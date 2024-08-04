@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Adds work in progress on new pr open. This will give us the confidence to remove the auto dismiss feature.
+
+      skipCI-kube-tests:true
+      skipCI-storybook-tests:true
+      skipCI-docs-build:true

@@ -181,6 +181,7 @@ func (h *SoloTestHelper) InstallGloo(ctx context.Context, timeout time.Duration,
 	glooctlCommand := []string{
 		filepath.Join(h.BuildAssetDir, h.GlooctlExecName),
 		"install", deploymentType,
+		"--release-name", h.HelmChartName,
 	}
 	if h.LicenseKey != "" {
 		options = append(options, WithExtraArgs("enterprise", "--license-key", h.LicenseKey))
@@ -323,6 +324,8 @@ func (h *SoloTestHelper) UpgradeGloo(ctx context.Context, timeout time.Duration,
 		h.HelmChartName,
 		chartPath,
 		"-n", h.InstallNamespace,
+		"--history-max",
+		"0",
 	}
 
 	if h.Verbose {
@@ -369,6 +372,8 @@ func (h *SoloTestHelper) RevertGlooUpgrade(ctx context.Context, timeout time.Dur
 		"rollback",
 		h.HelmChartName,
 		"-n", h.InstallNamespace,
+		"--history-max",
+		"0",
 	}
 
 	if h.Verbose {

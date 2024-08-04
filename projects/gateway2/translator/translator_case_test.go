@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/onsi/ginkgo/v2"
 	errors "github.com/rotisserie/eris"
+	"google.golang.org/protobuf/testing/protocmp"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -48,8 +51,16 @@ type ExpectedTestResult struct {
 	// Reports     map[types.NamespacedName]*reports.GatewayReport
 }
 
-func (r ExpectedTestResult) Equals(actual ActualTestResult) (bool, error) {
+func (r ExpectedTestResult) Load() (*v1.Proxy, error) {
 	proxy, err := testutils.ReadProxyFromFile(r.Proxy)
+	if err != nil {
+		return nil, err
+	}
+	return proxy, nil
+}
+
+func (r ExpectedTestResult) Equals(actual ActualTestResult) (bool, error) {
+	proxy, err := r.Load()
 	if err != nil {
 		return false, err
 	}
@@ -57,7 +68,7 @@ func (r ExpectedTestResult) Equals(actual ActualTestResult) (bool, error) {
 }
 
 // map of gwv1.GW namespace/name to translation result
-func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, error) {
+func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]string, error) {
 	// load inputs
 
 	var (
@@ -116,7 +127,7 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 
 	pluginRegistry := registry.NewPluginRegistry(registry.BuildPlugins(queries, fakeClient, routeOptionClient, vhOptionClient, statusReporter))
 
-	results := make(map[types.NamespacedName]bool)
+	results := make(map[types.NamespacedName]string)
 	for _, gw := range gateways {
 		gwNN := types.NamespacedName{
 			Namespace: gw.Namespace,
@@ -148,13 +159,12 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 		if !ok {
 			return nil, errors.Errorf("no expected result found for gateway %v", gwNN)
 		}
-
-		equal, err := expected.Equals(actual)
+		expectedProxy, err := expected.Load()
 		if err != nil {
 			return nil, err
 		}
 
-		results[gwNN] = equal
+		results[gwNN] = cmp.Diff(expectedProxy, actual.Proxy, protocmp.Transform(), cmpopts.EquateNaNs())
 	}
 
 	return results, nil

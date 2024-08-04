@@ -31,6 +31,7 @@ import (
 
 const (
 	// The port used to expose a developer server
+	// Deprecated: https://github.com/solo-io/gloo/issues/6494
 	devModePort = 10010
 )
 
@@ -197,10 +198,17 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 }
 
 // ServeXdsSnapshots exposes Gloo configuration as an API when `devMode` in Settings is True.
-// TODO(ilackarms): move this somewhere else, make it part of dev-mode
 // Deprecated: https://github.com/solo-io/gloo/issues/6494
-// Prefer to use the iosnapshot.History
+// Prefer to use the iosnapshot.History and pkg/servers/admin
 func (s *translatorSyncer) ServeXdsSnapshots() error {
+	return s.ContextuallyServeXdsSnapshots(context.Background())
+}
+
+// ContextuallyServeXdsSnapshots exposes Gloo configuration as an API when `devMode` in Settings is True.
+// Deprecated: https://github.com/solo-io/gloo/issues/6494
+// Prefer to use the iosnapshot.History and pkg/servers/admin
+func (s *translatorSyncer) ContextuallyServeXdsSnapshots(ctx context.Context) error {
+
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -220,7 +228,15 @@ func (s *translatorSyncer) ServeXdsSnapshots() error {
 		_, _ = fmt.Fprintf(w, "%+v", prettify(s.latestSnap))
 	})
 
-	return http.ListenAndServe(fmt.Sprintf(":%d", devModePort), r)
+	server := &http.Server{Addr: fmt.Sprintf(":%d", devModePort), Handler: r}
+
+	go func() {
+		<-ctx.Done()
+		_ = server.Close()
+	}()
+
+	return server.ListenAndServe()
+
 }
 
 func prettify(original interface{}) string {

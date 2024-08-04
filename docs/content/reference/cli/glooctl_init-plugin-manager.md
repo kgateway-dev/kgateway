@@ -4,7 +4,7 @@ weight: 5
 ---
 ## glooctl init-plugin-manager
 
-Install the Gloo Edge Enterprise CLI plugin manager
+Install the Gloo Gateway Enterprise CLI plugin manager
 
 ```
 glooctl init-plugin-manager [flags]

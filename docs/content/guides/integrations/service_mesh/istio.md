@@ -1,6 +1,6 @@
 ---
-title: Gloo Edge and Istio
-menuTitle: Configure your Gloo Edge gateway to run an Istio sidecar 
+title: Gloo Gateway and Istio
+menuTitle: Configure your Gloo Gateway gateway to run an Istio sidecar 
 weight: 1
 ---
 
@@ -14,13 +14,13 @@ The open source project Istio is the leading service mesh implementation that of
 * Fine-grained access control and quotas
 * Automatic logs, metrics, and traces for traffic in the service mesh
 
-### About the Gloo Edge Istio integration
+### About the Gloo Gateway Istio integration
 
-Gloo Edge comes with an Istio integration that allows you to configure your gateway proxy with an Istio sidecar. The Istio sidecar uses mutual TLS (mTLS) to prove its identity and to secure the connection between your gateway and the services in your Istio service mesh. In addition, you can control and secure the traffic that enters the mesh by applying all the advanced routing, traffic management, security, and resiliency capabilities that Gloo Edge offers. For example, you can set up end-user authentication and authorization, per-user rate limiting quotas, web application filters, and access logging to help prevent malicious attacks and audit service mesh usage. 
+Gloo Gateway comes with an Istio integration that allows you to configure your gateway proxy with an Istio sidecar. The Istio sidecar uses mutual TLS (mTLS) to prove its identity and to secure the connection between your gateway and the services in your Istio service mesh. In addition, you can control and secure the traffic that enters the mesh by applying all the advanced routing, traffic management, security, and resiliency capabilities that Gloo Gateway offers. For example, you can set up end-user authentication and authorization, per-user rate limiting quotas, web application filters, and access logging to help prevent malicious attacks and audit service mesh usage. 
 
 ### Changes to the Istio integration in 1.17
 
-In Gloo Edge 1.17, a new auto-mTLS feature was introduced that simplifies the integration with Istio service meshes. The auto-mTLS feature automatically injects mTLS configuration into all Upstream resources in your cluster. Without auto-mTLS, every Upstream must be updated manually to add the mTLS configuration. 
+In Gloo Gateway 1.17, a new auto-mTLS feature was introduced that simplifies the integration with Istio service meshes. The auto-mTLS feature automatically injects mTLS configuration into all Upstream resources in your cluster. Without auto-mTLS, every Upstream must be updated manually to add the mTLS configuration. 
 
 
 ## Set up an Istio service mesh
@@ -142,9 +142,9 @@ Set up Istio. Choose between the following options to set up Istio:
    }
    ```
 
-## Enable the Istio integration in Gloo Edge
+## Enable the Istio integration in Gloo Gateway
 
-Upgrade your Gloo Edge installation to enable the Istio integration. 
+Upgrade your Gloo Gateway installation to enable the Istio integration. 
 
 1. Get the name of the istiod service. Depending on how you set up Istio, you might see a revisionless service name (`istiod`) or a service name with a revision, such as `istiod-1-21`. 
    ```sh
@@ -159,7 +159,7 @@ Upgrade your Gloo Edge installation to enable the Istio integration.
 
 2. Derive the Kubernetes service address for your istiod deployment. The service address uses the format `<service-name>.<namespace>.svc:15012`. For example, if your service name is `istiod-1-21`, the full service address is `istiod-1-21.istio-system.svc:15012`.
 
-3. Get the Helm values for your current Gloo Edge installation. 
+3. Get the Helm values for your current Gloo Gateway installation. 
    ```sh
    helm get values gloo -n gloo-system -o yaml > gloo-gateway.yaml
    open gloo-gateway.yaml
@@ -317,7 +317,7 @@ Upgrade your Gloo Edge installation to enable the Istio integration.
         "8189f0a6c4e3582792744e97e79d8f22"
       ],
       "X-Forwarded-Client-Cert": [
-        "By=spiffe://gloo-edge-docs-mgt/ns/httpbin/sa/httpbin;Hash=3a57f9d8fddea59614b4ade84fcc186edeffb47794c06608068a3553e811bdfe;Subject=\"\";URI=spiffe://gloo-edge-docs-mgt/ns/gloo-system/sa/gloo-proxy-http"
+        "By=spiffe://gloo-gateway-docs-mgt/ns/httpbin/sa/httpbin;Hash=3a57f9d8fddea59614b4ade84fcc186edeffb47794c06608068a3553e811bdfe;Subject=\"\";URI=spiffe://gloo-gatewa-docs-mgt/ns/gloo-system/sa/gloo-proxy-http"
       ],
       "X-Forwarded-Proto": [
         "http"
@@ -336,7 +336,7 @@ You can optionally remove the resources that you created.
 
 1. Follow the [Uninstall guide in the Gloo Mesh Enterprise documentation](https://docs.solo.io/gloo-mesh-enterprise/main/setup/uninstall/) to remove Gloo Mesh Enterprise. 
    
-2. Upgrade your Gloo Edge Helm installation and remove the Helm values that you added as part of this guide. 
+2. Upgrade your Gloo Gateway Helm installation and remove the Helm values that you added as part of this guide. 
 
 3. Remove the Istio sidecar from the httpbin app. 
    1. Remove the Istio label from the httpbin namespace. 

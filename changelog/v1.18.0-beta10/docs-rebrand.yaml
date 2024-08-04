@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/docs/issues/404
+    description: >-
+      Rebrands Gloo Edge to Gloo Gateway.
+      Updates logo.
+      Bumps versions.
+      skipCI-kube-tests:false

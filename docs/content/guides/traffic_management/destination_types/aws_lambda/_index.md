@@ -8,7 +8,7 @@ Route traffic requests directly to an [Amazon Web Services (AWS) Lambda function
 
 ## About
 
-Gloo Edge enables you to route traffic requests directly to your AWS Lambda functions. To also use Gloo Edge in place of your AWS ALB or AWS API Gateway, you can configure the `unwrapAsAlb` or `unwrapAsApiGateway` setting (Gloo Edge Enterprise only, version 1.12.0 or later) in the [AWS `destinationSpec`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto.sk/" %}}) of the route to your Lambda upstream. These settings allow Gloo Edge to manipulate a response from an upstream Lambda in the same way as an AWS ALB or AWS API Gateway.
+Gloo Gateway enables you to route traffic requests directly to your AWS Lambda functions. To also use Gloo Gateway in place of your AWS ALB or AWS API Gateway, you can configure the `unwrapAsAlb` or `unwrapAsApiGateway` setting (Gloo Gateway Enterprise only, version 1.12.0 or later) in the [AWS `destinationSpec`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto.sk/" %}}) of the route to your Lambda upstream. These settings allow Gloo Gateway to manipulate a response from an upstream Lambda in the same way as an AWS ALB or AWS API Gateway.
 
 For more information, see the AWS Lambda documentation on [configuring Lambda functions as targets](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html).
 
@@ -18,7 +18,7 @@ For more information, see the AWS Lambda documentation on [configuring Lambda fu
 
 ### Step 1: Create an AWS Lambda
 
-Create an AWS Lambda function to test with Gloo Edge routing.
+Create an AWS Lambda function to test with Gloo Gateway routing.
 
 1. Log in to the AWS console and navigate to the Lambda page.
 
@@ -37,9 +37,9 @@ Create an AWS Lambda function to test with Gloo Edge routing.
 
 ### Step 2: Create an AWS credentials secret
 
-Create a Kubernetes secret that contains your AWS access key and secret key. Gloo Edge uses this secret to connect to AWS Lambda for service discovery.
+Create a Kubernetes secret that contains your AWS access key and secret key. Gloo Gateway uses this secret to connect to AWS Lambda for service discovery.
 
-1. Get the access key and secret key for your AWS account. Note that your [AWS credentials](https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html) must have the appropriate permissions to interact with AWS Lambda.
+1. Get the access key, secret key, and session token for your AWS account. If your AWS account setup does not require a session token, you can remove the session token parameter from the Kubernetes secret. Note that your [AWS credentials](https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html) must have the appropriate permissions to interact with AWS Lambda.
 
 2. Create a Kubernetes secret that contains the AWS access key and secret key.
    ```sh
@@ -47,12 +47,13 @@ Create a Kubernetes secret that contains your AWS access key and secret key. Glo
        --name 'aws-creds' \
        --namespace gloo-system \
        --access-key $ACCESS_KEY \
-       --secret-key $SECRET_KEY
+       --secret-key $SECRET_KEY \
+       --session-token $SESSION_TOKEN
    ```
 
 ### Step 3: Create an upstream and virtual service
 
-Create Gloo Edge `Upstream` and `VirtualService` resources to route requests to the Lambda function.
+Create Gloo Gateway `Upstream` and `VirtualService` resources to route requests to the Lambda function.
 
 1. Create an upstream resource that references the Lambda secret. Update the region with your Lamda location, such as `us-east-1`.
    {{< tabs >}}
@@ -81,12 +82,12 @@ Create Gloo Edge `Upstream` and `VirtualService` resources to route requests to 
    {{< /tab >}}
    {{< /tabs >}}
 
-2. Verify that Gloo Edge can access AWS Lambda via your AWS credentials. In the `spec.aws.lambdaFunctions` section of the output, verify that the `echo` Lambda function is listed.
+2. Verify that Gloo Gateway can access AWS Lambda via your AWS credentials. In the `spec.aws.lambdaFunctions` section of the output, verify that the `echo` Lambda function is listed.
    ```sh
    kubectl get upstream -n gloo-system aws-upstream -o yaml
    ```
 
-3. Create a VirtualService resource containing a `routeAction` that points to the AWS Lambda upstream. Note that this resource directs Gloo Edge to route requests directly to the Lambda upstram, but does not manipulate the JSON response.
+3. Create a VirtualService resource containing a `routeAction` that points to the AWS Lambda upstream. Note that this resource directs Gloo Gateway to route requests directly to the Lambda upstram, but does not manipulate the JSON response.
    ```yaml
    kubectl apply -f - <<EOF
    apiVersion: gateway.solo.io/v1
@@ -112,7 +113,7 @@ Create Gloo Edge `Upstream` and `VirtualService` resources to route requests to 
    EOF
    ```
 
-4. Confirm that Gloo Edge is correctly routing requests to Lambda by sending a curl request.
+4. Confirm that Gloo Gateway is correctly routing requests to Lambda by sending a curl request.
    ```sh
    curl $(glooctl proxy url)/ -d '{"key1":"value1", "key2":"value2"}' -X POST
    ```
@@ -121,20 +122,20 @@ Create Gloo Edge `Upstream` and `VirtualService` resources to route requests to 
    {"key1":"value1", "key2":"value2"}
    ```
 
-At this point, Gloo Edge is routing directly to the `echo` Lambda function. To configure Gloo Edge to also unwrap the JSON response from the function in the same way as an AWS ALB or AWS API Gateway, continue to the next section.
+At this point, Gloo Gateway is routing directly to the `echo` Lambda function. To configure Gloo Gateway to also unwrap the JSON response from the function in the same way as an AWS ALB or AWS API Gateway, continue to the next section.
 
 
 ## Transform requests and/or responses
 
 ### Basic request transformations
 
-When you use the AWS Lambda plug-in in Gloo Edge, you might want to transform requests to increase the amount of information passed to the Lambda function.
+When you use the AWS Lambda plug-in in Gloo Gateway, you might want to transform requests to increase the amount of information passed to the Lambda function.
 
 The request transformation injects the headers of the request into the body. The resulting body will be a JSON object containing two keys: 'headers', which contains the injected headers, and 'body', which contains the original body.
 
 Note that request transformations are incompatible with the `wrapAsApiGateway` setting, which transforms requests into the format produced by an AWS API Gateway.
 
-**Before you begin**: [Install Gloo Edge version 1.12.0 or later in a Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) or [upgrade your existing installation to version 1.12.0 or later]({{% versioned_link_path fromRoot="/operations/upgrading/upgrade_steps/" %}}).
+**Before you begin**: [Install Gloo Gateway version 1.12.0 or later in a Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) or [upgrade your existing installation to version 1.12.0 or later]({{% versioned_link_path fromRoot="/operations/upgrading/upgrade_steps/" %}}).
 
 1. Edit the VirtualService resource that you created in the previous section to add the `destinationSpec.aws.requestTransformation: true` setting.
    ```bash
@@ -158,7 +159,7 @@ Note that request transformations are incompatible with the `wrapAsApiGateway` s
 
 Unwrap the JSON response from the function in the same way as an AWS ALB.
 
-In the following steps, you configure the `unwrapAsAlb` setting in the [AWS `destinationSpec`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto.sk/" %}}) of the route to your Lambda upstream. These settings allow Gloo Edge to manipulate a response from an upstream Lambda in the same way as an AWS ALB .
+In the following steps, you configure the `unwrapAsAlb` setting in the [AWS `destinationSpec`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto.sk/" %}}) of the route to your Lambda upstream. These settings allow Gloo Gateway to manipulate a response from an upstream Lambda in the same way as an AWS ALB .
 
 1. Edit the VirtualService resource that you created in the previous section to add the `destinationSpec.aws.unwrapAsAlb: true` setting.
    ```bash
@@ -177,7 +178,7 @@ In the following steps, you configure the `unwrapAsAlb` setting in the [AWS `des
                namespace: gloo-system
    {{< / highlight >}}
 
-2. Verify that Gloo Edge correctly routes traffic requests to the Lambda function and unwraps the response from the function.
+2. Verify that Gloo Gateway correctly routes traffic requests to the Lambda function and unwraps the response from the function.
    ```sh
    curl $(glooctl proxy url)/ -d '{"body": "gloo edge is inserting this body", "headers": {"test-header-key": "test-header-value"}, "statusCode": 201}' -X POST -v
    ```
@@ -206,13 +207,13 @@ In the following steps, you configure the `unwrapAsAlb` setting in the [AWS `des
 
 ### Wrap or unwrap requests and responses as an AWS API Gateway (Enterprise v1.12.0+ only)
 
-In Gloo Edge Enterprise, you can use Gloo Edge in place of an AWS API Gateway. To do this, configure the `wrapAsApiGateway` setting or the `unwrapAsApiGateway` setting (Gloo Edge Enterprise only, version 1.12.0 or later) in the [AWS `destinationSpec`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto.sk/" %}}) of the route to your Lambda upstream. These settings allow Gloo Edge to manipulate a response from an upstream Lambda in the same way as an AWS API Gateway.
+In Gloo Gateway Enterprise, you can use Gloo Gateway in place of an AWS API Gateway. To do this, configure the `wrapAsApiGateway` setting or the `unwrapAsApiGateway` setting (Gloo Gateway Enterprise only, version 1.12.0 or later) in the [AWS `destinationSpec`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto.sk/" %}}) of the route to your Lambda upstream. These settings allow Gloo Gateway to manipulate a response from an upstream Lambda in the same way as an AWS API Gateway.
 
 #### Unwrap as API Gateway
 
 Unwrap the JSON response from the function in the same way as an AWS API Gateway.
 
-Note that to use the `unwrapAsApiGateway` setting, your Lambda function must be capable of returning a response in the form that is required by an AWS API Gateway. Gloo Edge looks for a JSON response from the Lambda upstream that contains the following specific fields:
+Note that to use the `unwrapAsApiGateway` setting, your Lambda function must be capable of returning a response in the form that is required by an AWS API Gateway. Gloo Gateway looks for a JSON response from the Lambda upstream that contains the following specific fields:
 - `body`: String containing the desired response body.
 - `headers`: JSON object containing a mapping from the desired response header keys to the desired response header values.
 - `multiValueHeaders`: JSON object containing a mapping from the desired response header keys to a list of the desired response header values that you want to map to a header key.
@@ -221,7 +222,7 @@ Note that to use the `unwrapAsApiGateway` setting, your Lambda function must be 
 
 For more information, see the AWS Lambda documentation on [how AWS API Gateways process Lambda responses](https://docs.aws.amazon.com/lambda/latest/dg/services-apigateway.html#apigateway-types-transforms).
 
-**Before you begin**: [Install Gloo Edge Enterprise version 1.12.0 or later in a Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) or [upgrade your existing Enterprise installation to version 1.12.0 or later]({{% versioned_link_path fromRoot="/operations/upgrading/upgrade_steps/" %}}).
+**Before you begin**: [Install Gloo Gateway Enterprise version 1.12.0 or later in a Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) or [upgrade your existing Enterprise installation to version 1.12.0 or later]({{% versioned_link_path fromRoot="/operations/upgrading/upgrade_steps/" %}}).
 
 1. Edit the VirtualService resource that you created in the previous section to add the `destinationSpec.aws.unwrapAsApiGateway: true` setting.
    ```bash
@@ -240,7 +241,7 @@ For more information, see the AWS Lambda documentation on [how AWS API Gateways 
                namespace: gloo-system
    {{< / highlight >}}
 
-2. Verify that Gloo Edge correctly routes traffic requests to the Lambda function and unwraps the response from the function.
+2. Verify that Gloo Gateway correctly routes traffic requests to the Lambda function and unwraps the response from the function.
    ```sh
    curl $(glooctl proxy url)/ -d '{"body": "gloo edge is inserting this body", "headers": {"test-header-key": "test-header-value"}, "statusCode": 201}' -X POST -v
    ```
@@ -271,7 +272,7 @@ For more information, see the AWS Lambda documentation on [how AWS API Gateways 
 
 Wrap the request to the function in the same way as an AWS API Gateway.
 
-**Before you begin**: [Install Gloo Edge Enterprise version 1.12.0 or later in a Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) or [upgrade your existing Enterprise installation to version 1.12.0 or later]({{% versioned_link_path fromRoot="/operations/upgrading/upgrade_steps/" %}}).
+**Before you begin**: [Install Gloo Gateway Enterprise version 1.12.0 or later in a Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) or [upgrade your existing Enterprise installation to version 1.12.0 or later]({{% versioned_link_path fromRoot="/operations/upgrading/upgrade_steps/" %}}).
 
 1. Edit the VirtualService resource that you created in the previous section to add the `destinationSpec.aws.unwrapAsApiGateway: true` setting.
    ```bash
@@ -290,7 +291,7 @@ Wrap the request to the function in the same way as an AWS API Gateway.
                namespace: gloo-system
    {{< / highlight >}}
 
-2. Verify that Gloo Edge correctly routes traffic requests to the Lambda function and unwraps the response from the function.
+2. Verify that Gloo Gateway correctly routes traffic requests to the Lambda function and unwraps the response from the function.
    ```sh
    curl $(glooctl proxy url)/ -d 'gloo edge is inserting this body' -H 'test-header-key: test-header-value' -X POST -v
    ```

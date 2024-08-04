@@ -13,7 +13,7 @@ a series of regex replacements on the response body and content that is logged b
 Valid regex patterns are those in the [RE2 syntax](https://github.com/google/re2/wiki/Syntax). Note that some features such as lookaheads are not supported by RE2.
 {{% /notice %}}
 
-For example, we can use Gloo Edge to transform this response:
+For example, we can use Gloo Gateway to transform this response:
 ```json
 {
    "fakevisa": "4397945340344828",
@@ -34,7 +34,7 @@ DLP is configured as an ordered list of `Action`s on an HTTP listener, virtual s
 configured on the listener, an additional matcher is paired with a list of `Action`s, and the first DLP rule that
 matches a request will be applied.
 
-The DLP filter will be run by Envoy after any other filters which might add data to be masked into the dynamic metadata. Gloo Edge's current filter order follows:
+The DLP filter will be run by Envoy after any other filters which might add data to be masked into the dynamic metadata. Gloo Gateway's current filter order follows:
 
 1. Fault Stage (Fault injection)
 1. DLP
@@ -54,7 +54,7 @@ WAF access logs will only be masked when logged to Dynamic metadata. WAF logs wr
 
 ### Prerequisites
 
-Install Gloo Edge Enterprise.
+Install Gloo Gateway Enterprise.
 
 ### Simple Example
 
@@ -157,7 +157,7 @@ Let's start by creating our typical petstore microservice:
 kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.14.x/example/petstore/petstore.yaml
 ```
 
-Apply the following virtual service to route to the Gloo Edge discovered petstore upstream:
+Apply the following virtual service to route to the Gloo Gateway discovered petstore upstream:
 
 ```yaml
 kubectl apply -f - <<EOF
@@ -251,7 +251,7 @@ Predefined and Custom actions will only match based on header value in access lo
    kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.14.x/example/petstore/petstore.yaml
    ```
 
-2. Apply the following virtual service to route to the Gloo Edge discovered upstream for petstore.
+2. Apply the following virtual service to route to the Gloo Gateway discovered upstream for petstore.
    ```yaml
    apiVersion: gateway.solo.io/v1
    kind: VirtualService
@@ -356,7 +356,7 @@ Some notes on key/value actions:
 
 ### Summary
 
-In this tutorial we installed Gloo Edge Enterprise and demonstrated rewriting responses from upstreams
+In this tutorial we installed Gloo Gateway Enterprise and demonstrated rewriting responses from upstreams
 with both the provided default regex patterns as well as the custom regex config.
 
 ### Cleanup

@@ -1564,6 +1564,21 @@ spec:
                                               type: boolean
                                             mergeExtractorsToBody:
                                               type: object
+                                            mergeJsonKeys:
+                                              properties:
+                                                jsonKeys:
+                                                  additionalProperties:
+                                                    properties:
+                                                      overrideEmpty:
+                                                        type: boolean
+                                                      tmpl:
+                                                        properties:
+                                                          text:
+                                                            type: string
+                                                        type: object
+                                                    type: object
+                                                  type: object
+                                              type: object
                                             parseBodyBehavior:
                                               type: string
                                               x-kubernetes-int-or-string: true
@@ -1665,6 +1680,21 @@ spec:
                                             ignoreErrorOnParse:
                                               type: boolean
                                             mergeExtractorsToBody:
+                                              type: object
+                                            mergeJsonKeys:
+                                              properties:
+                                                jsonKeys:
+                                                  additionalProperties:
+                                                    properties:
+                                                      overrideEmpty:
+                                                        type: boolean
+                                                      tmpl:
+                                                        properties:
+                                                          text:
+                                                            type: string
+                                                        type: object
+                                                    type: object
+                                                  type: object
                                               type: object
                                             parseBodyBehavior:
                                               type: string
@@ -1787,6 +1817,21 @@ spec:
                                             ignoreErrorOnParse:
                                               type: boolean
                                             mergeExtractorsToBody:
+                                              type: object
+                                            mergeJsonKeys:
+                                              properties:
+                                                jsonKeys:
+                                                  additionalProperties:
+                                                    properties:
+                                                      overrideEmpty:
+                                                        type: boolean
+                                                      tmpl:
+                                                        properties:
+                                                          text:
+                                                            type: string
+                                                        type: object
+                                                    type: object
+                                                  type: object
                                               type: object
                                             parseBodyBehavior:
                                               type: string
@@ -1950,6 +1995,21 @@ spec:
                                               type: boolean
                                             mergeExtractorsToBody:
                                               type: object
+                                            mergeJsonKeys:
+                                              properties:
+                                                jsonKeys:
+                                                  additionalProperties:
+                                                    properties:
+                                                      overrideEmpty:
+                                                        type: boolean
+                                                      tmpl:
+                                                        properties:
+                                                          text:
+                                                            type: string
+                                                        type: object
+                                                    type: object
+                                                  type: object
+                                              type: object
                                             parseBodyBehavior:
                                               type: string
                                               x-kubernetes-int-or-string: true
@@ -2051,6 +2111,21 @@ spec:
                                             ignoreErrorOnParse:
                                               type: boolean
                                             mergeExtractorsToBody:
+                                              type: object
+                                            mergeJsonKeys:
+                                              properties:
+                                                jsonKeys:
+                                                  additionalProperties:
+                                                    properties:
+                                                      overrideEmpty:
+                                                        type: boolean
+                                                      tmpl:
+                                                        properties:
+                                                          text:
+                                                            type: string
+                                                        type: object
+                                                    type: object
+                                                  type: object
                                               type: object
                                             parseBodyBehavior:
                                               type: string
@@ -2173,6 +2248,21 @@ spec:
                                             ignoreErrorOnParse:
                                               type: boolean
                                             mergeExtractorsToBody:
+                                              type: object
+                                            mergeJsonKeys:
+                                              properties:
+                                                jsonKeys:
+                                                  additionalProperties:
+                                                    properties:
+                                                      overrideEmpty:
+                                                        type: boolean
+                                                      tmpl:
+                                                        properties:
+                                                          text:
+                                                            type: string
+                                                        type: object
+                                                    type: object
+                                                  type: object
                                               type: object
                                             parseBodyBehavior:
                                               type: string
@@ -2328,6 +2418,21 @@ spec:
                                               type: boolean
                                             mergeExtractorsToBody:
                                               type: object
+                                            mergeJsonKeys:
+                                              properties:
+                                                jsonKeys:
+                                                  additionalProperties:
+                                                    properties:
+                                                      overrideEmpty:
+                                                        type: boolean
+                                                      tmpl:
+                                                        properties:
+                                                          text:
+                                                            type: string
+                                                        type: object
+                                                    type: object
+                                                  type: object
+                                              type: object
                                             parseBodyBehavior:
                                               type: string
                                               x-kubernetes-int-or-string: true
@@ -2429,6 +2534,21 @@ spec:
                                             ignoreErrorOnParse:
                                               type: boolean
                                             mergeExtractorsToBody:
+                                              type: object
+                                            mergeJsonKeys:
+                                              properties:
+                                                jsonKeys:
+                                                  additionalProperties:
+                                                    properties:
+                                                      overrideEmpty:
+                                                        type: boolean
+                                                      tmpl:
+                                                        properties:
+                                                          text:
+                                                            type: string
+                                                        type: object
+                                                    type: object
+                                                  type: object
                                               type: object
                                             parseBodyBehavior:
                                               type: string
@@ -2551,6 +2671,21 @@ spec:
                                             ignoreErrorOnParse:
                                               type: boolean
                                             mergeExtractorsToBody:
+                                              type: object
+                                            mergeJsonKeys:
+                                              properties:
+                                                jsonKeys:
+                                                  additionalProperties:
+                                                    properties:
+                                                      overrideEmpty:
+                                                        type: boolean
+                                                      tmpl:
+                                                        properties:
+                                                          text:
+                                                            type: string
+                                                        type: object
+                                                    type: object
+                                                  type: object
                                               type: object
                                             parseBodyBehavior:
                                               type: string
@@ -2676,6 +2811,21 @@ spec:
                                     type: boolean
                                   mergeExtractorsToBody:
                                     type: object
+                                  mergeJsonKeys:
+                                    properties:
+                                      jsonKeys:
+                                        additionalProperties:
+                                          properties:
+                                            overrideEmpty:
+                                              type: boolean
+                                            tmpl:
+                                              properties:
+                                                text:
+                                                  type: string
+                                              type: object
+                                          type: object
+                                        type: object
+                                    type: object
                                   parseBodyBehavior:
                                     type: string
                                     x-kubernetes-int-or-string: true
@@ -2777,6 +2927,21 @@ spec:
                                   ignoreErrorOnParse:
                                     type: boolean
                                   mergeExtractorsToBody:
+                                    type: object
+                                  mergeJsonKeys:
+                                    properties:
+                                      jsonKeys:
+                                        additionalProperties:
+                                          properties:
+                                            overrideEmpty:
+                                              type: boolean
+                                            tmpl:
+                                              properties:
+                                                text:
+                                                  type: string
+                                              type: object
+                                          type: object
+                                        type: object
                                     type: object
                                   parseBodyBehavior:
                                     type: string
@@ -2976,6 +3141,135 @@ spec:
                           type: string
                         options:
                           properties:
+                            ai:
+                              properties:
+                                backupModels:
+                                  items:
+                                    type: string
+                                  type: array
+                                defaults:
+                                  items:
+                                    properties:
+                                      field:
+                                        type: string
+                                      override:
+                                        type: boolean
+                                      value:
+                                        x-kubernetes-preserve-unknown-fields: true
+                                    type: object
+                                  type: array
+                                promptEnrichment:
+                                  properties:
+                                    append:
+                                      items:
+                                        properties:
+                                          content:
+                                            type: string
+                                          role:
+                                            type: string
+                                        type: object
+                                      type: array
+                                    prepend:
+                                      items:
+                                        properties:
+                                          content:
+                                            type: string
+                                          role:
+                                            type: string
+                                        type: object
+                                      type: array
+                                  type: object
+                                promptGuard:
+                                  properties:
+                                    request:
+                                      properties:
+                                        customResponseMessage:
+                                          type: string
+                                        matches:
+                                          items:
+                                            type: string
+                                          type: array
+                                      type: object
+                                    response:
+                                      properties:
+                                        builtins:
+                                          items:
+                                            type: string
+                                            x-kubernetes-int-or-string: true
+                                          type: array
+                                        matches:
+                                          items:
+                                            type: string
+                                          type: array
+                                      type: object
+                                  type: object
+                                rag:
+                                  properties:
+                                    datastore:
+                                      properties:
+                                        postgres:
+                                          properties:
+                                            collectionName:
+                                              type: string
+                                            connectionString:
+                                              type: string
+                                          type: object
+                                      type: object
+                                    embedding:
+                                      properties:
+                                        openai:
+                                          properties:
+                                            authToken:
+                                              properties:
+                                                inline:
+                                                  type: string
+                                                secretRef:
+                                                  properties:
+                                                    name:
+                                                      type: string
+                                                    namespace:
+                                                      type: string
+                                                  type: object
+                                              type: object
+                                          type: object
+                                      type: object
+                                    promptTemplate:
+                                      type: string
+                                  type: object
+                                semanticCache:
+                                  properties:
+                                    datastore:
+                                      properties:
+                                        redis:
+                                          properties:
+                                            connectionString:
+                                              type: string
+                                          type: object
+                                      type: object
+                                    embedding:
+                                      properties:
+                                        openai:
+                                          properties:
+                                            authToken:
+                                              properties:
+                                                inline:
+                                                  type: string
+                                                secretRef:
+                                                  properties:
+                                                    name:
+                                                      type: string
+                                                    namespace:
+                                                      type: string
+                                                  type: object
+                                              type: object
+                                          type: object
+                                      type: object
+                                    ttl:
+                                      maximum: 4294967295
+                                      minimum: 0
+                                      type: integer
+                                  type: object
+                              type: object
                             appendXForwardedHost:
                               nullable: true
                               type: boolean
@@ -4321,6 +4615,21 @@ spec:
                                                     type: boolean
                                                   mergeExtractorsToBody:
                                                     type: object
+                                                  mergeJsonKeys:
+                                                    properties:
+                                                      jsonKeys:
+                                                        additionalProperties:
+                                                          properties:
+                                                            overrideEmpty:
+                                                              type: boolean
+                                                            tmpl:
+                                                              properties:
+                                                                text:
+                                                                  type: string
+                                                              type: object
+                                                          type: object
+                                                        type: object
+                                                    type: object
                                                   parseBodyBehavior:
                                                     type: string
                                                     x-kubernetes-int-or-string: true
@@ -4422,6 +4731,21 @@ spec:
                                                   ignoreErrorOnParse:
                                                     type: boolean
                                                   mergeExtractorsToBody:
+                                                    type: object
+                                                  mergeJsonKeys:
+                                                    properties:
+                                                      jsonKeys:
+                                                        additionalProperties:
+                                                          properties:
+                                                            overrideEmpty:
+                                                              type: boolean
+                                                            tmpl:
+                                                              properties:
+                                                                text:
+                                                                  type: string
+                                                              type: object
+                                                          type: object
+                                                        type: object
                                                     type: object
                                                   parseBodyBehavior:
                                                     type: string
@@ -4544,6 +4868,21 @@ spec:
                                                   ignoreErrorOnParse:
                                                     type: boolean
                                                   mergeExtractorsToBody:
+                                                    type: object
+                                                  mergeJsonKeys:
+                                                    properties:
+                                                      jsonKeys:
+                                                        additionalProperties:
+                                                          properties:
+                                                            overrideEmpty:
+                                                              type: boolean
+                                                            tmpl:
+                                                              properties:
+                                                                text:
+                                                                  type: string
+                                                              type: object
+                                                          type: object
+                                                        type: object
                                                     type: object
                                                   parseBodyBehavior:
                                                     type: string
@@ -4707,6 +5046,21 @@ spec:
                                                     type: boolean
                                                   mergeExtractorsToBody:
                                                     type: object
+                                                  mergeJsonKeys:
+                                                    properties:
+                                                      jsonKeys:
+                                                        additionalProperties:
+                                                          properties:
+                                                            overrideEmpty:
+                                                              type: boolean
+                                                            tmpl:
+                                                              properties:
+                                                                text:
+                                                                  type: string
+                                                              type: object
+                                                          type: object
+                                                        type: object
+                                                    type: object
                                                   parseBodyBehavior:
                                                     type: string
                                                     x-kubernetes-int-or-string: true
@@ -4808,6 +5162,21 @@ spec:
                                                   ignoreErrorOnParse:
                                                     type: boolean
                                                   mergeExtractorsToBody:
+                                                    type: object
+                                                  mergeJsonKeys:
+                                                    properties:
+                                                      jsonKeys:
+                                                        additionalProperties:
+                                                          properties:
+                                                            overrideEmpty:
+                                                              type: boolean
+                                                            tmpl:
+                                                              properties:
+                                                                text:
+                                                                  type: string
+                                                              type: object
+                                                          type: object
+                                                        type: object
                                                     type: object
                                                   parseBodyBehavior:
                                                     type: string
@@ -4930,6 +5299,21 @@ spec:
                                                   ignoreErrorOnParse:
                                                     type: boolean
                                                   mergeExtractorsToBody:
+                                                    type: object
+                                                  mergeJsonKeys:
+                                                    properties:
+                                                      jsonKeys:
+                                                        additionalProperties:
+                                                          properties:
+                                                            overrideEmpty:
+                                                              type: boolean
+                                                            tmpl:
+                                                              properties:
+                                                                text:
+                                                                  type: string
+                                                              type: object
+                                                          type: object
+                                                        type: object
                                                     type: object
                                                   parseBodyBehavior:
                                                     type: string
@@ -5085,6 +5469,21 @@ spec:
                                                     type: boolean
                                                   mergeExtractorsToBody:
                                                     type: object
+                                                  mergeJsonKeys:
+                                                    properties:
+                                                      jsonKeys:
+                                                        additionalProperties:
+                                                          properties:
+                                                            overrideEmpty:
+                                                              type: boolean
+                                                            tmpl:
+                                                              properties:
+                                                                text:
+                                                                  type: string
+                                                              type: object
+                                                          type: object
+                                                        type: object
+                                                    type: object
                                                   parseBodyBehavior:
                                                     type: string
                                                     x-kubernetes-int-or-string: true
@@ -5186,6 +5585,21 @@ spec:
                                                   ignoreErrorOnParse:
                                                     type: boolean
                                                   mergeExtractorsToBody:
+                                                    type: object
+                                                  mergeJsonKeys:
+                                                    properties:
+                                                      jsonKeys:
+                                                        additionalProperties:
+                                                          properties:
+                                                            overrideEmpty:
+                                                              type: boolean
+                                                            tmpl:
+                                                              properties:
+                                                                text:
+                                                                  type: string
+                                                              type: object
+                                                          type: object
+                                                        type: object
                                                     type: object
                                                   parseBodyBehavior:
                                                     type: string
@@ -5308,6 +5722,21 @@ spec:
                                                   ignoreErrorOnParse:
                                                     type: boolean
                                                   mergeExtractorsToBody:
+                                                    type: object
+                                                  mergeJsonKeys:
+                                                    properties:
+                                                      jsonKeys:
+                                                        additionalProperties:
+                                                          properties:
+                                                            overrideEmpty:
+                                                              type: boolean
+                                                            tmpl:
+                                                              properties:
+                                                                text:
+                                                                  type: string
+                                                              type: object
+                                                          type: object
+                                                        type: object
                                                     type: object
                                                   parseBodyBehavior:
                                                     type: string
@@ -5441,6 +5870,21 @@ spec:
                                           type: boolean
                                         mergeExtractorsToBody:
                                           type: object
+                                        mergeJsonKeys:
+                                          properties:
+                                            jsonKeys:
+                                              additionalProperties:
+                                                properties:
+                                                  overrideEmpty:
+                                                    type: boolean
+                                                  tmpl:
+                                                    properties:
+                                                      text:
+                                                        type: string
+                                                    type: object
+                                                type: object
+                                              type: object
+                                          type: object
                                         parseBodyBehavior:
                                           type: string
                                           x-kubernetes-int-or-string: true
@@ -5542,6 +5986,21 @@ spec:
                                         ignoreErrorOnParse:
                                           type: boolean
                                         mergeExtractorsToBody:
+                                          type: object
+                                        mergeJsonKeys:
+                                          properties:
+                                            jsonKeys:
+                                              additionalProperties:
+                                                properties:
+                                                  overrideEmpty:
+                                                    type: boolean
+                                                  tmpl:
+                                                    properties:
+                                                      text:
+                                                        type: string
+                                                    type: object
+                                                type: object
+                                              type: object
                                           type: object
                                         parseBodyBehavior:
                                           type: string
@@ -5849,6 +6308,21 @@ spec:
                                                       ignoreErrorOnParse:
                                                         type: boolean
                                                       mergeExtractorsToBody:
+                                                        type: object
+                                                      mergeJsonKeys:
+                                                        properties:
+                                                          jsonKeys:
+                                                            additionalProperties:
+                                                              properties:
+                                                                overrideEmpty:
+                                                                  type: boolean
+                                                                tmpl:
+                                                                  properties:
+                                                                    text:
+                                                                      type: string
+                                                                  type: object
+                                                              type: object
+                                                            type: object
                                                         type: object
                                                       parseBodyBehavior:
                                                         type: string
@@ -6175,6 +6649,21 @@ spec:
                                                                   type: boolean
                                                                 mergeExtractorsToBody:
                                                                   type: object
+                                                                mergeJsonKeys:
+                                                                  properties:
+                                                                    jsonKeys:
+                                                                      additionalProperties:
+                                                                        properties:
+                                                                          overrideEmpty:
+                                                                            type: boolean
+                                                                          tmpl:
+                                                                            properties:
+                                                                              text:
+                                                                                type: string
+                                                                            type: object
+                                                                        type: object
+                                                                      type: object
+                                                                  type: object
                                                                 parseBodyBehavior:
                                                                   type: string
                                                                   x-kubernetes-int-or-string: true
@@ -6276,6 +6765,21 @@ spec:
                                                                 ignoreErrorOnParse:
                                                                   type: boolean
                                                                 mergeExtractorsToBody:
+                                                                  type: object
+                                                                mergeJsonKeys:
+                                                                  properties:
+                                                                    jsonKeys:
+                                                                      additionalProperties:
+                                                                        properties:
+                                                                          overrideEmpty:
+                                                                            type: boolean
+                                                                          tmpl:
+                                                                            properties:
+                                                                              text:
+                                                                                type: string
+                                                                            type: object
+                                                                        type: object
+                                                                      type: object
                                                                   type: object
                                                                 parseBodyBehavior:
                                                                   type: string
@@ -6398,6 +6902,21 @@ spec:
                                                                 ignoreErrorOnParse:
                                                                   type: boolean
                                                                 mergeExtractorsToBody:
+                                                                  type: object
+                                                                mergeJsonKeys:
+                                                                  properties:
+                                                                    jsonKeys:
+                                                                      additionalProperties:
+                                                                        properties:
+                                                                          overrideEmpty:
+                                                                            type: boolean
+                                                                          tmpl:
+                                                                            properties:
+                                                                              text:
+                                                                                type: string
+                                                                            type: object
+                                                                        type: object
+                                                                      type: object
                                                                   type: object
                                                                 parseBodyBehavior:
                                                                   type: string
@@ -6561,6 +7080,21 @@ spec:
                                                                   type: boolean
                                                                 mergeExtractorsToBody:
                                                                   type: object
+                                                                mergeJsonKeys:
+                                                                  properties:
+                                                                    jsonKeys:
+                                                                      additionalProperties:
+                                                                        properties:
+                                                                          overrideEmpty:
+                                                                            type: boolean
+                                                                          tmpl:
+                                                                            properties:
+                                                                              text:
+                                                                                type: string
+                                                                            type: object
+                                                                        type: object
+                                                                      type: object
+                                                                  type: object
                                                                 parseBodyBehavior:
                                                                   type: string
                                                                   x-kubernetes-int-or-string: true
@@ -6662,6 +7196,21 @@ spec:
                                                                 ignoreErrorOnParse:
                                                                   type: boolean
                                                                 mergeExtractorsToBody:
+                                                                  type: object
+                                                                mergeJsonKeys:
+                                                                  properties:
+                                                                    jsonKeys:
+                                                                      additionalProperties:
+                                                                        properties:
+                                                                          overrideEmpty:
+                                                                            type: boolean
+                                                                          tmpl:
+                                                                            properties:
+                                                                              text:
+                                                                                type: string
+                                                                            type: object
+                                                                        type: object
+                                                                      type: object
                                                                   type: object
                                                                 parseBodyBehavior:
                                                                   type: string
@@ -6784,6 +7333,21 @@ spec:
                                                                 ignoreErrorOnParse:
                                                                   type: boolean
                                                                 mergeExtractorsToBody:
+                                                                  type: object
+                                                                mergeJsonKeys:
+                                                                  properties:
+                                                                    jsonKeys:
+                                                                      additionalProperties:
+                                                                        properties:
+                                                                          overrideEmpty:
+                                                                            type: boolean
+                                                                          tmpl:
+                                                                            properties:
+                                                                              text:
+                                                                                type: string
+                                                                            type: object
+                                                                        type: object
+                                                                      type: object
                                                                   type: object
                                                                 parseBodyBehavior:
                                                                   type: string
@@ -6939,6 +7503,21 @@ spec:
                                                                   type: boolean
                                                                 mergeExtractorsToBody:
                                                                   type: object
+                                                                mergeJsonKeys:
+                                                                  properties:
+                                                                    jsonKeys:
+                                                                      additionalProperties:
+                                                                        properties:
+                                                                          overrideEmpty:
+                                                                            type: boolean
+                                                                          tmpl:
+                                                                            properties:
+                                                                              text:
+                                                                                type: string
+                                                                            type: object
+                                                                        type: object
+                                                                      type: object
+                                                                  type: object
                                                                 parseBodyBehavior:
                                                                   type: string
                                                                   x-kubernetes-int-or-string: true
@@ -7040,6 +7619,21 @@ spec:
                                                                 ignoreErrorOnParse:
                                                                   type: boolean
                                                                 mergeExtractorsToBody:
+                                                                  type: object
+                                                                mergeJsonKeys:
+                                                                  properties:
+                                                                    jsonKeys:
+                                                                      additionalProperties:
+                                                                        properties:
+                                                                          overrideEmpty:
+                                                                            type: boolean
+                                                                          tmpl:
+                                                                            properties:
+                                                                              text:
+                                                                                type: string
+                                                                            type: object
+                                                                        type: object
+                                                                      type: object
                                                                   type: object
                                                                 parseBodyBehavior:
                                                                   type: string
@@ -7163,6 +7757,21 @@ spec:
                                                                   type: boolean
                                                                 mergeExtractorsToBody:
                                                                   type: object
+                                                                mergeJsonKeys:
+                                                                  properties:
+                                                                    jsonKeys:
+                                                                      additionalProperties:
+                                                                        properties:
+                                                                          overrideEmpty:
+                                                                            type: boolean
+                                                                          tmpl:
+                                                                            properties:
+                                                                              text:
+                                                                                type: string
+                                                                            type: object
+                                                                        type: object
+                                                                      type: object
+                                                                  type: object
                                                                 parseBodyBehavior:
                                                                   type: string
                                                                   x-kubernetes-int-or-string: true
@@ -7273,6 +7882,21 @@ spec:
                                                         type: boolean
                                                       mergeExtractorsToBody:
                                                         type: object
+                                                      mergeJsonKeys:
+                                                        properties:
+                                                          jsonKeys:
+                                                            additionalProperties:
+                                                              properties:
+                                                                overrideEmpty:
+                                                                  type: boolean
+                                                                tmpl:
+                                                                  properties:
+                                                                    text:
+                                                                      type: string
+                                                                  type: object
+                                                              type: object
+                                                            type: object
+                                                        type: object
                                                       parseBodyBehavior:
                                                         type: string
                                                         x-kubernetes-int-or-string: true
@@ -7374,6 +7998,21 @@ spec:
                                                       ignoreErrorOnParse:
                                                         type: boolean
                                                       mergeExtractorsToBody:
+                                                        type: object
+                                                      mergeJsonKeys:
+                                                        properties:
+                                                          jsonKeys:
+                                                            additionalProperties:
+                                                              properties:
+                                                                overrideEmpty:
+                                                                  type: boolean
+                                                                tmpl:
+                                                                  properties:
+                                                                    text:
+                                                                      type: string
+                                                                  type: object
+                                                              type: object
+                                                            type: object
                                                         type: object
                                                       parseBodyBehavior:
                                                         type: string
@@ -7549,6 +8188,21 @@ spec:
                                             ignoreErrorOnParse:
                                               type: boolean
                                             mergeExtractorsToBody:
+                                              type: object
+                                            mergeJsonKeys:
+                                              properties:
+                                                jsonKeys:
+                                                  additionalProperties:
+                                                    properties:
+                                                      overrideEmpty:
+                                                        type: boolean
+                                                      tmpl:
+                                                        properties:
+                                                          text:
+                                                            type: string
+                                                        type: object
+                                                    type: object
+                                                  type: object
                                               type: object
                                             parseBodyBehavior:
                                               type: string

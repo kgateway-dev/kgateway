@@ -4,13 +4,13 @@ weight: 40
 description: Manually configure resolvers and schema for your GraphQL API.
 ---
 
-You can deploy your own GraphQL API, which might not leverage automatic service discovery and registration. To manually configure GraphQL resolvers, you create a Gloo Edge GraphQL API CRD. 
+You can deploy your own GraphQL API, which might not leverage automatic service discovery and registration. To manually configure GraphQL resolvers, you create a Gloo Gateway GraphQL API CRD. 
 
 The following sections describe the configuration for local or remote query resolution, schema definitions for the types of data to return to GraphQL queries, and an in-depth example.
 
 ## Define REST and gRPC resolvers for local execution
 
-If your upstream does not define GraphQL resolvers, you can define resolvers in your `GraphQLApi` resource. In this case, Gloo Edge uses _local execution_, which means the Envoy server executes GraphQL queries locally by using the defined resolvers. Then, it proxies the executed requests to the upstreams that provide the data requested in the queries.
+If your upstream does not define GraphQL resolvers, you can define resolvers in your `GraphQLApi` resource. In this case, Gloo Gateway uses _local execution_, which means the Envoy server executes GraphQL queries locally by using the defined resolvers. Then, it proxies the executed requests to the upstreams that provide the data requested in the queries.
 
 ### REST resolvers
 
@@ -219,7 +219,7 @@ After you automatically or manually create your GraphQL resolver and schema, cre
 
 In this example, all traffic to `/graphql` is handled by the GraphQL server, which uses the `default-petstore-8080` GraphQL API.
 {{< highlight yaml "hl_lines=12-16" >}}
-cat << EOF | kubectl apply -f -
+kubectl apply -f - << EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -240,4 +240,4 @@ EOF
 
 ## Reference
 
-For more information, see the [Gloo Edge API reference for GraphQL]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/" %}}).
+For more information, see the [Gloo Gateway API reference for GraphQL]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/" %}}).

@@ -52,7 +52,7 @@ In the previous section, you used local execution to resolve GraphQL queries to 
    EOF
    ```
 
-2. After the deployment is ready, verify that Gloo Edge created a `graphqlapi` resource for the upstream.
+2. After the deployment is ready, verify that Gloo Gateway created a `graphqlapi` resource for the upstream.
    ```sh
    kubectl get graphqlapis -n gloo-system
    ```
@@ -70,7 +70,7 @@ In the previous section, you used local execution to resolve GraphQL queries to 
 
 4. Update the `default` virtual service that you previously created to route traffic to `/graphql` to the new `default-todos-80` GraphQL API.
    {{< highlight yaml "hl_lines=12-16" >}}
-cat << EOF | kubectl apply -f -
+kubectl apply -f - << EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:

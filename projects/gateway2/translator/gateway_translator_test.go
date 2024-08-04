@@ -10,6 +10,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
+func ExpectKeyWithNoDiff(results map[types.NamespacedName]string, key types.NamespacedName) {
+	Expect(results).To(HaveKey(key))
+	Expect(results[key]).To(BeEmpty())
+}
+
 var _ = Describe("GatewayTranslator", func() {
 	ctx := context.TODO()
 	dir := util.MustGetThisDir()
@@ -31,14 +36,10 @@ var _ = Describe("GatewayTranslator", func() {
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(results).To(HaveLen(1))
-		Expect(results).To(HaveKey(types.NamespacedName{
+		ExpectKeyWithNoDiff(results, types.NamespacedName{
 			Namespace: "default",
 			Name:      "example-gateway",
-		}))
-		Expect(results[types.NamespacedName{
-			Namespace: "default",
-			Name:      "example-gateway",
-		}]).To(BeTrue())
+		})
 	})
 
 	It("should translate a gateway with https routing", func() {
@@ -58,14 +59,56 @@ var _ = Describe("GatewayTranslator", func() {
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(results).To(HaveLen(1))
-		Expect(results).To(HaveKey(types.NamespacedName{
+		ExpectKeyWithNoDiff(results, types.NamespacedName{
 			Namespace: "default",
 			Name:      "example-gateway",
-		}))
-		Expect(results[types.NamespacedName{
+		})
+	})
+
+	It("should translate a gateway with http routing with multiple listeners on the same port", func() {
+		results, err := TestCase{
+			Name:       "multiple-listeners-http-routing",
+			InputFiles: []string{dir + "/testutils/inputs/multiple-listeners-http-routing"},
+			ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+				{
+					Namespace: "default",
+					Name:      "http",
+				}: {
+					Proxy: dir + "/testutils/outputs/multiple-listeners-http-routing-proxy.yaml",
+					// Reports:     nil,
+				},
+			},
+		}.Run(ctx)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(results).To(HaveLen(1))
+		ExpectKeyWithNoDiff(results, types.NamespacedName{
 			Namespace: "default",
-			Name:      "example-gateway",
-		}]).To(BeTrue())
+			Name:      "http",
+		})
+	})
+
+	It("should translate a gateway with https routing with multiple listeners on the same port", func() {
+		results, err := TestCase{
+			Name:       "multiple-listeners-https-routing",
+			InputFiles: []string{dir + "/testutils/inputs/multiple-listeners-https-routing"},
+			ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+				{
+					Namespace: "default",
+					Name:      "http",
+				}: {
+					Proxy: dir + "/testutils/outputs/multiple-listeners-https-routing-proxy.yaml",
+					// Reports:     nil,
+				},
+			},
+		}.Run(ctx)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(results).To(HaveLen(1))
+		ExpectKeyWithNoDiff(results, types.NamespacedName{
+			Namespace: "default",
+			Name:      "http",
+		})
 	})
 
 	It("should translate an http gateway with multiple routing rules and use the HeaderModifier filter", func() {
@@ -85,10 +128,10 @@ var _ = Describe("GatewayTranslator", func() {
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(results).To(HaveLen(1))
-		Expect(results[types.NamespacedName{
+		ExpectKeyWithNoDiff(results, types.NamespacedName{
 			Namespace: "default",
 			Name:      "gw",
-		}]).To(BeTrue())
+		})
 	})
 
 	It("should translate an http gateway with a lambda destination", func() {
@@ -108,10 +151,10 @@ var _ = Describe("GatewayTranslator", func() {
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(results).To(HaveLen(1))
-		Expect(results[types.NamespacedName{
+		ExpectKeyWithNoDiff(results, types.NamespacedName{
 			Namespace: "default",
 			Name:      "gw",
-		}]).To(BeTrue())
+		})
 	})
 
 	It("should translate an http gateway with a azure destination", func() {
@@ -131,10 +174,10 @@ var _ = Describe("GatewayTranslator", func() {
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(results).To(HaveLen(1))
-		Expect(results[types.NamespacedName{
+		ExpectKeyWithNoDiff(results, types.NamespacedName{
 			Namespace: "default",
 			Name:      "gw",
-		}]).To(BeTrue())
+		})
 	})
 
 	It("should correctly sort routes", func() {
@@ -154,10 +197,10 @@ var _ = Describe("GatewayTranslator", func() {
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(results).To(HaveLen(1))
-		Expect(results).To(HaveKeyWithValue(types.NamespacedName{
+		ExpectKeyWithNoDiff(results, types.NamespacedName{
 			Namespace: "infra",
 			Name:      "example-gateway",
-		}, BeTrue()))
+		})
 	})
 })
 
@@ -182,10 +225,10 @@ var _ = DescribeTable("Route Delegation translator",
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(results).To(HaveLen(1))
-		Expect(results).To(HaveKeyWithValue(types.NamespacedName{
+		ExpectKeyWithNoDiff(results, types.NamespacedName{
 			Namespace: "infra",
 			Name:      "example-gateway",
-		}, BeTrue()))
+		})
 	},
 	Entry("Basic config", "basic.yaml"),
 	Entry("Child matches parent via parentRefs", "basic_parentref_match.yaml"),
@@ -206,4 +249,34 @@ var _ = DescribeTable("Route Delegation translator",
 	Entry("RouteOptions merge child override on no conflict", "route_options_inheritance_child_override_ok.yaml"),
 	Entry("RouteOptions multi level inheritance with child override", "route_options_multi_level_inheritance_override_ok.yaml"),
 	Entry("RouteOptions filter override merge", "route_options_filter_override_merge.yaml"),
+	Entry("Child route matcher does not match parent", "bug-6621.yaml"),
+)
+
+var _ = DescribeTable("RouteOptions translator",
+	func(inputFile string) {
+		ctx := context.TODO()
+		dir := util.MustGetThisDir()
+
+		results, err := TestCase{
+			Name:       inputFile,
+			InputFiles: []string{filepath.Join(dir, "testutils/inputs/route_options", inputFile)},
+			ResultsByGateway: map[types.NamespacedName]ExpectedTestResult{
+				{
+					Namespace: "default",
+					Name:      "gw",
+				}: {
+					Proxy: filepath.Join(dir, "testutils/outputs/route_options", inputFile),
+					// Reports:     nil,
+				},
+			},
+		}.Run(ctx)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(results).To(HaveLen(1))
+		ExpectKeyWithNoDiff(results, types.NamespacedName{
+			Namespace: "default",
+			Name:      "gw",
+		})
+	},
+	Entry("Merging", "merge.yaml"),
 )

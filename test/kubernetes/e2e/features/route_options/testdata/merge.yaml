@@ -64,12 +64,17 @@ spec:
           extensionRef:
             group: gateway.solo.io
             kind: RouteOption
-            name: extref
+            name: extref1
+        - type: ExtensionRef
+          extensionRef:
+            group: gateway.solo.io
+            kind: RouteOption
+            name: extref2
 ---
 apiVersion: gateway.solo.io/v1
 kind: RouteOption
 metadata:
-  name: extref
+  name: extref1
 spec:
   options:
     headerManipulation:
@@ -77,6 +82,14 @@ spec:
       - header:
           key: x-foo
           value: extref
+---
+apiVersion: gateway.solo.io/v1
+kind: RouteOption
+metadata:
+  name: extref2
+spec:
+  options:
+    appendXForwardedHost: true
 ---
 apiVersion: gateway.solo.io/v1
 kind: RouteOption

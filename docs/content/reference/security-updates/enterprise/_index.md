@@ -1,7 +1,7 @@
 ---
-title: Gloo Edge Enterprise results
+title: Gloo Gateway Enterprise results
 weight: 20
-description: Review security and CVE scan results for Gloo Edge Enterprise. 
+description: Review security and CVE scan results for Gloo Gateway Enterprise. 
 ---
 
 Gloo container images are scanned using [Trivy](https://github.com/aquasecurity/trivy) for HIGH and CRITICAL vulnerabilities. To learn more about how Solo.io detects, tracks, and remediates CVEs, see [CVE lifecycle handling]({{< versioned_link_path fromRoot="/reference/security-updates/cve-lifecycle/">}}).

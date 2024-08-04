@@ -1,7 +1,7 @@
 ---
 title: OPA Authorization
 weight: 50
-description: Illustrating how to combine OpenID Connect with Open Policy Agent to achieve fine grained policy with Gloo Edge.
+description: Illustrating how to combine OpenID Connect with Open Policy Agent to achieve fine grained policy with Gloo Gateway.
 ---
 
 The [Open Policy Agent](https://www.openpolicyagent.org/) (OPA) is an open source, general-purpose policy engine that can be used to define and enforce versatile policies in a uniform way across your organization. Compared to an RBAC authorization system, OPA allows you to create more fine-grained policies. For more information, see [the official docs](https://www.openpolicyagent.org/docs/latest/comparison-to-other-systems/).
@@ -9,7 +9,7 @@ The [Open Policy Agent](https://www.openpolicyagent.org/) (OPA) is an open sourc
 Be sure to check the external auth [configuration overview]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/#auth-configuration-overview" %}}) for detailed information about how authentication is configured on Virtual Services.
 
 {{% notice note %}}
-As of **Gloo Edge Enterprise** release 1.5.0-beta1, you can see Gloo Edge's version of OPA in the extauth service logs.
+As of **Gloo Gateway Enterprise** release 1.5.0-beta1, you can see Gloo Gateway's version of OPA in the extauth service logs.
 {{% /notice %}}
 
 ## Table of Contents
@@ -28,7 +28,7 @@ As of **Gloo Edge Enterprise** release 1.5.0-beta1, you can see Gloo Edge's vers
     - [Create a Virtual Service](#create-a-virtual-service)
     - [Secure the Virtual Service](#secure-the-virtual-service)
         - [Install Dex](#install-dex)
-        - [Make the client secret accessible to Gloo Edge](#make-the-client-secret-accessible-to-gloo-edge)
+        - [Make the client secret accessible to Gloo Gateway](#make-the-client-secret-accessible-to-gloo-edge)
         - [Create a Policy](#create-a-policy)
         - [Create a multi-step AuthConfig](#create-a-multi-step-authconfig)
         - [Update the Virtual Service](#update-the-virtual-service)
@@ -41,7 +41,7 @@ As of **Gloo Edge Enterprise** release 1.5.0-beta1, you can see Gloo Edge's vers
 ## OPA policy overview
 Open Policy Agent policies are written in [Rego](https://www.openpolicyagent.org/docs/latest/how-do-i-write-policies/). The _Rego_ language is inspired from _Datalog_, which in turn is a subset of _Prolog_. _Rego_ is more suited to work with modern JSON documents.
 
-Gloo Edge's OPA integration will populate an `input` document which can be used in your OPA policies. The structure of the `input` document depends on the context of the incoming request. See the following section for details.
+Gloo Gateway's OPA integration will populate an `input` document which can be used in your OPA policies. The structure of the `input` document depends on the context of the incoming request. See the following section for details.
 
 ### OPA input structure
 - `input.check_request` - By default, all OPA policies will contain an [Envoy Auth Service `CheckRequest`](https://www.envoyproxy.io/docs/envoy/latest/api-v2/service/auth/v2/external_auth.proto#service-auth-v2-checkrequest). This object contains all the information Envoy has gathered of the request being processed. See the Envoy docs and [proto files for `AttributeContext`](https://github.com/envoyproxy/envoy/blob/b3949eaf2080809b8a3a6cf720eba2cfdf864472/api/envoy/service/auth/v2/attribute_context.proto#L39) for the structure of this object.
@@ -100,7 +100,7 @@ You should see the following output:
 {{% extauth_version_info_note %}}
 {{% /notice %}}
 
-As we just saw, we were able to reach the upstream without having to provide any credentials. This is because by default Gloo Edge allows any request on routes that do not specify authentication configuration. Let's change this behavior. We will update the Virtual Service so that only requests that comply with a given OPA policy are allowed.
+As we just saw, we were able to reach the upstream without having to provide any credentials. This is because by default Gloo Gateway allows any request on routes that do not specify authentication configuration. Let's change this behavior. We will update the Virtual Service so that only requests that comply with a given OPA policy are allowed.
 
 #### Define an OPA policy 
 
@@ -136,7 +136,7 @@ If you decide to modify the policy example and add in your own allow rules, make
 {{% /notice %}}
 
 #### Create an OPA AuthConfig CRD
-Gloo Edge expects OPA policies to be stored in a Kubernetes ConfigMap, so let's go ahead and create a ConfigMap with the contents of the above policy file:
+Gloo Gateway expects OPA policies to be stored in a Kubernetes ConfigMap, so let's go ahead and create a ConfigMap with the contents of the above policy file:
 
 ```
 kubectl -n gloo-system create configmap allow-get-users --from-file=policy.rego
@@ -229,7 +229,7 @@ for [JSON Web Tokens](https://jwt.io/) (JWTs), allowing you to define policies b
 If you are using an **authentication** mechanism that conveys identity information via JWTs (e.g. [OpenID Connect](https://en.wikipedia.org/wiki/OpenID_Connect)),
 this feature makes it easy to implement **authorization** for authenticated users.
 
-In this guide we will see how to use OPA to enforce policies on the JWTs produced by Gloo Edge's **OpenID Connect** (OIDC) authentication module.
+In this guide we will see how to use OPA to enforce policies on the JWTs produced by Gloo Gateway's **OpenID Connect** (OIDC) authentication module.
 
 {{% notice note %}}
 It is possible to use the OPA without the OIDC authentication module.
@@ -285,7 +285,7 @@ spec:
             port: 8080
 ```
 
-To verify that the Virtual Service has been accepted by Gloo Edge, let's port-forward the Gateway Proxy service so that it is 
+To verify that the Virtual Service has been accepted by Gloo Gateway, let's port-forward the Gateway Proxy service so that it is 
 reachable from you machine at `localhost:8080`:
 ```
 kubectl -n gloo-system port-forward svc/gateway-proxy 8080:80
@@ -297,7 +297,7 @@ If you open your browser and navigate to [http://localhost:8080](http://localhos
 
 ### Secure the Virtual Service
 As we just saw, we were able to reach the service without having to provide any credentials. This is because by default 
-Gloo Edge allows any request on routes that do not specify authentication configuration. Let's change this behavior. 
+Gloo Gateway allows any request on routes that do not specify authentication configuration. Let's change this behavior. 
 We will update the Virtual Service so that each request to the sample application is:
  
 - authenticated using an **OpenID Connect** flow and
@@ -360,9 +360,9 @@ And then install dex (helm 3 command follows):
 helm install dex --namespace gloo-system dex/dex -f dex-values.yaml
 ```
 
-#### Make the client secret accessible to Gloo Edge
-To be able to act as our OIDC client, Gloo Edge needs to have access to the **client secret** we just defined, so that it can 
-use it to identify itself with the Dex authorization server. Gloo Edge expects the client secret to be stored in a specific format 
+#### Make the client secret accessible to Gloo Gateway
+To be able to act as our OIDC client, Gloo Gateway needs to have access to the **client secret** we just defined, so that it can 
+use it to identify itself with the Dex authorization server. Gloo Gateway expects the client secret to be stored in a specific format 
 inside of a Kubernetes `Secret`. 
 
 Let's create the secret and name it `oauth`:
@@ -381,7 +381,7 @@ metadata:
 data:
   # The value is a base64 encoding of the following YAML:
   # client_secret: secretvalue
-  # Gloo Edge expected OAuth client secrets in this format.
+  # Gloo Gateway expected OAuth client secrets in this format.
   client-secret: Y2xpZW50U2VjcmV0OiBzZWNyZXR2YWx1ZQo=
 {{< /tab >}}
 {{< /tabs >}} 
@@ -416,7 +416,7 @@ This policy allows the request if:
 
 Notice how we are using the `io.jwt.decode` function to decode the JWT and how we access claims in the `payload`. 
 
-Gloo Edge expects OPA policies to be stored in a Kubernetes ConfigMap, so let's go ahead and create a ConfigMap with the 
+Gloo Gateway expects OPA policies to be stored in a Kubernetes ConfigMap, so let's go ahead and create a ConfigMap with the 
 contents of the above policy file:
 
 ```
@@ -464,13 +464,13 @@ spec:
 kubectl apply -f jwt-opa.yaml
 ```
 
-The above `AuthConfig` defines two configurations that Gloo Edge will execute in order: 
+The above `AuthConfig` defines two configurations that Gloo Gateway will execute in order: 
 
-1. First, Gloo Edge will use its extauth OIDC module to authenticate the incoming request. If authentication was successful, 
-Gloo Edge will add the JWT ID token to the `Authorization` request header and execute the next configuration; otherwise it 
+1. First, Gloo Gateway will use its extauth OIDC module to authenticate the incoming request. If authentication was successful, 
+Gloo Gateway will add the JWT ID token to the `Authorization` request header and execute the next configuration; otherwise it 
 will deny the request. Notice how the configuration references the client secret we created earlier and compare the 
 configuration values with the ones we used to bootstrap Dex.
-1. If authentication was successful, Gloo Edge will check the request against the `allow-jwt` OPA policy to determine whether 
+1. If authentication was successful, Gloo Gateway will check the request against the `allow-jwt` OPA policy to determine whether 
 it should be allowed. Notice how the configuration references the `modules` ConfigMap we created earlier and defines a 
 query that allows access only if the `allow` variable in the policy evaluates to `true`.
 
@@ -521,7 +521,7 @@ portForwardPid1=$! # Store the port-forward pid so we can kill the process later
 echo "127.0.0.1 dex.gloo-system.svc.cluster.local" | sudo tee -a /etc/hosts
 ```
 
-1. Port-forward the Gloo Edge Proxy service so that it is reachable from you machine at `localhost:8080`:
+1. Port-forward the Gloo Gateway Proxy service so that it is reachable from you machine at `localhost:8080`:
 ```
 kubectl -n gloo-system port-forward svc/gateway-proxy 8080:80 &
 portForwardPid2=$!

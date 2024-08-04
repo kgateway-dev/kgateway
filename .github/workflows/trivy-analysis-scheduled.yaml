@@ -38,7 +38,7 @@ jobs:
           SCAN_DIR: _output/scans
           IMAGE_REGISTRY: quay.io/solo-io
           # ON_LTS_UPDATE - bump version
-          MIN_SCANNED_VERSION: 'v1.13.0' # ⚠️ you should also change docs-gen.yaml ⚠️
+          MIN_SCANNED_VERSION: 'v1.14.0' # ⚠️ you should also change docs-gen.yaml ⚠️
         run: |
           mkdir -p $SCAN_DIR
           make run-security-scan

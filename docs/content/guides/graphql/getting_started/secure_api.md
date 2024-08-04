@@ -4,7 +4,7 @@ weight: 50
 description: Protect the GraphQL API that you created in the previous sections by using an API key.
 ---
 
-Protect the GraphQL API that you created in the previous sections by using an API key. Note that you can also use any other authorization mechanism provided by Gloo Edge to secure your GraphQL endpoint.
+Protect the GraphQL API that you created in the previous sections by using an API key. Note that you can also use any other authorization mechanism provided by Gloo Gateway to secure your GraphQL endpoint.
 
 1. Create an API key secret that contains an existing API key. If you want `glooctl` to create an API key for you, you can specify the `--apikey-generate` flag instead of the `--apikey` flag.
    ```sh
@@ -13,7 +13,7 @@ Protect the GraphQL API that you created in the previous sections by using an AP
    --apikey-labels team=gloo
    ```
 
-2. Verify that the secret was successfully created and contains an API key. If you had Gloo Edge generate the API key, set the value as an environment variable, `export API_KEY=<api-key-value>`.
+2. Verify that the secret was successfully created and contains an API key. If you had Gloo Gateway generate the API key, set the value as an environment variable, `export API_KEY=<api-key-value>`.
    ```sh
    kubectl get secret my-apikey -n gloo-system -o yaml
    ```
@@ -37,7 +37,7 @@ Protect the GraphQL API that you created in the previous sections by using an AP
 
 4. Update the `default` virtual service that you previously created to reference the `apikey-auth` AuthConfig. 
    {{< highlight yaml "hl_lines=17-21" >}}
-cat << EOF | kubectl apply -f -
+kubectl apply -f - << EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -77,10 +77,10 @@ EOF
 
 ## Next steps
 
-Now that you've tried out GraphQL with Gloo Edge, check out the following pages to configure your own services for GraphQL integration.
+Now that you've tried out GraphQL with Gloo Gateway, check out the following pages to configure your own services for GraphQL integration.
 * [Visualize your GraphQL services in the UI]({{% versioned_link_path fromRoot="/guides/graphql/graphql_ui/" %}})
 * [Explore automatic schema generation with GraphQL service discovery]({{% versioned_link_path fromRoot="/guides/graphql/automatic_discovery/" %}})
 * [Manually configure resolvers and schema for your GraphQL API]({{% versioned_link_path fromRoot="/guides/graphql/resolver_config/" %}})
 * [Stitch GraphQL schemas]({{% versioned_link_path fromRoot="/guides/graphql/stitching/" %}})
 * [Monitor your GraphQL services]({{% versioned_link_path fromRoot="/guides/graphql/observability/" %}})
-* [Gloo Edge API reference for GraphQL]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/" %}})
+* [Gloo Gateway API reference for GraphQL]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/" %}})

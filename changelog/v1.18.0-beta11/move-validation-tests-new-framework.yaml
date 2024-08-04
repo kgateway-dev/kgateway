@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6321
+    resolvesIssue: false
+    description: >-
+      Moves the validation tests to the new framework.

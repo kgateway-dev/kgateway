@@ -25,8 +25,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.uber.org/zap/zapcore"
-	admissionregv1 "k8s.io/api/admissionregistration/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -46,13 +44,13 @@ func GetHttpEchoImage() string {
 }
 
 // GlooctlCheckEventuallyHealthy will run up until proved timeoutInterval or until gloo is reported as healthy
-func GlooctlCheckEventuallyHealthy(offset int, testHelper *helper.SoloTestHelper, timeoutInterval string) {
+func GlooctlCheckEventuallyHealthy(offset int, namespace string, timeoutInterval string) {
 	EventuallyWithOffset(offset, func() error {
 		contextWithCancel, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		opts := &options.Options{
 			Metadata: core.Metadata{
-				Namespace: testHelper.InstallNamespace,
+				Namespace: namespace,
 			},
 			Top: options.Top{
 				Ctx: contextWithCancel,
@@ -222,30 +220,4 @@ func GetTestHelperForRootDir(ctx context.Context, rootDir, namespace string) (*h
 			return defaults
 		})
 	}
-}
-
-func GetFailurePolicy(ctx context.Context, webhookName string) *admissionregv1.FailurePolicyType {
-	cfg := GetValidatingWebhookWithOffset(ctx, 2, webhookName)
-	ExpectWithOffset(1, cfg.Webhooks).To(HaveLen(1))
-	return cfg.Webhooks[0].FailurePolicy
-}
-
-func UpdateFailurePolicy(ctx context.Context, webhookName string, failurePolicy admissionregv1.FailurePolicyType) {
-	kubeClient := clienthelpers.MustKubeClient()
-	cfg := GetValidatingWebhookWithOffset(ctx, 2, webhookName)
-	ExpectWithOffset(1, cfg.Webhooks).To(HaveLen(1))
-	cfg.Webhooks[0].FailurePolicy = &failurePolicy
-
-	_, err := kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Update(ctx, cfg, metav1.UpdateOptions{})
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-}
-func GetValidatingWebhook(ctx context.Context, webhookName string) *admissionregv1.ValidatingWebhookConfiguration {
-	return GetValidatingWebhookWithOffset(ctx, 1, webhookName)
-}
-
-func GetValidatingWebhookWithOffset(ctx context.Context, offset int, webhookName string) *admissionregv1.ValidatingWebhookConfiguration {
-	kubeClient := clienthelpers.MustKubeClient()
-	cfg, err := kubeClient.AdmissionregistrationV1().ValidatingWebhookConfigurations().Get(ctx, webhookName, metav1.GetOptions{})
-	ExpectWithOffset(offset, err).NotTo(HaveOccurred())
-	return cfg
 }

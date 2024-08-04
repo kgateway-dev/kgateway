@@ -1,11 +1,11 @@
 ---
-title: Contribute to the Gloo Edge code
+title: Contribute to the Gloo Gateway code
 menuTitle: Development
-description: Contribute to the codebase for the Gloo Edge project.
+description: Contribute to the codebase for the Gloo Gateway project.
 weight: 10
 ---
 
-As a developer, you can contribute code to the [Gloo Edge project](https://github.com/solo-io/gloo).
+As a developer, you can contribute code to the [Gloo Gateway project](https://github.com/solo-io/gloo).
 
 ## Ways to contribute
 
@@ -34,11 +34,11 @@ Sometimes, you might need to open a larger PR, such as for:
 - Big bug fixes
 - New features
 
-For significant changes to the Gloo Edge project, get input on the design before starting on the implementation.
+For significant changes to the Gloo Gateway project, get input on the design before starting on the implementation.
 
 1. Refer to [Filing issues](#filing-issues) to find or open an issue with your idea.
 2. Message the [Solo team on Slack](https://slack.solo.io) to discuss your proposed changes and come up with an implementation plan.
-3. Refer to the [`devel` directory](https://github.com/solo-io/gloo/tree/main/devel) in the Gloo Edge project for tools and helpful information to contribute, debug, and test your code.
+3. Refer to the [`devel` directory](https://github.com/solo-io/gloo/tree/main/devel) in the Gloo Gateway project for tools and helpful information to contribute, debug, and test your code.
 4. Open a draft PR with the `work in progress` label to get feedback on your work.
 5. Address any review comments that a Solo team member leaves.
 
@@ -46,9 +46,9 @@ For significant changes to the Gloo Edge project, get input on the design before
 
 ## Code review guidelines
 
-Every piece of code in Gloo Edge is reviewed by at least one Solo team member familiar with that codebase.
+Every piece of code in Gloo Gateway is reviewed by at least one Solo team member familiar with that codebase.
 
-1. **Changelog** Every PR in Gloo Edge needs a changelog entry. For more information about changelogs, see the [readme](https://github.com/solo-io/go-utils/tree/main/changelogutils). 
+1. **Changelog** Every PR in Gloo Gateway needs a changelog entry. For more information about changelogs, see the [readme](https://github.com/solo-io/go-utils/tree/main/changelogutils). 
 2. **CI check** A Solo team member needs to kick off the CI process by commenting `/test` on your PR.
 3. **Testing** Please write tests for your changes. Bias towards fast / unit testing. 
 4. **Comments** The code reviewer may leave comments to discuss changes. Minor preferences are often called out with `nit`.

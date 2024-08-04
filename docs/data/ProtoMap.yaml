@@ -11,6 +11,39 @@ apis:
   advancedhttp.options.gloo.solo.io.ResponseMatcher:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/advanced_http/advanced_http.proto.sk/#ResponseMatcher
     package: advancedhttp.options.gloo.solo.io
+  ai.options.gloo.solo.io.AIPromptEnrichment:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#AIPromptEnrichment
+    package: ai.options.gloo.solo.io
+  ai.options.gloo.solo.io.AIPromptGaurd:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#AIPromptGaurd
+    package: ai.options.gloo.solo.io
+  ai.options.gloo.solo.io.Embedding:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#Embedding
+    package: ai.options.gloo.solo.io
+  ai.options.gloo.solo.io.FieldDefault:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#FieldDefault
+    package: ai.options.gloo.solo.io
+  ai.options.gloo.solo.io.Postgres:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#Postgres
+    package: ai.options.gloo.solo.io
+  ai.options.gloo.solo.io.RAG:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#RAG
+    package: ai.options.gloo.solo.io
+  ai.options.gloo.solo.io.RateLimiting:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#RateLimiting
+    package: ai.options.gloo.solo.io
+  ai.options.gloo.solo.io.RouteSettings:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#RouteSettings
+    package: ai.options.gloo.solo.io
+  ai.options.gloo.solo.io.SemanticCache:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#SemanticCache
+    package: ai.options.gloo.solo.io
+  ai.options.gloo.solo.io.SingleAuthToken:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#SingleAuthToken
+    package: ai.options.gloo.solo.io
+  ai.options.gloo.solo.io.UpstreamSpec:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#UpstreamSpec
+    package: ai.options.gloo.solo.io
   als.options.gloo.solo.io.AccessLog:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#AccessLog
     package: als.options.gloo.solo.io
@@ -373,6 +406,9 @@ apis:
     package: envoy.api.v2.filter.http
   envoy.api.v2.filter.http.MergeExtractorsToBody:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#MergeExtractorsToBody
+    package: envoy.api.v2.filter.http
+  envoy.api.v2.filter.http.MergeJsonKeys:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#MergeJsonKeys
     package: envoy.api.v2.filter.http
   envoy.api.v2.filter.http.Passthrough:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#Passthrough
@@ -751,6 +787,9 @@ apis:
     package: gloo.solo.io
   gloo.solo.io.ConsulServiceDestination:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#ConsulServiceDestination
+    package: gloo.solo.io
+  gloo.solo.io.CustomEnvoyFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#CustomEnvoyFilter
     package: gloo.solo.io
   gloo.solo.io.DeletedResources:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#DeletedResources
@@ -2017,6 +2056,9 @@ apis:
     package: transformation.options.gloo.solo.io
   transformation.options.gloo.solo.io.MergeExtractorsToBody:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#MergeExtractorsToBody
+    package: transformation.options.gloo.solo.io
+  transformation.options.gloo.solo.io.MergeJsonKeys:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#MergeJsonKeys
     package: transformation.options.gloo.solo.io
   transformation.options.gloo.solo.io.Parameters:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/parameters.proto.sk/#Parameters

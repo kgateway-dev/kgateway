@@ -16,7 +16,7 @@ type checkOutput struct {
 }
 
 var (
-	checkOutputByKey = map[string]checkOutput{
+	checkCommonGlooGatewayOutputByKey = map[string]checkOutput{
 		"deployments": {
 			include: ContainSubstring("Checking Deployments... OK"),
 			exclude: And(
@@ -93,6 +93,9 @@ var (
 			exclude:  gstruct.Ignore(), // We have not had historical tests for this, it would be good to add
 			readOnly: ContainSubstring("Warning: checking proxies with port forwarding is disabled"),
 		},
+	}
+
+	checkK8sGatewayOutputByKey = map[string]checkOutput{
 		"kube-gateway-classes": {
 			include:  ContainSubstring("Checking Kubernetes GatewayClasses... OK"),
 			exclude:  Not(ContainSubstring("Checking Kubernetes GatewayClasses...")),

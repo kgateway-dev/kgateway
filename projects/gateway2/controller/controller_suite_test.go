@@ -9,15 +9,17 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/solo-io/gloo/pkg/schemes"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/controller"
-	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -38,13 +40,18 @@ var (
 	ctx       context.Context
 	cancel    context.CancelFunc
 
-	gatewayClassName      string
-	gatewayControllerName string
-	kubeconfig            string
+	kubeconfig string
+
+	gwClasses = sets.New(gatewayClassName, altGatewayClassName)
+)
+
+const (
+	gatewayClassName      = "clsname"
+	altGatewayClassName   = "clsname-alt"
+	gatewayControllerName = "controller/name"
 )
 
 func getAssetsDir() string {
-
 	assets := ""
 	if os.Getenv("KUBEBUILDER_ASSETS") == "" {
 		// set default if not user provided
@@ -60,9 +67,6 @@ var _ = BeforeSuite(func() {
 	log.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
 	ctx, cancel = context.WithCancel(context.TODO())
-
-	gatewayClassName = "clsname"
-	gatewayControllerName = "controller/name"
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
@@ -80,7 +84,7 @@ var _ = BeforeSuite(func() {
 	cfg, err = testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
-	scheme := scheme.NewScheme()
+	scheme := schemes.DefaultScheme()
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
@@ -100,8 +104,6 @@ var _ = BeforeSuite(func() {
 	kubeconfig = generateKubeConfiguration(cfg)
 	mgr.GetLogger().Info("starting manager", "kubeconfig", kubeconfig)
 
-	var gatewayClassObjName api.ObjectName = api.ObjectName(gatewayClassName)
-
 	exts, err := extensions.NewK8sGatewayExtensions(ctx, extensions.K8sGatewayExtensionsFactoryParameters{
 		Mgr: mgr,
 	})
@@ -109,7 +111,7 @@ var _ = BeforeSuite(func() {
 	cfg := controller.GatewayConfig{
 		Mgr:            mgr,
 		ControllerName: gatewayControllerName,
-		GWClassName:    gatewayClassObjName,
+		GWClasses:      gwClasses,
 		AutoProvision:  true,
 		Kick:           func(ctx context.Context) { return },
 		Extensions:     exts,
@@ -117,21 +119,23 @@ var _ = BeforeSuite(func() {
 	err = controller.NewBaseGatewayController(ctx, cfg)
 	Expect(err).ToNot(HaveOccurred())
 
-	err = k8sClient.Create(ctx, &api.GatewayClass{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: gatewayClassName,
-		},
-		Spec: api.GatewayClassSpec{
-			ControllerName: api.GatewayController(gatewayControllerName),
-			ParametersRef: &api.ParametersReference{
-				Group:     api.Group(v1alpha1.GroupVersion.Group),
-				Kind:      api.Kind("GatewayParameters"),
-				Name:      wellknown.DefaultGatewayParametersName,
-				Namespace: ptr.To(api.Namespace("default")),
+	for class := range gwClasses {
+		err = k8sClient.Create(ctx, &api.GatewayClass{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: class,
 			},
-		},
-	})
-	Expect(err).NotTo(HaveOccurred())
+			Spec: api.GatewayClassSpec{
+				ControllerName: api.GatewayController(gatewayControllerName),
+				ParametersRef: &api.ParametersReference{
+					Group:     api.Group(v1alpha1.GroupVersion.Group),
+					Kind:      api.Kind("GatewayParameters"),
+					Name:      wellknown.DefaultGatewayParametersName,
+					Namespace: ptr.To(api.Namespace("default")),
+				},
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+	}
 
 	err = k8sClient.Create(ctx, &v1alpha1.GatewayParameters{
 		ObjectMeta: metav1.ObjectMeta{
@@ -170,6 +174,7 @@ func TestController(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Controller Suite")
 }
+
 func generateKubeConfiguration(restconfig *rest.Config) string {
 	clusters := make(map[string]*clientcmdapi.Cluster)
 	authinfos := make(map[string]*clientcmdapi.AuthInfo)

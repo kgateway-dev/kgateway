@@ -1,0 +1,7 @@
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-without-type
+spec:
+  # This is invalid: the type field is missing
+  bindAddress: '::'

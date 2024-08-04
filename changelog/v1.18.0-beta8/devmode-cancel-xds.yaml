@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      - Update XDS snapshot server to shutdown when context is done
+      - Add GoRoutineMonitor which allows for tracking of goroutines in e2e tests

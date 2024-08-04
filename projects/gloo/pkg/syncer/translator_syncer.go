@@ -108,7 +108,7 @@ func NewTranslatorSyncer(
 	if devMode {
 		// TODO(ilackarms): move this somewhere else?
 		go func() {
-			_ = s.ServeXdsSnapshots()
+			_ = s.ContextuallyServeXdsSnapshots(ctx)
 		}()
 	}
 	go s.statusSyncer.syncStatusOnEmit(ctx)

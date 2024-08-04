@@ -1,18 +1,18 @@
 ---
-title: "Gloo Edge as an Ingress Controller"
-description: How to install Gloo Edge to run in Ingress Mode on Kubernetes.
+title: "Gloo Gateway as an Ingress Controller"
+description: How to install Gloo Gateway to run in Ingress Mode on Kubernetes.
 weight: 50
 ---
 
-Gloo Edge can be used as a simple ingress controller on Kubernetes. This guide will take you through the process of deploying Gloo Edge as an ingress controller using either `glooctl` or Helm.
+Gloo Gateway can be used as a simple ingress controller on Kubernetes. This guide will take you through the process of deploying Gloo Gateway as an ingress controller using either `glooctl` or Helm.
 
 These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your Kubernetes cluster [here]({{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" >}}).
 
 ## Installing on Kubernetes with `glooctl`
 
-Before you begin, make sure that you [install `glooctl`]({{< versioned_link_path fromRoot="/installation/preparation/" >}}), the Gloo Edge command line tool (CLI).
+Before you begin, make sure that you [install `glooctl`]({{< versioned_link_path fromRoot="/installation/preparation/" >}}), the Gloo Gateway command line tool (CLI).
 
-Once your Kubernetes cluster is up and running, run the following command to deploy the Gloo Edge Ingress Controller to the `gloo-system` namespace:
+Once your Kubernetes cluster is up and running, run the following command to deploy the Gloo Gateway Ingress Controller to the `gloo-system` namespace:
 
 ```bash
 glooctl install ingress
@@ -26,9 +26,9 @@ You can run the command with the flag `--dry-run` to output the Kubernetes manif
 
 ## Installing on Kubernetes with Helm
 
-This is the recommended method for installing Gloo Edge to your production environment as it offers rich customization to the Gloo Edge control plane and the proxies Gloo Edge manages. This guide assumes that you are using Helm version 3, and have already installed the Helm client on your local machine.
+This is the recommended method for installing Gloo Gateway to your production environment as it offers rich customization to the Gloo Gateway control plane and the proxies Gloo Gateway manages. This guide assumes that you are using Helm version 3, and have already installed the Helm client on your local machine.
 
-As a first step, you have to add the Gloo Edge repository to the list of known chart repositories and update the repository:
+As a first step, you have to add the Gloo Gateway repository to the list of known chart repositories and update the repository:
 
 ```shell
 helm repo add gloo https://storage.googleapis.com/solo-public-helm
@@ -48,19 +48,19 @@ ingress:
   enabled: true
 ```
 
-Then install Gloo Edge using the following command:
+Then install Gloo Gateway using the following command:
 
 ```shell
 helm install gloo gloo/gloo --namespace gloo-system --create-namespace -f values.yaml
 ```
 
-Gloo Edge can be installed to a namespace of your choosing with the `--namespace` flag.
+Gloo Gateway can be installed to a namespace of your choosing with the `--namespace` flag.
 
 #### Install using in-line settings
 
 Instead of creating a `values.yaml` file, you can simply define the settings in-line. This is useful for a small number of values, but quickly becomes impractical if you want to override several values.
 
-Run the following commands to install the Gloo Edge ingress controller.
+Run the following commands to install the Gloo Gateway ingress controller.
 
 ```shell
 helm install gloo gloo/gloo --namespace gloo-system --create-namespace \
@@ -71,7 +71,7 @@ helm install gloo gloo/gloo --namespace gloo-system --create-namespace \
 
 ## Verify your Installation
 
-Check that the Gloo Edge pods and services have been created. Depending on your install option, you may see some differences from the following example. And if you chose to install Gloo Edge into a different namespace than the default `gloo-system`, you will need to query your chosen namespace instead.
+Check that the Gloo Gateway pods and services have been created. Depending on your install option, you may see some differences from the following example. And if you chose to install Gloo Gateway into a different namespace than the default `gloo-system`, you will need to query your chosen namespace instead.
 
 ```shell
 kubectl get all -n gloo-system
@@ -105,13 +105,13 @@ replicaset.apps/ingress-85ffc7b77b               1         1         1       64s
 
 ## Uninstall {#uninstall}
 
-To uninstall Gloo Edge and all related components, simply run the following.
+To uninstall Gloo Gateway and all related components, simply run the following.
 
 ```shell
 glooctl uninstall
 ```
 
-If you installed Gloo Edge to a different namespace, you will have to specify that namespace using the `-n` option:
+If you installed Gloo Gateway to a different namespace, you will have to specify that namespace using the `-n` option:
 
 ```shell
 glooctl uninstall -n my-namespace
@@ -119,6 +119,6 @@ glooctl uninstall -n my-namespace
 
 ## Next Steps
 
-To begin using Gloo Edge with the Kubernetes Ingress API, check out the [Ingress Controller guide]({{< versioned_link_path fromRoot="/guides/integrations/ingress/" >}}).
+To begin using Gloo Gateway with the Kubernetes Ingress API, check out the [Ingress Controller guide]({{< versioned_link_path fromRoot="/guides/integrations/ingress/" >}}).
 
 {{< readfile file="static/content/upgrade-note.md" markdown="true">}}

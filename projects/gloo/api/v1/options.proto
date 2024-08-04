@@ -10,6 +10,7 @@ option (extproto.hash_all) = true;
 option (extproto.clone_all) = true;
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/filters/stages.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/cors/cors.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/rest/rest.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc/grpc.proto";
@@ -51,6 +52,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rba
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/dlp/dlp.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/tap/tap.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/dynamic_forward_proxy/dynamic_forward_proxy.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/stateful_session/stateful_session.proto";
@@ -237,6 +239,7 @@ message HttpListenerOptions {
     // determine whether requests should be rejected based on the contents of
     // the header.
     header_validation.options.gloo.solo.io.HeaderValidationSettings header_validation_settings = 36;
+
 }
 
 // Optional, feature-specific configuration that lives on tcp listeners
@@ -249,6 +252,7 @@ message TcpListenerOptions {
     // LocalRatelimit can be used to rate limit the connections per gateway at the L4 layer.
     // It uses envoy's own local rate limit filter to do so, without the need for an external rate limit server to be set up.
     local_ratelimit.options.gloo.solo.io.TokenBucket local_ratelimit = 5;
+
 }
 
 // Optional, feature-specific configuration that lives on virtual hosts.
@@ -269,7 +273,8 @@ message VirtualHostOptions {
     // Append/Remove headers on Requests or Responses on all routes contained in this Virtual Host
     headers.options.gloo.solo.io.HeaderManipulation header_manipulation = 2;
     // Defines a CORS policy for the virtual host
-    // If a CORS policy is also defined on the route matched by the request, the policies are merged.
+    // If a CORS policy is also defined on the route matched by the request, the route policy
+    // overrides the virtual host policy for any configured field.
     cors.options.gloo.solo.io.CorsPolicy cors = 3;
     // Transformations to apply. Note: this field is superseded by `staged_transformations`.
     // If `staged_transformations.regular` is set, this field will be ignored.
@@ -436,7 +441,7 @@ message RouteOptions {
     // If true and there is a host rewrite, appends the x-forwarded-host header to requests.
     google.protobuf.BoolValue append_x_forwarded_host = 146;
     // Defines a CORS policy for the route
-    // If a CORS policy is also defined on the route's virtual host, the policies are merged.
+    // If a CORS policy is also defined on the route's virtual host any fields set here override the virtual host configuration 
     cors.options.gloo.solo.io.CorsPolicy cors = 11;
     // For routes served by a hashing load balancer, this defines the input to the hash key
     // Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers:
@@ -583,6 +588,10 @@ message RouteOptions {
     // Enterprise-only: External Processing filter settings for the route. This can be used to
     // override certain HttpListenerOptions or VirtualHostOptions settings.
     extproc.options.gloo.solo.io.RouteSettings ext_proc = 30;
+
+    // Enterprise-only: Settings to configure ai settings for a route.
+    // These settings will only apply if the backend is an `ai` Upstream.
+    ai.options.gloo.solo.io.RouteSettings ai = 31;
 }
 
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination

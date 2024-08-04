@@ -1,0 +1,30 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: i-am-valid
+spec:
+  virtualHost:
+    domains:
+      - 'invalid.com'
+    routes:
+      - matchers:
+          - { }
+        routeAction: { }
+        options:
+          prefixRewrite: "matcher and action are missing"
+---
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: i-am-invalid
+spec:
+  virtualHost:
+    domains:
+      - 'all-good-in-the-hood.com'
+    routes:
+      - matchers:
+          - prefix: /
+        routeAction:
+          single:
+            upstream:
+              name: nginx-upstream

@@ -23,6 +23,83 @@ spec:
         properties:
           spec:
             properties:
+              ai:
+                properties:
+                  anthropic:
+                    properties:
+                      authToken:
+                        properties:
+                          inline:
+                            type: string
+                          secretRef:
+                            properties:
+                              name:
+                                type: string
+                              namespace:
+                                type: string
+                            type: object
+                        type: object
+                      customHost:
+                        properties:
+                          host:
+                            type: string
+                          port:
+                            maximum: 4294967295
+                            minimum: 0
+                            type: integer
+                        type: object
+                      version:
+                        type: string
+                    type: object
+                  mistral:
+                    properties:
+                      authToken:
+                        properties:
+                          inline:
+                            type: string
+                          secretRef:
+                            properties:
+                              name:
+                                type: string
+                              namespace:
+                                type: string
+                            type: object
+                        type: object
+                      customHost:
+                        properties:
+                          host:
+                            type: string
+                          port:
+                            maximum: 4294967295
+                            minimum: 0
+                            type: integer
+                        type: object
+                    type: object
+                  openai:
+                    properties:
+                      authToken:
+                        properties:
+                          inline:
+                            type: string
+                          secretRef:
+                            properties:
+                              name:
+                                type: string
+                              namespace:
+                                type: string
+                            type: object
+                        type: object
+                      customHost:
+                        properties:
+                          host:
+                            type: string
+                          port:
+                            maximum: 4294967295
+                            minimum: 0
+                            type: integer
+                        type: object
+                    type: object
+                type: object
               aws:
                 properties:
                   awsAccountId:
@@ -389,6 +466,21 @@ spec:
                                   type: boolean
                                 mergeExtractorsToBody:
                                   type: object
+                                mergeJsonKeys:
+                                  properties:
+                                    jsonKeys:
+                                      additionalProperties:
+                                        properties:
+                                          overrideEmpty:
+                                            type: boolean
+                                          tmpl:
+                                            properties:
+                                              text:
+                                                type: string
+                                            type: object
+                                        type: object
+                                      type: object
+                                  type: object
                                 parseBodyBehavior:
                                   type: string
                                   x-kubernetes-int-or-string: true
@@ -476,6 +568,9 @@ spec:
                                           items:
                                             type: string
                                           type: array
+                                        oneWayTls:
+                                          nullable: true
+                                          type: boolean
                                         parameters:
                                           properties:
                                             cipherSuites:
@@ -771,6 +866,9 @@ spec:
                     items:
                       type: string
                     type: array
+                  oneWayTls:
+                    nullable: true
+                    type: boolean
                   parameters:
                     properties:
                       cipherSuites:
@@ -1025,6 +1123,21 @@ spec:
                                 ignoreErrorOnParse:
                                   type: boolean
                                 mergeExtractorsToBody:
+                                  type: object
+                                mergeJsonKeys:
+                                  properties:
+                                    jsonKeys:
+                                      additionalProperties:
+                                        properties:
+                                          overrideEmpty:
+                                            type: boolean
+                                          tmpl:
+                                            properties:
+                                              text:
+                                                type: string
+                                            type: object
+                                        type: object
+                                      type: object
                                   type: object
                                 parseBodyBehavior:
                                   type: string
@@ -1375,6 +1488,21 @@ spec:
                                   type: boolean
                                 mergeExtractorsToBody:
                                   type: object
+                                mergeJsonKeys:
+                                  properties:
+                                    jsonKeys:
+                                      additionalProperties:
+                                        properties:
+                                          overrideEmpty:
+                                            type: boolean
+                                          tmpl:
+                                            properties:
+                                              text:
+                                                type: string
+                                            type: object
+                                        type: object
+                                      type: object
+                                  type: object
                                 parseBodyBehavior:
                                   type: string
                                   x-kubernetes-int-or-string: true
@@ -1412,6 +1540,9 @@ spec:
                     items:
                       type: string
                     type: array
+                  oneWayTls:
+                    nullable: true
+                    type: boolean
                   parameters:
                     properties:
                       cipherSuites:
@@ -1671,6 +1802,21 @@ spec:
                                 ignoreErrorOnParse:
                                   type: boolean
                                 mergeExtractorsToBody:
+                                  type: object
+                                mergeJsonKeys:
+                                  properties:
+                                    jsonKeys:
+                                      additionalProperties:
+                                        properties:
+                                          overrideEmpty:
+                                            type: boolean
+                                          tmpl:
+                                            properties:
+                                              text:
+                                                type: string
+                                            type: object
+                                        type: object
+                                      type: object
                                   type: object
                                 parseBodyBehavior:
                                   type: string

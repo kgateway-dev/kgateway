@@ -6,9 +6,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
-	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
-	gwv2_translator "github.com/solo-io/gloo/projects/gateway2/translator"
 	gwplugins "github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -63,13 +61,11 @@ func NewGatewayInputChannels() *GatewayInputChannels {
 	}
 }
 
-var (
-	// labels used to uniquely identify Proxies that are managed by the kube gateway controller
-	kubeGatewayProxyLabels = map[string]string{
-		// the proxy type key/value must stay in sync with the one defined in projects/gateway2/translator/gateway_translator.go
-		utils.ProxyTypeKey: utils.GatewayApiProxyValue,
-	}
-)
+// labels used to uniquely identify Proxies that are managed by the kube gateway controller
+var kubeGatewayProxyLabels = map[string]string{
+	// the proxy type key/value must stay in sync with the one defined in projects/gateway2/translator/gateway_translator.go
+	utils.ProxyTypeKey: utils.GatewayApiProxyValue,
+}
 
 // NewProxySyncer returns an implementation of the ProxySyncer
 // The provided GatewayInputChannels are used to trigger syncs.
@@ -118,11 +114,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			return
 		}
 
-		gatewayQueries := query.NewData(s.mgr.GetClient(), s.mgr.GetScheme())
-
 		pluginRegistry := s.k8sGwExtensions.CreatePluginRegistry(ctx)
-		gatewayTranslator := gwv2_translator.NewTranslator(gatewayQueries, pluginRegistry)
-
 		rm := reports.NewReportMap()
 		r := reports.NewReporter(&rm)
 
@@ -131,6 +123,11 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			translatedGateways []gwplugins.TranslatedGateway
 		)
 		for _, gw := range gwl.Items {
+			gatewayTranslator := s.k8sGwExtensions.GetTranslator(ctx, &gw, pluginRegistry)
+			if gatewayTranslator == nil {
+				contextutils.LoggerFrom(ctx).Errorf("no translator found for Gateway %s (gatewayClass %s)", gw.Name, gw.Spec.GatewayClassName)
+				continue
+			}
 			proxy := gatewayTranslator.TranslateProxy(ctx, &gw, s.writeNamespace, r)
 			if proxy != nil {
 				// Add proxy id to the proxy metadata to track proxies for status reporting
