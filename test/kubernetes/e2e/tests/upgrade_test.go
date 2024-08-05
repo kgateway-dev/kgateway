@@ -15,11 +15,8 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
 )
 
-// The previous kube2e upgrade tests ran no meaningful assertions against the installation
-// before upgrading, so we do not here either.
+// The upgrade tests delegate the installs, upgrades and deletions to each individual test within the suite
 
-// TestUpgradeFromLastPatchPreviousMinor executes tests against an installation of Gloo Gateway, executes an upgrade ,
-// and finally executes tests against the upgraded version.
 func TestUpgradeFromLastPatchPreviousMinor(t *testing.T) {
 	ctx := context.Background()
 
@@ -40,9 +37,7 @@ func TestUpgradeFromLastPatchPreviousMinor(t *testing.T) {
 	UpgradeSuiteRunner().Run(ctx, t, testInstallation)
 }
 
-// TestUpgrade executes tests against an installation of Gloo Gateway, executes an upgrade,
-// and finally executes tests against the upgraded version. This will be skipped if there
-// has not yet been a patch release for the most current minor version.
+// This will be skipped if there has not yet been a patch release for the most current minor version.
 func TestUpgradeFromCurrentPatchLatestMinor(t *testing.T) {
 	ctx := context.Background()
 
