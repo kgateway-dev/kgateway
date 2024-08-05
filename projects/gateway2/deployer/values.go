@@ -18,10 +18,11 @@ type helmGateway struct {
 	FullnameOverride *string `json:"fullnameOverride,omitempty"`
 
 	// deployment/service values
-	ReplicaCount *uint32          `json:"replicaCount,omitempty"`
-	Autoscaling  *helmAutoscaling `json:"autoscaling,omitempty"`
-	Ports        []helmPort       `json:"ports,omitempty"`
-	Service      *helmService     `json:"service,omitempty"`
+	ReplicaCount   *uint32          `json:"replicaCount,omitempty"`
+	Autoscaling    *helmAutoscaling `json:"autoscaling,omitempty"`
+	Ports          []helmPort       `json:"ports,omitempty"`
+	Service        *helmService     `json:"service,omitempty"`
+	FloatingUserId *bool            `json:"floatingUserId,omitempty"`
 
 	// pod template values
 	ExtraPodAnnotations map[string]string             `json:"extraPodAnnotations,omitempty"`
@@ -45,7 +46,6 @@ type helmGateway struct {
 	Image             *helmImage                   `json:"image,omitempty"`
 	Resources         *corev1.ResourceRequirements `json:"resources,omitempty"`
 	SecurityContext   *corev1.SecurityContext      `json:"securityContext,omitempty"`
-	FloatingUserId    *bool                        `json:"floatingUserId,omitempty"`
 
 	// xds values
 	Xds *helmXds `json:"xds,omitempty"`

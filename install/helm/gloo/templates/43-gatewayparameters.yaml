@@ -31,8 +31,8 @@ spec:
 {{- end }}{{/* if $gg.service */}}
     service:
       type: {{ $serviceType }}
-{{- with .Values.global.securitySettings.floatingUserId  }}
-    floatinguserId: {{ . }}
+{{- if or $global.securitySettings.floatingUserId $gg.floatinguserId }}
+    floatinguserId: true
 {{- end }}
     envoyContainer:
       image:
@@ -46,7 +46,7 @@ spec:
 {{- if $gg.envoyContainer -}}
 {{- if $gg.envoyContainer.securityContext }}
       securityContext:
-        {{- include "gloo-gateway.renderSecurityContext" (list $gg.envoyContainer.securityContext .Values.global.securitySettings.floatingUserId) | nindent 8 }}
+        {{- toYaml $gg.envoyContainer.securityContext | nindent 8 }}
 {{- end }}{{/* if $gg.envoyContainer.securityContext */}}
 {{- if $gg.envoyContainer.resources }}
       resources:
@@ -62,7 +62,7 @@ spec:
         {{- merge $gg.sdsContainer.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
 {{- if $gg.sdsContainer.securityContext }}
       securityContext:
-        {{- include "gloo-gateway.renderSecurityContext" (list $gg.sdsContainer.securityContext .Values.global.securitySettings.floatingUserId) | nindent 8 }}
+        {{- toYaml $gg.sdsContainer.securityContext | nindent 8 }}
 {{- end }}{{/* if $gg.sdsContainer.securityContext */}}
 {{- if $gg.sdsContainer.logLevel }}
       bootstrap:
@@ -82,8 +82,8 @@ spec:
         image:
           {{- merge $gg.istio.istioProxyContainer.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 10 }}
 {{- if $gg.istio.istioProxyContainer.securityContext }}
-      securityContext:
-        {{- include "gloo-gateway.renderSecurityContext" (list $gg.istioProxyContainer.securityContext .Values.global.securitySettings.floatingUserId) | nindent 8 }}
+        securityContext:
+          {{- toYaml $gg.istio.istioProxyContainer.securityContext | nindent 10 }}
 {{- end }}{{/* if $gg.istio.istioProxyContainer.securityContext */}}
 {{- if $gg.istio.istioProxyContainer.logLevel }}
         logLevel: {{ $gg.istio.istioProxyContainer.logLevel }}
@@ -104,7 +104,7 @@ spec:
         {{- merge $gg.aiExtension.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
 {{- if $gg.aiExtension.securityContext }}
       securityContext:
-        {{- include "gloo-gateway.renderSecurityContext" (list $gg.aiExtension.securityContext .Values.global.securitySettings.floatingUserId) | nindent 8 }}
+        {{- toYaml $gg.aiExtension.securityContext | nindent 8 }}
 {{- end }}{{/* if $gg.aiExtension.securityContext */}}
 {{- if $gg.aiExtension.resources }}
       resources:

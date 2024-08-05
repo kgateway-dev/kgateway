@@ -59,16 +59,3 @@ digest: {{ $image.digest }}
 pullPolicy: {{ $image.pullPolicy }}
 {{- end -}}{{/* if $image.pullPolicy */}}
 {{- end }}
-
-{{/* Used by GatewayParameters to generate container securtityContexts
-    pass in the container definition and the global 
-     container definition is used because we may need to set global even if there is no secCtx or container defined
-*/}}
-{{- define "gloo-gateway.renderSecurityContext" -}}
-{{- $sc := or (first .) (dict)  -}}
-{{- $floatingUserId := or (index . 1) false -}}
-{{- if $floatingUserId -}}
-    {{- $_ := unset $sc "runAsUser" -}}
-{{- end -}}
-{{ $sc | toYaml }}
-{{- end -}}{{- /* define "gloo-gateway.gateway.renderSecurityContext" -}} */ -}}

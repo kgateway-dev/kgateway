@@ -152,7 +152,7 @@ func (d *Deployer) renderChartToObjects(gw *api.Gateway, vals map[string]any) ([
 	return objs, nil
 }
 
-// getGatewayParametersForGateway reuturns the a merged GatewayParameters object resulting from the default GwParams object and
+// getGatewayParametersForGateway returns the a merged GatewayParameters object resulting from the default GwParams object and
 // the GwParam object specifically associated with the given Gateway (if one exists).
 func (d *Deployer) getGatewayParametersForGateway(ctx context.Context, gw *api.Gateway) (*v1alpha1.GatewayParameters, error) {
 	logger := log.FromContext(ctx)
@@ -268,6 +268,12 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	// extract all the custom values from the GatewayParameters
 	// (note: if we add new fields to GatewayParameters, they will
 	// need to be plumbed through here as well)
+
+	// Apply the floating user ID if it is set
+	if gwParam.Spec.Kube.FloatingUserId != nil && *gwParam.Spec.Kube.FloatingUserId {
+		applyFloatingUserId(gwParam.Spec.Kube)
+	}
+
 	kubeProxyConfig := gwParam.Spec.Kube
 	deployConfig := kubeProxyConfig.GetDeployment()
 	podConfig := kubeProxyConfig.GetPodTemplate()
