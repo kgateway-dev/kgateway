@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/onsi/gomega"
+	kubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/skv2/codegen/util"
 	appsv1 "k8s.io/api/apps/v1"
@@ -33,6 +34,29 @@ var (
 	}
 	proxyService = func(ns string) *corev1.Service {
 		return &corev1.Service{ObjectMeta: glooProxyObjectMeta(ns)}
+	}
+
+	vsTargetingKube = func(ns string) *kubev1.VirtualService {
+		return &kubev1.VirtualService{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "vs-targeting-kube",
+				Namespace: ns,
+			},
+		}
+	}
+	vsTargetingUpstream = func(ns string) *kubev1.VirtualService {
+		return &kubev1.VirtualService{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "vs-targeting-upstream",
+				Namespace: ns,
+			},
+		}
+	}
+	tlsSecret = &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "my-tls",
+			Namespace: "nginx",
+		},
 	}
 
 	expectedHealthyResponse = &matchers.HttpResponse{

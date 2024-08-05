@@ -98,6 +98,9 @@ func (s *testingSuite) TestInvalidUpstreamMissingPort() {
 		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.ExampleUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
 		s.Assert().NoError(err, "can delete "+validation.ExampleUpstream)
 
+		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.InvalidUpstreamNoPort, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assert().NoError(err, "can delete "+validation.InvalidUpstreamNoPort)
+
 		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, testdefaults.NginxPodManifest)
 		s.Assert().NoError(err, "can delete "+testdefaults.NginxPodManifest)
 	})
