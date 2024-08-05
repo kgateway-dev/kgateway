@@ -31,9 +31,7 @@ spec:
 {{- end }}{{/* if $gg.service */}}
     service:
       type: {{ $serviceType }}
-{{- if or $global.securitySettings.floatingUserId $gg.floatinguserId }}
-    floatinguserId: true
-{{- end }}
+    floatingUserId: {{ hasKey $global.securitySettings "floatingUserId" | ternary $global.securitySettings.floatingUserId (or $gg.floatingUserId false) }}
     envoyContainer:
       image:
         {{- $envoyImage := dict -}}

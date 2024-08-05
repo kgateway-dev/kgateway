@@ -121,6 +121,8 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 				Expect(gwpKube.GetAiExtension().GetSecurityContext()).To(BeNil())
 				Expect(gwpKube.GetAiExtension().GetResources()).To(BeNil())
 				Expect(gwpKube.GetAiExtension().GetPorts()).To(BeEmpty())
+
+				Expect(*gwpKube.GetFloatingUserId()).To(BeFalse())
 			})
 
 			When("overrides are set", func() {
@@ -322,6 +324,38 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 
 					Expect(*gwpKube.GetService().GetType()).To(Equal(corev1.ServiceTypeClusterIP))
 				})
+			})
+
+			When("floatingUserId is set", func() {
+
+				DescribeTable("sets the floatingUserId field", func(expectedValue bool, extraValueArgs ...string) {
+					valuesArgs = append(valuesArgs, extraValueArgs...)
+					// Updated values so need to re-render
+					prepareHelmManifest(namespace, helmValues{valuesArgs: valuesArgs})
+
+					gwpUnstructured := testManifest.ExpectCustomResource("GatewayParameters", namespace, wellknown.DefaultGatewayParametersName)
+
+					var gwp v1alpha1.GatewayParameters
+					b, err := gwpUnstructured.MarshalJSON()
+					Expect(err).ToNot(HaveOccurred())
+					err = json.Unmarshal(b, &gwp)
+					Expect(err).ToNot(HaveOccurred())
+
+					gwpKube := gwp.Spec.Kube
+					Expect(gwpKube).ToNot(BeNil())
+
+					Expect(*gwpKube.GetFloatingUserId()).To(Equal(expectedValue))
+				},
+					Entry("locally true, globally true", true, "kubeGateway.gatewayParameters.glooGateway.floatingUserId=true", "global.securitySettings.floatingUserId=true"),
+					Entry("locally true, globally false", false, "kubeGateway.gatewayParameters.glooGateway.floatingUserId=true", "global.securitySettings.floatingUserId=false"),
+					Entry("locally true, globally undefined", true, "kubeGateway.gatewayParameters.glooGateway.floatingUserId=true"),
+					Entry("locally false, globally true", true, "kubeGateway.gatewayParameters.glooGateway.floatingUserId=false", "global.securitySettings.floatingUserId=true"),
+					Entry("locally false, globally false", false, "kubeGateway.gatewayParameters.glooGateway.floatingUserId=false", "global.securitySettings.floatingUserId=false"),
+					Entry("locally false, globally undefined", false, "kubeGateway.gatewayParameters.glooGateway.floatingUserId=false"),
+					Entry("locally undefined, globally true", true, "global.securitySettings.floatingUserId=true"),
+					Entry("locally undefined, globally false", false, "global.securitySettings.floatingUserId=false"),
+					Entry("locally undefined, globally undefined", false),
+				)
 			})
 		})
 
