@@ -108,8 +108,7 @@ func (s *testingSuite) TestValidationWebhookCABundle() {
 
 func (s *testingSuite) upgradeWithCustomValuesFile(valuesFile string) {
 	_, err := s.TestHelper.UpgradeGloo(s.Ctx, 600*time.Second, helper.WithExtraArgs([]string{
-		// Reuse values so there's no need to know the prior values used
-		"--reuse-values",
+		// Do not reuse the existing values as we need to install the new chart with the new version of the images
 		"--values", filepath.Join(util.MustGetThisDir(), "testdata/manifests", valuesFile),
 	}...))
 	s.TestInstallation.Assertions.Require.NoError(err)
