@@ -291,7 +291,8 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 ---
 ### CorsMergeSettings
 
-
+ 
+Settings for determining how CORS settings are merged when present on both VirtualHost and Route
 
 ```yaml
 "exposeHeaders": .gloo.solo.io.VirtualHostOptions.CorsMergeSettings.mergePolicy
@@ -300,7 +301,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `exposeHeaders` | [.gloo.solo.io.VirtualHostOptions.CorsMergeSettings.mergePolicy](../options.proto.sk/#mergepolicy) | mergePolicy AllowOrigin = 1; mergePolicy allow_origin_regex = 2; mergePolicy allow_methods = 3; mergePolicy allow_headers = 4;. |
+| `exposeHeaders` | [.gloo.solo.io.VirtualHostOptions.CorsMergeSettings.mergePolicy](../options.proto.sk/#mergepolicy) |  |
 
 
 

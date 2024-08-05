@@ -325,7 +325,7 @@ var _ = Describe("CORS", func() {
 				}).Should(Succeed(), "Request with allowed route origin, has expose headers from both route and vh")
 
 				// This demonstrates that when you define options both on the VirtualHost and Route levels,
-				// only the route definition is respected
+				// only the route definition is respected, even with merge settings set for other fields
 				allowedVhostOriginRequestBuilder := testContext.GetHttpRequestBuilder().
 					WithOptionsMethod().
 					WithPath("cors").

@@ -209,7 +209,8 @@ type VirtualService struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The VirtualHost contains the
+	// The VirtualHost contains configuration for serving a list of routes for a set of domains along with options for
+	// configuring traffic
 	VirtualHost *VirtualHost `protobuf:"bytes,1,opt,name=virtual_host,json=virtualHost,proto3" json:"virtual_host,omitempty"`
 	// If provided, the Gateway will serve TLS/SSL traffic for this set of routes
 	SslConfig *ssl.SslConfig `protobuf:"bytes,2,opt,name=ssl_config,json=sslConfig,proto3" json:"ssl_config,omitempty"`

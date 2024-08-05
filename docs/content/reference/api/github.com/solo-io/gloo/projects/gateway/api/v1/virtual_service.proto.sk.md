@@ -135,7 +135,7 @@ constraints:
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `virtualHost` | [.gateway.solo.io.VirtualHost](../virtual_service.proto.sk/#virtualhost) | The VirtualHost contains the. |
+| `virtualHost` | [.gateway.solo.io.VirtualHost](../virtual_service.proto.sk/#virtualhost) | The VirtualHost contains configuration for serving a list of routes for a set of domains along with options for configuring traffic. |
 | `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl/ssl.proto.sk/#sslconfig) | If provided, the Gateway will serve TLS/SSL traffic for this set of routes. |
 | `displayName` | `string` | Display only, optional descriptive name. Unlike metadata.name, DisplayName can be any string and can be changed after creating the resource. |
 | `namespacedStatuses` | [.core.solo.io.NamespacedStatuses](../../../../../../solo-kit/api/v1/status.proto.sk/#namespacedstatuses) | NamespacedStatuses indicates the validation status of this resource. NamespacedStatuses is read-only by clients, and set by gateway during validation. |

@@ -2086,15 +2086,12 @@ func (*ConnectionBalanceConfig_ExactBalance) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_rawDescGZIP(), []int{1, 0}
 }
 
+// Settings for determining how CORS settings are merged when present on both VirtualHost and Route
 type VirtualHostOptions_CorsMergeSettings struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// mergePolicy AllowOrigin = 1;
-	// mergePolicy allow_origin_regex = 2;
-	// mergePolicy allow_methods = 3;
-	// mergePolicy allow_headers = 4;
 	ExposeHeaders VirtualHostOptions_CorsMergeSettingsMergePolicy `protobuf:"varint,5,opt,name=expose_headers,json=exposeHeaders,proto3,enum=gloo.solo.io.VirtualHostOptions_CorsMergeSettingsMergePolicy" json:"expose_headers,omitempty"`
 }
 

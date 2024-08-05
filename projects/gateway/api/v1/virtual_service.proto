@@ -116,7 +116,8 @@ message VirtualService {
     option (core.solo.io.resource).short_name = "vs";
     option (core.solo.io.resource).plural_name = "virtual_services";
 
-    // The VirtualHost contains the
+    // The VirtualHost contains configuration for serving a list of routes for a set of domains along with options for
+    // configuring traffic
     VirtualHost virtual_host = 1;
 
     // If provided, the Gateway will serve TLS/SSL traffic for this set of routes
