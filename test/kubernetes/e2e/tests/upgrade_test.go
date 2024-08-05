@@ -5,7 +5,6 @@ import (
 	"log"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/require"
@@ -23,44 +22,20 @@ import (
 // and finally executes tests against the upgraded version.
 func TestUpgradeFromLastPatchPreviousMinor(t *testing.T) {
 	ctx := context.Background()
+
+	// Get the last released patch of the minor version prior to the one being tested.
+	lastPatchPreviousMinorVersion, _, err := helper.GetUpgradeVersions(ctx, "gloo")
+	require.NoError(t, err)
+
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
 			InstallNamespace:       "upgrade-from-last-patch-previous-minor",
 			ValuesManifestFile:     filepath.Join(util.MustGetThisDir(), "manifests", "upgrade-base-test-helm.yaml"),
 			ValidationAlwaysAccept: false,
+			ReleasedVersion:        lastPatchPreviousMinorVersion.String(),
 		},
 	)
-
-	// Get the last released patch of the minor version prior to the one being tested.
-	lastPatchPreviousMinorVersion, _, err := helper.GetUpgradeVersions(ctx, "gloo")
-	testInstallation.Assertions.Require.NoError(err)
-
-	testHelper := e2e.MustTestHelper(ctx, testInstallation)
-
-	testHelper.ReleasedVersion = lastPatchPreviousMinorVersion.String()
-
-	// We register the cleanup function _before_ we actually perform the installation.
-	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
-	t.Cleanup(func() {
-		if t.Failed() {
-			testInstallation.PreFailHandler(ctx)
-		}
-
-		testInstallation.UninstallGlooGateway(ctx, func(ctx context.Context) error {
-			return testHelper.UninstallGlooAll()
-		})
-	})
-
-	// Install Gloo Gateway
-	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
-		return testHelper.InstallGloo(ctx, 5*time.Minute, helper.WithExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
-	})
-
-	// If specific upgrade cases need to be tested, values overrides should be defined in manifests/ and passed into the upgrade fn here.
-	testInstallation.UpgradeGlooGateway(ctx, testHelper.ChartVersion(), func(ctx context.Context) (func() error, error) {
-		return testHelper.UpgradeGloo(ctx, 5*time.Minute, testHelper.ChartVersion(), true, filepath.Join(testHelper.RootDir, "install", "helm", "gloo", "crds"))
-	})
 
 	UpgradeSuiteRunner().Run(ctx, t, testInstallation)
 }
@@ -86,10 +61,9 @@ func TestUpgradeFromCurrentPatchLatestMinor(t *testing.T) {
 			InstallNamespace:       "upgrade-from-current-patch-latest-minor",
 			ValuesManifestFile:     filepath.Join(util.MustGetThisDir(), "manifests", "upgrade-base-test-helm.yaml"),
 			ValidationAlwaysAccept: false,
+			ReleasedVersion:        currentPatchMostRecentMinorVersion.String(),
 		},
 	)
 
-	testHelper := e2e.MustTestHelper(ctx, testInstallation)
-
-	testHelper.ReleasedVersion = currentPatchMostRecentMinorVersion.String()
+	UpgradeSuiteRunner().Run(ctx, t, testInstallation)
 }

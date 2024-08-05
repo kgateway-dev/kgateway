@@ -7,8 +7,6 @@ import (
 
 func UpgradeSuiteRunner() e2e.SuiteRunner {
 	upgradeSuiteRunner := e2e.NewSuiteRunner(false)
-
 	upgradeSuiteRunner.Register("Upgrade", upgrade.NewTestingSuite)
-
 	return upgradeSuiteRunner
 }
