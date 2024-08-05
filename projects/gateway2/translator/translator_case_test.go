@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/onsi/ginkgo/v2"
-	errors "github.com/rotisserie/eris"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -22,6 +21,7 @@ import (
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	. "github.com/solo-io/gloo/projects/gateway2/translator"
+	httplisquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/httplisteneroptions/query"
 	lisquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/listeneroptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
@@ -32,34 +32,23 @@ import (
 )
 
 type TestCase struct {
-	Name             string
-	InputFiles       []string
-	ResultsByGateway map[types.NamespacedName]ExpectedTestResult
+	InputFiles []string
 }
 
 type ActualTestResult struct {
-	Proxy *v1.Proxy
-	// Reports     map[types.NamespacedName]*reports.GatewayReport
-	// TODO(Law): figure out how RouteReports fit in
+	Proxy      *v1.Proxy
+	ReportsMap reports.ReportMap
 }
 
-type ExpectedTestResult struct {
-	Proxy string
-	// Reports     map[types.NamespacedName]*reports.GatewayReport
-}
-
-func (r ExpectedTestResult) Equals(actual ActualTestResult) (bool, error) {
-	proxy, err := testutils.ReadProxyFromFile(r.Proxy)
+func ProxyEquals(expectedFile string, actual *v1.Proxy) (bool, error) {
+	proxy, err := testutils.ReadProxyFromFile(expectedFile)
 	if err != nil {
 		return false, err
 	}
-	return proxy.Equal(actual.Proxy), nil
+	return proxy.Equal(actual), nil
 }
 
-// map of gwv1.GW namespace/name to translation result
-func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, error) {
-	// load inputs
-
+func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]ActualTestResult, error) {
 	var (
 		gateways     []*gwv1.Gateway
 		dependencies []client.Object
@@ -99,6 +88,7 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 		rtoptquery.IterateIndices,
 		vhoptquery.IterateIndices,
 		lisquery.IterateIndices,
+		httplisquery.IterateIndices,
 	)
 	queries := testutils.BuildGatewayQueriesWithClient(fakeClient)
 
@@ -116,7 +106,8 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 
 	pluginRegistry := registry.NewPluginRegistry(registry.BuildPlugins(queries, fakeClient, routeOptionClient, vhOptionClient, statusReporter))
 
-	results := make(map[types.NamespacedName]bool)
+	results := make(map[types.NamespacedName]ActualTestResult)
+
 	for _, gw := range gateways {
 		gwNN := types.NamespacedName{
 			Namespace: gw.Namespace,
@@ -136,25 +127,11 @@ func (tc TestCase) Run(ctx context.Context) (map[types.NamespacedName]bool, erro
 		act, _ := testutils.MarshalYaml(proxy)
 		fmt.Fprintf(ginkgo.GinkgoWriter, "actual result:\n %s \n", act)
 
-		actReport, _ := testutils.MarshalAnyYaml(reportsMap)
-		fmt.Fprintf(ginkgo.GinkgoWriter, "actual reports:\n %s \n", actReport)
-
 		actual := ActualTestResult{
-			Proxy: proxy,
-			// Reports:     reportsMap.Gateways,
+			Proxy:      proxy,
+			ReportsMap: reportsMap,
 		}
-
-		expected, ok := tc.ResultsByGateway[gwNN]
-		if !ok {
-			return nil, errors.Errorf("no expected result found for gateway %v", gwNN)
-		}
-
-		equal, err := expected.Equals(actual)
-		if err != nil {
-			return nil, err
-		}
-
-		results[gwNN] = equal
+		results[gwNN] = actual
 	}
 
 	return results, nil
