@@ -41,7 +41,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			in.assertReports(in.gwNN, result.ReportsMap)
 		}
 	},
-	Entry("gateway with basic routing",
+	Entry("http gateway with basic routing",
 		translatorTestCase{
 			inputFile:  "http-routing",
 			outputFile: "http-routing-proxy.yaml",
