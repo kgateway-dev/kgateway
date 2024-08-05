@@ -153,13 +153,41 @@ func (h *SoloTestHelper) ChartPath() string {
 type OptionsMutator func(opts *Options)
 
 type Options struct {
-	Command []string
-	Verbose bool
+	Command    []string
+	Verbose    bool
+	LocalChart bool
+	CRDDir     string
+	Version    string
+	Repo       string
 }
 
+// WithExtraArgs specifies additional args to pass to the lifecycle command
 func WithExtraArgs(args ...string) OptionsMutator {
 	return func(opts *Options) {
 		opts.Command = append(opts.Command, args...)
+	}
+}
+
+// WithLocalChart downloads the specified version of the chart and extracts it.
+func WithLocalChart(version string, repo string) OptionsMutator {
+	return func(opts *Options) {
+		opts.LocalChart = true
+		opts.Version = version
+		opts.Repo = repo
+	}
+}
+
+// WithCRDs installs the CRDs from the specific directory.
+func WithCRDs(crdDir string) OptionsMutator {
+	return func(opts *Options) {
+		opts.CRDDir = crdDir
+	}
+}
+
+// WithVersion specifies the version to use
+func WithVersion(version string) OptionsMutator {
+	return func(opts *Options) {
+		opts.Version = version
 	}
 }
 
@@ -260,7 +288,8 @@ func glooctlInstallWithTimeout(rootDir string, opts *Options, timeout time.Durat
 // Upgrades Gloo via a helm upgrade. It returns a method that rolls-back helm to the version prior to this upgrade
 // If localChart is false, the crdDir provided should be the path from the root of a chart pulled from remote.
 // e.g. for gloo, this would be gloo/crds
-func (h *SoloTestHelper) UpgradeGloo(ctx context.Context, timeout time.Duration, version string, localChart bool, crdDir string, options ...OptionsMutator) (revertFunc func() error, err error) {
+func (h *SoloTestHelper) UpgradeGloo(ctx context.Context, timeout time.Duration, options ...OptionsMutator) (revertFunc func() error, err error) {
+
 	log.Printf("upgrading gloo in namespace [%s]", h.InstallNamespace)
 
 	revision, err := h.CurrentGlooRevision()
@@ -268,55 +297,63 @@ func (h *SoloTestHelper) UpgradeGloo(ctx context.Context, timeout time.Duration,
 		return nil, err
 	}
 
-	if crdDir == "" {
-		return nil, fmt.Errorf("crdDir must be defined")
-	}
-
-	// not currently removing this since we could need it for rollback.........
-	tmpDir, err := os.MkdirTemp("", "kubernetes-e2e-*")
-	if err != nil {
-		return nil, err
-	}
-
-	currentCrdsCommand := []string{
-		"kubectl",
-		"get",
-		"crds",
-		"-oyaml",
-	}
-
-	currentCrdsOpts := h.generateOpts(currentCrdsCommand)
-	// we explicitly do not allow verbose because the output of printing CRDs is >60k lines
-	currentCrdsOpts.Verbose = false
-	currentCrds, err := runWithTimeoutOutput(h.RootDir, currentCrdsOpts, timeout, "get crds")
-	currentCrdsFile := filepath.Join(tmpDir, "old_crds.yaml")
-	err = os.WriteFile(currentCrdsFile, []byte(currentCrds), os.ModePerm)
-	if err != nil {
-		return nil, err
-	}
-
 	chartPath := h.ChartPath()
 
-	if !localChart {
-		helmCommand := []string{
-			"helm",
-			"pull",
-			"gloo/gloo", // TODO(jbohanon) make configurable before merge
-			"--untar",
-			"--untardir",
-			tmpDir,
-			"--version",
-			version,
+	var currentCRDsFile string
+	crdOpts := h.generateOpts([]string{}, options...)
+	crdDir := crdOpts.CRDDir
+
+	// Update the CRDs prior to an upgrade
+	if crdDir != "" {
+		getCRDsCommand := []string{
+			"kubectl",
+			"get",
+			"crds",
+			"-oyaml",
 		}
 
-		opts := h.generateOpts(helmCommand)
+		tmpDir, err := os.MkdirTemp("", "kubernetes-e2e-*")
+		if err != nil {
+			return nil, err
+		}
 
-		runWithTimeout(h.RootDir, opts, timeout, "pull crds")
-		crdDir = filepath.Join(tmpDir, strings.TrimPrefix(crdDir, "/"))
+		// we explicitly do not allow verbose because the output of printing CRDs is >60k lines
+		crdOpts.Verbose = false
+		crdOpts.Command = getCRDsCommand
+		currentCrds, err := runWithTimeoutOutput(h.RootDir, crdOpts, timeout, "get crds")
+		if err != nil {
+			return nil, err
+		}
 
-		chartPath = filepath.Join(tmpDir, strings.Split(crdDir, string(filepath.Separator))[0])
+		currentCRDsFile = filepath.Join(tmpDir, "old_crds.yaml")
+		err = os.WriteFile(currentCRDsFile, []byte(currentCrds), os.ModePerm)
+		if err != nil {
+			return nil, err
+		}
+
+		// Download, extract and apply CRDs
+		if crdOpts.LocalChart {
+			helmCommand := []string{
+				"helm",
+				"pull",
+				crdOpts.Repo,
+				"--untar",
+				"--untardir",
+				tmpDir,
+				"--version",
+				crdOpts.Version,
+			}
+
+			opts := h.generateOpts(helmCommand)
+
+			runWithTimeout(h.RootDir, opts, timeout, "pull crds")
+			crdDir = filepath.Join(tmpDir, strings.TrimPrefix(opts.CRDDir, "/"))
+
+			chartPath = filepath.Join(tmpDir, strings.Split(crdDir, string(filepath.Separator))[0])
+		}
+
+		h.ApplyFilePath(ctx, crdDir)
 	}
-	h.ApplyFilePath(ctx, crdDir)
 
 	helmCommand := []string{
 		"helm",
@@ -331,7 +368,6 @@ func (h *SoloTestHelper) UpgradeGloo(ctx context.Context, timeout time.Duration,
 	if h.Verbose {
 		helmCommand = append(helmCommand, "--debug")
 	}
-
 	opts := h.generateOpts(helmCommand, options...)
 
 	if err := runWithTimeout(h.RootDir, opts, timeout, "upgrade"); err != nil {
@@ -339,10 +375,17 @@ func (h *SoloTestHelper) UpgradeGloo(ctx context.Context, timeout time.Duration,
 	}
 
 	return func() error {
-		h.ApplyFile(ctx, currentCrdsFile)
-		return h.RevertGlooUpgrade(ctx, timeout, currentCrdsFile, WithExtraArgs([]string{
-			strconv.Itoa(revision),
-		}...))
+		err := h.RevertGlooUpgrade(ctx, timeout, currentCRDsFile,
+			WithExtraArgs([]string{strconv.Itoa(revision)}...))
+		if err != nil {
+			return err
+		}
+
+		if currentCRDsFile != "" {
+			defer os.Remove(currentCRDsFile)
+			return h.ApplyFile(ctx, currentCRDsFile)
+		}
+		return nil
 	}, nil
 }
 
