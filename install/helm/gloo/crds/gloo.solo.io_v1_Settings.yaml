@@ -712,8 +712,6 @@ spec:
                 type: object
               linkerd:
                 type: boolean
-              mergeCorsSettings:
-                type: boolean
               namedExtauth:
                 additionalProperties:
                   properties:

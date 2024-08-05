@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -20,10 +21,14 @@ import (
 )
 
 const (
-	requestACHMethods      = "Access-Control-Allow-Methods"
-	requestACHOrigin       = "Access-Control-Allow-Origin"
-	corsFilterString       = `"name": "` + wellknown.CORS + `"`
-	corsActiveConfigString = `"envoy.filters.http.cors": {`
+	requestACHMethods       = "Access-Control-Allow-Methods"
+	requestACHOrigin        = "Access-Control-Allow-Origin"
+	requestACHExposeHeaders = "Access-Control-Expose-Headers"
+	corsFilterString        = `"name": "` + wellknown.CORS + `"`
+	corsActiveConfigString  = `"envoy.filters.http.cors": {`
+
+	routeHeader = "route-header"
+	vhHeader    = "vh-header"
 )
 
 var _ = Describe("CORS", func() {
@@ -169,7 +174,7 @@ var _ = Describe("CORS", func() {
 
 		})
 
-		When("CORS is defined on RouteOptions and VirtualHostOptions without mergeCors enabled", func() {
+		When("CORS is defined on RouteOptions and VirtualHostOptions without corsMergeSettings set", func() {
 			BeforeEach(func() {
 				vsWithCors := gloohelpers.NewVirtualServiceBuilder().
 					WithNamespace(writeNamespace).
@@ -182,12 +187,14 @@ var _ = Describe("CORS", func() {
 							AllowOrigin:      allowedOrigins,
 							AllowOriginRegex: allowedOrigins,
 							AllowMethods:     allowedMethods,
+							ExposeHeaders:    []string{vhHeader},
 						}}).
 					WithRouteOptions("route", &gloov1.RouteOptions{
 						// We don't set allowed methods to show that we still get this from VirtualHost
 						Cors: &cors.CorsPolicy{
 							AllowOrigin:      routeAllowedOrigins,
 							AllowOriginRegex: routeAllowedOrigins,
+							ExposeHeaders:    []string{routeHeader},
 						}}).
 					Build()
 
@@ -214,10 +221,11 @@ var _ = Describe("CORS", func() {
 					WithHeader("Access-Control-Request-Headers", "X-Requested-With")
 				Eventually(func(g Gomega) {
 					g.Expect(testutils.DefaultHttpClient.Do(allowedRouteOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
-						requestACHMethods: MatchRegexp(strings.Join(allowedMethods, ",")),
-						requestACHOrigin:  Equal(routeAllowedOrigins[0]),
+						requestACHMethods:       MatchRegexp(strings.Join(allowedMethods, ",")),
+						requestACHOrigin:        Equal(routeAllowedOrigins[0]),
+						requestACHExposeHeaders: Equal(routeHeader),
 					}))
-				}).Should(Succeed(), "Request with allowed route origin")
+				}).Should(Succeed(), "Request with allowed route origin, has expose headers from route only")
 
 				// This demonstrates that when you define options both on the VirtualHost and Route levels,
 				// only the route definition is respected
@@ -259,7 +267,7 @@ var _ = Describe("CORS", func() {
 
 		})
 
-		When("CORS is defined on RouteOptions and VirtualHostOptions with mergeCors enabled", func() {
+		When("CORS is defined on RouteOptions and VirtualHostOptions with corsMergeSettings set", func() {
 			BeforeEach(func() {
 				vsWithCors := gloohelpers.NewVirtualServiceBuilder().
 					WithNamespace(writeNamespace).
@@ -272,22 +280,24 @@ var _ = Describe("CORS", func() {
 							AllowOrigin:      allowedOrigins,
 							AllowOriginRegex: allowedOrigins,
 							AllowMethods:     allowedMethods,
-						}}).
+							ExposeHeaders:    []string{vhHeader},
+						},
+						CorsMergeSettings: &gloov1.VirtualHostOptions_CorsMergeSettings{
+							ExposeHeaders: gloov1.VirtualHostOptions_CorsMergeSettings_UNION,
+						},
+					}).
 					WithRouteOptions("route", &gloov1.RouteOptions{
 						// We don't set allowed methods to show that we still get this from VirtualHost
 						Cors: &cors.CorsPolicy{
 							AllowOrigin:      routeAllowedOrigins,
 							AllowOriginRegex: routeAllowedOrigins,
+							ExposeHeaders:    []string{routeHeader},
 						}}).
 					Build()
 
 				testContext.ResourcesToCreate().VirtualServices = gatewayv1.VirtualServiceList{
 					vsWithCors,
 				}
-
-				testContext.SetRunSettings(&gloov1.Settings{
-					MergeCorsSettings: true,
-				})
 			})
 
 			It("should respect CORS", func() {
@@ -308,10 +318,11 @@ var _ = Describe("CORS", func() {
 					WithHeader("Access-Control-Request-Headers", "X-Requested-With")
 				Eventually(func(g Gomega) {
 					g.Expect(testutils.DefaultHttpClient.Do(allowedRouteOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
-						requestACHMethods: MatchRegexp(strings.Join(allowedMethods, ",")),
-						requestACHOrigin:  Equal(routeAllowedOrigins[0]),
+						requestACHMethods:       MatchRegexp(strings.Join(allowedMethods, ",")),
+						requestACHOrigin:        Equal(routeAllowedOrigins[0]),
+						requestACHExposeHeaders: Equal(fmt.Sprintf("%s,%s", vhHeader, routeHeader)),
 					}))
-				}).Should(Succeed(), "Request with allowed route origin")
+				}).Should(Succeed(), "Request with allowed route origin, has expose headers from both route and vh")
 
 				// This demonstrates that when you define options both on the VirtualHost and Route levels,
 				// only the route definition is respected
@@ -324,10 +335,9 @@ var _ = Describe("CORS", func() {
 					WithHeader("Access-Control-Request-Headers", "X-Requested-With")
 				Eventually(func(g Gomega) {
 					g.Expect(testutils.DefaultHttpClient.Do(allowedVhostOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
-						requestACHMethods: MatchRegexp(strings.Join(allowedMethods, ",")),
-						requestACHOrigin:  Equal(allowedOrigins[0]),
+						requestACHMethods: BeEmpty(),
 					}))
-				}).Should(Succeed(), "Request with allowed origin from vhost is also allowed, since mergeCors is enabled")
+				}).Should(Succeed(), "Request with allowed origin from vhost is not allowed, since route overrides it")
 
 				disallowedOriginRequestBuilder := allowedRouteOriginRequestBuilder.WithHeader("Origin", unAllowedOrigin)
 				Eventually(func(g Gomega) {

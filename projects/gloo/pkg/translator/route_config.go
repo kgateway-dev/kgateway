@@ -140,12 +140,12 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	var envoyRoutes []*envoy_config_route_v3.Route
 	for i, route := range virtualHost.GetRoutes() {
 
-		if params.Settings.MergeCorsSettings {
+		if mergeSettings := virtualHost.GetOptions().GetCorsMergeSettings(); mergeSettings != nil {
 			if route.GetOptions() == nil {
 				// create an empty object to merge to if needed
 				route.Options = &v1.RouteOptions{}
 			}
-			route.GetOptions().Cors = mergeCors(virtualHost.GetOptions().GetCors(), route.GetOptions().GetCors())
+			route.GetOptions().Cors = mergeCors(mergeSettings, virtualHost.GetOptions().GetCors(), route.GetOptions().GetCors())
 		}
 
 		routeParams := plugins.RouteParams{
@@ -923,32 +923,30 @@ func ValidateRoutePath(s string) error {
 	return nil
 }
 
-// Implements the "union"/"most permissive" strategy for a couple fields as an example
-// Final implementation will operate on all fields or on each field on a case-by-case basis
-func mergeCors(src, dest *cors.CorsPolicy) *cors.CorsPolicy {
-	if src == nil {
-		return dest
+func mergeCors(mergeSettings *v1.VirtualHostOptions_CorsMergeSettings, vh, route *cors.CorsPolicy) *cors.CorsPolicy {
+	// if either incoming CorsPolicy is nil, use the other
+	if vh == nil {
+		return route
 	}
-	if dest == nil {
-		return src
-	}
-
-	out := &cors.CorsPolicy{}
-
-	if src.GetAllowOrigin() == nil {
-		out.AllowOrigin = dest.GetAllowOrigin()
-	} else if dest.GetAllowOrigin() == nil {
-		out.AllowOrigin = src.GetAllowOrigin()
-	} else {
-		out.AllowOrigin = append(dest.GetAllowOrigin(), src.GetAllowOrigin()...)
+	if route == nil {
+		return vh
 	}
 
-	if src.GetAllowHeaders() == nil {
-		out.AllowHeaders = dest.GetAllowHeaders()
-	} else if dest.GetAllowHeaders() == nil {
-		out.AllowHeaders = src.GetAllowHeaders()
-	} else {
-		out.AllowHeaders = append(dest.GetAllowHeaders(), src.GetAllowHeaders()...)
+	// we propagate the route setting by default
+	out := &cors.CorsPolicy{
+		AllowOrigin:      route.GetAllowOrigin(),
+		AllowOriginRegex: route.GetAllowOriginRegex(),
+		AllowMethods:     route.GetAllowMethods(),
+		AllowHeaders:     route.GetAllowHeaders(),
+		ExposeHeaders:    route.GetExposeHeaders(),
+		MaxAge:           route.GetMaxAge(),
+		AllowCredentials: route.GetAllowCredentials(),
+		DisableForRoute:  route.GetDisableForRoute(),
+	}
+
+	switch mergeSettings.GetExposeHeaders() {
+	case v1.VirtualHostOptions_CorsMergeSettings_UNION:
+		out.ExposeHeaders = append(vh.GetExposeHeaders(), route.GetExposeHeaders()...)
 	}
 
 	return out

@@ -381,6 +381,24 @@ message VirtualHostOptions {
     // Enterprise-only: External Processing filter settings for the virtual host. This can be used to
     // override certain HttpListenerOptions settings, and can be overridden by RouteOptions settings.
     extproc.options.gloo.solo.io.RouteSettings ext_proc = 30;
+
+    message CorsMergeSettings {
+        enum mergePolicy {
+            DEFAULT = 0;
+            UNION = 1;
+        }
+
+//        mergePolicy AllowOrigin = 1;
+//        mergePolicy allow_origin_regex = 2;
+//        mergePolicy allow_methods = 3;
+//        mergePolicy allow_headers = 4;
+        mergePolicy expose_headers = 5;
+//        mergePolicy max_age = 6;
+//        mergePolicy allow_credentials = 7;
+//        mergePolicy disable_for_route = 8;
+    }
+
+    CorsMergeSettings corsMergeSettings = 20;
 }
 
 // Optional, feature-specific configuration that lives on routes.

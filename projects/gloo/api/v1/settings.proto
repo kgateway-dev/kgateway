@@ -563,31 +563,6 @@ message Settings {
     // defaults globally, and can be overridden by HttpListenerOptions, VirtualHostOptions,
     // or RouteOptions.
     extproc.options.gloo.solo.io.Settings ext_proc = 39;
-
-    bool mergeCorsSettings = 40;
-
-    // This is what is might look like to expose per-field merge strategy
-    // A single mergePolicy for the entire CORS policy could be used if the decision is made to apply the same strategy
-    // for all fields
-    message CorsMergeSettings {
-        enum mergePolicy {
-            ROUTE_OVERRIDE = 0;
-            VS_OVERRIDE = 1;
-            PERMISSIVE = 2;
-            RESTRICTIVE = 3;
-        }
-
-        mergePolicy AllowOrigin = 1;
-        mergePolicy allow_origin_regex = 2;
-        mergePolicy allow_methods = 3;
-        mergePolicy allow_headers = 4;
-        mergePolicy expose_headers = 5;
-        mergePolicy max_age = 6;
-        mergePolicy allow_credentials = 7;
-        mergePolicy disable_for_route = 8;
-    }
-
-    CorsMergeSettings corsMergeSettings = 41;
 }
 
 // Default configuration to use for upstreams, when not provided by a specific upstream

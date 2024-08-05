@@ -18,6 +18,8 @@ weight: 5
 - [HttpListenerOptions](#httplisteneroptions)
 - [TcpListenerOptions](#tcplisteneroptions)
 - [VirtualHostOptions](#virtualhostoptions)
+- [CorsMergeSettings](#corsmergesettings)
+- [mergePolicy](#mergepolicy)
 - [RouteOptions](#routeoptions)
 - [MaxStreamDuration](#maxstreamduration)
 - [DestinationSpec](#destinationspec)
@@ -250,6 +252,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 "includeAttemptCountInResponse": .google.protobuf.BoolValue
 "stagedTransformations": .transformation.options.gloo.solo.io.TransformationStages
 "extProc": .extproc.options.gloo.solo.io.RouteSettings
+"corsMergeSettings": .gloo.solo.io.VirtualHostOptions.CorsMergeSettings
 
 ```
 
@@ -280,6 +283,37 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 | `includeAttemptCountInResponse` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | IncludeAttemptCountInResponse decides whether the x-envoy-attempt-count header should be included in the downstream response. Setting this option will cause the router to override any existing header value, so in the case of two Envoys on the request path with this option enabled, the downstream will see the attempt count as perceived by the Envoy closest upstream from itself. Defaults to false. |
 | `stagedTransformations` | [.transformation.options.gloo.solo.io.TransformationStages](../options/transformation/transformation.proto.sk/#transformationstages) | Early transformations stage. These transformations run before most other options are processed. If the `regular` field is set in here, the `transformations` field is ignored. |
 | `extProc` | [.extproc.options.gloo.solo.io.RouteSettings](../enterprise/options/extproc/extproc.proto.sk/#routesettings) | Enterprise-only: External Processing filter settings for the virtual host. This can be used to override certain HttpListenerOptions settings, and can be overridden by RouteOptions settings. |
+| `corsMergeSettings` | [.gloo.solo.io.VirtualHostOptions.CorsMergeSettings](../options.proto.sk/#corsmergesettings) |  |
+
+
+
+
+---
+### CorsMergeSettings
+
+
+
+```yaml
+"exposeHeaders": .gloo.solo.io.VirtualHostOptions.CorsMergeSettings.mergePolicy
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `exposeHeaders` | [.gloo.solo.io.VirtualHostOptions.CorsMergeSettings.mergePolicy](../options.proto.sk/#mergepolicy) | mergePolicy AllowOrigin = 1; mergePolicy allow_origin_regex = 2; mergePolicy allow_methods = 3; mergePolicy allow_headers = 4;. |
+
+
+
+
+---
+### mergePolicy
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `DEFAULT` |  |
+| `UNION` |  |
 
 
 

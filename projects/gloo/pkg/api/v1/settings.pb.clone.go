@@ -215,8 +215,6 @@ func (m *Settings) Clone() proto.Message {
 		target.ExtProc = proto.Clone(m.GetExtProc()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.Settings)
 	}
 
-	target.MergeCorsSettings = m.GetMergeCorsSettings()
-
 	switch m.ConfigSource.(type) {
 
 	case *Settings_KubernetesConfigSource:
