@@ -192,9 +192,6 @@ Because of this, if a value is "true" in defaults it can not be modified with th
   {{- if .floatingUserId -}}
     {{- $_ := unset $securityContext "runAsUser" -}}
   {{- end -}}
-  {{- if hasKey . "fsGroup" -}}
-    {{- $_ := set $securityContext "fsGroup" .fsGroup -}}
-  {{- end -}}
 {{- end -}}
 {{- /* Remove "mergePolicy" if it exists because it is not a part of the kubernetes securityContext definition */ -}}
 {{- $securityContext = omit $securityContext "mergePolicy" -}}
@@ -256,26 +253,16 @@ It takes 4 values:
     {{- end -}}
   {{- end -}}
   {{- $_ := set $pss_restricted_defaults  "seccompProfile" (dict "type" $defaultSeccompProfileType) -}}
-
   {{- if $pss.container.enableRestrictedContainerDefaults -}}
     {{- $defaults = merge $defaults $pss_restricted_defaults -}}
   {{- end -}}
 {{- end -}}
-
-{{- /* remove fsGroup from globals, as that field is not part of the container security context */ -}}
-{{ $global := dict }}
-{{- if .global -}}
-  {{- $global = deepCopy .global -}}
-  {{- $_ := unset $global "fsGroup" -}}
-{{- end -}}
-
-
 {{- /* call general securityContext template */ -}}
 {{- include "gloo.securityContext" (dict 
             "values" $values
             "defaults" $defaults
             "indent" $indent
-            "global" $global) -}}
+            "global" .global) -}}
 {{- end -}}
 
 

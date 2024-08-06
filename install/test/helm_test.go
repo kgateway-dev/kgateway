@@ -6406,7 +6406,7 @@ metadata:
 					)
 
 					for _, securityRoot := range securitycontext.ContainerSecurityContextRoots {
-						helmArgs = append(helmArgs, securityRoot+".runAsGroup=1234", securityRoot+".runAsUser=1234")
+						helmArgs = append(helmArgs, securityRoot+".runAsUser=1234")
 					}
 
 					prepareMakefile(namespace, helmValues{
@@ -6450,11 +6450,9 @@ metadata:
 				)
 
 				DescribeTable("applies global security setings for pod security contexts", func(resourceName string, securityRoot string, extraArgs ...string) {
-					fsGroup := int64(99999)
 					helmArgs := append(
 						extraArgs,
 						"global.securitySettings.floatingUserId=true",
-						fmt.Sprintf("global.securitySettings.fsGroup=%d", fsGroup),
 					)
 
 					prepareMakefile(namespace, helmValues{
@@ -6464,35 +6462,13 @@ metadata:
 					structuredDeployment := getStructuredDeployment(testManifest, resourceName)
 					securityContext := structuredDeployment.Spec.Template.Spec.SecurityContext
 
-					Expect(securityContext.RunAsUser).To(BeNil(), "resource: %s", resourceName)
-					Expect(securityContext.FSGroup).To(Equal(pointer.Int64(fsGroup)), "resource: %s")
+					if securityContext != nil {
+						Expect(securityContext.RunAsUser).To(BeNil(), "resource: %s", resourceName)
+					}
 				},
 					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext"),
 					Entry("1-gloo-deployment", "gloo", "gloo.deployment.podSecurityContext"),
 				)
-
-				// FIt("applies global security setings to KubeGw GatewayParameters", func() {
-
-				// 	helmArgs := []string{
-				// 		"kubeGateway.enabled=true",
-				// 		"global.securitySettings.floatingUserId=true",
-				// 	}
-
-				// 	prepareMakefile(namespace, helmValues{
-				// 		valuesArgs: helmArgs,
-				// 	})
-
-				// 	testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
-				// 		if u.GetKind() == "GatewayParameters" && u.GetName() == "resourceName" {
-				// 			return true
-				// 		}
-				// 		return false
-				// 	}).ExpectAll(func(resource *unstructured.Unstructured) {
-				// 		resourceUncast, err := kuberesource.ConvertUnstructured(resource)
-				// 		Expect(err).NotTo(HaveOccurred())
-				// 		gwParams, ok := resourceUncast.(*gatewayv2.GatewayParameters)
-				// 	})
-				// })
 
 				DescribeTable("applies default restricted container security contexts", func(seccompType string) {
 
