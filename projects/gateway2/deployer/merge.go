@@ -99,6 +99,8 @@ func applyFloatingUserId(dstKube *v1alpha1.KubernetesProxyConfig) {
 		return
 	}
 
+	dstKube.GetPodTemplate().GetSecurityContext().RunAsUser = nil
+
 	securityContexts := []*corev1.SecurityContext{
 		dstKube.GetEnvoyContainer().GetSecurityContext(),
 		dstKube.GetSdsContainer().GetSecurityContext(),
