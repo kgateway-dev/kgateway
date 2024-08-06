@@ -18,7 +18,7 @@ import (
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
-// testingSuite is the entire Suite of tests for the Upgrade Tests
+// testingSuite is the entire Suite of tests for the Helm Tests
 type testingSuite struct {
 	*base.BaseTestingSuite
 }
