@@ -384,24 +384,29 @@ message VirtualHostOptions {
 
     // Settings for determining how CORS settings are merged when present on both VirtualHost and Route
     message CorsMergeSettings {
-        enum mergePolicy {
-            DEFAULT = 0;
-            UNION = 1;
+        enum mergeStrategy{
+            DEFAULT = 0; // Do not merge
+            UNION = 1; // Append list fields, OR booelan fields
+            
+            // Eventually we may want to add additional mergeStrategies
+            // INTERSECTION = 2; // Use intersection of list fields, AND boolean fields
+            // ROUTE = 3; // Use the route-level field if one is set (this is Envoy's underlying behavior, so effectively the same as default)
+            // VH = 4; // Use the vh-level field if one is set
         }
 
         // Eventually we may want to allow each CORS setting to be configured, so we reserve fields for them
 
         // mimicking the CorsPolicy message
-        // mergePolicy AllowOrigin = 1;
-        // mergePolicy allow_origin_regex = 2;
-        // mergePolicy allow_methods = 3;
-        // mergePolicy allow_headers = 4;
+        // mergeStrategy AllowOrigin = 1;
+        // mergeStrategy allow_origin_regex = 2;
+        // mergeStrategy allow_methods = 3;
+        // mergeStrategy allow_headers = 4;
 
-        mergePolicy expose_headers = 5;
+        mergeStrategy expose_headers = 5;
 
-        // mergePolicy max_age = 6;
-        // mergePolicy allow_credentials = 7;
-        // mergePolicy disable_for_route = 8;
+        // mergeStrategy max_age = 6;
+        // mergeStrategy allow_credentials = 7;
+        // mergeStrategy disable_for_route = 8;
     }
 
     CorsMergeSettings corsMergeSettings = 20;
