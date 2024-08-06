@@ -12,7 +12,6 @@ settings:
 gateway:
   enabled: true
   persistProxySpec: false
-  logLevel: info
   validation:
     allowWarnings: true
     alwaysAcceptResources: false

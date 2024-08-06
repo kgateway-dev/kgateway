@@ -6,7 +6,6 @@ global:
       enableRestrictedContainerDefaults: true
 gateway:
   persistProxySpec: true
-  logLevel: info
   validation:
     # These tests validate the glooctl properly reports errors and warnings on resources
     # Therefore, we accept all resources in our webhook
