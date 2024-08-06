@@ -162,9 +162,9 @@ Because of this, if a value is "true" in defaults it can not be modified with th
 {{- if .values -}}
   {{- $values = .values -}}
 {{- end -}}
-{{- $global := dict  -}}
-{{- if .global -}}
-  {{- $global = .global -}}
+{{- $globalSec := dict -}}
+{{- if .globalSec -}}
+  {{- $globalSec = .globalSec -}}
 {{- end -}}
 {{ $indent := 0}}
 {{- if .indent -}}
@@ -188,7 +188,7 @@ Because of this, if a value is "true" in defaults it can not be modified with th
   {{- $securityContext = merge $values $defaults -}}
 {{- end }}
 {{- /* Set global */ -}}
-{{- with $global -}}
+{{- with $globalSec -}}
   {{- if .floatingUserId -}}
     {{- $_ := unset $securityContext "runAsUser" -}}
   {{- end -}}
@@ -237,7 +237,6 @@ It takes 4 values:
 {{- end -}}
 {{- /* set default seccompProfileType */ -}}
 
-
 {{- $pss_restricted_defaults := dict 
     "runAsNonRoot" true
     "capabilities" (dict "drop" (list "ALL"))
@@ -262,7 +261,7 @@ It takes 4 values:
             "values" $values
             "defaults" $defaults
             "indent" $indent
-            "global" .global) -}}
+            "globalSec" .globalSec) -}}
 {{- end -}}
 
 
@@ -364,5 +363,3 @@ app: gloo
 {{ toYaml . }}
 {{- end }}
 {{- end }}
-
-
