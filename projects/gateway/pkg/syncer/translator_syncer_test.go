@@ -6,9 +6,9 @@ import (
 	"sync"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
+	"github.com/solo-io/gloo/pkg/utils/statsutils/metrics"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
-	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 
 	"github.com/solo-io/gloo/projects/gateway2/query"
@@ -47,6 +48,8 @@ func (t *translator) TranslateProxy(
 	writeNamespace string,
 	reporter reports.Reporter,
 ) *v1.Proxy {
+	stopwatch := statsutils.NewTranslatorStopWatch("TranslateProxy")
+	stopwatch.Start()
 
 	routesForGw, err := t.queries.GetRoutesForGw(ctx, gateway)
 	if err != nil {
@@ -80,6 +83,7 @@ func (t *translator) TranslateProxy(
 		reporter,
 	)
 
+	stopwatch.Stop(ctx)
 	return &v1.Proxy{
 		Metadata:  proxyMetadata(gateway, writeNamespace),
 		Listeners: listeners,

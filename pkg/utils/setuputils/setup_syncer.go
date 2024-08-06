@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 
-	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	mSetupsRun = utils.MakeSumCounter("gloo.solo.io/setups_run", "The number of times the main setup loop has run")
+	mSetupsRun = statsutils.MakeSumCounter("gloo.solo.io/setups_run", "The number of times the main setup loop has run")
 )
 
 // tell us how to setup
@@ -52,7 +52,7 @@ func (s *SetupSyncer) Sync(ctx context.Context, snap *v1.SetupSnapshot) error {
 
 	contextutils.LoggerFrom(ctx).Debugw("received settings snapshot", zap.Any("settings", settings))
 
-	utils.MeasureOne(
+	statsutils.MeasureOne(
 		ctx,
 		mSetupsRun,
 	)

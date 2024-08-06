@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
@@ -113,6 +114,8 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		totalResyncs++
 		contextutils.LoggerFrom(ctx).Debugf("resyncing k8s gateway proxies [%v]", totalResyncs)
 		startTime := time.Now()
+		stopwatch := statsutils.NewTranslatorStopWatch("ProxySyncer")
+		stopwatch.Start()
 
 		var gwl gwv1.GatewayList
 		err := s.mgr.GetClient().List(ctx, &gwl)
@@ -160,6 +163,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		s.syncRouteStatus(ctx, rm)
 		s.reconcileProxies(ctx, proxies)
 		contextutils.LoggerFrom(ctx).Debugf("translated and wrote %d proxies in %v", len(proxies), time.Since(startTime))
+		stopwatch.Stop(ctx)
 	}
 
 	for {
@@ -180,7 +184,8 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 	ctx = contextutils.WithLogger(ctx, "routeStatusSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Debugf("syncing k8s gateway route status")
-	startTime := time.Now()
+	stopwatch := statsutils.NewTranslatorStopWatch("HTTPRouteStatusSyncer")
+	stopwatch.Start()
 
 	rl := gwv1.HTTPRouteList{}
 	err := s.mgr.GetClient().List(ctx, &rl)
@@ -200,15 +205,15 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 			}
 		}
 	}
-	contextutils.LoggerFrom(ctx).Debugf("synced route statuses in %v", time.Since(startTime))
+	stopwatch.Stop(ctx)
 }
 
 // syncStatus updates the status of the Gateway CRs
 func (s *ProxySyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl gwv1.GatewayList) {
 	ctx = contextutils.WithLogger(ctx, "statusSyncer")
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Debugf("syncing k8s gateway proxy status")
-	startTime := time.Now()
+	stopwatch := statsutils.NewTranslatorStopWatch("GatewayStatusSyncer")
+	stopwatch.Start()
 
 	for _, gw := range gwl.Items {
 		gw := gw // pike
@@ -221,7 +226,7 @@ func (s *ProxySyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl 
 			}
 		}
 	}
-	contextutils.LoggerFrom(ctx).Debugf("synced statuses in %v", time.Since(startTime))
+	stopwatch.Stop(ctx)
 }
 
 // reconcileProxies persists the proxies that were generated during translations and stores them in an in-memory cache
