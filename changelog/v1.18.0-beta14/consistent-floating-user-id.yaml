@@ -3,4 +3,17 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/5034
     resolvesIssue: false
     description: >-
-      ""
+      Provide a Helm field `global.securitySettings.floatingUserId` to apply floatingUserId logic, which unsets `runAsUser`
+      for security contexts, for all deployments in the Gloo Helm chart. This functionality has also been added to
+      Gloo Gateway via the GatewayParameters resource. If `floatingUserId` is set in GatewayParameters, it will be applied
+      to all deployments in the Gloo Gateway Helm chart, unless a deployment-specific value is set.
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/5034
+    resolvesIssue: false
+    description: >-
+      Add a new field `global.securitySettings.floatingUserId` to the Gloo Helm chart that has the same effect as
+      setting all deployment-specific `floatingUserId` values to the same value. The global value will override any
+      local settings.
+  - type: NON_USER_FACING
+    description:
+      Update `kubectl` image to use USER_ID 10101 to allow resource rollout jobs to run when user id is not set

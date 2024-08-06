@@ -26,6 +26,7 @@ type ApplyContainerSecurityDefaults func(*corev1.SecurityContext)
 // ApplyNilSecurityDefaults is a function that does nothing and can be used as a default value for ApplyContainerSecurityDefaults
 var ApplyNilSecurityDefaults = ApplyContainerSecurityDefaults(func(securityContext *corev1.SecurityContext) {})
 
+// ApplyDiscoverySecurityDefaults will update the security context to match the defaults for the discovery container
 var ApplyDiscoverySecurityDefaults = ApplyContainerSecurityDefaults(func(securityContext *corev1.SecurityContext) {
 	securityContext.ReadOnlyRootFilesystem = ptr.To(true)
 	securityContext.RunAsUser = ptr.To(int64(defaultRunAsUser))
@@ -46,6 +47,7 @@ var ApplyKnativeSecurityDefaults = ApplyContainerSecurityDefaults(func(securityC
 	}
 })
 
+// ApplyClusterIngressSecurityDefaults updates the security context to match the defaults for the ClusterIngress service
 var ApplyClusterIngressSecurityDefaults = ApplyContainerSecurityDefaults(func(securityContext *corev1.SecurityContext) {
 	securityContext.Capabilities = &corev1.Capabilities{
 		Drop: []corev1.Capability{"ALL"},
@@ -54,6 +56,8 @@ var ApplyClusterIngressSecurityDefaults = ApplyContainerSecurityDefaults(func(se
 	securityContext.ReadOnlyRootFilesystem = ptr.To(true)
 })
 
+// GetDefaultRestrictedContainerSecurityContext applies the `applyContainerDefaults` function to the default restricted container security context
+// and sets the SeccompProfile to the provided `seccompType.
 var GetDefaultRestrictedContainerSecurityContext = func(seccompType string, applyContainerDefaults ApplyContainerSecurityDefaults) *corev1.SecurityContext {
 	// Use default value if not set
 	if seccompType == "" {
@@ -74,6 +78,8 @@ var GetDefaultRestrictedContainerSecurityContext = func(seccompType string, appl
 	return defaultRestrictedContainerSecurityContext
 }
 
+// DefaultOverrides is a map of resource names to a map of container names to ApplyContainerSecurityDefaults functions
+// Used to generated expected security contexts for specific containers in specific jobs and deployments
 var DefaultOverrides = map[string]map[string]ApplyContainerSecurityDefaults{
 	"gloo": {
 		"gloo":          ApplyDiscoverySecurityDefaults,
@@ -98,6 +104,8 @@ var DefaultOverrides = map[string]map[string]ApplyContainerSecurityDefaults{
 	"gateway-certgen-cronjob":       {"certgen": ApplyRunAsUserSecurityDefaults},
 }
 
+// FilterAndValidateSecurityContexts will filter the resources in the TestManifest using the provided filter function
+// and apply the passed validateContainer function to each container in the filtered resources. Returns the number of non-filtered containers found.
 func FilterAndValidateSecurityContexts(testManifest TestManifest, validateContainer func(container corev1.Container, resourceName string), filter func(resource *unstructured.Unstructured) bool) int {
 	foundContainers := 0
 
@@ -133,12 +141,15 @@ func FilterAndValidateSecurityContexts(testManifest TestManifest, validateContai
 	return foundContainers
 }
 
+// ValidateSecurityContexts passes through the TestManifest and validateContainer function to FilterAndValidateSecurityContexts and
+// creates a filter used to select Deployment, Job, and CronJob resources for validation.
 func ValidateSecurityContexts(testManifest TestManifest, validateContainer func(container corev1.Container, resourceName string)) int {
 	return FilterAndValidateSecurityContexts(testManifest, validateContainer, func(resource *unstructured.Unstructured) bool {
 		return resource.GetKind() == "Deployment" || resource.GetKind() == "Job" || resource.GetKind() == "CronJob"
 	})
 }
 
+// ExpectedContainers is the number of expected containers found when ValidateSecurityContexts is called on a TestManifest
 const ExpectedContainers = 21
 
 // Deployment, gloo, envoy-sidecar
@@ -163,6 +174,7 @@ const ExpectedContainers = 21
 // Job, gloo-resource-rollout-cleanup, kubectl
 // Job, gateway-certgen, certgen
 
+// ContainerSecurityContextRoots is a list of paths to the root of the container security context in the Helm charts
 var ContainerSecurityContextRoots = []string{
 	"accessLogger.accessLoggerContainerSecurityContext",
 	"discovery.deployment.discoveryContainerSecurityContext",

@@ -140,10 +140,10 @@ ttlSecondsAfterFinished: {{ . }}
 
 {{- /*
 This template is used to generate the gloo pod or container security context.
-It takes 3 values:
+It takes 4 values:
   .values - the securityContext passed from the user in values.yaml
   .defaults - the default securityContext for the pod or container
-  .global - global settings.
+  .globalSec - global security settings, usaully from .Values.global.securitySettings
   .indent - the number of spaces to indent the output. If not set, the output will not be indented.
     The indentation argument is necessary because it is possible that no output will be rendered. 
     If that happens and the caller handles the indentation the result will be a line of whitespace, which gets caught by the whitespace tests
@@ -208,8 +208,7 @@ It takes 4 values:
   .values - the securityContext passed from the user in values.yaml
   .defaults - the default securityContext for the pod or container
   .podSecurityStandards - podSecurityStandard from values.yaml
-  .global - global settings for the security context. Makes `.podSecurityStandards` redundant, and will be removed in 1.18.
-            Until that happens, the passed .podSecurityStandards will be used
+  .globalSec - global security settings, usaully from .Values.global.securitySettings
   .indent - the number of spaces to indent the output. If not set, the output will not be indented.
     The indentation argument is necessary because it is possible that no output will be rendered. 
     If that happens and the caller handles the indentation the result will be a line of whitespace, which gets caught by the whitespace tests

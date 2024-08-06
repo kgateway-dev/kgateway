@@ -40,11 +40,11 @@ type Global struct {
 	ExtraCustomResources *bool                 `json:"extraCustomResources,omitempty" desc:"Add additional custom resources to create, as defined by a helm partial. Defaults to false in open source, and true in enterprise."`
 	AdditionalLabels     map[string]string     `json:"additionalLabels,omitempty" desc:"Additional labels to add to all gloo resources."`
 	PodSecurityStandards *PodSecurityStandards `json:"podSecurityStandards,omitempty" desc:"Configuration related to [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/)."`
-	SecuritySettings     *SecuritySettings     `json:"securitySettings,omitempty" desc:"Security defaults for pod and container security contexts"`
+	SecuritySettings     *SecuritySettings     `json:"securitySettings,omitempty" desc:"Global settings for pod and container security contexts"`
 }
 
 type SecuritySettings struct {
-	FloatingUserId *bool `json:"floatingUserId,omitempty" desc:"If true, use 'true' as default value for all instances of floatingUserId. Also has side effects in extauth and redis containers in EE installs (DO_NOT_SUMIT-elaborate)"`
+	FloatingUserId *bool `json:"floatingUserId,omitempty" desc:"If true, use 'true' as default value for all instances of floatingUserId. Has additional effects in EE templates: in the Redis deployment, if true the pod security context will not render runAsGroup, runAsNonRoot, and fsGroup, and in the ExtAuth deployment's podSecurityContext, fsGroup will not be rendered."`
 }
 
 type PodSecurityStandards struct {
@@ -329,7 +329,7 @@ type GatewayParameters struct {
 	Istio           *Istio                     `json:"istio,omitempty" desc:"Configs used to manage Istio integration."`
 	Stats           *GatewayParamsStatsConfig  `json:"stats,omitempty" desc:"Config used to manage the stats endpoints exposed on the deployed proxies"`
 	AIExtension     *GatewayParamsAIExtension  `json:"aiExtension,omitempty" desc:"Config used to manage the Gloo Gateway AI extension."`
-	FloatingUserId  *bool                      `json:"floatingUserId,omitempty" desc:"DO_NOT_SUBMIT"`
+	FloatingUserId  *bool                      `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container. Default is false."`
 	// TODO(npolshak): Add support for GlooMtls
 }
 

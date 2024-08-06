@@ -94,14 +94,17 @@ func deepMergeGatewayParameters(dst, src *v1alpha1.GatewayParameters) *v1alpha1.
 	return dst
 }
 
+// applyFloatingUserId will set the RunAsUser field from all security contexts to null if the floatingUserId field is set
 func applyFloatingUserId(dstKube *v1alpha1.KubernetesProxyConfig) {
 	floatingUserId := dstKube.GetFloatingUserId()
 	if floatingUserId == nil || !*floatingUserId {
 		return
 	}
 
+	// Pod security context
 	dstKube.GetPodTemplate().GetSecurityContext().RunAsUser = nil
 
+	// Container security contexts
 	securityContexts := []*corev1.SecurityContext{
 		dstKube.GetEnvoyContainer().GetSecurityContext(),
 		dstKube.GetSdsContainer().GetSecurityContext(),
