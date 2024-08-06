@@ -95,7 +95,8 @@ func deepMergeGatewayParameters(dst, src *v1alpha1.GatewayParameters) *v1alpha1.
 }
 
 func applyFloatingUserId(dstKube *v1alpha1.KubernetesProxyConfig) {
-	if dstKube == nil || dstKube.FloatingUserId == nil || !*dstKube.FloatingUserId {
+	floatingUserId := dstKube.GetFloatingUserId()
+	if floatingUserId == nil || !*floatingUserId {
 		return
 	}
 
