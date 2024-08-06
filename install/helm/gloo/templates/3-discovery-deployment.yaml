@@ -105,7 +105,7 @@ spec:
         {{- if .Values.discovery.deployment.runAsUser }}
           {{- $_ := set $securityDefaults "runAsUser" (int64 (printf "%.0f" (float64 .Values.discovery.deployment.runAsUser))) -}}
         {{- end }}
-        {{ include "gloo.securityContext" (dict "defaults" $securityDefaults "indent" 6 "globalSec" .Values.global.securitySettings) -}}
+        {{- include "gloo.securityContext" (dict "defaults" $securityDefaults "indent" 6 "globalSec" .Values.global.securitySettings) -}}
       {{- end}}
 {{- end }}
 {{- end }} {{/* define "discovery.deploymentSpec"*/}}
