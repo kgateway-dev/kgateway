@@ -1,0 +1,3 @@
+gatewayProxies:
+  gatewayProxy:
+    globalDownstreamMaxConnections: 12345

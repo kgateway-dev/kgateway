@@ -14,19 +14,19 @@ import (
 
 type TestCase struct {
 	SimpleTestCase
-	subTestCases map[string]*TestCase
+	SubTestCases map[string]*TestCase
 }
 
 type SimpleTestCase struct {
 	// manifest files
-	manifests []string
-	// resources expected to be created by manifest
-	resources []client.Object
+	Manifests []string
+	// Resources expected to be created by manifest
+	Resources []client.Object
 	// values file passed during an upgrade
-	upgradeValues string
-	// rollback method to be called during cleanup.
+	UpgradeValues string
+	// Rollback method to be called during cleanup.
 	// Do not provide this. Calling an upgrade returns this method which we save
-	rollback func() error
+	Rollback func() error
 }
 
 var namespace string
@@ -52,8 +52,8 @@ func NewBaseTestingSuite(ctx context.Context, testInst *e2e.TestInstallation, te
 }
 
 func (s *BaseTestingSuite) SetupSuite() {
-	if s.Setup.manifests != nil {
-		for _, manifest := range s.Setup.manifests {
+	if s.Setup.Manifests != nil {
+		for _, manifest := range s.Setup.Manifests {
 			gomega.Eventually(func() error {
 				err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, manifest)
 				return err
@@ -62,34 +62,34 @@ func (s *BaseTestingSuite) SetupSuite() {
 	}
 
 	// Ensure the resources exist
-	if s.Setup.resources != nil {
-		s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, s.Setup.resources...)
+	if s.Setup.Resources != nil {
+		s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, s.Setup.Resources...)
 		// TODO special case of pods running
 	}
 
-	if s.Setup.upgradeValues != "" {
+	if s.Setup.UpgradeValues != "" {
 		// Perform an upgrade to change settings, deployments, etc.
 		var err error
-		s.Setup.rollback, err = s.TestHelper.UpgradeGloo(s.Ctx, 600*time.Second, helper.WithExtraArgs([]string{
+		s.Setup.Rollback, err = s.TestHelper.UpgradeGloo(s.Ctx, 600*time.Second, helper.WithExtraArgs([]string{
 			// Reuse values so there's no need to know the prior values used
 			"--reuse-values",
-			"--values", s.Setup.upgradeValues,
+			"--values", s.Setup.UpgradeValues,
 		}...))
 		s.TestInstallation.Assertions.Require.NoError(err)
 	}
 }
 
 func (s *BaseTestingSuite) TearDownSuite() {
-	if s.Setup.upgradeValues != "" {
+	if s.Setup.UpgradeValues != "" {
 		// Revet the upgrade applied before this test. This way we are sure that any changes
 		// made are undone and we go back to a clean state
-		err := s.Setup.rollback()
+		err := s.Setup.Rollback()
 		s.TestInstallation.Assertions.Require.NoError(err)
 	}
 
 	// Delete the setup manifest
-	if s.Setup.manifests != nil {
-		manifests := slices.Clone(s.Setup.manifests)
+	if s.Setup.Manifests != nil {
+		manifests := slices.Clone(s.Setup.Manifests)
 		slices.Reverse(manifests)
 		for _, manifest := range manifests {
 			gomega.Eventually(func() error {
@@ -98,8 +98,8 @@ func (s *BaseTestingSuite) TearDownSuite() {
 			}, 10*time.Second, 1*time.Second).Should(gomega.Succeed(), "can delete "+manifest)
 		}
 
-		if s.Setup.resources != nil {
-			s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx, s.Setup.resources...)
+		if s.Setup.Resources != nil {
+			s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx, s.Setup.Resources...)
 			// TODO special case of pods running
 		}
 	}
@@ -116,24 +116,24 @@ func (s *BaseTestingSuite) BeforeTest(suiteName, testName string) {
 		return
 	}
 
-	if testCase.upgradeValues != "" {
+	if testCase.UpgradeValues != "" {
 		// Perform an upgrade to change settings, deployments, etc.
 		var err error
-		testCase.rollback, err = s.TestHelper.UpgradeGloo(s.Ctx, 600*time.Second, helper.WithExtraArgs([]string{
+		testCase.Rollback, err = s.TestHelper.UpgradeGloo(s.Ctx, 600*time.Second, helper.WithExtraArgs([]string{
 			// Reuse values so there's no need to know the prior values used
 			"--reuse-values",
-			"--values", testCase.upgradeValues,
+			"--values", testCase.UpgradeValues,
 		}...))
 		s.TestInstallation.Assertions.Require.NoError(err)
 	}
 
-	for _, manifest := range testCase.manifests {
+	for _, manifest := range testCase.Manifests {
 		// TODO: Instead of sleeping, wrap this in an eventually
 		time.Sleep(10 * time.Second)
 		err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, manifest)
 		s.NoError(err, "can apply "+manifest)
 	}
-	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, testCase.resources...)
+	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, testCase.Resources...)
 }
 
 func (s *BaseTestingSuite) AfterTest(suiteName, testName string) {
@@ -147,20 +147,35 @@ func (s *BaseTestingSuite) AfterTest(suiteName, testName string) {
 		return
 	}
 
-	if testCase.upgradeValues != "" {
+	if testCase.UpgradeValues != "" {
 		// Revet the upgrade applied before this test. This way we are sure that any changes
 		// made are undone and we go back to a clean state
-		err := testCase.rollback()
+		err := testCase.Rollback()
 		s.TestInstallation.Assertions.Require.NoError(err)
 	}
 
 	// Delete them in reverse to avoid validation issues
-	manifests := slices.Clone(testCase.manifests)
+	manifests := slices.Clone(testCase.Manifests)
 	slices.Reverse(manifests)
 	for _, manifest := range manifests {
 		time.Sleep(10 * time.Second)
 		err := s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, manifest)
 		s.NoError(err, "can delete "+manifest)
 	}
-	s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx, testCase.resources...)
+	s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx, testCase.Resources...)
+}
+
+func (s *BaseTestingSuite) GetKubectlOutput(command ...string) string {
+	out, _, err := s.TestInstallation.Actions.Kubectl().Execute(s.Ctx, command...)
+	s.TestInstallation.Assertions.Require.NoError(err)
+
+	return out
+}
+
+func (s *BaseTestingSuite) UpgradeWithCustomValuesFile(valuesFile string) {
+	_, err := s.TestHelper.UpgradeGloo(s.Ctx, 600*time.Second, helper.WithExtraArgs([]string{
+		// Do not reuse the existing values as we need to install the new chart with the new version of the images
+		"--values", valuesFile,
+	}...))
+	s.TestInstallation.Assertions.Require.NoError(err)
 }
