@@ -19,7 +19,7 @@ weight: 5
 - [TcpListenerOptions](#tcplisteneroptions)
 - [VirtualHostOptions](#virtualhostoptions)
 - [CorsMergeSettings](#corsmergesettings)
-- [mergeStrategy](#mergestrategy)
+- [MergeStrategy](#mergestrategy)
 - [RouteOptions](#routeoptions)
 - [MaxStreamDuration](#maxstreamduration)
 - [DestinationSpec](#destinationspec)
@@ -295,19 +295,19 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 Settings for determining how CORS settings are merged when present on both VirtualHost and Route
 
 ```yaml
-"exposeHeaders": .gloo.solo.io.VirtualHostOptions.CorsMergeSettings.mergeStrategy
+"exposeHeaders": .gloo.solo.io.VirtualHostOptions.CorsMergeSettings.MergeStrategy
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `exposeHeaders` | [.gloo.solo.io.VirtualHostOptions.CorsMergeSettings.mergeStrategy](../options.proto.sk/#mergestrategy) |  |
+| `exposeHeaders` | [.gloo.solo.io.VirtualHostOptions.CorsMergeSettings.MergeStrategy](../options.proto.sk/#mergestrategy) |  |
 
 
 
 
 ---
-### mergeStrategy
+### MergeStrategy
 
 
 

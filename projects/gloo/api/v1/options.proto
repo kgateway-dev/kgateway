@@ -387,7 +387,7 @@ message VirtualHostOptions {
 
     // Settings for determining how CORS settings are merged when present on both VirtualHost and Route
     message CorsMergeSettings {
-        enum mergeStrategy{
+        enum MergeStrategy{
             DEFAULT = 0; // Do not merge
             UNION = 1; // Append list fields, OR booelan fields
             
@@ -400,19 +400,19 @@ message VirtualHostOptions {
         // Eventually we may want to allow each CORS setting to be configured, so we reserve fields for them
 
         // mimicking the CorsPolicy message
-        // mergeStrategy AllowOrigin = 1;
+        // mergeStrategy allow_origin = 1;
         // mergeStrategy allow_origin_regex = 2;
         // mergeStrategy allow_methods = 3;
         // mergeStrategy allow_headers = 4;
 
-        mergeStrategy expose_headers = 5;
+        MergeStrategy expose_headers = 5;
 
         // mergeStrategy max_age = 6;
         // mergeStrategy allow_credentials = 7;
         // mergeStrategy disable_for_route = 8;
     }
 
-    CorsMergeSettings corsMergeSettings = 20;
+    CorsMergeSettings cors_merge_settings = 20;
 }
 
 // Optional, feature-specific configuration that lives on routes.
