@@ -1,15 +1,25 @@
 package iosnapshot
 
 import (
+	"cmp"
 	"context"
+	"encoding/json"
+	"fmt"
+	"slices"
 	"sync"
+
+	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/schemes"
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/hashicorp/go-multierror"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -21,29 +31,27 @@ type History interface {
 	// SetApiSnapshot sets the latest Edge ApiSnapshot.
 	SetApiSnapshot(latestInput *v1snap.ApiSnapshot)
 
-	// SetKubeGatewayClient sets the client to use for Kubernetes CRUD operations when
-	// Kubernetes Gateway integration is enabled. If this is not set, then it is assumed
-	// that Kubernetes Gateway integration is not enabled, and no Kubernetes Gateway
-	// resources will be returned from `GetInputSnapshot`.
-	SetKubeGatewayClient(kubeGatewayClient client.Client)
-
 	// GetInputSnapshot returns all resources in the Edge input snapshot, and if Kubernetes
 	// Gateway integration is enabled, it additionally returns all resources on the cluster
-	// with types specified by `kubeGvks`.
-	GetInputSnapshot(ctx context.Context) ([]byte, error)
+	// with types specified by `inputSnapshotGvks`.
+	GetInputSnapshot(ctx context.Context) SnapshotResponseData
+
+	// GetEdgeApiSnapshot returns all resources in the Edge input snapshot
+	GetEdgeApiSnapshot(ctx context.Context) SnapshotResponseData
 
 	// GetProxySnapshot returns the Proxies generated for all components.
-	GetProxySnapshot(ctx context.Context) ([]byte, error)
+	GetProxySnapshot(ctx context.Context) SnapshotResponseData
 
 	// GetXdsSnapshot returns the entire cache of xDS snapshots
 	// NOTE: This contains sensitive data, as it is the exact inputs that used by Envoy
-	GetXdsSnapshot(ctx context.Context) ([]byte, error)
+	GetXdsSnapshot(ctx context.Context) SnapshotResponseData
 }
 
 // HistoryFactoryParameters are the inputs used to create a History object
 type HistoryFactoryParameters struct {
-	Settings *gloov1.Settings
-	Cache    cache.SnapshotCache
+	Settings                    *gloov1.Settings
+	Cache                       cache.SnapshotCache
+	EnableK8sGatewayIntegration bool
 }
 
 // HistoryFactory is a function that produces a History object
@@ -52,24 +60,42 @@ type HistoryFactory func(params HistoryFactoryParameters) History
 // GetHistoryFactory returns a default HistoryFactory implementation
 func GetHistoryFactory() HistoryFactory {
 	return func(params HistoryFactoryParameters) History {
-		return NewHistory(params.Cache, params.Settings, KubeGatewayDefaultGVKs)
+		var kubeClient client.Client
+
+		cfg, err := kubeutils.GetRestConfigWithKubeContext("")
+		if err == nil {
+			cli, err := client.New(cfg, client.Options{
+				Scheme: schemes.DefaultScheme(),
+			})
+			if err == nil {
+				kubeClient = cli
+			}
+		}
+
+		// By default, only return the GVKs for using Gloo Gateway, with purely the Edge Gateway APIs
+		var gvks = EdgeOnlyInputSnapshotGVKs
+		if params.EnableK8sGatewayIntegration {
+			gvks = CompleteInputSnapshotGVKs
+		}
+
+		return NewHistory(params.Cache, params.Settings, kubeClient, gvks)
 	}
 }
 
 // NewHistory returns an implementation of the History interface
 //   - `cache` is the control plane's xDS snapshot cache
 //   - `settings` specifies the Settings for this control plane instance
-//   - `kubeGvks` specifies the list of resource types to return in the input snapshot when
+//   - `inputSnapshotGvks` specifies the list of resource types to return in the input snapshot when
 //     Kubernetes Gateway integration is enabled. For example, this may include Gateway API
 //     resources, Portal resources, or other resources specific to the Kubernetes Gateway integration.
 //     If not set, then only Edge ApiSnapshot resources will be returned from `GetInputSnapshot`.
-func NewHistory(cache cache.SnapshotCache, settings *gloov1.Settings, kubeGvks []schema.GroupVersionKind) History {
+func NewHistory(cache cache.SnapshotCache, settings *gloov1.Settings, kubeClient client.Client, kubeGatewayGvks []schema.GroupVersionKind) History {
 	return &historyImpl{
-		latestApiSnapshot: nil,
-		xdsCache:          cache,
-		settings:          settings,
-		kubeGatewayClient: nil,
-		kubeGvks:          kubeGvks,
+		latestApiSnapshot:   nil,
+		xdsCache:            cache,
+		settings:            settings,
+		inputSnapshotClient: kubeClient,
+		inputSnapshotGvks:   kubeGatewayGvks,
 	}
 }
 
@@ -81,10 +107,12 @@ type historyImpl struct {
 	latestApiSnapshot *v1snap.ApiSnapshot
 	xdsCache          cache.SnapshotCache
 	settings          *gloov1.Settings
-	kubeGatewayClient client.Client
-	// this will hold all the kube gvks that we want to show in the input snapshot when kube gateway
-	// integration is enabled
-	kubeGvks []schema.GroupVersionKind
+
+	// The InputSnapshot API is really a pass through to the Kubernetes API Server
+	// Below are properties that are used to configure the behavior of GetInputSnapshot
+
+	inputSnapshotClient client.Client
+	inputSnapshotGvks   []schema.GroupVersionKind
 }
 
 // SetApiSnapshot sets the latest input ApiSnapshot
@@ -99,83 +127,61 @@ func (h *historyImpl) SetApiSnapshot(latestApiSnapshot *v1snap.ApiSnapshot) {
 	}()
 }
 
-func (h *historyImpl) SetKubeGatewayClient(kubeGatewayClient client.Client) {
-	// Setters are called by the running Control Plane, so we perform the update in a goroutine to prevent
-	// any contention/issues, from impacting the runtime of the system
-	go func() {
-		h.Lock()
-		defer h.Unlock()
-
-		h.kubeGatewayClient = kubeGatewayClient
-	}()
+func (h *historyImpl) GetEdgeApiSnapshot(_ context.Context) SnapshotResponseData {
+	snap := h.getRedactedApiSnapshot()
+	return completeSnapshotResponse(snap)
 }
 
 // GetInputSnapshot gets the input snapshot for all components.
-func (h *historyImpl) GetInputSnapshot(ctx context.Context) ([]byte, error) {
-	snap := h.getRedactedApiSnapshot()
-
-	// Proxies are defined on the ApiSnapshot, but are not considered part of the
-	// "input snapshot" since they are the product (output) of translation
-	snap.Proxies = nil
-
-	// If kubernetes gateway integration is enabled, we remove resource types from the ApiSnapshot
-	// that are shared between the edge and kube gateway controllers. Since the kube gateway controller
-	// watches all resources of the relevant types on the cluster (rather than only ones in the snapshot),
-	// the resources returned by getKubeGatewayResources below is a superset of what's in the edge api snapshot.
-	// So we remove the duplicate resource types from the api snapshot here.
-	kubeGatewayClient := h.getKubeGatewayClientSafe()
-	if kubeGatewayClient != nil {
-		// kube gateway integration is enabled
-		snap.RouteOptions = nil
-		snap.VirtualHostOptions = nil
-		snap.AuthConfigs = nil
-		snap.Ratelimitconfigs = nil
+func (h *historyImpl) GetInputSnapshot(ctx context.Context) SnapshotResponseData {
+	if h.inputSnapshotClient == nil {
+		return errorSnapshotResponse(eris.New("No kubernetes Client found for InputSnapshot"))
 	}
 
-	// get the resources from the edge api snapshot
-	resources, err := snapshotToKubeResources(snap)
-	if err != nil {
-		return nil, err
-	}
-
-	// get settings, which is not part of the api snapshot
-	if h.settings != nil {
-		settings, err := settingsToKubeResource(h.settings)
+	var objects []client.Object
+	var errs *multierror.Error
+	for _, gvk := range h.inputSnapshotGvks {
+		gvkResources, err := h.listObjectsForGvk(ctx, h.inputSnapshotClient, gvk)
 		if err != nil {
-			return nil, err
+			// We intentionally aggregate the errors so that we can return a "best effort" set of
+			// resources, and one error doesn't lead to the entire set of GVKs being short-circuited
+			errs = multierror.Append(errs, err)
 		}
-		resources = append(resources, *settings)
+		objects = append(objects, gvkResources...)
 	}
+	sortResources(objects)
 
-	// get the resources that the kubernetes gateway controller watches
-	// (if kube gateway integration is enabled)
-	kubeResources, err := h.getKubeGatewayResources(ctx)
-	if err != nil {
-		return nil, err
+	return SnapshotResponseData{
+		Data:  objects,
+		Error: errs.ErrorOrNil(),
 	}
-	resources = append(resources, kubeResources...)
-
-	return formatResources(resources)
 }
 
-func (h *historyImpl) GetProxySnapshot(ctx context.Context) ([]byte, error) {
+func (h *historyImpl) GetProxySnapshot(_ context.Context) SnapshotResponseData {
 	snap := h.getRedactedApiSnapshot()
 
-	onlyProxies := &v1snap.ApiSnapshot{
-		Proxies: snap.Proxies,
+	var resources []crdv1.Resource
+	var errs *multierror.Error
+
+	for _, proxy := range snap.Proxies {
+		kubeProxy, err := gloov1.ProxyCrd.KubeResource(proxy)
+		if err != nil {
+			// We intentionally aggregate the errors so that we can return a "best effort" set of
+			// resources, and one error doesn't lead to the entire set of GVKs being short-circuited
+			errs = multierror.Append(errs, err)
+		}
+		resources = append(resources, *kubeProxy)
 	}
 
-	resources, err := snapshotToKubeResources(onlyProxies)
-	if err != nil {
-		return nil, err
+	return SnapshotResponseData{
+		Data:  resources,
+		Error: errs.ErrorOrNil(),
 	}
-
-	return formatResources(resources)
 }
 
 // GetXdsSnapshot returns the entire cache of xDS snapshots
 // NOTE: This contains sensitive data, as it is the exact inputs that used by Envoy
-func (h *historyImpl) GetXdsSnapshot(_ context.Context) ([]byte, error) {
+func (h *historyImpl) GetXdsSnapshot(_ context.Context) SnapshotResponseData {
 	cacheKeys := h.xdsCache.GetStatusKeys()
 	cacheEntries := make(map[string]interface{}, len(cacheKeys))
 
@@ -188,7 +194,7 @@ func (h *historyImpl) GetXdsSnapshot(_ context.Context) ([]byte, error) {
 		}
 	}
 
-	return formatOutput("json_compact", cacheEntries)
+	return completeSnapshotResponse(cacheEntries)
 }
 
 // getRedactedApiSnapshot gets an in-memory copy of the ApiSnapshot
@@ -228,46 +234,43 @@ func (h *historyImpl) getApiSnapshotSafe() *v1snap.ApiSnapshot {
 	return &clone
 }
 
-// getKubeGatewayResources returns the list of resources specific to the Kubernetes Gateway integration.
-// Since the Kubernetes Gateway controller does not have the concept of input snapshots or watch
-// namespaces, we return all resources on the cluster of the given types.
-func (h *historyImpl) getKubeGatewayResources(ctx context.Context) ([]crdv1.Resource, error) {
-	kubeGatewayClient := h.getKubeGatewayClientSafe()
-	if kubeGatewayClient == nil {
-		// No client has been set, so the Kubernetes Gateway integration has not been enabled
-		return nil, nil
+func (h *historyImpl) listObjectsForGvk(ctx context.Context, cli client.Client, gvk schema.GroupVersionKind) ([]client.Object, error) {
+	var objects []client.Object
+
+	// populate an unstructured list for each resource type
+	list := &unstructured.UnstructuredList{}
+	list.SetGroupVersionKind(gvk)
+	err := cli.List(ctx, list)
+	if err != nil {
+		return nil, err
 	}
 
-	resources := []crdv1.Resource{}
-	for _, gvk := range h.kubeGvks {
-		// populate an unstructured list for each resource type
-		list := &unstructured.UnstructuredList{}
-		list.SetGroupVersionKind(gvk)
-		err := kubeGatewayClient.List(ctx, list)
+	var errs *multierror.Error
+
+	// convert each Unstructured to a client.Object
+	for _, uns := range list.Items {
+		realObj, err := cli.Scheme().New(gvk)
 		if err != nil {
-			return nil, err
+			errs = multierror.Append(errs, err)
+			continue
 		}
-		// convert each Unstructured to a Resource so that the final list can be merged with the
-		// edge resource list
-		for _, uns := range list.Items {
-			out := crdv1.Resource{}
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(uns.Object, &out)
-			if err != nil {
-				return nil, err
-			}
-			resources = append(resources, out)
+		clientObj, ok := realObj.(client.Object)
+		if !ok {
+			errs = multierror.Append(errs, eris.New(fmt.Sprintf("%s could not be converted into client.Object", gvk)))
+			continue
 		}
+
+		err = runtime.DefaultUnstructuredConverter.FromUnstructured(uns.Object, clientObj)
+		if err != nil {
+			errs = multierror.Append(errs, err)
+			continue
+		}
+
+		redactClientObject(clientObj)
+		objects = append(objects, clientObj)
 	}
 
-	return resources, nil
-}
-
-// getKubeGatewayClientSafe gets the Kubernetes client used for CRUD operations
-// on resources used in the Kubernetes Gateway integration
-func (h *historyImpl) getKubeGatewayClientSafe() client.Client {
-	h.RLock()
-	defer h.RUnlock()
-	return h.kubeGatewayClient
+	return objects, errs.ErrorOrNil()
 }
 
 // redactApiSnapshot accepts an ApiSnapshot, and mutates it to remove sensitive data.
@@ -278,9 +281,44 @@ func (h *historyImpl) getKubeGatewayClientSafe() client.Client {
 // into the hands of the field.As we iterate on this component, we can use some of the redaction
 // utilities in `/pkg/utils/syncutil`.
 func redactApiSnapshot(snap *v1snap.ApiSnapshot) {
-	snap.Secrets = nil
+	snap.Secrets.Each(func(element *gloov1.Secret) {
+		redactGlooSecretData(element)
+	})
 
 	// See `pkg/utils/syncutil/log_redactor.StringifySnapshot` for an explanation for
 	// why we redact Artifacts
-	snap.Artifacts = nil
+	snap.Artifacts.Each(func(element *gloov1.Artifact) {
+		redactGlooArtifactData(element)
+	})
+}
+
+// sortResources sorts resources by gvk, namespace, and name
+func sortResources(resources []client.Object) {
+	slices.SortStableFunc(resources, func(a, b client.Object) int {
+		return cmp.Or(
+			cmp.Compare(a.GetObjectKind().GroupVersionKind().Version, b.GetObjectKind().GroupVersionKind().Version),
+			cmp.Compare(a.GetObjectKind().GroupVersionKind().Kind, b.GetObjectKind().GroupVersionKind().Kind),
+			cmp.Compare(a.GetNamespace(), b.GetNamespace()),
+			cmp.Compare(a.GetName(), b.GetName()),
+		)
+	})
+}
+
+// apiSnapshotToGenericMap converts an ApiSnapshot into a generic map
+// Since maps do not guarantee ordering, we do not attempt to sort these resources, as we do four []crdv1.Resource
+func apiSnapshotToGenericMap(snap *v1snap.ApiSnapshot) (map[string]interface{}, error) {
+	genericMap := map[string]interface{}{}
+
+	if snap == nil {
+		return genericMap, nil
+	}
+
+	jsn, err := json.Marshal(snap)
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(jsn, &genericMap); err != nil {
+		return nil, err
+	}
+	return genericMap, nil
 }

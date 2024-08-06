@@ -12,16 +12,23 @@ import (
 
 // SoloKitStatus defines the set of properties that we can validate from a core.Status
 type SoloKitStatus struct {
-	State      *core.Status_State
-	Reason     string
-	ReportedBy string
+	State               *core.Status_State
+	Reason              string
+	ReportedBy          string
+	SubresourceStatuses map[string]SoloKitSubresourceStatus
 	// TODO: implement as needed
-	// SubresourceStatuses map[string]*core.Status
 	// Details             *structpb.Struct
 	// Messages            []string
 	// Custom is a generic matcher that can be applied to validate any other properties of a core.Status
 	// Optional: If not provided, does not perform additional validation
 	Custom types.GomegaMatcher
+}
+
+// SoloKitSubresourceStatus is a struct for subresource status fields
+type SoloKitSubresourceStatus struct {
+	Reason     string
+	ReportedBy string
+	State      string
 }
 
 // SoloKitNamespacedStatuses defines the set of properties that we can validate from a core.NamespacedStatuses
@@ -38,6 +45,14 @@ func HaveState(state core.Status_State) types.GomegaMatcher {
 func HaveReportedBy(reporter string) types.GomegaMatcher {
 	return HaveStatus(&SoloKitStatus{
 		ReportedBy: reporter,
+	})
+}
+
+func HaveSubResourceStatusState(subResourceName string, subResourceStatus SoloKitSubresourceStatus) types.GomegaMatcher {
+	return HaveStatus(&SoloKitStatus{
+		SubresourceStatuses: map[string]SoloKitSubresourceStatus{
+			subResourceName: subResourceStatus,
+		},
 	})
 }
 
@@ -160,6 +175,23 @@ func HaveStatus(expected *SoloKitStatus) types.GomegaMatcher {
 		})
 	}
 	partialStatusMatchers = append(partialStatusMatchers, expectedReportedByMatcher)
+
+	// Matcher for subresource statuses
+	expectedSubresourceStatusesMatcher := gstruct.Ignore()
+	if expected.SubresourceStatuses != nil {
+		subresourceMatchers := make(map[string]types.GomegaMatcher)
+		for subresourceKey, subresourceStatus := range expected.SubresourceStatuses {
+			subresourceMatchers[subresourceKey] = gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+				"Reason":     gomega.ContainSubstring(subresourceStatus.Reason),
+				"ReportedBy": gomega.Equal(subresourceStatus.ReportedBy),
+				"State":      gomega.Equal(subresourceStatus.State),
+			})
+		}
+		expectedSubresourceStatusesMatcher = gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+			"SubresourceStatuses": gstruct.MatchFields(gstruct.IgnoreExtras, subresourceMatchers),
+		})
+	}
+	partialStatusMatchers = append(partialStatusMatchers, expectedSubresourceStatusesMatcher)
 
 	return &HaveStatusMatcher{
 		Expected:      expected,

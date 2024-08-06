@@ -1,0 +1,33 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6604
+    resolvesIssue: true
+    description: >-
+      Deprecate dev mode in our Settings API, introduce documentation for our new Admin API.
+      The removal of the API will be tracked by https://github.com/solo-io/gloo/issues/6494.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6603
+    resolvesIssue: false
+    description: >-
+      Remove managedFields from API response, and expand tests to more easily inspect the state
+      of returned objects.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/6494
+    resolvesIssue: false
+    description: >-
+      Expand the endpoints used by the Administration Interface, and deprecate some of the older APIs.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6600
+    resolvesIssue: false
+    description: >-
+      Redact the contents of Secrets and Artifacts.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6601
+    resolvesIssue: false
+    description: >-
+      Expose an endpoint in the Admin Server to return the unmodified Edge API Snapshot.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6602
+    resolvesIssue: false
+    description: >-
+      Admin Server returns partial results and errors.

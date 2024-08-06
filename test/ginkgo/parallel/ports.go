@@ -25,15 +25,23 @@ func GetPortOffset() int {
 	return GetParallelProcessCount() * 1000
 }
 
+// RetryWithLoggedError retries if there is an error and prints that error to stdout
+func RetryWithLoggedError() retry.Option {
+	return retry.RetryIf(func(err error) bool {
+		if err != nil {
+			fmt.Println("Retrying because :", err)
+		}
+		return err != nil
+	})
+}
+
 // AdvancePortSafe advances the provided port by 1 until it returns a port that is safe to use
 // The availability of the port is determined by the errIfPortInUse function
 func AdvancePortSafe(p *uint32, errIfPortInUse func(proposedPort uint32) error, retryOptions ...retry.Option) (uint32, error) {
 	var newPort uint32
 
 	defaultRetryOptions := []retry.Option{
-		retry.RetryIf(func(err error) bool {
-			return err != nil
-		}),
+		RetryWithLoggedError(),
 
 		// We retry here if we are searching for a free port in a test, and the port we attempted was in use
 		// We retry a couple of times, and with a delay, to increase the likelihood that we
@@ -77,7 +85,6 @@ func portInUseListen(proposedPort uint32) error {
 		return eris.Wrapf(err, "port %d is in use", proposedPort)
 	}
 
-	_ = ln.Close()
-	// Port is available
-	return nil
+	// Port should available if the listener closes without an error
+	return ln.Close()
 }

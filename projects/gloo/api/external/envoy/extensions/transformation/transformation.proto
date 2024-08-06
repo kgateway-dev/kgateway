@@ -293,6 +293,13 @@ message TransformationTemplate {
     // If you want to nest elements inside the body, use dot separator in the
     // extractor name.
     MergeExtractorsToBody merge_extractors_to_body = 6;
+    // A set of key-value pairs to merge into the JSON body.
+    // Each value will be rendered separately, and then placed into the JSON body at
+    // the specified key.
+    // There are a number of important caveats to using this feature:
+    // * This can only be used when the body is parsed as JSON.
+    // * This option does NOT work with advanced templates currently
+    MergeJsonKeys merge_json_keys = 13;
   }
 
   // Determines how the body will be parsed.
@@ -362,6 +369,36 @@ message InjaTemplate { string text = 1; }
 message Passthrough {}
 
 message MergeExtractorsToBody {}
+
+message MergeJsonKeys {
+  message OverridableTemplate {
+    // Template to render
+    InjaTemplate tmpl = 1;
+    // If set to true, the template will be set even if the rendered value is empty.
+    bool override_empty = 2;
+  }
+  /* 
+    Map of key name -> template to render into the JSON body.
+    Specified keys which don't exist in the JSON body will be set,
+    keys which do exist will be overriden.
+    
+    For example, given the following JSON body:
+    {
+      "key1": "value1"
+    }
+    and the following MergeJsonKeys:
+    {
+      "key1": "{{ header("header1") }}",
+      "key2": "{{ header("header2") }}"
+    }
+    The resulting JSON body will be:
+    {
+      "key1": "header1_value",
+      "key2": "header2_value"
+    }
+  */
+  map<string, OverridableTemplate> json_keys = 2;
+}
 
 message HeaderBodyTransform {
   // When transforming a request, setting this to true will additionally add "queryString",

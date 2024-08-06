@@ -87,8 +87,12 @@ message Settings {
     // How frequently to resync watches, etc
     google.protobuf.Duration refresh_rate = 12;
 
-    // Enable serving debug data on port 9090
-    bool dev_mode = 13;
+
+    // DEPRECATED: In the past DevMode was used to expose endpoints that behave as an Admin API
+    // https://github.com/solo-io/gloo/issues/6494
+    // We now support an Admin API on port 9091. See the following guide for more details
+    // https://docs.solo.io/gloo-edge/latest/operations/debugging_gloo/#debugging-the-control-plane
+    bool dev_mode = 13 [deprecated=true];
 
     // Enable automatic linkerd upstream header addition for easier routing to linkerd services
     bool linkerd = 17;
@@ -807,13 +811,12 @@ message GatewayOptions {
         //   - duplicate matchers
         google.protobuf.BoolValue warn_route_short_circuiting = 8 [deprecated = true];
 
-        // Deprecated: See `server_enabled` and consider configuring it to `false` instead.
         // By default gloo will attempt to validate transformations by calling out to a local envoy binary in `validate` mode.
         // Calling this local envoy binary can become slow when done many times during a single validation.
         // Setting this to true will stop gloo from calling out to envoy to validate the transformations, which may speed up the
         // validation time considerably, but may also cause the transformation config to fail after being sent to envoy.
         // When disabling this, ensure that your transformations are valid prior to applying them.
-        google.protobuf.BoolValue disable_transformation_validation = 9 [deprecated = true];
+        google.protobuf.BoolValue disable_transformation_validation = 9;
 
         reserved 10;
 

@@ -755,6 +755,28 @@ func (m *TransformationTemplate) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
+	case *TransformationTemplate_MergeJsonKeys:
+
+		if h, ok := interface{}(m.GetMergeJsonKeys()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("MergeJsonKeys")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetMergeJsonKeys(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("MergeJsonKeys")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
 	}
 
 	return hasher.Sum64(), nil
@@ -807,6 +829,61 @@ func (m *MergeExtractorsToBody) Hash(hasher hash.Hash64) (uint64, error) {
 	var err error
 	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.MergeExtractorsToBody")); err != nil {
 		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *MergeJsonKeys) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.MergeJsonKeys")); err != nil {
+		return 0, err
+	}
+
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range m.GetJsonKeys() {
+			innerHash.Reset()
+
+			if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+				if _, err = innerHash.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if _, err = h.Hash(innerHash); err != nil {
+					return 0, err
+				}
+			} else {
+				if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+					return 0, err
+				} else {
+					if _, err = innerHash.Write([]byte("")); err != nil {
+						return 0, err
+					}
+					if err := binary.Write(innerHash, binary.LittleEndian, fieldValue); err != nil {
+						return 0, err
+					}
+				}
+			}
+
+			if _, err = innerHash.Write([]byte(k)); err != nil {
+				return 0, err
+			}
+
+			result = result ^ innerHash.Sum64()
+		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+
 	}
 
 	return hasher.Sum64(), nil
@@ -1202,6 +1279,47 @@ func (m *TransformationTemplate_DynamicMetadataValue) Hash(hasher hash.Hash64) (
 	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetJsonToProto())
+	if err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *MergeJsonKeys_OverridableTemplate) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.MergeJsonKeys_OverridableTemplate")); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetTmpl()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Tmpl")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetTmpl(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Tmpl")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetOverrideEmpty())
 	if err != nil {
 		return 0, err
 	}

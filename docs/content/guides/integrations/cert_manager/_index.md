@@ -62,7 +62,7 @@ For development and testing environments, you can use an AWS key pair to grant c
    ```
 3. Create a cluster issuer for the Let's Encrypt CA with Route 53 that refers to secret.
    ```shell
-   cat << EOF | kubectl apply -f -
+   kubectl apply -f - << EOF
    apiVersion: cert-manager.io/v1
    kind: ClusterIssuer
    metadata:
@@ -211,7 +211,7 @@ Now that the AWS access is configured, you can configure the Gloo Gateway resour
    ```
 2. Create the certificate for the Gloo Gateway ingress traffic along your host domain, such as `test-123456789.solo.io`.
    ```shell
-   cat << EOF | kubectl apply -f -
+   kubectl apply -f - << EOF
    apiVersion: cert-manager.io/v1
    kind: Certificate
    metadata:
@@ -234,7 +234,7 @@ Now that the AWS access is configured, you can configure the Gloo Gateway resour
    ```
 4. Configure Gloo Gateway's default VirtualService to refer to the TLS secret and to route the pet clinic sample app to the host domain.
    ```shell
-   cat <<EOF | kubectl create -f -
+   kubectl create -f - << EOF
    apiVersion: gateway.solo.io/v1
    kind: VirtualService
    metadata:
@@ -278,7 +278,7 @@ These steps are specific for Gloo Gateway running in gateway mode. When running 
    * Sets the ingress service type to `ClusterIP`.  By default, cert-manager creates a NodePort service that an Ingress resource routes to. However, because you run Gloo Gateway in gateway mode, incoming traffic is routed through a VirtualService instead. Therefore, you do not need a NodePort and can set the service type to ClusterIP.
    * Sets the `dnsName` to be a [nip.io](https://nip.io/) subdomain with the IP address of the externally facing LoadBalancer IP address. The inline command uses `glooctl proxy address` to get the externally facing IP address of the proxy. Then, you append the `nip.io` domain, which results in a domain that looks something like: `34.71.xx.xx.nip.io`.
    ```shell
-   cat << EOF | kubectl apply -f -
+   kubectl apply -f - << EOF
    apiVersion: cert-manager.io/v1
    kind: ClusterIssuer
    metadata:
@@ -302,7 +302,7 @@ These steps are specific for Gloo Gateway running in gateway mode. When running 
 2. Create the `Certificate` that uses the `ClusterIssuer`. Behind the scenes, cert-manager creates the relevant `CertificateRequest` and `Order` resources. To satisfy the order, cert-manager spins up a pod and service that present the correct token.
 
    ```shell
-   cat << EOF | kubectl apply -f -
+   kubectl apply -f - << EOF
    apiVersion: cert-manager.io/v1
    kind: Certificate
    metadata:
@@ -356,7 +356,7 @@ Now that the pod to serve the token is created, you must configure Gloo Gateway 
 4. Create a VirtualService to route to the cert-manager token pod at the expected well known path. Note that the domain matches the [nip.io](https://nip.io/) domain and routes requests for the path that Let's Encrypt expects, `/.well-known/acme-challenge/<TOKEN>` to the Upstream.
 
    ```shell
-   cat << EOF | kubectl apply -f -
+   kubectl apply -f - << EOF
    apiVersion: gateway.solo.io/v1
    kind: VirtualService
    metadata:
@@ -395,7 +395,7 @@ Now that the server can reach the cert-manager token pod, the HTTP-01 challenge 
    ```
 3. Configure the VirtualService to use the newly created TLS secret and to route to the pet store sample app.
    ```shell
-   cat << EOF | kubectl apply -f -
+   kubectl apply -f - << EOF
    apiVersion: gateway.solo.io/v1
    kind: VirtualService
    metadata:

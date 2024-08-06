@@ -1,0 +1,3 @@
+changelog:
+- type: NON_USER_FACING
+  description: Configures tests to set the max history for helm upgrades and rollbacks to 0 (no limit) from the default of 10. This is used by tests that quickly reach the max history when changing and later reverting settings.

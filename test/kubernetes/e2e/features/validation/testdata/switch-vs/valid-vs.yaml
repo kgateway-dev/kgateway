@@ -1,0 +1,15 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: i-am-valid
+spec:
+  virtualHost:
+    domains:
+      - 'valid1.com'
+    routes:
+      - matchers:
+          - prefix: /
+        routeAction:
+          single:
+            upstream:
+              name: nginx-upstream

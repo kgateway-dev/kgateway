@@ -3,6 +3,7 @@ package gloogateway
 import (
 	"context"
 
+	v1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -21,6 +22,9 @@ type ResourceClients interface {
 	VirtualHostOptionClient() gatewayv1.VirtualHostOptionClient
 	ServiceClient() skkube.ServiceClient
 	UpstreamClient() v1.UpstreamClient
+	VirtualServiceClient() gatewayv1.VirtualServiceClient
+	RateLimitConfigClient() v1alpha1.RateLimitConfigClient
+	GatewayClient() gatewayv1.GatewayClient
 }
 
 type Clients struct {
@@ -28,6 +32,9 @@ type Clients struct {
 	serviceClient           skkube.ServiceClient
 	upstreamClient          v1.UpstreamClient
 	virtualHostOptionClient gatewayv1.VirtualHostOptionClient
+	virtualServiceClient    gatewayv1.VirtualServiceClient
+	rateLimitConfigClient   v1alpha1.RateLimitConfigClient
+	gatewayClient           gatewayv1.GatewayClient
 }
 
 func NewResourceClients(ctx context.Context, clusterCtx *cluster.Context) (ResourceClients, error) {
@@ -53,6 +60,16 @@ func NewResourceClients(ctx context.Context, clusterCtx *cluster.Context) (Resou
 		return nil, err
 	}
 
+	virtualServiceClientFactory := &factory.KubeResourceClientFactory{
+		Crd:         gatewayv1.VirtualServiceCrd,
+		Cfg:         clusterCtx.RestConfig,
+		SharedCache: sharedClientCache,
+	}
+	virtualServiceClient, err := gatewayv1.NewVirtualServiceClient(ctx, virtualServiceClientFactory)
+	if err != nil {
+		return nil, err
+	}
+
 	kubeCoreCache, err := cache.NewKubeCoreCache(ctx, clusterCtx.Clientset)
 	if err != nil {
 		return nil, err
@@ -69,11 +86,34 @@ func NewResourceClients(ctx context.Context, clusterCtx *cluster.Context) (Resou
 		return nil, err
 	}
 
+	rlcClientFactory := &factory.KubeResourceClientFactory{
+		Crd:         v1alpha1.RateLimitConfigCrd,
+		Cfg:         clusterCtx.RestConfig,
+		SharedCache: sharedClientCache,
+	}
+	rlcClient, err := v1alpha1.NewRateLimitConfigClient(ctx, rlcClientFactory)
+	if err != nil {
+		return nil, err
+	}
+
+	gwClientFactory := &factory.KubeResourceClientFactory{
+		Crd:         gatewayv1.GatewayCrd,
+		Cfg:         clusterCtx.RestConfig,
+		SharedCache: sharedClientCache,
+	}
+	gwClient, err := gatewayv1.NewGatewayClient(ctx, gwClientFactory)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Clients{
 		routeOptionClient:       routeOptionClient,
 		serviceClient:           serviceClient,
 		upstreamClient:          upstreamClient,
 		virtualHostOptionClient: virtualHostOptionClient,
+		virtualServiceClient:    virtualServiceClient,
+		rateLimitConfigClient:   rlcClient,
+		gatewayClient:           gwClient,
 	}, nil
 }
 
@@ -91,4 +131,16 @@ func (c *Clients) ServiceClient() skkube.ServiceClient {
 
 func (c *Clients) UpstreamClient() v1.UpstreamClient {
 	return c.upstreamClient
+}
+
+func (c *Clients) VirtualServiceClient() gatewayv1.VirtualServiceClient {
+	return c.virtualServiceClient
+}
+
+func (c *Clients) RateLimitConfigClient() v1alpha1.RateLimitConfigClient {
+	return c.rateLimitConfigClient
+}
+
+func (c *Clients) GatewayClient() gatewayv1.GatewayClient {
+	return c.gatewayClient
 }
