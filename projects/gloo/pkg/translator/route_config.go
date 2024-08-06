@@ -942,6 +942,7 @@ func mergeCors(mergeSettings *v1.VirtualHostOptions_CorsMergeSettings, vh, route
 		DisableForRoute:  route.GetDisableForRoute(),
 	}
 
+	// handle merging for ExposeHeaders field
 	switch mergeSettings.GetExposeHeaders() {
 	case v1.VirtualHostOptions_CorsMergeSettings_UNION:
 		out.ExposeHeaders = append(vh.GetExposeHeaders(), route.GetExposeHeaders()...)
