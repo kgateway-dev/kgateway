@@ -143,7 +143,7 @@ This template is used to generate the gloo pod or container security context.
 It takes 4 values:
   .values - the securityContext passed from the user in values.yaml
   .defaults - the default securityContext for the pod or container
-  .globalSec - global security settings, usaully from .Values.global.securitySettings
+  .globalSec - global security settings, usually from .Values.global.securitySettings
   .indent - the number of spaces to indent the output. If not set, the output will not be indented.
     The indentation argument is necessary because it is possible that no output will be rendered. 
     If that happens and the caller handles the indentation the result will be a line of whitespace, which gets caught by the whitespace tests
@@ -153,7 +153,7 @@ It takes 4 values:
 Because of this, if a value is "true" in defaults it can not be modified with this method.
 */ -}}
 {{- define "gloo.securityContext" }}
-{{/* Move input parameters to non-null variables */}}
+{{- /* Move input parameters to non-null variables */ -}}
 {{- $defaults := dict -}}
 {{- if .defaults -}}
   {{- $defaults = .defaults -}}
@@ -170,24 +170,23 @@ Because of this, if a value is "true" in defaults it can not be modified with th
 {{- if .indent -}}
   {{- $indent = .indent -}}
 {{- end -}}
-
-{{- $securityContext := dict -}}
+{{- /* create $overwrite and set it based on the merge-policy */ -}}
 {{- $overwrite := true -}}
-
 {{- if $values.mergePolicy }}
   {{- if eq $values.mergePolicy "helm-merge" -}}
     {{- $overwrite = false -}}
   {{- else if ne $values.mergePolicy "no-merge" -}}
     {{- fail printf "value '%s' is not an allowed value for mergePolicy. Allowed values are 'no-merge', 'helm-merge', or an empty string" $values.mergePolicy }}
   {{- end -}}
-{{- end }}
-
+{{- end -}}
+{{- /* create $securityContext and combine with $defaults based on teh value of $overwrite */ -}}
+{{- $securityContext := dict -}}
 {{- if $overwrite -}}
   {{- $securityContext = or $values $defaults (dict) -}}
 {{- else -}}
   {{- $securityContext = merge $values $defaults -}}
 {{- end }}
-{{- /* Set global */ -}}
+{{- /* Apply global overrides */ -}}
 {{- with $globalSec -}}
   {{- if .floatingUserId -}}
     {{- $_ := unset $securityContext "runAsUser" -}}
@@ -208,7 +207,7 @@ It takes 4 values:
   .values - the securityContext passed from the user in values.yaml
   .defaults - the default securityContext for the pod or container
   .podSecurityStandards - podSecurityStandard from values.yaml
-  .globalSec - global security settings, usaully from .Values.global.securitySettings
+  .globalSec - global security settings, usually from .Values.global.securitySettings
   .indent - the number of spaces to indent the output. If not set, the output will not be indented.
     The indentation argument is necessary because it is possible that no output will be rendered. 
     If that happens and the caller handles the indentation the result will be a line of whitespace, which gets caught by the whitespace tests

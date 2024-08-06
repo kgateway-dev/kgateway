@@ -6449,10 +6449,14 @@ metadata:
 					Entry("14-clusteringress-proxy-deployment.yaml", "clusteringress-proxy", "clusteringress-proxy", "Deployment", securitycontext.ApplyClusterIngressSecurityDefaults, "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
 				)
 
-				DescribeTable("applies global security setings for pod security contexts", func(resourceName string, securityRoot string, extraArgs ...string) {
+				DescribeTable("applies global security setings for pod security contexts", func(resourceName string, securityRoot string, expectContextOmitted bool, extraArgs ...string) {
+					// "expectContextOmitted" argument indicates that in this test, the global `floatingUserId=true` is expected to also act like the local `enableSecurityConext=false`
+					fsGroup := int64(4321)
 					helmArgs := append(
 						extraArgs,
 						"global.securitySettings.floatingUserId=true",
+						securityRoot+".runAsUser=1234",
+						fmt.Sprintf("%s.fsGroup=%d", securityRoot, fsGroup),
 					)
 
 					prepareMakefile(namespace, helmValues{
@@ -6462,12 +6466,16 @@ metadata:
 					structuredDeployment := getStructuredDeployment(testManifest, resourceName)
 					securityContext := structuredDeployment.Spec.Template.Spec.SecurityContext
 
-					if securityContext != nil {
+					if expectContextOmitted {
+						Expect(securityContext).To(BeNil(), "resource: %s", resourceName)
+					} else {
 						Expect(securityContext.RunAsUser).To(BeNil(), "resource: %s", resourceName)
+						Expect(*securityContext.FSGroup).To(Equal(fsGroup), "resource: %s", resourceName)
 					}
 				},
-					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext"),
-					Entry("1-gloo-deployment", "gloo", "gloo.deployment.podSecurityContext"),
+					Entry("1-gloo-deployment", "gloo", "gloo.deployment.podSecurityContext", false),
+					Entry("3-discovery-deployment", "discovery", "discovery.deployment", true, "discovery.deployment.enablePodSecurityContext=true"),
+					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext", true, "gatewayProxies.gatewayProxy.podTemplate.enablePodSecurityContext=true"),
 				)
 
 				DescribeTable("applies default restricted container security contexts", func(seccompType string) {
@@ -6598,8 +6606,9 @@ metadata:
 						},
 					))
 				},
-					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext"),
 					Entry("1-gloo-deployment", "gloo", "gloo.deployment.podSecurityContext"),
+					// "3-discovery-deployment" uses the template but is excluded from this test because it does not have a configurable podSecurityContext
+					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext", "gatewayProxies.gatewayProxy.podTemplate.enablePodSecurityContext=true"),
 				)
 
 				DescribeTable("merges resources for pod security contexts", func(resourceName string, securityRoot string, extraArgs ...string) {
@@ -6706,8 +6715,9 @@ metadata:
 
 					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext).To(Equal(initialSecurityContext))
 				},
-					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext"),
 					Entry("1-gloo-deployment", "gloo", "gloo.deployment.podSecurityContext"),
+					// "3-discovery-deployment" uses the template but is excluded from this test because it does not have a configurable podSecurityContext
+					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext", "gatewayProxies.gatewayProxy.podTemplate.enablePodSecurityContext=true"),
 				)
 
 				DescribeTable("floatingUserId is properly applied (container)", func(resourceName string, containerName string, fpuidRoot string, securityRoot string, extraArgs ...string) {
@@ -7400,10 +7410,12 @@ func generateExpectedImage(name string, version string, variant string) string {
 func helmRenderEverythingValues() []string {
 	return []string{
 		"accessLogger.enabled=true",
+		"discovery.deployment.enablePodSecurityContext=true",
 		"gateway.certGenJob.cron.enabled=true",
 		"gateway.enabled=true",
 		"gateway.validation.enabled=true",
 		"gateway.validation.webhook.enabled=true",
+		"gatewayProxies.gatewayProxy.podTemplate.enablePodSecurityContext=true",
 		"global.glooMtls.enabled=true",
 		"global.istioIntegration.enabled=true",
 		"ingress.enabled=true",

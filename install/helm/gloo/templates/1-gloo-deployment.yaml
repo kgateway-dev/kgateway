@@ -46,7 +46,7 @@ spec:
 {{- with .Values.gloo.deployment.podSecurityContext -}}
   {{- $podSecCtx = . -}}
 {{- end -}}
-{{- if or $podSecCtx (and .Values.global .Values.global.securitySettings) -}}
+{{- if $podSecCtx  -}}
 {{- include "gloo.securityContext" (dict "values" $podSecCtx "globalSec" .Values.global.securitySettings) | indent 6  -}}
 {{- end }}
 {{- include "gloo.pullSecret" $image | nindent 6 -}}

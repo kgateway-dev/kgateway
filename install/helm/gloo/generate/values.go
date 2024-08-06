@@ -44,7 +44,7 @@ type Global struct {
 }
 
 type SecuritySettings struct {
-	FloatingUserId *bool `json:"floatingUserId,omitempty" desc:"If true, use 'true' as default value for all instances of floatingUserId. Has additional effects in EE templates: in the Redis deployment, if true the pod security context will not render runAsGroup, runAsNonRoot, and fsGroup, and in the ExtAuth deployment's podSecurityContext, fsGroup will not be rendered."`
+	FloatingUserId *bool `json:"floatingUserId,omitempty" desc:"If true, use 'true' as default value for all instances of floatingUserId. In OSS, has the additional effects of rendering charts as if 'discovery.deployment.enablePodSecurityContext=false' and 'gatewayProxies.gatewayProxy.podTemplate.enablePodSecurityContext=false'. In EE templates  has the additional effects of rendering charts as if 'redis.deployment.enablePodSecurityContext=false', and in the ExtAuth deployment's podSecurityContext, behavior will match the local 'floatingUserId' and fsGroup will not be rendered."`
 }
 
 type PodSecurityStandards struct {
