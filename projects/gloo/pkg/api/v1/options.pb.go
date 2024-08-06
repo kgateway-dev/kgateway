@@ -777,7 +777,8 @@ type VirtualHostOptions struct {
 	HeaderManipulation *headers.HeaderManipulation `protobuf:"bytes,2,opt,name=header_manipulation,json=headerManipulation,proto3" json:"header_manipulation,omitempty"`
 	// Defines a CORS policy for the virtual host
 	// If a CORS policy is also defined on the route matched by the request, the route policy
-	// overrides the virtual host policy for any configured field.
+	// overrides the virtual host policy for any configured field unless CorsMergeSettings are specified that define an
+	// alternate behavior.
 	Cors *cors.CorsPolicy `protobuf:"bytes,3,opt,name=cors,proto3" json:"cors,omitempty"`
 	// Transformations to apply. Note: this field is superseded by `staged_transformations`.
 	// If `staged_transformations.regular` is set, this field will be ignored.
@@ -1247,6 +1248,7 @@ type RouteOptions struct {
 	AppendXForwardedHost *wrappers.BoolValue `protobuf:"bytes,146,opt,name=append_x_forwarded_host,json=appendXForwardedHost,proto3" json:"append_x_forwarded_host,omitempty"`
 	// Defines a CORS policy for the route
 	// If a CORS policy is also defined on the route's virtual host any fields set here override the virtual host configuration
+	// unless an alternate behavior is defined on the virtual host via CorsMergeSettings
 	Cors *cors.CorsPolicy `protobuf:"bytes,11,opt,name=cors,proto3" json:"cors,omitempty"`
 	// For routes served by a hashing load balancer, this defines the input to the hash key
 	// Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers:
