@@ -140,9 +140,12 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	var envoyRoutes []*envoy_config_route_v3.Route
 	for i, route := range virtualHost.GetRoutes() {
 
-		// Envoy overrides vh-level CORS settings with route settings for any CORS settings present on the route
-		// Therefore we implement our merge logic in-memory and set the result on the route directly
-		if mergeSettings := virtualHost.GetOptions().GetCorsMergeSettings(); mergeSettings != nil {
+		// Envoy overrides vh-level CORS policy with route policy for any fields present on the route
+		// Therefore we implement our merge logic in-memory and, if necessary, modify the route-level CORS policy to
+		// have the desired merged value(s)
+		// If either is nil, merging will be ineffectual and we skip this step
+		if mergeSettings := virtualHost.GetOptions().GetCorsMergeSettings(); mergeSettings != nil &&
+			virtualHost.GetOptions().GetCors() != nil && route.GetOptions().GetCors() != nil {
 			route.GetOptions().Cors = mergeCors(mergeSettings, virtualHost.GetOptions().GetCors(), route.GetOptions().GetCors())
 		}
 
@@ -922,14 +925,6 @@ func ValidateRoutePath(s string) error {
 }
 
 func mergeCors(mergeSettings *v1.VirtualHostOptions_CorsMergeSettings, vh, route *cors.CorsPolicy) *cors.CorsPolicy {
-	// if either incoming CorsPolicy is nil, use the other
-	if vh == nil {
-		return route
-	}
-	if route == nil {
-		return vh
-	}
-
 	// we propagate the route setting by default
 	out := &cors.CorsPolicy{
 		AllowOrigin:      route.GetAllowOrigin(),
@@ -943,9 +938,12 @@ func mergeCors(mergeSettings *v1.VirtualHostOptions_CorsMergeSettings, vh, route
 	}
 
 	// handle merging for ExposeHeaders field
-	switch mergeSettings.GetExposeHeaders() {
-	case v1.VirtualHostOptions_CorsMergeSettings_UNION:
-		out.ExposeHeaders = append(vh.GetExposeHeaders(), route.GetExposeHeaders()...)
+	// if either is nil, there is nothing to do
+	if vh.GetExposeHeaders() != nil && route.GetExposeHeaders() == nil {
+		switch mergeSettings.GetExposeHeaders() {
+		case v1.VirtualHostOptions_CorsMergeSettings_UNION:
+			out.ExposeHeaders = append(vh.GetExposeHeaders(), route.GetExposeHeaders()...)
+		}
 	}
 
 	return out
