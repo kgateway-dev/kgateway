@@ -294,7 +294,7 @@ func (h *httpFilterChainTranslator) createFilterChainsFromSslConfiguration(
 		// get secrets
 		downstreamTlsContext, err := h.sslConfigTranslator.ResolveDownstreamSslConfig(snap.Secrets, sslConfig)
 		if err != nil {
-			validation.AppendListenerError(h.parentReport, validationapi.ListenerReport_Error_SSLConfigError, err.Error())
+			validation.AppendListenerWarning(h.parentReport, validationapi.ListenerReport_Warning_SSLConfigWarning, err.Error())
 			continue
 		}
 

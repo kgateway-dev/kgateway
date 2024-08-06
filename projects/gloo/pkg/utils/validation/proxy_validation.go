@@ -382,6 +382,13 @@ func AppendListenerError(listenerReport *validation.ListenerReport, errType vali
 	})
 }
 
+func AppendListenerWarning(listenerReport *validation.ListenerReport, errType validation.ListenerReport_Warning_Type, reason string) {
+	listenerReport.Warnings = append(listenerReport.GetWarnings(), &validation.ListenerReport_Warning{
+		Type:   errType,
+		Reason: reason,
+	})
+}
+
 func AppendVirtualHostError(virtualHostReport *validation.VirtualHostReport, errType validation.VirtualHostReport_Error_Type, reason string) {
 	virtualHostReport.Errors = append(virtualHostReport.GetErrors(), &validation.VirtualHostReport_Error{
 		Type:   errType,
