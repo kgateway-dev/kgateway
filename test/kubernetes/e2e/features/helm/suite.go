@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/gateway"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/tests/base"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen"
 )
@@ -98,48 +99,10 @@ func (s *testingSuite) TestApplyCRDs() {
 	}
 }
 
-// The local helm tests involve templating settings with various values set
-// and then validating that the templated data matches fixture data.
-// The tests assume that the fixture data we have defined is valid yaml that
-// will be accepted by a cluster. However, this has not always been the case
-// and it's important that we validate the settings end to end
-//
-// This solution may not be the best way to validate settings, but it
-// attempts to avoid re-running all the helm template tests against a live cluster
-// func (s *testingSuite) TestApplySettings() {
-// 	settingsFixturesFolder := filepath.Join(util.GetModuleRoot(), "install", "test", "fixtures", "settings")
-
-// 	err := filepath.Walk(settingsFixturesFolder, func(settingsFixtureFile string, info os.FileInfo, err error) error {
-// 		if err != nil {
-// 			return err
-// 		}
-// 		if info.IsDir() {
-// 			return nil
-// 		}
-
-// 		fmt.Println(settingsFixtureFile)
-// 		// Apply the fixture
-// 		out, e, err := s.TestHelper.Execute(s.Ctx, "apply", "-f", settingsFixtureFile)
-// 		fmt.Println(out, e, err)
-// 		s.NoError(err)
-
-// 		// continue traversing
-// 		return nil
-// 	})
-// 	s.NoError(err)
-// }
-
-// func (s *testingSuite) TestProtoDescriptorBin() {
-// 	protoDescriptor := getExampleProtoDescriptor()
-// 	fmt.Println(protoDescriptor)
-// 	gateway := s.GetKubectlOutput("-n", s.TestInstallation.Metadata.InstallNamespace, "get", "gateways.gateway.solo.io", "gateway-proxy", "-o", "yaml")
-// 	fmt.Println(gateway)
-// }
-
-// // return a base64-encoded proto descriptor to use for testing
-// func getExampleProtoDescriptor() string {
-// 	pathToDescriptors := filepath.Join(util.MustGetThisDir(), "../../../../v1helpers/test_grpc_service/descriptors/proto.pb")
-// 	bytes, err := os.ReadFile(pathToDescriptors)
-// 	fmt.Println(err)
-// 	return base64.StdEncoding.EncodeToString(bytes)
-// }
+func (s *testingSuite) UpgradeWithCustomValuesFile(valuesFile string) {
+	_, err := s.TestHelper.UpgradeGloo(s.Ctx, 600*time.Second, helper.WithExtraArgs([]string{
+		// Do not reuse the existing values as we need to install the new chart with the new version of the images
+		"--values", valuesFile,
+	}...))
+	s.TestInstallation.Assertions.Require.NoError(err)
+}

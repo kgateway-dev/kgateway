@@ -64,7 +64,6 @@ func (s *BaseTestingSuite) SetupSuite() {
 	// Ensure the resources exist
 	if s.Setup.Resources != nil {
 		s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, s.Setup.Resources...)
-		// TODO special case of pods running
 	}
 
 	if s.Setup.UpgradeValues != "" {
@@ -100,7 +99,6 @@ func (s *BaseTestingSuite) TearDownSuite() {
 
 		if s.Setup.Resources != nil {
 			s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx, s.Setup.Resources...)
-			// TODO special case of pods running
 		}
 	}
 }
@@ -128,10 +126,10 @@ func (s *BaseTestingSuite) BeforeTest(suiteName, testName string) {
 	}
 
 	for _, manifest := range testCase.Manifests {
-		// TODO: Instead of sleeping, wrap this in an eventually
-		time.Sleep(10 * time.Second)
-		err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, manifest)
-		s.NoError(err, "can apply "+manifest)
+		gomega.Eventually(func() error {
+			err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, manifest)
+			return err
+		}, 10*time.Second, 1*time.Second).Should(gomega.Succeed(), "can apply "+manifest)
 	}
 	s.TestInstallation.Assertions.EventuallyObjectsExist(s.Ctx, testCase.Resources...)
 }
@@ -158,9 +156,10 @@ func (s *BaseTestingSuite) AfterTest(suiteName, testName string) {
 	manifests := slices.Clone(testCase.Manifests)
 	slices.Reverse(manifests)
 	for _, manifest := range manifests {
-		time.Sleep(10 * time.Second)
-		err := s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, manifest)
-		s.NoError(err, "can delete "+manifest)
+		gomega.Eventually(func() error {
+			err := s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, manifest)
+			return err
+		}, 10*time.Second, 1*time.Second).Should(gomega.Succeed(), "can delete "+manifest)
 	}
 	s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx, testCase.Resources...)
 }

@@ -105,3 +105,11 @@ func (s *testingSuite) TestValidationWebhookCABundle() {
 	// Ensure the webhook caBundle should be the same as the secret's root ca value post upgrade
 	ensureWebhookCABundleMatchesSecretsRootCAValue()
 }
+
+func (s *testingSuite) UpgradeWithCustomValuesFile(valuesFile string) {
+	_, err := s.TestHelper.UpgradeGloo(s.Ctx, 600*time.Second, helper.WithExtraArgs([]string{
+		// Do not reuse the existing values as we need to install the new chart with the new version of the images
+		"--values", valuesFile,
+	}...))
+	s.TestInstallation.Assertions.Require.NoError(err)
+}
