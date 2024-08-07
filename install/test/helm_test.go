@@ -2948,21 +2948,56 @@ spec:
 						testManifest.Expect("Deployment", namespace, "gateway-proxy").NotTo(BeNil())
 					})
 
-					DescribeTable("supports deploying the specified variant of the envoy image", func(variant string) {
+					DescribeTable("supports deploying the specified variant of the envoy image", func(registry, repo, tag, digest, variant, expectedImage string) {
+						vals := []string{
+							"global.image.variant=" + variant,
+							"gatewayProxies.gatewayProxy.podTemplate.image.registry=" + registry,
+							"gatewayProxies.gatewayProxy.podTemplate.image.repository=" + repo,
+							"gatewayProxies.gatewayProxy.podTemplate.image.tag=" + tag,
+						}
+						// set the digest value corresponding to the variant
+						switch variant {
+						case "fips":
+							vals = append(vals, "gatewayProxies.gatewayProxy.podTemplate.image.fipsDigest="+digest)
+						case "distroless":
+							vals = append(vals, "gatewayProxies.gatewayProxy.podTemplate.image.distrolessDigest="+digest)
+						case "fips-distroless":
+							vals = append(vals, "gatewayProxies.gatewayProxy.podTemplate.image.fipsDistrolessDigest="+digest)
+						case "":
+							fallthrough
+						case "standard":
+							fallthrough
+						default:
+							vals = append(vals, "gatewayProxies.gatewayProxy.podTemplate.image.digest="+digest)
+						}
 						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{
-								"global.image.variant=" + variant,
-								"gatewayProxies.gatewayProxy.podTemplate.image.repository=gloo-ee-envoy-wrapper",
-							},
+							valuesArgs: vals,
 						})
-						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Image = generateExpectedImage("quay.io/solo-io/gloo-ee-envoy-wrapper", version, variant)
+
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Image = expectedImage
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					},
-						Entry("No variant specified", ""),
-						Entry("Standard variant", "standard"),
-						Entry("Fips variant", "fips"),
-						Entry("Distroless variant", "distroless"),
-						Entry("Fips-Distroless variant", "fips-distroless"))
+						Entry("No tag, digest, or variant specified", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "", "", "", "quay.io/solo-io/gloo-ee-envoy-wrapper"),
+						Entry("Only tag specified", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "tag1", "", "", "quay.io/solo-io/gloo-ee-envoy-wrapper:tag1"),
+						Entry("Only digest specified", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "", "digest1", "", "quay.io/solo-io/gloo-ee-envoy-wrapper@digest1"),
+						Entry("Only variant specified (standard)", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "", "", "standard", "quay.io/solo-io/gloo-ee-envoy-wrapper"),
+						Entry("Only variant specified (fips)", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "", "", "fips", "quay.io/solo-io/gloo-ee-envoy-wrapper-fips"),
+						Entry("Only variant specified (distroless)", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "", "", "distroless", "quay.io/solo-io/gloo-ee-envoy-wrapper"),
+						Entry("Only variant specified (fips-distroless)", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "", "", "fips-distroless", "quay.io/solo-io/gloo-ee-envoy-wrapper-fips"),
+						Entry("Tag and digest specified", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "tag1", "digest1", "", "quay.io/solo-io/gloo-ee-envoy-wrapper:tag1@digest1"),
+						Entry("Tag and variant specified (standard)", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "tag1", "", "standard", "quay.io/solo-io/gloo-ee-envoy-wrapper:tag1"),
+						Entry("Tag and variant specified (fips)", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "tag1", "", "fips", "quay.io/solo-io/gloo-ee-envoy-wrapper-fips:tag1"),
+						Entry("Tag and variant specified (distroless)", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "tag1", "", "distroless", "quay.io/solo-io/gloo-ee-envoy-wrapper:tag1-distroless"),
+						Entry("Tag and variant specified (fips-distroless)", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "tag1", "", "fips-distroless", "quay.io/solo-io/gloo-ee-envoy-wrapper-fips:tag1-distroless"),
+						Entry("Digest and variant specified (standard)", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "", "digest1", "standard", "quay.io/solo-io/gloo-ee-envoy-wrapper@digest1"),
+						Entry("Digest and variant specified (fips)", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "", "digest1", "fips", "quay.io/solo-io/gloo-ee-envoy-wrapper-fips@digest1"),
+						Entry("Digest and variant specified (distroless)", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "", "digest1", "distroless", "quay.io/solo-io/gloo-ee-envoy-wrapper@digest1"),
+						Entry("Digest and variant specified (fips-distroless)", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "", "digest1", "fips-distroless", "quay.io/solo-io/gloo-ee-envoy-wrapper-fips@digest1"),
+						Entry("Tag, digest, and variant specified (standard)", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "tag1", "digest1", "standard", "quay.io/solo-io/gloo-ee-envoy-wrapper:tag1@digest1"),
+						Entry("Tag, digest, and variant specified (fips)", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "tag1", "digest1", "fips", "quay.io/solo-io/gloo-ee-envoy-wrapper-fips:tag1@digest1"),
+						Entry("Tag, digest, and variant specified (distroless)", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "tag1", "digest1", "distroless", "quay.io/solo-io/gloo-ee-envoy-wrapper:tag1-distroless@digest1"),
+						Entry("Tag, digest, and variant specified (fips-distroless)", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "tag1", "digest1", "fips-distroless", "quay.io/solo-io/gloo-ee-envoy-wrapper-fips:tag1-distroless@digest1"),
+					)
 
 					It("supports deploying the fips envoy image via the deprecated global.image.fips helm value", func() {
 						prepareMakefile(namespace, helmValues{
@@ -3469,7 +3504,7 @@ spec:
 						Expect(gwpDepl.Spec.Template.Spec.Volumes[7]).To(Equal(corev1.Volume{Name: "workload-certs", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}}))
 					})
 
-					DescribeTable("Uses the correct image for the sds-ee container", func(variant string) {
+					DescribeTable("Uses the correct image for the sds-ee container", func(variant string, expectedImage string) {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"global.glooMtls.enabled=true",
@@ -3485,14 +3520,14 @@ spec:
 
 						sdsContainer := gwpDepl.Spec.Template.Spec.Containers[1]
 						Expect(sdsContainer.Name).To(Equal("sds"))
-						Expect(sdsContainer.Image).To(Equal(generateExpectedImage("my-sds-reg/sds-ee", "my-sds-tag", variant)))
+						Expect(sdsContainer.Image).To(Equal(expectedImage))
 						Expect(sdsContainer.ImagePullPolicy).To(Equal(corev1.PullIfNotPresent))
 					},
-						Entry("No variant specified", ""),
-						Entry("Standard variant", "standard"),
-						Entry("Fips variant", "fips"),
-						Entry("Distroless variant", "distroless"),
-						Entry("Fips-Distroless variant", "fips-distroless"))
+						Entry("No variant specified", "", "my-sds-reg/sds-ee:my-sds-tag"),
+						Entry("Standard variant", "standard", "my-sds-reg/sds-ee:my-sds-tag"),
+						Entry("Fips variant", "fips", "my-sds-reg/sds-ee-fips:my-sds-tag"),
+						Entry("Distroless variant", "distroless", "my-sds-reg/sds-ee:my-sds-tag-distroless"),
+						Entry("Fips-Distroless variant", "fips-distroless", "my-sds-reg/sds-ee-fips:my-sds-tag-distroless"))
 
 					It("adds readConfig annotations", func() {
 						gatewayProxyDeployment.Spec.Template.Annotations["readconfig-stats"] = "/stats"
@@ -5122,22 +5157,24 @@ metadata:
 						})
 					})
 
-					DescribeTable("supports deploying the correct discovery-ee image variant", func(variant string) {
-						discoveryDeployment.Spec.Template.Spec.Containers[0].Image = generateExpectedImage("quay.io/solo-io/discovery-ee", version, variant)
+					DescribeTable("supports deploying the correct discovery-ee image variant", func(variant string, expectedImage string) {
+						discoveryDeployment.Spec.Template.Spec.Containers[0].Image = expectedImage
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"global.image.variant=" + variant,
+								"discovery.deployment.image.tag=1.2.3",
 								"discovery.deployment.image.repository=discovery-ee",
 							},
 						})
 
 						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
 					},
-						Entry("No variant specified", ""),
-						Entry("Standard variant", "standard"),
-						Entry("Fips variant", "fips"),
-						Entry("Distroless variant", "distroless"),
-						Entry("Fips-Distroless variant", "fips-distroless"))
+						Entry("No variant specified", "", "quay.io/solo-io/discovery-ee:1.2.3"),
+						Entry("Standard variant", "standard", "quay.io/solo-io/discovery-ee:1.2.3"),
+						Entry("Fips variant", "fips", "quay.io/solo-io/discovery-ee-fips:1.2.3"),
+						Entry("Distroless variant", "distroless", "quay.io/solo-io/discovery-ee:1.2.3-distroless"),
+						Entry("Fips-Distroless variant", "fips-distroless", "quay.io/solo-io/discovery-ee-fips:1.2.3-distroless"),
+					)
 
 					It("can set log level env var", func() {
 						discoveryDeployment.Spec.Template.Spec.Containers[0].Env = append(
@@ -7304,21 +7341,4 @@ func getSslGatewayName(name string) string {
 
 func getFailoverGatewayName(name string) string {
 	return name + "-failover"
-}
-
-func generateExpectedImage(name string, version string, variant string) string {
-	switch variant {
-	case "fips":
-		return fmt.Sprintf("%s-fips:%s", name, version)
-	case "distroless":
-		return fmt.Sprintf("%s:%s-distroless", name, version)
-	case "fips-distroless":
-		return fmt.Sprintf("%s-fips:%s-distroless", name, version)
-	case "":
-		fallthrough
-	case "standard":
-		fallthrough
-	default:
-		return fmt.Sprintf("%s:%s", name, version)
-	}
 }
