@@ -45,4 +45,5 @@ glooctl check [flags]
 ### SEE ALSO
 
 * [glooctl](../glooctl)	 - CLI for Gloo
+* [glooctl check license](../glooctl_check_license)	 - Check Gloo Gateway License
 

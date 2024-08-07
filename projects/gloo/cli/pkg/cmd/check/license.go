@@ -3,12 +3,13 @@ package check
 import (
 	"encoding/base64"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/spf13/cobra"
-	"strings"
-	"time"
 )
 
 type AddOn struct {

@@ -1,10 +1,11 @@
 package check
 
 import (
+	"time"
+
 	"github.com/golang-jwt/jwt/v4"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"time"
 )
 
 var _ = Describe("Licence", func() {
@@ -30,7 +31,7 @@ var _ = Describe("Licence", func() {
 
 	It("should verify a valid license", func() {
 		err = checkLicense(tokenString)
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("should fail to verify an invalid license", func() {
