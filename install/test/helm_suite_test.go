@@ -20,7 +20,7 @@ import (
 	"github.com/solo-io/gloo/pkg/cliutil/helm"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	glooeetestutils "github.com/solo-io/gloo/test/testutils"
+	glootestutils "github.com/solo-io/gloo/test/testutils"
 	soloHelm "github.com/solo-io/go-utils/helmutils"
 	"github.com/solo-io/go-utils/testutils"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
@@ -140,7 +140,7 @@ func MustGetVersion() string {
 
 type ChartRenderer interface {
 	// returns a TestManifest containing all resources
-	RenderManifest(namespace string, values glooeetestutils.HelmValues) (TestManifest, error)
+	RenderManifest(namespace string, values glootestutils.HelmValues) (TestManifest, error)
 }
 
 var _ ChartRenderer = &helm3Renderer{}
@@ -154,7 +154,7 @@ type helm3Renderer struct {
 	manifestOutputDir string
 }
 
-func (h3 helm3Renderer) RenderManifest(namespace string, values glooeetestutils.HelmValues) (TestManifest, error) {
+func (h3 helm3Renderer) RenderManifest(namespace string, values glootestutils.HelmValues) (TestManifest, error) {
 	rel, err := buildHelm3Release(h3.chartDir, namespace, values)
 	if err != nil {
 		return nil, errors.Errorf("failure in buildHelm3Release: %s", err.Error())
@@ -200,19 +200,19 @@ func (h3 helm3Renderer) RenderManifest(namespace string, values glooeetestutils.
 	return NewTestManifest(testManifestFile.Name()), nil
 }
 
-func buildHelm3Release(chartDir, namespace string, values glooeetestutils.HelmValues) (*release.Release, error) {
+func buildHelm3Release(chartDir, namespace string, values glootestutils.HelmValues) (*release.Release, error) {
 	chartRequested, err := loader.Load(chartDir)
 	if err != nil {
 		return nil, errors.Errorf("failed to load chart directory: %s", err.Error())
 	}
 
-	helmValues, err := glooeetestutils.BuildHelmValues(values)
+	helmValues, err := glootestutils.BuildHelmValues(values)
 	if err != nil {
 		return nil, errors.Errorf("failure in buildHelmValues: %s", err.Error())
 	}
 
 	// Validate that the provided values match the Go types used to construct out docs
-	err = glooeetestutils.ValidateHelmValues(helmValues)
+	err = glootestutils.ValidateHelmValues(helmValues)
 	if err != nil {
 		return nil, errors.Errorf("failure in ValidateHelmValues: %s", err.Error())
 	}

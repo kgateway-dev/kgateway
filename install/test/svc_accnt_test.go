@@ -2,7 +2,7 @@ package test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
-	glooeetestutils "github.com/solo-io/gloo/test/testutils"
+	glootestutils "github.com/solo-io/gloo/test/testutils"
 
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
@@ -20,7 +20,7 @@ var _ = Describe("SVC Accnt Test", func() {
 				resourceBuilder.Name = name
 				resourceBuilder.Labels["gloo"] = name
 
-				tm, err := testCase.renderer.RenderManifest(namespace, glooeetestutils.HelmValues{
+				tm, err := testCase.renderer.RenderManifest(namespace, glootestutils.HelmValues{
 					ValuesArgs: helmFlags,
 				})
 				Expect(err).NotTo(HaveOccurred(), "Should be able to render the manifest in the service account unit test")
