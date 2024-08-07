@@ -4,3 +4,8 @@ changelog:
     resolvesIssue: false
     description: >-
       Moves the validation tests to the new framework.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6437
+    resolvesIssue: false
+    description: >-
+      Create a common Curl manifest for use in tests
