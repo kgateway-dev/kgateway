@@ -1270,18 +1270,18 @@ func (m *VirtualHostOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetCorsMergeSettings()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("CorsMergeSettings")); err != nil {
+	if h, ok := interface{}(m.GetCorsPolicyMergeSettings()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("CorsPolicyMergeSettings")); err != nil {
 			return 0, err
 		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetCorsMergeSettings(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetCorsPolicyMergeSettings(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("CorsMergeSettings")); err != nil {
+			if _, err = hasher.Write([]byte("CorsPolicyMergeSettings")); err != nil {
 				return 0, err
 			}
 			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
@@ -2606,27 +2606,6 @@ func (m *ConnectionBalanceConfig_ExactBalance) Hash(hasher hash.Hash64) (uint64,
 	}
 	var err error
 	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.ConnectionBalanceConfig_ExactBalance")); err != nil {
-		return 0, err
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// Hash function
-func (m *VirtualHostOptions_CorsMergeSettings) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.VirtualHostOptions_CorsMergeSettings")); err != nil {
-		return 0, err
-	}
-
-	err = binary.Write(hasher, binary.LittleEndian, m.GetExposeHeaders())
-	if err != nil {
 		return 0, err
 	}
 

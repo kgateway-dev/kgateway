@@ -762,12 +762,12 @@ func (m *VirtualHostOptions) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetCorsMergeSettings()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetCorsMergeSettings()) {
+	if h, ok := interface{}(m.GetCorsPolicyMergeSettings()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetCorsPolicyMergeSettings()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetCorsMergeSettings(), target.GetCorsMergeSettings()) {
+		if !proto.Equal(m.GetCorsPolicyMergeSettings(), target.GetCorsPolicyMergeSettings()) {
 			return false
 		}
 	}
@@ -1663,34 +1663,6 @@ func (m *ConnectionBalanceConfig_ExactBalance) Equal(that interface{}) bool {
 	if target == nil {
 		return m == nil
 	} else if m == nil {
-		return false
-	}
-
-	return true
-}
-
-// Equal function
-func (m *VirtualHostOptions_CorsMergeSettings) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*VirtualHostOptions_CorsMergeSettings)
-	if !ok {
-		that2, ok := that.(VirtualHostOptions_CorsMergeSettings)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if m.GetExposeHeaders() != target.GetExposeHeaders() {
 		return false
 	}
 

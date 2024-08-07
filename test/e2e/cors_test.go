@@ -282,8 +282,8 @@ var _ = Describe("CORS", func() {
 							AllowMethods:     allowedMethods,
 							ExposeHeaders:    []string{vhHeader},
 						},
-						CorsMergeSettings: &gloov1.VirtualHostOptions_CorsMergeSettings{
-							ExposeHeaders: gloov1.VirtualHostOptions_CorsMergeSettings_UNION,
+						CorsPolicyMergeSettings: &cors.CorsPolicyMergeSettings{
+							ExposeHeaders: cors.CorsPolicyMergeSettings_UNION,
 						},
 					}).
 					WithRouteOptions("route", &gloov1.RouteOptions{

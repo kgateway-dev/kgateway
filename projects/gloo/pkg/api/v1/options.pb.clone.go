@@ -547,10 +547,10 @@ func (m *VirtualHostOptions) Clone() proto.Message {
 		target.ExtProc = proto.Clone(m.GetExtProc()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.RouteSettings)
 	}
 
-	if h, ok := interface{}(m.GetCorsMergeSettings()).(clone.Cloner); ok {
-		target.CorsMergeSettings = h.Clone().(*VirtualHostOptions_CorsMergeSettings)
+	if h, ok := interface{}(m.GetCorsPolicyMergeSettings()).(clone.Cloner); ok {
+		target.CorsPolicyMergeSettings = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_cors.CorsPolicyMergeSettings)
 	} else {
-		target.CorsMergeSettings = proto.Clone(m.GetCorsMergeSettings()).(*VirtualHostOptions_CorsMergeSettings)
+		target.CorsPolicyMergeSettings = proto.Clone(m.GetCorsPolicyMergeSettings()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_cors.CorsPolicyMergeSettings)
 	}
 
 	switch m.RateLimitEarlyConfigType.(type) {
@@ -1136,19 +1136,6 @@ func (m *ConnectionBalanceConfig_ExactBalance) Clone() proto.Message {
 		return target
 	}
 	target = &ConnectionBalanceConfig_ExactBalance{}
-
-	return target
-}
-
-// Clone function
-func (m *VirtualHostOptions_CorsMergeSettings) Clone() proto.Message {
-	var target *VirtualHostOptions_CorsMergeSettings
-	if m == nil {
-		return target
-	}
-	target = &VirtualHostOptions_CorsMergeSettings{}
-
-	target.ExposeHeaders = m.GetExposeHeaders()
 
 	return target
 }

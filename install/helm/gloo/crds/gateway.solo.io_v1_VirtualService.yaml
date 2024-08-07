@@ -165,7 +165,7 @@ spec:
                           maxAge:
                             type: string
                         type: object
-                      corsMergeSettings:
+                      corsPolicyMergeSettings:
                         properties:
                           exposeHeaders:
                             type: string

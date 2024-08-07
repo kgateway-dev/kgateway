@@ -40,3 +40,30 @@ message CorsPolicy {
     // If set, the CORS Policy (specified on the virtual host) will be disabled for this route.
     bool disable_for_route = 8;
 }
+
+// Settings for determining how CORS settings are merged when present on both VirtualHost and Route
+message CorsPolicyMergeSettings {
+    enum MergeStrategy{
+        DEFAULT = 0; // Do not merge
+        UNION = 1; // Append list fields, OR booelan fields
+
+        // Eventually we may want to add additional mergeStrategies
+        // INTERSECTION = 2; // Use intersection of list fields, AND boolean fields
+        // ROUTE = 3; // Use the route-level field if one is set (this is Envoy's underlying behavior, so effectively the same as default)
+        // VH = 4; // Use the vh-level field if one is set
+    }
+
+    // Eventually we may want to allow each CORS setting to be configured, so we reserve fields for them
+
+    // mimicking the CorsPolicy message
+    // mergeStrategy allow_origin = 1;
+    // mergeStrategy allow_origin_regex = 2;
+    // mergeStrategy allow_methods = 3;
+    // mergeStrategy allow_headers = 4;
+
+    MergeStrategy expose_headers = 5;
+
+    // mergeStrategy max_age = 6;
+    // mergeStrategy allow_credentials = 7;
+    // mergeStrategy disable_for_route = 8;
+}

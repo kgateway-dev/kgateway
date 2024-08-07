@@ -12,6 +12,8 @@ weight: 5
 
 
 - [CorsPolicy](#corspolicy)
+- [CorsPolicyMergeSettings](#corspolicymergesettings)
+- [MergeStrategy](#mergestrategy)
   
 
 
@@ -50,6 +52,37 @@ CorsPolicy defines Cross-Origin Resource Sharing for a virtual service.
 | `maxAge` | `string` | Specifies the content for the *access-control-max-age* header. |
 | `allowCredentials` | `bool` | Specifies whether the resource allows credentials. |
 | `disableForRoute` | `bool` | Optional, only applies to route-specific CORS Policies, defaults to false. If set, the CORS Policy (specified on the virtual host) will be disabled for this route. |
+
+
+
+
+---
+### CorsPolicyMergeSettings
+
+ 
+Settings for determining how CORS settings are merged when present on both VirtualHost and Route
+
+```yaml
+"exposeHeaders": .cors.options.gloo.solo.io.CorsPolicyMergeSettings.MergeStrategy
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `exposeHeaders` | [.cors.options.gloo.solo.io.CorsPolicyMergeSettings.MergeStrategy](../cors.proto.sk/#mergestrategy) |  |
+
+
+
+
+---
+### MergeStrategy
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `DEFAULT` |  |
+| `UNION` |  |
 
 
 

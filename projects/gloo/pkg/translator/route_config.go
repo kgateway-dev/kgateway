@@ -144,7 +144,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 		// Therefore we implement our merge logic in-memory and, if necessary, modify the route-level CORS policy to
 		// have the desired merged value(s)
 		// If either is nil, merging will be ineffectual and we skip this step
-		if mergeSettings := virtualHost.GetOptions().GetCorsMergeSettings(); mergeSettings != nil &&
+		if mergeSettings := virtualHost.GetOptions().GetCorsPolicyMergeSettings(); mergeSettings != nil &&
 			virtualHost.GetOptions().GetCors() != nil && route.GetOptions().GetCors() != nil {
 			route.GetOptions().Cors = mergeCors(mergeSettings, virtualHost.GetOptions().GetCors(), route.GetOptions().GetCors())
 		}
@@ -924,7 +924,7 @@ func ValidateRoutePath(s string) error {
 	return nil
 }
 
-func mergeCors(mergeSettings *v1.VirtualHostOptions_CorsMergeSettings, vh, route *cors.CorsPolicy) *cors.CorsPolicy {
+func mergeCors(mergeSettings *cors.CorsPolicyMergeSettings, vh, route *cors.CorsPolicy) *cors.CorsPolicy {
 	// we propagate the route setting by default
 	out := &cors.CorsPolicy{
 		AllowOrigin:      route.GetAllowOrigin(),
@@ -941,7 +941,7 @@ func mergeCors(mergeSettings *v1.VirtualHostOptions_CorsMergeSettings, vh, route
 	// if either is nil, there is nothing to do
 	if vh.GetExposeHeaders() != nil && route.GetExposeHeaders() != nil {
 		switch mergeSettings.GetExposeHeaders() {
-		case v1.VirtualHostOptions_CorsMergeSettings_UNION:
+		case cors.CorsPolicyMergeSettings_UNION:
 			out.ExposeHeaders = append(vh.GetExposeHeaders(), route.GetExposeHeaders()...)
 		}
 	}
