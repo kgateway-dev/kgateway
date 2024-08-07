@@ -9,11 +9,8 @@ import (
 )
 
 var (
-	translationTime  = stats.Float64("gloo_edge/translation_time_sec", "how long the translator takes in seconds", "s")
-	statusSyncerTime = stats.Float64("gloo_edge/status_syncer_time_sec", "how long the status syncer takes in seconds", "s")
-
-	translatorNameKey, _   = tag.NewKey("translator_name")
-	statusSyncerNameKey, _ = tag.NewKey("status_syncer_name")
+	translationTime      = stats.Float64("gloo_edge/translation_time_sec", "how long the translator takes in seconds", "s")
+	translatorNameKey, _ = tag.NewKey("translator_name")
 )
 
 func init() {
@@ -26,13 +23,6 @@ func init() {
 			Aggregation: view.Distribution(0.01, 0.05, 0.1, 0.25, 0.5, 1, 5, 10, 60),
 			TagKeys:     []tag.Key{translatorNameKey},
 		},
-		&view.View{
-			Name:        "gloo_edge/status_syncer_time_sec",
-			Measure:     statusSyncerTime,
-			Description: "how long the status syncer takes in seconds",
-			Aggregation: view.Distribution(0.01, 0.05, 0.1, 0.25, 0.5, 1, 5, 10, 60),
-			TagKeys:     []tag.Key{statusSyncerNameKey},
-		},
 	); err != nil {
 		log.Fatalf("Failed to register views: %v", err)
 	}
@@ -40,8 +30,4 @@ func init() {
 
 func NewTranslatorStopWatch(translatorName string) StopWatch {
 	return NewStopWatch(translationTime, tag.Upsert(translatorNameKey, translatorName))
-}
-
-func NewStatusSyncerStopWatch(statusSyncerName string) StopWatch {
-	return NewStopWatch(statusSyncerTime, tag.Upsert(statusSyncerNameKey, statusSyncerName))
 }

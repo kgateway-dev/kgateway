@@ -50,6 +50,7 @@ func (t *translator) TranslateProxy(
 ) *v1.Proxy {
 	stopwatch := statsutils.NewTranslatorStopWatch("TranslateProxy")
 	stopwatch.Start()
+	defer stopwatch.Stop(ctx)
 
 	routesForGw, err := t.queries.GetRoutesForGw(ctx, gateway)
 	if err != nil {
@@ -83,7 +84,6 @@ func (t *translator) TranslateProxy(
 		reporter,
 	)
 
-	stopwatch.Stop(ctx)
 	return &v1.Proxy{
 		Metadata:  proxyMetadata(gateway, writeNamespace),
 		Listeners: listeners,
