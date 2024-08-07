@@ -35,6 +35,8 @@ func (s *stopwatch) Start() {
 }
 
 // Stop stops the stopwatch and records the duration of the operation
+// Note: Stop() should be called only once per Start() call, otherwise this could lead to double-counting in any
+// metrics that rely on this stopwatch and redundant logging.
 func (s *stopwatch) Stop(ctx context.Context) time.Duration {
 	duration := time.Since(s.startTime)
 	tagCtx, _ := tag.New(ctx, s.labels...)
