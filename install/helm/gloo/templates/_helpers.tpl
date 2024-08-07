@@ -56,7 +56,7 @@ for distroless or fips-distroless variants: add -distroless to the tag
 {{- if (has .repository $distrolessSupportedImages) -}}
 {{- $image = printf "%s-distroless" $image -}} {{- /* Add distroless suffix to the tag since it contains the same binaries in a different container */ -}}
 {{- end -}}{{- /* if (has .repository $distrolessSupportedImages) */ -}}
-{{- end -}}{{- /* if has .variant (list "distroless" "fips-distroless") */ -}}
+{{- end -}}{{- /* if and .tag (has .variant (list "distroless" "fips-distroless")) */ -}}
 
 {{- /*
 add digest for the chosen variant, if it exists
