@@ -939,7 +939,7 @@ func mergeCors(mergeSettings *v1.VirtualHostOptions_CorsMergeSettings, vh, route
 
 	// handle merging for ExposeHeaders field
 	// if either is nil, there is nothing to do
-	if vh.GetExposeHeaders() != nil && route.GetExposeHeaders() == nil {
+	if vh.GetExposeHeaders() != nil && route.GetExposeHeaders() != nil {
 		switch mergeSettings.GetExposeHeaders() {
 		case v1.VirtualHostOptions_CorsMergeSettings_UNION:
 			out.ExposeHeaders = append(vh.GetExposeHeaders(), route.GetExposeHeaders()...)
