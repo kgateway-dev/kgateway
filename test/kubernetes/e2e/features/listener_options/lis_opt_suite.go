@@ -38,8 +38,11 @@ func NewTestingSuite(
 
 func (s *testingSuite) SetupSuite() {
 	// Check that the common setup manifest is applied
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
-	s.NoError(err, "can apply "+setupManifest)
+	for _, manifest := range setupManifests {
+		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
+		s.NoError(err, "can apply "+manifest)
+	}
+
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment, exampleSvc, nginxPod)
 	// Check that test resources are running
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
@@ -56,8 +59,12 @@ func (s *testingSuite) SetupSuite() {
 
 func (s *testingSuite) TearDownSuite() {
 	// Check that the common setup manifest is deleted
-	output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, setupManifest)
-	s.testInstallation.Assertions.ExpectObjectDeleted(setupManifest, err, output)
+	for _, manifest := range setupManifests {
+		output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, manifest)
+		s.NoError(err, "can delete "+manifest)
+		s.testInstallation.Assertions.ExpectObjectDeleted(manifest, err, output)
+
+	}
 }
 
 func (s *testingSuite) BeforeTest(suiteName, testName string) {

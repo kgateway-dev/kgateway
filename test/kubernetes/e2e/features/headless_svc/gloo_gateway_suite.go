@@ -7,8 +7,13 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	gloo_defaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/resources"
+	testutilsresources "github.com/solo-io/gloo/test/kubernetes/testutils/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -40,7 +45,7 @@ func NewEdgeGatewayHeadlessSvcSuite(ctx context.Context, testInst *e2e.TestInsta
 // SetupSuite generates manifest files for the test suite
 func (s *edgeGatewaySuite) SetupSuite() {
 	gwResources := GetEdgeGatewayResources(s.testInstallation.Metadata.InstallNamespace)
-	err := resources.WriteResourcesToFile(gwResources, s.routingManifestFile)
+	err := testutilsresources.WriteResourcesToFile(gwResources, s.routingManifestFile)
 	s.Require().NoError(err, "can write resources to file")
 }
 
@@ -57,9 +62,27 @@ func (s *edgeGatewaySuite) TestEdgeGatewayRoutingHeadlessSvc() {
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, headlessSvcSetupManifest)
 	s.Assert().NoError(err, "can apply setup manifest")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, headlessService)
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, headlessService.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=nginx",
+	})
 
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, s.routingManifestFile)
 	s.NoError(err, "can setup Edge Gateway API routing manifest")
+	// check status of the VirtualService and Upstream to ensure they are accepted
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		func() (resources.InputResource, error) {
+			return s.testInstallation.ResourceClients.UpstreamClient().Read(s.testInstallation.Metadata.InstallNamespace, "headless-nginx-upstream", clients.ReadOpts{Ctx: s.ctx})
+		},
+		core.Status_Accepted,
+		gloo_defaults.GlooReporter,
+	)
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		func() (resources.InputResource, error) {
+			return s.testInstallation.ResourceClients.VirtualServiceClient().Read(s.testInstallation.Metadata.InstallNamespace, "headless-vs", clients.ReadOpts{Ctx: s.ctx})
+		},
+		core.Status_Accepted,
+		gloo_defaults.GlooReporter,
+	)
 
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
