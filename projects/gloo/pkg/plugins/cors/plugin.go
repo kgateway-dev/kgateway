@@ -88,6 +88,15 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		return nil
 	}
 
+	// Envoy overrides vh-level CORS policy with route policy for any fields present on the route
+	// Therefore we implement our merge logic in-memory and, if necessary, modify the route-level CORS policy to
+	// have the desired merged value(s)
+	// If either is nil, merging will be ineffectual and we skip this step
+	if mergeSettings := params.VirtualHost.GetOptions().GetCorsPolicyMergeSettings(); mergeSettings != nil &&
+		params.VirtualHost.GetOptions().GetCors() != nil && in.GetOptions().GetCors() != nil {
+		in.GetOptions().Cors = mergeCors(mergeSettings, params.VirtualHost.GetOptions().GetCors(), in.GetOptions().GetCors())
+	}
+
 	// if the route has a direct response action, the cors filter will not apply headers to the response
 	// instead, configure ResponseHeadersToAdd on the direct response action
 	if _, ok := out.GetAction().(*envoy_config_route_v3.Route_DirectResponse); ok &&
@@ -246,4 +255,29 @@ func getCorsResponseHeadersFromPolicy(corsPolicy *cors.CorsPolicy) []*envoy_conf
 			KeepEmptyValue: false,
 		},
 	}
+}
+
+func mergeCors(mergeSettings *cors.CorsPolicyMergeSettings, vh, route *cors.CorsPolicy) *cors.CorsPolicy {
+	// we propagate the route setting by default
+	out := &cors.CorsPolicy{
+		AllowOrigin:      route.GetAllowOrigin(),
+		AllowOriginRegex: route.GetAllowOriginRegex(),
+		AllowMethods:     route.GetAllowMethods(),
+		AllowHeaders:     route.GetAllowHeaders(),
+		ExposeHeaders:    route.GetExposeHeaders(),
+		MaxAge:           route.GetMaxAge(),
+		AllowCredentials: route.GetAllowCredentials(),
+		DisableForRoute:  route.GetDisableForRoute(),
+	}
+
+	// handle merging for ExposeHeaders field
+	// if either is nil, there is nothing to do
+	if vh.GetExposeHeaders() != nil && route.GetExposeHeaders() != nil {
+		switch mergeSettings.GetExposeHeaders() {
+		case cors.CorsPolicyMergeSettings_UNION:
+			out.ExposeHeaders = append(vh.GetExposeHeaders(), route.GetExposeHeaders()...)
+		}
+	}
+
+	return out
 }

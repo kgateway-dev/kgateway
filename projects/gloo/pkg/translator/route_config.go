@@ -8,8 +8,6 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/dynamic_forward_proxy"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -139,15 +137,6 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	}
 	var envoyRoutes []*envoy_config_route_v3.Route
 	for i, route := range virtualHost.GetRoutes() {
-
-		// Envoy overrides vh-level CORS policy with route policy for any fields present on the route
-		// Therefore we implement our merge logic in-memory and, if necessary, modify the route-level CORS policy to
-		// have the desired merged value(s)
-		// If either is nil, merging will be ineffectual and we skip this step
-		if mergeSettings := virtualHost.GetOptions().GetCorsPolicyMergeSettings(); mergeSettings != nil &&
-			virtualHost.GetOptions().GetCors() != nil && route.GetOptions().GetCors() != nil {
-			route.GetOptions().Cors = mergeCors(mergeSettings, virtualHost.GetOptions().GetCors(), route.GetOptions().GetCors())
-		}
 
 		routeParams := plugins.RouteParams{
 			VirtualHostParams: params,
@@ -922,29 +911,4 @@ func ValidateRoutePath(s string) error {
 		}
 	}
 	return nil
-}
-
-func mergeCors(mergeSettings *cors.CorsPolicyMergeSettings, vh, route *cors.CorsPolicy) *cors.CorsPolicy {
-	// we propagate the route setting by default
-	out := &cors.CorsPolicy{
-		AllowOrigin:      route.GetAllowOrigin(),
-		AllowOriginRegex: route.GetAllowOriginRegex(),
-		AllowMethods:     route.GetAllowMethods(),
-		AllowHeaders:     route.GetAllowHeaders(),
-		ExposeHeaders:    route.GetExposeHeaders(),
-		MaxAge:           route.GetMaxAge(),
-		AllowCredentials: route.GetAllowCredentials(),
-		DisableForRoute:  route.GetDisableForRoute(),
-	}
-
-	// handle merging for ExposeHeaders field
-	// if either is nil, there is nothing to do
-	if vh.GetExposeHeaders() != nil && route.GetExposeHeaders() != nil {
-		switch mergeSettings.GetExposeHeaders() {
-		case cors.CorsPolicyMergeSettings_UNION:
-			out.ExposeHeaders = append(vh.GetExposeHeaders(), route.GetExposeHeaders()...)
-		}
-	}
-
-	return out
 }
