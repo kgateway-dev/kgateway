@@ -1,7 +1,6 @@
 package e2e_test
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -27,8 +26,9 @@ const (
 	corsFilterString        = `"name": "` + wellknown.CORS + `"`
 	corsActiveConfigString  = `"envoy.filters.http.cors": {`
 
-	routeHeader = "route-header"
-	vhHeader    = "vh-header"
+	commonHeader = "common-header"
+	routeHeader  = "route-header"
+	vhHeader     = "vh-header"
 )
 
 var _ = Describe("CORS", func() {
@@ -187,14 +187,14 @@ var _ = Describe("CORS", func() {
 							AllowOrigin:      allowedOrigins,
 							AllowOriginRegex: allowedOrigins,
 							AllowMethods:     allowedMethods,
-							ExposeHeaders:    []string{vhHeader},
+							ExposeHeaders:    []string{commonHeader, vhHeader},
 						}}).
 					WithRouteOptions("route", &gloov1.RouteOptions{
 						// We don't set allowed methods to show that we still get this from VirtualHost
 						Cors: &cors.CorsPolicy{
 							AllowOrigin:      routeAllowedOrigins,
 							AllowOriginRegex: routeAllowedOrigins,
-							ExposeHeaders:    []string{routeHeader},
+							ExposeHeaders:    []string{commonHeader, routeHeader},
 						}}).
 					Build()
 
@@ -223,7 +223,7 @@ var _ = Describe("CORS", func() {
 					g.Expect(testutils.DefaultHttpClient.Do(allowedRouteOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
 						requestACHMethods:       MatchRegexp(strings.Join(allowedMethods, ",")),
 						requestACHOrigin:        Equal(routeAllowedOrigins[0]),
-						requestACHExposeHeaders: Equal(routeHeader),
+						requestACHExposeHeaders: Equal(strings.Join([]string{commonHeader, routeHeader}, ",")),
 					}))
 				}).Should(Succeed(), "Request with allowed route origin, has expose headers from route only")
 
@@ -280,7 +280,7 @@ var _ = Describe("CORS", func() {
 							AllowOrigin:      allowedOrigins,
 							AllowOriginRegex: allowedOrigins,
 							AllowMethods:     allowedMethods,
-							ExposeHeaders:    []string{vhHeader},
+							ExposeHeaders:    []string{commonHeader, vhHeader},
 						},
 						CorsPolicyMergeSettings: &cors.CorsPolicyMergeSettings{
 							ExposeHeaders: cors.CorsPolicyMergeSettings_UNION,
@@ -291,7 +291,7 @@ var _ = Describe("CORS", func() {
 						Cors: &cors.CorsPolicy{
 							AllowOrigin:      routeAllowedOrigins,
 							AllowOriginRegex: routeAllowedOrigins,
-							ExposeHeaders:    []string{routeHeader},
+							ExposeHeaders:    []string{commonHeader, routeHeader},
 						}}).
 					Build()
 
@@ -320,7 +320,7 @@ var _ = Describe("CORS", func() {
 					g.Expect(testutils.DefaultHttpClient.Do(allowedRouteOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
 						requestACHMethods:       MatchRegexp(strings.Join(allowedMethods, ",")),
 						requestACHOrigin:        Equal(routeAllowedOrigins[0]),
-						requestACHExposeHeaders: Equal(fmt.Sprintf("%s,%s", vhHeader, routeHeader)),
+						requestACHExposeHeaders: Equal(strings.Join([]string{commonHeader, vhHeader, routeHeader}, ",")),
 					}))
 				}).Should(Succeed(), "Request with allowed route origin, has expose headers from both route and vh")
 

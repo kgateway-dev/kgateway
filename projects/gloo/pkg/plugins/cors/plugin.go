@@ -275,7 +275,21 @@ func mergeCors(mergeSettings *cors.CorsPolicyMergeSettings, vh, route *cors.Cors
 	if vh.GetExposeHeaders() != nil && route.GetExposeHeaders() != nil {
 		switch mergeSettings.GetExposeHeaders() {
 		case cors.CorsPolicyMergeSettings_UNION:
-			out.ExposeHeaders = append(vh.GetExposeHeaders(), route.GetExposeHeaders()...)
+			out.ExposeHeaders = dedupe(append(vh.GetExposeHeaders(), route.GetExposeHeaders()...))
+		}
+	}
+
+	return out
+}
+
+func dedupe(in []string) []string {
+	seen := map[string]struct{}{}
+	var out []string
+
+	for _, s := range in {
+		if _, ok := seen[s]; !ok {
+			out = append(out, s)
+			seen[s] = struct{}{}
 		}
 	}
 
