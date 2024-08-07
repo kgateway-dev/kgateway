@@ -168,12 +168,189 @@ For more information, see the [API docs]({{% versioned_link_path fromRoot="/refe
    [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
    ```
 
+## How to configure a Route for CORS
 
+CORS policy can also be applied directly on Routes in addition to, or instead of, on a VirtualHost. The fields available are the same as on the VirtualHost.
+To apply the same policy as in the example above on the route level, modify the VS as follows:
 
+```yaml
+...
+spec:
+  displayName: corsexample
+  virtualHost:
+  domains:
+  - '*'
+  routes:
+  - matchers:
+    - exact: /all-pets
+    options:
+      cors:
+        allowCredentials: true
+        allowHeaders:
+        - origin
+        allowMethods:
+        - GET
+        - POST
+        - OPTIONS
+        allowOrigin:
+        - https://example.com
+        allowOriginRegex:
+        - https://[a-zA-Z0-9]*.example.com
+        exposeHeaders:
+        - origin
+        maxAge: 1d
+      prefixRewrite: /api/pets
+...
+```
 
+By default, values that are set on the VirtualHost level are overridden by those set on the Route level. For example, try amending the VS as follows:
+{{< highlight yaml "hl_lines=16,21,27-32" >}}
+...
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    options:
+      cors:
+        allowCredentials: true
+        allowHeaders:
+        - origin
+        allowMethods:
+        - GET
+        - POST
+        - OPTIONS
+        allowOrigin:
+        - https://fake.com
+        allowOriginRegex:
+        - https://[a-zA-Z0-9]*.example.com
+        exposeHeaders:
+        - origin
+        - vh-header
+        maxAge: 1d
+  routes:
+    - matchers:
+        - exact: /all-pets
+      options:
+        cors:
+          allowOrigin:
+            - https://example.com
+          exposeHeaders:
+            - origin
+            - route-header
+        prefixRewrite: /api/pets
+...
+{{< /highlight >}}
 
+We can make the same request as above:
+```
+curl -vik -H "Origin: https://notallowed.com" \
+-H "Access-Control-Request-Method: GET" \
+-X GET $(glooctl proxy url)/all-pets 
+``` 
 
+We get output like:
+```
+> GET /all-pets HTTP/1.1
+> Host: localhost:8080
+> User-Agent: curl/8.1.2
+> Accept: */*
+> Origin: https://example.com
+> Access-Control-Request-Method: GET
+>
+< HTTP/1.1 200 OK
+HTTP/1.1 200 OK
+< access-control-allow-origin: https://example.com
+access-control-allow-origin: https://example.com
+< access-control-allow-credentials: true
+access-control-allow-credentials: true
+< access-control-expose-headers: origin,route-header
+access-control-expose-headers: origin,route-header
+< server: envoy
+server: envoy
 
+<
+[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
+```
 
+Note that the Origin, which is found on the Route level and not the VirtualHost level, is accepted and the `access-control-expose-headers` header contains only the values specified on the route level.
 
+### Configuring CORS policy merge settings
 
+It is possible to override the default merge strategy for CORS policy fields found at both the VirtualHost and Route level by applying `corsPolicyMergeSettings` in VirtualHost options.
+See [API docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/cors/cors.proto.sk/#corspolicymergesettings" %}}) for more on the particular fields and merge strategies that are currently supported.
+
+To try this out, modify the VirtualService once more, adding `corsPolicyMergeSettings` to VirtualHost options:
+
+{{< highlight yaml "hl_lines=7-8" >}}
+...
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    options:
+      corsPolicyMergeSettings:
+        exposeHeaders: UNION
+      cors:
+        allowCredentials: true
+        allowHeaders:
+        - origin
+        allowMethods:
+        - GET
+        - POST
+        - OPTIONS
+        allowOrigin:
+        - https://fake.com
+        allowOriginRegex:
+        - https://[a-zA-Z0-9]*.example.com
+        exposeHeaders:
+        - origin
+        - vh-header
+        maxAge: 1d
+  routes:
+    - matchers:
+        - exact: /all-pets
+      options:
+        cors:
+          allowOrigin:
+            - https://example.com
+          exposeHeaders:
+            - origin
+            - route-header
+        prefixRewrite: /api/pets
+...
+{{< /highlight >}}
+
+Now we have configured a `UNION` merge strategy for the `exposeHeaders` field. This will result in a CORS policy applied to the route where all `exposeHeaders` values from the VirtualHost and from the Route will be applied.
+
+We can try this out by executing another request:
+```
+curl -vik -H "Origin: https://notallowed.com" \
+-H "Access-Control-Request-Method: GET" \
+-X GET $(glooctl proxy url)/all-pets 
+``` 
+
+We get output like:
+```
+> GET /all-pets HTTP/1.1
+> Host: localhost:8080
+> User-Agent: curl/8.1.2
+> Accept: */*
+> Origin: https://example.com
+> Access-Control-Request-Method: GET
+>
+< HTTP/1.1 200 OK
+HTTP/1.1 200 OK
+< access-control-allow-origin: https://example.com
+access-control-allow-origin: https://example.com
+< access-control-allow-credentials: true
+access-control-allow-credentials: true
+< access-control-expose-headers: origin,vh-header,route-header
+access-control-expose-headers: origin,vh-header,route-header
+< server: envoy
+server: envoy
+
+<
+[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
+```
+
+Note that the `access-control-expose-headers` header has the union of the values set on the VirtualHost and on the Route as its value.
