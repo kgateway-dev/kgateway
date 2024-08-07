@@ -2948,7 +2948,7 @@ spec:
 						testManifest.Expect("Deployment", namespace, "gateway-proxy").NotTo(BeNil())
 					})
 
-					DescribeTable("supports deploying the specified variant of the envoy image", func(registry, repo, tag, digest, variant, expectedImage string) {
+					DescribeTable("supports deploying the specified tag, digest, and variant of the envoy image", func(registry, repo, tag, digest, variant, expectedImage string) {
 						vals := []string{
 							"global.image.variant=" + variant,
 							"gatewayProxies.gatewayProxy.podTemplate.image.registry=" + registry,
@@ -2977,6 +2977,7 @@ spec:
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Image = expectedImage
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					},
+						// EE envoy image supports both fips and distroless
 						Entry("No tag, digest, or variant specified", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "", "", "", "quay.io/solo-io/gloo-ee-envoy-wrapper"),
 						Entry("Only tag specified", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "tag1", "", "", "quay.io/solo-io/gloo-ee-envoy-wrapper:tag1"),
 						Entry("Only digest specified", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "", "digest1", "", "quay.io/solo-io/gloo-ee-envoy-wrapper@digest1"),
@@ -2997,6 +2998,27 @@ spec:
 						Entry("Tag, digest, and variant specified (fips)", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "tag1", "digest1", "fips", "quay.io/solo-io/gloo-ee-envoy-wrapper-fips:tag1@digest1"),
 						Entry("Tag, digest, and variant specified (distroless)", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "tag1", "digest1", "distroless", "quay.io/solo-io/gloo-ee-envoy-wrapper:tag1-distroless@digest1"),
 						Entry("Tag, digest, and variant specified (fips-distroless)", "quay.io/solo-io", "gloo-ee-envoy-wrapper", "tag1", "digest1", "fips-distroless", "quay.io/solo-io/gloo-ee-envoy-wrapper-fips:tag1-distroless@digest1"),
+						// OSS envoy image does not support fips, so whenever a fips variant is requested, it should use the standard repo name instead of -fips
+						Entry("No tag, digest, or variant specified", "quay.io/solo-io", "gloo-envoy-wrapper", "", "", "", "quay.io/solo-io/gloo-envoy-wrapper"),
+						Entry("Only tag specified", "quay.io/solo-io", "gloo-envoy-wrapper", "tag1", "", "", "quay.io/solo-io/gloo-envoy-wrapper:tag1"),
+						Entry("Only digest specified", "quay.io/solo-io", "gloo-envoy-wrapper", "", "digest1", "", "quay.io/solo-io/gloo-envoy-wrapper@digest1"),
+						Entry("Only variant specified (standard)", "quay.io/solo-io", "gloo-envoy-wrapper", "", "", "standard", "quay.io/solo-io/gloo-envoy-wrapper"),
+						Entry("Only variant specified (fips)", "quay.io/solo-io", "gloo-envoy-wrapper", "", "", "fips", "quay.io/solo-io/gloo-envoy-wrapper"),
+						Entry("Only variant specified (distroless)", "quay.io/solo-io", "gloo-envoy-wrapper", "", "", "distroless", "quay.io/solo-io/gloo-envoy-wrapper"),
+						Entry("Only variant specified (fips-distroless)", "quay.io/solo-io", "gloo-envoy-wrapper", "", "", "fips-distroless", "quay.io/solo-io/gloo-envoy-wrapper"),
+						Entry("Tag and digest specified", "quay.io/solo-io", "gloo-envoy-wrapper", "tag1", "digest1", "", "quay.io/solo-io/gloo-envoy-wrapper:tag1@digest1"),
+						Entry("Tag and variant specified (standard)", "quay.io/solo-io", "gloo-envoy-wrapper", "tag1", "", "standard", "quay.io/solo-io/gloo-envoy-wrapper:tag1"),
+						Entry("Tag and variant specified (fips)", "quay.io/solo-io", "gloo-envoy-wrapper", "tag1", "", "fips", "quay.io/solo-io/gloo-envoy-wrapper:tag1"),
+						Entry("Tag and variant specified (distroless)", "quay.io/solo-io", "gloo-envoy-wrapper", "tag1", "", "distroless", "quay.io/solo-io/gloo-envoy-wrapper:tag1-distroless"),
+						Entry("Tag and variant specified (fips-distroless)", "quay.io/solo-io", "gloo-envoy-wrapper", "tag1", "", "fips-distroless", "quay.io/solo-io/gloo-envoy-wrapper:tag1-distroless"),
+						Entry("Digest and variant specified (standard)", "quay.io/solo-io", "gloo-envoy-wrapper", "", "digest1", "standard", "quay.io/solo-io/gloo-envoy-wrapper@digest1"),
+						Entry("Digest and variant specified (fips)", "quay.io/solo-io", "gloo-envoy-wrapper", "", "digest1", "fips", "quay.io/solo-io/gloo-envoy-wrapper@digest1"),
+						Entry("Digest and variant specified (distroless)", "quay.io/solo-io", "gloo-envoy-wrapper", "", "digest1", "distroless", "quay.io/solo-io/gloo-envoy-wrapper@digest1"),
+						Entry("Digest and variant specified (fips-distroless)", "quay.io/solo-io", "gloo-envoy-wrapper", "", "digest1", "fips-distroless", "quay.io/solo-io/gloo-envoy-wrapper@digest1"),
+						Entry("Tag, digest, and variant specified (standard)", "quay.io/solo-io", "gloo-envoy-wrapper", "tag1", "digest1", "standard", "quay.io/solo-io/gloo-envoy-wrapper:tag1@digest1"),
+						Entry("Tag, digest, and variant specified (fips)", "quay.io/solo-io", "gloo-envoy-wrapper", "tag1", "digest1", "fips", "quay.io/solo-io/gloo-envoy-wrapper:tag1@digest1"),
+						Entry("Tag, digest, and variant specified (distroless)", "quay.io/solo-io", "gloo-envoy-wrapper", "tag1", "digest1", "distroless", "quay.io/solo-io/gloo-envoy-wrapper:tag1-distroless@digest1"),
+						Entry("Tag, digest, and variant specified (fips-distroless)", "quay.io/solo-io", "gloo-envoy-wrapper", "tag1", "digest1", "fips-distroless", "quay.io/solo-io/gloo-envoy-wrapper:tag1-distroless@digest1"),
 					)
 
 					It("supports deploying the fips envoy image via the deprecated global.image.fips helm value", func() {
@@ -3503,6 +3525,64 @@ spec:
 						Expect(gwpDepl.Spec.Template.Spec.Volumes[6]).To(Equal(corev1.Volume{Name: "workload-socket", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}}))
 						Expect(gwpDepl.Spec.Template.Spec.Volumes[7]).To(Equal(corev1.Volume{Name: "workload-certs", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}}))
 					})
+
+					DescribeTable("supports deploying the specified tag, digest, and variant of the istioProxy image", func(registry, repo, tag, digest, variant, expectedImage string) {
+						vals := []string{
+							"global.glooMtls.enabled=true",
+							"global.istioSDS.enabled=true",
+							"global.image.variant=" + variant,
+							"global.glooMtls.istioProxy.image.registry=" + registry,
+							"global.glooMtls.istioProxy.image.repository=" + repo,
+							"global.glooMtls.istioProxy.image.tag=" + tag,
+						}
+						// set the digest value corresponding to the variant
+						switch variant {
+						case "fips":
+							vals = append(vals, "global.glooMtls.istioProxy.image.fipsDigest="+digest)
+						case "distroless":
+							vals = append(vals, "global.glooMtls.istioProxy.image.distrolessDigest="+digest)
+						case "fips-distroless":
+							vals = append(vals, "global.glooMtls.istioProxy.image.fipsDistrolessDigest="+digest)
+						case "":
+							fallthrough
+						case "standard":
+							fallthrough
+						default:
+							vals = append(vals, "global.glooMtls.istioProxy.image.digest="+digest)
+						}
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: vals,
+						})
+
+						gwpDepl := getDeployment(testManifest, namespace, "gateway-proxy")
+						Expect(gwpDepl.Spec.Template.Spec.Containers).To(HaveLen(3))
+
+						istioProxyContainer := gwpDepl.Spec.Template.Spec.Containers[2]
+						Expect(istioProxyContainer.Name).To(Equal("istio-proxy"))
+						Expect(istioProxyContainer.Image).To(Equal(expectedImage))
+					},
+						// there is no fips or distroless version of the istioProxy image so we don't add the -fips or -distroless suffixes for any variants
+						Entry("No tag, digest, or variant specified", "my-istio-reg", "my-istio-repo", "", "", "", "my-istio-reg/my-istio-repo"),
+						Entry("Only tag specified", "my-istio-reg", "my-istio-repo", "tag1", "", "", "my-istio-reg/my-istio-repo:tag1"),
+						Entry("Only digest specified", "my-istio-reg", "my-istio-repo", "", "digest1", "", "my-istio-reg/my-istio-repo@digest1"),
+						Entry("Only variant specified (standard)", "my-istio-reg", "my-istio-repo", "", "", "standard", "my-istio-reg/my-istio-repo"),
+						Entry("Only variant specified (fips)", "my-istio-reg", "my-istio-repo", "", "", "fips", "my-istio-reg/my-istio-repo"),
+						Entry("Only variant specified (distroless)", "my-istio-reg", "my-istio-repo", "", "", "distroless", "my-istio-reg/my-istio-repo"),
+						Entry("Only variant specified (fips-distroless)", "my-istio-reg", "my-istio-repo", "", "", "fips-distroless", "my-istio-reg/my-istio-repo"),
+						Entry("Tag and digest specified", "my-istio-reg", "my-istio-repo", "tag1", "digest1", "", "my-istio-reg/my-istio-repo:tag1@digest1"),
+						Entry("Tag and variant specified (standard)", "my-istio-reg", "my-istio-repo", "tag1", "", "standard", "my-istio-reg/my-istio-repo:tag1"),
+						Entry("Tag and variant specified (fips)", "my-istio-reg", "my-istio-repo", "tag1", "", "fips", "my-istio-reg/my-istio-repo:tag1"),
+						Entry("Tag and variant specified (distroless)", "my-istio-reg", "my-istio-repo", "tag1", "", "distroless", "my-istio-reg/my-istio-repo:tag1"),
+						Entry("Tag and variant specified (fips-distroless)", "my-istio-reg", "my-istio-repo", "tag1", "", "fips-distroless", "my-istio-reg/my-istio-repo:tag1"),
+						Entry("Digest and variant specified (standard)", "my-istio-reg", "my-istio-repo", "", "digest1", "standard", "my-istio-reg/my-istio-repo@digest1"),
+						Entry("Digest and variant specified (fips)", "my-istio-reg", "my-istio-repo", "", "digest1", "fips", "my-istio-reg/my-istio-repo@digest1"),
+						Entry("Digest and variant specified (distroless)", "my-istio-reg", "my-istio-repo", "", "digest1", "distroless", "my-istio-reg/my-istio-repo@digest1"),
+						Entry("Digest and variant specified (fips-distroless)", "my-istio-reg", "my-istio-repo", "", "digest1", "fips-distroless", "my-istio-reg/my-istio-repo@digest1"),
+						Entry("Tag, digest, and variant specified (standard)", "my-istio-reg", "my-istio-repo", "tag1", "digest1", "standard", "my-istio-reg/my-istio-repo:tag1@digest1"),
+						Entry("Tag, digest, and variant specified (fips)", "my-istio-reg", "my-istio-repo", "tag1", "digest1", "fips", "my-istio-reg/my-istio-repo:tag1@digest1"),
+						Entry("Tag, digest, and variant specified (distroless)", "my-istio-reg", "my-istio-repo", "tag1", "digest1", "distroless", "my-istio-reg/my-istio-repo:tag1@digest1"),
+						Entry("Tag, digest, and variant specified (fips-distroless)", "my-istio-reg", "my-istio-repo", "tag1", "digest1", "fips-distroless", "my-istio-reg/my-istio-repo:tag1@digest1"),
+					)
 
 					DescribeTable("Uses the correct image for the sds-ee container", func(variant string, expectedImage string) {
 						prepareMakefile(namespace, helmValues{
