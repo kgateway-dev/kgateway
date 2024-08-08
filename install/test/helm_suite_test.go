@@ -18,7 +18,7 @@ import (
 	"github.com/solo-io/gloo/pkg/cliutil/helm"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	testmake "github.com/solo-io/gloo/test/make"
+	"github.com/solo-io/gloo/test/makefile"
 	soloHelm "github.com/solo-io/go-utils/helmutils"
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/k8s-utils/installutils/kuberesource"
@@ -56,10 +56,10 @@ func TestHelm(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	version = testmake.MustGetVersion(".", "-C", "../../")
+	version = makefile.MustGetVersion(".", "-C", "../../")
 	pullPolicy = corev1.PullIfNotPresent
 	// generate the values.yaml and Chart.yaml files
-	testmake.MustMake(".", "-C", "../../", "generate-helm-files", "-B")
+	makefile.MustMake(".", "-C", "../../", "generate-helm-files", "-B")
 })
 
 type renderTestCase struct {
