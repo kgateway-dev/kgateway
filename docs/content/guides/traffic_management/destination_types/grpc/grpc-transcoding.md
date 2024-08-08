@@ -154,11 +154,6 @@ status:
       ```
       kubectl apply -f upstream.yaml
       ```
-      
-{{% notice note %}}
-Adding the proto descriptor binary to the upstream is the recommended gRPC transcoding practice. However, you can choose to add the proto descriptors to the gateway resource instead of the upstream. For instructions on how to do that, refer to the [Gloo Edge 1.13 docs](https://docs.solo.io/gloo-edge/v1.13.x/guides/traffic_management/destination_types/grpc_to_rest_advanced/). 
-{{% /notice %}}
-
 
 ## Step 4: Set up routing to the gRPC upstream {#grpc-routing}
 
