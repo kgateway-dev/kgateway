@@ -294,6 +294,9 @@ func (h *httpFilterChainTranslator) createFilterChainsFromSslConfiguration(
 		// get secrets
 		downstreamTlsContext, err := h.sslConfigTranslator.ResolveDownstreamSslConfig(snap.Secrets, sslConfig)
 		if err != nil {
+			// We add this as a warning to support eventual consistency with TLS Secret resources. In this way,
+			// the Proxy producing this will not be considered Rejected, and the HTTPS Listener will still operate
+			// as expected with a VirtualService in error.
 			validation.AppendListenerWarning(h.parentReport, validationapi.ListenerReport_Warning_SSLConfigWarning, err.Error())
 			continue
 		}
@@ -308,7 +311,8 @@ func (h *httpFilterChainTranslator) createFilterChainsFromSslConfiguration(
 			continue
 		}
 		secureFilterChains = append(secureFilterChains, &plugins.ExtendedFilterChain{
-			FilterChain: filterChain, TerminatingCipherSuites: sslConfig.GetParameters().GetCipherSuites(),
+			FilterChain:             filterChain,
+			TerminatingCipherSuites: sslConfig.GetParameters().GetCipherSuites(),
 		})
 	}
 	return secureFilterChains

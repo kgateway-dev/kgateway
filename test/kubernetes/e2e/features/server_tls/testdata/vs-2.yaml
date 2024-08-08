@@ -1,0 +1,18 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: vs-2
+spec:
+  sslConfig:
+    secretRef:
+      name: tls-secret-2
+      namespace: ${INSTALL_NAMESPACE}
+  virtualHost:
+    domains:
+    - 'vs-2'
+    routes:
+    - matchers:
+      - exact: /
+      directResponseAction:
+        status: 200
+        body: "success from vs-2"

@@ -185,22 +185,34 @@ func makeTcpHostReports(tcpHosts []*v1.TcpHost) []*validation.TcpHostReport {
 	return tcpHostReports
 }
 
-func mkErr(level, errType, reason string) error {
+func formattedError(level, errType, reason string) error {
 	return errors.Errorf("%v Error: %v. Reason: %v", level, errType, reason)
+}
+
+func formattedWarning(level, errType, reason string) string {
+	return fmt.Sprintf("%v Warning: %v. Reason: %v", level, errType, reason)
 }
 
 func GetListenerErr(listener *validation.ListenerReport) []error {
 	var errs []error
 	for _, errReport := range listener.GetErrors() {
-		errs = append(errs, mkErr("Listener", errReport.GetType().String(), errReport.GetReason()))
+		errs = append(errs, formattedError("Listener", errReport.GetType().String(), errReport.GetReason()))
 	}
 	return errs
+}
+
+func GetListenerWarning(listener *validation.ListenerReport) []string {
+	var warnings []string
+	for _, warning := range listener.GetWarnings() {
+		warnings = append(warnings, formattedWarning("Listener", warning.GetType().String(), warning.GetReason()))
+	}
+	return warnings
 }
 
 func GetHttpListenerErr(httpListener *validation.HttpListenerReport) []error {
 	var errs []error
 	for _, errReport := range httpListener.GetErrors() {
-		errs = append(errs, mkErr("HttpListener", errReport.GetType().String(), errReport.GetReason()))
+		errs = append(errs, formattedError("HttpListener", errReport.GetType().String(), errReport.GetReason()))
 	}
 	return errs
 }
@@ -208,7 +220,7 @@ func GetHttpListenerErr(httpListener *validation.HttpListenerReport) []error {
 func GetVirtualHostErr(virtualHost *validation.VirtualHostReport) []error {
 	var errs []error
 	for _, errReport := range virtualHost.GetErrors() {
-		errs = append(errs, mkErr("VirtualHost", errReport.GetType().String(), errReport.GetReason()))
+		errs = append(errs, formattedError("VirtualHost", errReport.GetType().String(), errReport.GetReason()))
 	}
 	return errs
 }
@@ -224,21 +236,16 @@ func GetRouteErr(route *validation.RouteReport) []error {
 
 func GetRouteWarning(route *validation.RouteReport) []string {
 	var warnings []string
-	appendWarning := func(level, errType, reason string) {
-		warnings = append(warnings, fmt.Sprintf("%v Warning: %v. Reason: %v", level, errType, reason))
-	}
-
 	for _, warning := range route.GetWarnings() {
-		appendWarning("Route", warning.GetType().String(), warning.GetReason())
+		warnings = append(warnings, formattedWarning("Route", warning.GetType().String(), warning.GetReason()))
 	}
-
 	return warnings
 }
 
 func GetTcpListenerErr(tcpListener *validation.TcpListenerReport) []error {
 	var errs []error
 	for _, errReport := range tcpListener.GetErrors() {
-		errs = append(errs, mkErr("TcpListener", errReport.GetType().String(), errReport.GetReason()))
+		errs = append(errs, formattedError("TcpListener", errReport.GetType().String(), errReport.GetReason()))
 	}
 	return errs
 }
@@ -246,7 +253,7 @@ func GetTcpListenerErr(tcpListener *validation.TcpListenerReport) []error {
 func GetTcpHostErr(tcpHost *validation.TcpHostReport) []error {
 	var errs []error
 	for _, errReport := range tcpHost.GetErrors() {
-		errs = append(errs, mkErr("TcpHost", errReport.GetType().String(), errReport.GetReason()))
+		errs = append(errs, formattedError("TcpHost", errReport.GetType().String(), errReport.GetReason()))
 	}
 	return errs
 }
@@ -255,14 +262,9 @@ func GetTcpHostErr(tcpHost *validation.TcpHostReport) []error {
 // of strings
 func GetTcpHostWarning(tcpHost *validation.TcpHostReport) []string {
 	var warnings []string
-	appendWarning := func(level, errType, reason string) {
-		warnings = append(warnings, fmt.Sprintf("%v Warning: %v. Reason: %v", level, errType, reason))
-	}
-
 	for _, warning := range tcpHost.GetWarnings() {
-		appendWarning("TcpHost", warning.GetType().String(), warning.GetReason())
+		warnings = append(warnings, formattedWarning("TcpHost", warning.GetType().String(), warning.GetReason()))
 	}
-
 	return warnings
 }
 
