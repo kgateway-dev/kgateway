@@ -59,7 +59,7 @@ When a user or process wants to perform CRUD (Create, Read, Update, Delete) oper
 
 ## Upstreams and Upstream Groups
 
-*Upstreams* are destinations for traffic sent to the Gloo Edge gateway. A Virtual Service or Route Table may reference one of more Upstreams as destinations. Multiple Upstreams can be combined into an *Upstream Group* with a list of Upstreams and weights for each Upstream.
+*Upstreams* are destinations for traffic sent to the gateway. A Virtual Service or Route Table may reference one of more Upstreams as destinations. Multiple Upstreams can be combined into an *Upstream Group* with a list of Upstreams and weights for each Upstream.
 
 ### Upstreams
 

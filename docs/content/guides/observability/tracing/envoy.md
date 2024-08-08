@@ -201,10 +201,10 @@ Add the Envoy code that you want to apply to a Kubernetes configmap and restart 
 
 ### Step 3. Configure Zipkin as the tracing provider for a listener {#provider}
 
-After you configure the [tracing cluster](#cluster), you can now set Zipkin as the tracing platform for a listener in your Gloo Edge gateway. To do that, you can either update the Gloo Edge gateway, or provide the Envoy code in a Kubernetes configmap and apply this configmap by manually restarting the Envoy proxies.
+After you configure the [tracing cluster](#cluster), you can now set Zipkin as the tracing platform for a listener in your gateway. To do that, you can either update the gateway or provide the Envoy code in a Kubernetes configmap. Then, apply this configmap by manually restarting the Envoy proxies.
 
 {{% notice note %}}
-When you choose to manually update the Envoy proxies with a configmap, you can apply the updated configuration to a static listener that is defined in the Envoy bootstrap config only. If you want to configure a tracing provider for dynamically created listeners, you must update the gateway in Gloo Edge. 
+When you choose to manually update the Envoy proxies with a configmap, you can apply the updated configuration to a static listener that is defined in the Envoy bootstrap config only. If you want to configure a tracing provider for dynamically created listeners, you must update the gateway. 
 {{% /notice %}}
 
 **Option 1: Dynamic listeners with Gloo Edge**

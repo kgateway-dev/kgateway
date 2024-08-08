@@ -354,7 +354,7 @@ After this callback, the normal request flow continues and the upstream applicat
 
 ![GlooTest Response]({{% versioned_link_path fromRoot="/img/glootest-get-1.png" %}})
 
-You can also test other `httpbin` endpoints via the Gloo Edge gateway.  For example, consider this base64 conversion service endpoint:  https://glootest.com/base64/R2xvbyBpcyBhd2Vzb21lCg==
+You can also test other `httpbin` endpoints via the gateway.  For example, consider this base64 conversion service endpoint:  https://glootest.com/base64/R2xvbyBpcyBhd2Vzb21lCg==
 
 ![GlooTest Base64 Conversion]({{% versioned_link_path fromRoot="/img/httpbin-base64.png" %}})
 
