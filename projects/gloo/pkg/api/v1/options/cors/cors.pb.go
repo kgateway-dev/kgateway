@@ -25,8 +25,11 @@ const (
 type CorsPolicyMergeSettings_MergeStrategy int32
 
 const (
-	CorsPolicyMergeSettings_DEFAULT CorsPolicyMergeSettings_MergeStrategy = 0 // Do not merge
-	CorsPolicyMergeSettings_UNION   CorsPolicyMergeSettings_MergeStrategy = 1 // Append list fields, OR booelan fields
+	// Follow the default Envoy behavior, which is for Route settings to override VH settings if non-nil
+	CorsPolicyMergeSettings_DEFAULT CorsPolicyMergeSettings_MergeStrategy = 0
+	// When a setting is present on both VH and Route CORS policy, merge by concatenating for list fields and by
+	// ORing for boolean fields
+	CorsPolicyMergeSettings_UNION CorsPolicyMergeSettings_MergeStrategy = 1
 )
 
 // Enum value maps for CorsPolicyMergeSettings_MergeStrategy.
@@ -187,6 +190,8 @@ func (x *CorsPolicy) GetDisableForRoute() bool {
 }
 
 // Settings for determining how CORS settings are merged when present on both VirtualHost and Route
+// This may be useful if different teams/personas are responsible for managing VirtualService and Route resources and policies
+// on VirtualServices set by one team or persona should be enforced or inherited on Routes
 type CorsPolicyMergeSettings struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

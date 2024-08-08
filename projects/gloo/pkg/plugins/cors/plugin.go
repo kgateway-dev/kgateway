@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/solo-io/gloo/pkg/utils/sliceutils"
+
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_config_cors_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
@@ -83,8 +85,7 @@ func (p *plugin) ProcessVirtualHost(
 }
 
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
-	corsPlugin := in.GetOptions().GetCors()
-	if corsPlugin == nil {
+	if in.GetOptions().GetCors() == nil {
 		return nil
 	}
 
@@ -93,9 +94,11 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	// have the desired merged value(s)
 	// If either is nil, merging will be ineffectual and we skip this step
 	if mergeSettings := params.VirtualHost.GetOptions().GetCorsPolicyMergeSettings(); mergeSettings != nil &&
-		params.VirtualHost.GetOptions().GetCors() != nil && in.GetOptions().GetCors() != nil {
+		params.VirtualHost.GetOptions().GetCors() != nil {
 		in.GetOptions().Cors = mergeCors(mergeSettings, params.VirtualHost.GetOptions().GetCors(), in.GetOptions().GetCors())
 	}
+
+	corsPlugin := in.GetOptions().GetCors()
 
 	// if the route has a direct response action, the cors filter will not apply headers to the response
 	// instead, configure ResponseHeadersToAdd on the direct response action
@@ -275,21 +278,9 @@ func mergeCors(mergeSettings *cors.CorsPolicyMergeSettings, vh, route *cors.Cors
 	if vh.GetExposeHeaders() != nil && route.GetExposeHeaders() != nil {
 		switch mergeSettings.GetExposeHeaders() {
 		case cors.CorsPolicyMergeSettings_UNION:
-			out.ExposeHeaders = dedupe(append(vh.GetExposeHeaders(), route.GetExposeHeaders()...))
-		}
-	}
-
-	return out
-}
-
-func dedupe(in []string) []string {
-	seen := map[string]struct{}{}
-	var out []string
-
-	for _, s := range in {
-		if _, ok := seen[s]; !ok {
-			out = append(out, s)
-			seen[s] = struct{}{}
+			out.ExposeHeaders = sliceutils.Dedupe(append(vh.GetExposeHeaders(), route.GetExposeHeaders()...))
+		case cors.CorsPolicyMergeSettings_DEFAULT:
+			// do nothing
 		}
 	}
 

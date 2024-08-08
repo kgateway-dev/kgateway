@@ -42,15 +42,28 @@ message CorsPolicy {
 }
 
 // Settings for determining how CORS settings are merged when present on both VirtualHost and Route
+// This may be useful if different teams/personas are responsible for managing VirtualService and Route resources and policies
+// on VirtualServices set by one team or persona should be enforced or inherited on Routes
 message CorsPolicyMergeSettings {
     enum MergeStrategy{
-        DEFAULT = 0; // Do not merge
-        UNION = 1; // Append list fields, OR booelan fields
+        // Follow the default Envoy behavior, which is for Route settings to override VH settings if non-nil
+        DEFAULT = 0;
+        // When a setting is present on both VH and Route CORS policy, merge by concatenating for list fields and by
+        // ORing for boolean fields
+        UNION = 1;
 
         // Eventually we may want to add additional mergeStrategies
-        // INTERSECTION = 2; // Use intersection of list fields, AND boolean fields
-        // ROUTE = 3; // Use the route-level field if one is set (this is Envoy's underlying behavior, so effectively the same as default)
-        // VH = 4; // Use the vh-level field if one is set
+
+        // When a setting is present on both VH and Route CORS policy, merge by taking only values present in both for
+        // list fields and by ANDing for boolean fields
+        // INTERSECTION = 2;
+
+        // When a setting is present on both VH and Route CORS policy, use the Route-level field
+        // This is Envoy's underlying behavior, so effectively the same as default
+        // ROUTE = 3;
+
+        // When a setting is present on both VH and Route CORS policy, use the VH-level field
+        // VH = 4;
     }
 
     // Eventually we may want to allow each CORS setting to be configured, so we reserve fields for them

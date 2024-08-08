@@ -1202,8 +1202,8 @@ type RouteOptions struct {
 	// If true and there is a host rewrite, appends the x-forwarded-host header to requests.
 	AppendXForwardedHost *wrappers.BoolValue `protobuf:"bytes,146,opt,name=append_x_forwarded_host,json=appendXForwardedHost,proto3" json:"append_x_forwarded_host,omitempty"`
 	// Defines a CORS policy for the route
-	// If a CORS policy is also defined on the route's virtual host any fields set here override the virtual host configuration
-	// unless an alternate behavior is defined on the virtual host via CorsMergeSettings
+	// If a CORS policy is defined on both the route and the virtual host, the merge behavior for these policies is
+	// determined by the CorsPolicyMergeSettings defined on the VirtualHost.
 	Cors *cors.CorsPolicy `protobuf:"bytes,11,opt,name=cors,proto3" json:"cors,omitempty"`
 	// For routes served by a hashing load balancer, this defines the input to the hash key
 	// Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers:
