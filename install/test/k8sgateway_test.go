@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/install/utils/kuberesource"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
@@ -334,12 +335,11 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					prepareHelmManifest(namespace, helmValues{valuesArgs: valuesArgs})
 
 					gwpUnstructured := testManifest.ExpectCustomResource("GatewayParameters", namespace, wellknown.DefaultGatewayParametersName)
+					obj, err := kuberesource.ConvertUnstructured(gwpUnstructured)
+					Expect(err).NotTo(HaveOccurred())
 
-					var gwp v1alpha1.GatewayParameters
-					b, err := gwpUnstructured.MarshalJSON()
-					Expect(err).ToNot(HaveOccurred())
-					err = json.Unmarshal(b, &gwp)
-					Expect(err).ToNot(HaveOccurred())
+					gwp, ok := obj.(*v1alpha1.GatewayParameters)
+					Expect(ok).To(BeTrue())
 
 					gwpKube := gwp.Spec.Kube
 					Expect(gwpKube).ToNot(BeNil())
