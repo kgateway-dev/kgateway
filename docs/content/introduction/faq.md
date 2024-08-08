@@ -62,7 +62,7 @@ When you install Gloo Gateway, you can provide an enterprise license to install 
 
 We strive to write good documentation and lots of tutorials in our user guides. If you have a suggestion for how to improve, please tell us! In this section, we'll look at some frequent questions asked when getting started:
 
-### How to change the ports on which Gloo Gateway gateway proxy listens?
+### How to change the ports on which the gateway proxy listens?
 
 When considering changing the ports, it's important to understand that the Gloo Gateway `gateway-proxy` (Envoy) listens on a port, and when running in Kubernetes, the Kubernetes service maps to a routable service:port as well.
 
@@ -222,7 +222,7 @@ https://192.168.64.50:31767
 
 There will be times when a configuration goes awry or you encounter unexpected behavior. Here are some helpful hints to diagnose these problems.
 
-### How can I see exactly what configuration the Gloo Gateway gateway-proxy should see and is seeing?
+### How can I see exactly what configuration the gateway-proxy should see and is seeing?
 
 To show what configuration the `gateway-proxy` *should* see, check the Gloo proxy. Gloo uses the proxy configuration (which also reads in configuration from other Gloo resources such as gateways and virtual services) to translate to an Envoy proxy configuration.
 
@@ -401,7 +401,7 @@ If you want to quickly get the logs for the proxy:
 glooctl proxy logs -f
 ```
 
-### Why are the ports on my Gloo Gateway gateway proxy not opened?
+### Why are the ports on my gateway proxy not opened?
 
 For Envoy to open the ports and actually listen, you need to have a Route defined in one of the VirtualServices that will be associated with that particular Gateway/Listener. For example, if have only **one** VirtualService and that has **zero** routes, the corresponding listeners on the `gateway-proxy` will not be active:
 
