@@ -18,6 +18,7 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/fsutils"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
+	test_runtime "github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils/exec"
 )
@@ -153,14 +154,53 @@ func (h *SoloTestHelper) ChartPath() string {
 type OptionsMutator func(opts *Options)
 
 type Options struct {
-	Command []string
-	Verbose bool
+	Command    []string
+	Verbose    bool
+	LocalChart bool
+	CRDDir     string
+	Version    string
+	Repo       string
 }
 
+// WithExtraArgs specifies additional args to pass to the lifecycle command
 func WithExtraArgs(args ...string) OptionsMutator {
 	return func(opts *Options) {
 		opts.Command = append(opts.Command, args...)
 	}
+}
+
+// WithLocalChart downloads the specified version of the chart and extracts it.
+func WithLocalChart(version string, repo string) OptionsMutator {
+	return func(opts *Options) {
+		opts.LocalChart = true
+		opts.Version = version
+		opts.Repo = repo
+	}
+}
+
+// WithCRDs installs the CRDs from the specific directory.
+func WithCRDs(crdDir string) OptionsMutator {
+	return func(opts *Options) {
+		opts.CRDDir = crdDir
+	}
+}
+
+// WithVersion specifies the version to use
+func WithVersion(version string) OptionsMutator {
+	return func(opts *Options) {
+		opts.Version = version
+	}
+}
+
+func (h *SoloTestHelper) generateOpts(command []string, options ...OptionsMutator) *Options {
+	opts := &Options{
+		Command: command,
+		Verbose: true,
+	}
+	for _, opt := range options {
+		opt(opts)
+	}
+	return opts
 }
 
 // InstallGloo calls glooctl to install Gloo. This is where image variants are handled as well.
@@ -173,19 +213,18 @@ func (h *SoloTestHelper) InstallGloo(ctx context.Context, timeout time.Duration,
 		"--release-name", h.HelmChartName,
 	}
 	if h.LicenseKey != "" {
-		glooctlCommand = append(glooctlCommand, "enterprise", "--license-key", h.LicenseKey)
+		options = append(options, WithExtraArgs("enterprise", "--license-key", h.LicenseKey))
 	}
+	options = append(options, WithExtraArgs("-n", h.InstallNamespace))
 	if h.ReleasedVersion != "" {
-		glooctlCommand = append(glooctlCommand, "-n", h.InstallNamespace, "--version", h.ReleasedVersion)
+		options = append(options, WithExtraArgs("--version", h.ReleasedVersion))
 	} else {
-		glooctlCommand = append(glooctlCommand,
-			"-n", h.InstallNamespace,
-			"-f", h.ChartPath())
+		options = append(options, WithExtraArgs("-f", h.ChartPath()))
 	}
 	if h.Verbose {
 		glooctlCommand = append(glooctlCommand, "-v")
 	}
-	variant := os.Getenv("IMAGE_VARIANT")
+	variant := os.Getenv(test_runtime.ImageVariantEnv)
 	if variant != "" {
 		variantValuesFile, err := GenerateVariantValuesFile(variant)
 		if err != nil {
@@ -194,39 +233,48 @@ func (h *SoloTestHelper) InstallGloo(ctx context.Context, timeout time.Duration,
 		options = append(options, WithExtraArgs("--values", variantValuesFile))
 	}
 
-	io := &Options{
-		Command: glooctlCommand,
-		Verbose: true,
-	}
-	for _, opt := range options {
-		opt(io)
-	}
+	opts := h.generateOpts(glooctlCommand, options...)
 
-	if err := glooctlInstallWithTimeout(h.RootDir, io, timeout); err != nil {
+	if err := glooctlInstallWithTimeout(h.RootDir, opts, timeout); err != nil {
 		return errors.Wrapf(err, "error running glooctl install command")
 	}
 
 	return nil
 }
 
-func runWithTimeout(rootDir string, opts *Options, timeout time.Duration, operation string) error {
+func runWithTimeoutOutput(rootDir string, opts *Options, timeout time.Duration, operation string) (string, error) {
+	type result struct {
+		out string
+		err error
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	errChan := make(chan error, 1)
+	resultChan := make(chan result, 1)
 	go func() {
-		err := exec.RunCommand(rootDir, opts.Verbose, opts.Command...)
+		out, err := exec.RunCommandOutput(rootDir, opts.Verbose, opts.Command...)
 		if err != nil {
-			errChan <- errors.Wrapf(err, "error while executing gloo %s", operation)
+			resultChan <- result{
+				out: out,
+				err: errors.Wrapf(err, "error while executing gloo %s", operation),
+			}
 		}
-		errChan <- nil
+		resultChan <- result{
+			out: out,
+			err: nil,
+		}
 	}()
 
 	select {
-	case err := <-errChan:
-		return err // can be nil
+	case res := <-resultChan:
+		return res.out, res.err
 	case <-ctx.Done():
-		return fmt.Errorf("timed out while executing gloo %s", operation)
+		return "", fmt.Errorf("timed out while executing gloo %s", operation)
 	}
+}
+func runWithTimeout(rootDir string, opts *Options, timeout time.Duration, operation string) error {
+	_, err := runWithTimeoutOutput(rootDir, opts, timeout, operation)
+	return err
 }
 
 // Wait for the glooctl install command to respond, err on timeout.
@@ -239,7 +287,10 @@ func glooctlInstallWithTimeout(rootDir string, opts *Options, timeout time.Durat
 }
 
 // Upgrades Gloo via a helm upgrade. It returns a method that rolls-back helm to the version prior to this upgrade
+// If localChart is false, the crdDir provided should be the path from the root of a chart pulled from remote.
+// e.g. for gloo, this would be gloo/crds
 func (h *SoloTestHelper) UpgradeGloo(ctx context.Context, timeout time.Duration, options ...OptionsMutator) (revertFunc func() error, err error) {
+
 	log.Printf("upgrading gloo in namespace [%s]", h.InstallNamespace)
 
 	revision, err := h.CurrentGlooRevision()
@@ -247,36 +298,95 @@ func (h *SoloTestHelper) UpgradeGloo(ctx context.Context, timeout time.Duration,
 		return nil, err
 	}
 
+	chartPath := h.ChartPath()
+
+	var currentCRDsFile string
+	crdOpts := h.generateOpts([]string{}, options...)
+	crdDir := crdOpts.CRDDir
+
+	// Update the CRDs prior to an upgrade
+	if crdDir != "" {
+		getCRDsCommand := []string{
+			"kubectl",
+			"get",
+			"crds",
+			"-oyaml",
+		}
+
+		tmpDir, err := os.MkdirTemp("", "kubernetes-e2e-*")
+		if err != nil {
+			return nil, err
+		}
+
+		// we explicitly do not allow verbose because the output of printing CRDs is >60k lines
+		crdOpts.Verbose = false
+		crdOpts.Command = getCRDsCommand
+		currentCrds, err := runWithTimeoutOutput(h.RootDir, crdOpts, timeout, "get crds")
+		if err != nil {
+			return nil, err
+		}
+
+		currentCRDsFile = filepath.Join(tmpDir, "old_crds.yaml")
+		err = os.WriteFile(currentCRDsFile, []byte(currentCrds), os.ModePerm)
+		if err != nil {
+			return nil, err
+		}
+
+		// Download, extract and apply CRDs
+		if crdOpts.LocalChart {
+			helmCommand := []string{
+				"helm",
+				"pull",
+				crdOpts.Repo,
+				"--untar",
+				"--untardir",
+				tmpDir,
+				"--version",
+				crdOpts.Version,
+			}
+
+			opts := h.generateOpts(helmCommand)
+
+			runWithTimeout(h.RootDir, opts, timeout, "pull crds")
+			crdDir = filepath.Join(tmpDir, strings.TrimPrefix(opts.CRDDir, "/"))
+
+			chartPath = filepath.Join(tmpDir, strings.Split(crdDir, string(filepath.Separator))[0])
+		}
+
+		h.ApplyFilePath(ctx, crdDir)
+	}
+
 	helmCommand := []string{
 		"helm",
 		"upgrade",
 		h.HelmChartName,
-		h.ChartPath(),
+		chartPath,
 		"-n", h.InstallNamespace,
 		"--history-max",
 		"0",
 	}
 
 	if h.Verbose {
-		helmCommand = append(helmCommand, "-v")
+		helmCommand = append(helmCommand, "--debug")
 	}
+	opts := h.generateOpts(helmCommand, options...)
 
-	opts := &Options{
-		Command: helmCommand,
-		Verbose: true,
-	}
-	for _, opt := range options {
-		opt(opts)
-	}
-
-	if err := upgradeGlooWithTimeout(h.RootDir, opts, timeout); err != nil {
-		return nil, errors.Wrapf(err, "error running glooctl install command")
+	if err := runWithTimeout(h.RootDir, opts, timeout, "upgrade"); err != nil {
+		return nil, errors.Wrapf(err, "error running helm upgrade command")
 	}
 
 	return func() error {
-		return h.RevertGlooUpgrade(ctx, timeout, WithExtraArgs([]string{
-			strconv.Itoa(revision),
-		}...))
+		err := h.RevertGlooUpgrade(ctx, timeout, currentCRDsFile,
+			WithExtraArgs([]string{strconv.Itoa(revision)}...))
+		if err != nil {
+			return err
+		}
+
+		if currentCRDsFile != "" {
+			defer os.Remove(currentCRDsFile)
+			return h.ApplyFile(ctx, currentCRDsFile)
+		}
+		return nil
 	}, nil
 }
 
@@ -299,7 +409,7 @@ func upgradeGlooWithTimeout(rootDir string, opts *Options, timeout time.Duration
 
 // Rollback Gloo. The version can be passed via the ExtraArgs option. If not specified it rolls-back to the previous version
 // Eg: RevertGlooUpgrade(ctx, timeout, WithExtraArgs([]string{revision}))
-func (h *SoloTestHelper) RevertGlooUpgrade(ctx context.Context, timeout time.Duration, options ...OptionsMutator) error {
+func (h *SoloTestHelper) RevertGlooUpgrade(ctx context.Context, timeout time.Duration, crdsPath string, options ...OptionsMutator) error {
 	log.Printf("reverting gloo upgrade in namespace [%s]", h.InstallNamespace)
 	helmCommand := []string{
 		"helm",
@@ -311,12 +421,12 @@ func (h *SoloTestHelper) RevertGlooUpgrade(ctx context.Context, timeout time.Dur
 	}
 
 	if h.Verbose {
-		helmCommand = append(helmCommand, "-v")
+		helmCommand = append(helmCommand, "--debug")
 	}
 
 	opts := &Options{
 		Command: helmCommand,
-		Verbose: true,
+		Verbose: h.Verbose,
 	}
 	for _, opt := range options {
 		opt(opts)

@@ -1,0 +1,6 @@
+settings:
+  replaceInvalidRoutes: true
+  invalidConfigPolicy.invalidRouteResponseCode: 400
+gateway:
+  validation:
+    validationServerGrpcMaxSizeBytes: 5000000
