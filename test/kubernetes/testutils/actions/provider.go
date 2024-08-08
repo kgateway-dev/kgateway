@@ -1,6 +1,7 @@
 package actions
 
 import (
+	"github.com/solo-io/gloo/pkg/utils/helmutils"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
@@ -13,6 +14,7 @@ import (
 type Provider struct {
 	kubeCli *kubectl.Cli
 	glooCli *testutils.GlooCli
+	helmCli *helmutils.Client
 
 	glooGatewayContext *gloogateway.Context
 }
@@ -22,6 +24,7 @@ func NewActionsProvider() *Provider {
 	return &Provider{
 		kubeCli:            nil,
 		glooCli:            testutils.NewGlooCli(),
+		helmCli:            helmutils.NewClient(),
 		glooGatewayContext: nil,
 	}
 }
@@ -44,4 +47,8 @@ func (p *Provider) Kubectl() *kubectl.Cli {
 
 func (p *Provider) Glooctl() *testutils.GlooCli {
 	return p.glooCli
+}
+
+func (p *Provider) Helm() *helmutils.Client {
+	return p.helmCli
 }

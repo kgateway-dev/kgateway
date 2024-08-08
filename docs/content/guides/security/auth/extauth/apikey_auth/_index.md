@@ -57,7 +57,7 @@ Now let's configure Gloo Gateway to route requests to the upstream we just creat
 {{< /tab >}}
 {{< /tabs >}} 
 
-Let's send a request that matches the above route to the Gloo Gateway gateway and make sure it works:
+Let's send a request that matches the above route to the gateway proxy and make sure it works:
 
 ```shell
 curl -H "Host: foo" $(glooctl proxy url)/posts/1
