@@ -121,6 +121,8 @@ func (s *checkSuite) TestCheckTimeout() {
 	_, err = normalTimeoutValues.Write([]byte(`checkTimeoutSeconds: 300s`))
 	s.NoError(err)
 
+	// Note: This test does not use `"-x", "xds-metrics"`, so it will require the xds-metrics check to pass with no errors
+	// In gloo-ee the prometheus metrics must be enabled for the check to pass
 	_, err = s.testInstallation.Actions.Glooctl().Check(s.ctx,
 		"-n", s.testInstallation.Metadata.InstallNamespace,
 		"-c", normalTimeoutValues.Name())
@@ -139,6 +141,8 @@ func (s *checkSuite) TestCheckNamespace() {
 	s.Contains(output, "Warning: The provided label selector (gloo) applies to no pods")
 
 	// pod does not exist
+	// Note: This test does not use `"-x", "xds-metrics"`, so it will require the xds-metrics check to pass with no errors
+	// In gloo-ee the prometheus metrics must be enabled for the check to pass
 	output, err = s.testInstallation.Actions.Glooctl().Check(s.ctx,
 		"-n", s.testInstallation.Metadata.InstallNamespace,
 		"-p", "not-gloo")
