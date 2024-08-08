@@ -1,6 +1,6 @@
 ---
 title: Gloo Gateway and Istio
-menuTitle: Configure your Gloo Gateway gateway to run an Istio sidecar 
+menuTitle: Configure your gateway to run an Istio sidecar 
 weight: 1
 ---
 
