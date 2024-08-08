@@ -69,7 +69,6 @@ var _ = Describe("Eds", func() {
 		},
 			mockCache, v1.UpstreamList{}, clients.WatchOpts{Ctx: ctx}, &v1.Settings{WatchNamespaces: watchNamespaces})
 		Expect(err).NotTo(HaveOccurred())
-
 	})
 
 	Context("Istio integration", func() {
