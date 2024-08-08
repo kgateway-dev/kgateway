@@ -8,7 +8,7 @@ With Gloo Gateway, you can configure the gateway listener along with custom Envo
 * [Types of request processing](#types-of-request-processing)
 * [Filter flow](#filter-flow)
 
-For an overview of Gloo Gateway gateway, virtual service, and upstream configurations, see [Traffic management]({{% versioned_link_path fromRoot="/introduction/traffic_management/" %}}).
+For an overview of gateway, virtual service, and upstream configurations, see [Traffic management]({{% versioned_link_path fromRoot="/introduction/traffic_management/" %}}).
 
 ---
 
