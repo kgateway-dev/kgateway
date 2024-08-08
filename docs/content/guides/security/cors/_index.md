@@ -204,7 +204,7 @@ spec:
 ```
 
 By default, values that are set on the VirtualHost level are overridden by those set on the Route level. For example, try amending the VS as follows:
-{{< highlight yaml "hl_lines=16,21,27-32" >}}
+{{< highlight yaml "hl_lines=16 21 27-32" >}}
 ...
 spec:
   virtualHost:
