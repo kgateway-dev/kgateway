@@ -4,6 +4,8 @@ metadata:
   name: vs-with-oneway
 spec:
   sslConfig:
+    sniDomains:
+      - vs-with-oneway
     oneWayTls: true
     secretRef:
       name: tls-secret-with-ca

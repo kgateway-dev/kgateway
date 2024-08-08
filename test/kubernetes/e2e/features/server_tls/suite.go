@@ -1,4 +1,4 @@
-package client_tls
+package server_tls
 
 import (
 	"context"
@@ -30,6 +30,9 @@ type serverTlsTestingSuite struct {
 
 	// ns is the namespace in which the feature suite is being executed.
 	ns string
+
+	tlsSecret1, tlsSecret2, tlsSecretWithCa []byte
+	vs1, vs2, vsWithOneWay, vsWithoutOneWay []byte
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
@@ -41,7 +44,25 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *serverTlsTestingSuite) SetupSuite() {
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.CurlPodManifest)
+	var err error
+	// We are substituting our namespace via os.ExpandEnv in order to place our referenced
+	// resources in our NS.
+	s.tlsSecret1, err = tlsSecret1Manifest()
+	s.NoError(err, "can substitute NS in tlsSecret1")
+	s.tlsSecret2, err = tlsSecret2Manifest()
+	s.NoError(err, "can substitute NS in tlsSecret2")
+	s.tlsSecretWithCa, err = tlsSecretWithCaManifest()
+	s.NoError(err, "can substitute NS in tlsSecretWithCa")
+	s.vs1, err = vs1Manifest()
+	s.NoError(err, "can substitute NS in vs1")
+	s.vs2, err = vs2Manifest()
+	s.NoError(err, "can substitute NS in vs2")
+	s.vsWithOneWay, err = vsWithOneWayManifest()
+	s.NoError(err, "can substitute NS in vsWithOneWay")
+	s.vsWithoutOneWay, err = vsWithoutOneWayManifest()
+	s.NoError(err, "can substitute NS in vsWithoutOneWay")
+
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.CurlPodManifest)
 	s.NoError(err, "can apply Curl setup manifest")
 
 }
@@ -57,23 +78,23 @@ func (s *serverTlsTestingSuite) TestServerTls() {
 	vs1 := vs1(s.ns)
 	s.T().Cleanup(func() {
 		// ordering here matters if strict validation enabled
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, vs1ManifestFile, "-n", s.ns)
+		err := s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.vs1, "-n", s.ns)
 		s.NoError(err, "can delete vs1 manifest file")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, vs1)
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, tlsSecret1ManifestFile)
+		err = s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.tlsSecret1)
 		s.NoError(err, "can delete tls secret manifest file")
 		// tlsSecret2 is deleted in the process of the test.
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, tlsSecret1(s.ns))
 	})
 
 	// ordering here matters if strict validation enabled
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, tlsSecret1ManifestFile)
+	err := s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.tlsSecret1)
 	s.NoError(err, "can apply tls secret 1 manifest file")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, tlsSecret1(s.ns))
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, vs1ManifestFile, "-n", s.ns)
+	err = s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.vs1, "-n", s.ns)
 	s.NoError(err, "can apply vs1 manifest file")
 
-	// Assert that we have traffic working on both VS.
+	// Assert that we have traffic working on our VS.
 	s.assertEventualResponse(vs1.GetName(), expectedHealthyResponse1)
 }
 
@@ -84,26 +105,26 @@ func (s *serverTlsTestingSuite) TestServerTlsTwoVirtualServices() {
 	vs2 := vs2(s.ns)
 	s.T().Cleanup(func() {
 		// ordering here matters if strict validation enabled
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, vs1ManifestFile, "-n", s.ns)
+		err := s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.vs1, "-n", s.ns)
 		s.NoError(err, "can delete vs1 manifest file")
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, vs2ManifestFile, "-n", s.ns)
+		err = s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.vs2, "-n", s.ns)
 		s.NoError(err, "can delete vs2 manifest file")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, vs1, vs2)
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, tlsSecret1ManifestFile)
+		err = s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.tlsSecret1)
 		s.NoError(err, "can delete tls secret manifest file")
 		// tlsSecret2 is deleted in the process of the test.
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, tlsSecret1(s.ns), tlsSecret2(s.ns))
 	})
 
 	// ordering here matters if strict validation enabled
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, tlsSecret1ManifestFile)
+	err := s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.tlsSecret1)
 	s.NoError(err, "can apply tls secret 1 manifest file")
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, tlsSecret1ManifestFile)
+	err = s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.tlsSecret2)
 	s.NoError(err, "can apply tls secret 2 manifest file")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, tlsSecret1(s.ns), tlsSecret2(s.ns))
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, vs1ManifestFile, "-n", s.ns)
+	err = s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.vs1, "-n", s.ns)
 	s.NoError(err, "can apply vs1 manifest file")
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, vs2ManifestFile, "-n", s.ns)
+	err = s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.vs2, "-n", s.ns)
 	s.NoError(err, "can apply vs2 manifest file")
 
 	// Assert that we have traffic working on both VS.
@@ -121,40 +142,40 @@ func (s *serverTlsTestingSuite) TestServerTlsTwoVirtualServicesOneMissingTlsSecr
 	vs2 := vs2(s.ns)
 	s.T().Cleanup(func() {
 		// ordering here matters if strict validation enabled
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, vs1ManifestFile, "-n", s.ns)
+		err := s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.vs1, "-n", s.ns)
 		s.NoError(err, "can delete vs1 manifest file")
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, vs2ManifestFile, "-n", s.ns)
+		err = s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.vs2, "-n", s.ns)
 		s.NoError(err, "can delete vs2 manifest file")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, vs1, vs2)
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, tlsSecret1ManifestFile)
+		err = s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.tlsSecret1)
 		s.NoError(err, "can delete tls secret manifest file")
 		// tlsSecret2 is deleted in the process of the test.
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, tlsSecret1(s.ns), tlsSecret2(s.ns))
 	})
 
 	// ordering here matters if strict validation enabled
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, tlsSecret1ManifestFile)
+	err := s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.tlsSecret1)
 	s.NoError(err, "can apply tls secret 1 manifest file")
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, tlsSecret1ManifestFile)
+	err = s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.tlsSecret2)
 	s.NoError(err, "can apply tls secret 2 manifest file")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, tlsSecret1(s.ns), tlsSecret2(s.ns))
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, vs1ManifestFile, "-n", s.ns)
+	err = s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.vs1, "-n", s.ns)
 	s.NoError(err, "can apply vs1 manifest file")
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, vs2ManifestFile, "-n", s.ns)
+	err = s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.vs2, "-n", s.ns)
 	s.NoError(err, "can apply vs2 manifest file")
 
 	// Assert that we have traffic working on both VS.
 	s.assertEventualResponse(vs1.GetName(), expectedHealthyResponse1)
 	s.assertEventualResponse(vs2.GetName(), expectedHealthyResponse2)
 
-	// Delete the secret referenced by VS 1.
-	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, tlsSecret2ManifestFile)
+	// Delete the secret referenced by VS 2.
+	err = s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.tlsSecret2)
 	s.NoError(err, "can delete tls secret 2 manifest file")
 	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, tlsSecret2(s.ns))
 
 	// Assert that we have traffic working on VS 1 but failed traffic on VS 2.
 	s.assertEventualResponse(vs1.GetName(), expectedHealthyResponse1)
-	s.assertEventualResponse(vs2.GetName(), expectedNoFilterChainFailedResponse)
+	s.assertEventualError(vs2.GetName(), 35)
 
 	// Restart the Gloo deployment
 	err = s.testInstallation.Actions.Kubectl().RestartDeploymentAndWait(s.ctx, "gloo", "-n", s.ns)
@@ -164,7 +185,7 @@ func (s *serverTlsTestingSuite) TestServerTlsTwoVirtualServicesOneMissingTlsSecr
 
 	// Assert that we have traffic working on VS 1 but failed traffic on VS 2.
 	s.assertEventuallyConsistentResponse(vs1.GetName(), expectedHealthyResponse1, timeout, polling)
-	s.assertEventuallyConsistentResponse(vs2.GetName(), expectedNoFilterChainFailedResponse, timeout, polling)
+	s.assertEventualError(vs2.GetName(), 35)
 
 }
 
@@ -175,21 +196,21 @@ func (s *serverTlsTestingSuite) TestOneWayServerTlsFailsWithoutOneWayTls() {
 	vs := vsWithoutOneWay(s.ns)
 	s.T().Cleanup(func() {
 		// ordering here matters if strict validation enabled
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, vsWithoutOneWayManifestFile, "-n", s.ns)
+		err := s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.vsWithoutOneWay, "-n", s.ns)
 		s.NoError(err, "can delete vs manifest file")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, vs)
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, tlsSecretWithCaManifestFile)
+		err = s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.tlsSecretWithCa)
 		s.NoError(err, "can delete tls secret manifest file")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, tlsSecretWithCa(s.ns))
 	})
 
 	// ordering here matters if strict validation enabled
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, tlsSecretWithCaManifestFile)
+	err := s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.tlsSecretWithCa)
 	s.NoError(err, "can apply tls secret manifest file")
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, vsWithoutOneWayManifestFile, "-n", s.ns)
+	err = s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.vsWithoutOneWay, "-n", s.ns)
 	s.NoError(err, "can apply vs manifest file")
 
-	s.assertEventualResponse(vs.GetName(), expectedCertVerifyFailedResponse)
+	s.assertEventualError(vs.GetName(), 16)
 }
 
 // TestOneWayServerTlsWorksWithOneWayTls validates that one-way server TLS traffic succeeds when CA data
@@ -199,21 +220,33 @@ func (s *serverTlsTestingSuite) TestOneWayServerTlsWorksWithOneWayTls() {
 	vs := vsWithOneWay(s.ns)
 	s.T().Cleanup(func() {
 		// ordering here matters if strict validation enabled
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, vsWithOneWayManifestFile, "-n", s.ns)
+		err := s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.vsWithOneWay, "-n", s.ns)
 		s.NoError(err, "can delete vs manifest file")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, vs)
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, tlsSecretWithCaManifestFile)
+		err = s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.tlsSecretWithCa)
 		s.NoError(err, "can delete tls secret manifest file")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, tlsSecretWithCa(s.ns))
 	})
 
 	// ordering here matters if strict validation enabled
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, tlsSecret1ManifestFile)
+	err := s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.tlsSecretWithCa)
 	s.NoError(err, "can apply tls secret manifest file")
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, vsWithoutOneWayManifestFile, "-n", s.ns)
+	err = s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.vsWithOneWay, "-n", s.ns)
 	s.NoError(err, "can apply vs manifest file")
 
 	s.assertEventualResponse(vs.GetName(), expectedHealthyResponseWithOneWay)
+}
+
+func curlOptions(ns, hostHeaderValue string) []curl.Option {
+	return []curl.Option{
+		curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: ns})),
+		// The host header must match the domain in the VirtualService
+		curl.WithHostHeader(hostHeaderValue),
+		curl.WithPort(443),
+		curl.IgnoreServerCert(),
+		curl.WithScheme("https"),
+		curl.WithSni(hostHeaderValue),
+	}
 }
 
 func (s *serverTlsTestingSuite) assertEventualResponse(hostHeaderValue string, matcher *matchers.HttpResponse) {
@@ -228,13 +261,7 @@ func (s *serverTlsTestingSuite) assertEventualResponse(hostHeaderValue string, m
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: s.testInstallation.Metadata.InstallNamespace})),
-			// The host header must match the domain in the VirtualService
-			curl.WithHostHeader(hostHeaderValue),
-			curl.WithPort(443),
-			curl.IgnoreServerCert(),
-		},
+		curlOptions(s.ns, hostHeaderValue),
 		matcher)
 }
 
@@ -250,13 +277,23 @@ func (s *serverTlsTestingSuite) assertEventuallyConsistentResponse(hostHeaderVal
 	s.testInstallation.Assertions.AssertEventuallyConsistentCurlResponse(
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: defaults.GatewayProxyName, Namespace: s.testInstallation.Metadata.InstallNamespace})),
-			// The host header must match the domain in the VirtualService
-			curl.WithHostHeader(hostHeaderValue),
-			curl.WithPort(443),
-			curl.IgnoreServerCert(),
-		},
+		curlOptions(s.ns, hostHeaderValue),
 		matcher,
 		timeouts...)
+}
+
+func (s *serverTlsTestingSuite) assertEventualError(hostHeaderValue string, code int) {
+
+	// Make sure our proxy pod is running
+	listOpts := metav1.ListOptions{
+		LabelSelector: "gloo=gateway-proxy",
+	}
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, s.testInstallation.Metadata.InstallNamespace, listOpts, time.Minute*2)
+
+	// Check curl works against expected response
+	s.testInstallation.Assertions.AssertEventualCurlError(
+		s.ctx,
+		testdefaults.CurlPodExecOpt,
+		curlOptions(s.ns, hostHeaderValue),
+		code)
 }

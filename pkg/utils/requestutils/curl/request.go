@@ -134,9 +134,9 @@ func (c *requestConfig) generateArgs() []string {
 	var fullAddress string
 
 	if c.sni != "" {
-		sniResolution := fmt.Sprintf("%s:%d:%s", c.sni, c.port, c.host)
+		sniResolution := fmt.Sprintf("%s:%d:%s:%d", c.sni, c.port, c.host, c.port)
 		fullAddress = fmt.Sprintf("%s://%s:%d", c.scheme, c.sni, c.port)
-		args = append(args, "--resolve", sniResolution)
+		args = append(args, "--connect-to", sniResolution)
 	} else {
 		fullAddress = fmt.Sprintf("%v://%s:%v/%s", c.scheme, c.host, c.port, c.path)
 		if len(c.queryParameters) > 0 {

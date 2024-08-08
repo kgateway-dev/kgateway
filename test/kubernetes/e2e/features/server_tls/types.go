@@ -1,7 +1,8 @@
-package client_tls
+package server_tls
 
 import (
 	"net/http"
+	"os"
 	"path/filepath"
 
 	"github.com/onsi/gomega"
@@ -14,13 +15,13 @@ import (
 )
 
 var (
-	tlsSecret1ManifestFile      = filepath.Join(util.MustGetThisDir(), "testdata", "tls-secret-1.yaml")
-	tlsSecret2ManifestFile      = filepath.Join(util.MustGetThisDir(), "testdata", "tls-secret-2.yaml")
-	tlsSecretWithCaManifestFile = filepath.Join(util.MustGetThisDir(), "testdata", "tls-secret-with-ca.yaml")
-	vs1ManifestFile             = filepath.Join(util.MustGetThisDir(), "testdata", "vs-1.yaml")
-	vs2ManifestFile             = filepath.Join(util.MustGetThisDir(), "testdata", "vs-2.yaml")
-	vsWithOneWayManifestFile    = filepath.Join(util.MustGetThisDir(), "testdata", "vs-with-oneway.yaml")
-	vsWithoutOneWayManifestFile = filepath.Join(util.MustGetThisDir(), "testdata", "vs-without-oneway.yaml")
+	tlsSecret1Manifest      = func() ([]byte, error) { return manifestFromFile("tls-secret-1.yaml") }
+	tlsSecret2Manifest      = func() ([]byte, error) { return manifestFromFile("tls-secret-2.yaml") }
+	tlsSecretWithCaManifest = func() ([]byte, error) { return manifestFromFile("tls-secret-with-ca.yaml") }
+	vs1Manifest             = func() ([]byte, error) { return manifestFromFile("vs-1.yaml") }
+	vs2Manifest             = func() ([]byte, error) { return manifestFromFile("vs-2.yaml") }
+	vsWithOneWayManifest    = func() ([]byte, error) { return manifestFromFile("vs-with-oneway.yaml") }
+	vsWithoutOneWayManifest = func() ([]byte, error) { return manifestFromFile("vs-without-oneway.yaml") }
 
 	// When we apply the deployer-provision.yaml file, we expect resources to be created with this metadata
 	glooProxyObjectMeta = func(ns string) metav1.ObjectMeta {
@@ -105,16 +106,22 @@ var (
 		StatusCode: http.StatusOK,
 		Body:       gomega.ContainSubstring("success from vs-with-oneway"),
 	}
-	expectedHealthyResponseWithoutOneWay = &matchers.HttpResponse{
-		StatusCode: http.StatusOK,
-		Body:       gomega.ContainSubstring("success from vs-without-oneway"),
-	}
-	expectedCertVerifyFailedResponse = &matchers.HttpResponse{
-		StatusCode: http.StatusServiceUnavailable,
-		Body:       gomega.ContainSubstring("CERTIFICATE_VERIFY_FAILED"),
-	}
-	expectedNoFilterChainFailedResponse = &matchers.HttpResponse{
-		StatusCode: http.StatusServiceUnavailable,
-		Body:       gomega.ContainSubstring("OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection"),
-	}
+	// These codes are defined at https://curl.se/libcurl/c/libcurl-errors.html.
+	// These were determined experimentally.
+	expectedFailedResponseCodeInvalidVs = 16
+	expectedFailedResponseCertRequested = 35
 )
+
+func manifestFromFile(fname string) ([]byte, error) {
+	return withSubstitutions(filepath.Join(util.MustGetThisDir(), "testdata", fname))
+}
+func withSubstitutions(fname string) ([]byte, error) {
+	// VS with secret should be accepted, need to substitute the secret ns
+	raw, err := os.ReadFile(fname)
+	if err != nil {
+		return nil, err
+	}
+
+	// Replace environment variables placeholders with their values
+	return []byte(os.ExpandEnv(string(raw))), nil
+}

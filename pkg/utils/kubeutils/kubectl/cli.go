@@ -299,11 +299,12 @@ func (c *Cli) Scale(ctx context.Context, namespace string, resource string, repl
 
 // RestartDeployment restarts a deployment. It does not wait for the deployment to be ready.
 func (c *Cli) RestartDeployment(ctx context.Context, name string, extraArgs ...string) error {
-	return c.RunCommand(ctx,
+	args := append([]string{
 		"rollout",
 		"restart",
 		fmt.Sprintf("deployment/%s", name),
-	)
+	}, extraArgs...)
+	return c.RunCommand(ctx, args...)
 }
 
 // RestartDeploymentAndWait restarts a deployment and waits for it to become healthy.

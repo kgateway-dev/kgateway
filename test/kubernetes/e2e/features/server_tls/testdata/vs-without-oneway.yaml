@@ -4,6 +4,8 @@ metadata:
   name: vs-without-oneway
 spec:
   sslConfig:
+    sniDomains:
+      - vs-without-oneway
     secretRef:
       name: tls-secret-with-ca
       namespace: ${INSTALL_NAMESPACE}
