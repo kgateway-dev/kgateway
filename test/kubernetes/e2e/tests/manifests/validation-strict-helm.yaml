@@ -17,7 +17,6 @@ settings:
     invalidRouteResponseBody: Gloo Gateway has invalid configuration.
 gateway:
   persistProxySpec: false
-  logLevel: info
   validation:
     enabled: true
     failurePolicy: Fail # For "strict" validation mode, fail the validation if webhook server is not available

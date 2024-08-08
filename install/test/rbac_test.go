@@ -3,6 +3,7 @@ package test
 import (
 	"fmt"
 
+	glootestutils "github.com/solo-io/gloo/test/testutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -23,9 +24,9 @@ var _ = Describe("RBAC Test", func() {
 			)
 
 			prepareMakefile := func(helmFlags ...string) {
-				tm, err := testCase.renderer.RenderManifest(namespace, helmValues{
+				tm, err := testCase.renderer.RenderManifest(namespace, glootestutils.HelmValues{
 					// TODO: re-enable once our k8s gw integration supports namespaced rbac
-					valuesArgs: append([]string{"kubeGateway.enabled=false"}, helmFlags...),
+					ValuesArgs: append([]string{"kubeGateway.enabled=false"}, helmFlags...),
 				})
 				Expect(err).NotTo(HaveOccurred(), "Should be able to render the manifest in the RBAC unit test")
 				testManifest = tm

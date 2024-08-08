@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	glootestutils "github.com/solo-io/gloo/test/testutils"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -38,7 +39,7 @@ var _ = Describe("GrpcJsonTranscoder helm test", func() {
 				}
 			}
 		)
-		prepareManifest := func(namespace string, values helmValues) {
+		prepareManifest := func(namespace string, values glootestutils.HelmValues) {
 			GinkgoHelper()
 			tm, err := rendererTestCase.renderer.RenderManifest(namespace, values)
 			Expect(err).NotTo(HaveOccurred(), "Failed to render manifest")
@@ -47,8 +48,8 @@ var _ = Describe("GrpcJsonTranscoder helm test", func() {
 
 		Context("protoDescriptorBin field", func() {
 			BeforeEach(func() {
-				prepareManifest(namespace, helmValues{
-					valuesArgs: []string{
+				prepareManifest(namespace, glootestutils.HelmValues{
+					ValuesArgs: []string{
 						fmt.Sprintf("gatewayProxies.gatewayProxy.gatewaySettings.customHttpGateway.options.grpcJsonTranscoder.protoDescriptorBin=%s", protoDescriptor),
 						fmt.Sprintf("gatewayProxies.gatewayProxy.gatewaySettings.customHttpsGateway.options.grpcJsonTranscoder.protoDescriptorBin=%s", protoDescriptor),
 					},
@@ -65,8 +66,8 @@ var _ = Describe("GrpcJsonTranscoder helm test", func() {
 		})
 		Context("protoDescriptorConfigMap field", func() {
 			BeforeEach(func() {
-				prepareManifest(namespace, helmValues{
-					valuesArgs: []string{
+				prepareManifest(namespace, glootestutils.HelmValues{
+					ValuesArgs: []string{
 						"gatewayProxies.gatewayProxy.gatewaySettings.customHttpGateway.options.grpcJsonTranscoder.protoDescriptorConfigMap.configMapRef.name=my-config-map",
 						"gatewayProxies.gatewayProxy.gatewaySettings.customHttpGateway.options.grpcJsonTranscoder.protoDescriptorConfigMap.configMapRef.namespace=gloo-system",
 						"gatewayProxies.gatewayProxy.gatewaySettings.customHttpGateway.options.grpcJsonTranscoder.protoDescriptorConfigMap.key=my-key",
