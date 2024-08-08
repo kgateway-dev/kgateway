@@ -37,7 +37,7 @@ func GatewayParametersUnstructured() *unstructured.Unstructured {
 	var rss []*unstructured.Unstructured
 	err := json.Unmarshal(unstructuredGatewayParametersJson, &rss)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	ExpectWithOffset(1, len(rss)).To(Equal(1))
+	ExpectWithOffset(1, rss).To(HaveLen(1))
 	return rss[0]
 }
 
