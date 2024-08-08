@@ -6376,7 +6376,7 @@ metadata:
 					Entry("19-gloo-mtls-certgen-cronjob.yaml", "gloo-mtls-certgen-cronjob", "certgen", "CronJob", "gateway.certGenJob.containerSecurityContext", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 				)
 
-				It("applies global security setings to containers", func() {
+				It("applies global security settings to containers", func() {
 					helmArgs := append(
 						helmRenderEverythingValues(),
 						"global.securitySettings.floatingUserId=true",
