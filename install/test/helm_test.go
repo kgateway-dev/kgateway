@@ -6386,7 +6386,7 @@ metadata:
 						valuesArgs: helmArgs,
 					})
 
-					foundContainers := securitycontext.ValidateSecurityContexts(
+					securitycontext.ValidateSecurityContexts(
 						testManifest,
 						func(container corev1.Container, resourceName string) {
 							// If securityContext is nil, then it means runAsUser has not been set
@@ -6394,9 +6394,9 @@ metadata:
 								Expect(container.SecurityContext.RunAsUser).To(BeNil(), "resource: %s, container: %s", resourceName, container.Name)
 							}
 						},
+						Equal(securitycontext.ExpectedContainers),
 					)
 
-					Expect(foundContainers).To(Equal(securitycontext.ExpectedContainers))
 				})
 
 				It("global security setings override container-specific values", func() {
@@ -6413,7 +6413,7 @@ metadata:
 						valuesArgs: helmArgs,
 					})
 
-					foundContainers := securitycontext.ValidateSecurityContexts(
+					securitycontext.ValidateSecurityContexts(
 						testManifest,
 						func(container corev1.Container, resourceName string) {
 							// If securityContext is nil, then it means runAsUser has not been set
@@ -6421,9 +6421,8 @@ metadata:
 								Expect(container.SecurityContext.RunAsUser).To(BeNil(), "resource: %s, container: %s", resourceName, container.Name)
 							}
 						},
+						Equal(securitycontext.ExpectedContainers),
 					)
-
-					Expect(foundContainers).To(Equal(securitycontext.ExpectedContainers))
 				})
 
 				// Most of the containers are covered in the test above which loops over the entire deployment, but we can't
@@ -6495,7 +6494,7 @@ metadata:
 						valuesArgs: helmArgs,
 					})
 
-					foundContainers := securitycontext.ValidateSecurityContexts(
+					securitycontext.ValidateSecurityContexts(
 						testManifest,
 						func(container corev1.Container, resourceName string) {
 							// Uncomment this to print the enumerated list of containers
@@ -6513,9 +6512,8 @@ metadata:
 							securityContext := container.SecurityContext
 							Expect(securityContext).To(Equal(expectedDefaults), "resource: %s, container: %s, seccompTypeValue: %s", resourceName, container.Name, seccompType)
 						},
+						Equal(securitycontext.ExpectedContainers),
 					)
-
-					Expect(foundContainers).To(Equal(securitycontext.ExpectedContainers), "seccompTypeValue: %s", seccompType)
 
 				},
 					Entry("null/default", ""),

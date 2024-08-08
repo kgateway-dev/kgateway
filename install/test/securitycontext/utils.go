@@ -11,6 +11,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/onsi/gomega/types"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/utils/ptr"
 )
@@ -106,7 +107,12 @@ var DefaultOverrides = map[string]map[string]ApplyContainerSecurityDefaults{
 
 // FilterAndValidateSecurityContexts will filter the resources in the TestManifest using the provided filter function
 // and apply the passed validateContainer function to each container in the filtered resources. Returns the number of non-filtered containers found.
-func FilterAndValidateSecurityContexts(testManifest TestManifest, validateContainer func(container corev1.Container, resourceName string), filter func(resource *unstructured.Unstructured) bool) int {
+func FilterAndValidateSecurityContexts(
+	testManifest TestManifest,
+	validateContainer func(container corev1.Container, resourceName string),
+	containerMatcher types.GomegaMatcher,
+	filter func(resource *unstructured.Unstructured) bool,
+) {
 	foundContainers := 0
 
 	testManifest.SelectResources(filter).ExpectAll(func(resource *unstructured.Unstructured) {
@@ -143,13 +149,13 @@ func FilterAndValidateSecurityContexts(testManifest TestManifest, validateContai
 		}
 	})
 
-	return foundContainers
+	containerMatcher.Match(foundContainers)
 }
 
 // ValidateSecurityContexts passes through the TestManifest and validateContainer function to FilterAndValidateSecurityContexts and
 // creates a filter used to select Deployment, Job, and CronJob resources for validation.
-func ValidateSecurityContexts(testManifest TestManifest, validateContainer func(container corev1.Container, resourceName string)) int {
-	return FilterAndValidateSecurityContexts(testManifest, validateContainer, func(resource *unstructured.Unstructured) bool {
+func ValidateSecurityContexts(testManifest TestManifest, validateContainer func(container corev1.Container, resourceName string), containerMatcher types.GomegaMatcher) {
+	FilterAndValidateSecurityContexts(testManifest, validateContainer, containerMatcher, func(resource *unstructured.Unstructured) bool {
 		return true
 	})
 }
