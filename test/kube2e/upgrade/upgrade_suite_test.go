@@ -10,7 +10,7 @@ import (
 
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/gloo/test/kube2e/upgrade"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
 	"github.com/solo-io/go-utils/versionutils"
 	"github.com/solo-io/skv2/codegen/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,7 +65,7 @@ var _ = BeforeSuite(func() {
 		chartUri = filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
 	}
 
-	LastPatchPreviousMinorVersion, CurrentPatchMostRecentMinorVersion, err = upgrade.GetUpgradeVersions(suiteCtx, "gloo")
+	LastPatchPreviousMinorVersion, CurrentPatchMostRecentMinorVersion, err = helper.GetUpgradeVersions(suiteCtx, "gloo")
 	Expect(err).NotTo(HaveOccurred())
 
 	skipIfFirstMinorFunc = func() {}
