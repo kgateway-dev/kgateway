@@ -19,7 +19,6 @@ settings:
     invalidRouteResponseBody: Gloo Gateway has invalid configuration.
 gateway:
   persistProxySpec: false
-  logLevel: info
   validation:
     # These tests validate the glooctl properly reports errors and warnings on resources
     # Therefore, we accept all resources in our webhook

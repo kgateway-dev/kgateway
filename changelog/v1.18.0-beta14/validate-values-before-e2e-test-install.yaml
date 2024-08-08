@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Validate e2e test values before installing Gloo and running e2e tests.
