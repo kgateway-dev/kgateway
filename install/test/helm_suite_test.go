@@ -2,11 +2,9 @@ package test
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -16,25 +14,22 @@ import (
 	"github.com/solo-io/k8s-utils/installutils/kuberesource"
 	rbacv1 "k8s.io/api/rbac/v1"
 
-	"github.com/solo-io/gloo/install/helm/gloo/generate"
-
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/cliutil/helm"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	glootestutils "github.com/solo-io/gloo/test/testutils"
 	soloHelm "github.com/solo-io/go-utils/helmutils"
 	"github.com/solo-io/go-utils/testutils"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/release"
-	"helm.sh/helm/v3/pkg/strvals"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	k8syamlutil "sigs.k8s.io/yaml"
 )
 
 const (
@@ -143,14 +138,9 @@ func MustGetVersion() string {
 	return "version-not-found"
 }
 
-type helmValues struct {
-	valuesFile string
-	valuesArgs []string // each entry should look like `path.to.helm.field=value`
-}
-
 type ChartRenderer interface {
 	// returns a TestManifest containing all resources
-	RenderManifest(namespace string, values helmValues) (TestManifest, error)
+	RenderManifest(namespace string, values glootestutils.HelmValues) (TestManifest, error)
 }
 
 var _ ChartRenderer = &helm3Renderer{}
@@ -164,7 +154,7 @@ type helm3Renderer struct {
 	manifestOutputDir string
 }
 
-func (h3 helm3Renderer) RenderManifest(namespace string, values helmValues) (TestManifest, error) {
+func (h3 helm3Renderer) RenderManifest(namespace string, values glootestutils.HelmValues) (TestManifest, error) {
 	rel, err := buildHelm3Release(h3.chartDir, namespace, values)
 	if err != nil {
 		return nil, errors.Errorf("failure in buildHelm3Release: %s", err.Error())
@@ -210,21 +200,21 @@ func (h3 helm3Renderer) RenderManifest(namespace string, values helmValues) (Tes
 	return NewTestManifest(testManifestFile.Name()), nil
 }
 
-func buildHelm3Release(chartDir, namespace string, values helmValues) (*release.Release, error) {
+func buildHelm3Release(chartDir, namespace string, values glootestutils.HelmValues) (*release.Release, error) {
 	chartRequested, err := loader.Load(chartDir)
 	if err != nil {
 		return nil, errors.Errorf("failed to load chart directory: %s", err.Error())
 	}
 
-	helmValues, err := buildHelmValues(chartDir, values)
+	helmValues, err := glootestutils.BuildHelmValues(values)
 	if err != nil {
 		return nil, errors.Errorf("failure in buildHelmValues: %s", err.Error())
 	}
 
 	// Validate that the provided values match the Go types used to construct out docs
-	err = validateHelmValues(helmValues)
+	err = glootestutils.ValidateHelmValues(helmValues)
 	if err != nil {
-		return nil, errors.Errorf("failure in validateHelmValues: %s", err.Error())
+		return nil, errors.Errorf("failure in ValidateHelmValues: %s", err.Error())
 	}
 
 	// Install the chart
@@ -237,88 +227,6 @@ func buildHelm3Release(chartDir, namespace string, values helmValues) (*release.
 		return nil, errors.Errorf("failure in installAction.run: %s", err.Error())
 	}
 	return release, err
-}
-
-// each entry in valuesArgs should look like `path.to.helm.field=value`
-func buildHelmValues(chartDir string, values helmValues) (map[string]interface{}, error) {
-	// read the chart's base values file first
-	finalValues, err := readValuesFile(path.Join(chartDir, "values.yaml"))
-	if err != nil {
-		return nil, err
-	}
-
-	for _, v := range values.valuesArgs {
-		err := strvals.ParseInto(v, finalValues)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if values.valuesFile != "" {
-		// these lines ripped out of Helm internals
-		// https://github.com/helm/helm/blob/release-3.0/pkg/cli/values/options.go
-		mapFromFile, err := readValuesFile(values.valuesFile)
-		if err != nil {
-			return nil, err
-		}
-
-		// Merge with the previous map
-		finalValues = mergeMaps(finalValues, mapFromFile)
-	}
-
-	return finalValues, nil
-}
-
-// validateHelmValues ensures that the unstructured helm values that are provided
-// to a chart match the Go type used to generate the Helm documentation
-// Returns nil if all the provided values are all included in the Go struct
-// Returns an error if a provided value is not included in the Go struct.
-//
-// Example:
-//
-//	Failed to render manifest
-//	    Unexpected error:
-//	        <*errors.errorString | 0xc000fedf40>: {
-//	            s: "error unmarshaling JSON: while decoding JSON: json: unknown field \"useTlsTagging\"",
-//	        }
-//	        error unmarshaling JSON: while decoding JSON: json: unknown field "useTlsTagging"
-//	    occurred
-//
-// This means that the unstructured values provided to the Helm chart contain a field `useTlsTagging`
-// but the Go struct does not contain that field.
-func validateHelmValues(unstructuredHelmValues map[string]interface{}) error {
-	// This Go type is the source of truth for the Helm docs
-	var structuredHelmValues generate.HelmConfig
-
-	unstructuredHelmValueBytes, err := json.Marshal(unstructuredHelmValues)
-	if err != nil {
-		return err
-	}
-
-	// This ensures that an error will be raised if there is an unstructured helm value
-	// defined but there is not the equivalent type defined in our Go struct
-	//
-	// When an error occurs, this means the Go type needs to be amended
-	// to include the new field (which is the source of truth for our docs)
-	return k8syamlutil.UnmarshalStrict(unstructuredHelmValueBytes, &structuredHelmValues)
-}
-
-func readValuesFile(filePath string) (map[string]interface{}, error) {
-	mapFromFile := map[string]interface{}{}
-
-	bytes, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, err
-	}
-
-	// NOTE: This is not the default golang yaml.Unmarshal, because that implementation
-	// does not unmarshal into a map[string]interface{}; it unmarshals the file into a map[interface{}]interface{}
-	// https://github.com/go-yaml/yaml/issues/139
-	if err := k8syamlutil.Unmarshal(bytes, &mapFromFile); err != nil {
-		return nil, err
-	}
-
-	return mapFromFile, nil
 }
 
 func createInstallAction(namespace string) (*action.Install, error) {
@@ -342,27 +250,6 @@ func createInstallAction(namespace string) (*action.Install, error) {
 	renderer.ClientOnly = true
 
 	return renderer, nil
-}
-
-// stolen from Helm internals
-// https://github.com/helm/helm/blob/release-3.0/pkg/cli/values/options.go#L88
-func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
-	out := make(map[string]interface{}, len(a))
-	for k, v := range a {
-		out[k] = v
-	}
-	for k, v := range b {
-		if v, ok := v.(map[string]interface{}); ok {
-			if bv, ok := out[k]; ok {
-				if bv, ok := bv.(map[string]interface{}); ok {
-					out[k] = mergeMaps(bv, v)
-					continue
-				}
-			}
-		}
-		out[k] = v
-	}
-	return out
 }
 
 func makeUnstructured(yam string) *unstructured.Unstructured {

@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	"github.com/solo-io/gloo/test/gomega/matchers"
+	glootestutils "github.com/solo-io/gloo/test/testutils"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -22,7 +23,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 			testManifest TestManifest
 			valuesArgs   []string
 		)
-		prepareHelmManifest := func(namespace string, values helmValues) {
+		prepareHelmManifest := func(namespace string, values glootestutils.HelmValues) {
 			tm, err := rendererTestCase.renderer.RenderManifest(namespace, values)
 			ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
 			testManifest = tm
@@ -33,7 +34,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 		})
 
 		JustBeforeEach(func() {
-			prepareHelmManifest(namespace, helmValues{valuesArgs: valuesArgs})
+			prepareHelmManifest(namespace, glootestutils.HelmValues{ValuesArgs: valuesArgs})
 		})
 		When("kube gateway integration is enabled", func() {
 			BeforeEach(func() {
