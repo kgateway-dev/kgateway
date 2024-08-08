@@ -18,6 +18,7 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/fsutils"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
+	test_runtime "github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils/exec"
 )
@@ -223,7 +224,7 @@ func (h *SoloTestHelper) InstallGloo(ctx context.Context, timeout time.Duration,
 	if h.Verbose {
 		glooctlCommand = append(glooctlCommand, "-v")
 	}
-	variant := os.Getenv("IMAGE_VARIANT")
+	variant := os.Getenv(test_runtime.ImageVariantEnv)
 	if variant != "" {
 		variantValuesFile, err := GenerateVariantValuesFile(variant)
 		if err != nil {
