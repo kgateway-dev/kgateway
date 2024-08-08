@@ -30,7 +30,7 @@ func convertToUnstructured(obj interface{}, res *unstructured.Unstructured) (err
 		return err
 	}
 	err = res.UnmarshalJSON(rawJson)
-	return
+	return nil
 }
 
 func GatewayParametersUnstructured() *unstructured.Unstructured {
