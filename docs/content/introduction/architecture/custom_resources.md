@@ -17,7 +17,7 @@ When Gloo Gateway is installed on Kubernetes, it creates a number of Custom Reso
 | {{< protobuf name="gloo.solo.io.Settings" display="Settings">}} | gloo.solo.io | Global settings for all Gloo Gateway containers. |
 | {{< protobuf name="gateway.solo.io.Gateway" display="Gateway">}} | gateway.solo.io | Describes a single Listener and the routing Upstreams reachable via the Gateway Proxy. |
 | {{< protobuf name="gateway.solo.io.VirtualService" display="VirtualService">}} | gateway.solo.io | Describes the set of routes to match for a set of domains with a destination of a Route Table, Upstream, or Upstream Group. |
-| {{< protobuf name="gateway.solo.io.RouteTable" display="RouteTable">}} | gateway.solo.io | Child Routing object for the Gloo Gateway gateway. |
+| {{< protobuf name="gateway.solo.io.RouteTable" display="RouteTable">}} | gateway.solo.io | Child Routing object for Gloo Gateway's Gateway custom resource. |
 | {{< protobuf name="gloo.solo.io.Proxy" display="Proxy">}} | gloo.solo.io | A combination of Gateway resources to be parsed by Gloo Gateway pods. |
 | {{< protobuf name="gloo.solo.io.Upstream" display="Upstream">}} | gloo.solo.io | Upstreams represent destinations for routing requests. |
 | {{< protobuf name="gloo.solo.io.UpstreamGroup" display="UpstreamGroup">}} | gloo.solo.io | Group multiple Upstreams and/or external endpoints to be referenced by Virtual Service(s). |
@@ -59,7 +59,7 @@ When a user or process wants to perform CRUD (Create, Read, Update, Delete) oper
 
 ## Upstreams and Upstream Groups
 
-*Upstreams* are destinations for traffic sent to the Gloo Gateway gateway. A Virtual Service or Route Table may reference one of more Upstreams as destinations. Multiple Upstreams can be combined into an *Upstream Group* with a list of Upstreams and weights for each Upstream.
+*Upstreams* are destinations for traffic sent to the gateway. A Virtual Service or Route Table may reference one of more Upstreams as destinations. Multiple Upstreams can be combined into an *Upstream Group* with a list of Upstreams and weights for each Upstream.
 
 ### Upstreams
 
