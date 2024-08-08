@@ -78,5 +78,4 @@ message CorsPolicyMergeSettings {
 
     // mergeStrategy max_age = 6;
     // mergeStrategy allow_credentials = 7;
-    // mergeStrategy disable_for_route = 8;
 }
