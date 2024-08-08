@@ -1,4 +1,4 @@
-package check
+package license
 
 import (
 	"encoding/base64"
@@ -39,12 +39,12 @@ type LicenseLegacyClaims struct {
 
 func License(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "license",
-		Aliases: []string{"l", "licence"},
-		Short:   "Check Gloo Gateway License",
-		Long: "Checking Gloo Gateway license.\n\n" +
+		Use:     "validate",
+		Aliases: []string{"v", "validate"},
+		Short:   "Check Gloo Gateway License Validity",
+		Long: "Checking Gloo Gateway license Validity.\n\n" +
 			"" +
-			"Usage: `glooctl check license [--license-key license-key]`",
+			"Usage: `glooctl license validate [--license-key license-key]`",
 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			licenseKey := opts.CheckLicense.LicenseKey
@@ -54,8 +54,9 @@ func License(opts *options.Options) *cobra.Command {
 			return checkLicense(opts.CheckLicense.LicenseKey)
 
 		}}
-	pflags := cmd.PersistentFlags()
-	flagutils.AddLicenseValidationFlag(pflags, &opts.CheckLicense.LicenseKey)
+	flags := cmd.Flags()
+	flagutils.AddLicenseValidationFlag(flags, &opts.CheckLicense.LicenseKey)
+	cmd.MarkFlagRequired(flagutils.LicenseFlag)
 	return cmd
 }
 

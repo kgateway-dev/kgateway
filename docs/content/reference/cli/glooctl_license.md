@@ -1,29 +1,15 @@
 ---
-title: "glooctl check"
+title: "glooctl license"
 weight: 5
 ---
-## glooctl check
+## glooctl license
 
-Checks Gloo resources for errors (requires Gloo running on Kubernetes)
-
-### Synopsis
-
-usage: glooctl check [-o FORMAT]
-
-```
-glooctl check [flags]
-```
+subcommands for interacting with the license
 
 ### Options
 
 ```
-  -x, --exclude strings                   check to exclude: (deployments, pods, upstreams, upstreamgroup, auth-configs, rate-limit-configs, virtual-host-options, route-options, secrets, virtual-services, gateways, proxies, xds-metrics, kube-gateway-classes, kube-gateways, kube-http-routes)
-  -h, --help                              help for check
-  -n, --namespace string                  namespace for reading or writing resources (default "gloo-system")
-  -o, --output OutputType                 output format: (json, table) (default table)
-  -p, --pod-selector string               Label selector for pod scanning (default "gloo")
-      --read-only                         only do checks that dont require creating resources (i.e. port forwards)
-  -r, --resource-namespaces stringArray   Namespaces in which to scan gloo custom resources. If not provided, all watched namespaces (as specified in settings) will be scanned.
+  -h, --help   help for license
 ```
 
 ### Options inherited from parent commands
@@ -45,4 +31,5 @@ glooctl check [flags]
 ### SEE ALSO
 
 * [glooctl](../glooctl)	 - CLI for Gloo
+* [glooctl license validate](../glooctl_license_validate)	 - Check Gloo Gateway License Validity
 

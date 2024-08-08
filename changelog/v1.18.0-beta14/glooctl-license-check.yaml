@@ -3,4 +3,4 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/3520
     resolvesIssue: false
     description: >-
-      Check the validity of Gloo Gateway License using `glooctl check license --license-key <key>`. 
+      Check the validity of Gloo Gateway License using `glooctl license validate --license-key <key>`. 

@@ -114,7 +114,6 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	flagutils.AddExcludeCheckFlag(pflags, &opts.Top.CheckName)
 	flagutils.AddReadOnlyFlag(pflags, &opts.Top.ReadOnly)
 	cliutils.ApplyOptions(cmd, optionsFunc)
-	cmd.AddCommand(License(opts))
 	return cmd
 }
 
