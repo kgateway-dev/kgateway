@@ -1,4 +1,4 @@
-package make_test
+package makefile_test
 
 import (
 	"fmt"
