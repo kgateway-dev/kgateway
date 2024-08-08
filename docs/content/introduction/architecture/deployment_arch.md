@@ -33,7 +33,7 @@ In this deployment model, the only component from the Gloo Gateway control plane
 
 ## Kube-native edge API Gateway for Kubernetes
 
-Since the Kubernetes Ingress API is very limited and restricted to HTTP traffic, we recommend avoiding it for anything but very trivial hello-world usecases. For any non-trivial cluster, you'll want to use the [Gloo Gateway gateway functionality]({{< versioned_link_path fromRoot="/installation/gateway" >}}). In this model, the proxy is deployed as a full-featured API gateway with functionality like traffic routing, header matching, rate limiting, security features (WAF, Oauth, etc) and others. Having these features close to the applications is desirable, therefore you run the Gateway within the cluster as the edge ingress proxy (note, this is ingress with a lowercase "i" and not necessarily the Kubernetes Ingress resource.)
+Since the Kubernetes Ingress API is very limited and restricted to HTTP traffic, we recommend avoiding it for anything but very trivial hello-world usecases. For any non-trivial cluster, you'll want to use [Gloo Gateway's Gateway custom resource functionality]({{< versioned_link_path fromRoot="/installation/gateway" >}}). In this model, the proxy is deployed as a full-featured API gateway with functionality like traffic routing, header matching, rate limiting, security features (WAF, Oauth, etc) and others. Having these features close to the applications is desirable, therefore you run the Gateway within the cluster as the edge ingress proxy (note, this is ingress with a lowercase "i" and not necessarily the Kubernetes Ingress resource.)
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/gateway.png" %}})
 

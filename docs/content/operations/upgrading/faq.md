@@ -70,7 +70,7 @@ The Envoy dependency in Gloo Gateway 1.17 was upgraded from 1.27.x to 1.29.x. Th
 
 **Kubernetes Ingress API deprecation**
 
-As of version 1.17, the Kubernetes Ingress API is deprecated in Gloo Gateway. Instead, you can use the Gloo Gateway gateway resources. Alternatively, to use the Kubernetes Gateway API, you can check out the [Gloo Gateway with Kubernetes Gateway API docs](https://docs.solo.io/gateway/latest/).
+As of version 1.17, the Kubernetes Ingress API is deprecated in Gloo Gateway. Instead, you can use the Gloo Gateway (Edge API) `Gateway` custom resource. Alternatively, to use the Kubernetes Gateway API for `Gateway` custom resources, you can check out the [Gloo Gateway (Kubernetes Gateway API) docs](https://docs.solo.io/gateway/latest/).
 
 **OTel service name change**
 
