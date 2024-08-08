@@ -188,13 +188,6 @@ func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallFn
 	i.Assertions.EventuallyUninstallationSucceeded(ctx)
 }
 
-func (i *TestInstallation) UpgradeGlooGateway(ctx context.Context, serverVersion string, upgradeFn func(ctx context.Context) error) {
-	err := upgradeFn(ctx)
-	i.Assertions.Require.NoError(err)
-	i.Assertions.EventuallyUpgradeSucceeded(ctx, serverVersion)
-	i.Assertions.EventuallyGlooReachesConsistentState(i.Metadata.InstallNamespace)
-}
-
 // PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
 func (i *TestInstallation) PreFailHandler(ctx context.Context) {
 	// This is a work in progress
