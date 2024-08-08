@@ -111,6 +111,10 @@ func FilterAndValidateSecurityContexts(testManifest TestManifest, validateContai
 
 	testManifest.SelectResources(filter).ExpectAll(func(resource *unstructured.Unstructured) {
 
+		if resource.GetKind() != "Deployment" && resource.GetKind() != "Job" && resource.GetKind() != "CronJob" {
+			// It's not a resource we care about, and it might throw and error if we try to cast it
+			return
+		}
 		// Get the pods and validate their security context
 		var containers []corev1.Container
 		resourceUncast, err := kuberesource.ConvertUnstructured(resource)
@@ -127,6 +131,7 @@ func FilterAndValidateSecurityContexts(testManifest TestManifest, validateContai
 			job := resourceUncast.(*batchv1.CronJob)
 			containers = job.Spec.JobTemplate.Spec.Template.Spec.Containers
 		default:
+			// We should never get here as we've checked the resource kind above
 			Fail(fmt.Sprintf("Unexpected resource kind: %s", resource.GetKind()))
 		}
 
@@ -145,7 +150,7 @@ func FilterAndValidateSecurityContexts(testManifest TestManifest, validateContai
 // creates a filter used to select Deployment, Job, and CronJob resources for validation.
 func ValidateSecurityContexts(testManifest TestManifest, validateContainer func(container corev1.Container, resourceName string)) int {
 	return FilterAndValidateSecurityContexts(testManifest, validateContainer, func(resource *unstructured.Unstructured) bool {
-		return resource.GetKind() == "Deployment" || resource.GetKind() == "Job" || resource.GetKind() == "CronJob"
+		return true
 	})
 }
 

@@ -4,9 +4,8 @@ changelog:
     resolvesIssue: false
     description: >-
       Provide a Helm field `global.securitySettings.floatingUserId` to apply floatingUserId logic, which unsets `runAsUser`
-      for security contexts, for all deployments in the Gloo Helm chart. The global field will also apply the effects of
-      `discovery.deployment.enablePodSecurityContext=false` and gatewayProxies.gatewayProxy.podTemplate.enablePodSecurityContext=false`
-      to allow for easy OpenShift deployment.
+      for security contexts, for all deployments in the Gloo Helm chart. The global field will also cause templates to be rendered
+      as if deployments with "enablePodSecurityContext` fields have their value set to `false` to allow for easy OpenShift deployment.
       This functionality has also been added to Gloo Gateway via the GatewayParameters resource. If `floatingUserId` is set in 
       GatewayParameters, it will be applied to all deployments in the Gloo Gateway Helm chart, unless a deployment-specific value is set.
   - type: HELM
