@@ -39,7 +39,7 @@ func (s *testingSuite) TestProductionRecommendations() {
 
 func (s *testingSuite) TestChangedConfigMapTriggersRollout() {
 	expectConfigDumpToContain := func(str string) {
-		dump, err := gateway.GetEnvoyAdminData(context.TODO(), "gateway-proxy", s.TestHelper.InstallNamespace, "/config_dump", 5*time.Second)
+		dump, err := gateway.GetEnvoyAdminData(s.Ctx, "gateway-proxy", s.TestHelper.InstallNamespace, "/config_dump", 5*time.Second)
 		s.NoError(err)
 		s.Contains(dump, str)
 	}
@@ -65,7 +65,7 @@ func (s *testingSuite) TestChangedConfigMapTriggersRollout() {
 
 func (s *testingSuite) TestApplyCRDs() {
 	var crdsByFileName = map[string]v1.CustomResourceDefinition{}
-	crdDir := filepath.Join(util.GetModuleRoot(), "install", "helm", "gloo", "crds")
+	crdDir := filepath.Join(util.GetModuleRoot(), "install", "helm", s.TestHelper.HelmChartName, "crds")
 
 	err := filepath.Walk(crdDir, func(crdFile string, info os.FileInfo, err error) error {
 		if err != nil {

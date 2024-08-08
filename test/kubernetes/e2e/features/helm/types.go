@@ -9,18 +9,12 @@ import (
 
 var (
 	productionRecommendationsSetup = filepath.Join(util.MustGetThisDir(), "testdata/manifests", "production-recommendations.yaml")
-	protoDescriptorBinSetup        = filepath.Join(util.MustGetThisDir(), "testdata/manifests", "proto-descriptor-bin.yaml")
 	configMapChangeSetup           = filepath.Join(util.MustGetThisDir(), "testdata/manifests", "config-map-change.yaml")
 
 	helmTestCases = map[string]*base.TestCase{
 		"TestProductionRecommendations": {
 			SimpleTestCase: base.SimpleTestCase{
 				UpgradeValues: productionRecommendationsSetup,
-			},
-		},
-		"TestProtoDescriptorBin": {
-			SimpleTestCase: base.SimpleTestCase{
-				UpgradeValues: protoDescriptorBinSetup,
 			},
 		},
 	}

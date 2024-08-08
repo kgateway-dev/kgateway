@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net/url"
 	"os"
 	"slices"
 	"strings"
@@ -107,20 +106,6 @@ func (c *Cli) Apply(ctx context.Context, content []byte, extraArgs ...string) er
 func (c *Cli) ApplyFile(ctx context.Context, fileName string, extraArgs ...string) error {
 	_, err := c.ApplyFileWithOutput(ctx, fileName, extraArgs...)
 	return err
-}
-
-// ApplyRemoteFiles applies the resources defined at the URL provided, and returns an error if one occurred.
-// An error is returned if the provided URL is not able to be parsed (i.e. is invalid).
-func (c *Cli) ApplyRemoteFiles(ctx context.Context, uri string, extraArgs ...string) error {
-	_, err := url.Parse(uri)
-	if err != nil {
-		return err
-	}
-
-	args := append([]string{"apply", "-f", uri}, extraArgs...)
-	return c.Command(ctx, args...).
-		Run().
-		Cause()
 }
 
 // ApplyFilePath applies the resources defined at the file path, and returns an error if one occurred.

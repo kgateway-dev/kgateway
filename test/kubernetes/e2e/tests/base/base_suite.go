@@ -12,11 +12,18 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// This defines a test case used by the BaseTestingSuite
 type TestCase struct {
+	// SimpleTestCase defines the resources used by a specific test
 	SimpleTestCase
+	// SubTestCases contains a map for hierarchial tests within the current test
+	// Eg: TestRateLimit
+	//      |- OnVhost
+	//      |- OnRoute
 	SubTestCases map[string]*TestCase
 }
 
+// SimpleTestCase defines the resources used by a specific test
 type SimpleTestCase struct {
 	// manifest files
 	Manifests []string
@@ -52,13 +59,11 @@ func NewBaseTestingSuite(ctx context.Context, testInst *e2e.TestInstallation, te
 }
 
 func (s *BaseTestingSuite) SetupSuite() {
-	if s.Setup.Manifests != nil {
-		for _, manifest := range s.Setup.Manifests {
-			gomega.Eventually(func() error {
-				err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, manifest)
-				return err
-			}, 10*time.Second, 1*time.Second).Should(gomega.Succeed(), "can apply "+manifest)
-		}
+	for _, manifest := range s.Setup.Manifests {
+		gomega.Eventually(func() error {
+			err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, manifest)
+			return err
+		}, 10*time.Second, 1*time.Second).Should(gomega.Succeed(), "can apply "+manifest)
 	}
 
 	// Ensure the resources exist
@@ -153,14 +158,17 @@ func (s *BaseTestingSuite) AfterTest(suiteName, testName string) {
 	}
 
 	// Delete them in reverse to avoid validation issues
-	manifests := slices.Clone(testCase.Manifests)
-	slices.Reverse(manifests)
-	for _, manifest := range manifests {
-		gomega.Eventually(func() error {
-			err := s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, manifest)
-			return err
-		}, 10*time.Second, 1*time.Second).Should(gomega.Succeed(), "can delete "+manifest)
+	if testCase.Manifests != nil {
+		manifests := slices.Clone(testCase.Manifests)
+		slices.Reverse(manifests)
+		for _, manifest := range manifests {
+			gomega.Eventually(func() error {
+				err := s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, manifest)
+				return err
+			}, 10*time.Second, 1*time.Second).Should(gomega.Succeed(), "can delete "+manifest)
+		}
 	}
+
 	s.TestInstallation.Assertions.EventuallyObjectsNotExist(s.Ctx, testCase.Resources...)
 }
 

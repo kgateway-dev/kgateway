@@ -19,9 +19,6 @@ type Context struct {
 
 	// RunSource identifies who/what triggered the test
 	RunSource RunSource
-
-	// ImageVariant specifies with what image variant the tests will be run
-	ImageVariant string
 }
 
 func NewContext() Context {
@@ -36,8 +33,5 @@ func NewContext() Context {
 		ClusterName: os.Getenv(testutils.ClusterName),
 
 		RunSource: runSource,
-
-		// ImageVariant is derived from the environment variable
-		ImageVariant: os.Getenv(ImageVariantEnv),
 	}
 }

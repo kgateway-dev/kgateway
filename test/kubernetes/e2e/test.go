@@ -128,10 +128,6 @@ type TestInstallation struct {
 
 	// IstioctlBinary is the path to the istioctl binary that can be used to interact with Istio
 	IstioctlBinary string
-
-	// rollbackFn is a function that is set when an upgrade is performed. The function is called later by
-	// the rollback function.
-	rollbackFn func() error
 }
 
 func (i *TestInstallation) String() string {
@@ -190,25 +186,6 @@ func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallFn
 	err := uninstallFn(ctx)
 	i.Assertions.Require.NoError(err)
 	i.Assertions.EventuallyUninstallationSucceeded(ctx)
-}
-
-func (i *TestInstallation) UpgradeGlooGateway(ctx context.Context, serverVersion string, upgradeFn func(ctx context.Context) (func() error, error)) {
-	var err error
-	// Our revert func
-	i.rollbackFn, err = upgradeFn(ctx)
-	i.Assertions.Require.NoError(err)
-	i.Assertions.EventuallyUpgradeSucceeded(ctx, serverVersion)
-	i.Assertions.EventuallyGlooReachesConsistentState(i.Metadata.InstallNamespace)
-}
-
-// RollbackGlooGateway should only be called after a call to UpgradeGlooGateway. It will call the rollback function that
-// was stored from that function, then nil out the field so we cannot end up attempting the same rollback multiple times.
-func (i *TestInstallation) RollbackGlooGateway(ctx context.Context) {
-	err := i.rollbackFn()
-	i.Assertions.Require.NoError(err)
-	i.rollbackFn = nil
-	i.Assertions.EventuallyInstallationSucceeded(ctx)
-	i.Assertions.EventuallyGlooReachesConsistentState(i.Metadata.InstallNamespace)
 }
 
 // PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
