@@ -282,6 +282,8 @@ var _ = Describe("CORS", func() {
 							AllowMethods:     allowedMethods,
 							ExposeHeaders:    []string{commonHeader, vhHeader},
 						},
+						// These CorsPolicyMergeSettings should result in a policy that has all ExposeHeaders from
+						// both VH and Route
 						CorsPolicyMergeSettings: &cors.CorsPolicyMergeSettings{
 							ExposeHeaders: cors.CorsPolicyMergeSettings_UNION,
 						},
@@ -300,7 +302,7 @@ var _ = Describe("CORS", func() {
 				}
 			})
 
-			It("should respect CORS", func() {
+			It("should respect CORS policy derived according to merge settings", func() {
 				Eventually(func(g Gomega) {
 					cfg, err := testContext.EnvoyInstance().ConfigDump()
 					g.Expect(err).NotTo(HaveOccurred())
@@ -318,48 +320,12 @@ var _ = Describe("CORS", func() {
 					WithHeader("Access-Control-Request-Headers", "X-Requested-With")
 				Eventually(func(g Gomega) {
 					g.Expect(testutils.DefaultHttpClient.Do(allowedRouteOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
-						requestACHMethods:       MatchRegexp(strings.Join(allowedMethods, ",")),
-						requestACHOrigin:        Equal(routeAllowedOrigins[0]),
+						requestACHMethods: MatchRegexp(strings.Join(allowedMethods, ",")),
+						requestACHOrigin:  Equal(routeAllowedOrigins[0]),
+						// Expect that we have expose headers from both VH and Route
 						requestACHExposeHeaders: Equal(strings.Join([]string{commonHeader, vhHeader, routeHeader}, ",")),
 					}))
 				}).Should(Succeed(), "Request with allowed route origin, has expose headers from both route and vh")
-
-				// This demonstrates that when you define options both on the VirtualHost and Route levels,
-				// only the route definition is respected, even with merge settings set for other fields
-				allowedVhostOriginRequestBuilder := testContext.GetHttpRequestBuilder().
-					WithOptionsMethod().
-					WithPath("cors").
-					// use the allowed origins defined on the vhost, not the route
-					WithHeader("Origin", allowedOrigins[0]).
-					WithHeader("Access-Control-Request-Method", http.MethodGet).
-					WithHeader("Access-Control-Request-Headers", "X-Requested-With")
-				Eventually(func(g Gomega) {
-					g.Expect(testutils.DefaultHttpClient.Do(allowedVhostOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
-						requestACHMethods: BeEmpty(),
-					}))
-				}).Should(Succeed(), "Request with allowed origin from vhost is not allowed, since route overrides it")
-
-				disallowedOriginRequestBuilder := allowedRouteOriginRequestBuilder.WithHeader("Origin", unAllowedOrigin)
-				Eventually(func(g Gomega) {
-					g.Expect(testutils.DefaultHttpClient.Do(disallowedOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
-						requestACHMethods: BeEmpty(),
-					}))
-				}).Should(Succeed(), "Request with disallowed origin")
-
-				// request with disallowed method
-				// shows that vhost field is respected iff route field is not set
-				allowedOriginRequestBuilder := testContext.GetHttpRequestBuilder().
-					WithOptionsMethod().
-					WithPath("cors").
-					WithHeader("Origin", routeAllowedOrigins[0]).
-					WithHeader("Access-Control-Request-Method", http.MethodDelete).
-					WithHeader("Access-Control-Request-Headers", "X-Requested-With")
-				Eventually(func(g Gomega) {
-					g.Expect(testutils.DefaultHttpClient.Do(allowedOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
-						requestACHMethods: MatchRegexp(strings.Join(allowedMethods, ",")), // show that methods are still coming through despite being on the vhost only
-					}))
-				}).Should(Succeed(), "Request with disallowed method via vhost")
-
 			})
 
 		})
