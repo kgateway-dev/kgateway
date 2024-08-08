@@ -333,7 +333,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 				DescribeTable("sets the floatingUserId field", func(expectedValue bool, extraValueArgs ...string) {
 					valuesArgs = append(valuesArgs, extraValueArgs...)
 					// Updated values so need to re-render
-					prepareHelmManifest(namespace, helmValues{valuesArgs: valuesArgs})
+					prepareHelmManifest(namespace, glootestutils.HelmValues{ValuesArgs: valuesArgs})
 
 					gwpUnstructured := testManifest.ExpectCustomResource("GatewayParameters", namespace, wellknown.DefaultGatewayParametersName)
 					obj, err := kuberesource.ConvertUnstructured(gwpUnstructured)
