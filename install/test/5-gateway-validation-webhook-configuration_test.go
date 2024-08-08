@@ -9,6 +9,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/onsi/gomega/types"
+	glootestutils "github.com/solo-io/gloo/test/testutils"
 	v1 "k8s.io/api/admissionregistration/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -31,7 +32,7 @@ var _ = Describe("WebhookValidationConfiguration helm test", func() {
 			testManifest TestManifest
 			//expectedChart *unstructured.Unstructured
 		)
-		prepareMakefile := func(namespace string, values helmValues) {
+		prepareMakefile := func(namespace string, values glootestutils.HelmValues) {
 			tm, err := rendererTestCase.renderer.RenderManifest(namespace, values)
 			ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
 			testManifest = tm
@@ -45,8 +46,8 @@ var _ = Describe("WebhookValidationConfiguration helm test", func() {
 			expectedDeletes := 5 - expectedRemoved
 			expectedChart := generateExpectedChart(timeoutSeconds, resources, expectedDeletes)
 
-			prepareMakefile(namespace, helmValues{
-				valuesArgs: []string{
+			prepareMakefile(namespace, glootestutils.HelmValues{
+				ValuesArgs: []string{
 					fmt.Sprintf(`gateway.validation.webhook.timeoutSeconds=%d`, timeoutSeconds),
 					`gateway.validation.webhook.skipDeleteValidationResources={` + strings.Join(resources, ",") + `}`,
 				},
@@ -105,8 +106,8 @@ var _ = Describe("WebhookValidationConfiguration helm test", func() {
 						valuesArgs = append(valuesArgs, fmt.Sprintf(`gateway.validation.webhook.enablePolicyApi=%t`, testCase.enablePolicyApi.GetValue()))
 					}
 
-					prepareMakefile(namespace, helmValues{
-						valuesArgs: valuesArgs,
+					prepareMakefile(namespace, glootestutils.HelmValues{
+						ValuesArgs: valuesArgs,
 					})
 
 					testManifest.ExpectUnstructured(

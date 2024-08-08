@@ -17,7 +17,6 @@ settings:
     invalidRouteResponseBody: Gloo Gateway has invalid configuration.
 gateway:
   persistProxySpec: false
-  logLevel: info
   validation:
     allowWarnings: true
     alwaysAcceptResources: false
