@@ -19,7 +19,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/gomega/assertions"
 	"github.com/solo-io/gloo/test/kube2e/helper"
-	"github.com/solo-io/gloo/test/kube2e/upgrade"
+	newhelper "github.com/solo-io/gloo/test/kubernetes/testutils/helper"
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/go-utils/stats"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -183,7 +183,7 @@ func GetTestReleasedVersion(ctx context.Context, repoName string) string {
 	}
 
 	if releasedVersion == "LATEST" {
-		_, current, err := upgrade.GetUpgradeVersions(ctx, repoName)
+		_, current, err := newhelper.GetUpgradeVersions(ctx, repoName)
 		Expect(err).NotTo(HaveOccurred())
 		return current.String()
 	}
