@@ -6383,8 +6383,8 @@ metadata:
 						"global.securitySettings.floatingUserId=true",
 					)
 
-					prepareMakefile(namespace, helmValues{
-						valuesArgs: helmArgs,
+					prepareMakefile(namespace, glootestutils.HelmValues{
+						ValuesArgs: helmArgs,
 					})
 
 					securitycontext.ValidateSecurityContexts(
@@ -6410,8 +6410,8 @@ metadata:
 						helmArgs = append(helmArgs, securityRoot+".runAsUser=1234")
 					}
 
-					prepareMakefile(namespace, helmValues{
-						valuesArgs: helmArgs,
+					prepareMakefile(namespace, glootestutils.HelmValues{
+						ValuesArgs: helmArgs,
 					})
 
 					securitycontext.ValidateSecurityContexts(
@@ -6435,8 +6435,8 @@ metadata:
 						"global.securitySettings.floatingUserId=true",
 					)
 
-					prepareMakefile(namespace, helmValues{
-						valuesArgs: helmArgs,
+					prepareMakefile(namespace, glootestutils.HelmValues{
+						ValuesArgs: helmArgs,
 					})
 
 					container := getContainer(testManifest, resourceType, resourceName, containerName)
@@ -6459,8 +6459,8 @@ metadata:
 						fmt.Sprintf("%s.fsGroup=%d", securityRoot, fsGroup),
 					)
 
-					prepareMakefile(namespace, helmValues{
-						valuesArgs: helmArgs,
+					prepareMakefile(namespace, glootestutils.HelmValues{
+						ValuesArgs: helmArgs,
 					})
 
 					structuredDeployment := getStructuredDeployment(testManifest, resourceName)
@@ -6491,8 +6491,8 @@ metadata:
 						}, helmArgs...)
 					}
 
-					prepareMakefile(namespace, helmValues{
-						valuesArgs: helmArgs,
+					prepareMakefile(namespace, glootestutils.HelmValues{
+						ValuesArgs: helmArgs,
 					})
 
 					securitycontext.ValidateSecurityContexts(
@@ -7016,8 +7016,8 @@ metadata:
 			})
 
 			It("should add the additional labels to all resources", func() {
-				prepareMakefile(namespace, helmValues{
-					valuesArgs: append(helmRenderEverythingValues(),
+				prepareMakefile(namespace, glootestutils.HelmValues{
+					ValuesArgs: append(helmRenderEverythingValues(),
 						"global.additionalLabels.this=that",
 						"global.additionalLabels.the=other",
 					),
