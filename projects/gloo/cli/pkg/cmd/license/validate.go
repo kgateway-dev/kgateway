@@ -47,20 +47,20 @@ func License(opts *options.Options) *cobra.Command {
 			"Usage: `glooctl license validate [--license-key license-key]`",
 
 		RunE: func(cmd *cobra.Command, args []string) error {
-			licenseKey := opts.CheckLicense.LicenseKey
+			licenseKey := opts.ValidateLicense.LicenseKey
 			if strings.Count(licenseKey, ".") == 1 {
-				return checkLegacyLicense(opts.CheckLicense.LicenseKey)
+				return validateLegacyLicense(opts.ValidateLicense.LicenseKey)
 			}
-			return checkLicense(opts.CheckLicense.LicenseKey)
+			return validateLicense(opts.ValidateLicense.LicenseKey)
 
 		}}
 	flags := cmd.Flags()
-	flagutils.AddLicenseValidationFlag(flags, &opts.CheckLicense.LicenseKey)
+	flagutils.AddLicenseValidationFlag(flags, &opts.ValidateLicense.LicenseKey)
 	cmd.MarkFlagRequired(flagutils.LicenseFlag)
 	return cmd
 }
 
-func checkLicense(licenseKey string) error {
+func validateLicense(licenseKey string) error {
 	var licenseClaims LicenseClaims
 
 	_, _, err := new(jwt.Parser).ParseUnverified(licenseKey, &licenseClaims)
@@ -71,7 +71,7 @@ func checkLicense(licenseKey string) error {
 	return nil
 }
 
-func checkLegacyLicense(licenseKey string) error {
+func validateLegacyLicense(licenseKey string) error {
 	var licenseLegacyClaim LicenseLegacyClaims
 	var standardizedLicenseKey = base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"HS256","typ":"JWT"}`)) + "." + licenseKey
 	_, _, err := new(jwt.Parser).ParseUnverified(standardizedLicenseKey, &licenseLegacyClaim)

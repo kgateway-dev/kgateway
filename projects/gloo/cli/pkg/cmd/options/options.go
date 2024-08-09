@@ -18,24 +18,24 @@ import (
 )
 
 type Options struct {
-	Metadata     core.Metadata
-	Top          Top
-	Install      Install
-	Uninstall    Uninstall
-	Proxy        Proxy
-	Upgrade      Upgrade
-	Create       Create
-	Delete       Delete
-	Edit         Edit
-	Route        Route
-	Get          Get
-	Add          Add
-	Istio        Istio
-	Remove       Remove
-	Cluster      Cluster
-	Check        Check
-	CheckCRD     CheckCRD
-	CheckLicense CheckLicense
+	Metadata        core.Metadata
+	Top             Top
+	Install         Install
+	Uninstall       Uninstall
+	Proxy           Proxy
+	Upgrade         Upgrade
+	Create          Create
+	Delete          Delete
+	Edit            Edit
+	Route           Route
+	Get             Get
+	Add             Add
+	Istio           Istio
+	Remove          Remove
+	Cluster         Cluster
+	Check           Check
+	CheckCRD        CheckCRD
+	ValidateLicense ValidateLicense
 }
 type Top struct {
 	contextoptions.ContextAccessible
@@ -493,6 +493,6 @@ type CheckCRD struct {
 	ShowYaml   bool
 }
 
-type CheckLicense struct {
+type ValidateLicense struct {
 	LicenseKey string
 }

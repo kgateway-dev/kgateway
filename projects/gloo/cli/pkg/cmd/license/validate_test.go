@@ -30,15 +30,14 @@ var _ = Describe("Licence", func() {
 	tokenString, err := token.SignedString([]byte("secret"))
 
 	It("should verify a valid license", func() {
-		err = checkLicense(tokenString)
+		err = validateLicense(tokenString)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("should fail to verify an invalid license", func() {
 		invalidLicenseKey := "invalid"
 
-		// Call the checkLicense function
-		err := checkLicense(invalidLicenseKey)
+		err := validateLicense(invalidLicenseKey)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(Equal("can't parse license key"))
 	})
