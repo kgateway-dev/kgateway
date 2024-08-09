@@ -1,6 +1,6 @@
 changelog:
   - type: HELM
-    issueLink: 
+    issueLink: https://github.com/solo-io/gloo/issues/9855
     resolvesIssue: false
     description: >-
       Introduce `gatewayProxies.gatewayProxy.istioSpiffeCertProviderAddress` which overrides the Istio SPIFFE
