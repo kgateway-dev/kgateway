@@ -729,10 +729,10 @@ var _ = Describe("Deployer", func() {
 			return nil
 		}
 
-		generalAiAndSdsValidationFunc := func(objs clientObjects, inp *input, expectNullRunAsUser bool) error {
+		generalSdsValidationFunc := func(objs clientObjects, inp *input, expectNullRunAsUser bool) error {
 			containers := objs.findDeployment(defaultNamespace, defaultDeploymentName).Spec.Template.Spec.Containers
-			Expect(containers).To(HaveLen(4))
-			var foundGw, foundSds, foundIstioProxy, foundAIExtension bool
+			Expect(containers).To(HaveLen(3))
+			var foundGw, foundSds, foundIstioProxy bool
 			var sdsContainer, istioProxyContainer, aiContainer, gwContainer corev1.Container
 			for _, container := range containers {
 				switch container.Name {
@@ -745,9 +745,6 @@ var _ = Describe("Deployer", func() {
 				case "gloo-gateway":
 					gwContainer = container
 					foundGw = true
-				case "gloo-ai-extension":
-					aiContainer = container
-					foundAIExtension = true
 				default:
 					Fail("unknown container name " + container.Name)
 				}
@@ -755,7 +752,6 @@ var _ = Describe("Deployer", func() {
 			Expect(foundGw).To(BeTrue())
 			Expect(foundSds).To(BeTrue())
 			Expect(foundIstioProxy).To(BeTrue())
-			Expect(foundAIExtension).To(BeTrue())
 
 			if expectNullRunAsUser {
 				if sdsContainer.SecurityContext != nil {
@@ -788,12 +784,12 @@ var _ = Describe("Deployer", func() {
 			return nil
 		}
 
-		aiAndSdsValidationFunc := func(objs clientObjects, inp *input) error {
-			return generalAiAndSdsValidationFunc(objs, inp, false) // false: don't expect null runAsUser
+		sdsValidationFunc := func(objs clientObjects, inp *input) error {
+			return generalSdsValidationFunc(objs, inp, false) // false: don't expect null runAsUser
 		}
 
-		aiSdsAndFloatingUserIdValidationFunc := func(objs clientObjects, inp *input) error {
-			return generalAiAndSdsValidationFunc(objs, inp, true) // true: don't expect null runAsUser
+		sdsAndFloatingUserIdValidationFunc := func(objs clientObjects, inp *input) error {
+			return generalSdsValidationFunc(objs, inp, true) // true: don't expect null runAsUser
 		}
 
 		DescribeTable("create and validate objs", func(inp *input, expected *expectedOutput) {
@@ -881,7 +877,7 @@ var _ = Describe("Deployer", func() {
 				defaultGwp:  defaultGatewayParams(),
 				overrideGwp: gatewayParamsOverrideWithSds(),
 			}, &expectedOutput{
-				validationFunc: aiAndSdsValidationFunc,
+				validationFunc: sdsValidationFunc,
 			}),
 			Entry("correct deployment with sds, AI extension, and floatinguUserId enabled", &input{
 				dInputs:     istioEnabledDeployerInputs(),
@@ -889,7 +885,7 @@ var _ = Describe("Deployer", func() {
 				defaultGwp:  defaultGatewayParams(),
 				overrideGwp: gatewayParamsOverrideWithSdsAndFloatingUserId(),
 			}, &expectedOutput{
-				validationFunc: aiSdsAndFloatingUserIdValidationFunc,
+				validationFunc: sdsAndFloatingUserIdValidationFunc,
 			}),
 			Entry("no listeners on gateway", &input{
 				dInputs: defaultDeployerInputs(),
