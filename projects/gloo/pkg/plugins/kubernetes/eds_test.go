@@ -59,7 +59,16 @@ var _ = Describe("Eds", func() {
 		Expect(err).NotTo(HaveOccurred())
 		watcher.List("foo", clients.ListOpts{Ctx: ctx})
 		Expect(func() {}).NotTo(Panic())
+	})
 
+	It("should default to watchNamespaces if no upstreams exist", func() {
+		watchNamespaces := []string{"gloo-system"}
+		_, err := newEndpointWatcherForUpstreams(func(namespaces []string) KubePluginSharedFactory {
+			Expect(namespaces).To(Equal(watchNamespaces))
+			return mockSharedFactory
+		},
+			mockCache, v1.UpstreamList{}, clients.WatchOpts{Ctx: ctx}, &v1.Settings{WatchNamespaces: watchNamespaces})
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Context("Istio integration", func() {
