@@ -63,15 +63,17 @@ type Rbac struct {
 
 // Common
 type Image struct {
-	Tag        *string `json:"tag,omitempty"  desc:"The image tag for the container."`
-	Repository *string `json:"repository,omitempty"  desc:"The image repository (name) for the container."`
-	Digest     *string `json:"digest,omitempty"  desc:"The hash digest of the container's image, ie. sha256:12345...."`
-	Registry   *string `json:"registry,omitempty" desc:"The image hostname prefix and registry, such as quay.io/solo-io."`
-	PullPolicy *string `json:"pullPolicy,omitempty"  desc:"The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting"`
-	PullSecret *string `json:"pullSecret,omitempty" desc:"The image pull secret to use for the container, in the same namespace as the container pod."`
-	Variant    *string `json:"variant,omitempty" desc:"Specifies the version of the data-plane containers to deploy. Can take the values 'standard', 'fips', 'distroless', 'fips-distroless'. Defaults to standard. (The 'fips' and 'fips-distroless' variants are an Enterprise-only feature)"`
-	FipsDigest *string `json:"fipsDigest,omitempty"  desc:"[Deprecated] Use 'variant=fips' and 'digest=...' instead. The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true"`
-	Fips       *bool   `json:"fips,omitempty" desc:"[Deprecated] Use 'variant=fips' instead. If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature)"`
+	Tag                  *string `json:"tag,omitempty"  desc:"The image tag for the container."`
+	Repository           *string `json:"repository,omitempty"  desc:"The image repository (name) for the container."`
+	Digest               *string `json:"digest,omitempty"  desc:"The container image's hash digest (e.g. 'sha256:12345...'), consumed when variant=standard."`
+	FipsDigest           *string `json:"fipsDigest,omitempty"  desc:"The container image's hash digest (e.g. 'sha256:12345...'), consumed when variant=fips. If the image does not have a fips variant, this field will contain the digest for the standard image variant."`
+	DistrolessDigest     *string `json:"distrolessDigest,omitempty"  desc:"The container image's hash digest (e.g. 'sha256:12345...'), consumed when variant=distroless. If the image does not have a distroless variant, this field will contain the digest for the standard image variant."`
+	FipsDistrolessDigest *string `json:"fipsDistrolessDigest,omitempty"  desc:"The container image's hash digest (e.g. 'sha256:12345...'), consumed when variant=fips-distroless. If the image does not have a fips-distroless variant, this field will contain either the fips variant's digest (if supported), else the distroless variant's digest (if supported), else the standard variant's digest."`
+	Registry             *string `json:"registry,omitempty" desc:"The image hostname prefix and registry, such as quay.io/solo-io."`
+	PullPolicy           *string `json:"pullPolicy,omitempty"  desc:"The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting"`
+	PullSecret           *string `json:"pullSecret,omitempty" desc:"The image pull secret to use for the container, in the same namespace as the container pod."`
+	Variant              *string `json:"variant,omitempty" desc:"Specifies the variant of the control plane and data plane containers to deploy. Can take the values 'standard', 'fips', 'distroless', 'fips-distroless'. Defaults to standard. (The 'fips' and 'fips-distroless' variants are an Enterprise-only feature)"`
+	Fips                 *bool   `json:"fips,omitempty" desc:"[Deprecated] Use 'variant=fips' instead. If true, deploys a version of the control plane and data plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature)"`
 }
 
 type ResourceAllocation struct {
