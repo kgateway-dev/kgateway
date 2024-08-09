@@ -21,6 +21,7 @@ Name|Version|License
 [go-swagger/go-swagger](https://github.com/go-swagger/go-swagger)|v0.21.0|Apache License 2.0
 [gogo/googleapis](https://github.com/gogo/googleapis)|v1.4.0|Apache License 2.0
 [gogo/protobuf](https://github.com/gogo/protobuf)|v1.3.2|BSD 3-clause "New" or "Revised" License
+[jwt/v4](https://github.com/golang-jwt/jwt)|v4.5.0|MIT License
 [golang/protobuf](https://github.com/golang/protobuf)|v1.5.3|BSD 3-clause "New" or "Revised" License
 [google/go-cmp](https://github.com/google/go-cmp)|v0.6.0|BSD 3-clause "New" or "Revised" License
 [google/go-github](https://github.com/google/go-github)|v17.0.0+incompatible|BSD 3-clause "New" or "Revised" License

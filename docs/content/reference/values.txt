@@ -171,6 +171,7 @@
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.ports[].containerPort|int32|||
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.ports[].protocol|string|||
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.ports[].hostIP|string|||
+|kubeGateway.gatewayParameters.glooGateway.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container. Default is false.|
 |settings.watchNamespaces[]|string||whitelist of namespaces for Gloo Edge to watch for services and CRDs. Empty list means all namespaces|
 |settings.writeNamespace|string||namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Edge Discovery.|
 |settings.integrations.knative.enabled|bool|false|enabled knative components|
@@ -1650,3 +1651,4 @@
 |global.additionalLabels.NAME|string||Additional labels to add to all gloo resources.|
 |global.podSecurityStandards.container.enableRestrictedContainerDefaults|bool||Set to true to default all containers to a security policy that minimally conforms to a [restricted container security policy](https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted). |
 |global.podSecurityStandards.container.defaultSeccompProfileType|string||The seccomp profile type to use for default restricted container securityContexts. Valid values are 'RuntimeDefault' and 'Localhost'. Default is 'RuntimeDefault'. Has no effect if enableRestrictedContainerDefaults is false.|
+|global.securitySettings.floatingUserId|bool||If true, use 'true' as default value for all instances of floatingUserId. In OSS, has the additional effects of rendering charts as if 'discovery.deployment.enablePodSecurityContext=false' and 'gatewayProxies.gatewayProxy.podTemplate.enablePodSecurityContext=false'. In EE templates  has the additional effects of rendering charts as if 'redis.deployment.enablePodSecurityContext=false', and in the ExtAuth deployment's podSecurityContext, behavior will match the local 'floatingUserId' and fsGroup will not be rendered.|

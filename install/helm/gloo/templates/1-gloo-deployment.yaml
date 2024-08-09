@@ -42,8 +42,12 @@ spec:
         {{- end }}
         {{- end }}
     spec:
-{{ with .Values.gloo.deployment.podSecurityContext }}
-{{- include "gloo.securityContext" (dict "values" . "defaults" (dict)) | indent 6 -}}
+{{- $podSecCtx := dict -}}
+{{- with .Values.gloo.deployment.podSecurityContext -}}
+  {{- $podSecCtx = . -}}
+{{- end -}}
+{{- if $podSecCtx  -}}
+{{- include "gloo.securityContext" (dict "values" $podSecCtx "globalSec" .Values.global.securitySettings) | indent 6  -}}
 {{- end }}
 {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo
@@ -84,7 +88,7 @@ spec:
         {{- if not .Values.gloo.deployment.floatingUserId }}
           {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser }}
         {{- end }}
-        {{- include "gloo.containerSecurityContext" (dict "values" .Values.global.glooMtls.envoy.securityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
+        {{- include "gloo.containerSecurityContext" (dict "values" .Values.global.glooMtls.envoy.securityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8 "globalSec" .Values.global.securitySettings) }}
         ports:
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}
           name: grpc-xds
@@ -127,7 +131,7 @@ spec:
         {{- if not .Values.gloo.deployment.floatingUserId -}}
           {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser}}
         {{- end -}}
-        {{- include "gloo.containerSecurityContext" (dict "values" .Values.global.glooMtls.sds.securityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
+        {{- include "gloo.containerSecurityContext" (dict "values" .Values.global.glooMtls.sds.securityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8 "globalSec" .Values.global.securitySettings) }}
         ports:
         - containerPort: {{ .Values.gloo.deployment.validationPort }}
           name: validation
@@ -168,7 +172,7 @@ spec:
         {{- if not .Values.gloo.deployment.floatingUserId -}}
           {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser }}
         {{- end -}}
-        {{- include "gloo.containerSecurityContext" (dict "values" .Values.gloo.deployment.glooContainerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
+        {{- include "gloo.containerSecurityContext" (dict "values" .Values.gloo.deployment.glooContainerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8 "globalSec" .Values.global.securitySettings) }}
         ports:
 {{- if not .Values.global.glooMtls.enabled }}
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}

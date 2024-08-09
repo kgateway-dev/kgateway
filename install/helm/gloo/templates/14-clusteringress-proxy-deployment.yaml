@@ -64,7 +64,7 @@ spec:
             "allowPrivilegeEscalation" false
             "capabilities" $capabilities
         }}
-        {{- include "gloo.containerSecurityContext" (dict "values" .Values.settings.integrations.knative.proxy.containerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
+        {{- include "gloo.containerSecurityContext" (dict "values" .Values.settings.integrations.knative.proxy.containerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8 "globalSec" .Values.global.securitySettings) }}
         ports:
         - containerPort: {{ .Values.settings.integrations.knative.proxy.httpPort }}
           name: http
@@ -80,7 +80,7 @@ spec:
           name: clusteringress-envoy-config
         name: envoy-config
 
-{{- end }}
+{{- end }} {{/*  if (semverCompare "< 0.8.0" .Values.settings.integrations.knative.version ) */}}
 {{- end }} {{/* if .Values.settings.integrations.knative.enabled */}}
 {{- end }} {{/* define clusterIngressProxy.deploymentSpec */}}
 

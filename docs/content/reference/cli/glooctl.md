@@ -45,6 +45,7 @@ glooctl is the unified CLI for Gloo.
 * [glooctl init-plugin-manager](../glooctl_init-plugin-manager)	 - Install the Gloo Gateway Enterprise CLI plugin manager
 * [glooctl install](../glooctl_install)	 - install gloo on different platforms
 * [glooctl istio](../glooctl_istio)	 - Commands for interacting with Istio in Gloo
+* [glooctl license](../glooctl_license)	 - subcommands for interacting with the license
 * [glooctl plugin](../glooctl_plugin)	 - Commands for interacting with glooctl plugins
 * [glooctl proxy](../glooctl_proxy)	 - interact with proxy instances managed by Gloo
 * [glooctl remove](../glooctl_remove)	 - remove configuration items from a top-level Gloo resource

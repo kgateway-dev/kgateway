@@ -96,6 +96,9 @@ type KubernetesProxyConfig struct {
 	//
 	// +kubebuilder:validation:Optional
 	AiExtension *AiExtension `json:"aiExtension,omitempty"`
+
+	// Used to unset the `runAsUser` values in security contexts.
+	FloatingUserId *bool `json:"floatingUserId,omitempty"`
 }
 
 func (in *KubernetesProxyConfig) GetDeployment() *ProxyDeployment {
@@ -152,6 +155,13 @@ func (in *KubernetesProxyConfig) GetAiExtension() *AiExtension {
 		return nil
 	}
 	return in.AiExtension
+}
+
+func (in *KubernetesProxyConfig) GetFloatingUserId() *bool {
+	if in == nil {
+		return nil
+	}
+	return in.FloatingUserId
 }
 
 // Configuration for the Proxy deployment in Kubernetes.
