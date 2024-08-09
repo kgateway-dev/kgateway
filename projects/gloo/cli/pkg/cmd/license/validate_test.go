@@ -40,7 +40,7 @@ var _ = Describe("Licence", func() {
 		// Call the checkLicense function
 		err := checkLicense(invalidLicenseKey)
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal("can't parse licence key"))
+		Expect(err.Error()).To(Equal("can't parse license key"))
 	})
 
 	It("should print correct values for valid license", func() {

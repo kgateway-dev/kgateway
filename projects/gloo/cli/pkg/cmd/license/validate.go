@@ -65,7 +65,7 @@ func checkLicense(licenseKey string) error {
 
 	_, _, err := new(jwt.Parser).ParseUnverified(licenseKey, &licenseClaims)
 	if err != nil {
-		return fmt.Errorf("can't parse licence key")
+		return fmt.Errorf("can't parse license key")
 	}
 	fmt.Printf(formatLicenseDetail(licenseClaims.CreationDate, licenseClaims.ExpirationDate, licenseClaims.Product, licenseClaims.LicenseType == "trial"))
 	return nil
@@ -76,7 +76,7 @@ func checkLegacyLicense(licenseKey string) error {
 	var standardizedLicenseKey = base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"HS256","typ":"JWT"}`)) + "." + licenseKey
 	_, _, err := new(jwt.Parser).ParseUnverified(standardizedLicenseKey, &licenseLegacyClaim)
 	if err != nil {
-		return fmt.Errorf("can't parse licence key")
+		return fmt.Errorf("can't parse license key")
 	}
 	fmt.Printf(formatLicenseDetail(licenseLegacyClaim.Iat, licenseLegacyClaim.Exp, licenseLegacyClaim.Product, licenseLegacyClaim.LicType == "trial"))
 	return nil

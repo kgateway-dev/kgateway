@@ -68,7 +68,7 @@ type TestConfig struct {
 	InstallNamespace string
 	// Name of the glooctl executable
 	GlooctlExecName string
-	// If provided, the licence key to install the enterprise version of Gloo
+	// If provided, the license key to install the enterprise version of Gloo
 	LicenseKey string
 	// Install a released version of gloo. This is the value of the github tag that may have a leading 'v'
 	ReleasedVersion string
