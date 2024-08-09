@@ -165,9 +165,10 @@ ttlSecondsAfterFinished: {{ . }}
 
 {{- /*
 This template is used to generate the gloo pod or container security context.
-It takes 3 values:
+It takes 4 values:
   .values - the securityContext passed from the user in values.yaml
   .defaults - the default securityContext for the pod or container
+  .globalSec - global security settings, usually from .Values.global.securitySettings
   .indent - the number of spaces to indent the output. If not set, the output will not be indented.
     The indentation argument is necessary because it is possible that no output will be rendered. 
     If that happens and the caller handles the indentation the result will be a line of whitespace, which gets caught by the whitespace tests
@@ -177,31 +178,50 @@ It takes 3 values:
 Because of this, if a value is "true" in defaults it can not be modified with this method.
 */ -}}
 {{- define "gloo.securityContext" }}
+{{- /* Move input parameters to non-null variables */ -}}
+{{- $defaults := dict -}}
+{{- if .defaults -}}
+  {{- $defaults = .defaults -}}
+{{- end -}}
+{{- $values := dict -}}
+{{- if .values -}}
+  {{- $values = .values -}}
+{{- end -}}
+{{- $globalSec := dict -}}
+{{- if .globalSec -}}
+  {{- $globalSec = .globalSec -}}
+{{- end -}}
 {{ $indent := 0}}
 {{- if .indent -}}
   {{- $indent = .indent -}}
 {{- end -}}
-{{- $securityContext := dict -}}
+{{- /* create $overwrite and set it based on the merge-policy */ -}}
 {{- $overwrite := true -}}
-{{- if .values -}}
-  {{- if .values.mergePolicy }}
-    {{- if eq .values.mergePolicy "helm-merge" -}}
-      {{- $overwrite = false -}}
-    {{- else if ne .values.mergePolicy "no-merge" -}}
-      {{- fail printf "value '%s' is not an allowed value for mergePolicy. Allowed values are 'no-merge', 'helm-merge', or an empty string" .values.mergePolicy }}
-    {{- end -}}
-  {{- end }}
+{{- if $values.mergePolicy }}
+  {{- if eq $values.mergePolicy "helm-merge" -}}
+    {{- $overwrite = false -}}
+  {{- else if ne $values.mergePolicy "no-merge" -}}
+    {{- fail printf "value '%s' is not an allowed value for mergePolicy. Allowed values are 'no-merge', 'helm-merge', or an empty string" $values.mergePolicy }}
+  {{- end -}}
 {{- end -}}
+{{- /* create $securityContext and combine with $defaults based on teh value of $overwrite */ -}}
+{{- $securityContext := dict -}}
 {{- if $overwrite -}}
-  {{- $securityContext = or .values .defaults (dict) -}}
+  {{- $securityContext = or $values $defaults (dict) -}}
 {{- else -}}
-  {{- $securityContext = merge .values .defaults }}
+  {{- $securityContext = merge $values $defaults -}}
 {{- end }}
+{{- /* Apply global overrides */ -}}
+{{- with $globalSec -}}
+  {{- if .floatingUserId -}}
+    {{- $_ := unset $securityContext "runAsUser" -}}
+  {{- end -}}
+{{- end -}}
 {{- /* Remove "mergePolicy" if it exists because it is not a part of the kubernetes securityContext definition */ -}}
 {{- $securityContext = omit $securityContext "mergePolicy" -}}
 {{- with $securityContext -}}
-{{- $toRender := dict "securityContext" $securityContext }}
-{{- toYaml $toRender | nindent $indent }}
+  {{- $toRender := dict "securityContext" $securityContext -}}
+  {{- toYaml $toRender | nindent $indent -}}
 {{- end }}
 {{- end }}
 
@@ -212,6 +232,7 @@ It takes 4 values:
   .values - the securityContext passed from the user in values.yaml
   .defaults - the default securityContext for the pod or container
   .podSecurityStandards - podSecurityStandard from values.yaml
+  .globalSec - global security settings, usually from .Values.global.securitySettings
   .indent - the number of spaces to indent the output. If not set, the output will not be indented.
     The indentation argument is necessary because it is possible that no output will be rendered. 
     If that happens and the caller handles the indentation the result will be a line of whitespace, which gets caught by the whitespace tests
@@ -219,40 +240,52 @@ It takes 4 values:
   If .podSecurityStandards.container.enableRestrictedContainerDefaults is true, the defaults will be set to a restricted set of values.
   .podSecurityStandards.container.defaultSeccompProfileType can be used to set the seccompProfileType.
 */ -}}
-{{- define "gloo.containerSecurityContext" }}
-{{- $defaultSeccompProfileType := "RuntimeDefault"}}
-{{- /* set default seccompProfileType */ -}}
+{{- define "gloo.containerSecurityContext" -}}
+{{- /* Move input parameters to non-null variables */ -}}
+{{- $defaults := dict -}}
+{{- if .defaults -}}
+  {{- $defaults = .defaults -}}
+{{- end -}}
+{{- $values := dict -}}
+{{- if .values -}}
+  {{- $values = .values -}}
+{{- end -}}
 {{ $indent := 0}}
 {{- if .indent -}}
   {{- $indent = .indent -}}
 {{- end -}}
+{{ $pss := dict }}
 {{- if .podSecurityStandards -}}
-  {{- if .podSecurityStandards.container -}}
-    {{- if .podSecurityStandards.container.defaultSeccompProfileType -}}
-      {{- $defaultSeccompProfileType = .podSecurityStandards.container.defaultSeccompProfileType -}}
-      {{- if and (ne $defaultSeccompProfileType "RuntimeDefault") (ne $defaultSeccompProfileType "Localhost") -}}
-        {{- fail printf "value '%s' is not an allowed value for defaultSeccompProfileType. Allowed values are 'RuntimeDefault' or 'Localhost'" . }}
-      {{- end -}}
-    {{ end -}}
-  {{ end -}}
+  {{- $pss = .podSecurityStandards -}}
 {{- end -}}
+{{- /* set default seccompProfileType */ -}}
+
 {{- $pss_restricted_defaults := dict 
     "runAsNonRoot" true
     "capabilities" (dict "drop" (list "ALL"))
-    "allowPrivilegeEscalation" false
-    "seccompProfile" (dict "type" $defaultSeccompProfileType) }}
+    "allowPrivilegeEscalation" false }}
 {{- /* set defaults if appropriate */ -}}
-{{- $defaults := .defaults }}
-{{- if .podSecurityStandards -}}
-  {{- if .podSecurityStandards.container -}}
-    {{- if .podSecurityStandards.container.enableRestrictedContainerDefaults -}}
-      {{- $defaults = merge .defaults $pss_restricted_defaults -}}
+{{- if $pss.container -}}
+  {{/* Set the default seccompProfileType */}}
+  {{- $defaultSeccompProfileType := "RuntimeDefault"}}
+  {{- if $pss.container.defaultSeccompProfileType -}}
+    {{- $defaultSeccompProfileType = $pss.container.defaultSeccompProfileType -}}
+    {{- if and (ne $defaultSeccompProfileType "RuntimeDefault") (ne $defaultSeccompProfileType "Localhost") -}}
+      {{- fail printf "value '%s' is not an allowed value for defaultSeccompProfileType. Allowed values are 'RuntimeDefault' or 'Localhost'" . }}
     {{- end -}}
+  {{- end -}}
+  {{- $_ := set $pss_restricted_defaults  "seccompProfile" (dict "type" $defaultSeccompProfileType) -}}
+  {{- if $pss.container.enableRestrictedContainerDefaults -}}
+    {{- $defaults = merge $defaults $pss_restricted_defaults -}}
   {{- end -}}
 {{- end -}}
 {{- /* call general securityContext template */ -}}
-{{- include "gloo.securityContext" (dict "values" .values "defaults" $defaults "indent" $indent) -}}
-{{- end }}
+{{- include "gloo.securityContext" (dict 
+            "values" $values
+            "defaults" $defaults
+            "indent" $indent
+            "globalSec" .globalSec) -}}
+{{- end -}}
 
 
 {{- /*

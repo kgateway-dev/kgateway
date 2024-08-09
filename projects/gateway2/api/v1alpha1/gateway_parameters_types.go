@@ -91,6 +91,17 @@ type KubernetesProxyConfig struct {
 	//
 	// +kubebuilder:validation:Optional
 	Stats *StatsConfig `json:"stats,omitempty"`
+<<<<<<< HEAD
+=======
+
+	// Configuration for the AI extension.
+	//
+	// +kubebuilder:validation:Optional
+	AiExtension *AiExtension `json:"aiExtension,omitempty"`
+
+	// Used to unset the `runAsUser` values in security contexts.
+	FloatingUserId *bool `json:"floatingUserId,omitempty"`
+>>>>>>> df93f5f79 (Global floatingUserId to support OpenShift (#9835))
 }
 
 func (in *KubernetesProxyConfig) GetDeployment() *ProxyDeployment {
@@ -141,6 +152,14 @@ func (in *KubernetesProxyConfig) GetStats() *StatsConfig {
 	}
 	return in.Stats
 }
+
+func (in *KubernetesProxyConfig) GetFloatingUserId() *bool {
+	if in == nil {
+		return nil
+	}
+	return in.FloatingUserId
+}
+
 
 // Configuration for the Proxy deployment in Kubernetes.
 type ProxyDeployment struct {

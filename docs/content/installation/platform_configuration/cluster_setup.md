@@ -209,73 +209,21 @@ You can use this Helm chart `values.yaml` file while following the [Gloo Gateway
 {{< tabs >}}
 {{< tab name="Enterprise" codelang="yaml" >}}
 global:
-  extensions:
-    extAuth:
-      deployment:
-        floatingUserId: true
-        fsGroup: ""
-    rateLimit:
-      deployment:
-        floatingUserId: true
-oberservability:
-  deployment:
+  securitySettings:
     floatingUserId: true
-redis:
-  deployment:
-    floatingUserId: true
-    enablePodSecurityContext: false
-gloo:
-  gloo:
-    deployment:
-      floatingUserId: true
-  discovery:
-    deployment:
-      floatingUserId: true
-      enablePodSecurityContext: false
-  gateway:
-    deployment:
-      floatingUserId: true
-    certGenJob:
-      floatingUserId: true
-  observability:
-    deployment:
-      floatingUserId: true
-  gatewayProxies:
-    gatewayProxy:
-      podTemplate:
-        floatingUserId: true
-        enablePodSecurityContext: false
 gloo-fed:
   enabled: false
   glooFedApiserver:
     enable: false #optionally disable the admin console, too
-    floatingUserId: true
 prometheus:
   enabled: false
 grafana:
   defaultInstallationEnabled: false
 {{< /tab >}}
 {{< tab name="Open Source" codelang="yaml">}}
-gloo:
-  deployment:
+global:
+  securitySettings:
     floatingUserId: true
-discovery:
-  deployment:
-    floatingUserId: true
-    enablePodSecurityContext: false
-gateway:
-  deployment:
-    floatingUserId: true
-  certGenJob:
-    floatingUserId: true
-observability:
-  deployment:
-    floatingUserId: true
-gatewayProxies:
-  gatewayProxy:
-    podTemplate:
-      floatingUserId: true
-      enablePodSecurityContext: false
 {{< /tab >}}
 {{< /tabs >}}
 

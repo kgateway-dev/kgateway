@@ -101,12 +101,12 @@ spec:
         {{- end }}
 {{- end}}
     spec:
-{{ $securityDefaults := dict "fsGroup" $spec.podTemplate.fsGroup }}
+{{- $securityDefaults := dict "fsGroup" $spec.podTemplate.fsGroup -}}
 {{- if not $spec.podTemplate.floatingUserId -}}
   {{- $_ := set $securityDefaults "runAsUser" $spec.podTemplate.runAsUser }}
 {{ end -}}
-{{- if $spec.podTemplate.enablePodSecurityContext -}}
-{{ include "gloo.securityContext" (dict "values" $spec.podTemplate.podSecurityContext "defaults" $securityDefaults "indent" 6) -}}
+{{- if (and $spec.podTemplate.enablePodSecurityContext (not $global.securitySettings.floatingUserId)) -}}
+{{ include "gloo.securityContext" (dict "values" $spec.podTemplate.podSecurityContext "defaults" $securityDefaults "indent" 6 "globalSec" $global.securitySettings) -}}
 {{- end -}}
 
 {{- if $spec.kind.deployment }}
@@ -217,7 +217,7 @@ spec:
         {{- if not $spec.podTemplate.floatingUserId -}}
           {{- $_ := set $securityDefaults "runAsUser" $spec.podTemplate.runAsUser }}
         {{- end -}}
-        {{- include "gloo.containerSecurityContext" (dict "values" $spec.podTemplate.glooContainerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
+        {{- include "gloo.containerSecurityContext" (dict "values" $spec.podTemplate.glooContainerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8 "globalSec" $global.securitySettings) }}
         ports:
         - containerPort: {{ $spec.podTemplate.httpPort }}
           name: http
@@ -300,7 +300,7 @@ spec:
       {{- $sdsImage := merge $global.glooMtls.sds.image $global.image }}
       - name: sds
         image: {{ template "gloo.image" $sdsImage }}
-        {{- include "gloo.containerSecurityContext" (dict "values" $global.glooMtls.sds.securityContext "defaults" (dict) "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
+        {{- include "gloo.containerSecurityContext" (dict "values" $global.glooMtls.sds.securityContext "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8 "globalSec" $global.securitySettings) }}
         imagePullPolicy: {{ $sdsImage.pullPolicy }}
 {{- if $global.glooMtls.sdsResources }}
         resources:
@@ -364,7 +364,7 @@ spec:
 {{- end }}
 {{- if not $global.istioSDS.customSidecars }}
       - name: istio-proxy
-        {{- include "gloo.containerSecurityContext" (dict "values" $global.glooMtls.istioProxy.securityContext "defaults" (dict) "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
+        {{- include "gloo.containerSecurityContext" (dict "values" $global.glooMtls.istioProxy.securityContext "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8 "globalSec" $global.securitySettings) }}
         {{- $istioProxyImage := merge $global.glooMtls.istioProxy.image $global.image }}
         image: {{ template "gloo.image" $istioProxyImage }}
         imagePullPolicy: {{ $istioProxyImage.pullPolicy }}
