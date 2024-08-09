@@ -21,6 +21,7 @@ import (
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/storage"
 	"helm.sh/helm/v3/pkg/storage/driver"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -509,4 +510,33 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 	}
 
 	return objs, nil
+}
+
+// applyFloatingUserId will set the RunAsUser field from all security contexts to null if the floatingUserId field is set
+func applyFloatingUserId(dstKube *v1alpha1.KubernetesProxyConfig) {
+	floatingUserId := dstKube.GetFloatingUserId()
+	if floatingUserId == nil || !*floatingUserId {
+		return
+	}
+
+	// Pod security context
+	podSecurityContext := dstKube.GetPodTemplate().GetSecurityContext()
+	if podSecurityContext != nil {
+		podSecurityContext.RunAsUser = nil
+	}
+
+	// Container security contexts
+	securityContexts := []*corev1.SecurityContext{
+		dstKube.GetEnvoyContainer().GetSecurityContext(),
+		dstKube.GetSdsContainer().GetSecurityContext(),
+		dstKube.GetIstio().GetIstioProxyContainer().GetSecurityContext(),
+		dstKube.GetAiExtension().GetSecurityContext(),
+	}
+
+	for _, securityContext := range securityContexts {
+		if securityContext != nil {
+			securityContext.RunAsUser = nil
+		}
+	}
+
 }
