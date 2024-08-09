@@ -316,3 +316,5 @@ global:
   extauthCustomYaml: true
   # additionalLabels adds a label to all object metadata
   additionalLabels: {}
+  # securitySettings defines global security settings such as `floatingUserId`
+  securitySettings: {}

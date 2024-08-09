@@ -21,6 +21,7 @@ import (
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/storage"
 	"helm.sh/helm/v3/pkg/storage/driver"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -152,7 +153,7 @@ func (d *Deployer) renderChartToObjects(gw *api.Gateway, vals map[string]any) ([
 	return objs, nil
 }
 
-// getGatewayParametersForGateway reuturns the a merged GatewayParameters object resulting from the default GwParams object and
+// getGatewayParametersForGateway returns the a merged GatewayParameters object resulting from the default GwParams object and
 // the GwParam object specifically associated with the given Gateway (if one exists).
 func (d *Deployer) getGatewayParametersForGateway(ctx context.Context, gw *api.Gateway) (*v1alpha1.GatewayParameters, error) {
 	logger := log.FromContext(ctx)
@@ -268,6 +269,12 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	// extract all the custom values from the GatewayParameters
 	// (note: if we add new fields to GatewayParameters, they will
 	// need to be plumbed through here as well)
+
+	// Apply the floating user ID if it is set
+	if gwParam.Spec.Kube.FloatingUserId != nil && *gwParam.Spec.Kube.FloatingUserId {
+		applyFloatingUserId(gwParam.Spec.Kube)
+	}
+
 	kubeProxyConfig := gwParam.Spec.Kube
 	deployConfig := kubeProxyConfig.GetDeployment()
 	podConfig := kubeProxyConfig.GetPodTemplate()
@@ -503,4 +510,33 @@ func ConvertYAMLToObjects(scheme *runtime.Scheme, yamlData []byte) ([]client.Obj
 	}
 
 	return objs, nil
+}
+
+// applyFloatingUserId will set the RunAsUser field from all security contexts to null if the floatingUserId field is set
+func applyFloatingUserId(dstKube *v1alpha1.KubernetesProxyConfig) {
+	floatingUserId := dstKube.GetFloatingUserId()
+	if floatingUserId == nil || !*floatingUserId {
+		return
+	}
+
+	// Pod security context
+	podSecurityContext := dstKube.GetPodTemplate().GetSecurityContext()
+	if podSecurityContext != nil {
+		podSecurityContext.RunAsUser = nil
+	}
+
+	// Container security contexts
+	securityContexts := []*corev1.SecurityContext{
+		dstKube.GetEnvoyContainer().GetSecurityContext(),
+		dstKube.GetSdsContainer().GetSecurityContext(),
+		dstKube.GetIstio().GetIstioProxyContainer().GetSecurityContext(),
+		dstKube.GetAiExtension().GetSecurityContext(),
+	}
+
+	for _, securityContext := range securityContexts {
+		if securityContext != nil {
+			securityContext.RunAsUser = nil
+		}
+	}
+
 }

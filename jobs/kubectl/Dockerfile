@@ -7,3 +7,5 @@ FROM $BASE_IMAGE
 RUN apk upgrade --update-cache
 
 COPY --from=kubectl /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/
+
+USER 10101

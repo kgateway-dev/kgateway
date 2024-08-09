@@ -47,7 +47,7 @@ spec:
       - image: {{template "gloo.image" $image}}
         imagePullPolicy: {{ $image.pullPolicy }}
         name: ingress
-        {{- include "gloo.containerSecurityContext" (dict "values" .Values.ingress.deployment.ingressContainerSecurityContext "defaults" (dict) "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
+        {{- include "gloo.containerSecurityContext" (dict "values" .Values.ingress.deployment.ingressContainerSecurityContext "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8 "globalSec" .Values.global.securitySettings) }}
 {{- if .Values.ingress.deployment.resources }}
         resources:
 {{ toYaml .Values.ingress.deployment.resources | indent 10}}

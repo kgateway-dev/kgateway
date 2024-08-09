@@ -5,3 +5,5 @@ FROM bitnami/kubectl:1.29.6 as kubectl
 FROM $BASE_IMAGE
 
 COPY --from=kubectl /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/
+
+USER 10101

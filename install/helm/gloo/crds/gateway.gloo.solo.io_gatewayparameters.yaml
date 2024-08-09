@@ -352,6 +352,8 @@ spec:
                             type: object
                         type: object
                     type: object
+                  floatingUserId:
+                    type: boolean
                   istio:
                     properties:
                       customSidecars:

@@ -57,7 +57,7 @@ spec:
         - image: {{ template "gloo.image" $image }}
           imagePullPolicy: {{ $image.pullPolicy }}
           name: access-logger
-          {{- include "gloo.containerSecurityContext" (dict "values" .Values.accessLogger.accessLoggerContainerSecurityContext "defaults" (dict) "podSecurityStandards" .Values.global.podSecurityStandards "indent" 10) }}
+          {{- include "gloo.containerSecurityContext" (dict "values" .Values.accessLogger.accessLoggerContainerSecurityContext "podSecurityStandards" .Values.global.podSecurityStandards "indent" 10 "globalSec" .Values.global.securitySettings) }}
 {{- if .Values.accessLogger.resources }}
           resources:
 {{ toYaml .Values.accessLogger.resources | indent 12}}
