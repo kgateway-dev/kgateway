@@ -32,7 +32,7 @@ runs:
       TEST_PKG: ./test/kubernetes/e2e/tests
       ISTIO_VERSION: ${{ inputs.istio-version }}
     shell: bash
-    run: make go-test
+    run: 'mkdir ./_test/test_output; make go-test | tee ./_test/test_output/${{inputs.cluster-name}}; grep -E "(--- FAIL)|(--- PASS)" ./_test/test_output/${{inputs.cluster-name}}'
   - name: Archive bug report directory on failure
     if: ${{ failure() }}
     uses: actions/upload-artifact@v4
