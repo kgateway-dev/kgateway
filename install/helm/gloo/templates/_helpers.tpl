@@ -26,36 +26,61 @@ ClusterRole
 {{- end -}}
 
 {{/*
-Expand the name of a container image by adding the digest, and the -fips / -distroless suffix if configured.
+Construct a container image name from a registry, repository, tag, and digest.
 */}}
 {{- define "gloo.image" -}}
 {{- $image := printf "%s/%s" .registry .repository -}}
-{{- if and .fips .fipsDigest -}}
+
 {{- /*
-In consideration of https://github.com/solo-io/gloo/issues/7326, we want the ability for -fips images to use their own digests,
-rather than falling back (incorrectly) onto the digests of non-fips images
+for fips or fips-distroless variants: add -fips to the image repo (name)
 */ -}}
-{{- $image = printf "%s-fips:%s@%s" $image .tag .fipsDigest -}}
-{{- else -}} {{- /* if and .fips .fipsDigest */ -}}
 {{- if or .fips (has .variant (list "fips" "fips-distroless")) -}}
 {{- $fipsSupportedImages := list "gloo-ee" "extauth-ee" "gloo-ee-envoy-wrapper" "rate-limit-ee" "discovery-ee" "sds-ee" -}}
 {{- if (has .repository $fipsSupportedImages) -}}
 {{- $image = printf "%s-fips" $image -}}
 {{- end -}}{{- /* if (has .repository $fipsSupportedImages) */ -}}
-{{- end -}}{{- /* if .fips */ -}}
+{{- end -}}{{- /* if or .fips (has .variant (list "fips" "fips-distroless")) */ -}}
+
+{{- /*
+add tag, if it exists
+*/ -}}
+{{- if .tag -}}
 {{- $image = printf "%s:%s" $image .tag -}}
-{{- if has .variant (list "distroless" "fips-distroless") -}}
+{{- end -}}{{- /* if .tag */ -}}
+
+{{- /*
+for distroless or fips-distroless variants: add -distroless to the tag
+*/ -}}
+{{- if and .tag (has .variant (list "distroless" "fips-distroless")) -}}
 {{- $distrolessSupportedImages := list "gloo" "gloo-envoy-wrapper" "discovery" "sds" "certgen" "kubectl" "access-logger" "ingress" "gloo-ee" "extauth-ee" "gloo-ee-envoy-wrapper" "rate-limit-ee" "discovery-ee" "sds-ee" "observability-ee" "caching-ee" -}}
 {{- if (has .repository $distrolessSupportedImages) -}}
 {{- $image = printf "%s-distroless" $image -}} {{- /* Add distroless suffix to the tag since it contains the same binaries in a different container */ -}}
 {{- end -}}{{- /* if (has .repository $distrolessSupportedImages) */ -}}
-{{- end -}}{{- /* if .distroless */ -}}
-{{- if .digest -}}
-{{- $image = printf "%s@%s" $image .digest -}}
-{{- end -}}{{- /* if .digest */ -}}
-{{- end -}}{{- /* if and .fips .fipsDigest */ -}}
+{{- end -}}{{- /* if and .tag (has .variant (list "distroless" "fips-distroless")) */ -}}
+
+{{- /*
+add digest for the chosen variant, if it exists
+*/ -}}
+{{- if or .fips (eq .variant "fips") -}}
+  {{- if .fipsDigest -}}
+    {{- $image = printf "%s@%s" $image .fipsDigest -}}
+  {{- end -}}{{- /* if .fipsDigest */ -}}
+{{- else if eq .variant "distroless" -}}
+  {{- if .distrolessDigest -}}
+    {{- $image = printf "%s@%s" $image .distrolessDigest -}}
+  {{- end -}}{{- /* if .distrolessDigest */ -}}
+{{- else if eq .variant "fips-distroless" -}}
+  {{- if .fipsDistrolessDigest -}}
+    {{- $image = printf "%s@%s" $image .fipsDistrolessDigest -}}
+  {{- end -}}{{- /* if .fipsDistrolessDigest */ -}}
+{{- else -}}
+  {{- if .digest -}}{{- /* standard image digest */ -}}
+    {{- $image = printf "%s@%s" $image .digest -}}
+  {{- end -}}{{- /* if .digest */ -}}
+{{- end -}}
 {{ $image }}
 {{- end -}}{{- /* define "gloo.image" */ -}}
+
 
 {{- define "gloo.pullSecret" -}}
 {{- if .pullSecret -}}
