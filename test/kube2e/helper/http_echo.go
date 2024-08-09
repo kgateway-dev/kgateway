@@ -9,7 +9,7 @@ const (
 // Deprecated
 // ported to test/kubernetes/e2e/defaults/testdata/http_echo.yaml
 func NewEchoHttp(namespace string) (TestContainer, error) {
-	return newTestContainer(namespace, defaultHttpEchoImage, HttpEchoName, HttpEchoPort)
+	return newTestContainer(namespace, defaultHttpEchoImage, HttpEchoName, HttpEchoPort, true, nil)
 }
 
 const (
@@ -21,5 +21,5 @@ const (
 // Deprecated
 // ported to test/kubernetes/e2e/defaults/testdata/tcp_echo.yaml
 func NewEchoTcp(namespace string) (TestContainer, error) {
-	return newTestContainer(namespace, defaultTcpEchoImage, TcpEchoName, TcpEchoPort)
+	return newTestContainer(namespace, defaultTcpEchoImage, TcpEchoName, TcpEchoPort, true, nil)
 }
