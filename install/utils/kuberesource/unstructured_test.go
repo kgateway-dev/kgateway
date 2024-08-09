@@ -32,7 +32,8 @@ var _ = Describe("Unstructured", func() {
 
 		structured, err := ConvertUnstructured(unstructured)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(structured.GetObjectKind().GroupVersionKind().Kind).To(Equal(obj.GetObjectKind().GroupVersionKind().Kind))
+		Expect(structured.GetObjectKind().GroupVersionKind()).NotTo(BeNil())
+		Expect(structured.GetObjectKind().GroupVersionKind()).To(Equal(obj.GetObjectKind().GroupVersionKind()))
 	},
 		Entry("GatewayParameters", gatewayParameters),
 	)
