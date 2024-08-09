@@ -256,11 +256,6 @@ var _ = Describe("Kube2e: helm", func() {
 			// Since the production recommendation is to disable discovery, we remove it from the list of deployments to check to consider gloo is healthy
 			glooDeploymentsToCheck = []string{"gloo", "gateway-proxy"}
 
-			additionalInstallArgs = []string{
-				// Setting `settings.disableKubernetesDestinations` && `global.glooRbac.namespaced` leads to panic in gloo
-				// Ref: https://github.com/solo-io/gloo/issues/8801
-				"--set", "global.glooRbac.namespaced=false",
-			}
 			additionalInstallArgs = append(additionalInstallArgs, valuesForProductionRecommendations...)
 
 			expectGatewayProxyIsReady = func() {
