@@ -460,8 +460,19 @@ var _ = Describe("Listener Subsystem", func() {
 				listenerReport)
 
 			params := plugins.Params{
-				Ctx:      ctx,
-				Snapshot: &gloov1snap.ApiSnapshot{},
+				Ctx: ctx,
+				Snapshot: &gloov1snap.ApiSnapshot{
+					Secrets: []*v1.Secret{{
+						Kind: &v1.Secret_Tls{
+							// This is an invalid secret that will generate a listener error when referenced.
+							Tls: &v1.TlsSecret{},
+						},
+						Metadata: &core.Metadata{
+							Name:      "exists-but-invalid",
+							Namespace: defaults.GlooSystem,
+						},
+					}},
+				},
 			}
 			_ = listenerTranslator.ComputeListener(params)
 			_ = routeConfigurationTranslator.ComputeRouteConfiguration(params)
@@ -471,6 +482,43 @@ var _ = Describe("Listener Subsystem", func() {
 		},
 		Entry(
 			"ListenerError",
+			&v1.AggregateListener{
+
+				HttpResources: &v1.AggregateListener_HttpResources{
+					HttpOptions: map[string]*v1.HttpListenerOptions{
+						"http-options-ref": {
+							HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{},
+						},
+					},
+					VirtualHosts: map[string]*v1.VirtualHost{
+						"vhost-ref": {
+							Name: "virtual-host",
+						},
+					},
+				},
+				HttpFilterChains: []*v1.AggregateListener_HttpFilterChain{{
+					Matcher: &v1.Matcher{
+						SslConfig: &ssl.SslConfig{
+							SslSecrets: &ssl.SslConfig_SecretRef{
+								SecretRef: &core.ResourceRef{
+									Name:      "exists-but-invalid",
+									Namespace: defaults.GlooSystem,
+								},
+							},
+						},
+					},
+					HttpOptionsRef:  "http-options-ref",
+					VirtualHostRefs: []string{"vhost-ref"},
+				}},
+			},
+			func(proxyReport *validation.ProxyReport) {
+				proxyErr := gloovalidation.GetProxyError(proxyReport)
+				Expect(proxyErr).To(HaveOccurred())
+				Expect(proxyErr.Error()).To(ContainSubstring(validation.ListenerReport_Error_SSLConfigError.String()))
+			},
+		),
+		Entry(
+			"ListenerWarning",
 			&v1.AggregateListener{
 				HttpResources: &v1.AggregateListener_HttpResources{
 					HttpOptions: map[string]*v1.HttpListenerOptions{
@@ -500,9 +548,8 @@ var _ = Describe("Listener Subsystem", func() {
 				}},
 			},
 			func(proxyReport *validation.ProxyReport) {
-				proxyErr := gloovalidation.GetProxyError(proxyReport)
-				Expect(proxyErr).To(HaveOccurred())
-				Expect(proxyErr.Error()).To(ContainSubstring(validation.ListenerReport_Error_SSLConfigError.String()))
+				proxyErr := gloovalidation.GetProxyWarning(proxyReport)
+				Expect(proxyErr).To(ContainElement(ContainSubstring(validation.ListenerReport_Warning_SSLConfigWarning.String())))
 			},
 		),
 		Entry(
