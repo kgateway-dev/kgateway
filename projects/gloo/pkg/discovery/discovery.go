@@ -169,7 +169,7 @@ func setLabels(udsName string, upstreamList v1.UpstreamList) v1.UpstreamList {
 	return clone
 }
 
-// launch a goroutine for all the UDS plugins with a single cancel to close them all
+// launch a goroutine for all the EDS plugins with a single cancel to close them all
 func (d *EndpointDiscovery) StartEds(upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (chan error, error) {
 	aggregatedErrs := make(chan error)
 	logger := contextutils.LoggerFrom(opts.Ctx)
@@ -233,9 +233,9 @@ func (d *EndpointDiscovery) Ready() <-chan struct{} {
 	return d.ready
 }
 
-func aggregateEndpoints(endpointsByUds map[DiscoveryPlugin]v1.EndpointList) v1.EndpointList {
+func aggregateEndpoints(endpointsByEds map[DiscoveryPlugin]v1.EndpointList) v1.EndpointList {
 	var endpoints v1.EndpointList
-	for _, endpointList := range endpointsByUds {
+	for _, endpointList := range endpointsByEds {
 		endpoints = append(endpoints, endpointList...)
 	}
 	sort.SliceStable(endpoints, func(i, j int) bool {
