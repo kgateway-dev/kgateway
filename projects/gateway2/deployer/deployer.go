@@ -528,7 +528,6 @@ func applyFloatingUserId(dstKube *v1alpha1.KubernetesProxyConfig) {
 		dstKube.GetEnvoyContainer().GetSecurityContext(),
 		dstKube.GetSdsContainer().GetSecurityContext(),
 		dstKube.GetIstio().GetIstioProxyContainer().GetSecurityContext(),
-		dstKube.GetAiExtension().GetSecurityContext(),
 	}
 
 	for _, securityContext := range securityContexts {
