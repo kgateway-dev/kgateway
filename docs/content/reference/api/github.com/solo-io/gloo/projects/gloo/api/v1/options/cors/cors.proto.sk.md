@@ -60,9 +60,9 @@ CorsPolicy defines Cross-Origin Resource Sharing for a virtual service.
 ### CorsPolicyMergeSettings
 
  
-Settings for determining how CORS settings are merged when present on both VirtualHost and Route
-This may be useful if different teams/personas are responsible for managing VirtualService and Route resources and policies
-on VirtualServices set by one team or persona should be enforced or inherited on Routes
+Settings to determine how to merge CORS settings when present on both the VirtualHost and Route.
+This option can be useful when different user personas or teams share ownership of a VirtualService.
+For example, you might not want CORS settings on each route to override the virtual host settings, but instead merge them with a `UNION` strategy.
 
 ```yaml
 "exposeHeaders": .cors.options.gloo.solo.io.CorsPolicyMergeSettings.MergeStrategy
@@ -83,8 +83,8 @@ on VirtualServices set by one team or persona should be enforced or inherited on
 
 | Name | Description |
 | ----- | ----------- | 
-| `DEFAULT` | Follow the default Envoy behavior, which is for Route settings to override VH settings if non-nil |
-| `UNION` | When a setting is present on both VH and Route CORS policy, merge by concatenating for list fields and by ORing for boolean fields |
+| `DEFAULT` | Follow the default Envoy behavior, which is for Route settings to override VirtualHost settings if non-nil. |
+| `UNION` | When a CORS policy is present on both VirtualHost and Route CORS policy, merge the settings. The merge is done by concatenating for list fields and by ORing for boolean fields. |
 
 
 

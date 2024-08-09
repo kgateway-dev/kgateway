@@ -729,7 +729,7 @@ type VirtualHostOptions struct {
 	Stats      *stats.Stats         `protobuf:"bytes,10,opt,name=stats,proto3" json:"stats,omitempty"`
 	// Append/Remove headers on Requests or Responses on all routes contained in this Virtual Host
 	HeaderManipulation *headers.HeaderManipulation `protobuf:"bytes,2,opt,name=header_manipulation,json=headerManipulation,proto3" json:"header_manipulation,omitempty"`
-	// Defines a CORS policy for the virtual host
+	// Defines a CORS policy for the virtual host.
 	// If a CORS policy is also defined on the route matched by the request, the route policy
 	// overrides the virtual host policy for any configured field unless CorsMergeSettings are specified that define an
 	// alternate behavior.
@@ -1201,7 +1201,7 @@ type RouteOptions struct {
 	HostRewriteType isRouteOptions_HostRewriteType `protobuf_oneof:"host_rewrite_type"`
 	// If true and there is a host rewrite, appends the x-forwarded-host header to requests.
 	AppendXForwardedHost *wrappers.BoolValue `protobuf:"bytes,146,opt,name=append_x_forwarded_host,json=appendXForwardedHost,proto3" json:"append_x_forwarded_host,omitempty"`
-	// Defines a CORS policy for the route
+	// Defines a CORS policy for the route.
 	// If a CORS policy is defined on both the route and the virtual host, the merge behavior for these policies is
 	// determined by the CorsPolicyMergeSettings defined on the VirtualHost.
 	Cors *cors.CorsPolicy `protobuf:"bytes,11,opt,name=cors,proto3" json:"cors,omitempty"`
