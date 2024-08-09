@@ -4,30 +4,28 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 	"text/template"
-
-	"github.com/pkg/errors"
-	"github.com/solo-io/k8s-utils/installutils/kuberesource"
-	rbacv1 "k8s.io/api/rbac/v1"
 
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/cliutil/helm"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/gloo/test/makefile"
 	glootestutils "github.com/solo-io/gloo/test/testutils"
 	soloHelm "github.com/solo-io/go-utils/helmutils"
 	"github.com/solo-io/go-utils/testutils"
+	"github.com/solo-io/k8s-utils/installutils/kuberesource"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/release"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -54,10 +52,10 @@ func TestHelm(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	version = MustGetVersion()
+	version = makefile.MustGetVersion(".", "-C", "../../")
 	pullPolicy = corev1.PullIfNotPresent
 	// generate the values.yaml and Chart.yaml files
-	MustMake(".", "-C", "../../", "generate-helm-files", "-B")
+	makefile.MustMake(".", "-C", "../../", "generate-helm-files", "-B")
 })
 
 type renderTestCase struct {
@@ -76,66 +74,6 @@ func runTests(callback func(testCase renderTestCase)) {
 	for _, r := range renderers {
 		callback(r)
 	}
-}
-
-func MustMake(dir string, args ...string) {
-	makeCmd := exec.Command("make", args...)
-	makeCmd.Dir = dir
-
-	makeCmd.Stdout = GinkgoWriter
-	makeCmd.Stderr = GinkgoWriter
-	err := makeCmd.Run()
-
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-}
-
-func MustMakeReturnStdout(dir string, args ...string) string {
-	makeCmd := exec.Command("make", args...)
-	makeCmd.Dir = dir
-
-	var stdout bytes.Buffer
-	makeCmd.Stdout = &stdout
-
-	makeCmd.Stderr = GinkgoWriter
-	err := makeCmd.Run()
-
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-
-	return stdout.String()
-}
-
-// MustGetVersion returns the VERSION that will be used to build the chart
-func MustGetVersion() string {
-	output := MustMakeReturnStdout(".", "-C", "../../", "print-VERSION") // use print-VERSION so version matches on forks
-	lines := strings.Split(output, "\n")
-
-	// output from a fork:
-	// <[]string | len:4, cap:4>: [
-	//	"make[1]: Entering directory '/workspace/gloo'",
-	//	"<VERSION>",
-	//	"make[1]: Leaving directory '/workspace/gloo'",
-	//	"",
-	// ]
-
-	// output from the gloo repo:
-	// <[]string | len:2, cap:2>: [
-	//	"<VERSION>",
-	//	"",
-	// ]
-
-	if len(lines) == 4 {
-		// This is being executed from a fork
-		return lines[1]
-	}
-
-	if len(lines) == 2 {
-		// This is being executed from the Gloo repo
-		return lines[0]
-	}
-
-	// Error loudly to prevent subtle failures
-	Fail(fmt.Sprintf("print-VERSION output returned unknown format. %v", lines))
-	return "version-not-found"
 }
 
 type ChartRenderer interface {
