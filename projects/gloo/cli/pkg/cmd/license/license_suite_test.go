@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestRoute(t *testing.T) {
+func TestLicense(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Route Suite")
+	RunSpecs(t, "License Suite")
 }

@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Licence", func() {
+var _ = Describe("License Validate", func() {
 
 	licenseClaims := LicenseClaims{
 		AddOns:         []AddOn{{Addon: 1, ExpiresAt: time.Now().Add(24 * time.Hour).Unix(), LicenseType: "trial"}},
