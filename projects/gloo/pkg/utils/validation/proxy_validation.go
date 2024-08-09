@@ -360,12 +360,11 @@ func GetProxyWarning(proxyRpt *validation.ProxyReport) []string {
 	var warnings []string
 
 	for _, listenerReport := range proxyRpt.GetListenerReports() {
+		warnings = append(warnings, GetListenerWarning(listenerReport)...)
 		vhostReports := utils.GetVhostReportsFromListenerReport(listenerReport)
 		for _, vhReport := range vhostReports {
 			for _, routeReport := range vhReport.GetRouteReports() {
-				if warns := GetRouteWarning(routeReport); len(warns) > 0 {
-					warnings = append(warnings, warns...)
-				}
+				warnings = append(warnings, GetRouteWarning(routeReport)...)
 			}
 		}
 		for _, tcpHostReport := range utils.GetTcpHostReportsFromListenerReport(listenerReport) {

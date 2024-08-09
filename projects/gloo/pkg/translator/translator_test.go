@@ -2855,8 +2855,9 @@ var _ = Describe("Translator", func() {
 			}}
 
 			_, errs, _ := translator.Translate(params, proxyClone)
-			Expect(errs.Validate()).To(HaveOccurred())
-			Expect(errs.Validate().Error()).To(ContainSubstring("Listener Error: SSLConfigError. Reason: SSL secret not found: list did not find secret"))
+			resultantErr := errs.ValidateStrict()
+			Expect(resultantErr).To(HaveOccurred())
+			Expect(resultantErr.Error()).To(ContainSubstring("Listener Warning: SSLConfigWarning. Reason: SSL secret not found: list did not find secret"))
 		})
 	})
 

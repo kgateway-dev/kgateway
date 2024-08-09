@@ -122,7 +122,11 @@ func (t *translatorInstance) initializeCluster(
 		applyDefaultsToUpstreamSslConfig(sslConfig, t.settings.GetUpstreamOptions())
 		cfg, err := utils.NewSslConfigTranslator().ResolveUpstreamSslConfig(*secrets, sslConfig)
 		if err != nil {
-			reports.AddWarning(upstream, err.Error())
+			if errors.Is(err, utils.SslSecretNotFoundError) {
+				reports.AddWarning(upstream, err.Error())
+			} else {
+				reports.AddError(upstream, err)
+			}
 		} else {
 			typedConfig, err := utils.MessageToAny(cfg)
 			if err != nil {
