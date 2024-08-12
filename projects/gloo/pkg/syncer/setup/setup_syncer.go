@@ -889,12 +889,11 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	startFuncs["admin-server"] = AdminServerStartFunc(snapshotHistory)
 
-	// MARK: build k8s gw start func
 	var (
 		gwv2StatusSyncer       status.GatewayStatusSyncer
 		gwv2StatusSyncCallback syncer.OnProxiesTranslatedFn
 	)
-
+	// MARK: build k8s gw start func
 	if opts.GlooGateway.EnableK8sGatewayController {
 		gwv2StatusSyncer = status.NewStatusSyncerFactory()
 		gwv2StatusSyncCallback = gwv2StatusSyncer.HandleProxyReports
