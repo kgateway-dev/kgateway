@@ -26,7 +26,6 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) *gwv1.Ga
 		return nil
 	}
 
-	// TODO(Law): deterministic sorting
 	finalListeners := make([]gwv1.ListenerStatus, 0, len(gw.Spec.Listeners))
 	for _, lis := range gw.Spec.Listeners {
 		lisReport := gwReport.listener(&lis)
