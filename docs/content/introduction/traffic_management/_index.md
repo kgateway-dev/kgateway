@@ -25,7 +25,7 @@ Additional information can be found in the [Gloo Edge Core Concepts document]({{
 Let's see what underpins Gloo Edge routing with a high-level look at the layout of the Gloo Edge configuration. This can be seen as 3 layers: the *Gateway listeners*, *Virtual Services*, and *Upstreams*. Mostly, you'll be interacting with [Virtual Services]({{% versioned_link_path fromRoot="/introduction/architecture/concepts#virtual-services" %}}), which allow you to configure the details of the API you wish to expose on the Gateway and how routing happens to the backends. [Upstreams]({{% versioned_link_path fromRoot="/introduction/architecture/concepts#upstreams" %}}) represent those backends. [Gateway]({{% versioned_link_path fromRoot="/introduction/architecture/concepts#gateways" %}}) objects help you control the listeners for incoming traffic.
 
 <figure><img src="{{% versioned_link_path fromRoot="/img/traffic-config-ov.svg" %}}">
-<figcaption style="text-align:center;font-style:italic">Figure: Example configuration of Gloo Edge gateway, virtual service, and upstream resources.</figcaption></figure>
+<figcaption style="text-align:center;font-style:italic">Figure: Example configuration of gateway, virtual service, and upstream resources.</figcaption></figure>
 
 ---
 ## Route Rules

@@ -67,7 +67,7 @@ Now let's configure Gloo Edge to route requests to the upstream we just created.
 {{< /tab >}}
 {{< /tabs >}} 
 
-Let's send a request that matches the above route to the Gloo Edge gateway and make sure it works:
+Let's send a request that matches the above route to the gateway proxy and make sure it works:
 
 ```shell
 curl -H "Host: foo" $(glooctl proxy url)/posts/1

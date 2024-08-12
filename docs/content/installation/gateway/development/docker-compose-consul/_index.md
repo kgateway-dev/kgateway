@@ -108,7 +108,7 @@ You can view resources stored in the Consul UI at [http://localhost:8500/ui](htt
 
 You can also view secrets stored in the Vault UI at [http://localhost:8200/ui](http://localhost:8200/ui). Use the `Token` sign-in method, with `root` as the token.
 
-With all the containers now running, it is time to configure the *Upstream* for the Per Store application and a *Virtual Service* on the Gloo Edge gateway to serve content from the Pet Store app.
+With all the containers now running, it is time to configure the *Upstream* for the Pet Store app and a *Virtual Service* on the gateway to serve content from the Pet Store app.
 
 ---
 
@@ -122,7 +122,7 @@ curl --request PUT --data-binary @./install/docker-compose-consul/data/gateways/
 
 ## Configuring Upstream and Virtual Services
 
-The next step is to expose the Pet Store's API through the Gloo Edge gateway. We will do this by creating a service on Consul that Gloo Edge will use as an *Upstream*. Then we will create a *Virtual Service* on Gloo Edge with a routing rule. The configuration data for the *Virtual Service* will be stored in Consul.
+The next step is to expose the Pet Store's API through the gateway. We will do this by creating a service on Consul that Gloo Edge will use as an *Upstream*. Then we will create a *Virtual Service* on Gloo Edge with a routing rule. The configuration data for the *Virtual Service* will be stored in Consul.
 
 To create the service on Consul, we need to get the IP address of the `petstore` container. The command below retrieves the IP address and then creates a JSON file with information about the Pet Store application. The JSON file will be submitted to Consul to create the service.
 

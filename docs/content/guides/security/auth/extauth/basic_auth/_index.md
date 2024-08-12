@@ -46,7 +46,7 @@ Service to match all requests that:
 Apply the following virtual service:
 {{< readfile file="guides/security/auth/extauth/basic_auth/test-no-auth-vs.yaml" markdown="true">}}
 
-Let's send a request that matches the above route to the Gloo Edge gateway and make sure it works:
+Let's send a request that matches the above route to the gateway proxy and make sure it works:
 
 ```shell
 curl -H "Host: foo" $(glooctl proxy url)/posts/1
