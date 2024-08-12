@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/envutils"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
 	"github.com/solo-io/gloo/test/testutils"
 
@@ -21,10 +22,11 @@ import (
 // the k8s Gateway controller is disabled
 func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 	ctx := context.Background()
+	installNs, overrodeNs := envutils.LookupOrDefault(testutils.InstallNamespace, "automtls-istio-edge-api-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   "automtls-istio-edge-api-test",
+			InstallNamespace:   installNs,
 			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-automtls-edge-gateway-test-helm.yaml"),
 		},
 	)
@@ -33,6 +35,11 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 	err := testInstallation.AddIstioctl(ctx)
 	if err != nil {
 		t.Fatalf("failed to get istioctl: %v", err)
+	}
+
+	// Set the env to the install namespace if it is not already set
+	if os.Getenv(testutils.InstallNamespace) == "" {
+		os.Setenv(testutils.InstallNamespace, installNs)
 	}
 
 	// We register the cleanup function _before_ we actually perform the installation.

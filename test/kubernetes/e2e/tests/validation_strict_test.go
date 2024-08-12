@@ -20,7 +20,7 @@ import (
 // installation where validation is strict (allow_warnings=false)
 func TestValidationStrict(t *testing.T) {
 	ctx := context.Background()
-	installNs := env.GetOrDefault(testutils.InstallNamespace, "validation-strict-test")
+	installNs, overrodeNs := env.LookupOrDefault(testutils.InstallNamespace, "validation-strict-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
@@ -39,6 +39,9 @@ func TestValidationStrict(t *testing.T) {
 	// We register the cleanup function _before_ we actually perform the installation.
 	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
 	t.Cleanup(func() {
+		if overrodeNs {
+			os.Unsetenv(testutils.InstallNamespace)
+		}
 		if t.Failed() {
 			testInstallation.PreFailHandler(ctx)
 		}
