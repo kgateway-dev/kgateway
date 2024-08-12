@@ -43,7 +43,7 @@ Gloo Gateway supports image variants for the following component images:
 
 You have two options for specifying the variant for a Gloo Gateway image in your Helm values:
 * Specify the image variant for all Gloo Gateway components in the `global.image.variant` Helm field. Supported values include `standard`, `distroless`, `fips`, and `fips-distroless`. If unset, the default value is `standard`.
-* Specify images for individual components by using variant tags in the `gloo.<component>.deployment.image.tag` field of the component's Helm settings, such as `quay.io/solo-io/gloo-ee:v{{< reuse "conrefs/versions/gloo_patch.md" >}}-distroless`.
+* Specify images for individual components by using variant tags in the `gloo.<component>.deployment.image.tag` field of the component's Helm settings, such as `quay.io/solo-io/gloo-ee:v{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}-distroless`.
 
 ## Release cadence
 
