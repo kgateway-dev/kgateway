@@ -91,6 +91,9 @@ type KubernetesProxyConfig struct {
 	//
 	// +kubebuilder:validation:Optional
 	Stats *StatsConfig `json:"stats,omitempty"`
+
+	// Used to unset the `runAsUser` values in security contexts.
+	FloatingUserId *bool `json:"floatingUserId,omitempty"`
 }
 
 func (in *KubernetesProxyConfig) GetDeployment() *ProxyDeployment {
@@ -140,6 +143,13 @@ func (in *KubernetesProxyConfig) GetStats() *StatsConfig {
 		return nil
 	}
 	return in.Stats
+}
+
+func (in *KubernetesProxyConfig) GetFloatingUserId() *bool {
+	if in == nil {
+		return nil
+	}
+	return in.FloatingUserId
 }
 
 // Configuration for the Proxy deployment in Kubernetes.

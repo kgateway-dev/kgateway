@@ -67,7 +67,7 @@ spec:
        {{- if .Values.settings.integrations.knative.proxy.runAsUser -}}
           {{- $_ := set $securityDefaults "runAsUser" .Values.settings.integrations.knative.proxy.runAsUser }}
         {{- end -}}
-        {{- include "gloo.containerSecurityContext" (dict "values" .Values.settings.integrations.knative.proxy.containerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8) }}
+        {{- include "gloo.containerSecurityContext" (dict "values" .Values.settings.integrations.knative.proxy.containerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8 "globalSec" .Values.global.securitySettings) }}
         ports:
         - containerPort: {{ .Values.settings.integrations.knative.proxy.httpPort }}
           name: http

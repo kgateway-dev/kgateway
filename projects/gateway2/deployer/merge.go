@@ -88,6 +88,7 @@ func deepMergeGatewayParameters(dst, src *v1alpha1.GatewayParameters) *v1alpha1.
 	dstKube.Service = deepMergeService(dstKube.GetService(), srcKube.GetService())
 	dstKube.Istio = deepMergeIstioIntegration(dstKube.GetIstio(), srcKube.GetIstio())
 	dstKube.Stats = deepMergeStatsConfig(dstKube.GetStats(), srcKube.GetStats())
+	dstKube.FloatingUserId = mergePointers(dstKube.GetFloatingUserId(), srcKube.GetFloatingUserId())
 
 	return dst
 }

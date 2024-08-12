@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/install/utils/kuberesource"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
@@ -114,6 +115,9 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 				Expect(*gwpKube.GetStats().GetRoutePrefixRewrite()).To(Equal("/stats/prometheus"))
 				Expect(*gwpKube.GetStats().GetEnableStatsRoute()).To(BeTrue())
 				Expect(*gwpKube.GetStats().GetStatsRoutePrefixRewrite()).To(Equal("/stats"))
+
+				Expect(*gwpKube.GetFloatingUserId()).To(BeFalse())
+
 			})
 
 			When("overrides are set", func() {
@@ -303,6 +307,37 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 
 					Expect(*gwpKube.GetService().GetType()).To(Equal(corev1.ServiceTypeClusterIP))
 				})
+			})
+
+			When("floatingUserId is set", func() {
+
+				DescribeTable("sets the floatingUserId field", func(expectedValue bool, extraValueArgs ...string) {
+					valuesArgs = append(valuesArgs, extraValueArgs...)
+					// Updated values so need to re-render
+					prepareHelmManifest(namespace, glootestutils.HelmValues{ValuesArgs: valuesArgs})
+
+					gwpUnstructured := testManifest.ExpectCustomResource("GatewayParameters", namespace, wellknown.DefaultGatewayParametersName)
+					obj, err := kuberesource.ConvertUnstructured(gwpUnstructured)
+					Expect(err).NotTo(HaveOccurred())
+
+					gwp, ok := obj.(*v1alpha1.GatewayParameters)
+					Expect(ok).To(BeTrue())
+
+					gwpKube := gwp.Spec.Kube
+					Expect(gwpKube).ToNot(BeNil())
+
+					Expect(*gwpKube.GetFloatingUserId()).To(Equal(expectedValue))
+				},
+					Entry("locally true, globally true", true, "kubeGateway.gatewayParameters.glooGateway.floatingUserId=true", "global.securitySettings.floatingUserId=true"),
+					Entry("locally true, globally false", false, "kubeGateway.gatewayParameters.glooGateway.floatingUserId=true", "global.securitySettings.floatingUserId=false"),
+					Entry("locally true, globally undefined", true, "kubeGateway.gatewayParameters.glooGateway.floatingUserId=true"),
+					Entry("locally false, globally true", true, "kubeGateway.gatewayParameters.glooGateway.floatingUserId=false", "global.securitySettings.floatingUserId=true"),
+					Entry("locally false, globally false", false, "kubeGateway.gatewayParameters.glooGateway.floatingUserId=false", "global.securitySettings.floatingUserId=false"),
+					Entry("locally false, globally undefined", false, "kubeGateway.gatewayParameters.glooGateway.floatingUserId=false"),
+					Entry("locally undefined, globally true", true, "global.securitySettings.floatingUserId=true"),
+					Entry("locally undefined, globally false", false, "global.securitySettings.floatingUserId=false"),
+					Entry("locally undefined, globally undefined", false),
+				)
 			})
 		})
 
