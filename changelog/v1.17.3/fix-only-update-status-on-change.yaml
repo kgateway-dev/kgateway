@@ -1,6 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/solo-projects/issues/6638
-    resolvesIssue: true
-    description: |
-      Only update the K8s Gateway resource statuses on change to improve HTTPRoute translation time.
