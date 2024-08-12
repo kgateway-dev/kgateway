@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Wrap all Kubernetes E2E tests in a parent so that reporting summaries come 
+      out complete at the end.

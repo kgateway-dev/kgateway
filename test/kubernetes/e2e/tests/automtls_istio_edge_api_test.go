@@ -2,11 +2,13 @@ package tests_test
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
+	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/solo-io/skv2/codegen/util"
 
@@ -36,6 +38,9 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 	// We register the cleanup function _before_ we actually perform the installation.
 	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
 	t.Cleanup(func() {
+		if overrodeNs {
+			os.Unsetenv(testutils.InstallNamespace)
+		}
 		if t.Failed() {
 			testInstallation.PreFailHandler(ctx)
 
