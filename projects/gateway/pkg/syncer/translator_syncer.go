@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
+	"github.com/solo-io/gloo/pkg/utils/statsutils/metrics"
 
-	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	gloo_translator "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"

@@ -5,7 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"go.opencensus.io/stats/view"
 )
@@ -27,8 +27,8 @@ var _ = Describe("Validator", func() {
 	It("Updates the stats", func() {
 		cacheHitsName := "gloo.solo.io/test_validation_cache_hits"
 		cacheMissesName := "gloo.solo.io/test_validation_cache_misses"
-		mCacheHits := utils.MakeSumCounter(cacheHitsName, "The number of cache hits while validating test config")
-		mCacheMisses := utils.MakeSumCounter(cacheMissesName, "The number of cache misses while validating test config")
+		mCacheHits := statsutils.MakeSumCounter(cacheHitsName, "The number of cache hits while validating test config")
+		mCacheMisses := statsutils.MakeSumCounter(cacheMissesName, "The number of cache misses while validating test config")
 
 		validator := New("test", "test",
 			WithCounters(mCacheHits, mCacheMisses))
