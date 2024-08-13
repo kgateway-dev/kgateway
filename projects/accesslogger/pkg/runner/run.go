@@ -8,7 +8,7 @@ import (
 	envoy_data_accesslog_v3 "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v3"
 	_struct "github.com/golang/protobuf/ptypes/struct"
-	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/loggingservice"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 	"github.com/solo-io/go-utils/contextutils"
@@ -105,7 +105,7 @@ func Run() {
 						// https://docs.solo.io/gloo-edge/latest/guides/security/auth/jwt/access_control/#appendix---use-a-remote-json-web-key-set-jwks-server
 						issuer := getClaimFromJwtInDynamicMetadata("iss", meta)
 
-						utils.MeasureOne(
+						statsutils.MeasureOne(
 							ctx,
 							mAccessLogsRequests,
 							tag.Insert(responseCodeKey, v.GetResponse().GetResponseCode().String()),
@@ -121,7 +121,7 @@ func Run() {
 						// otherwise, you want this
 						// upstreamRespTimeNs := firstToFirstNs(v)
 
-						utils.Measure(
+						statsutils.Measure(
 							ctx,
 							mAccessLogsDownstreamRespTime,
 							downstreamRespTimeNs,
@@ -129,7 +129,7 @@ func Run() {
 							tag.Insert(clusterKey, v.GetCommonProperties().GetUpstreamCluster()),
 							tag.Insert(requestMethodKey, v.GetRequest().GetRequestMethod().String()))
 
-						utils.Measure(
+						statsutils.Measure(
 							ctx,
 							mAccessLogsUpstreamRespTime,
 							upstreamRespTimeNs,

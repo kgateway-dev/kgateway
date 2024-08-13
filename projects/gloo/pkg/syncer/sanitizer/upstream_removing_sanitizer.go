@@ -4,7 +4,7 @@ import (
 	"context"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	mUpstreamsRemoved = utils.MakeLastValueCounter("gloo.solo.io/sanitizer/upstreams_removed", "The number upstreams removed from the sanitized xds snapshot", stats.ProxyNameKey)
+	mUpstreamsRemoved = statsutils.MakeLastValueCounter("gloo.solo.io/sanitizer/upstreams_removed", "The number upstreams removed from the sanitized xds snapshot", stats.ProxyNameKey)
 
 	// Compile-time assertion
 	_ XdsSanitizer = new(UpstreamRemovingSanitizer)
@@ -79,7 +79,7 @@ func (s *UpstreamRemovingSanitizer) SanitizeSnapshot(
 		}
 	}
 
-	utils.Measure(ctx, mUpstreamsRemoved, removed)
+	statsutils.Measure(ctx, mUpstreamsRemoved, removed)
 
 	// TODO(marco): the function accepts and return a Snapshot interface, but then swaps in its own implementation.
 	//  This breaks the abstraction and mocking the snapshot becomes impossible. We should have a generic way of

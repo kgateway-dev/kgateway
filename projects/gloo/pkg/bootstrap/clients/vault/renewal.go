@@ -7,7 +7,7 @@ import (
 
 	vault "github.com/hashicorp/vault/api"
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	"github.com/solo-io/go-utils/contextutils"
 )
 
@@ -169,8 +169,8 @@ func (r *VaultTokenRenewer) manageTokenLifecycle(ctx context.Context, client *va
 		// extending it or renewing is disabled. In any case, the caller
 		// needs to attempt to log in again.
 		case err := <-watcher.DoneCh():
-			utils.Measure(ctx, MLastRenewFailure, time.Now().Unix())
-			utils.MeasureOne(ctx, MRenewFailures)
+			statsutils.Measure(ctx, MLastRenewFailure, time.Now().Unix())
+			statsutils.MeasureOne(ctx, MRenewFailures)
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Debugf("Failed to renew token: %v. Re-attempting login.", err)
 				return true, nil
@@ -181,8 +181,8 @@ func (r *VaultTokenRenewer) manageTokenLifecycle(ctx context.Context, client *va
 
 		// Successfully completed renewal
 		case renewal := <-watcher.RenewCh():
-			utils.Measure(ctx, MLastRenewSuccess, time.Now().Unix())
-			utils.MeasureOne(ctx, MRenewSuccesses)
+			statsutils.Measure(ctx, MLastRenewSuccess, time.Now().Unix())
+			statsutils.MeasureOne(ctx, MRenewSuccesses)
 			contextutils.LoggerFrom(ctx).Debugf("Successfully renewed: %v.", renewal)
 
 		case <-ctx.Done():
