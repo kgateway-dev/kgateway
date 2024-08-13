@@ -254,7 +254,7 @@ test-with-coverage: test
 	go tool cover -html $(OUTPUT_DIR)/coverage.cov
 
 .PHONY: run-tests
-run-tests: GINKGO_FLAGS += -skip-package=e2e,gateway2 ## Run all non E2E tests, or only run the test package at {TEST_PKG} if it is specified
+run-tests: GINKGO_FLAGS += -skip-package=e2e,gateway2,test/kubernetes/testutils/helper ## Run all non E2E tests, or only run the test package at {TEST_PKG} if it is specified
 run-tests: GINKGO_FLAGS += --label-filter="!end-to-end && !performance"
 run-tests: test
 
