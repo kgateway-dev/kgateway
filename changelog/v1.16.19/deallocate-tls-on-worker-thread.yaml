@@ -2,7 +2,7 @@ changelog:
   - type: DEPENDENCY_BUMP
     dependencyOwner: solo-io
     dependencyRepo: envoy-gloo
-    dependencyTag: v1.27.7-patch3
+    dependencyTag: v1.27.7-patch2
     issueLink: https://github.com/solo-io/solo-projects/issues/6713
     resolvesIssue: false
     description: >
