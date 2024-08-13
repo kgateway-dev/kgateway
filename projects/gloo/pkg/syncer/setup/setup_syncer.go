@@ -525,6 +525,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
+	// create in-memory cache for endpoints
+	// see (https://github.com/solo-io/gloo/blob/main/devel/architecture/endpoint-discovery.md) for more info
 	endpointsFactory := &factory.MemoryResourceClientFactory{
 		Cache: memory.NewInMemoryResourceCache(),
 	}
