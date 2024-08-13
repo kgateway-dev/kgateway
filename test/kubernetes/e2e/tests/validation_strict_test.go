@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/utils/env"
+	"github.com/solo-io/gloo/pkg/utils/envutils"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	. "github.com/solo-io/gloo/test/kubernetes/e2e/tests"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
@@ -20,7 +20,7 @@ import (
 // installation where validation is strict (allow_warnings=false)
 func TestValidationStrict(t *testing.T) {
 	ctx := context.Background()
-	installNs, overrodeNs := env.LookupOrDefault(testutils.InstallNamespace, "validation-strict-test")
+	installNs, overrodeNs := envutils.LookupOrDefault(testutils.InstallNamespace, "validation-strict-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
