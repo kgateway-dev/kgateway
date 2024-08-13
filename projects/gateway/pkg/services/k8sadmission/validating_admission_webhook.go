@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 
 	"github.com/ghodss/yaml"
 
@@ -54,8 +55,8 @@ var (
 	resourceTypeKey, _ = tag.NewKey("resource_type")
 	resourceRefKey, _  = tag.NewKey("resource_ref")
 
-	mGatewayResourcesAccepted = utils.MakeSumCounter("validation.gateway.solo.io/resources_accepted", "The number of resources accepted")
-	mGatewayResourcesRejected = utils.MakeSumCounter("validation.gateway.solo.io/resources_rejected", "The number of resources rejected")
+	mGatewayResourcesAccepted = statsutils.MakeSumCounter("validation.gateway.solo.io/resources_accepted", "The number of resources accepted")
+	mGatewayResourcesRejected = statsutils.MakeSumCounter("validation.gateway.solo.io/resources_rejected", "The number of resources rejected")
 
 	unmarshalErrMsg     = "could not unmarshal raw object"
 	UnmarshalErr        = errors.New(unmarshalErrMsg)
@@ -75,7 +76,7 @@ const (
 )
 
 func incrementMetric(ctx context.Context, resource string, ref *core.ResourceRef, m *stats.Int64Measure) {
-	utils.MeasureOne(
+	statsutils.MeasureOne(
 		ctx,
 		m,
 		tag.Insert(resourceTypeKey, resource),

@@ -6,11 +6,11 @@ import (
 
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/awsutils"
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 
 	"github.com/avast/retry-go"
 	vault "github.com/hashicorp/vault/api"
 	awsauth "github.com/hashicorp/vault/api/auth/aws"
-	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 )
@@ -95,14 +95,14 @@ func (*StaticTokenAuth) ManageTokenRenewal(ctx context.Context, client *vault.Cl
 // Login logs in to vault using a static token
 func (s *StaticTokenAuth) Login(ctx context.Context, _ *vault.Client) (*vault.Secret, error) {
 	if s.GetToken() == "" {
-		utils.Measure(ctx, MLastLoginFailure, time.Now().Unix())
-		utils.MeasureOne(ctx, MLoginFailures)
+		statsutils.Measure(ctx, MLastLoginFailure, time.Now().Unix())
+		statsutils.MeasureOne(ctx, MLoginFailures)
 		return nil, ErrEmptyToken
 	}
 
 	contextutils.LoggerFrom(ctx).Debug("successfully authenticated to vault with static token")
-	utils.Measure(ctx, MLastLoginSuccess, time.Now().Unix())
-	utils.MeasureOne(ctx, MLoginSuccesses)
+	statsutils.Measure(ctx, MLastLoginSuccess, time.Now().Unix())
+	statsutils.MeasureOne(ctx, MLoginSuccesses)
 	return &vault.Secret{
 		Auth: &vault.SecretAuth{
 			ClientToken: s.token,
@@ -184,21 +184,21 @@ func (r *RemoteTokenAuth) loginOnce(ctx context.Context, client *vault.Client) (
 	loginResponse, loginErr := r.authMethod.Login(ctx, client)
 	if loginErr != nil {
 		contextutils.LoggerFrom(ctx).Errorf("unable to authenticate to vault: %v", loginErr)
-		utils.Measure(ctx, MLastLoginFailure, time.Now().Unix())
-		utils.MeasureOne(ctx, MLoginFailures)
+		statsutils.Measure(ctx, MLastLoginFailure, time.Now().Unix())
+		statsutils.MeasureOne(ctx, MLoginFailures)
 		return nil, ErrVaultAuthentication(loginErr)
 	}
 
 	if loginResponse == nil {
 		contextutils.LoggerFrom(ctx).Error(ErrNoAuthInfo)
-		utils.Measure(ctx, MLastLoginFailure, time.Now().Unix())
-		utils.MeasureOne(ctx, MLoginFailures)
+		statsutils.Measure(ctx, MLastLoginFailure, time.Now().Unix())
+		statsutils.MeasureOne(ctx, MLoginFailures)
 		return nil, ErrNoAuthInfo
 	}
 
 	contextutils.LoggerFrom(ctx).Debugf("successfully authenticated to vault %v", loginResponse)
-	utils.Measure(ctx, MLastLoginSuccess, time.Now().Unix())
-	utils.MeasureOne(ctx, MLoginSuccesses)
+	statsutils.Measure(ctx, MLastLoginSuccess, time.Now().Unix())
+	statsutils.MeasureOne(ctx, MLoginSuccesses)
 	return loginResponse, nil
 }
 

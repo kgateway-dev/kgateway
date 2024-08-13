@@ -3,7 +3,7 @@ package validator
 import (
 	"fmt"
 
-	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	"go.opencensus.io/stats"
 )
 
@@ -30,8 +30,8 @@ func WithCacheSize(size int) Option {
 
 func processOptions(name string, options ...Option) *config {
 	cfg := &config{
-		cacheHits:   utils.MakeSumCounter(fmt.Sprintf("gloo.solo.io/%s_validation_cache_hits", name), fmt.Sprintf("The number of cache hits while validating %s config", name)),
-		cacheMisses: utils.MakeSumCounter(fmt.Sprintf("gloo.solo.io/%s_validation_cache_misses", name), fmt.Sprintf("The number of cache misses while validating %s config", name)),
+		cacheHits:   statsutils.MakeSumCounter(fmt.Sprintf("gloo.solo.io/%s_validation_cache_hits", name), fmt.Sprintf("The number of cache hits while validating %s config", name)),
+		cacheMisses: statsutils.MakeSumCounter(fmt.Sprintf("gloo.solo.io/%s_validation_cache_misses", name), fmt.Sprintf("The number of cache misses while validating %s config", name)),
 		cacheSize:   DefaultCacheSize,
 	}
 	for _, option := range options {
