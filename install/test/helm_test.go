@@ -1454,8 +1454,8 @@ spec:
 					svc := rb.GetService()
 					svc.Spec.Selector = selector
 					svc.Spec.Type = corev1.ServiceTypeLoadBalancer
-					svc.Spec.Ports[0].TargetPort = intstr.FromInt(8080)
-					svc.Spec.Ports[1].TargetPort = intstr.FromInt(8443)
+					svc.Spec.Ports[0].TargetPort = intstr.FromInt32(8080)
+					svc.Spec.Ports[1].TargetPort = intstr.FromInt32(8443)
 					svc.Annotations = map[string]string{"test": "test"}
 					testManifest.ExpectService(svc)
 				})
@@ -3320,7 +3320,7 @@ spec:
 							ProbeHandler: corev1.ProbeHandler{
 								HTTPGet: &corev1.HTTPGetAction{
 									Path:   "/ready",
-									Port:   intstr.FromInt(19000),
+									Port:   intstr.FromInt32(19000),
 									Scheme: "HTTP",
 								},
 							},
@@ -3332,7 +3332,7 @@ spec:
 							ProbeHandler: corev1.ProbeHandler{
 								HTTPGet: &corev1.HTTPGetAction{
 									Path:   "/server_info",
-									Port:   intstr.FromInt(19000),
+									Port:   intstr.FromInt32(19000),
 									Scheme: "HTTP",
 								},
 							},
@@ -3837,8 +3837,8 @@ spec:
 					It("can set spiffeCertProviderAddress value in CA_ADDR env var", func() {
 						val := "istiod-1-8-6.istio-system.svc:15012"
 
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{
+						prepareMakefile(namespace, glootestutils.HelmValues{
+							ValuesArgs: []string{
 								"global.glooMtls.enabled=true",
 								"global.istioIntegration.enabled=true",
 								"gatewayProxies.gatewayProxy.istioSpiffeCertProviderAddress=" + val,
@@ -3864,8 +3864,8 @@ spec:
 					It("istio's spiffeCertProviderAddress default value set", func() {
 						def := "istiod.istio-system.svc:15012"
 
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{
+						prepareMakefile(namespace, glootestutils.HelmValues{
+							ValuesArgs: []string{
 								"global.glooMtls.enabled=true",
 								"global.istioIntegration.enabled=true",
 							},
@@ -4975,7 +4975,7 @@ metadata:
 						deploy.Spec.Template.Spec.Containers[0].ReadinessProbe = &corev1.Probe{
 							ProbeHandler: corev1.ProbeHandler{
 								TCPSocket: &corev1.TCPSocketAction{
-									Port: intstr.FromInt(9977),
+									Port: intstr.FromInt32(9977),
 								},
 							},
 							InitialDelaySeconds: 3,
