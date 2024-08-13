@@ -6,12 +6,4 @@ set -eux
 helm upgrade --install --create-namespace \
   --namespace gloo-system gloo \
   ./_test/gloo-1.0.0-ci1.tgz \
-  -f - <<EOF
-discovery:
-  enabled: false
-gateway:
-  validation:
-    alwaysAcceptResources: false
-kubeGateway:
-  enabled: true
-EOF
+  -f ./test/kubernetes/e2e/tests/manifests/k8s-gateway-test-helm.yaml
