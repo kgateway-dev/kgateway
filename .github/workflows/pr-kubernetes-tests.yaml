@@ -64,12 +64,12 @@ jobs:
         # August 6, 2024: 26 minutes execution time (see load_balancing_tests.md)
         - cluster-name: 'cluster-three'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '(^TestGlooGateway$$/^TestK8sGatewayIstioAutoMtls$$|^TestGlooGateway$$/^TestAutomtlsIstioEdgeApisGateway$$|^TestGlooGateway$$/^TestIstioEdgeApiGateway$$|^TestGlooGateway$$/^TestIstioRegression$$)'
+          go-test-run-regex: '^TestGlooGateway$$/^TestK8sGatewayIstioAutoMtls$$|^TestGlooGateway$$/^TestAutomtlsIstioEdgeApisGateway$$|^TestGlooGateway$$/^TestIstioEdgeApiGateway$$|^TestGlooGateway$$/^TestIstioRegression$$'
 
         # August 6, 2024: 24 minutes execution time (see load_balancing_tests.md)
         - cluster-name: 'cluster-four'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '(^TestGlooGateway$$/^TestK8sGatewayIstio$$|^TestGlooGateway$$/^TestGlooGatewayEdgeGateway$$|^TestGlooGateway$$/^TestGlooctlIstioInjectEdgeApiGateway$$|^TestGlooGateway$$/^TestK8sGatewayNoValidation$$)'
+          go-test-run-regex: '^TestGlooGateway$$/^TestK8sGatewayIstio$$|^TestGlooGateway$$/^TestGlooGatewayEdgeGateway$$|^TestGlooGateway$$/^TestGlooctlIstioInjectEdgeApiGateway$$|^TestGlooGateway$$/^TestK8sGatewayNoValidation$$'
 
         # In our PR tests, we run the suite of tests using the upper ends of versions that we claim to support
         # The versions should mirror: https://docs.solo.io/gloo-edge/latest/reference/support/
