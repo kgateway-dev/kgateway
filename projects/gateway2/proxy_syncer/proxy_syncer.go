@@ -3,8 +3,10 @@ package proxy_syncer
 import (
 	"context"
 	"strconv"
-	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	gwplugins "github.com/solo-io/gloo/projects/gateway2/translator/plugins"
@@ -14,9 +16,10 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // QueueStatusForProxiesFn queues a list of proxies to be synced and the plugin registry that produced them for a given sync iteration
@@ -105,9 +108,17 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		}
 		totalResyncs++
 		contextutils.LoggerFrom(ctx).Debugf("resyncing k8s gateway proxies [%v]", totalResyncs)
-		startTime := time.Now()
+		stopwatch := statsutils.NewTranslatorStopWatch("ProxySyncer")
+		stopwatch.Start()
+		var (
+			proxies gloo_solo_io.ProxyList
+		)
+		defer func() {
+			duration := stopwatch.Stop(ctx)
+			contextutils.LoggerFrom(ctx).Debugf("translated and wrote %d proxies in %s", len(proxies), duration.String())
+		}()
 
-		var gwl apiv1.GatewayList
+		var gwl gwv1.GatewayList
 		err := s.mgr.GetClient().List(ctx, &gwl)
 		if err != nil {
 			// This should never happen, try again?
@@ -119,7 +130,6 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		r := reports.NewReporter(&rm)
 
 		var (
-			proxies            gloo_solo_io.ProxyList
 			translatedGateways []gwplugins.TranslatedGateway
 		)
 		for _, gw := range gwl.Items {
@@ -153,7 +163,6 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		s.syncStatus(ctx, rm, gwl)
 		s.syncRouteStatus(ctx, rm)
 		s.reconcileProxies(ctx, proxies)
-		contextutils.LoggerFrom(ctx).Debugf("translated and wrote %d proxies in %v", len(proxies), time.Since(startTime))
 	}
 
 	for {
@@ -173,7 +182,12 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
 	ctx = contextutils.WithLogger(ctx, "routeStatusSyncer")
 	logger := contextutils.LoggerFrom(ctx)
-	rl := apiv1.HTTPRouteList{}
+	logger.Debugf("syncing k8s gateway route status")
+	stopwatch := statsutils.NewTranslatorStopWatch("HTTPRouteStatusSyncer")
+	stopwatch.Start()
+	defer stopwatch.Stop(ctx)
+
+	rl := gwv1.HTTPRouteList{}
 	err := s.mgr.GetClient().List(ctx, &rl)
 	if err != nil {
 		logger.Error(err)
@@ -183,24 +197,32 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 	for _, route := range rl.Items {
 		route := route // pike
 		if status := rm.BuildRouteStatus(ctx, route, s.controllerName); status != nil {
-			route.Status = *status
-			if err := s.mgr.GetClient().Status().Update(ctx, &route); err != nil {
-				logger.Error(err)
+			if !isHTTPRouteStatusEqual(&route.Status, status) {
+				route.Status = *status
+				if err := s.mgr.GetClient().Status().Update(ctx, &route); err != nil {
+					logger.Error(err)
+				}
 			}
 		}
 	}
 }
 
 // syncStatus updates the status of the Gateway CRs
-func (s *ProxySyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl apiv1.GatewayList) {
+func (s *ProxySyncer) syncStatus(ctx context.Context, rm reports.ReportMap, gwl gwv1.GatewayList) {
 	ctx = contextutils.WithLogger(ctx, "statusSyncer")
 	logger := contextutils.LoggerFrom(ctx)
+	stopwatch := statsutils.NewTranslatorStopWatch("GatewayStatusSyncer")
+	stopwatch.Start()
+	defer stopwatch.Stop(ctx)
+
 	for _, gw := range gwl.Items {
 		gw := gw // pike
 		if status := rm.BuildGWStatus(ctx, gw); status != nil {
-			gw.Status = *status
-			if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
-				logger.Error(err)
+			if !isGatewayStatusEqual(&gw.Status, status) {
+				gw.Status = *status
+				if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
+					logger.Error(err)
+				}
 			}
 		}
 	}
@@ -243,4 +265,25 @@ func applyPostTranslationPlugins(ctx context.Context, pluginRegistry registry.Pl
 			continue
 		}
 	}
+}
+
+var opts = cmp.Options{
+	cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"),
+	cmpopts.IgnoreMapEntries(func(k string, _ any) bool {
+		return k == "lastTransitionTime"
+	}),
+}
+
+func isGatewayStatusEqual(objA, objB *gwv1.GatewayStatus) bool {
+	if cmp.Equal(objA, objB, opts) {
+		return true
+	}
+	return false
+}
+
+func isHTTPRouteStatusEqual(objA, objB *gwv1.HTTPRouteStatus) bool {
+	if cmp.Equal(objA, objB, opts) {
+		return true
+	}
+	return false
 }

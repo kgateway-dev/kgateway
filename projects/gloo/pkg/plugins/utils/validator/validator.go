@@ -4,7 +4,7 @@ import (
 	"context"
 	"hash"
 
-	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.opencensus.io/stats"
@@ -62,7 +62,7 @@ func (v validator) ValidateConfig(ctx context.Context, config HashableProtoMessa
 
 	// This proto has already been validated, return the result
 	if err, ok := v.lruCache.Get(hash); ok {
-		utils.MeasureOne(
+		statsutils.MeasureOne(
 			ctx,
 			v.cacheHits,
 		)
@@ -71,7 +71,7 @@ func (v validator) ValidateConfig(ctx context.Context, config HashableProtoMessa
 		errCasted, _ := err.(error)
 		return errCasted
 	}
-	utils.MeasureOne(
+	statsutils.MeasureOne(
 		ctx,
 		v.cacheMisses,
 	)

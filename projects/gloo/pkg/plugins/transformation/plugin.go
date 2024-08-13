@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/validator"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -13,7 +14,6 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/golang/protobuf/ptypes/any"
-	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	envoyroutev3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
 	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
@@ -74,8 +74,8 @@ type Plugin struct {
 }
 
 func NewPlugin() *Plugin {
-	mCacheHits := utils.MakeSumCounter("gloo.solo.io/transformation_validation_cache_hits", "The number of cache hits while validating transformation config")
-	mCacheMisses := utils.MakeSumCounter("gloo.solo.io/transformation_validation_cache_misses", "The number of cache misses while validating transformation config")
+	mCacheHits := statsutils.MakeSumCounter("gloo.solo.io/transformation_validation_cache_hits", "The number of cache hits while validating transformation config")
+	mCacheMisses := statsutils.MakeSumCounter("gloo.solo.io/transformation_validation_cache_misses", "The number of cache misses while validating transformation config")
 
 	return &Plugin{
 		validator: validator.New(ExtensionName, FilterName,

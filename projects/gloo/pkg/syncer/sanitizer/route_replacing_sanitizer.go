@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
@@ -20,7 +21,6 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -44,7 +44,7 @@ const (
 
 var (
 	routeConfigKey, _ = tag.NewKey("route_config_name")
-	mRoutesReplaced   = utils.MakeLastValueCounter("gloo.solo.io/sanitizer/routes_replaced", "The number routes replaced in the sanitized xds snapshot", stats.ProxyNameKey, routeConfigKey)
+	mRoutesReplaced   = statsutils.MakeLastValueCounter("gloo.solo.io/sanitizer/routes_replaced", "The number routes replaced in the sanitized xds snapshot", stats.ProxyNameKey, routeConfigKey)
 
 	// Compile-time assertion
 	_ XdsSanitizer = new(RouteReplacingSanitizer)
@@ -317,7 +317,7 @@ func (s *RouteReplacingSanitizer) replaceRoutes(
 			}
 		}
 
-		utils.Measure(ctx, mRoutesReplaced, replaced, tag.Insert(routeConfigKey, cfg.GetName()))
+		statsutils.Measure(ctx, mRoutesReplaced, replaced, tag.Insert(routeConfigKey, cfg.GetName()))
 		sanitizedRouteConfigs = append(sanitizedRouteConfigs, cfg)
 	}
 
