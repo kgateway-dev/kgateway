@@ -3688,6 +3688,7 @@ spec:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"global.glooMtls.enabled=true",
+								// In 1.17 and above, this is controlled by "global.istioIntegration.enabled=true"
 								"global.istioSDS.enabled=true",
 								"gatewayProxies.gatewayProxy.istioDiscoveryAddress=" + val,
 							},
@@ -3703,7 +3704,8 @@ spec:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"global.glooMtls.enabled=true",
-								"global.istioIntegration.enabled=true",
+								// In 1.17 and above, this is controlled by "global.istioIntegration.enabled=true"
+								"global.istioSDS.enabled=true",
 								"gatewayProxies.gatewayProxy.istioSpiffeCertProviderAddress=" + val,
 							},
 						})
@@ -3717,6 +3719,7 @@ spec:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"global.glooMtls.enabled=true",
+								// In 1.17 and above, this is controlled by "global.istioIntegration.enabled=true"
 								"global.istioSDS.enabled=true",
 							},
 						})
@@ -3730,7 +3733,8 @@ spec:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"global.glooMtls.enabled=true",
-								"global.istioIntegration.enabled=true",
+								// In 1.17 and above, this is controlled by "global.istioIntegration.enabled=true"
+								"global.istioSDS.enabled=true",
 							},
 						})
 
