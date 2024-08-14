@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Update all tests to use INSTALL_NAMESPACE defined by the TestInstallation setup.
+      Move test utils unit tests to GHA because it requires an authorized token.
+      Update nightlies timeout.
