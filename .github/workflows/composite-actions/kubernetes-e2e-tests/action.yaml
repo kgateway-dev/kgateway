@@ -18,10 +18,6 @@ inputs:
   istio-version:
     required: true
     description: The version of Istio to use
-outputs:
-  test-output:
-    description: The output of the go-test make target
-    value: ${{ steps.execute-tests.outputs.test-log }}
 
 runs:
   using: "composite"
@@ -30,14 +26,13 @@ runs:
     shell: bash
     run: make install-test-tools
   - name: Execute tests
-    id: execute-tests
     env:
       GO_TEST_USER_ARGS: ${{ inputs.test-args }} -run "${{ inputs.run-regex }}"
       CLUSTER_NAME: ${{ inputs.cluster-name }}
       TEST_PKG: ./test/kubernetes/e2e/tests
       ISTIO_VERSION: ${{ inputs.istio-version }}
     shell: bash
-    run: echo test-log=$(make go-test) | tee -a $GITHUB_OUTPUT
+    run: make go-test
   - name: Archive bug report directory on failure
     if: ${{ failure() }}
     uses: actions/upload-artifact@v4
