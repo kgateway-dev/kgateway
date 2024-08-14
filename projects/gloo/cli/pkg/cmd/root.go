@@ -20,6 +20,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/initpluginmanager"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/istio"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/license"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/plugin"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/remove"
@@ -128,6 +129,7 @@ func CommandWithContext(ctx context.Context) *cobra.Command {
 			federation.RootCmd(opts),
 			plugin.RootCmd(opts),
 			istio.RootCmd(opts),
+			license.RootCmd(opts),
 			initpluginmanager.Command(context.Background()),
 			// TODO: re-enable this when it's working again
 			// kubegateway.InstallCmd(opts),

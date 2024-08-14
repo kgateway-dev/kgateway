@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
+	"github.com/solo-io/gloo/pkg/utils/statsutils/metrics"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
-	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 

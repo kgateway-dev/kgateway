@@ -40,6 +40,11 @@ type Global struct {
 	ExtraCustomResources *bool                 `json:"extraCustomResources,omitempty" desc:"Add additional custom resources to create, as defined by a helm partial. Defaults to false in open source, and true in enterprise."`
 	AdditionalLabels     map[string]string     `json:"additionalLabels,omitempty" desc:"Additional labels to add to all gloo resources."`
 	PodSecurityStandards *PodSecurityStandards `json:"podSecurityStandards,omitempty" desc:"Configuration related to [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/)."`
+	SecuritySettings     *SecuritySettings     `json:"securitySettings,omitempty" desc:"Global settings for pod and container security contexts"`
+}
+
+type SecuritySettings struct {
+	FloatingUserId *bool `json:"floatingUserId,omitempty" desc:"If true, use 'true' as default value for all instances of floatingUserId. In OSS, has the additional effects of rendering charts as if 'discovery.deployment.enablePodSecurityContext=false' and 'gatewayProxies.gatewayProxy.podTemplate.enablePodSecurityContext=false'. In EE templates  has the additional effects of rendering charts as if 'redis.deployment.enablePodSecurityContext=false', and in the ExtAuth deployment's podSecurityContext, behavior will match the local 'floatingUserId' and fsGroup will not be rendered."`
 }
 
 type PodSecurityStandards struct {
@@ -326,6 +331,7 @@ type GatewayParameters struct {
 	Istio           *Istio                     `json:"istio,omitempty" desc:"Configs used to manage Istio integration."`
 	Stats           *GatewayParamsStatsConfig  `json:"stats,omitempty" desc:"Config used to manage the stats endpoints exposed on the deployed proxies"`
 	AIExtension     *GatewayParamsAIExtension  `json:"aiExtension,omitempty" desc:"Config used to manage the Gloo Gateway AI extension."`
+	FloatingUserId  *bool                      `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container. Default is false."`
 	// TODO(npolshak): Add support for GlooMtls
 }
 

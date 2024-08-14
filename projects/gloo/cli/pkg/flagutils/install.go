@@ -19,7 +19,7 @@ func AddGlooInstallFlags(set *pflag.FlagSet, install *options.Install) {
 
 func AddEnterpriseInstallFlags(set *pflag.FlagSet, install *options.Install) {
 	set.BoolVarP(&install.DryRun, "dry-run", "d", false, "Dump the raw installation yaml instead of applying it to kubernetes")
-	set.StringVar(&install.LicenseKey, "license-key", "", "License key to activate GlooE features")
+	set.StringVar(&install.LicenseKey, LicenseFlag, "", "License key to activate GlooE features")
 	set.BoolVar(&install.WithGlooFed, "with-gloo-fed", true, "Install Gloo-Fed alongside Gloo Enterprise")
 	// Gloo-fed
 	set.StringSliceVar(&install.Federation.HelmChartValueFileNames, "gloo-fed-values", []string{}, "List of files with value overrides for the Gloo Fed Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)")
