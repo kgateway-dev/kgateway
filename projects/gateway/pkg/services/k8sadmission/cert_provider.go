@@ -10,7 +10,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	"go.opencensus.io/tag"
 )
 
@@ -25,8 +25,8 @@ type certificateProvider struct {
 }
 
 func NewCertificateProvider(certPath, keyPath string, logger *log.Logger, ctx context.Context, interval time.Duration) (*certificateProvider, error) {
-	mReloadSuccess := utils.MakeSumCounter("validation.gateway.solo.io/certificate_reload_success", "Number of successful certificate reloads")
-	mReloadFailed := utils.MakeSumCounter("validation.gateway.solo.io/certificate_reload_failed", "Number of failed certificate reloads")
+	mReloadSuccess := statsutils.MakeSumCounter("validation.gateway.solo.io/certificate_reload_success", "Number of successful certificate reloads")
+	mReloadFailed := statsutils.MakeSumCounter("validation.gateway.solo.io/certificate_reload_failed", "Number of failed certificate reloads")
 	tagKey, err := tag.NewKey("error")
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func NewCertificateProvider(certPath, keyPath string, logger *log.Logger, ctx co
 	if err != nil {
 		return nil, err
 	}
-	utils.MeasureOne(ctx, mReloadSuccess)
+	statsutils.MeasureOne(ctx, mReloadSuccess)
 	result := &certificateProvider{
 		ctx:       ctx,
 		logger:    logger,
@@ -68,13 +68,13 @@ func NewCertificateProvider(certPath, keyPath string, logger *log.Logger, ctx co
 			certFileInfo, err := os.Stat(certPath)
 			if err != nil {
 				result.logger.Printf("Error while checking if validating admission webhook certificate file changed %s", err)
-				utils.MeasureOne(ctx, mReloadFailed, tag.Insert(tagKey, fmt.Sprintf("%s", err)))
+				statsutils.MeasureOne(ctx, mReloadFailed, tag.Insert(tagKey, fmt.Sprintf("%s", err)))
 				continue
 			}
 			keyFileInfo, err := os.Stat(keyPath)
 			if err != nil {
 				result.logger.Printf("Error while checking if validating admission webhook private key file changed %s", err)
-				utils.MeasureOne(ctx, mReloadFailed, tag.Insert(tagKey, fmt.Sprintf("%s", err)))
+				statsutils.MeasureOne(ctx, mReloadFailed, tag.Insert(tagKey, fmt.Sprintf("%s", err)))
 				continue
 			}
 			km := keyFileInfo.ModTime()
@@ -85,10 +85,10 @@ func NewCertificateProvider(certPath, keyPath string, logger *log.Logger, ctx co
 					result.logger.Println("Reloaded validating admission webhook certificate")
 					result.keyMtime = km
 					result.certMtime = cm
-					utils.MeasureOne(ctx, mReloadSuccess)
+					statsutils.MeasureOne(ctx, mReloadSuccess)
 				} else {
 					result.logger.Printf("Error while reloading validating admission webhook certificate %s, will keep using the old certificate", err)
-					utils.MeasureOne(ctx, mReloadFailed, tag.Insert(tagKey, fmt.Sprintf("%s", err)))
+					statsutils.MeasureOne(ctx, mReloadFailed, tag.Insert(tagKey, fmt.Sprintf("%s", err)))
 				}
 			}
 		}

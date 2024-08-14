@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
@@ -61,7 +61,7 @@ var _ = Describe("Validator", func() {
 			ExtensionValidator: extensionValidator,
 			AllowWarnings:      false,
 		})
-		mValidConfig = utils.MakeGauge("validation.gateway.solo.io/valid_config", "A boolean indicating whether gloo config is valid")
+		mValidConfig = statsutils.MakeGauge("validation.gateway.solo.io/valid_config", "A boolean indicating whether gloo config is valid")
 	})
 
 	It("returns error before sync called", func() {
@@ -747,7 +747,7 @@ var _ = Describe("Validator", func() {
 		Context("valid config gauge", func() {
 			BeforeEach(func() {
 				// reset the value before each test
-				utils.Measure(context.TODO(), mValidConfig, -1)
+				statsutils.Measure(context.TODO(), mValidConfig, -1)
 			})
 			It("returns 1 when there are no validation errors", func() {
 				v.glooValidator = ValidateAccept
