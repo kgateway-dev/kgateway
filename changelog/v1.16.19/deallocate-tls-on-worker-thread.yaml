@@ -1,0 +1,13 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/6713
+    resolvesIssue: false
+    description: >
+      Update Envoy to enable thread-local slots to be deallocated on worker
+      threads. This provides greater stability in Envoy when the main thread is
+      under heavy load. This behaviour can be disabled by toggling the runtime
+      flag envoy_restart_features_allow_slot_destroy_on_worker_threads.
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: envoy-gloo
+    dependencyTag: v1.27.7-patch2
