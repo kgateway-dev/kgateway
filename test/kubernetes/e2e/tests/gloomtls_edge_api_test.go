@@ -2,14 +2,17 @@ package tests_test
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/envutils"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	. "github.com/solo-io/gloo/test/kubernetes/e2e/tests"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
+	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/skv2/codegen/util"
 )
 
@@ -17,19 +20,28 @@ import (
 // the k8s Gateway controller is disabled and gloomtls is enabled
 func TestGloomtlsGatewayEdgeGateway(t *testing.T) {
 	ctx := context.Background()
+	installNs, overrodeNs := envutils.LookupOrDefault(testutils.InstallNamespace, "gloo-gateway-edge-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   "gloo-gateway-edge-test",
+			InstallNamespace:   installNs,
 			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "gloomtls-edge-gateway-test-helm.yaml"),
 		},
 	)
 
 	testHelper := e2e.MustTestHelper(ctx, testInstallation)
 
+	// Set the env to the install namespace if it is not already set
+	if os.Getenv(testutils.InstallNamespace) == "" {
+		os.Setenv(testutils.InstallNamespace, installNs)
+	}
+
 	// We register the cleanup function _before_ we actually perform the installation.
 	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
 	t.Cleanup(func() {
+		if overrodeNs {
+			os.Unsetenv(testutils.InstallNamespace)
+		}
 		if t.Failed() {
 			testInstallation.PreFailHandler(ctx)
 		}
