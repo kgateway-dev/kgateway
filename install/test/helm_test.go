@@ -4833,9 +4833,9 @@ metadata:
 								v1.ResourceCPU:    resource.MustParse("500m"),
 							},
 						}
-						deploy.Spec.Template.Spec.Containers[0].ReadinessProbe = &corev1.Probe{
-							ProbeHandler: corev1.ProbeHandler{
-								TCPSocket: &corev1.TCPSocketAction{
+						deploy.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
+							ProbeHandler: v1.ProbeHandler{
+								TCPSocket: &v1.TCPSocketAction{
 									Port: intstr.FromInt32(9977),
 								},
 							},
