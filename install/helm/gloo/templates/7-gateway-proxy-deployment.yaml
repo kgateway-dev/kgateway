@@ -402,14 +402,14 @@ spec:
           - name: PILOT_CERT_PROVIDER
             value: istiod
           - name: CA_ADDR
-            value: {{ $spec.istioDiscoveryAddress | default "istiod.istio-system.svc:15012" }}
+            value: {{ $spec.istioSpiffeCertProviderAddress | default $spec.istioDiscoveryAddress }}
           - name: ISTIO_META_MESH_ID
             value: {{ $spec.istioMetaMeshId | default "cluster.local"}}
           - name: ISTIO_META_CLUSTER_ID
             value: {{ $spec.istioMetaClusterId | default "Kubernetes"}}
           - name: PROXY_CONFIG
             value: |
-              {"discoveryAddress": {{ $spec.istioDiscoveryAddress | default "istiod.istio-system.svc:15012" }}}
+              {"discoveryAddress": {{ $spec.istioDiscoveryAddress }}}
           - name: POD_NAME
             valueFrom:
               fieldRef:
