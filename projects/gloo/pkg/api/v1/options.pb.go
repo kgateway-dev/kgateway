@@ -731,7 +731,7 @@ type VirtualHostOptions struct {
 	HeaderManipulation *headers.HeaderManipulation `protobuf:"bytes,2,opt,name=header_manipulation,json=headerManipulation,proto3" json:"header_manipulation,omitempty"`
 	// Defines a CORS policy for the virtual host.
 	// If a CORS policy is also defined on the route matched by the request, the route policy
-	// overrides the virtual host policy for any configured field unless CorsMergeSettings are specified that define an
+	// overrides the virtual host policy for any configured field unless CorsPolicyMergeSettings are specified that define an
 	// alternate behavior.
 	Cors *cors.CorsPolicy `protobuf:"bytes,3,opt,name=cors,proto3" json:"cors,omitempty"`
 	// Transformations to apply. Note: this field is superseded by `staged_transformations`.
@@ -801,7 +801,7 @@ type VirtualHostOptions struct {
 	// Enterprise-only: External Processing filter settings for the virtual host. This can be used to
 	// override certain HttpListenerOptions settings, and can be overridden by RouteOptions settings.
 	ExtProc *extproc.RouteSettings `protobuf:"bytes,30,opt,name=ext_proc,json=extProc,proto3" json:"ext_proc,omitempty"`
-	// Settings for determining merge strategy for CORS settings when present at both Route and VH level
+	// Settings for determining merge strategy for CORS settings when present at both Route and VirtualHost levels.
 	CorsPolicyMergeSettings *cors.CorsPolicyMergeSettings `protobuf:"bytes,20,opt,name=cors_policy_merge_settings,json=corsPolicyMergeSettings,proto3" json:"cors_policy_merge_settings,omitempty"`
 }
 

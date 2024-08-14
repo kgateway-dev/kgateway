@@ -274,7 +274,7 @@ message VirtualHostOptions {
     headers.options.gloo.solo.io.HeaderManipulation header_manipulation = 2;
     // Defines a CORS policy for the virtual host.
     // If a CORS policy is also defined on the route matched by the request, the route policy
-    // overrides the virtual host policy for any configured field unless CorsMergeSettings are specified that define an
+    // overrides the virtual host policy for any configured field unless CorsPolicyMergeSettings are specified that define an
     // alternate behavior.
     cors.options.gloo.solo.io.CorsPolicy cors = 3;
     // Transformations to apply. Note: this field is superseded by `staged_transformations`.
@@ -386,7 +386,7 @@ message VirtualHostOptions {
     // override certain HttpListenerOptions settings, and can be overridden by RouteOptions settings.
     extproc.options.gloo.solo.io.RouteSettings ext_proc = 30;
 
-    // Settings for determining merge strategy for CORS settings when present at both Route and VH level
+    // Settings for determining merge strategy for CORS settings when present at both Route and VirtualHost levels.
     cors.options.gloo.solo.io.CorsPolicyMergeSettings cors_policy_merge_settings = 20;
 }
 

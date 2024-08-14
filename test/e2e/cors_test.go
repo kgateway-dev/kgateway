@@ -174,7 +174,7 @@ var _ = Describe("CORS", func() {
 
 		})
 
-		When("CORS is defined on RouteOptions and VirtualHostOptions without corsMergeSettings set", func() {
+		When("CORS is defined on RouteOptions and VirtualHostOptions without corsPolicyMergeSettings set", func() {
 			BeforeEach(func() {
 				vsWithCors := gloohelpers.NewVirtualServiceBuilder().
 					WithNamespace(writeNamespace).
@@ -267,7 +267,7 @@ var _ = Describe("CORS", func() {
 
 		})
 
-		When("CORS is defined on RouteOptions and VirtualHostOptions with corsMergeSettings set", func() {
+		When("CORS is defined on RouteOptions and VirtualHostOptions with corsPolicyMergeSettings set", func() {
 			BeforeEach(func() {
 				vsWithCors := gloohelpers.NewVirtualServiceBuilder().
 					WithNamespace(writeNamespace).
