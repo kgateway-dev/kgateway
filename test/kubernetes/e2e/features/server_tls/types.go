@@ -106,6 +106,9 @@ var (
 		StatusCode: http.StatusOK,
 		Body:       gomega.ContainSubstring("success from vs-with-oneway"),
 	}
+)
+
+const (
 	// These codes are defined at https://curl.se/libcurl/c/libcurl-errors.html.
 	// These were determined experimentally.
 	expectedFailedResponseCodeInvalidVs = 16

@@ -98,7 +98,7 @@ func (s *serverTlsTestingSuite) TestServerTls() {
 	s.assertEventualResponse(vs1.GetName(), expectedHealthyResponse1)
 }
 
-// TestServerTls validates the happy path that two VirtualServices referencing existent TLS secrets
+// TestServerTlsTwoVirtualServices validates the happy path that two VirtualServices referencing existent TLS secrets
 // terminate TLS and respond appropriately.
 func (s *serverTlsTestingSuite) TestServerTlsTwoVirtualServices() {
 	vs1 := vs1(s.ns)
@@ -111,8 +111,9 @@ func (s *serverTlsTestingSuite) TestServerTlsTwoVirtualServices() {
 		s.NoError(err, "can delete vs2 manifest file")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, vs1, vs2)
 		err = s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.tlsSecret1)
-		s.NoError(err, "can delete tls secret manifest file")
-		// tlsSecret2 is deleted in the process of the test.
+		s.NoError(err, "can delete tls secret 1 manifest file")
+		err = s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.tlsSecret2)
+		s.NoError(err, "can delete tls secret 2 manifest file")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, tlsSecret1(s.ns), tlsSecret2(s.ns))
 	})
 
@@ -132,9 +133,9 @@ func (s *serverTlsTestingSuite) TestServerTlsTwoVirtualServices() {
 	s.assertEventualResponse(vs2.GetName(), expectedHealthyResponse2)
 }
 
-// TestServerTls validates that when we have two VirtualServices referencing TLS secrets, but one secret
-// is missing, the traffic routing defined by the other VirtualService is not affected. In order to test
-// this properly, we require persistProxySpec to be off, validating that both VS are working correctly,
+// TestServerTlsTwoVirtualServicesOneMissingTlsSecret validates that when we have two VirtualServices referencing TLS
+// secrets, but one secret is missing, the traffic routing defined by the other VirtualService is not affected. In order
+// to test this properly, we require persistProxySpec to be off, validating that both VS are working correctly,
 // then we delete the secret for one of the VS and restart the Gloo pod. This ensures that we are still
 // serving on the other VS.
 func (s *serverTlsTestingSuite) TestServerTlsTwoVirtualServicesOneMissingTlsSecret() {
@@ -175,7 +176,7 @@ func (s *serverTlsTestingSuite) TestServerTlsTwoVirtualServicesOneMissingTlsSecr
 
 	// Assert that we have traffic working on VS 1 but failed traffic on VS 2.
 	s.assertEventualResponse(vs1.GetName(), expectedHealthyResponse1)
-	s.assertEventualError(vs2.GetName(), 35)
+	s.assertEventualError(vs2.GetName(), expectedFailedResponseCertRequested)
 
 	// Restart the Gloo deployment
 	err = s.testInstallation.Actions.Kubectl().RestartDeploymentAndWait(s.ctx, "gloo", "-n", s.ns)
@@ -185,7 +186,7 @@ func (s *serverTlsTestingSuite) TestServerTlsTwoVirtualServicesOneMissingTlsSecr
 
 	// Assert that we have traffic working on VS 1 but failed traffic on VS 2.
 	s.assertEventuallyConsistentResponse(vs1.GetName(), expectedHealthyResponse1, timeout, polling)
-	s.assertEventualError(vs2.GetName(), 35)
+	s.assertEventualError(vs2.GetName(), expectedFailedResponseCertRequested)
 
 }
 
@@ -210,7 +211,7 @@ func (s *serverTlsTestingSuite) TestOneWayServerTlsFailsWithoutOneWayTls() {
 	err = s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.vsWithoutOneWay, "-n", s.ns)
 	s.NoError(err, "can apply vs manifest file")
 
-	s.assertEventualError(vs.GetName(), 16)
+	s.assertEventualError(vs.GetName(), expectedFailedResponseCodeInvalidVs)
 }
 
 // TestOneWayServerTlsWorksWithOneWayTls validates that one-way server TLS traffic succeeds when CA data
