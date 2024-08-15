@@ -22,10 +22,22 @@ CORS policies are typically implemented to limit access to server resources for 
 
 For more details, see [this article](https://medium.com/@baphemot/understanding-cors-18ad6b478e2b).
 
-## How to configure a VirtualService for CORS
+## Configuration options
 
-In order to allow your `VirtualService` to work with CORS, you need to add a new set of configuration options in
-the `VirtualHost` part of your `VirtualService`
+You can configure the CORS policy at two levels in the VirtualService:
+
+* [Virtual host](#virtual-host): By applying the CORS policy in the `virtualHost.options.cors` section, each route in the VirtualService gets the policy.
+* [Route](#route): Configure separate CORS policies per route in the `routes.options.cors` section.
+
+By default, the configuration of the route option take precedence over the virtual host. However, you can change this behavior by using the `corsPolicyMergeSettings` field in the virtual host options. For more information about the supported merge strategies, see the [API docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/cors/cors.proto.sk/#corspolicymergesettings" %}}).
+
+{{% notice note %}} 
+Some apps, such as `httpbin`, have built-in CORS policies that allow all origins. These policies take precedence over CORS policies that you might configure in Gloo Gateway. 
+{{% /notice %}}
+
+### Configure CORS for a virtual host {#virtual-host}
+
+To configure the `virtualHost` part of your VirtualService for a CORS policy, review the following example.
 
 {{< highlight yaml "hl_lines=9-11" >}}
 apiVersion: gateway.solo.io/v1
@@ -43,13 +55,46 @@ spec:
     - '*'
 {{< /highlight >}}
 
-{{% notice note %}} 
-Some apps, such as `httpbin`, have built-in CORS policies that allow all origins. These policies take precedence over CORS policies that you might configure in Gloo Gateway. 
-{{% /notice %}}
+### Configure CORS for a particular route {#route}
 
-### Available Fields
+To configure a particular `route` of your VirtualService for a CORS policy, review the following example.
 
-The following fields are available when specifying CORS on your `VirtualService`:
+{{< highlight yaml "hl_lines=15-29" >}}
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: corsexample
+  namespace: gloo-system
+spec:
+  displayName: corsexample
+  virtualHost:
+  domains:
+  - '*'
+  routes:
+  - matchers:
+    - exact: /all-pets
+    options:
+      cors:
+        allowCredentials: true
+        allowHeaders:
+        - origin
+        allowMethods:
+        - GET
+        - POST
+        - OPTIONS
+        allowOrigin:
+        - https://example.com
+        allowOriginRegex:
+        - https://[a-zA-Z0-9]*.example.com
+        exposeHeaders:
+        - origin
+        maxAge: 1d
+      prefixRewrite: /api/pets
+{{< /highlight >}}
+
+### Available fields to configure CORS {#available-fields}
+
+The following fields are available when configuring a CORS policy for your `VirtualService`. For more information, see the [API docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/cors/cors.proto.sk/" %}}).
 
 | Field              | Type       | Description                                                                                                                                                      | Default |
 | ------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
@@ -61,10 +106,9 @@ The following fields are available when specifying CORS on your `VirtualService`
 | `maxAge`           | `string`   | Specifies the content for the *access-control-max-age* header.                                                                                                   |         |
 | `allowCredentials` | `bool`     | Specifies whether the resource allows credentials.                                                                                                               |         |
 | `disableForRoute` | `bool` | If set, the CORS Policy (specified on the virtual host) is disabled for this route. | false |
+ 
 
-For more information, see the [API docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/cors/cors.proto.sk/" %}}). 
-
-## Try out an example
+## Try out a CORS policy {#cors-steps}
 
 1. Follow the steps to [deploy the Petstore Hello World app]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}) in your cluster. 
 2. Edit the virtual service that exposes the Petstore app to add in a CORS policy. 
@@ -168,12 +212,146 @@ For more information, see the [API docs]({{% versioned_link_path fromRoot="/refe
    [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
    ```
 
+6. Update the VirtualService with a CORS policy at the route level that conflicts with the CORS policy at the virtual host level. Keep in mind that route configuration overrides the virtual host configuration.
 
+   {{< highlight yaml "hl_lines=16 21 27-32" >}}
+   ...
+   spec:
+     virtualHost:
+       domains:
+       - '*'
+       options:
+         cors:
+           allowCredentials: true
+           allowHeaders:
+           - origin
+           allowMethods:
+           - GET
+           - POST
+           - OPTIONS
+           allowOrigin:
+           - https://fake.com
+           allowOriginRegex:
+           - https://[a-zA-Z0-9]*.example.com
+           exposeHeaders:
+           - origin
+           - vh-header
+           maxAge: 1d
+     routes:
+       - matchers:
+           - exact: /all-pets
+         options:
+           cors:
+             allowOrigin:
+               - https://example.com
+             exposeHeaders:
+               - origin
+               - route-header
+           prefixRewrite: /api/pets
+   ...
+   {{< /highlight >}}
 
+7. Repeat the previous request. This time, notice that the origin is `https://example.com`, which is set by the route configuration (but not the virtual host configuration, which is `https://fake.com`). Also, the `access-control-expose-headers` header contains only the values specified on the route level, `origin` and `route-header` (and not the virtual host, `vh-header`).
 
+   ```
+   curl -vik -H "Origin: https://notallowed.com" \
+   -H "Access-Control-Request-Method: GET" \
+   -X GET $(glooctl proxy url)/all-pets 
+   ``` 
 
+   Example output:
+   ```
+   > GET /all-pets HTTP/1.1
+   > Host: localhost:8080
+   > User-Agent: curl/8.1.2
+   > Accept: */*
+   > Origin: https://example.com
+   > Access-Control-Request-Method: GET
+   >
+   < HTTP/1.1 200 OK
+   HTTP/1.1 200 OK
+   < access-control-allow-origin: https://example.com
+   access-control-allow-origin: https://example.com
+   < access-control-allow-credentials: true
+   access-control-allow-credentials: true
+   < access-control-expose-headers: origin,route-header
+   access-control-expose-headers: origin,route-header
+   < server: envoy
+   server: envoy
+   
+   <
+   [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat",   "status":"pending"}]
+   ```
 
+8. To change how conflicting CORS policies are handled, update the VirtualService with the `corsPolicyMergeSettings` in the virtual host. In the following example, you configure a `UNION` merge strategy for the `exposeHeaders` field. Now, the CORS policy applies to requests so that all the `exposeHeaders` values from both the virtual host and route are included. For more information, see the [API docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/cors/cors.proto.sk/#corspolicymergesettings" %}}).
 
+   {{< highlight yaml "hl_lines=7-8" >}}
+   ...
+   spec:
+     virtualHost:
+       domains:
+       - '*'
+       options:
+         corsPolicyMergeSettings:
+           exposeHeaders: UNION
+         cors:
+           allowCredentials: true
+           allowHeaders:
+           - origin
+           allowMethods:
+           - GET
+           - POST
+           - OPTIONS
+           allowOrigin:
+           - https://fake.com
+           allowOriginRegex:
+           - https://[a-zA-Z0-9]*.example.com
+           exposeHeaders:
+           - origin
+           - vh-header
+           maxAge: 1d
+     routes:
+       - matchers:
+           - exact: /all-pets
+         options:
+           cors:
+             allowOrigin:
+               - https://example.com
+             exposeHeaders:
+               - origin
+               - route-header
+           prefixRewrite: /api/pets
+   ...
+   {{< /highlight >}}
 
+9. Repeat the request. This time, notice that the `access-control-expose-headers` header has the union of the values set on both the virtual host and the route (`origin`, `vh-header`, and `route-header`).
 
+   ```
+   curl -vik -H "Origin: https://notallowed.com" \
+   -H "Access-Control-Request-Method: GET" \
+   -X GET $(glooctl proxy url)/all-pets 
+   ``` 
 
+   Example output:
+   ```
+   > GET /all-pets HTTP/1.1
+   > Host: localhost:8080
+   > User-Agent: curl/8.1.2
+   > Accept: */*
+   > Origin: https://example.com
+   > Access-Control-Request-Method: GET
+   >
+   < HTTP/1.1 200 OK
+   HTTP/1.1 200 OK
+   < access-control-allow-origin: https://example.com
+   access-control-allow-origin: https://example.com
+   < access-control-allow-credentials: true
+   access-control-allow-credentials: true
+   < access-control-expose-headers: origin,vh-header,route-header
+   access-control-expose-headers: origin,vh-header,route-header
+   < server: envoy
+   server: envoy
+   
+   <
+   [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat",   "status":"pending"}]
+   ```

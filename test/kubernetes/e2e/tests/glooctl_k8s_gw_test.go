@@ -37,6 +37,11 @@ func TestGlooctlK8sGateway(t *testing.T) {
 		os.Setenv(testutils.InstallNamespace, installNs)
 	}
 
+	// Set the env to the install namespace if it is not already set
+	if os.Getenv(testutils.InstallNamespace) == "" {
+		os.Setenv(testutils.InstallNamespace, installNs)
+	}
+
 	// We register the cleanup function _before_ we actually perform the installation.
 	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
 	t.Cleanup(func() {

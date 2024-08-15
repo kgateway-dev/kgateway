@@ -86,3 +86,16 @@ func (m *CorsPolicy) Clone() proto.Message {
 
 	return target
 }
+
+// Clone function
+func (m *CorsPolicyMergeSettings) Clone() proto.Message {
+	var target *CorsPolicyMergeSettings
+	if m == nil {
+		return target
+	}
+	target = &CorsPolicyMergeSettings{}
+
+	target.ExposeHeaders = m.GetExposeHeaders()
+
+	return target
+}

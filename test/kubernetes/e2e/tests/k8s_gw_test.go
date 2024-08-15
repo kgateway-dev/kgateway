@@ -19,7 +19,7 @@ import (
 // TestK8sGateway is the function which executes a series of tests against a given installation
 func TestK8sGateway(t *testing.T) {
 	ctx := context.Background()
-	installNs, overrodeNs := envutils.LookupOrDefault(testutils.InstallNamespace, "validation-always-accept-test")
+	installNs, overrodeNs := envutils.LookupOrDefault(testutils.InstallNamespace, "k8s-gw-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
@@ -31,6 +31,11 @@ func TestK8sGateway(t *testing.T) {
 	)
 
 	testHelper := e2e.MustTestHelper(ctx, testInstallation)
+	// Set the env to the install namespace if it is not already set
+	if os.Getenv(testutils.InstallNamespace) == "" {
+		os.Setenv(testutils.InstallNamespace, installNs)
+	}
+
 	// Set the env to the install namespace if it is not already set
 	if os.Getenv(testutils.InstallNamespace) == "" {
 		os.Setenv(testutils.InstallNamespace, installNs)
