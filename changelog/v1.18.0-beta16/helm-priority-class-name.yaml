@@ -3,8 +3,9 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/8677
     resolvesIssue: false
     description: >-
-      Introduce `gatewayProxy.NAME.podTemplate.priorityClassName` which allows you to set the PriorityClassName
-      for gateway-proxy Pods. This is already supported on all other Gloo deployments.
+      Ensure that gateway-proxy deployments respect the  `gatewayProxy.NAME.kind.deployment.priorityClassName` field.
+      This API allows you to set the PriorityClassName for gateway-proxy Pods.
+      This is already supported on all other Gloo deployments.
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/9010
     resolvesIssue: false

@@ -3300,7 +3300,7 @@ spec:
 					It("enables priorityClassName", func() {
 						prepareMakefile(namespace, glootestutils.HelmValues{
 							ValuesArgs: []string{
-								"gatewayProxies.gatewayProxy.podTemplate.priorityClassName=example-priority",
+								"gatewayProxies.gatewayProxy.kind.deployment.priorityClassName=example-priority",
 							},
 						})
 
