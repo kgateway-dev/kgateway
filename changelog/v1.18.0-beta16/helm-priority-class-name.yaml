@@ -1,0 +1,29 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/8677
+    resolvesIssue: false
+    description: >-
+      Ensure that gateway-proxy deployments respect the  `gatewayProxy.NAME.kind.deployment.priorityClassName` field.
+      This API allows you to set the PriorityClassName for gateway-proxy Pods.
+      This is already supported on all other Gloo deployments.
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/9010
+    resolvesIssue: false
+    description: >-
+      Support defining the PriorityClassName on a GatewayProxy deployment. This allows users to
+      attach pods to PriorityClasses (https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/)
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/9823
+    resolvesIssue: false
+    description: >-
+      This is a duplicate issue that tracks the single enhancement that we are adding here.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/9731
+    resolvesIssue: false
+    description: >-
+      This is a duplicate issue that tracks the single enhancement that we are adding here.
+      
+      
+      
+      
+      

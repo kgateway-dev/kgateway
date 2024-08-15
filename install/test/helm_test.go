@@ -3297,6 +3297,17 @@ spec:
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
+					It("enables priorityClassName", func() {
+						prepareMakefile(namespace, glootestutils.HelmValues{
+							ValuesArgs: []string{
+								"gatewayProxies.gatewayProxy.kind.deployment.priorityClassName=example-priority",
+							},
+						})
+
+						gatewayProxyDeployment.Spec.Template.Spec.PriorityClassName = "example-priority"
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
 					It("supports custom readiness and liveness probe", func() {
 						prepareMakefile(namespace, glootestutils.HelmValues{
 							ValuesArgs: []string{
