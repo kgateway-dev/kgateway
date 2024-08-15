@@ -16,3 +16,13 @@ changelog:
     resolvesIssue: false
     description: >-
       This is a duplicate issue that tracks the single enhancement that we are adding here.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/9731
+    resolvesIssue: false
+    description: >-
+      This is a duplicate issue that tracks the single enhancement that we are adding here.
+      
+      
+      
+      
+      
