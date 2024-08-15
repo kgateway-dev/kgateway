@@ -18,7 +18,6 @@ static_resources:
               socket_address:
                 address: gloo
                 port_value: 9977
-    http2_protocol_options: {}
     type: STRICT_DNS
 dynamic_resources:
   ads_config:
