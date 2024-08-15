@@ -643,6 +643,13 @@ type DaemonSetSpec struct {
 	HostNetwork *bool `json:"hostNetwork,omitempty"`
 }
 
+// GatewayProxyPodTemplate contains the Helm API available to configure the PodTemplate on the gateway-proxy Deployment
+//
+//	Note to Developers:
+//	The PodSpec defined below is our standard way of exposing these APIs consistently. This PodTemplate pre-dated that struct, so
+//	we didn't rely on it, and instead have to manage each of the fields individually.
+//	Since some of the fields available on the PodSpec aren't all exposed in this PodTemplate, and instead are availabe up a level on the API,
+//	there isn't ean easy way to rely on that PodSpec definition. One solution would be to deprecate the old fields, and migrate them all to this API
 type GatewayProxyPodTemplate struct {
 	HttpPort                      *int                  `json:"httpPort,omitempty" desc:"HTTP port for the gateway service target port."`
 	HttpsPort                     *int                  `json:"httpsPort,omitempty" desc:"HTTPS port for the gateway service target port."`
@@ -651,6 +658,7 @@ type GatewayProxyPodTemplate struct {
 	NodeName                      *string               `json:"nodeName,omitempty" desc:"name of node to run on."`
 	NodeSelector                  map[string]string     `json:"nodeSelector,omitempty" desc:"label selector for nodes."`
 	Tolerations                   []*corev1.Toleration  `json:"tolerations,omitempty"`
+	PriorityClassName             *string               `json:"priorityClassName,omitempty" desc:"name of a defined priority class"`
 	Probes                        *bool                 `json:"probes,omitempty" desc:"Set to true to enable a readiness probe (default is false). Then, you can also enable a liveness probe."`
 	LivenessProbeEnabled          *bool                 `json:"livenessProbeEnabled,omitempty" desc:"Set to true to enable a liveness probe (default is false)."`
 	Resources                     *ResourceRequirements `json:"resources,omitempty"`

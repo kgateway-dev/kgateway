@@ -142,6 +142,9 @@ spec:
       {{- if $spec.podTemplate.nodeName }}
       nodeName: {{$spec.podTemplate.nodeName}}
       {{- end }}
+      {{- if $spec.podTemplate.priorityClassName }}
+      priorityClassName: {{$spec.podTemplate.priorityClassName}}
+      {{- end }}
       {{- if $spec.podTemplate.nodeSelector }}
       nodeSelector:
       {{- range $key, $value := $spec.podTemplate.nodeSelector }}
