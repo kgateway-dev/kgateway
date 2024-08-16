@@ -643,6 +643,12 @@ type DaemonSetSpec struct {
 	HostNetwork *bool `json:"hostNetwork,omitempty"`
 }
 
+// GatewayProxyPodTemplate contains the Helm API available to configure the PodTemplate on the gateway-proxy Deployment
+//
+//	Note to Developers: The Helm API for the PodTemplate is split between the values defined in this struct, and the values
+//		in the PodSpec, which is available for a GatewayProxy under `gatewayProxy.kind.Deployment`.
+//		The side effect of this, is that there may be Helm values which may live on both structs, but only one is used by our templates.
+//		Always refer back to the Helm templates to see which is used.
 type GatewayProxyPodTemplate struct {
 	HttpPort                      *int                  `json:"httpPort,omitempty" desc:"HTTP port for the gateway service target port."`
 	HttpsPort                     *int                  `json:"httpsPort,omitempty" desc:"HTTPS port for the gateway service target port."`
