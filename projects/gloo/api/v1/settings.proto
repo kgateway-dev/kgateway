@@ -832,6 +832,11 @@ message GatewayOptions {
         //
         // If not included, the validation server will be enabled.
         google.protobuf.BoolValue server_enabled = 12;
+
+        // Allows configuring validation to report a missing TLS secret referenced by a SslConfig or UpstreamSslConfig
+        // as a warning instead of an error. This will allow for eventually consistent workloads, but will also permit
+        // the accidental deletion of secrets being referenced, which would cause disruption in traffic.
+        google.protobuf.BoolValue warn_missing_tls_secret = 13;
     }
 
     // If provided, the Gateway will perform [Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
