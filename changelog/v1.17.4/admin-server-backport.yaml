@@ -1,5 +1,15 @@
 changelog:
   - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6600
+    resolvesIssue: false
+    description: >-
+      In the InputSnapshot API response, redact the keys of Secrets, instead of wiping the entire object.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6602
+    resolvesIssue: false
+    description: >-
+      Admin Server returns partial results and errors.
+  - type: NON_USER_FACING
     issueLink: https://github.com/solo-io/solo-projects/issues/6604
     resolvesIssue: true
     description: >-
@@ -17,17 +27,7 @@ changelog:
     description: >-
       Expand the endpoints used by the Administration Interface, and deprecate some of the older APIs.
   - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/6600
-    resolvesIssue: false
-    description: >-
-      Redact the contents of Secrets and Artifacts.
-  - type: NON_USER_FACING
     issueLink: https://github.com/solo-io/solo-projects/issues/6601
     resolvesIssue: false
     description: >-
       Expose an endpoint in the Admin Server to return the unmodified Edge API Snapshot.
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/6602
-    resolvesIssue: false
-    description: >-
-      Admin Server returns partial results and errors.
