@@ -123,6 +123,8 @@ var _ = Describe("Translator", func() {
 					//	"Invalid type URL, unknown type: envoy.api.v2.filter.http.RouteTransformations for type Any)"
 					// We do not perform transformation validation as part of our translator tests, so we explicitly disable this
 					DisableTransformationValidation: &wrappers.BoolValue{Value: true},
+					// We set this value as it is defaulted on via helm
+					WarnMissingTlsSecret: &wrappers.BoolValue{Value: true},
 				},
 			},
 		}

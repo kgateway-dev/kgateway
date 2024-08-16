@@ -9,6 +9,7 @@ import (
 	envoy_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -59,6 +60,8 @@ var _ = Describe("Listener Subsystem", func() {
 
 		ctrl          *gomock.Controller
 		sslTranslator *mock_utils.MockSslConfigTranslator
+
+		settings *v1.Settings
 	)
 
 	BeforeEach(func() {
@@ -67,6 +70,15 @@ var _ = Describe("Listener Subsystem", func() {
 		sslTranslator = mock_utils.NewMockSslConfigTranslator(ctrl)
 
 		ctx, cancel = context.WithCancel(context.Background())
+
+		settings = &v1.Settings{
+			Gateway: &v1.GatewayOptions{
+				Validation: &v1.GatewayOptions_ValidationOptions{
+					// set this as it is the default setting initialized by helm
+					WarnMissingTlsSecret: &wrapperspb.BoolValue{Value: true},
+				},
+			},
+		}
 
 		// Create a pluginRegistry with a minimal number of plugins
 		// This test is not concerned with the functionality of individual plugins
@@ -81,11 +93,12 @@ var _ = Describe("Listener Subsystem", func() {
 		for _, p := range pluginRegistry.GetPlugins() {
 			p.Init(plugins.InitParams{
 				Ctx:      ctx,
-				Settings: &v1.Settings{},
+				Settings: settings,
 			})
 		}
 
-		translatorFactory = translator.NewListenerSubsystemTranslatorFactory(pluginRegistry, sslutils.NewSslConfigTranslator(), &v1.Settings{})
+		translatorFactory = translator.NewListenerSubsystemTranslatorFactory(pluginRegistry, sslutils.NewSslConfigTranslator(), settings)
+
 	})
 
 	AfterEach(func() {
