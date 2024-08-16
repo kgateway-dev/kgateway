@@ -31,6 +31,8 @@ var (
 		return eris.Errorf("ocsp staple policy %v not a valid policy", p)
 	}
 
+	// SslSecretNotFoundError is an exported error that wraps errors produced in validation
+	// indicating a missing secret reference. This can be compared against using errors.Is.
 	SslSecretNotFoundError = eris.New("SSL secret not found")
 	sslSecretNotFoundError = func(err error) error {
 		return eris.Wrapf(err, SslSecretNotFoundError.Error())
