@@ -206,6 +206,7 @@ func (t *tcpFilterChainTranslator) computeNetworkFilters(params plugins.Params) 
 // An httpFilterChainTranslator configures a single set of NetworkFilters
 // and then creates duplicate filter chains for each provided SslConfig.
 type httpFilterChainTranslator struct {
+	settings                *v1.Settings
 	parentReport            *validationapi.ListenerReport
 	networkFilterTranslator NetworkFilterTranslator
 	sslConfigurations       []*ssl.SslConfig
@@ -294,7 +295,10 @@ func (h *httpFilterChainTranslator) createFilterChainsFromSslConfiguration(
 		// get secrets
 		downstreamTlsContext, err := h.sslConfigTranslator.ResolveDownstreamSslConfig(snap.Secrets, sslConfig)
 		if err != nil {
-			if errors.Is(err, utils.SslSecretNotFoundError) {
+			// if we are configured to warn on missing tls secret and we match that error, add a
+			// warning instead of error to the report.
+			if h.settings.GetGateway().GetValidation().GetWarnMissingTlsSecret().GetValue() &&
+				errors.Is(err, utils.SslSecretNotFoundError) {
 				// We add this as a warning to support eventual consistency with TLS Secret resources. In this way,
 				// the Proxy producing this will not be considered Rejected, and the HTTPS Listener will still operate
 				// as expected with a VirtualService in error.
