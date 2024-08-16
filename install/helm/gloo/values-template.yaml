@@ -132,6 +132,7 @@ gateway:
     secretName: gateway-validation-certs
     alwaysAcceptResources: true
     allowWarnings: true
+    warnMissingTlsSecret: true
     serverEnabled: true
     disableTransformationValidation: false
     warnRouteShortCircuiting: false

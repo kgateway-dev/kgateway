@@ -16,6 +16,7 @@ spec:
    validation:
      alwaysAccept: true
      allowWarnings: true
+     warnMissingTlsSecret: false
      serverEnabled: true
      disableTransformationValidation: true
      warnRouteShortCircuiting: true

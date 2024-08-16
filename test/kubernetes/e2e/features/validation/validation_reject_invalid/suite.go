@@ -114,16 +114,12 @@ func (s *testingSuite) TestVirtualServiceWithSecretDeletion() {
 		gloo_defaults.GlooReporter,
 	)
 
-	// attempting to delete a secret that is in use produces a warning but succeeds
-	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.Secret, "-n", s.testInstallation.Metadata.InstallNamespace)
-	s.Assert().NoError(err)
-	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
-		func() (resources.InputResource, error) {
-			return s.testInstallation.ResourceClients.GatewayClient().Read(s.testInstallation.Metadata.InstallNamespace, "gateway-proxy-ssl", clients.ReadOpts{Ctx: s.ctx})
-		},
-		core.Status_Warning,
-		gloo_defaults.GlooReporter,
-	)
+	// failing to delete a secret that is in use
+	output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, validation.Secret, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().Error(err)
+	s.Assert().Contains(output, fmt.Sprintf(`admission webhook "gloo.%s.svc" denied the request`, s.testInstallation.Metadata.InstallNamespace))
+	s.Assert().Contains(output, fmt.Sprintf("failed validating the deletion of resource"))
+	s.Assert().Contains(output, fmt.Sprintf("SSL secret not found: list did not find secret %s.tls-secret", s.testInstallation.Metadata.InstallNamespace))
 
 	// deleting a secret that is not in use works
 	err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.UnusedSecret, "-n", s.testInstallation.Metadata.InstallNamespace)
