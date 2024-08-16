@@ -85,7 +85,7 @@ var _ = Describe("Listener Subsystem", func() {
 			})
 		}
 
-		translatorFactory = translator.NewListenerSubsystemTranslatorFactory(pluginRegistry, sslutils.NewSslConfigTranslator())
+		translatorFactory = translator.NewListenerSubsystemTranslatorFactory(pluginRegistry, sslutils.NewSslConfigTranslator(), &v1.Settings{})
 	})
 
 	AfterEach(func() {

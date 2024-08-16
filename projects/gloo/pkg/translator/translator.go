@@ -71,7 +71,7 @@ func NewTranslatorWithHasher(
 		pluginRegistry:            pluginRegistry,
 		settings:                  settings,
 		hasher:                    hasher,
-		listenerTranslatorFactory: NewListenerSubsystemTranslatorFactory(pluginRegistry, sslConfigTranslator),
+		listenerTranslatorFactory: NewListenerSubsystemTranslatorFactory(pluginRegistry, sslConfigTranslator, settings),
 	}
 }
 
