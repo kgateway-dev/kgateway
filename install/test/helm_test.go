@@ -4170,7 +4170,7 @@ spec:
 							ValuesArgs: []string{
 								"gateway.validation.disableTransformationValidation=true",
 								"gateway.validation.warnRouteShortCircuiting=true",
-								"gateway.validation.warnMissingTlsSecret=true",
+								"gateway.validation.warnMissingTlsSecret=false",
 							},
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
