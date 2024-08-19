@@ -146,7 +146,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 
 	// After reports are written for proxies, save in gateway syncer (previously gw watched for status changes to proxies)
 	if s.gatewaySyncer != nil {
-		s.gatewaySyncer.UpdateProxies(ctx)
+		s.gatewaySyncer.UpdateStatusForAllProxies(ctx)
 	}
 
 	s.statusSyncer.reportsLock.Lock()

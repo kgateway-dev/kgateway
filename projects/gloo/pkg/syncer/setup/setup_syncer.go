@@ -491,10 +491,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	runErrorGroup, _ := errgroup.WithContext(watchOpts.Ctx)
 	logger := contextutils.LoggerFrom(watchOpts.Ctx)
 
-	endpointsFactory := &factory.MemoryResourceClientFactory{
-		Cache: memory.NewInMemoryResourceCache(),
-	}
-
+	// MARK: build resource clients
 	upstreamClient, err := v1.NewUpstreamClient(watchOpts.Ctx, opts.Upstreams)
 	if err != nil {
 		return err
@@ -528,6 +525,11 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
+	// create in-memory cache for endpoints
+	// see (https://github.com/solo-io/gloo/blob/main/devel/architecture/endpoint-discovery.md) for more info
+	endpointsFactory := &factory.MemoryResourceClientFactory{
+		Cache: memory.NewInMemoryResourceCache(),
+	}
 	endpointClient, err := v1.NewEndpointClient(watchOpts.Ctx, endpointsFactory)
 	if err != nil {
 		return err
@@ -625,6 +627,9 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	if opts.ProxyCleanup != nil {
 		opts.ProxyCleanup()
 	}
+
+	statusClient := gloostatusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
+
 	// Register grpc endpoints to the grpc server
 	xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
 
@@ -642,7 +647,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	errs := make(chan error)
 
-	statusClient := gloostatusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
+	// MARK: build and run EDS loop
 	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, statusClient, discoveryPlugins)
 	edsSync := discovery.NewEdsSyncer(disc, discovery.Opts{}, watchOpts.RefreshRate)
 	discoveryCache := v1.NewEdsEmitter(hybridUsClient)
@@ -675,25 +680,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	// We are ready!
 
 	go errutils.AggregateErrs(watchOpts.Ctx, errs, edsErrs, "eds.gloo")
-	apiCache := v1snap.NewApiEmitterWithEmit(
-		artifactClient,
-		endpointClient,
-		proxyClient,
-		upstreamGroupClient,
-		secretClient,
-		hybridUsClient,
-		authConfigClient,
-		rlClient,
-		virtualServiceClient,
-		rtClient,
-		gatewayClient,
-		virtualHostOptionClient,
-		routeOptionClient,
-		matchableHttpGatewayClient,
-		matchableTcpGatewayClient,
-		graphqlApiClient,
-		extensions.ApiEmitterChannel,
-	)
 
 	rpt := reporter.NewReporter(defaults.GlooReporter,
 		statusClient,
@@ -775,24 +761,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}()
 		opts.ProxyDebugServer.StartGrpcServer = false
 	}
-	gwOpts := gwtranslator.Opts{
-		GlooNamespace:                  opts.WriteNamespace,
-		WriteNamespace:                 opts.WriteNamespace,
-		StatusReporterNamespace:        opts.StatusReporterNamespace,
-		WatchNamespaces:                opts.WatchNamespaces,
-		Gateways:                       opts.Gateways,
-		VirtualServices:                opts.VirtualServices,
-		RouteTables:                    opts.RouteTables,
-		Proxies:                        opts.Proxies,
-		RouteOptions:                   opts.RouteOptions,
-		VirtualHostOptions:             opts.VirtualHostOptions,
-		WatchOpts:                      opts.WatchOpts,
-		DevMode:                        opts.DevMode,
-		ReadGatewaysFromAllNamespaces:  opts.ReadGatwaysFromAllNamespaces,
-		Validation:                     opts.ValidationOpts,
-		ConfigStatusMetricOpts:         nil,
-		IsolateVirtualHostsBySslConfig: opts.Settings.GetGateway().GetIsolateVirtualHostsBySslConfig().GetValue(),
-	}
 
 	resourceHasher := translator.EnvoyCacheResourcesListToFnvHash
 
@@ -810,6 +778,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		syncerExtensions = append(syncerExtensions, syncerExtension)
 	}
 
+	// MARK: build gloo translator
 	sharedTranslator := translator.NewTranslatorWithHasher(
 		sslutils.NewSslConfigTranslator(),
 		opts.Settings,
@@ -839,6 +808,25 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		opts.ValidationServer.Server.SetValidator(validator)
 	}
 
+	// MARK: build gateway translator
+	gwOpts := gwtranslator.Opts{
+		GlooNamespace:                  opts.WriteNamespace,
+		WriteNamespace:                 opts.WriteNamespace,
+		StatusReporterNamespace:        opts.StatusReporterNamespace,
+		WatchNamespaces:                opts.WatchNamespaces,
+		Gateways:                       opts.Gateways,
+		VirtualServices:                opts.VirtualServices,
+		RouteTables:                    opts.RouteTables,
+		Proxies:                        opts.Proxies,
+		RouteOptions:                   opts.RouteOptions,
+		VirtualHostOptions:             opts.VirtualHostOptions,
+		WatchOpts:                      opts.WatchOpts,
+		DevMode:                        opts.DevMode,
+		ReadGatewaysFromAllNamespaces:  opts.ReadGatwaysFromAllNamespaces,
+		Validation:                     opts.ValidationOpts,
+		ConfigStatusMetricOpts:         nil,
+		IsolateVirtualHostsBySslConfig: opts.Settings.GetGateway().GetIsolateVirtualHostsBySslConfig().GetValue(),
+	}
 	var (
 		gwTranslatorSyncer *gwsyncer.TranslatorSyncer
 		gatewayTranslator  *gwtranslator.GwTranslator
@@ -907,7 +895,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		gwv2StatusSyncer       status.GatewayStatusSyncer
 		gwv2StatusSyncCallback syncer.OnProxiesTranslatedFn
 	)
-
+	// MARK: build k8s gw start func
 	if opts.GlooGateway.EnableK8sGatewayController {
 		gwv2StatusSyncer = status.NewStatusSyncerFactory()
 		gwv2StatusSyncCallback = gwv2StatusSyncer.HandleProxyReports
@@ -923,6 +911,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		)
 	}
 
+	// MARK: build translator syncer
 	translationSync := syncer.NewTranslatorSyncer(
 		watchOpts.Ctx,
 		sharedTranslator,
@@ -944,6 +933,26 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		snapshotHistory,
 	)
 
+	// MARK: build & run api snap loop
+	apiCache := v1snap.NewApiEmitterWithEmit(
+		artifactClient,
+		endpointClient,
+		proxyClient,
+		upstreamGroupClient,
+		secretClient,
+		hybridUsClient,
+		authConfigClient,
+		rlClient,
+		virtualServiceClient,
+		rtClient,
+		gatewayClient,
+		virtualHostOptionClient,
+		routeOptionClient,
+		matchableHttpGatewayClient,
+		matchableTcpGatewayClient,
+		graphqlApiClient,
+		extensions.ApiEmitterChannel,
+	)
 	syncers := v1snap.ApiSyncers{
 		validator,
 		translationSync,
@@ -968,6 +977,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}
 	}()
 
+	// MARK: start validation server
 	validationMustStart := os.Getenv("VALIDATION_MUST_START")
 	// only starting validation server if the env var is true or empty (previously, it always started, so this avoids causing unwanted changes for users)
 	if validationMustStart == "true" || validationMustStart == "" {
