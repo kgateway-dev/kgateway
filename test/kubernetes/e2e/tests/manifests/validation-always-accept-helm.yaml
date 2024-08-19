@@ -20,6 +20,8 @@ gateway:
   validation:
     allowWarnings: true
     alwaysAcceptResources: true
+    # added to preserve behavior tested by this suite.
+    warnMissingTlsSecret: false
 kubeGateway:
   # This is the field that enables the K8s Gateway Integration in Gloo Gateway
   enabled: true
