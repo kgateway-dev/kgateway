@@ -176,6 +176,9 @@ apis:
   cors.options.gloo.solo.io.CorsPolicy:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/cors/cors.proto.sk/#CorsPolicy
     package: cors.options.gloo.solo.io
+  cors.options.gloo.solo.io.CorsPolicyMergeSettings:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/cors/cors.proto.sk/#CorsPolicyMergeSettings
+    package: cors.options.gloo.solo.io
   dfp.options.gloo.solo.io.AppleDnsResolverConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/dynamic_forward_proxy/dynamic_forward_proxy.proto.sk/#AppleDnsResolverConfig
     package: dfp.options.gloo.solo.io

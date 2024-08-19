@@ -762,6 +762,16 @@ func (m *VirtualHostOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetCorsPolicyMergeSettings()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetCorsPolicyMergeSettings()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetCorsPolicyMergeSettings(), target.GetCorsPolicyMergeSettings()) {
+			return false
+		}
+	}
+
 	switch m.RateLimitEarlyConfigType.(type) {
 
 	case *VirtualHostOptions_RatelimitEarly:

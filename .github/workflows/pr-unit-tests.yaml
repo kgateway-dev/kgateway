@@ -36,7 +36,7 @@ jobs:
     - name: Run Tests
       shell: bash
       env:
-        TEST_PKG: ./projects/gateway2/...
+        TEST_PKG: "./projects/gateway2/... ./test/kubernetes/testutils/helper"
       run: make go-test-with-coverage
     - name: Validate Test Coverage
       shell: bash

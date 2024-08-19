@@ -40,3 +40,42 @@ message CorsPolicy {
     // If set, the CORS Policy (specified on the virtual host) will be disabled for this route.
     bool disable_for_route = 8;
 }
+
+// Settings to determine how to merge CORS settings when present on both the VirtualHost and Route.
+// This option can be useful when different user personas or teams share ownership of a VirtualService.
+// For example, you might not want CORS settings on each route to override the virtual host settings, but instead merge them with a `UNION` strategy.
+message CorsPolicyMergeSettings {
+    enum MergeStrategy{
+        // Follow the default Envoy behavior, which is for Route settings to override VirtualHost settings if non-nil.
+        DEFAULT = 0;
+        // When a CORS policy is present on both VirtualHost and Route CORS policy, merge the settings. The merge is done
+        // by concatenating for list fields and by ORing for boolean fields.
+        UNION = 1;
+
+        // Eventually we may want to add additional mergeStrategies
+
+        // When a setting is present on both VH and Route CORS policy, merge by taking only values present in both for
+        // list fields and by ANDing for boolean fields
+        // INTERSECTION = 2;
+
+        // When a setting is present on both VH and Route CORS policy, use the Route-level field
+        // This is Envoy's underlying behavior, so effectively the same as default
+        // ROUTE = 3;
+
+        // When a setting is present on both VH and Route CORS policy, use the VH-level field
+        // VH = 4;
+    }
+
+    // Eventually we may want to allow each CORS setting to be configured, so we reserve fields for them
+
+    // mimicking the CorsPolicy message
+    // mergeStrategy allow_origin = 1;
+    // mergeStrategy allow_origin_regex = 2;
+    // mergeStrategy allow_methods = 3;
+    // mergeStrategy allow_headers = 4;
+
+    MergeStrategy expose_headers = 5;
+
+    // mergeStrategy max_age = 6;
+    // mergeStrategy allow_credentials = 7;
+}
