@@ -161,6 +161,16 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				Expect(resolvedRefs.Message).To(Equal("unknown backend kind"))
 			},
 		}),
+	Entry(
+		"RouteOptions merging",
+		translatorTestCase{
+			inputFile:  "route_options/merge.yaml",
+			outputFile: "route_options/merge.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "gw",
+			},
+		}),
 )
 
 var _ = DescribeTable("Route Delegation translator",
@@ -203,27 +213,4 @@ var _ = DescribeTable("Route Delegation translator",
 	Entry("RouteOptions multi level inheritance with child override", "route_options_multi_level_inheritance_override_ok.yaml"),
 	Entry("RouteOptions filter override merge", "route_options_filter_override_merge.yaml"),
 	Entry("Child route matcher does not match parent", "bug-6621.yaml"),
-)
-
-var _ = DescribeTable("RouteOptions translator",
-	func(inputFile string) {
-		ctx := context.TODO()
-		dir := util.MustGetThisDir()
-
-		results, err := TestCase{
-			InputFiles: []string{filepath.Join(dir, "testutils/inputs/route_options", inputFile)},
-		}.Run(ctx)
-
-		Expect(err).NotTo(HaveOccurred())
-		Expect(results).To(HaveLen(1))
-		gwNN := types.NamespacedName{
-			Namespace: "default",
-			Name:      "gw",
-		}
-		result, ok := results[gwNN]
-		Expect(ok).To(BeTrue())
-		outputProxyFile := filepath.Join(dir, "testutils/outputs/route_options", inputFile)
-		Expect(CompareProxy(outputProxyFile, result.Proxy)).To(BeEmpty())
-	},
-	Entry("Merging", "merge.yaml"),
 )
