@@ -69,6 +69,9 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) *gwv1.Ga
 	return &finalGwStatus
 }
 
+// BuildRouteStatus returns a newly constructed and fully defined HTTPRouteStatus for the supplied route
+// according to the state of the ReportMap. If the ReportMap does not have a RouteReport for the given HTTPRoute,
+// e.g. because it did not encounter the route during translation, nil is returned
 func (r *ReportMap) BuildRouteStatus(ctx context.Context, route gwv1.HTTPRoute, cName string) *gwv1.HTTPRouteStatus {
 	routeReport := r.route(&route)
 	if routeReport == nil {

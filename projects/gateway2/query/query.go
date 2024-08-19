@@ -20,7 +20,7 @@ import (
 
 var (
 	ErrMissingReferenceGrant      = fmt.Errorf("missing reference grant")
-	ErrUnknownKind                = fmt.Errorf("unknown kind")
+	ErrUnknownBackendKind         = fmt.Errorf("unknown backend kind")
 	ErrNoMatchingListenerHostname = fmt.Errorf("no matching listener hostname")
 	ErrNoMatchingParent           = fmt.Errorf("no matching parent")
 	ErrNotAllowedByListeners      = fmt.Errorf("not allowed by listeners")
@@ -319,7 +319,7 @@ func (r *gatewayQueries) getRef(ctx context.Context, from From, backendName stri
 	versions := r.scheme.VersionsForGroupKind(gk)
 	// versions are prioritized by order in the scheme, so we can just take the first one
 	if len(versions) == 0 {
-		return nil, ErrUnknownKind
+		return nil, ErrUnknownBackendKind
 	}
 	newObj, err := r.scheme.New(gk.WithVersion(versions[0].Version))
 	if err != nil {
