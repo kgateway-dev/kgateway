@@ -186,6 +186,7 @@ gatewayProxies:
       enabled: false
       port: 15443
       secretName: failover-downstream
+    istioDiscoveryAddress: istiod.istio-system.svc:15012
     kind:
       deployment:
         replicas: 1

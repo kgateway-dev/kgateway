@@ -142,6 +142,11 @@ spec:
       {{- if $spec.podTemplate.nodeName }}
       nodeName: {{$spec.podTemplate.nodeName}}
       {{- end }}
+      {{- if $spec.kind.deployment}}
+      {{- if $spec.kind.deployment.priorityClassName }}
+      priorityClassName: {{ $spec.kind.deployment.priorityClassName }}
+      {{- end }}
+      {{- end }}
       {{- if $spec.podTemplate.nodeSelector }}
       nodeSelector:
       {{- range $key, $value := $spec.podTemplate.nodeSelector }}
@@ -402,14 +407,14 @@ spec:
           - name: PILOT_CERT_PROVIDER
             value: istiod
           - name: CA_ADDR
-            value: {{ $spec.istioDiscoveryAddress | default "istiod.istio-system.svc:15012" }}
+            value: {{ $spec.istioSpiffeCertProviderAddress | default $spec.istioDiscoveryAddress }}
           - name: ISTIO_META_MESH_ID
             value: {{ $spec.istioMetaMeshId | default "cluster.local"}}
           - name: ISTIO_META_CLUSTER_ID
             value: {{ $spec.istioMetaClusterId | default "Kubernetes"}}
           - name: PROXY_CONFIG
             value: |
-              {"discoveryAddress": {{ $spec.istioDiscoveryAddress | default "istiod.istio-system.svc:15012" }}}
+              {"discoveryAddress": {{ $spec.istioDiscoveryAddress }}}
           - name: POD_NAME
             valueFrom:
               fieldRef:

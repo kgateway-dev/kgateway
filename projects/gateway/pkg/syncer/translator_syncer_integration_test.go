@@ -195,7 +195,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		// write the proxy status.
 		AcceptProxy()
 		ts, _ := ts.(*TranslatorSyncer)
-		ts.UpdateProxies(ctx)
+		ts.UpdateStatusForAllProxies(ctx)
 		// wait for the proxy status to be written in the VS
 		EventuallyProxyStatusInVs().Should(Equal(core.Status_Accepted))
 
@@ -212,7 +212,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 
 		// re-sync to process the new VS
 		ts.Sync(ctx, snapshot())
-		ts.UpdateProxies(ctx)
+		ts.UpdateStatusForAllProxies(ctx)
 		// wait for proxy status to become pending
 		EventuallyProxyStatus().Should(Equal(core.Status_Pending))
 
@@ -222,7 +222,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		// write the proxy status again to the same status as the one currently in the snapshot
 		AcceptProxy()
 
-		ts.UpdateProxies(ctx)
+		ts.UpdateStatusForAllProxies(ctx)
 		// status should be accepted.
 		// this tests the bug that we saw where the status stayed pending.
 		// the vs sub resource status did not update,

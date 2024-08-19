@@ -272,9 +272,10 @@ message VirtualHostOptions {
     stats.options.gloo.solo.io.Stats stats = 10;
     // Append/Remove headers on Requests or Responses on all routes contained in this Virtual Host
     headers.options.gloo.solo.io.HeaderManipulation header_manipulation = 2;
-    // Defines a CORS policy for the virtual host
+    // Defines a CORS policy for the virtual host.
     // If a CORS policy is also defined on the route matched by the request, the route policy
-    // overrides the virtual host policy for any configured field.
+    // overrides the virtual host policy for any configured field unless CorsPolicyMergeSettings are specified that define an
+    // alternate behavior.
     cors.options.gloo.solo.io.CorsPolicy cors = 3;
     // Transformations to apply. Note: this field is superseded by `staged_transformations`.
     // If `staged_transformations.regular` is set, this field will be ignored.
@@ -384,6 +385,9 @@ message VirtualHostOptions {
     // Enterprise-only: External Processing filter settings for the virtual host. This can be used to
     // override certain HttpListenerOptions settings, and can be overridden by RouteOptions settings.
     extproc.options.gloo.solo.io.RouteSettings ext_proc = 30;
+
+    // Settings for determining merge strategy for CORS settings when present at both Route and VirtualHost levels.
+    cors.options.gloo.solo.io.CorsPolicyMergeSettings cors_policy_merge_settings = 20;
 }
 
 // Optional, feature-specific configuration that lives on routes.
@@ -440,8 +444,9 @@ message RouteOptions {
     };
     // If true and there is a host rewrite, appends the x-forwarded-host header to requests.
     google.protobuf.BoolValue append_x_forwarded_host = 146;
-    // Defines a CORS policy for the route
-    // If a CORS policy is also defined on the route's virtual host any fields set here override the virtual host configuration 
+    // Defines a CORS policy for the route.
+    // If a CORS policy is defined on both the route and the virtual host, the merge behavior for these policies is
+    // determined by the CorsPolicyMergeSettings defined on the VirtualHost.
     cors.options.gloo.solo.io.CorsPolicy cors = 11;
     // For routes served by a hashing load balancer, this defines the input to the hash key
     // Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers:

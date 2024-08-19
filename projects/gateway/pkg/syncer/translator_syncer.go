@@ -106,8 +106,10 @@ func (s *TranslatorSyncer) Sync(ctx context.Context, snap *gloov1snap.ApiSnapsho
 
 // This replaced a watch on the proxy CR from when the gloo and gateway pods were separate
 // Now it is called at the end of the gloo translation loop after statuses have been set for proxies
-// This is where we update statuses on gateway types based on the proxy statuses
-func (s *TranslatorSyncer) UpdateProxies(ctx context.Context) {
+// This is where we update statuses on gateway types based on the proxy statuses.
+// After this method runs, all Proxies (those retrieved from the proxy client) will have their status
+// written, along with the translation reports that correspond to the Gateway resources.
+func (s *TranslatorSyncer) UpdateStatusForAllProxies(ctx context.Context) {
 	s.statusSyncer.handleUpdatedProxies(ctx)
 }
 func (s *TranslatorSyncer) GeneratedDesiredProxies(ctx context.Context, snap *gloov1snap.ApiSnapshot) (reconciler.GeneratedProxies, reconciler.InvalidProxies) {

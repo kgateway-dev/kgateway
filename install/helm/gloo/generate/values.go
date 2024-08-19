@@ -580,6 +580,7 @@ type GatewayProxy struct {
 	IstioMetaMeshId                *string                          `json:"istioMetaMeshId,omitempty" desc:"ISTIO_META_MESH_ID Environment Variable. Defaults to \"cluster.local\""`
 	IstioMetaClusterId             *string                          `json:"istioMetaClusterId,omitempty" desc:"ISTIO_META_CLUSTER_ID Environment Variable. Defaults to \"Kubernetes\""`
 	IstioDiscoveryAddress          *string                          `json:"istioDiscoveryAddress,omitempty" desc:"discoveryAddress field of the PROXY_CONFIG environment variable. Defaults to \"istiod.istio-system.svc:15012\""`
+	IstioSpiffeCertProviderAddress *string                          `json:"istioSpiffeCertProviderAddress,omitempty" desc:"Address of the spiffe certificate provider. Defaults to istioDiscoveryAddress"`
 	EnvoyLogLevel                  *string                          `json:"envoyLogLevel,omitempty" desc:"Level at which the pod should log. Options include \"trace\", \"info\", \"debug\", \"warn\", \"error\", \"critical\" and \"off\". Default level is info"`
 	EnvoyStatsConfig               map[string]interface{}           `json:"envoyStatsConfig,omitempty" desc:"Envoy statistics configuration, such as tagging. For more info, see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/metrics/v3/stats.proto#config-metrics-v3-statsconfig"`
 	XdsServiceAddress              *string                          `json:"xdsServiceAddress,omitempty" desc:"The k8s service name for the xds server. Defaults to gloo."`
@@ -642,6 +643,12 @@ type DaemonSetSpec struct {
 	HostNetwork *bool `json:"hostNetwork,omitempty"`
 }
 
+// GatewayProxyPodTemplate contains the Helm API available to configure the PodTemplate on the gateway-proxy Deployment
+//
+//	Note to Developers: The Helm API for the PodTemplate is split between the values defined in this struct, and the values
+//		in the PodSpec, which is available for a GatewayProxy under `gatewayProxy.kind.Deployment`.
+//		The side effect of this, is that there may be Helm values which may live on both structs, but only one is used by our templates.
+//		Always refer back to the Helm templates to see which is used.
 type GatewayProxyPodTemplate struct {
 	HttpPort                      *int                  `json:"httpPort,omitempty" desc:"HTTP port for the gateway service target port."`
 	HttpsPort                     *int                  `json:"httpsPort,omitempty" desc:"HTTPS port for the gateway service target port."`

@@ -209,11 +209,8 @@ type VirtualService struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The VirtualHost contains the
-	// The list of HTTP routes define routing actions to be taken
-	// for incoming HTTP requests whose host header matches
-	// this virtual host. If the request matches more than one route in the list, the first route matched will be selected.
-	// If the list of routes is empty, the virtual host will be ignored by Gloo.
+	// The VirtualHost contains configuration for serving a list of routes for a set of domains along with options for
+	// configuring traffic
 	VirtualHost *VirtualHost `protobuf:"bytes,1,opt,name=virtual_host,json=virtualHost,proto3" json:"virtual_host,omitempty"`
 	// If provided, the Gateway will serve TLS/SSL traffic for this set of routes
 	SslConfig *ssl.SslConfig `protobuf:"bytes,2,opt,name=ssl_config,json=sslConfig,proto3" json:"ssl_config,omitempty"`
