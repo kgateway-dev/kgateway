@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: |
+      Update the pull_request_template.md file to comment out the
+      instructions under individual headers.
+    skipCI: true
