@@ -4,12 +4,14 @@ import (
 	"context"
 	"time"
 
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/kube2e/helper"
 	testdefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
@@ -82,6 +84,7 @@ func (s *serverTlsTestingSuite) TestOneVirtualService() {
 		err := s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.vs1, "-n", s.ns)
 		s.NoError(err, "can delete vs1 manifest file")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, vs1)
+		s.eventuallyNotInSnapshot(gatewayv1.VirtualServiceGVK, vs1.ObjectMeta)
 		err = s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.tlsSecret1)
 		s.NoError(err, "can delete tls secret manifest file")
 		// tlsSecret2 is deleted in the process of the test.
@@ -92,6 +95,7 @@ func (s *serverTlsTestingSuite) TestOneVirtualService() {
 	err := s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.tlsSecret1)
 	s.NoError(err, "can apply tls secret 1 manifest file")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, tlsSecret1(s.ns))
+	s.eventuallyInSnapshot(coreSecretGVK, tlsSecret1(s.ns).ObjectMeta)
 	err = s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.vs1, "-n", s.ns)
 	s.NoError(err, "can apply vs1 manifest file")
 
@@ -111,6 +115,8 @@ func (s *serverTlsTestingSuite) TestTwoVirtualServices() {
 		err = s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.vs2, "-n", s.ns)
 		s.NoError(err, "can delete vs2 manifest file")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, vs1, vs2)
+		s.eventuallyNotInSnapshot(gatewayv1.VirtualServiceGVK, vs1.ObjectMeta)
+		s.eventuallyNotInSnapshot(gatewayv1.VirtualServiceGVK, vs2.ObjectMeta)
 		err = s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.tlsSecret1)
 		s.NoError(err, "can delete tls secret 1 manifest file")
 		err = s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.tlsSecret2)
@@ -124,6 +130,8 @@ func (s *serverTlsTestingSuite) TestTwoVirtualServices() {
 	err = s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.tlsSecret2)
 	s.NoError(err, "can apply tls secret 2 manifest file")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, tlsSecret1(s.ns), tlsSecret2(s.ns))
+	s.eventuallyInSnapshot(coreSecretGVK, tlsSecret1(s.ns).ObjectMeta)
+	s.eventuallyInSnapshot(coreSecretGVK, tlsSecret2(s.ns).ObjectMeta)
 	err = s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.vs1, "-n", s.ns)
 	s.NoError(err, "can apply vs1 manifest file")
 	err = s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.vs2, "-n", s.ns)
@@ -149,6 +157,8 @@ func (s *serverTlsTestingSuite) TestTwoVirtualServicesOneMissingTlsSecret() {
 		err = s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.vs2, "-n", s.ns)
 		s.NoError(err, "can delete vs2 manifest file")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, vs1, vs2)
+		s.eventuallyNotInSnapshot(gatewayv1.VirtualServiceGVK, vs1.ObjectMeta)
+		s.eventuallyNotInSnapshot(gatewayv1.VirtualServiceGVK, vs2.ObjectMeta)
 		err = s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.tlsSecret1)
 		s.NoError(err, "can delete tls secret manifest file")
 		// tlsSecret2 is deleted in the process of the test.
@@ -161,6 +171,8 @@ func (s *serverTlsTestingSuite) TestTwoVirtualServicesOneMissingTlsSecret() {
 	err = s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.tlsSecret2)
 	s.NoError(err, "can apply tls secret 2 manifest file")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, tlsSecret1(s.ns), tlsSecret2(s.ns))
+	s.eventuallyInSnapshot(coreSecretGVK, tlsSecret1(s.ns).ObjectMeta)
+	s.eventuallyInSnapshot(coreSecretGVK, tlsSecret2(s.ns).ObjectMeta)
 	err = s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.vs1, "-n", s.ns)
 	s.NoError(err, "can apply vs1 manifest file")
 	err = s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.vs2, "-n", s.ns)
@@ -174,6 +186,7 @@ func (s *serverTlsTestingSuite) TestTwoVirtualServicesOneMissingTlsSecret() {
 	err = s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.tlsSecret2)
 	s.NoError(err, "can delete tls secret 2 manifest file")
 	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, tlsSecret2(s.ns))
+	s.eventuallyNotInSnapshot(coreSecretGVK, tlsSecret2(s.ns).ObjectMeta)
 
 	// Assert that we have traffic working on VS 1 but failed traffic on VS 2.
 	s.assertEventualResponse(vs1.GetName(), expectedHealthyResponse1)
@@ -201,6 +214,7 @@ func (s *serverTlsTestingSuite) TestOneWayServerTlsFailsWithoutOneWayTls() {
 		err := s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.vsWithoutOneWay, "-n", s.ns)
 		s.NoError(err, "can delete vs manifest file")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, vs)
+		s.eventuallyNotInSnapshot(gatewayv1.VirtualServiceGVK, vs.ObjectMeta)
 		err = s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.tlsSecretWithCa)
 		s.NoError(err, "can delete tls secret manifest file")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, tlsSecretWithCa(s.ns))
@@ -210,9 +224,7 @@ func (s *serverTlsTestingSuite) TestOneWayServerTlsFailsWithoutOneWayTls() {
 	err := s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.tlsSecretWithCa)
 	s.NoError(err, "can apply tls secret manifest file")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, tlsSecretWithCa(s.ns))
-	// TODO(jbohanon) remove this sleep by figuring out why the `EventuallyObjectsExist`
-	// is not sufficient to get the VS through validation. Stale snapshots?
-	time.Sleep(time.Second * 5) // 2 seconds consistently worked on local; 2.5x that to prevent flakes
+	s.eventuallyInSnapshot(coreSecretGVK, tlsSecretWithCa(s.ns).ObjectMeta)
 	err = s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.vsWithoutOneWay, "-n", s.ns)
 	s.NoError(err, "can apply vs manifest file")
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, vsWithoutOneWay(s.ns))
@@ -230,6 +242,7 @@ func (s *serverTlsTestingSuite) TestOneWayServerTlsWorksWithOneWayTls() {
 		err := s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.vsWithOneWay, "-n", s.ns)
 		s.NoError(err, "can delete vs manifest file")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, vs)
+		s.eventuallyNotInSnapshot(gatewayv1.VirtualServiceGVK, vs.ObjectMeta)
 		err = s.testInstallation.Actions.Kubectl().Delete(s.ctx, s.tlsSecretWithCa)
 		s.NoError(err, "can delete tls secret manifest file")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, tlsSecretWithCa(s.ns))
@@ -238,6 +251,8 @@ func (s *serverTlsTestingSuite) TestOneWayServerTlsWorksWithOneWayTls() {
 	// ordering here matters if strict validation enabled
 	err := s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.tlsSecretWithCa)
 	s.NoError(err, "can apply tls secret manifest file")
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, tlsSecretWithCa(s.ns))
+	s.eventuallyInSnapshot(coreSecretGVK, tlsSecretWithCa(s.ns).ObjectMeta)
 	err = s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.vsWithOneWay, "-n", s.ns)
 	s.NoError(err, "can apply vs manifest file")
 
@@ -303,4 +318,25 @@ func (s *serverTlsTestingSuite) assertEventualError(hostHeaderValue string, code
 		testdefaults.CurlPodExecOpt,
 		curlOptions(s.ns, hostHeaderValue),
 		code)
+}
+
+func (s *serverTlsTestingSuite) eventuallyInSnapshot(gvk schema.GroupVersionKind, meta metav1.ObjectMeta) {
+	s.testInstallation.Assertions.AssertGlooAdminApi(
+		s.ctx,
+		metav1.ObjectMeta{
+			Name:      kubeutils.GlooDeploymentName,
+			Namespace: s.testInstallation.Metadata.InstallNamespace,
+		},
+		s.testInstallation.Assertions.InputSnapshotContainsElement(gvk, meta),
+	)
+}
+func (s *serverTlsTestingSuite) eventuallyNotInSnapshot(gvk schema.GroupVersionKind, meta metav1.ObjectMeta) {
+	s.testInstallation.Assertions.AssertGlooAdminApi(
+		s.ctx,
+		metav1.ObjectMeta{
+			Name:      kubeutils.GlooDeploymentName,
+			Namespace: s.testInstallation.Metadata.InstallNamespace,
+		},
+		s.testInstallation.Assertions.InputSnapshotDoesNotContainElement(gvk, meta),
+	)
 }
