@@ -18,7 +18,8 @@ import (
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
-// serverTlsTestingSuite is the entire Suite of tests for the "Gloo mtls" cases
+// serverTlsTestingSuite is the entire Suite of tests for gloo gateway proxy serving terminated TLS.
+// The assertions in these tests assume that the warnMissingTlsSecret setting is "false"
 type serverTlsTestingSuite struct {
 	suite.Suite
 
@@ -45,8 +46,8 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 func (s *serverTlsTestingSuite) SetupSuite() {
 	var err error
-	// We are substituting our namespace via os.ExpandEnv in order to place our referenced
-	// resources in our NS.
+	// These functions each substitute our namespace for placeholders in the given manifest
+	// file via os.ExpandEnv in order to place our referenced resources in our NS.
 	s.tlsSecret1, err = tlsSecret1Manifest()
 	s.NoError(err, "can substitute NS in tlsSecret1")
 	s.tlsSecret2, err = tlsSecret2Manifest()
@@ -72,9 +73,9 @@ func (s *serverTlsTestingSuite) TearDownSuite() {
 	s.NoError(err, "can delete Curl setup manifest")
 }
 
-// TestServerTls validates the happy path that a VirtualService referencing an existent TLS secret
+// TestOneVirtualService validates the happy path that a VirtualService referencing an existent TLS secret
 // terminates TLS and responds appropriately.
-func (s *serverTlsTestingSuite) TestServerTls() {
+func (s *serverTlsTestingSuite) TestOneVirtualService() {
 	vs1 := vs1(s.ns)
 	s.T().Cleanup(func() {
 		// ordering here matters if strict validation enabled
@@ -98,9 +99,9 @@ func (s *serverTlsTestingSuite) TestServerTls() {
 	s.assertEventualResponse(vs1.GetName(), expectedHealthyResponse1)
 }
 
-// TestServerTlsTwoVirtualServices validates the happy path that two VirtualServices referencing existent TLS secrets
+// TestTwoVirtualServices validates the happy path that two VirtualServices referencing existent TLS secrets
 // terminate TLS and respond appropriately.
-func (s *serverTlsTestingSuite) TestServerTlsTwoVirtualServices() {
+func (s *serverTlsTestingSuite) TestTwoVirtualServices() {
 	vs1 := vs1(s.ns)
 	vs2 := vs2(s.ns)
 	s.T().Cleanup(func() {
@@ -133,12 +134,12 @@ func (s *serverTlsTestingSuite) TestServerTlsTwoVirtualServices() {
 	s.assertEventualResponse(vs2.GetName(), expectedHealthyResponse2)
 }
 
-// TestServerTlsTwoVirtualServicesOneMissingTlsSecret validates that when we have two VirtualServices referencing TLS
+// TestTwoVirtualServicesOneMissingTlsSecret validates that when we have two VirtualServices referencing TLS
 // secrets, but one secret is missing, the traffic routing defined by the other VirtualService is not affected. In order
 // to test this properly, we require persistProxySpec to be off, validating that both VS are working correctly,
 // then we delete the secret for one of the VS and restart the Gloo pod. This ensures that we are still
 // serving on the other VS.
-func (s *serverTlsTestingSuite) TestServerTlsTwoVirtualServicesOneMissingTlsSecret() {
+func (s *serverTlsTestingSuite) TestTwoVirtualServicesOneMissingTlsSecret() {
 	vs1 := vs1(s.ns)
 	vs2 := vs2(s.ns)
 	s.T().Cleanup(func() {
@@ -208,8 +209,13 @@ func (s *serverTlsTestingSuite) TestOneWayServerTlsFailsWithoutOneWayTls() {
 	// ordering here matters if strict validation enabled
 	err := s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.tlsSecretWithCa)
 	s.NoError(err, "can apply tls secret manifest file")
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, tlsSecretWithCa(s.ns))
+	// TODO(jbohanon) remove this sleep by figuring out why the `EventuallyObjectsExist`
+	// is not sufficient to get the VS through validation. Stale snapshots?
+	time.Sleep(time.Second * 5) // 2 seconds consistently worked on local; 2.5x that to prevent flakes
 	err = s.testInstallation.Actions.Kubectl().Apply(s.ctx, s.vsWithoutOneWay, "-n", s.ns)
 	s.NoError(err, "can apply vs manifest file")
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, vsWithoutOneWay(s.ns))
 
 	s.assertEventualError(vs.GetName(), expectedFailedResponseCodeInvalidVs)
 }
