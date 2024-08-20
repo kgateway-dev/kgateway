@@ -54,10 +54,12 @@ runs:
   - name: Run the kubernetes gateway API conformance tests
     shell: bash
     run: |
-      if [[ ${{ matrix.profile }} == "experimental" ]]; then
-        make conformance-experimental
-      else
+      # Default to the standard profile if none is provided. Otherwise,
+      # assume the profile is experimental.
+      if [[ -z ${{ matrix.profile }} ]]; then
         make conformance
+      else
+        make conformance-experimental
       fi
   - name: Capture debug information when tests fail
     if: ${{ failure() }}
