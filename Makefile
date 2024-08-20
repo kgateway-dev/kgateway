@@ -1186,18 +1186,13 @@ build-test-chart: ## Build the Helm chart and place it in the _test directory
 # Targets for running Kubernetes Gateway API conformance tests
 #----------------------------------------------------------------------------------
 
-# FIXME(tim): Re-evaluate the --version & --contact flags. I think both are fine, but need to validate.
-# TODO(tim): We should have a single Makefile target to drive all of this...
-# Note(tim): Looks like adding the "TLS" profile breaks everything. We obviously don't support the "MESH" profile either.
-# Note(tim): All of the profiles and suites were refactored in the release-1.1 branch. The profiles became more granular
-# 			 among other things like the experimental_conformance_test.go file being removed.
-
 # Pull the conformance test suite from the k8s gateway api repo and copy it into the test dir.
 $(TEST_ASSET_DIR)/conformance/conformance_test.go:
 	mkdir -p $(TEST_ASSET_DIR)/conformance
 	cat $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/conformance_test.go >> $@
 	go fmt $@
 
+# Pull the experimental conformance test suite from the k8s gateway api repo and copy it into the test dir.
 $(TEST_ASSET_DIR)/conformance/experimental_conformance_test.go:
 	mkdir -p $(TEST_ASSET_DIR)/conformance
 	cat $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/experimental_conformance_test.go >> $@
