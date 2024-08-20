@@ -165,6 +165,12 @@ spec:
                           maxAge:
                             type: string
                         type: object
+                      corsPolicyMergeSettings:
+                        properties:
+                          exposeHeaders:
+                            type: string
+                            x-kubernetes-int-or-string: true
+                        type: object
                       csrf:
                         properties:
                           additionalOrigins:

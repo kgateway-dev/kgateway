@@ -123,6 +123,8 @@ var _ = Describe("Translator", func() {
 					//	"Invalid type URL, unknown type: envoy.api.v2.filter.http.RouteTransformations for type Any)"
 					// We do not perform transformation validation as part of our translator tests, so we explicitly disable this
 					DisableTransformationValidation: &wrappers.BoolValue{Value: true},
+					// We set this value as it is defaulted on via helm
+					WarnMissingTlsSecret: &wrappers.BoolValue{Value: true},
 				},
 			},
 		}
@@ -2855,8 +2857,9 @@ var _ = Describe("Translator", func() {
 			}}
 
 			_, errs, _ := translator.Translate(params, proxyClone)
-			Expect(errs.Validate()).To(HaveOccurred())
-			Expect(errs.Validate().Error()).To(ContainSubstring("Listener Error: SSLConfigError. Reason: SSL secret not found: list did not find secret"))
+			resultantErr := errs.ValidateStrict()
+			Expect(resultantErr).To(HaveOccurred())
+			Expect(resultantErr.Error()).To(ContainSubstring("Listener Warning: SSLConfigWarning. Reason: SSL secret not found: list did not find secret"))
 		})
 	})
 

@@ -297,6 +297,19 @@ func (m *ListenerReport) Clone() proto.Message {
 		}
 	}
 
+	if m.GetWarnings() != nil {
+		target.Warnings = make([]*ListenerReport_Warning, len(m.GetWarnings()))
+		for idx, v := range m.GetWarnings() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Warnings[idx] = h.Clone().(*ListenerReport_Warning)
+			} else {
+				target.Warnings[idx] = proto.Clone(v).(*ListenerReport_Warning)
+			}
+
+		}
+	}
+
 	switch m.ListenerTypeReport.(type) {
 
 	case *ListenerReport_HttpListenerReport:
@@ -644,6 +657,21 @@ func (m *ListenerReport_Error) Clone() proto.Message {
 		return target
 	}
 	target = &ListenerReport_Error{}
+
+	target.Type = m.GetType()
+
+	target.Reason = m.GetReason()
+
+	return target
+}
+
+// Clone function
+func (m *ListenerReport_Warning) Clone() proto.Message {
+	var target *ListenerReport_Warning
+	if m == nil {
+		return target
+	}
+	target = &ListenerReport_Warning{}
 
 	target.Type = m.GetType()
 

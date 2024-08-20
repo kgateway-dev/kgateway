@@ -547,6 +547,12 @@ func (m *VirtualHostOptions) Clone() proto.Message {
 		target.ExtProc = proto.Clone(m.GetExtProc()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.RouteSettings)
 	}
 
+	if h, ok := interface{}(m.GetCorsPolicyMergeSettings()).(clone.Cloner); ok {
+		target.CorsPolicyMergeSettings = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_cors.CorsPolicyMergeSettings)
+	} else {
+		target.CorsPolicyMergeSettings = proto.Clone(m.GetCorsPolicyMergeSettings()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_cors.CorsPolicyMergeSettings)
+	}
+
 	switch m.RateLimitEarlyConfigType.(type) {
 
 	case *VirtualHostOptions_RatelimitEarly:

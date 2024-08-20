@@ -40,6 +40,11 @@ type Global struct {
 	ExtraCustomResources *bool                 `json:"extraCustomResources,omitempty" desc:"Add additional custom resources to create, as defined by a helm partial. Defaults to false in open source, and true in enterprise."`
 	AdditionalLabels     map[string]string     `json:"additionalLabels,omitempty" desc:"Additional labels to add to all gloo resources."`
 	PodSecurityStandards *PodSecurityStandards `json:"podSecurityStandards,omitempty" desc:"Configuration related to [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/)."`
+	SecuritySettings     *SecuritySettings     `json:"securitySettings,omitempty" desc:"Global settings for pod and container security contexts"`
+}
+
+type SecuritySettings struct {
+	FloatingUserId *bool `json:"floatingUserId,omitempty" desc:"If true, use 'true' as default value for all instances of floatingUserId. In OSS, has the additional effects of rendering charts as if 'discovery.deployment.enablePodSecurityContext=false' and 'gatewayProxies.gatewayProxy.podTemplate.enablePodSecurityContext=false'. In EE templates  has the additional effects of rendering charts as if 'redis.deployment.enablePodSecurityContext=false', and in the ExtAuth deployment's podSecurityContext, behavior will match the local 'floatingUserId' and fsGroup will not be rendered."`
 }
 
 type PodSecurityStandards struct {
@@ -63,15 +68,17 @@ type Rbac struct {
 
 // Common
 type Image struct {
-	Tag        *string `json:"tag,omitempty"  desc:"The image tag for the container."`
-	Repository *string `json:"repository,omitempty"  desc:"The image repository (name) for the container."`
-	Digest     *string `json:"digest,omitempty"  desc:"The hash digest of the container's image, ie. sha256:12345...."`
-	Registry   *string `json:"registry,omitempty" desc:"The image hostname prefix and registry, such as quay.io/solo-io."`
-	PullPolicy *string `json:"pullPolicy,omitempty"  desc:"The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting"`
-	PullSecret *string `json:"pullSecret,omitempty" desc:"The image pull secret to use for the container, in the same namespace as the container pod."`
-	Variant    *string `json:"variant,omitempty" desc:"Specifies the version of the data-plane containers to deploy. Can take the values 'standard', 'fips', 'distroless', 'fips-distroless'. Defaults to standard. (The 'fips' and 'fips-distroless' variants are an Enterprise-only feature)"`
-	FipsDigest *string `json:"fipsDigest,omitempty"  desc:"[Deprecated] Use 'variant=fips' and 'digest=...' instead. The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true"`
-	Fips       *bool   `json:"fips,omitempty" desc:"[Deprecated] Use 'variant=fips' instead. If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature)"`
+	Tag                  *string `json:"tag,omitempty"  desc:"The image tag for the container."`
+	Repository           *string `json:"repository,omitempty"  desc:"The image repository (name) for the container."`
+	Digest               *string `json:"digest,omitempty"  desc:"The container image's hash digest (e.g. 'sha256:12345...'), consumed when variant=standard."`
+	FipsDigest           *string `json:"fipsDigest,omitempty"  desc:"The container image's hash digest (e.g. 'sha256:12345...'), consumed when variant=fips. If the image does not have a fips variant, this field will contain the digest for the standard image variant."`
+	DistrolessDigest     *string `json:"distrolessDigest,omitempty"  desc:"The container image's hash digest (e.g. 'sha256:12345...'), consumed when variant=distroless. If the image does not have a distroless variant, this field will contain the digest for the standard image variant."`
+	FipsDistrolessDigest *string `json:"fipsDistrolessDigest,omitempty"  desc:"The container image's hash digest (e.g. 'sha256:12345...'), consumed when variant=fips-distroless. If the image does not have a fips-distroless variant, this field will contain either the fips variant's digest (if supported), else the distroless variant's digest (if supported), else the standard variant's digest."`
+	Registry             *string `json:"registry,omitempty" desc:"The image hostname prefix and registry, such as quay.io/solo-io."`
+	PullPolicy           *string `json:"pullPolicy,omitempty"  desc:"The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting"`
+	PullSecret           *string `json:"pullSecret,omitempty" desc:"The image pull secret to use for the container, in the same namespace as the container pod."`
+	Variant              *string `json:"variant,omitempty" desc:"Specifies the variant of the control plane and data plane containers to deploy. Can take the values 'standard', 'fips', 'distroless', 'fips-distroless'. Defaults to standard. (The 'fips' and 'fips-distroless' variants are an Enterprise-only feature)"`
+	Fips                 *bool   `json:"fips,omitempty" desc:"[Deprecated] Use 'variant=fips' instead. If true, deploys a version of the control plane and data plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature)"`
 }
 
 type ResourceAllocation struct {
@@ -324,6 +331,7 @@ type GatewayParameters struct {
 	Istio           *Istio                     `json:"istio,omitempty" desc:"Configs used to manage Istio integration."`
 	Stats           *GatewayParamsStatsConfig  `json:"stats,omitempty" desc:"Config used to manage the stats endpoints exposed on the deployed proxies"`
 	AIExtension     *GatewayParamsAIExtension  `json:"aiExtension,omitempty" desc:"Config used to manage the Gloo Gateway AI extension."`
+	FloatingUserId  *bool                      `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container. Default is false."`
 	// TODO(npolshak): Add support for GlooMtls
 }
 
@@ -452,6 +460,7 @@ type GatewayValidation struct {
 	Enabled                          *bool    `json:"enabled,omitempty" desc:"enable Gloo Edge API Gateway validation hook (default true)"`
 	AlwaysAcceptResources            *bool    `json:"alwaysAcceptResources,omitempty" desc:"unless this is set this to false in order to ensure validation webhook rejects invalid resources. by default, validation webhook will only log and report metrics for invalid resource admission without rejecting them outright."`
 	AllowWarnings                    *bool    `json:"allowWarnings,omitempty" desc:"set this to false in order to ensure validation webhook rejects resources that would have warning status or rejected status, rather than just rejected."`
+	WarnMissingTlsSecret             *bool    `json:"warnMissingTlsSecret,omitempty" desc:"set this to false in order to treat missing tls secret references as errors, causing validation to fail."`
 	ServerEnabled                    *bool    `json:"serverEnabled,omitempty" desc:"By providing the validation field (parent of this object) the user is implicitly opting into validation. This field allows the user to opt out of the validation server, while still configuring pre-existing fields such as warn_route_short_circuiting and disable_transformation_validation."`
 	DisableTransformationValidation  *bool    `json:"disableTransformationValidation,omitempty" desc:"set this to true to disable transformation validation. This may bring signifigant performance benefits if using many transformations, at the cost of possibly incorrect transformations being sent to Envoy. When using this value make sure to pre-validate transformations."`
 	WarnRouteShortCircuiting         *bool    `json:"warnRouteShortCircuiting,omitempty" desc:"Write a warning to route resources if validation produced a route ordering warning (defaults to false). By setting to true, this means that Gloo Edge will start assigning warnings to resources that would result in route short-circuiting within a virtual host."`
@@ -572,6 +581,7 @@ type GatewayProxy struct {
 	IstioMetaMeshId                *string                          `json:"istioMetaMeshId,omitempty" desc:"ISTIO_META_MESH_ID Environment Variable. Defaults to \"cluster.local\""`
 	IstioMetaClusterId             *string                          `json:"istioMetaClusterId,omitempty" desc:"ISTIO_META_CLUSTER_ID Environment Variable. Defaults to \"Kubernetes\""`
 	IstioDiscoveryAddress          *string                          `json:"istioDiscoveryAddress,omitempty" desc:"discoveryAddress field of the PROXY_CONFIG environment variable. Defaults to \"istiod.istio-system.svc:15012\""`
+	IstioSpiffeCertProviderAddress *string                          `json:"istioSpiffeCertProviderAddress,omitempty" desc:"Address of the spiffe certificate provider. Defaults to istioDiscoveryAddress"`
 	EnvoyLogLevel                  *string                          `json:"envoyLogLevel,omitempty" desc:"Level at which the pod should log. Options include \"trace\", \"info\", \"debug\", \"warn\", \"error\", \"critical\" and \"off\". Default level is info"`
 	EnvoyStatsConfig               map[string]interface{}           `json:"envoyStatsConfig,omitempty" desc:"Envoy statistics configuration, such as tagging. For more info, see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/metrics/v3/stats.proto#config-metrics-v3-statsconfig"`
 	XdsServiceAddress              *string                          `json:"xdsServiceAddress,omitempty" desc:"The k8s service name for the xds server. Defaults to gloo."`
@@ -634,6 +644,12 @@ type DaemonSetSpec struct {
 	HostNetwork *bool `json:"hostNetwork,omitempty"`
 }
 
+// GatewayProxyPodTemplate contains the Helm API available to configure the PodTemplate on the gateway-proxy Deployment
+//
+//	Note to Developers: The Helm API for the PodTemplate is split between the values defined in this struct, and the values
+//		in the PodSpec, which is available for a GatewayProxy under `gatewayProxy.kind.Deployment`.
+//		The side effect of this, is that there may be Helm values which may live on both structs, but only one is used by our templates.
+//		Always refer back to the Helm templates to see which is used.
 type GatewayProxyPodTemplate struct {
 	HttpPort                      *int                  `json:"httpPort,omitempty" desc:"HTTP port for the gateway service target port."`
 	HttpsPort                     *int                  `json:"httpsPort,omitempty" desc:"HTTPS port for the gateway service target port."`

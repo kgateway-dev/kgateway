@@ -40,6 +40,20 @@ func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper
 	installation.Metadata.HelmRepoIndexFileName = testHelper.HelmRepoIndexFileName
 	installation.Metadata.ChartUri = filepath.Join(testutils.GitRootDirectory(), installation.Metadata.TestAssetDir, installation.Metadata.HelmChartName+"-"+installation.Metadata.ChartVersion+".tgz")
 
+	// validate that the glooGatewayContext has a valid manifest
+	if installation.Metadata.ValuesManifestFile == "" {
+		panic("ValuesManifestFile must be provided in glooGatewayContext")
+	}
+
+	values, err := testutils.BuildHelmValues(testutils.HelmValues{ValuesFile: installation.Metadata.ValuesManifestFile})
+	if err != nil {
+		panic(fmt.Sprintf("failed to build helm values: %v", err))
+	}
+	err = testutils.ValidateHelmValues(values)
+	if err != nil {
+		panic(fmt.Sprintf("failed to validate helm values: %v", err))
+	}
+
 	return testHelper
 }
 
@@ -80,7 +94,7 @@ func CreateTestInstallationForCluster(
 		// ResourceClients are only available _after_ installing Gloo Gateway
 		ResourceClients: nil,
 
-		// Create an operations provider, and point it to the running installation
+		// Create an actions provider, and point it to the running installation
 		Actions: actions.NewActionsProvider().
 			WithClusterContext(clusterContext).
 			WithGlooGatewayContext(glooGatewayContext),

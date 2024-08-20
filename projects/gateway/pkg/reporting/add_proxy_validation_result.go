@@ -116,6 +116,7 @@ func AddProxyValidationResult(resourceReports reporter.ResourceReports, proxy *g
 
 func addListenerResult(resourceReports reporter.ResourceReports, listener *gloov1.Listener, listenerReport *validation.ListenerReport) error {
 	listenerErrs := getListenerLevelErrors(listenerReport)
+	listenerWarnings := getListenerLevelWarnings(listenerReport)
 
 	return translator.ForEachSource(listener, func(src translator.SourceRef) error {
 		srcResource, _ := resourceReports.Find(src.ResourceKind, &core.ResourceRef{Name: src.Name, Namespace: src.Namespace})
@@ -123,6 +124,7 @@ func addListenerResult(resourceReports reporter.ResourceReports, listener *gloov
 			return missingReportForSourceErr
 		}
 		resourceReports.AddErrors(srcResource, listenerErrs...)
+		resourceReports.AddWarnings(srcResource, listenerWarnings...)
 		return nil
 	})
 }
@@ -179,6 +181,14 @@ func getListenerLevelErrors(listenerReport *validation.ListenerReport) []error {
 	}
 
 	return listenerErrs
+}
+func getListenerLevelWarnings(listenerReport *validation.ListenerReport) []string {
+	listenerWarnings := validationutils.GetListenerWarning(listenerReport)
+
+	// TODO(jbohanon) implement warnings on various listener types and account for them here
+	// similarly to the errors aggregation func above.
+
+	return listenerWarnings
 }
 
 // get errors that can be caused by virtual services

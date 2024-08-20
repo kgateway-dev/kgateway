@@ -130,7 +130,6 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	virtualHost *v1.VirtualHost,
 	vhostReport *validationapi.VirtualHostReport,
 ) *envoy_config_route_v3.VirtualHost {
-
 	sanitizedName := utils.SanitizeForEnvoy(params.Ctx, virtualHost.GetName(), "virtual host")
 	if sanitizedName != virtualHost.GetName() {
 		virtualHost = virtualHost.Clone().(*v1.VirtualHost)
@@ -138,6 +137,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	}
 	var envoyRoutes []*envoy_config_route_v3.Route
 	for i, route := range virtualHost.GetRoutes() {
+
 		routeParams := plugins.RouteParams{
 			VirtualHostParams: params,
 			VirtualHost:       virtualHost,

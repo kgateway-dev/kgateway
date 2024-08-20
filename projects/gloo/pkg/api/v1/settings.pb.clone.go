@@ -1286,6 +1286,12 @@ func (m *GatewayOptions_ValidationOptions) Clone() proto.Message {
 		target.ServerEnabled = proto.Clone(m.GetServerEnabled()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
+	if h, ok := interface{}(m.GetWarnMissingTlsSecret()).(clone.Cloner); ok {
+		target.WarnMissingTlsSecret = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.WarnMissingTlsSecret = proto.Clone(m.GetWarnMissingTlsSecret()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	return target
 }
 

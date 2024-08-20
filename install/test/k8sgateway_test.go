@@ -6,11 +6,13 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/install/utils/kuberesource"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	"github.com/solo-io/gloo/test/gomega/matchers"
+	glootestutils "github.com/solo-io/gloo/test/testutils"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -22,7 +24,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 			testManifest TestManifest
 			valuesArgs   []string
 		)
-		prepareHelmManifest := func(namespace string, values helmValues) {
+		prepareHelmManifest := func(namespace string, values glootestutils.HelmValues) {
 			tm, err := rendererTestCase.renderer.RenderManifest(namespace, values)
 			ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
 			testManifest = tm
@@ -33,7 +35,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 		})
 
 		JustBeforeEach(func() {
-			prepareHelmManifest(namespace, helmValues{valuesArgs: valuesArgs})
+			prepareHelmManifest(namespace, glootestutils.HelmValues{ValuesArgs: valuesArgs})
 		})
 		When("kube gateway integration is enabled", func() {
 			BeforeEach(func() {
@@ -121,6 +123,8 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 				Expect(gwpKube.GetAiExtension().GetSecurityContext()).To(BeNil())
 				Expect(gwpKube.GetAiExtension().GetResources()).To(BeNil())
 				Expect(gwpKube.GetAiExtension().GetPorts()).To(BeEmpty())
+
+				Expect(*gwpKube.GetFloatingUserId()).To(BeFalse())
 			})
 
 			When("overrides are set", func() {
@@ -322,6 +326,37 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 
 					Expect(*gwpKube.GetService().GetType()).To(Equal(corev1.ServiceTypeClusterIP))
 				})
+			})
+
+			When("floatingUserId is set", func() {
+
+				DescribeTable("sets the floatingUserId field", func(expectedValue bool, extraValueArgs ...string) {
+					valuesArgs = append(valuesArgs, extraValueArgs...)
+					// Updated values so need to re-render
+					prepareHelmManifest(namespace, glootestutils.HelmValues{ValuesArgs: valuesArgs})
+
+					gwpUnstructured := testManifest.ExpectCustomResource("GatewayParameters", namespace, wellknown.DefaultGatewayParametersName)
+					obj, err := kuberesource.ConvertUnstructured(gwpUnstructured)
+					Expect(err).NotTo(HaveOccurred())
+
+					gwp, ok := obj.(*v1alpha1.GatewayParameters)
+					Expect(ok).To(BeTrue())
+
+					gwpKube := gwp.Spec.Kube
+					Expect(gwpKube).ToNot(BeNil())
+
+					Expect(*gwpKube.GetFloatingUserId()).To(Equal(expectedValue))
+				},
+					Entry("locally true, globally true", true, "kubeGateway.gatewayParameters.glooGateway.floatingUserId=true", "global.securitySettings.floatingUserId=true"),
+					Entry("locally true, globally false", false, "kubeGateway.gatewayParameters.glooGateway.floatingUserId=true", "global.securitySettings.floatingUserId=false"),
+					Entry("locally true, globally undefined", true, "kubeGateway.gatewayParameters.glooGateway.floatingUserId=true"),
+					Entry("locally false, globally true", true, "kubeGateway.gatewayParameters.glooGateway.floatingUserId=false", "global.securitySettings.floatingUserId=true"),
+					Entry("locally false, globally false", false, "kubeGateway.gatewayParameters.glooGateway.floatingUserId=false", "global.securitySettings.floatingUserId=false"),
+					Entry("locally false, globally undefined", false, "kubeGateway.gatewayParameters.glooGateway.floatingUserId=false"),
+					Entry("locally undefined, globally true", true, "global.securitySettings.floatingUserId=true"),
+					Entry("locally undefined, globally false", false, "global.securitySettings.floatingUserId=false"),
+					Entry("locally undefined, globally undefined", false),
+				)
 			})
 		})
 

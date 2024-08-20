@@ -73,7 +73,7 @@ type TestConfig struct {
 	InstallNamespace string
 	// Name of the glooctl executable
 	GlooctlExecName string
-	// If provided, the licence key to install the enterprise version of Gloo
+	// If provided, the license key to install the enterprise version of Gloo
 	LicenseKey string
 	// Determines whether the test server pod gets deployed
 	DeployTestServer bool

@@ -132,6 +132,7 @@ gateway:
     secretName: gateway-validation-certs
     alwaysAcceptResources: true
     allowWarnings: true
+    warnMissingTlsSecret: true
     serverEnabled: true
     disableTransformationValidation: false
     warnRouteShortCircuiting: false
@@ -186,6 +187,7 @@ gatewayProxies:
       enabled: false
       port: 15443
       secretName: failover-downstream
+    istioDiscoveryAddress: istiod.istio-system.svc:15012
     kind:
       deployment:
         replicas: 1
@@ -316,3 +318,5 @@ global:
   extauthCustomYaml: true
   # additionalLabels adds a label to all object metadata
   additionalLabels: {}
+  # securitySettings defines global security settings such as `floatingUserId`
+  securitySettings: {}

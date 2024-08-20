@@ -29,7 +29,8 @@ EOF
 echo "Wrote to $CHANGELOG_FILE"
 fi
 
-# TODO this is a quick hack to avoid args parsing. If this script grows in complexity, parsing args will be more appropriate than this check.
+# TODO this is a quick hack to avoid args parsing. If this script grows in complexity,
+# parsing args will be more appropriate than this check.
 if [[ $# > 0 ]] && [[ "$1" == "edit" ]]; then
     echo "Editing..."
     "$EDITOR" "$CHANGELOG_FILE"

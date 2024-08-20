@@ -81,9 +81,3 @@ settings:
 # Ref: https://docs.solo.io/gloo-edge/latest/operations/production_deployment/#discovery
 discovery:
   enabled: false
-
-# Setting `settings.disableKubernetesDestinations` && `global.glooRbac.namespaced` leads to panic in gloo
-# Ref: https://github.com/solo-io/gloo/issues/8801
-global:
-  glooRbac:
-    namespaced: false

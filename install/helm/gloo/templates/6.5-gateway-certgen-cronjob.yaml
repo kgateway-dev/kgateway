@@ -48,7 +48,7 @@ spec:
           {{- if not .Values.gateway.certGenJob.floatingUserId }}
             {{- $_ := set $securityDefaults "runAsUser" .Values.gateway.certGenJob.runAsUser }}
           {{- end }}
-          {{- include "gloo.containerSecurityContext" (dict "values" .Values.gateway.certGenJob.containerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 14) }}
+          {{- include "gloo.containerSecurityContext" (dict "values" .Values.gateway.certGenJob.containerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 14 "globalSec" .Values.global.securitySettings) }}
               {{- with .Values.gateway.certGenJob.resources }}
               resources: {{ toYaml . | nindent 16 }}
               {{- end }}
