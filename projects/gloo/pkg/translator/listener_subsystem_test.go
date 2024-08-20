@@ -9,6 +9,7 @@ import (
 	envoy_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -59,6 +60,8 @@ var _ = Describe("Listener Subsystem", func() {
 
 		ctrl          *gomock.Controller
 		sslTranslator *mock_utils.MockSslConfigTranslator
+
+		settings *v1.Settings
 	)
 
 	BeforeEach(func() {
@@ -67,6 +70,15 @@ var _ = Describe("Listener Subsystem", func() {
 		sslTranslator = mock_utils.NewMockSslConfigTranslator(ctrl)
 
 		ctx, cancel = context.WithCancel(context.Background())
+
+		settings = &v1.Settings{
+			Gateway: &v1.GatewayOptions{
+				Validation: &v1.GatewayOptions_ValidationOptions{
+					// set this as it is the default setting initialized by helm
+					WarnMissingTlsSecret: &wrapperspb.BoolValue{Value: true},
+				},
+			},
+		}
 
 		// Create a pluginRegistry with a minimal number of plugins
 		// This test is not concerned with the functionality of individual plugins
@@ -81,11 +93,12 @@ var _ = Describe("Listener Subsystem", func() {
 		for _, p := range pluginRegistry.GetPlugins() {
 			p.Init(plugins.InitParams{
 				Ctx:      ctx,
-				Settings: &v1.Settings{},
+				Settings: settings,
 			})
 		}
 
-		translatorFactory = translator.NewListenerSubsystemTranslatorFactory(pluginRegistry, sslutils.NewSslConfigTranslator())
+		translatorFactory = translator.NewListenerSubsystemTranslatorFactory(pluginRegistry, sslutils.NewSslConfigTranslator(), settings)
+
 	})
 
 	AfterEach(func() {
@@ -460,8 +473,19 @@ var _ = Describe("Listener Subsystem", func() {
 				listenerReport)
 
 			params := plugins.Params{
-				Ctx:      ctx,
-				Snapshot: &gloov1snap.ApiSnapshot{},
+				Ctx: ctx,
+				Snapshot: &gloov1snap.ApiSnapshot{
+					Secrets: []*v1.Secret{{
+						Kind: &v1.Secret_Tls{
+							// This is an invalid secret that will generate a listener error when referenced.
+							Tls: &v1.TlsSecret{},
+						},
+						Metadata: &core.Metadata{
+							Name:      "exists-but-invalid",
+							Namespace: defaults.GlooSystem,
+						},
+					}},
+				},
 			}
 			_ = listenerTranslator.ComputeListener(params)
 			_ = routeConfigurationTranslator.ComputeRouteConfiguration(params)
@@ -471,6 +495,43 @@ var _ = Describe("Listener Subsystem", func() {
 		},
 		Entry(
 			"ListenerError",
+			&v1.AggregateListener{
+
+				HttpResources: &v1.AggregateListener_HttpResources{
+					HttpOptions: map[string]*v1.HttpListenerOptions{
+						"http-options-ref": {
+							HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{},
+						},
+					},
+					VirtualHosts: map[string]*v1.VirtualHost{
+						"vhost-ref": {
+							Name: "virtual-host",
+						},
+					},
+				},
+				HttpFilterChains: []*v1.AggregateListener_HttpFilterChain{{
+					Matcher: &v1.Matcher{
+						SslConfig: &ssl.SslConfig{
+							SslSecrets: &ssl.SslConfig_SecretRef{
+								SecretRef: &core.ResourceRef{
+									Name:      "exists-but-invalid",
+									Namespace: defaults.GlooSystem,
+								},
+							},
+						},
+					},
+					HttpOptionsRef:  "http-options-ref",
+					VirtualHostRefs: []string{"vhost-ref"},
+				}},
+			},
+			func(proxyReport *validation.ProxyReport) {
+				proxyErr := gloovalidation.GetProxyError(proxyReport)
+				Expect(proxyErr).To(HaveOccurred())
+				Expect(proxyErr.Error()).To(ContainSubstring(validation.ListenerReport_Error_SSLConfigError.String()))
+			},
+		),
+		Entry(
+			"ListenerWarning",
 			&v1.AggregateListener{
 				HttpResources: &v1.AggregateListener_HttpResources{
 					HttpOptions: map[string]*v1.HttpListenerOptions{
@@ -500,9 +561,8 @@ var _ = Describe("Listener Subsystem", func() {
 				}},
 			},
 			func(proxyReport *validation.ProxyReport) {
-				proxyErr := gloovalidation.GetProxyError(proxyReport)
-				Expect(proxyErr).To(HaveOccurred())
-				Expect(proxyErr.Error()).To(ContainSubstring(validation.ListenerReport_Error_SSLConfigError.String()))
+				proxyErr := gloovalidation.GetProxyWarning(proxyReport)
+				Expect(proxyErr).To(ContainElement(ContainSubstring(validation.ListenerReport_Warning_SSLConfigWarning.String())))
 			},
 		),
 		Entry(

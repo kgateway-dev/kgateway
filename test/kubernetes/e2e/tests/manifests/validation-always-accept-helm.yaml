@@ -20,6 +20,9 @@ gateway:
   validation:
     allowWarnings: true
     alwaysAcceptResources: true
+    # this is needed to run the ServerTls tests which verify that with this setting, we 
+    # will not bring down an entire https gateway from a missing tls secret
+    warnMissingTlsSecret: true
 kubeGateway:
   # This is the field that enables the K8s Gateway Integration in Gloo Gateway
   enabled: true

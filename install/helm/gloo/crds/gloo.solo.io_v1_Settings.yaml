@@ -546,6 +546,9 @@ spec:
                         type: string
                       validationWebhookTlsKey:
                         type: string
+                      warnMissingTlsSecret:
+                        nullable: true
+                        type: boolean
                       warnRouteShortCircuiting:
                         nullable: true
                         type: boolean

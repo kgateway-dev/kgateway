@@ -20,7 +20,7 @@ import (
 // installation where validation has disableTransformationValidation=true
 func TestTransformationValidationDisabled(t *testing.T) {
 	ctx := context.Background()
-	installNs, overrodeNs := envutils.LookupOrDefault(testutils.InstallNamespace, "disable-transformation-validation-test")
+	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "disable-transformation-validation-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
@@ -32,14 +32,14 @@ func TestTransformationValidationDisabled(t *testing.T) {
 	testHelper := e2e.MustTestHelper(ctx, testInstallation)
 
 	// Set the env to the install namespace if it is not already set
-	if os.Getenv(testutils.InstallNamespace) == "" {
+	if !nsEnvPredefined {
 		os.Setenv(testutils.InstallNamespace, installNs)
 	}
 
 	// We register the cleanup function _before_ we actually perform the installation.
 	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
 	t.Cleanup(func() {
-		if overrodeNs {
+		if !nsEnvPredefined {
 			os.Unsetenv(testutils.InstallNamespace)
 		}
 		if t.Failed() {

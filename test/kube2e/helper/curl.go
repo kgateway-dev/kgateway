@@ -24,6 +24,16 @@ import (
 	"github.com/solo-io/go-utils/log"
 )
 
+const (
+	defaultCurlImage = "curlimages/curl:7.83.1"
+	CurlName         = "curl"
+	CurlPort         = 3000
+)
+
+func NewCurl(namespace string) (TestContainer, error) {
+	return newTestContainer(namespace, defaultCurlImage, CurlName, CurlPort, false, []string{"tail", "-f", "/dev/null"})
+}
+
 type CurlOpts struct {
 	Protocol          string
 	Path              string
@@ -94,7 +104,7 @@ func (t *testContainer) CurlEventuallyShouldRespond(opts CurlOpts, expectedRespo
 	cli := kubectl.NewCli()
 
 	EventuallyWithOffset(ginkgoOffset+1, func(g Gomega) {
-		curlResp, err := cli.CurlFromPod(context.Background(), kubectl.PodExecOptions{Name: t.echoName, Namespace: t.namespace, Container: t.echoName}, t.buildCurlOptions(opts)...)
+		curlResp, err := cli.CurlFromPod(context.Background(), kubectl.PodExecOptions{Name: t.podName, Namespace: t.namespace, Container: t.podName}, t.buildCurlOptions(opts)...)
 		if err != nil {
 			// trigger an early exit if the pod has been deleted.
 			if strings.Contains(err.Error(), `pods "testserver" not found`) {
@@ -208,11 +218,11 @@ func (t *testContainer) buildCurlOptions(opts CurlOpts) []curl.Option {
 		appendOption(curl.WithScheme(opts.Protocol))
 	}
 
-	service := opts.Service
-	if service == "" {
-		service = "test-ingress"
+	host := opts.Service
+	if host == "" {
+		host = "test-ingress"
 	}
-	appendOption(curl.WithHost(service))
+	appendOption(curl.WithHost(host))
 
 	if opts.SelfSigned {
 		appendOption(curl.IgnoreServerCert())
