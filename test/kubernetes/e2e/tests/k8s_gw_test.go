@@ -17,7 +17,7 @@ import (
 )
 
 // TestK8sGateway is the function which executes a series of tests against a given installation
-func TestK8sGateway(t *testing.T) {
+func TestK8sGatewayA(t *testing.T) {
 	ctx := context.Background()
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "k8s-gw-test")
 	testInstallation := e2e.CreateTestInstallation(
