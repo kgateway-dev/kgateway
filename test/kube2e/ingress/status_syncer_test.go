@@ -480,10 +480,12 @@ var _ = Describe("StatusSyncer", func() {
 				return err
 			}, time.Second*10).ShouldNot(HaveOccurred())
 
-			if len(kubeSvc.Status.LoadBalancer.Ingress) == 0 {
-				// kubernetes does set ingress lb, set service status explicitly instead
-				kubeSvc, err = kubeSvcClient.UpdateStatus(ctx, &kubeSvcDefinition, metav1.UpdateOptions{})
-				Expect(err).NotTo(HaveOccurred())
+			if kubeSvc.Spec.Type == kubev1.ServiceTypeLoadBalancer {
+				if len(kubeSvc.Status.LoadBalancer.Ingress) == 0 {
+					// kubernetes does set ingress lb, set service status explicitly instead
+					kubeSvc, err = kubeSvcClient.UpdateStatus(ctx, &kubeSvcDefinition, metav1.UpdateOptions{})
+					Expect(err).NotTo(HaveOccurred())
+				}
 			}
 
 			// The only service that we have configured should be rejected
