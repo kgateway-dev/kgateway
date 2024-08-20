@@ -20,7 +20,7 @@ import (
 // the k8s Gateway controller is disabled
 func TestGlooGatewayEdgeGateway(t *testing.T) {
 	ctx := context.Background()
-	installNs, overrodeNs := envutils.LookupOrDefault(testutils.InstallNamespace, "gloo-gateway-edge-test")
+	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "gloo-gateway-edge-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
@@ -31,14 +31,14 @@ func TestGlooGatewayEdgeGateway(t *testing.T) {
 
 	testHelper := e2e.MustTestHelper(ctx, testInstallation)
 	// Set the env to the install namespace if it is not already set
-	if os.Getenv(testutils.InstallNamespace) == "" {
+	if !nsEnvPredefined {
 		os.Setenv(testutils.InstallNamespace, installNs)
 	}
 
 	// We register the cleanup function _before_ we actually perform the installation.
 	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
 	t.Cleanup(func() {
-		if overrodeNs {
+		if !nsEnvPredefined {
 			os.Unsetenv(testutils.InstallNamespace)
 		}
 		if t.Failed() {
