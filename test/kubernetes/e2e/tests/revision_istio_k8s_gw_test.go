@@ -20,7 +20,7 @@ import (
 // k8s gateway enabled and Istio installed with revisions
 func TestK8sGatewayIstioRevision(t *testing.T) {
 	ctx := context.Background()
-	installNs, overrodeNs := envutils.LookupOrDefault(testutils.InstallNamespace, "istio-rev-k8s-gw-test")
+	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "istio-rev-k8s-gw-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
@@ -36,14 +36,14 @@ func TestK8sGatewayIstioRevision(t *testing.T) {
 	}
 
 	// Set the env to the install namespace if it is not already set
-	if os.Getenv(testutils.InstallNamespace) == "" {
+	if !nsEnvPredefined {
 		os.Setenv(testutils.InstallNamespace, installNs)
 	}
 
 	// We register the cleanup function _before_ we actually perform the installation.
 	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
 	t.Cleanup(func() {
-		if overrodeNs {
+		if !nsEnvPredefined {
 			os.Unsetenv(testutils.InstallNamespace)
 		}
 		if t.Failed() {

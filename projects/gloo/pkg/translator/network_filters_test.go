@@ -53,7 +53,7 @@ var _ = Describe("Router filter test", func() {
 				})
 			}
 
-			translatorFactory := translator.NewListenerSubsystemTranslatorFactory(pluginRegistry, sslutils.NewSslConfigTranslator())
+			translatorFactory := translator.NewListenerSubsystemTranslatorFactory(pluginRegistry, sslutils.NewSslConfigTranslator(), &v1.Settings{})
 			listener := &v1.Listener{
 				Name:        "aggregate-listener",
 				BindAddress: gatewaydefaults.GatewayBindAddress,

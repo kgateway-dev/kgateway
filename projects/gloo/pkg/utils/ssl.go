@@ -31,8 +31,11 @@ var (
 		return eris.Errorf("ocsp staple policy %v not a valid policy", p)
 	}
 
-	SslSecretNotFoundError = func(err error) error {
-		return eris.Wrapf(err, "SSL secret not found")
+	// SslSecretNotFoundError is an exported error that wraps errors produced in validation
+	// indicating a missing secret reference. This can be compared against using errors.Is.
+	SslSecretNotFoundError = eris.New("SSL secret not found")
+	sslSecretNotFoundError = func(err error) error {
+		return eris.Wrapf(err, SslSecretNotFoundError.Error())
 	}
 
 	NotTlsSecretError = func(ref *core.ResourceRef) error {
@@ -413,7 +416,7 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string, string, []byte, error) {
 	secret, err := secrets.Find(ref.Strings())
 	if err != nil {
-		return "", "", "", nil, SslSecretNotFoundError(err)
+		return "", "", "", nil, sslSecretNotFoundError(err)
 	}
 
 	sslSecret, ok := secret.GetKind().(*v1.Secret_Tls)
