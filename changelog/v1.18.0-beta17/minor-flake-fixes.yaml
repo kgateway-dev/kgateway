@@ -7,3 +7,7 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/9785
     description: >-
       Add check for curl pod in vhost opts e2e tests.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/9788
+    description: >-
+      Fix helm e2e test parsing when image variant is not set.
