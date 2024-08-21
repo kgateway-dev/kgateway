@@ -1,4 +1,4 @@
-## Contributing to Gloo
+# Contributing to Gloo
 
 Excited about Gloo and want to help make it better?
 
@@ -15,14 +15,12 @@ Here are some of the ways you can contribute:
 * [Big pull requests](#big-prs)
 * [Code review guidelines](#code-review-guidelines)
 
-
-### Filing issues
+## Filing issues
 
 If you encounter a bug, please file an issue on GitHub.
 If an issue you have is already reported, please add additional information or add a 👍 reaction to indicate your agreement.
 
-
-### Improving the documentation
+## Improving the documentation
 
 The docs for Gloo are built from the contents found in the [`docs/content`](/docs/content) directory of this repository.
 
@@ -30,7 +28,7 @@ Improving the documentation, adding examples or use cases can be the easiest way
 
 For more detailed guidance on contributing to the documentation, check out the guide on the [docs website](https://docs.solo.io/gloo-edge/latest/contributing).
 
-### Setting up the development environment
+## Setting up the development environment
 
 Instructions for setting the development environment can be found in the [developer guide](https://docs.solo.io/gloo-edge/latest/guides/dev/setting-up-dev-environment/).
 
@@ -45,12 +43,12 @@ Useful make commands:
 | make clean build-test-assets -B TAGGED_VERSION=v(version) | Builds a zipped helm chart for gloo that is configured to use the specified gloo version. This version must be a valid image in quay. This can include non-standard versions used for testing. |
 | make install-go-tools                                     | Updates the go dependencies |
 
-### Small bug fixes
+## Small bug fixes
 
 If your bug fix is small (around 20 lines of code) just open a pull request. We will try to merge it as soon as possible,
 just make sure that you include a test that verifies the bug you are fixing.
 
-### Big PRs
+## Big PRs
 
 This includes:
 
@@ -66,7 +64,7 @@ For significant changes to the repository, it’s important to settle on a desig
 5. **Review.** At least one Solo team member should sign off on the change before it’s merged. Look at the “code review” section below to learn about what we're looking for.
 6. **A Solo team member will merge and release!**
 
-### Code review guidelines
+## Code review guidelines
 
 It’s important that every piece of code in Gloo is reviewed by at least one Solo team member familiar with that codebase.
 
@@ -75,7 +73,7 @@ It’s important that every piece of code in Gloo is reviewed by at least one So
 3. **Testing** Please write tests for your changes. Bias towards fast / unit testing.
 4. **Comments** The code reviewer may leave comments to discuss changes. Minor preferences are often called out with `nit`.
 
-### Testing with coverage:
+## Testing with coverage:
 
 To see coverage, run your tests in the package like so
 
