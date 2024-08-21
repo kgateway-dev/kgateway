@@ -1,0 +1,53 @@
+name: Run Conformance Tests
+
+on:
+  # TODO: Trigger on release events too.
+  workflow_dispatch:
+    inputs:
+      image-variant:
+        description: "The image variant to use."
+        required: true
+        type: choice
+        options:
+          - standard
+          - distroless
+      profile:
+        description: "The conformance profile to run."
+        required: true
+        type: choice
+        options:
+          - standard
+          - experimental
+      version:
+        description: "Optional: Specify an existing Gloo Gateway release tag to deploy and test (e.g., 1.17.3). Leave empty to use the default branch."
+        required: false
+        type: string
+
+jobs:
+  run-conformance-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # TODO(tim): Avoid hardcoding versions here. It's a bit tricky based on
+        # how this was setup and there's a limited # of dispatch inputs that GH
+        # supports. We can revisit this later.
+        kube-version:
+        - node: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245'
+          kubectl: 'v1.29.2'
+          kind: 'v0.20.0'
+          helm: 'v3.14.4'
+        image-variant:
+          - ${{ inputs.image-variant }}
+        profile:
+          - ${{ inputs.profile }}
+        version:
+          - ${{ inputs.version }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Run Conformance Tests
+        uses: ./.github/workflows/composite-actions/kube-gateway-api-conformance-tests
+
+      # TODO(tim): Add support for downloading the test results and creating
+      # a pull request whenever a new release > 1.17+ is cut.
