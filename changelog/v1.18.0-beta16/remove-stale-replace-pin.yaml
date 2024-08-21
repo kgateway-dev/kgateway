@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Remove the stale github.com/Sirupsen/logrus replace directive from go.mod.
+      This was previously needed way back in time when the original logrus repo
+      was renamed. See https://github.com/sirupsen/logrus/issues/570 for more
+      details.
