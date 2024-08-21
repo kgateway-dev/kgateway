@@ -167,6 +167,7 @@ install-go-tools: mod-download ## Download and install Go dependencies
 	go install github.com/cratonica/2goarray
 	go install github.com/golang/mock/mockgen
 	go install github.com/saiskee/gettercheck
+	go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
 	# This version must stay in sync with the version used in CI: .github/workflows/static-analysis.yaml
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(LINTER_VERSION)
 	go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@v0.3.16
@@ -1202,16 +1203,16 @@ CONFORMANCE_ARGS := -gateway-class=gloo-gateway -supported-features=Gateway,Refe
 
 .PHONY: conformance ## Run the conformance test suite
 conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go
-	go test -ldflags=$(LDFLAGS) -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS)
+	go test -ldflags=$(LDFLAGS) -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS)
 
 # Run only the specified conformance test. The name must correspond to the ShortName of one of the k8s gateway api
 # conformance tests.
 conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
-	go test -ldflags=$(LDFLAGS) -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS) \
+	go test -ldflags=$(LDFLAGS) -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS) \
 	-run-test=$*
 
 .PHONY: conformance-experimental ## Run the extended conformance test suite
-conformance-experimental: CONFORMANCE_ARGS += -conformance-profiles=HTTP -report-output=$(TEST_ASSET_DIR)/conformance/report.yaml -organization=solo.io -project=gloo -version=$(VERSION) -url=github.com/solo-io/gloo -contact=github.com/solo-io/gloo/issues/new/choose
+conformance-experimental: CONFORMANCE_ARGS += -conformance-profiles=HTTP -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSION)-report.yaml -organization=solo.io -project=gloo -version=$(VERSION) -url=github.com/solo-io/gloo -contact=github.com/solo-io/gloo/issues/new/choose
 conformance-experimental: $(TEST_ASSET_DIR)/conformance/conformance_test.go $(TEST_ASSET_DIR)/conformance/experimental_conformance_test.go
 	go test -ldflags=$(LDFLAGS) \
 		-run TestExperimentalConformance \
