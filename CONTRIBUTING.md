@@ -1,13 +1,13 @@
 ## Contributing to Gloo Edge
 
-Excited about Gloo Edge and want to help make it better? 
+Excited about Gloo Edge and want to help make it better?
 
-At Solo we strive to make the world of microservices, serverless and service mesh available to everyone. 
+At Solo we strive to make the world of microservices, serverless and service mesh available to everyone.
 If you want to help but don't know where to start, let us know, and we'll find something for you.
 
 If you haven't already, make sure you sign up for the [Solo Slack](https://slack.solo.io).
 
-Here are some of the ways you can contribute: 
+Here are some of the ways you can contribute:
 
 * [Filing issues](#filing-issues)
 * [Improving the documentation](#improving-the-documentation)
@@ -18,7 +18,7 @@ Here are some of the ways you can contribute:
 
 ### Filing issues
 
-If you encounter a bug, please file an issue on GitHub. 
+If you encounter a bug, please file an issue on GitHub.
 If an issue you have is already reported, please add additional information or add a 👍 reaction to indicate your agreement.
 
 
@@ -32,7 +32,7 @@ For more detailed guidance on contributing to the documentation, check out the g
 
 ### Setting up the development environment
 
-Instructions for setting the development environment can be found in the [developer guide](https://docs.solo.io/gloo-edge/latest/guides/dev/setting-up-dev-environment/). 
+Instructions for setting the development environment can be found in the [developer guide](https://docs.solo.io/gloo-edge/latest/guides/dev/setting-up-dev-environment/).
 
 Useful make commands:
 
@@ -47,7 +47,7 @@ Useful make commands:
 
 ### Small bug fixes
 
-If your bug fix is small (around 20 lines of code) just open a pull request. We will try to merge it as soon as possible, 
+If your bug fix is small (around 20 lines of code) just open a pull request. We will try to merge it as soon as possible,
 just make sure that you include a test that verifies the bug you are fixing.
 
 ### Big PRs
@@ -70,10 +70,10 @@ For significant changes to the repository, it’s important to settle on a desig
 
 It’s important that every piece of code in Gloo Edge is reviewed by at least one Solo team member familiar with that codebase.
 
-1. **Changelog** Every PR in Gloo Edge needs a changelog entry. For more information about changelogs, see the [readme](https://github.com/solo-io/go-utils/tree/main/changelogutils). 
+1. **Changelog** Every PR in Gloo Edge needs a changelog entry. For more information about changelogs, see the [readme](https://github.com/solo-io/go-utils/tree/main/changelogutils).
 2. **CI check** A Solo team member needs to kick off the CI process by commenting `/test` on your PR.
-3. **Testing** Please write tests for your changes. Bias towards fast / unit testing. 
-4. **Comments** The code reviewer may leave comments to discuss changes. Minor preferences are often called out with `nit`. 
+3. **Testing** Please write tests for your changes. Bias towards fast / unit testing.
+4. **Comments** The code reviewer may leave comments to discuss changes. Minor preferences are often called out with `nit`.
 
 ### Testing with coverage:
 
