@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/9737
+    description: >-
+      Add check for curl pod in list opt e2e tests.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/9785
+    description: >-
+      Add check for curl pod in vhost opts e2e tests.
