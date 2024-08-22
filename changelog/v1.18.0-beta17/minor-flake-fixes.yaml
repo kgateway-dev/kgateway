@@ -14,3 +14,7 @@ changelog:
   - type: NON_USER_FACING
     description: >-
       Fix validation rlc e2e test when run in enterprise mode.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/9912
+    description: >-
+      Skip kube2e tests package when compiling performance tests.
