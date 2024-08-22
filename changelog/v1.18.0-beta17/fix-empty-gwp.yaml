@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/pull/9922
+    description: >-
+      Fix a bug where an empty GWP seg faults.
