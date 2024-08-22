@@ -11,3 +11,6 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/9788
     description: >-
       Fix helm e2e test parsing when image variant is not set.
+  - type: NON_USER_FACING
+    description: >-
+      Fix validation rlc e2e test when run in enterprise mode.
