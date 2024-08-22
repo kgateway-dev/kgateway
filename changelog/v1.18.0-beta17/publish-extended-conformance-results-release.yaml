@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6165
+    resolvesIssue: false
+    description: >-
+      Add support for running and generating Kubernetes Gateway API conformance
+      suite reports on-demand via GitHub Actions. This allows users to trigger
+      the extended conformance suite against existing Gloo Gateway releases or
+      the latest branch.
