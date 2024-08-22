@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Exclude the generated osa_provided.md file from requiring approval
+      from the doc codeowners.
