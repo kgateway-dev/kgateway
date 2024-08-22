@@ -271,7 +271,7 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	// need to be plumbed through here as well)
 
 	// Apply the floating user ID if it is set
-	if gwParam.Spec.Kube.FloatingUserId != nil && *gwParam.Spec.Kube.FloatingUserId {
+	if gwParam.Spec.Kube.GetFloatingUserId() != nil && *gwParam.Spec.Kube.GetFloatingUserId() {
 		applyFloatingUserId(gwParam.Spec.Kube)
 	}
 
