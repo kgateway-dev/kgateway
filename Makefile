@@ -1212,7 +1212,7 @@ conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
 	-run-test=$*
 
 .PHONY: conformance-experimental ## Run the extended conformance test suite
-conformance-experimental: CONFORMANCE_ARGS += -conformance-profiles=HTTP -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSION)-report.yaml -organization=solo.io -project=gloo -version=$(VERSION) -url=github.com/solo-io/gloo -contact=github.com/solo-io/gloo/issues/new/choose
+conformance-experimental: CONFORMANCE_ARGS += -conformance-profiles=HTTP -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSION)-report.yaml -organization=solo.io -project=gloo-gateway -version=$(VERSION) -url=github.com/solo-io/gloo -contact=github.com/solo-io/gloo/issues/new/choose
 conformance-experimental: $(TEST_ASSET_DIR)/conformance/conformance_test.go $(TEST_ASSET_DIR)/conformance/experimental_conformance_test.go
 	go test -ldflags=$(LDFLAGS) \
 		-run TestExperimentalConformance \
