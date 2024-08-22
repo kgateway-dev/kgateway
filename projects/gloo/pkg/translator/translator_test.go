@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -3952,7 +3953,7 @@ var _ = Describe("Translator", func() {
 			lis := snapshot.GetResources(types.ListenerTypeV3).Items["hybrid-listener"].ResourceProto().(*listenerv3.Listener)
 			fc := lis.FilterChains[1]
 
-			Expect(fc.Filters).To(ContainElements(MatchPublicFields(&listenerv3.Filter{
+			Expect(fc.Filters).To(ContainMatches(1, MatchPublicFields(&listenerv3.Filter{
 				Name: "my-custom-filter",
 				ConfigType: &listenerv3.Filter_TypedConfig{
 					TypedConfig: &anypb.Any{
@@ -3972,7 +3973,7 @@ var _ = Describe("Translator", func() {
 				}
 			}
 			Expect(found).To(BeTrue(), "HttpConnectionManager to be found")
-			Expect(hcm.GetHttpFilters()).To(ContainElements(MatchPublicFields(&envoyhttp.HttpFilter{
+			Expect(hcm.GetHttpFilters()).To(ContainMatches(1, MatchPublicFields(&envoyhttp.HttpFilter{
 				Name: "my-custom-http-filter",
 				ConfigType: &envoyhttp.HttpFilter_TypedConfig{
 					TypedConfig: &anypb.Any{
@@ -3998,7 +3999,7 @@ var _ = Describe("Translator", func() {
 			}}
 			translate()
 			lis := snapshot.GetResources(types.ListenerTypeV3).Items["hybrid-listener"].ResourceProto().(*listenerv3.Listener)
-			Expect(lis.FilterChains[0].Filters).To(ContainElements(MatchPublicFields(&listenerv3.Filter{
+			Expect(lis.FilterChains[0].Filters).To(ContainMatches(1, MatchPublicFields(&listenerv3.Filter{
 				Name: "my-custom-filter",
 				ConfigType: &listenerv3.Filter_TypedConfig{
 					TypedConfig: &anypb.Any{
@@ -4118,4 +4119,43 @@ func createMultiActionRoute(routeName string, matcher *matchers.Matcher, destina
 
 func asDouble(v float64) *wrappers.DoubleValue {
 	return &wrappers.DoubleValue{Value: v}
+}
+
+// ContainMatches checks if the inner matcher matches exactly count items in a slice.
+// This will fail for arrays and maps, unless support is added below.
+func ContainMatches(count int, inner gomega_types.GomegaMatcher) gomega_types.GomegaMatcher {
+	return &matchContainsCount{count: count, inner: inner}
+}
+
+type matchContainsCount struct {
+	// inputs
+	count int
+	inner gomega_types.GomegaMatcher
+
+	// state
+	matched int
+}
+
+func (m *matchContainsCount) FailureMessage(actual interface{}) (message string) {
+	return fmt.Sprintf("expected %d matches but got %d", m.count, m.matched)
+}
+
+func (m *matchContainsCount) NegatedFailureMessage(actual interface{}) (message string) {
+	return fmt.Sprintf("expected not to have %d matches but got %d", m.count, m.matched)
+}
+
+func (m *matchContainsCount) Match(actual interface{}) (success bool, err error) {
+	if reflect.TypeOf(actual).Kind() != reflect.Slice {
+		return false, fmt.Errorf("expected a slice  but got %T", actual)
+	}
+	matched := 0
+	value := reflect.ValueOf(actual)
+	for i := 0; i < value.Len(); i++ {
+		el := value.Index(i).Interface()
+		if ok, err := m.inner.Match(el); ok && err == nil {
+			matched++
+		}
+	}
+	m.matched = matched
+	return m.matched == m.count, nil
 }
