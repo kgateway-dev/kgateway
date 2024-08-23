@@ -50,7 +50,7 @@ jobs:
     name: End-to-End (branch=${{ github.ref_name }}, cluster=${{ matrix.test.cluster-name }}, version=${{ matrix.version-files.label }} )
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.run-kubernetes-end-to-end && inputs.branch == 'workflow_initiating_branch' }}
     runs-on: ubuntu-22.04
-    timeout-minutes: 150
+    timeout-minutes: 180
     strategy:
       # Since we are running these on a schedule, there is no value in failing fast
       # In fact, we want to ensure that all tests run, so that we have a clearer picture of which tests are prone to flaking
@@ -60,7 +60,7 @@ jobs:
           # When running the tests at night, there is no value in splitting the tests across multiple clusters and running them in parallel.
           # As a result, we increase the threshold for the tests, since they all run serially on a single cluster
           - cluster-name: 'cluster-one'
-            go-test-args: '-v -timeout=120m'
+            go-test-args: '-v -timeout=150m'
             go-test-run-regex: ${{ inputs.kubernetes-end-to-end-run-regex }}
         # In our nightly tests, we run the suite of tests using the lower and upper ends of versions that we claim to support
         # The versions should mirror: https://docs.solo.io/gloo-edge/latest/reference/support/
@@ -110,7 +110,7 @@ jobs:
     name: End-to-End (branch=main, cluster=${{ matrix.test.cluster-name }}, version=${{ matrix.version-files.label }} )
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-kubernetes-end-to-end && inputs.branch == 'main') || github.event.schedule == '0 5 * * 1-5' }}
     runs-on: ubuntu-22.04
-    timeout-minutes: 150
+    timeout-minutes: 180
     strategy:
       # Since we are running these on a schedule, there is no value in failing fast
       # In fact, we want to ensure that all tests run, so that we have a clearer picture of which tests are prone to flaking
@@ -120,7 +120,7 @@ jobs:
           # When running the tests at night, there is no value in splitting the tests across multiple clusters and running them in parallel.
           # As a result, we increase the threshold for the tests, since they all run serially on a single cluster
           - cluster-name: 'cluster-one'
-            go-test-args: '-v -timeout=120m'
+            go-test-args: '-v -timeout=150m'
             go-test-run-regex: ""
         # In our nightly tests, we run the suite of tests using the lower and upper ends of versions that we claim to support
         # The versions should mirror: https://docs.solo.io/gloo-edge/latest/reference/support/
