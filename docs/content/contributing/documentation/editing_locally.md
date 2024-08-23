@@ -103,4 +103,4 @@ Please remember to keep changes small and focused on a particular section of the
 
 We want to **thank you** for helping make Gloo Gateway documentation the best it can be. Editing docs isn't the most glamorous task, but for the newbie trying to learn about Gloo Gateway they are absolutely essential.
 
-If you haven't already had a chance, please be sure to read the [style guide]({{< versioned_link_path fromRoot="/contributing/documentation/style_guide/" >}}) and take a look at the [example document]({{< versioned_link_path fromRoot="/contributing/documentation/example_doc/" >}}) before you start submitting updates.
+If you haven't already had a chance, please be sure to read the [style guide]({{< versioned_link_path fromRoot="/contributing/documentation/style_guide/" >}}) before you start submitting updates.
