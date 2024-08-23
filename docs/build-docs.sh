@@ -51,6 +51,21 @@ firebaseJson=$(cat <<EOF
     ],
     "redirects": [      
       {
+        "source": "/gloo-edge/master/:path",
+        "destination": "/gloo-edge/latest/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/v1.13.x/:path",
+        "destination": "/gloo-edge/latest/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/1.3.0/:path",
+        "destination": "/gloo-edge/latest/",
+        "type":"301"
+      },
+      {
         "source": "gloo-edge/:version/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/",
         "destination": "gloo-edge/:version/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/",
         "type":"301"
@@ -71,11 +86,6 @@ firebaseJson=$(cat <<EOF
         "type":"301"
       },
       {
-        "source": "/gloo-edge/:version/cli/",
-        "destination": "/gloo-edge/:version/reference/cli/",
-        "type":"301"
-      },
-      {
         "source": "/gloo-edge/:version/advanced_configuration/:path",
         "destination": "/gloo-edge/:version/installation/advanced_configuration/:path",
         "type":"301"
@@ -92,47 +102,22 @@ firebaseJson=$(cat <<EOF
       },
       {
         "source": "/gloo-edge/:version/operations/upgrading/1.3.0/",
-        "destination": "/gloo-edge/:version/upgrading/",
+        "destination": "/gloo-edge/:version/operations/upgrading/",
         "type":"301"
       },
       {
         "source": "/gloo-edge/:version/operations/upgrading/v1.14",
-        "destination": "/gloo-edge/:version/upgrading/",
+        "destination": "/gloo-edge/:version/operations/upgrading/",
         "type":"301"
       },
       {
         "source": "/gloo-edge/:version/operations/upgrading/v1.3",
-        "destination": "/gloo-edge/:version/upgrading/",
+        "destination": "/gloo-edge/:version/operations/upgrading/",
         "type":"301"
       },
       {
-        "source": "/gloo-edge/:version/operations/upgrading/v1.3",
-        "destination": "/gloo-edge/:version/upgrading/",
-        "type":"301"
-      },
-      {
-        "source": "/gloo-edge/:version/security/auth/:path",
-        "destination": "/gloo-edge/:version/guides/security/auth/:path/",
-        "type":"301"
-      },
-      {
-        "source": "/gloo-edge/v1.13/:path",
-        "destination": "/gloo-edge/latest/",
-        "type":"301"
-      },
-      {
-        "source": "/gloo-edge/1.0.0/:path",
-        "destination": "/gloo-edge/latest/",
-        "type":"301"
-      },
-      {
-        "source": "/gloo-edge/1.3.0/:path",
-        "destination": "/gloo-edge/latest/",
-        "type":"301"
-      },
-      {
-        "source": "/gloo-edge/1.3.0/:path",
-        "destination": "/gloo-edge/latest/",
+        "source": "/gloo-edge/:version/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/static_upstream/",
+        "destination": "/gloo-edge/:version/guides/traffic_management/destination_types/static_upstream/",
         "type":"301"
       },
       {
@@ -141,7 +126,7 @@ firebaseJson=$(cat <<EOF
         "type":"301"
       },
       {
-        "source": "/gloo-edge/:version/dev/writing_auth_plugins/",
+        "source": "/gloo-edge/:version/dev/writing_auth_plugins",
         "destination": "/gloo-edge/:version/guides/dev/writing_auth_plugins/",
         "type":"301"
       },
@@ -196,6 +181,21 @@ firebaseJson=$(cat <<EOF
         "type":"301"
       },
       {
+        "source": "/gloo-edge/:version/gloo_routing/virtual_services/routes/route_destinations/consul_services/",
+        "destination": "/gloo-edge/:versiont/guides/traffic_management/destination_types/consul_servides/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/ec2_upstream/",
+        "destination": "/gloo-edge/:version/guides/traffic_management/destination_types/ec2_upstream/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/function_routing/",
+        "destination": "/gloo-edge/:version/guides/traffic_management/destination_types/aws_lambda/",
+        "type":"301"
+      },
+      {
         "source": "/gloo-edge/:version/user_guides/",
         "destination": "/gloo-edge/:version/guides/traffic_management/",
         "type":"301"
@@ -221,8 +221,18 @@ firebaseJson=$(cat <<EOF
         "type":"301"
       },
       {
-        "source": "/gloo-edge/:version/guides/security/auth/:path",
-        "destination": "/gloo-edge/:version/guides/security/auth/extauth/:path",
+        "source": "/gloo-edge/:version/guides/security/auth/oauth/",
+        "destination": "/gloo-edge/:version/guides/security/auth/extauth/oauth/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/guides/security/auth/opa/",
+        "destination": "/gloo-edge/:version/guides/security/auth/extauth/opa/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/guides/security/auth/plugin_auth",
+        "destination": "/gloo-edge/:version/guides/security/auth/extauth/plugin_auth/",
         "type":"301"
       },
       {
@@ -233,11 +243,6 @@ firebaseJson=$(cat <<EOF
       {
         "source": "/gloo-edge/:version/latest/guides/traffic_management/request_processing/transformations/",
         "destination": "/gloo-edge/:version/guides/traffic_management/request_processing/transformations/",
-        "type":"301"
-      },
-      {
-        "source": "/gloo-edge/master/:path",
-        "destination": "/gloo-edge/latest/",
         "type":"301"
       },
       {
@@ -278,6 +283,11 @@ firebaseJson=$(cat <<EOF
       {
         "source": "/gloo-edge/:version/reference/cha",
         "destination": "/gloo-edge/:version/reference/changelog/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/",
+        "destination": "/gloo-edge/:version/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/",
         "type":"301"
       }
     ]

@@ -17,7 +17,7 @@ Gloo Gateway Enterprise offers `n-3` patching support for bug and critical secur
 | 1.15.x | 1.23 - 1.27 | v3 xDS API | >= 3.11 | 1.13 - 1.18 |
 | 1.14.x | 1.23 - 1.25 | v3 xDS API | >= 3.8 | 1.13 - 1.18 |
 
-{{% notice note %}}`†` **Istio versions**: Gloo Gateway is tested on Istio 1.16 - 1.22. Istio must run on a compatible version of Kubernetes. For example, Istio 1.22 is tested, but not supported, on Kubernetes 1.26. For more information, see the [Istio docs](https://istio.io/latest/docs/releases/supported-releases/). If you want hardened `n-4` versions of Istio for particular requirements such as FIPS, consider using [Gloo Mesh Enterprise](https://www.solo.io/products/gloo-mesh/), which includes ingress gateway and service mesh components.{{% /notice %}}
+{{% notice note %}}`†` **Istio versions**: Istio must run on a compatible version of Kubernetes. For example, Istio 1.22 is tested, but not supported, on Kubernetes 1.26. For more information, see the [Istio docs](https://istio.io/latest/docs/releases/supported-releases/). If you want hardened `n-4` versions of Istio for particular requirements such as FIPS, consider using [Gloo Mesh Enterprise](https://www.solo.io/products/gloo-mesh/), which includes ingress gateway and service mesh components.{{% /notice %}}
 
 <!--TO FIND VERSIONS
 For 1.17 and later, go to the version branch, such as v1.17.x. In the .github/workflows.env/nightly-tests directory, open the min_versions.env and max_versions.env files. Example on main: https://github.com/solo-io/gloo/tree/main/.github/workflows/.env/nightly-tests -->
