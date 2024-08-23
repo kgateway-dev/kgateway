@@ -51,23 +51,13 @@ firebaseJson=$(cat <<EOF
     ],
     "redirects": [      
       {
-        "source": "/gloo-edge/master/:path",
+        "source": "/gloo-edge/master/:path*",
         "destination": "/gloo-edge/latest/",
         "type":"301"
       },
       {
-        "source": "/gloo-edge/v1.13.x/:path",
+        "source": "/gloo-edge/v1.13.x/:path*",
         "destination": "/gloo-edge/latest/",
-        "type":"301"
-      },
-      {
-        "source": "/gloo-edge/1.3.0/:path",
-        "destination": "/gloo-edge/latest/",
-        "type":"301"
-      },
-      {
-        "source": "gloo-edge/:version/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/",
-        "destination": "gloo-edge/:version/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/",
         "type":"301"
       },
       {
@@ -182,7 +172,7 @@ firebaseJson=$(cat <<EOF
       },
       {
         "source": "/gloo-edge/:version/gloo_routing/virtual_services/routes/route_destinations/consul_services/",
-        "destination": "/gloo-edge/:versiont/guides/traffic_management/destination_types/consul_servides/",
+        "destination": "/gloo-edge/:versiont/guides/traffic_management/destination_types/consul_services/",
         "type":"301"
       },
       {
@@ -221,6 +211,11 @@ firebaseJson=$(cat <<EOF
         "type":"301"
       },
       {
+        "source": "/gloo-edge/:version/security/auth/",
+        "destination": "/gloo-edge/:version/guides/security/auth/",
+        "type":"301"
+      },
+      {
         "source": "/gloo-edge/:version/guides/security/auth/oauth/",
         "destination": "/gloo-edge/:version/guides/security/auth/extauth/oauth/",
         "type":"301"
@@ -233,6 +228,11 @@ firebaseJson=$(cat <<EOF
       {
         "source": "/gloo-edge/:version/guides/security/auth/plugin_auth",
         "destination": "/gloo-edge/:version/guides/security/auth/extauth/plugin_auth/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/security/auth/apikey_auth/",
+        "destination": "/gloo-edge/:version/guides/security/auth/extauth/apikey_auth/",
         "type":"301"
       },
       {
