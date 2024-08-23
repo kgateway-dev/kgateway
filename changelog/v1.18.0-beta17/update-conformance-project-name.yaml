@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Update the conformance project name to match the new project name.
+      Previously, the "gloo" project name was being used, which is inconsistent
+      our previous naming conventions.
