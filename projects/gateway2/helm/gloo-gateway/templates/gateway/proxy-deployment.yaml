@@ -249,8 +249,6 @@ spec:
 {{- if (($gateway.aiExtension).enabled) }}
       - name: gloo-ai-extension
         image: "{{ template "gloo-gateway.gateway.image" $gateway.aiExtension.image }}"
-        args:
-        - "extproc"
         {{- if $gateway.aiExtension.image.pullPolicy }}
         imagePullPolicy: {{ $gateway.aiExtension.image.pullPolicy }}
         {{- end }}
