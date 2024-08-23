@@ -147,7 +147,7 @@ firebaseJson=$(cat <<EOF
       },
       {
         "source": "/gloo-edge/:version/enterprise/",
-        "destination": "/gloo-edge/:version",
+        "destination": "/gloo-edge/:version/",
         "type":"301"
       },
       {
