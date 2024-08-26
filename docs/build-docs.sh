@@ -48,7 +48,254 @@ firebaseJson=$(cat <<EOF
         "source": "/gloo-edge",
         "destination": "/gloo-edge/latest/index.html"
       }
-    ] 
+    ],
+    "redirects": [      
+      {
+        "source": "/gloo-edge/master/:path*",
+        "destination": "/gloo-edge/latest/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/v1.13.x/:path*",
+        "destination": "/gloo-edge/latest/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/changelog/",
+        "destination": "/gloo-edge/:version/reference/changelog/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/cli/",
+        "destination": "/gloo-edge/:version/reference/cli/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/cli/:path",
+        "destination": "/gloo-edge/:version/reference/cli/:path",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/advanced_configuration/:path",
+        "destination": "/gloo-edge/:version/installation/advanced_configuration/:path",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/introduction/concepts/",
+        "destination": "/gloo-edge/:version/introduction/architecture/concepts/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/introduction/whygloo/",
+        "destination": "/gloo-edge/:version/introduction/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/operations/upgrading/1.3.0/",
+        "destination": "/gloo-edge/:version/operations/upgrading/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/operations/upgrading/v1.14",
+        "destination": "/gloo-edge/:version/operations/upgrading/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/operations/upgrading/v1.3",
+        "destination": "/gloo-edge/:version/operations/upgrading/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/static_upstream/",
+        "destination": "/gloo-edge/:version/guides/traffic_management/destination_types/static_upstream/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/contributing/documentation/example_doc/",
+        "destination": "/gloo-edge/:version/contributing/documentation/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/dev/writing_auth_plugins",
+        "destination": "/gloo-edge/:version/guides/dev/writing_auth_plugins/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/enterprise/",
+        "destination": "/gloo-edge/:version/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/enterprise/authentication/",
+        "destination": "/gloo-edge/:version/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/gloo_integrations/",
+        "destination": "/gloo-edge/:version/guides/integrations/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/gloo_integrations/:path",
+        "destination": "/gloo-edge/:version/guides/integrations/:path",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/gloo_routing/tcp_proxy/",
+        "destination": "/gloo-edge/:version/guides/traffic_management/listener_configuration/tcp_proxy/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/gloo_routing/virtual_services/authentication/",
+        "destination": "/gloo-edge/:version/guides/security/auth/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/gloo_routing/virtual_services/authentication/:path",
+        "destination": "/gloo-edge/:version/guides/security/auth/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/gloo_routing/virtual_services/security/",
+        "destination": "/gloo-edge/:version/guides/security/auth/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/gloo_routing/virtual_services/security/:path",
+        "destination": "/gloo-edge/:version/guides/security/auth/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/gloo_routing/virtual_services/routes/",
+        "destination": "/gloo-edge/:version/guides/traffic_management/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/gloo_routing/virtual_services/routes/route_destinations/consul_services/",
+        "destination": "/gloo-edge/:version/guides/traffic_management/destination_types/consul_services/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/ec2_upstream/",
+        "destination": "/gloo-edge/:version/guides/traffic_management/destination_types/ec2_upstream/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/function_routing/",
+        "destination": "/gloo-edge/:version/guides/traffic_management/destination_types/aws_lambda/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/user_guides/",
+        "destination": "/gloo-edge/:version/guides/traffic_management/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/user_guides/",
+        "destination": "/gloo-edge/:version/guides/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/user_guides/:path",
+        "destination": "/gloo-edge/:version/guides/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/guides/integrations/service_mesh/gloo_istio_mtls/",
+        "destination": "/gloo-edge/:version/guides/integrations/service_mesh/istio/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/guides/security/access_logging/file-based-access-logging",
+        "destination": "/gloo-edge/:version/guides/security/access_logging/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/security/auth/",
+        "destination": "/gloo-edge/:version/guides/security/auth/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/guides/security/auth/oauth/",
+        "destination": "/gloo-edge/:version/guides/security/auth/extauth/oauth/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/guides/security/auth/opa/",
+        "destination": "/gloo-edge/:version/guides/security/auth/extauth/opa/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/guides/security/auth/plugin_auth",
+        "destination": "/gloo-edge/:version/guides/security/auth/extauth/plugin_auth/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/security/auth/apikey_auth/",
+        "destination": "/gloo-edge/:version/guides/security/auth/extauth/apikey_auth/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/guides/traffic_management/destination_types/grpc_to_rest/",
+        "destination": "/gloo-edge/:version/guides/traffic_management/destination_types/grpc/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/latest/guides/traffic_management/request_processing/transformations/",
+        "destination": "/gloo-edge/:version/guides/traffic_management/request_processing/transformations/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk.md",
+        "destination": "/gloo-edge/:version/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/reference/api/github.com/solo-io/solo-apis/api/gloo/enterprise.gloo/v1/auth_config.proto.sk/",
+        "destination": "/gloo-edge/:version/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/v1/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/",
+        "destination": "/gloo-edge/:version/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/v1/github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto.sk/",
+        "destination": "/gloo-edge/:version/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto.sk/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/v1/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/transformation.proto.sk/",
+        "destination": "/gloo-edge/:version/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/v1/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/",
+        "destination": "/gloo-edge/:version/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/v1/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk/",
+        "destination": "/gloo-edge/:version/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/reference/cha",
+        "destination": "/gloo-edge/:version/reference/changelog/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/:version/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/",
+        "destination": "/gloo-edge/:version/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/v1.13.xreference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tracing/tracing.proto.sk/",
+        "destination": "/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tracing/tracing.proto.sk/",
+        "type":"301"
+      }
+    ]
   } 
 }
 EOF
