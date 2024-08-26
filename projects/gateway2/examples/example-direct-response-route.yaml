@@ -1,0 +1,61 @@
+---
+
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: http
+  namespace: gloo-system
+spec:
+  gatewayClassName: gloo-gateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All
+
+---
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: httpbin
+  namespace: httpbin
+  labels:
+    app: httpbin
+spec:
+  hostnames:
+  - "www.example.com"
+  parentRefs:
+  - name: http
+    namespace: gloo-system
+  rules:
+  - backendRefs:
+    - name: httpbin
+      port: 8000
+    matches:
+    - headers:
+      - name: Authorization
+        type: RegularExpression
+        value: "Bearer .*"
+  - backendRefs:
+    - name: httpbin
+      port: 8000
+    filters:
+    - type: ExtensionRef
+      extensionRef:
+        group: gateway.gloo.solo.io
+        kind: DirectResponseRoute
+        name: test
+
+---
+
+apiVersion: gateway.gloo.solo.io/v1alpha1
+kind: DirectResponseRoute
+metadata:
+  name: test
+  namespace: httpbin
+spec:
+  code: 401
+  body: "Unauthorized: No token provided"

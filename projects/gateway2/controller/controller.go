@@ -4,18 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
-	"github.com/solo-io/gloo/projects/gateway2/deployer"
-	"github.com/solo-io/gloo/projects/gateway2/extensions"
-	"github.com/solo-io/gloo/projects/gateway2/query"
-	httplisoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/httplisteneroptions/query"
-	lisoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/listeneroptions/query"
-	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
-	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
-	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,6 +21,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+
+	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
+	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
+	"github.com/solo-io/gloo/projects/gateway2/deployer"
+	"github.com/solo-io/gloo/projects/gateway2/extensions"
+	"github.com/solo-io/gloo/projects/gateway2/query"
+	httplisoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/httplisteneroptions/query"
+	lisoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/listeneroptions/query"
+	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
+	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 )
 
 const (
@@ -85,6 +86,7 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 		controllerBuilder.addRtOptIndexes,
 		controllerBuilder.addVhOptIndexes,
 		controllerBuilder.addGwParamsIndexes,
+		controllerBuilder.watchDirectResponseRoutes,
 	)
 }
 
@@ -354,6 +356,19 @@ func (c *controllerBuilder) watchServices(ctx context.Context) error {
 	return nil
 }
 
+// watchDirectResponseRoutes watches for DirectResponseRoutes and triggers
+// reconciliation of the Gateway that references them.
+func (c *controllerBuilder) watchDirectResponseRoutes(_ context.Context) error {
+	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		WithEventFilter(predicate.GenerationChangedPredicate{}).
+		For(&v1alpha1.DirectResponseRoute{}).
+		Complete(reconcile.Func(c.reconciler.ReconcileDirectResponseRoutes))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 type controllerReconciler struct {
 	cli    client.Client
 	scheme *runtime.Scheme
@@ -374,6 +389,12 @@ func (r *controllerReconciler) ReconcileListenerOptions(ctx context.Context, req
 
 func (r *controllerReconciler) ReconcileRouteOptions(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// eventually reconcile only effected routes/listeners etc
+	r.kick(ctx)
+	return ctrl.Result{}, nil
+}
+
+func (r *controllerReconciler) ReconcileDirectResponseRoutes(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// TODO(tim): eventually reconcile only effected routes.
 	r.kick(ctx)
 	return ctrl.Result{}, nil
 }
