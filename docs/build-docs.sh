@@ -172,7 +172,7 @@ firebaseJson=$(cat <<EOF
       },
       {
         "source": "/gloo-edge/:version/gloo_routing/virtual_services/routes/route_destinations/consul_services/",
-        "destination": "/gloo-edge/:versiont/guides/traffic_management/destination_types/consul_services/",
+        "destination": "/gloo-edge/:version/guides/traffic_management/destination_types/consul_services/",
         "type":"301"
       },
       {
@@ -288,6 +288,11 @@ firebaseJson=$(cat <<EOF
       {
         "source": "/gloo-edge/:version/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/",
         "destination": "/gloo-edge/:version/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/",
+        "type":"301"
+      },
+      {
+        "source": "/gloo-edge/v1.13.xreference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tracing/tracing.proto.sk/",
+        "destination": "/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tracing/tracing.proto.sk/",
         "type":"301"
       }
     ]
