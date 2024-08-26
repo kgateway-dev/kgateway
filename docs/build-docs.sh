@@ -294,7 +294,7 @@ firebaseJson=$(cat <<EOF
         "source": "/gloo-edge/v1.13.xreference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tracing/tracing.proto.sk/",
         "destination": "/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tracing/tracing.proto.sk/",
         "type":"301"
-      },
+      }
     ]
   } 
 }
