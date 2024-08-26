@@ -25,6 +25,7 @@ weight: 5
 - [SemanticCache](#semanticcache)
 - [Redis](#redis)
 - [DataStore](#datastore)
+- [Mode](#mode)
 - [RAG](#rag)
 - [DataStore](#datastore)
 - [RateLimiting](#ratelimiting)
@@ -337,6 +338,7 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 "datastore": .ai.options.gloo.solo.io.SemanticCache.DataStore
 "embedding": .ai.options.gloo.solo.io.Embedding
 "ttl": int
+"mode": .ai.options.gloo.solo.io.SemanticCache.Mode
 
 ```
 
@@ -345,6 +347,7 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 | `datastore` | [.ai.options.gloo.solo.io.SemanticCache.DataStore](../ai.proto.sk/#datastore) | Which data store to use. |
 | `embedding` | [.ai.options.gloo.solo.io.Embedding](../ai.proto.sk/#embedding) | Model to use to get embeddings for prompt. |
 | `ttl` | `int` | Time before data in the cache is considered expired. |
+| `mode` | [.ai.options.gloo.solo.io.SemanticCache.Mode](../ai.proto.sk/#mode) | Cache mode to use: READ_WRITE or READ_ONLY. |
 
 
 
@@ -356,12 +359,14 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 
 ```yaml
 "connectionString": string
+"scoreThreshold": float
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `connectionString` | `string` | Connection string to the Redis database. |
+| `scoreThreshold` | `float` | Similarity score threshold value between 0.0 and 1.0 that determines how similar two queries need to be in order to return a cached result. The lower the number, the more similar the queries need to be for a cache hit. +kubebuilder:validation:Minimum=0 +kubebuilder:validation:Maximum=1. |
 
 
 
@@ -380,6 +385,19 @@ Data store from which to cache the request/response pairs
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `redis` | [.ai.options.gloo.solo.io.SemanticCache.Redis](../ai.proto.sk/#redis) |  |
+
+
+
+
+---
+### Mode
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `READ_WRITE` | Read and write to the cache as a part of the request/response lifecycle |
+| `READ_ONLY` | Only read from the cache, do not write to it. Data will be written to the cache outside the request/response cycle. |
 
 
 
