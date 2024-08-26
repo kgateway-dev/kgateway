@@ -124,8 +124,9 @@ gateway:
     secretName: gateway-validation-certs
     alwaysAcceptResources: true
     allowWarnings: true
-    # Explicitly setting to false in order to emphasize the opt-in nature of this 
-    # behavior in backports.
+    # Explicitly defaulting this setting to false in order to emphasize the opt-in 
+    # nature of this behavior in this version. The default value for this field 
+    # is changed to true in 1.18, making the behavior opt-out.
     warnMissingTlsSecret: false
     serverEnabled: true
     disableTransformationValidation: false
