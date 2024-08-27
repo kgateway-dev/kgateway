@@ -40,13 +40,13 @@ func (pm *podMatcher) Match(actual interface{}) (bool, error) {
 			}
 		}
 		if !foundContainer {
-			return false, nil
+			return false, fmt.Errorf("expected pod to have container '%s', but it was not found", pm.expectedPod.ContainerName)
 		}
 	}
 
 	if pm.expectedPod.Status != "" {
 		if pod.Status.Phase != pm.expectedPod.Status {
-			return false, nil
+			return false, fmt.Errorf("expected pod to have status %s, but it was %s", pm.expectedPod.Status, pod.Status.Phase)
 		}
 	}
 
