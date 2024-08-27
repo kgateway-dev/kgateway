@@ -2,6 +2,7 @@ package matchers
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/onsi/gomega/types"
 	corev1 "k8s.io/api/core/v1"
@@ -40,13 +41,15 @@ func (pm *podMatcher) Match(actual interface{}) (bool, error) {
 			}
 		}
 		if !foundContainer {
-			return false, fmt.Errorf("expected pod to have container '%s', but it was not found", pm.expectedPod.ContainerName)
+			log.Printf("expected pod to have container '%s', but it was not found", pm.expectedPod.ContainerName)
+			return false, nil
 		}
 	}
 
 	if pm.expectedPod.Status != "" {
 		if pod.Status.Phase != pm.expectedPod.Status {
-			return false, fmt.Errorf("expected pod to have status %s, but it was %s", pm.expectedPod.Status, pod.Status.Phase)
+			log.Printf("expected pod to have status %s, but it was %s", pm.expectedPod.Status, pod.Status.Phase)
+			return false, nil
 		}
 	}
 
