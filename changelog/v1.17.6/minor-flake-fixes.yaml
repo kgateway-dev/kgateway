@@ -18,3 +18,10 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/9912
     description: >-
       Skip kube2e tests package when compiling performance tests.
+  - type: NON_USER_FACING
+    description: >-
+      Remove the .githooks directory from the repository. This directory was
+      used to configure pre-commit hooks for the repository, but it's sole
+      use was to catch JWT tokens from being committed to the repository. This
+      seems to be a bit of an overkill, and the hooks have not been maintained
+      for a while.
