@@ -121,10 +121,12 @@ func translateGatewayHTTPRouteRule(
 	routes := make([]*v1.Route, len(rule.Matches))
 	for idx, match := range rule.Matches {
 		match := match // pike
+		uniqueRouteName := gwroute.UniqueRouteName(idx)
 		outputRoute := &v1.Route{
 			Matchers: []*matchers.Matcher{translateGlooMatcher(match)},
 			Action:   nil,
 			Options:  &v1.RouteOptions{},
+			Name:     uniqueRouteName,
 		}
 
 		var delegatedRoutes []*v1.Route
