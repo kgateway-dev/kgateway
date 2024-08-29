@@ -3,7 +3,6 @@ package summary
 import (
 	"bytes"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -28,13 +27,7 @@ type event struct {
 
 // This will also output a list of all leaf-node tests ran to produce the output.
 // This can be used to determine if a new test was properly run or not.
-func Main() {
-	var logFile, outFile string
-	var jsonOutput bool
-	flag.StringVar(&logFile, "log-file", "./_test/test_log/go-test", "point to the raw string log output of go test command")
-	flag.StringVar(&outFile, "out-file", "./_test/test_log/go-test-summary", "where to place the output summary file")
-	flag.BoolVar(&jsonOutput, "json", false, "output as json")
-	flag.Parse()
+func Main(logFile, outFile string, jsonOutput bool) {
 
 	b, err := readTestOutput(logFile)
 	if err != nil {
