@@ -4697,6 +4697,7 @@ metadata:
   labels:
     app: gloo
     gloo: gateway-certgen
+    gloo.solo.io/component: certgen
   name: gateway-certgen
   namespace: ` + namespace + `
   annotations:
@@ -4800,6 +4801,7 @@ metadata:
     labels:
         app: gloo
         gloo: rbac
+        gloo.solo.io/component: certgen
     annotations:
       "helm.sh/hook": "pre-install,pre-upgrade"
       "helm.sh/hook-weight": "5"
@@ -4820,6 +4822,7 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
+    gloo.solo.io/component: certgen
   annotations:
     "helm.sh/hook": "pre-install,pre-upgrade"
     "helm.sh/hook-weight": "5"
@@ -4843,6 +4846,7 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
+    gloo.solo.io/component: certgen
   annotations:
     "helm.sh/hook": "pre-install,pre-upgrade"
     "helm.sh/hook-weight": "5"
@@ -6579,7 +6583,6 @@ metadata:
 						},
 						Equal(securitycontext.ExpectedContainers),
 					)
-
 				})
 
 				It("global security setings override container-specific values", func() {
@@ -6626,7 +6629,6 @@ metadata:
 					if container.SecurityContext != nil {
 						Expect(container.SecurityContext.RunAsUser).To(BeNil(), "resource: %s, container: %s", resourceName, container.Name)
 					}
-
 				},
 					Entry("14-clusteringress-proxy-deployment.yaml", "clusteringress-proxy", "clusteringress-proxy", "Deployment", securitycontext.ApplyClusterIngressSecurityDefaults, "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
 				)
@@ -6661,7 +6663,6 @@ metadata:
 				)
 
 				DescribeTable("applies default restricted container security contexts", func(seccompType string) {
-
 					helmArgs := append(
 						helmRenderEverythingValues(),
 						"global.podSecurityStandards.container.enableRestrictedContainerDefaults=true",
@@ -6697,7 +6698,6 @@ metadata:
 						},
 						Equal(securitycontext.ExpectedContainers),
 					)
-
 				},
 					Entry("null/default", ""),
 					Entry("RuntimeDefault", "RuntimeDefault"),
