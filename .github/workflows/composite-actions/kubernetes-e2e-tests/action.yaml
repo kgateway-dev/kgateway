@@ -18,6 +18,9 @@ inputs:
   istio-version:
     required: true
     description: The version of Istio to use
+  matrix-label:
+    required: true
+    description: The version of the matrix being used - used to name artifacts to prevent filename collisions
 
 runs:
   using: "composite"
@@ -48,5 +51,5 @@ runs:
     if: ${{ always() }}
     uses: actions/upload-artifact@v4
     with:
-      name: go-test-summary-${{ inputs.cluster-name }}
+      name: go-test-summary-${{ inputs.cluster-name }}-${{ inputs.matrix-label }}
       path: ./_test/test_log/go-test-summary
