@@ -88,6 +88,13 @@ BUG_REPORT_DIR := $(TEST_ASSET_DIR)/bug_report
 $(BUG_REPORT_DIR):
 	mkdir -p $(BUG_REPORT_DIR)
 
+# This is the location where logs are stored for future processing.
+# This is used to generate summaries of test outcomes and may be used in the future to automate
+# processing of data based on test outcomes.
+TEST_LOG_DIR := $(TEST_ASSET_DIR)/test_log
+$(TEST_LOG_DIR):
+	mkdir -p $(TEST_LOG_DIR)
+
 # Used to install ca-certificates in GLOO_DISTROLESS_BASE_IMAGE
 PACKAGE_DONOR_IMAGE ?= debian:11
 # Harvested for utility binaries (sh, wget, sleep, nc, echo, ls, cat, vi)
@@ -263,7 +270,7 @@ run-tests: test
 # Performance tests are filtered using a Ginkgo label
 # This means that any tests which do not rely on Ginkgo, will by default be compiled and run
 # Since this is not the desired behavior, we explicitly skip these packages
-run-performance-tests: GINKGO_FLAGS += -skip-package=gateway2,kubernetes/e2e
+run-performance-tests: GINKGO_FLAGS += -skip-package=gateway2,kubernetes/e2e,test/kube2e
 run-performance-tests: GINKGO_FLAGS += --label-filter="performance" ## Run only tests with the Performance label
 run-performance-tests: test
 
@@ -298,10 +305,10 @@ GO_TEST_USER_ARGS ?=
 
 .PHONY: go-test
 go-test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
-go-test: clean-bug-report $(BUG_REPORT_DIR) # Ensure the bug_report dir is reset before each invocation
+go-test: clean-bug-report clean-test-logs $(BUG_REPORT_DIR) $(TEST_LOG_DIR) # Ensure the bug_report dir is reset before each invocation
 	 $(GO_TEST_ENV) go test -ldflags=$(LDFLAGS) \
 	$(GO_TEST_ARGS) $(GO_TEST_USER_ARGS) \
-	$(TEST_PKG)
+	$(TEST_PKG) | tee $(TEST_LOG_DIR)/go-test
 
 # https://go.dev/blog/cover#heat-maps
 .PHONY: go-test-with-coverage
@@ -339,6 +346,10 @@ clean-tests:
 .PHONY: clean-bug-report
 clean-bug-report:
 	rm -rf $(BUG_REPORT_DIR)
+
+.PHONY: clean-test-logs
+clean-test-logs:
+	rm -rf $(TEST_LOG_DIR)
 
 .PHONY: clean-vendor-any
 clean-vendor-any:

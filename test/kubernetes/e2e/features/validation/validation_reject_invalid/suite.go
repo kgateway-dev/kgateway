@@ -137,6 +137,9 @@ func (s *testingSuite) TestRejectsInvalidGatewayResources() {
 
 // TestRejectsInvalidRatelimitConfigResources tests behaviors when Gloo rejects invalid RateLimitConfig resources due to missing enterprise features
 func (s *testingSuite) TestRejectsInvalidRatelimitConfigResources() {
+	if s.testInstallation.Metadata.IsEnterprise {
+		s.T().Skip("RateLimitConfig is enterprise-only, skipping test when running enterprise helm chart")
+	}
 	output, _ := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidRLC, "-n", s.testInstallation.Metadata.InstallNamespace)
 	// We don't expect an error exit code here because this is a warning
 	s.Assert().Contains(output, fmt.Sprintf(`admission webhook "gloo.%s.svc" denied the request`, s.testInstallation.Metadata.InstallNamespace))

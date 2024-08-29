@@ -1,0 +1,14 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/solo-projects/issues/6824
+    resolvesIssue: false
+    description: |
+      helm/gloo: introduce component label for grouping resources
+
+      Introduces a `gloo.solo.io/component` label to group Helm resources
+      that are associated with a given component. This is required by
+      downstream projects that use Helm as a templating engine to be able
+      to group resources associated with a component and customize their
+      behavior. This change groups resources related required by the
+      certgen component using the new label.
+
