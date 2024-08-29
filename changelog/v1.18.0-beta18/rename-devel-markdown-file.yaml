@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Rename static_metadata.md -> static-metadata.md in the devel/ directory.
+      This is to make consistent with the rest of the files throughout that
+      directory.
+
+      skipCI-docs-build:true
+      skipCI-kube-tests:true
