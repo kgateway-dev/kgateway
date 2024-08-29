@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6165
+    resolvesIssue: false
+    description: >-
+      Fix the "conformance" and "conformance-%" targets in the Makefile
+      to run the "TestConformance" suite. Previously, both the "TestConformance"
+      and "TestExperimental" suites were run.
