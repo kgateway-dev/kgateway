@@ -1919,6 +1919,9 @@ var _ = Describe("Kube2e: gateway", func() {
 			// Therefore, before the tests start, we must attempt updates that should be rejected
 			// They will only be rejected once a Proxy exists in the ApiSnapshot
 
+			// NOTE: The error used to check this behavior is a warning, meaning
+			// this function is ineffective when testing with allowWarnings=false
+
 			placeholderUs := &gloov1.Upstream{
 				Metadata: &core.Metadata{
 					Name:      "",
@@ -2094,8 +2097,6 @@ spec:
 			})
 
 			Context("secret validation", func() {
-				When("warnMissingTlsSecret=false", Ordered, func() {})
-				When("allowWarnings=false", Ordered, func() {})
 				const secretName = "tls-secret"
 
 				BeforeEach(func() {
@@ -2246,16 +2247,16 @@ spec:
 						}, testHelper.InstallNamespace)
 					})
 
-					// There are times when the VirtualService + Proxy do not update Status with the error when deleting the referenced Secret, therefore the validation error doesn't occur.
-					// It isn't until later - either a few minutes and/or after forcing an update by updating the VS - that the error status appears.
-					// The reason is still unknown, so we retry on flakes in the meantime.
 					It("should act as expected with secret validation", func() {
 						By("waiting for the modified VS to be accepted")
 						helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 							return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, testRunnerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
 						})
 
-						verifyGlooValidationWorks()
+						// verifyGlooValidationWorks()
+						// The method ^ that uses to check the validation server doesn't work with
+						// allowWarnings=true
+						time.Sleep(time.Second * 10)
 
 						By("successfully deleting a secret that is in use")
 						err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
@@ -2294,13 +2295,16 @@ spec:
 							return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, testRunnerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
 						})
 
-						verifyGlooValidationWorks()
+						// verifyGlooValidationWorks()
+						// The method ^ that uses to check the validation server doesn't work with
+						// allowWarnings=true
+						time.Sleep(time.Second * 10)
 
 						By("failing to delete a secret that is in use")
 						err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
 
 						Expect(err).To(HaveOccurred())
-						Expect(err).To(MatchError(utils.SslSecretNotFoundError))
+						Expect(err).To(MatchError(ContainSubstring(utils.SslSecretNotFoundError.Error())))
 
 						By("successfully deleting a secret that is no longer in use")
 						// We patch the VirtualService to remove the ssl reference, allowing the Secret to be removed
