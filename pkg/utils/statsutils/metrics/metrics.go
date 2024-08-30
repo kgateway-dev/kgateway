@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
@@ -135,7 +135,7 @@ func (m *ConfigStatusMetrics) SetResourceValid(ctx context.Context, resource res
 		if err != nil {
 			log.Errorf("Error setting labels on %s: %s", Names[gvk], err.Error())
 		}
-		utils.MeasureZero(ctx, m.metrics[gvk].gauge, mutators...)
+		statsutils.MeasureZero(ctx, m.metrics[gvk].gauge, mutators...)
 	}
 }
 
@@ -152,7 +152,7 @@ func (m *ConfigStatusMetrics) SetResourceInvalid(ctx context.Context, resource r
 		if err != nil {
 			log.Errorf("Error setting labels on %s: %s", Names[gvk], err.Error())
 		}
-		utils.MeasureOne(ctx, m.metrics[gvk].gauge, mutators...)
+		statsutils.MeasureOne(ctx, m.metrics[gvk].gauge, mutators...)
 	}
 }
 
@@ -224,7 +224,7 @@ func newResourceMetric(gvk schema.GroupVersionKind, labelToPath map[string]strin
 		i++
 	}
 	return &resourceMetric{
-		gauge:       utils.MakeGauge(Names[gvk], descriptions[gvk], tagKeys...),
+		gauge:       statsutils.MakeGauge(Names[gvk], descriptions[gvk], tagKeys...),
 		labelToPath: labelToPath,
 	}, nil
 }

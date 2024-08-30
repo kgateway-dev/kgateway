@@ -2,6 +2,7 @@ package assertions
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/onsi/gomega"
@@ -42,5 +43,5 @@ func (p *Provider) EventuallyPodsMatches(
 	}).
 		WithTimeout(currentTimeout).
 		WithPolling(pollingInterval).
-		Should(gomega.Succeed(), "Failed to match pod")
+		Should(gomega.Succeed(), fmt.Sprintf("Failed to match pod in namespace %s", podNamespace))
 }

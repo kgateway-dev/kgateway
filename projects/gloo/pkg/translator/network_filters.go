@@ -78,7 +78,6 @@ func (n *httpNetworkFilterTranslator) computePreHCMFilters(params plugins.Params
 		if err != nil {
 			validation.AppendHTTPListenerError(n.report, validationapi.HttpListenerReport_Error_ProcessingError, err.Error())
 		}
-		stagedFilters = append(stagedFilters, CustomNetworkFiltersHTTP(n.listener)...)
 
 		for _, nf := range stagedFilters {
 			if nf.Filter == nil {
@@ -88,6 +87,7 @@ func (n *httpNetworkFilterTranslator) computePreHCMFilters(params plugins.Params
 			networkFilters = append(networkFilters, nf)
 		}
 	}
+	networkFilters = append(networkFilters, CustomNetworkFiltersHTTP(n.listener)...)
 	return networkFilters
 }
 
@@ -221,7 +221,6 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 		if err != nil {
 			validation.AppendHTTPListenerError(h.report, validationapi.HttpListenerReport_Error_ProcessingError, err.Error())
 		}
-		stagedFilters = append(stagedFilters, CustomHttpFilters(h.listener)...)
 
 		for _, httpFilter := range stagedFilters {
 			if httpFilter.Filter == nil {
@@ -231,6 +230,7 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 			httpFilters = append(httpFilters, httpFilter)
 		}
 	}
+	httpFilters = append(httpFilters, CustomHttpFilters(h.listener)...)
 
 	// https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http/http_filters#filter-ordering
 	// HttpFilter ordering determines the order in which the HCM will execute the filter.

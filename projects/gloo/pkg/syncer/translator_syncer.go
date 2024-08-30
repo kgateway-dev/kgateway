@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/statsutils/metrics"
 	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 
 	"github.com/hashicorp/go-multierror"
@@ -17,7 +18,6 @@ import (
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	gwsyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
-	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
@@ -146,7 +146,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 
 	// After reports are written for proxies, save in gateway syncer (previously gw watched for status changes to proxies)
 	if s.gatewaySyncer != nil {
-		s.gatewaySyncer.UpdateProxies(ctx)
+		s.gatewaySyncer.UpdateStatusForAllProxies(ctx)
 	}
 
 	s.statusSyncer.reportsLock.Lock()

@@ -255,6 +255,8 @@ func (m *SemanticCache) Clone() proto.Message {
 
 	target.Ttl = m.GetTtl()
 
+	target.Mode = m.GetMode()
+
 	return target
 }
 
@@ -485,6 +487,8 @@ func (m *SemanticCache_Redis) Clone() proto.Message {
 	target = &SemanticCache_Redis{}
 
 	target.ConnectionString = m.GetConnectionString()
+
+	target.ScoreThreshold = m.GetScoreThreshold()
 
 	return target
 }

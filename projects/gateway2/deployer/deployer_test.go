@@ -189,6 +189,66 @@ var _ = Describe("Deployer", func() {
 			}
 		}
 	)
+
+	Context("default case", func() {
+
+		It("should work with empty params", func() {
+			gwc := &api.GatewayClass{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: wellknown.GatewayClassName,
+				},
+				Spec: api.GatewayClassSpec{
+					ControllerName: wellknown.GatewayControllerName,
+					ParametersRef: &api.ParametersReference{
+						Group:     "gateway.gloo.solo.io",
+						Kind:      "GatewayParameters",
+						Name:      wellknown.DefaultGatewayParametersName,
+						Namespace: ptr.To(api.Namespace(defaultNamespace)),
+					},
+				},
+			}
+			gwParams := &gw2_v1alpha1.GatewayParameters{
+				TypeMeta: metav1.TypeMeta{
+					Kind: "GatewayParameters",
+					// The parsing expects GROUP/VERSION format in this field
+					APIVersion: gw2_v1alpha1.GroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      wellknown.DefaultGatewayParametersName,
+					Namespace: defaultNamespace,
+					UID:       "1237",
+				},
+			}
+			d, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, gwParams), &deployer.Inputs{
+				ControllerName: wellknown.GatewayControllerName,
+				Dev:            false,
+				ControlPlane: bootstrap.ControlPlane{
+					Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+				},
+			})
+
+			gw := &api.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: defaultNamespace,
+					UID:       "1235",
+				},
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Gateway",
+					APIVersion: "gateway.solo.io/v1beta1",
+				},
+				Spec: api.GatewaySpec{
+					GatewayClassName: wellknown.GatewayClassName,
+				},
+			}
+
+			Expect(err).NotTo(HaveOccurred())
+			gvks, err := d.GetObjsToDeploy(context.Background(), gw)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(gvks).NotTo(BeEmpty())
+		})
+	})
+
 	Context("special cases", func() {
 		var gwc *api.GatewayClass
 		BeforeEach(func() {

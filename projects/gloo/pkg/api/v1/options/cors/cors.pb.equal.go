@@ -115,3 +115,31 @@ func (m *CorsPolicy) Equal(that interface{}) bool {
 
 	return true
 }
+
+// Equal function
+func (m *CorsPolicyMergeSettings) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*CorsPolicyMergeSettings)
+	if !ok {
+		that2, ok := that.(CorsPolicyMergeSettings)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if m.GetExposeHeaders() != target.GetExposeHeaders() {
+		return false
+	}
+
+	return true
+}

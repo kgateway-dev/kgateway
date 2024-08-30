@@ -313,6 +313,24 @@ func (c *Cli) Scale(ctx context.Context, namespace string, resource string, repl
 	return c.RunCommand(ctx, "wait", "-n", namespace, "--for=condition=available", resource, "--timeout=300s")
 }
 
+// RestartDeployment restarts a deployment. It does not wait for the deployment to be ready.
+func (c *Cli) RestartDeployment(ctx context.Context, name string, extraArgs ...string) error {
+	args := append([]string{
+		"rollout",
+		"restart",
+		fmt.Sprintf("deployment/%s", name),
+	}, extraArgs...)
+	return c.RunCommand(ctx, args...)
+}
+
+// RestartDeploymentAndWait restarts a deployment and waits for it to become healthy.
+func (c *Cli) RestartDeploymentAndWait(ctx context.Context, name string, extraArgs ...string) error {
+	if err := c.RestartDeployment(ctx, name, extraArgs...); err != nil {
+		return err
+	}
+	return c.DeploymentRolloutStatus(ctx, name, extraArgs...)
+}
+
 // GetContainerLogs retrieves the logs for the specified container
 func (c *Cli) GetContainerLogs(ctx context.Context, namespace string, name string) (string, error) {
 	stdout, stderr, err := c.Execute(ctx, "-n", namespace, "logs", name)

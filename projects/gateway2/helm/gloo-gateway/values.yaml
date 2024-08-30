@@ -21,6 +21,12 @@ gateway:
   service:
     type: LoadBalancer
 
+  image:
+    pullPolicy: IfNotPresent
+
+  istio:
+    enabled: false
+
   # list of ports actually come from the Gateway resource driving this proxy
   ports:
   - port: 80

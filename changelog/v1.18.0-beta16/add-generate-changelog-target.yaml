@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: |
+      Add a `generate-changelog` target to the Makefile that will
+      generate a changelog for the current release.
+    resolvesIssue: false

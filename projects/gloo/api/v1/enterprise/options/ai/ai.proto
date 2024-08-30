@@ -40,7 +40,7 @@ message SingleAuthToken {
     * Default Port: 443
     * Auth Token: x-api-key to use for the Anthropic API
     * Version: Optional version header to pass to the Anthropic API
-  
+
   All of the above backends can be configured to use a custom host and port.
   This option is meant to allow users to proxy the request, or to use a different
   backend altogether which is API compliant with the upstream version.
@@ -118,7 +118,7 @@ message UpstreamSpec {
     // See: https://docs.anthropic.com/en/api/versioning for more details
     string version = 3;
   }
-  
+
   oneof llm {
     OpenAI openai = 1;
     Mistral mistral = 2;
@@ -165,13 +165,13 @@ message RouteSettings {
 
   /*
     Guards to apply to the LLM requests on this route.
-    This can be used to reject requests based on the content of the prompt, as well as 
+    This can be used to reject requests based on the content of the prompt, as well as
     mask responses based on the content of the response. These guards can be also be used
     at the same time.
 
     Below is a simple example of a prompt guard that will reject any prompt that contains
     the string "credit card" and will mask any credit card numbers in the response.
-    
+
     ```
     promptGuard:
       request:
@@ -212,7 +212,7 @@ message RouteSettings {
   RAG rag = 3;
   /*
     Semantic caching configuration
-    Semantic caching allows you to cache previous model responses in order to provide 
+    Semantic caching allows you to cache previous model responses in order to provide
     faster responses to similar requests in the future.
     Results will vary depending on the embedding mechanism used, as well
     as the similarity threshold set.
@@ -235,7 +235,7 @@ message RouteSettings {
 
   // Backup models to use in case of a failure with the primary model
   // passed in the request. By default each model will be tried 2 times
-  // before moving on to the next model in the list. If all requests fail then 
+  // before moving on to the next model in the list. If all requests fail then
   // the final response will be returned to the client.
   repeated string backup_models = 5;
 
@@ -301,6 +301,14 @@ message SemanticCache {
   message Redis {
     // Connection string to the Redis database
     string connection_string = 1;
+
+    // Similarity score threshold value between 0.0 and 1.0 that determines how similar
+    // two queries need to be in order to return a cached result.
+    // The lower the number, the more similar the queries need to be for a cache hit.
+    //
+    // +kubebuilder:validation:Minimum=0
+    // +kubebuilder:validation:Maximum=1
+    float score_threshold = 2;
   }
   // Data store from which to cache the request/response pairs
   message DataStore {
@@ -308,12 +316,20 @@ message SemanticCache {
       Redis redis = 1;
     }
   }
+  enum Mode {
+    // Read and write to the cache as a part of the request/response lifecycle
+    READ_WRITE = 0;
+    // Only read from the cache, do not write to it. Data will be written to the cache outside the request/response cycle.
+    READ_ONLY = 1;
+  }
   // Which data store to use
   DataStore datastore = 1;
   // Model to use to get embeddings for prompt
   Embedding embedding = 2;
   // Time before data in the cache is considered expired
   uint32 ttl = 3;
+  // Cache mode to use: READ_WRITE or READ_ONLY
+  Mode mode = 4;
 }
 
 message RAG {

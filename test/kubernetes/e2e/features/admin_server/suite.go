@@ -2,18 +2,12 @@ package admin_server
 
 import (
 	"context"
-	"time"
 
 	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	"github.com/onsi/gomega/types"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
-	"github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils/glooadminutils/admincli"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/stretchr/testify/suite"
@@ -50,7 +44,7 @@ func (s *testingSuite) TestGetInputSnapshotIncludesSettings() {
 			Name:      kubeutils.GlooDeploymentName,
 			Namespace: s.testInstallation.Metadata.InstallNamespace,
 		},
-		inputSnapshotContainsElement(s.testInstallation, v1.SettingsGVK, metav1.ObjectMeta{
+		s.testInstallation.Assertions.InputSnapshotContainsElement(v1.SettingsGVK, metav1.ObjectMeta{
 			Name:      defaults.SettingsName,
 			Namespace: s.testInstallation.Metadata.InstallNamespace,
 		}),
@@ -74,7 +68,7 @@ func (s *testingSuite) TestGetInputSnapshotIncludesEdgeApiResources() {
 			Name:      kubeutils.GlooDeploymentName,
 			Namespace: s.testInstallation.Metadata.InstallNamespace,
 		},
-		inputSnapshotContainsElement(s.testInstallation, v1.UpstreamGVK, upstreamMeta),
+		s.testInstallation.Assertions.InputSnapshotContainsElement(v1.UpstreamGVK, upstreamMeta),
 	)
 }
 
@@ -99,34 +93,6 @@ func (s *testingSuite) TestGetInputSnapshotIncludesK8sGatewayApiResources() {
 			Name:      kubeutils.GlooDeploymentName,
 			Namespace: s.testInstallation.Metadata.InstallNamespace,
 		},
-		inputSnapshotContainsElement(s.testInstallation, v1alpha1.GatewayParametersGVK, gatewayParametersMeta),
+		s.testInstallation.Assertions.InputSnapshotContainsElement(v1alpha1.GatewayParametersGVK, gatewayParametersMeta),
 	)
-}
-
-func inputSnapshotContainsElement(testInstallation *e2e.TestInstallation, gvk schema.GroupVersionKind, meta metav1.ObjectMeta) func(ctx context.Context, adminClient *admincli.Client) {
-	return inputSnapshotMatches(testInstallation, gomega.ContainElement(
-		gomega.And(
-			gomega.HaveKeyWithValue("kind", gomega.Equal(gvk.Kind)),
-			gomega.HaveKeyWithValue("apiVersion", gomega.Equal(gvk.GroupVersion().String())),
-			gomega.HaveKeyWithValue("metadata", gomega.And(
-				gomega.HaveKeyWithValue("name", meta.GetName()),
-				gomega.HaveKeyWithValue("namespace", meta.GetNamespace()),
-			)),
-		),
-	))
-}
-
-func inputSnapshotMatches(testInstallation *e2e.TestInstallation, inputSnapshotMatcher types.GomegaMatcher) func(ctx context.Context, adminClient *admincli.Client) {
-	return func(ctx context.Context, adminClient *admincli.Client) {
-		testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
-			inputSnapshot, err := adminClient.GetInputSnapshot(ctx)
-			g.Expect(err).NotTo(gomega.HaveOccurred(), "error getting input snapshot")
-			g.Expect(inputSnapshot).NotTo(gomega.BeEmpty(), "objects are returned")
-			g.Expect(inputSnapshot).To(inputSnapshotMatcher)
-		}).
-			WithContext(ctx).
-			WithTimeout(time.Second * 10).
-			WithPolling(time.Millisecond * 200).
-			Should(gomega.Succeed())
-	}
 }

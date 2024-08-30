@@ -29,13 +29,18 @@ var _ = Describe("Route Plugin", func() {
 		plugin plugins.Plugin
 
 		// values used in first example
-		allowOrigin1      = []string{"solo.io", "github.com"}
-		allowOriginRegex1 = []string{`.*\.solo\.io`, `git.*\.com`}
-		badOriginRegex1   = []string{`*\.solo\.io`, `git.*\.com`} // has a * at the front which is invalid
-		allowMethods1     = []string{"GET", "POST"}
-		allowHeaders1     = []string{"allowH1", "allow2"}
-		exposeHeaders1    = []string{"exHeader", "eh2"}
-		maxAge1           = "5555"
+		commonExposeHeader = "common"
+		routeExposeHeader  = "route"
+		vhExposeHeader     = "vh"
+
+		allowOrigin1       = []string{"solo.io", "github.com"}
+		allowOriginRegex1  = []string{`.*\.solo\.io`, `git.*\.com`}
+		badOriginRegex1    = []string{`*\.solo\.io`, `git.*\.com`} // has a * at the front which is invalid
+		allowMethods1      = []string{"GET", "POST"}
+		allowHeaders1      = []string{"allowH1", "allow2"}
+		routeExposeHeaders = []string{commonExposeHeader, routeExposeHeader}
+		vhExposeHeaders    = []string{commonExposeHeader, vhExposeHeader}
+		maxAge1            = "5555"
 	)
 
 	BeforeEach(func() {
@@ -46,14 +51,24 @@ var _ = Describe("Route Plugin", func() {
 	})
 
 	Context("CORS", func() {
-		It("should full specification", func() {
+		It("should process full specification", func() {
+			// Pass a VirtualHost with different CORS policy and without CorsPolicyMergeSettings as a sanity check that
+			// the VirtualHost CORS policy has no bearing on the Route's CORS policy when no merge settings are configured
+			params.VirtualHost = &v1.VirtualHost{
+				Options: &v1.VirtualHostOptions{
+					Cors: &cors.CorsPolicy{
+						AllowOrigin:   allowOrigin1,
+						ExposeHeaders: vhExposeHeaders,
+					},
+				},
+			}
 			allowCredentials1 := true
 			inRoute := routeWithCors(&cors.CorsPolicy{
 				AllowOrigin:      allowOrigin1,
 				AllowOriginRegex: allowOriginRegex1,
 				AllowMethods:     allowMethods1,
 				AllowHeaders:     allowHeaders1,
-				ExposeHeaders:    exposeHeaders1,
+				ExposeHeaders:    routeExposeHeaders,
 				MaxAge:           maxAge1,
 				AllowCredentials: allowCredentials1,
 				DisableForRoute:  true,
@@ -90,7 +105,7 @@ var _ = Describe("Route Plugin", func() {
 				},
 				AllowMethods:     strings.Join(allowMethods1, ","),
 				AllowHeaders:     strings.Join(allowHeaders1, ","),
-				ExposeHeaders:    strings.Join(exposeHeaders1, ","),
+				ExposeHeaders:    strings.Join(routeExposeHeaders, ","),
 				MaxAge:           maxAge1,
 				AllowCredentials: &wrappers.BoolValue{Value: allowCredentials1},
 				FilterEnabled: &envoy_config_core_v3.RuntimeFractionalPercent{
@@ -111,7 +126,7 @@ var _ = Describe("Route Plugin", func() {
 			Expect(outCorsConfig).NotTo(BeNil())
 			Expect(outCorsConfig).To(Equal(typedConfig))
 		})
-		It("should process  minimal specification", func() {
+		It("should process minimal specification", func() {
 			inRoute := routeWithCors(&cors.CorsPolicy{
 				AllowOrigin: allowOrigin1,
 			})
@@ -136,7 +151,7 @@ var _ = Describe("Route Plugin", func() {
 			Expect(outRoute.TypedPerFilterConfig).To(Equal(expected.TypedPerFilterConfig))
 
 		})
-		It("should reject  bad CORS", func() {
+		It("should reject bad CORS", func() {
 			inRoute := routeWithCors(&cors.CorsPolicy{
 				AllowOriginRegex: badOriginRegex1,
 			})
@@ -159,6 +174,85 @@ var _ = Describe("Route Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 			expected := basicEnvoyRoute()
 			Expect(outRoute).To(Equal(expected))
+		})
+		It("should apply CorsPolicyMergeSettings if set", func() {
+			// Add a VirtualHost with different CORS policy and with CorsPolicyMergeSettings that will cause non-default
+			// behavior
+			params.VirtualHost = &v1.VirtualHost{
+				Options: &v1.VirtualHostOptions{
+					Cors: &cors.CorsPolicy{
+						AllowOrigin:   allowOrigin1,
+						ExposeHeaders: vhExposeHeaders,
+					},
+					CorsPolicyMergeSettings: &cors.CorsPolicyMergeSettings{
+						ExposeHeaders: cors.CorsPolicyMergeSettings_UNION,
+					},
+				},
+			}
+			allowCredentials1 := true
+			inRoute := routeWithCors(&cors.CorsPolicy{
+				AllowOrigin:      allowOrigin1,
+				AllowOriginRegex: allowOriginRegex1,
+				AllowMethods:     allowMethods1,
+				AllowHeaders:     allowHeaders1,
+				ExposeHeaders:    routeExposeHeaders,
+				MaxAge:           maxAge1,
+				AllowCredentials: allowCredentials1,
+				DisableForRoute:  true,
+			})
+			outRoute := &envoy_config_route_v3.Route{
+				Action: &envoy_config_route_v3.Route_Route{
+					Route: &envoy_config_route_v3.RouteAction{},
+				},
+			}
+			expected := &envoy_config_cors_v3.CorsPolicy{
+				AllowOriginStringMatch: []*envoy_type_matcher_v3.StringMatcher{
+					{
+						MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{Exact: allowOrigin1[0]},
+					},
+					{
+						MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{Exact: allowOrigin1[1]},
+					},
+					{
+						MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
+							SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
+								EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{}},
+								Regex:      allowOriginRegex1[0],
+							},
+						},
+					},
+					{
+						MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
+							SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
+								EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{}},
+								Regex:      allowOriginRegex1[1],
+							},
+						},
+					},
+				},
+				AllowMethods: strings.Join(allowMethods1, ","),
+				AllowHeaders: strings.Join(allowHeaders1, ","),
+				// We expect expose headers from both VH and Route due to merge settings
+				ExposeHeaders:    strings.Join([]string{commonExposeHeader, vhExposeHeader, routeExposeHeader}, ","),
+				MaxAge:           maxAge1,
+				AllowCredentials: &wrappers.BoolValue{Value: allowCredentials1},
+				FilterEnabled: &envoy_config_core_v3.RuntimeFractionalPercent{
+					DefaultValue: &envoy_type_v3.FractionalPercent{
+						Numerator:   0,
+						Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
+					},
+					RuntimeKey: runtimeKey,
+				},
+			}
+			typedConfig, err := utils.MessageToAny(expected)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = plugin.(plugins.RoutePlugin).ProcessRoute(params, inRoute, outRoute)
+			Expect(err).NotTo(HaveOccurred())
+
+			outCorsConfig := outRoute.TypedPerFilterConfig["envoy.filters.http.cors"]
+			Expect(outCorsConfig).NotTo(BeNil())
+			Expect(outCorsConfig).To(Equal(typedConfig))
 		})
 	})
 

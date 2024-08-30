@@ -94,7 +94,7 @@ func CreateTestInstallationForCluster(
 		// ResourceClients are only available _after_ installing Gloo Gateway
 		ResourceClients: nil,
 
-		// Create an operations provider, and point it to the running installation
+		// Create an actions provider, and point it to the running installation
 		Actions: actions.NewActionsProvider().
 			WithClusterContext(clusterContext).
 			WithGlooGatewayContext(glooGatewayContext),

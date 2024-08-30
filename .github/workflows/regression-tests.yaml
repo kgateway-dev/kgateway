@@ -82,6 +82,8 @@ jobs:
         # (see https://github.com/solo-io/solo-projects/issues/6094)
         image-variant:
           - standard
+        profile:
+        - standard
     steps:
     - uses: actions/checkout@v4
     - id: auto-succeed-tests

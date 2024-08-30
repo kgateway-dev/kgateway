@@ -130,9 +130,9 @@ spec:
 {{- if .Values.gateway.validation.enabled }}
     validation:
       proxyValidationServerAddr: "gloo:{{ .Values.gloo.deployment.validationPort }}"
-{{- /* need to do this weird if/else because Helm cannot differentiate between 'false' and 'unset' */}}
       alwaysAccept: {{ .Values.gateway.validation.alwaysAcceptResources }}
       allowWarnings: {{ .Values.gateway.validation.allowWarnings }}
+      warnMissingTlsSecret: {{ .Values.gateway.validation.warnMissingTlsSecret }}
       serverEnabled: {{ .Values.gateway.validation.serverEnabled }}
       disableTransformationValidation: {{ .Values.gateway.validation.disableTransformationValidation }}
       warnRouteShortCircuiting: {{ .Values.gateway.validation.warnRouteShortCircuiting }}

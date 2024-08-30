@@ -14,16 +14,16 @@ import (
 )
 
 type syncer struct {
-	eds         *EndpointDiscovery
-	refreshRate time.Duration
-	discOpts    Opts
+	edsDiscovery *EndpointDiscovery
+	refreshRate  time.Duration
+	discOpts     Opts
 }
 
 func NewEdsSyncer(disc *EndpointDiscovery, discOpts Opts, refreshRate time.Duration) v1.EdsSyncer {
 	s := &syncer{
-		eds:         disc,
-		refreshRate: refreshRate,
-		discOpts:    discOpts,
+		edsDiscovery: disc,
+		refreshRate:  refreshRate,
+		discOpts:     discOpts,
 	}
 	return s
 }
@@ -46,7 +46,7 @@ func (s *syncer) Sync(ctx context.Context, snap *v1.EdsSnapshot) error {
 		RefreshRate: s.refreshRate,
 	}
 
-	udsErrs, err := s.eds.StartEds(snap.Upstreams, opts)
+	edsErrs, err := s.edsDiscovery.StartEds(snap.Upstreams, opts)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func (s *syncer) Sync(ctx context.Context, snap *v1.EdsSnapshot) error {
 	go func() {
 		for {
 			select {
-			case err := <-udsErrs:
+			case err := <-edsErrs:
 				contextutils.LoggerFrom(ctx).Errorf("error in EDS: %v", err)
 			case <-ctx.Done():
 				return

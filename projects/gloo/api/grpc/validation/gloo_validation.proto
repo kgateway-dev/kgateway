@@ -121,8 +121,24 @@ message ListenerReport {
         string reason = 2;
     }
 
+    // warning types for the given listener config
+    message Warning {
+        enum Type {
+            SSLConfigWarning = 0;
+        }
+
+        // the type of the error
+        Type type = 1;
+        // any extra info as a string
+        string reason = 2;
+    }
+
+
     // errors on top-level config of the listener
     repeated Error errors = 2;
+
+    // warnings on the top-levelconfig of the listener
+    repeated Warning warnings = 7;
 
     oneof listener_type_report {
         // report for the http listener

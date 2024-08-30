@@ -13,6 +13,8 @@ gateway:
   validation:
     allowWarnings: true
     alwaysAcceptResources: false
+    # added to preserve behavior tested by this suite.
+    warnMissingTlsSecret: false
     # skipping delete validation due to flakes per https://github.com/solo-io/solo-projects/issues/6272
     webhook:
       skipDeleteValidationResources:

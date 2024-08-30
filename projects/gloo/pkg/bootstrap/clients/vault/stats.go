@@ -1,7 +1,7 @@
 package vault
 
 import (
-	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	"go.opencensus.io/stats/view"
 )
 
@@ -20,28 +20,28 @@ func init() {
 
 var (
 	// Login metrics
-	MLastLoginSuccess     = utils.Int64Measure("gloo.solo.io/vault/last_login_success", "Timestamp of last successful authentication of vault")
-	MLastLoginSuccessView = utils.ViewForCounter(MLastLoginSuccess, view.LastValue())
+	MLastLoginSuccess     = statsutils.Int64Measure("gloo.solo.io/vault/last_login_success", "Timestamp of last successful authentication of vault")
+	MLastLoginSuccessView = statsutils.ViewForCounter(MLastLoginSuccess, view.LastValue())
 
-	MLastLoginFailure     = utils.Int64Measure("gloo.solo.io/vault/last_login_failure", "Timestamp of last failed authentication of vault")
-	MLastLoginFailureView = utils.ViewForCounter(MLastLoginFailure, view.LastValue())
+	MLastLoginFailure     = statsutils.Int64Measure("gloo.solo.io/vault/last_login_failure", "Timestamp of last failed authentication of vault")
+	MLastLoginFailureView = statsutils.ViewForCounter(MLastLoginFailure, view.LastValue())
 
-	MLoginSuccesses     = utils.Int64Measure("gloo.solo.io/vault/login_successes", "Number of successful authentications of vault")
-	MLoginSuccessesView = utils.ViewForCounter(MLoginSuccesses, view.Sum())
+	MLoginSuccesses     = statsutils.Int64Measure("gloo.solo.io/vault/login_successes", "Number of successful authentications of vault")
+	MLoginSuccessesView = statsutils.ViewForCounter(MLoginSuccesses, view.Sum())
 
-	MLoginFailures     = utils.Int64Measure("gloo.solo.io/vault/login_failures", "Number of failed authentications of vault")
-	MLoginFailuresView = utils.ViewForCounter(MLoginFailures, view.Sum())
+	MLoginFailures     = statsutils.Int64Measure("gloo.solo.io/vault/login_failures", "Number of failed authentications of vault")
+	MLoginFailuresView = statsutils.ViewForCounter(MLoginFailures, view.Sum())
 
 	// Renew metrics
-	MLastRenewSuccess     = utils.Int64Measure("gloo.solo.io/vault/last_renew_success", "Timestamp of last successful renewal of vault secret lease")
-	MLastRenewSuccessView = utils.ViewForCounter(MLastRenewSuccess, view.LastValue())
+	MLastRenewSuccess     = statsutils.Int64Measure("gloo.solo.io/vault/last_renew_success", "Timestamp of last successful renewal of vault secret lease")
+	MLastRenewSuccessView = statsutils.ViewForCounter(MLastRenewSuccess, view.LastValue())
 
-	MLastRenewFailure     = utils.Int64Measure("gloo.solo.io/vault/last_renew_failure", "Timestamp of last failed renewal of vault secret lease")
-	MLastRenewFailureView = utils.ViewForCounter(MLastRenewFailure, view.LastValue())
+	MLastRenewFailure     = statsutils.Int64Measure("gloo.solo.io/vault/last_renew_failure", "Timestamp of last failed renewal of vault secret lease")
+	MLastRenewFailureView = statsutils.ViewForCounter(MLastRenewFailure, view.LastValue())
 
-	MRenewSuccesses     = utils.Int64Measure("gloo.solo.io/vault/renew_successes", "Number of successful renewals of vault secret lease")
-	MRenewSuccessesView = utils.ViewForCounter(MRenewSuccesses, view.Sum())
+	MRenewSuccesses     = statsutils.Int64Measure("gloo.solo.io/vault/renew_successes", "Number of successful renewals of vault secret lease")
+	MRenewSuccessesView = statsutils.ViewForCounter(MRenewSuccesses, view.Sum())
 
-	MRenewFailures     = utils.Int64Measure("gloo.solo.io/vault/renew_failures", "Number of failed renewals of vault secret lease")
-	MRenewFailuresView = utils.ViewForCounter(MRenewFailures, view.Sum())
+	MRenewFailures     = statsutils.Int64Measure("gloo.solo.io/vault/renew_failures", "Number of failed renewals of vault secret lease")
+	MRenewFailuresView = statsutils.ViewForCounter(MRenewFailures, view.Sum())
 )

@@ -1233,6 +1233,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		var (
 			httpEcho            helper.TestContainer
 			httpEchoClusterName string
+			curlPod             helper.TestContainer
 			clusterIp           string
 			tcpPort             = corev1.ServicePort{
 				Name:       "tcp-proxy",
@@ -1249,6 +1250,12 @@ var _ = Describe("Kube2e: gateway", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			err = httpEcho.DeployResources(time.Minute)
+			Expect(err).NotTo(HaveOccurred())
+
+			curlPod, err = helper.NewCurl(testHelper.InstallNamespace)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = curlPod.DeployResources(time.Minute)
 			Expect(err).NotTo(HaveOccurred())
 
 			gwSvc, err := resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Get(ctx, gatewayProxy, metav1.GetOptions{})
@@ -1291,6 +1298,9 @@ var _ = Describe("Kube2e: gateway", func() {
 			err = httpEcho.TerminatePod()
 			Expect(err).NotTo(HaveOccurred())
 
+			err = curlPod.TerminatePod()
+			Expect(err).NotTo(HaveOccurred())
+
 			err = resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Delete(ctx, helper.HttpEchoName, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -1324,7 +1334,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			It("correctly routes to the service (tcp)", func() {
 				responseString := fmt.Sprintf(`"hostname":"%s"`, gatewayProxy)
 
-				httpEcho.CurlEventuallyShouldRespond(helper.CurlOpts{
+				curlPod.CurlEventuallyShouldRespond(helper.CurlOpts{
 					Protocol:          "http",
 					Service:           gatewayProxy,
 					Port:              int(defaults2.TcpPort),
@@ -1377,7 +1387,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			It("correctly routes to the service (tcp/tls)", func() {
 				responseString := fmt.Sprintf(`"hostname":"%s"`, httpEchoClusterName)
 
-				httpEcho.CurlEventuallyShouldRespond(helper.CurlOpts{
+				curlPod.CurlEventuallyShouldRespond(helper.CurlOpts{
 					Protocol:          "https",
 					Sni:               httpEchoClusterName,
 					Service:           clusterIp,

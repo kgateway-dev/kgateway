@@ -22,6 +22,29 @@ Gloo Gateway Enterprise offers `n-3` patching support for bug and critical secur
 <!--TO FIND VERSIONS
 For 1.17 and later, go to the version branch, such as v1.17.x. In the .github/workflows.env/nightly-tests directory, open the min_versions.env and max_versions.env files. Example on main: https://github.com/solo-io/gloo/tree/main/.github/workflows/.env/nightly-tests -->
 
+## Image variants
+
+For some Gloo Gateway component images, the following image variants are supported. Note that the `fips` and `fips-distroless` image variants are supported for Enterprise only.
+
+* **Standard**: The default image variant provided by Gloo Gateway. The standard variant does not require a tag on the image. 
+* **Distroless**: An image tagged with `-distroless` is a slimmed-down distribution with the minimum set of binary dependencies to run the image, for enhanced performance and security. Distroless images do not contain package managers, shells, or any other programs that are generally found in a standard Linux distribution. The use of distroless variants is a standard practice adopted by various open source projects and proprietary applications.
+* **FIPS** (Enterprise only): An image tagged with `-fips` complies with National Institute of Standards and Technology (NIST) Federal Information Processing Standards (FIPS), for use cases that require federal information processing capabilities. For example, you might provide a cloud service that runs in a Federal Risk and Authorization Management Program ([FedRAMP](https://www.gsa.gov/technology/government-it-initiatives/fedramp)) regulated environment. In such cases, you can use Gloo Gateway's FIPS images without the need for any additional tooling or CLIs.
+* **FIPS and distroless** (Enterprise only): An image tagged with `-fips-distroless` follows the same characteristics of both the distroless and FIPS image variants.
+
+Gloo Gateway supports image variants for the following component images:
+- `access-logger`
+- `certgen`
+- `discovery`
+- `gloo`
+- `gloo-envoy-wrapper`
+- `ingress`
+- `kubectl`
+- `sds`
+
+You have two options for specifying the variant for a Gloo Gateway image in your Helm values:
+* Specify the image variant for all Gloo Gateway components in the `global.image.variant` Helm field. Supported values include `standard`, `distroless`, `fips`, and `fips-distroless`. If unset, the default value is `standard`.
+* Specify images for individual components by using variant tags in the `gloo.<component>.deployment.image.tag` field of the component's Helm settings, such as `quay.io/solo-io/gloo-ee:v{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}-distroless`.
+
 ## Release cadence
 
 Gloo Gateway Enterprise releases are built on the OSS codebase and typically follow the equivalent Gloo Gateway OSS release. The OSS version is always released as the latest build, while Enterprise version is always released as the first stable build of that version. For example, the latest build of Gloo Gateway OSS is {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}, while the latest stable build of Gloo Gateway Enterprise is {{< readfile file="static/content/version_gee_latest.md" markdown="true">}}.
