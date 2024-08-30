@@ -111,7 +111,15 @@ var _ = Describe("Translator", func() {
 		ctrl = gomock.NewController(T)
 
 		cluster = nil
-		settings = &v1.Settings{}
+		settings = &v1.Settings{
+			Gateway: &v1.GatewayOptions{
+				Validation: &v1.GatewayOptions_ValidationOptions{
+					// This is the default value, specifying false explicitly here as it
+					// is not default-on until 1.18
+					WarnMissingTlsSecret: &wrapperspb.BoolValue{Value: false},
+				},
+			},
+		}
 		memoryClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
