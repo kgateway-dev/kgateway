@@ -18,6 +18,9 @@ inputs:
   istio-version:
     required: true
     description: The version of Istio to use
+  matrix-label:
+    required: true
+    description: The version of the matrix being used - used to name artifacts to prevent filename collisions
 
 runs:
   using: "composite"
@@ -33,9 +36,20 @@ runs:
       ISTIO_VERSION: ${{ inputs.istio-version }}
     shell: bash
     run: make go-test
+  - name: Summarize tests
+    # Print out a summary of ALL tests run under this action. In the future we can use this tool 
+    # with the --json flag to export the results for centralized processing.
+    shell: bash
+    run: go run ./ci/github-actions/go-test-summary
   - name: Archive bug report directory on failure
     if: ${{ failure() }}
     uses: actions/upload-artifact@v4
     with:
       name: bug-report-${{ inputs.cluster-name }}
       path: ./_test/bug_report/${{ inputs.cluster-name }}
+  - name: Archive test results
+    if: ${{ always() }}
+    uses: actions/upload-artifact@v4
+    with:
+      name: go-test-summary-${{ inputs.cluster-name }}-${{ inputs.matrix-label }}
+      path: ./_test/test_log/go-test-summary

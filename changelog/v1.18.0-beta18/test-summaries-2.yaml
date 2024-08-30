@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6646
+    resolvesIssue: false
+    description: >-
+      Add test summary tool to centralize results and give easier insight into what failed.

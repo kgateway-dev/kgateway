@@ -11,6 +11,7 @@ metadata:
   labels:
 {{ include "gloo.labels" . | indent 4}}
     gloo: gateway-certgen
+    gloo.solo.io/component: certgen
   name: gateway-certgen
   namespace: {{ .Release.Namespace }}
   annotations:

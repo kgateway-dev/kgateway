@@ -512,7 +512,11 @@ func getGlooServerVersion(ctx context.Context, namespace string) (v string) {
 			Expect(container.Tag).To(Equal(v))
 		}
 	}
-	return strings.ReplaceAll(v, "-"+variant, "")
+	if variant != "" {
+		return strings.ReplaceAll(v, "-"+variant, "")
+	} else {
+		return v
+	}
 }
 
 func makeUnstructured(yam string) *unstructured.Unstructured {

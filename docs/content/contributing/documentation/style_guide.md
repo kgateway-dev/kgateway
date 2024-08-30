@@ -77,5 +77,4 @@ To create a new menu item, simply create a directory at the root of the content 
 
 Now that you have a firm grasp of how the docs should be written, you can start writing your first doc or get set up on your local workstation.
 
-* The [Example Document doc]({{< versioned_link_path fromRoot="/contributing/documentation/example_doc/" >}}) provides a starting point for creating new docs in Gloo Gateway
 * The [Editing Locally doc]({{< versioned_link_path fromRoot="/contributing/documentation/editing_locally/" >}}) provides a guide for getting started with Gloo Gateway docs on your local workstation

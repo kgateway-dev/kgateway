@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/6646
+    resolvesIssue: false
+    description: >-
+      Give each test summary artifact a unique name and refactor summary code into reusable package

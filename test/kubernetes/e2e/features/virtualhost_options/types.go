@@ -7,6 +7,7 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/gloo/test/gomega/matchers"
+	e2edefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
 	"github.com/solo-io/skv2/codegen/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -14,7 +15,10 @@ import (
 )
 
 var (
-	setupManifest          = filepath.Join(util.MustGetThisDir(), "testdata", "setup.yaml")
+	setupManifests = []string{
+		filepath.Join(util.MustGetThisDir(), "testdata", "setup.yaml"),
+		e2edefaults.CurlPodManifest,
+	}
 	basicVhOManifest       = filepath.Join(util.MustGetThisDir(), "testdata", "basic-vho.yaml")
 	sectionNameVhOManifest = filepath.Join(util.MustGetThisDir(), "testdata", "section-name-vho.yaml")
 	extraVhOManifest       = filepath.Join(util.MustGetThisDir(), "testdata", "extra-vho.yaml")

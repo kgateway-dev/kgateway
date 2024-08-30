@@ -419,6 +419,10 @@ func (m *SemanticCache) Equal(that interface{}) bool {
 		return false
 	}
 
+	if m.GetMode() != target.GetMode() {
+		return false
+	}
+
 	return true
 }
 
@@ -845,6 +849,10 @@ func (m *SemanticCache_Redis) Equal(that interface{}) bool {
 	}
 
 	if strings.Compare(m.GetConnectionString(), target.GetConnectionString()) != 0 {
+		return false
+	}
+
+	if m.GetScoreThreshold() != target.GetScoreThreshold() {
 		return false
 	}
 
