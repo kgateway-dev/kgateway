@@ -65,8 +65,8 @@ weight: 5
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `beforeExtAuth` | [.jwt.options.gloo.solo.io.VhostExtension](../jwt.proto.sk/#vhostextension) | JWT route config for the JWT filter that runs after the extauth filter. |
-| `afterExtAuth` | [.jwt.options.gloo.solo.io.VhostExtension](../jwt.proto.sk/#vhostextension) | JWT route config for the JWT filter that runs after the extauth filter. |
+| `beforeExtAuth` | [.jwt.options.gloo.solo.io.VhostExtension](../jwt.proto.sk/#vhostextension) | Per-route JWT config for the JWT filter that runs before the extauth filter. |
+| `afterExtAuth` | [.jwt.options.gloo.solo.io.VhostExtension](../jwt.proto.sk/#vhostextension) | Per-route JWT config for the JWT filter that runs before the extauth filter. |
 
 
 
@@ -84,8 +84,8 @@ weight: 5
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `beforeExtAuth` | [.jwt.options.gloo.solo.io.RouteExtension](../jwt.proto.sk/#routeextension) | JWT route config for the JWT filter that runs after the extauth filter. |
-| `afterExtAuth` | [.jwt.options.gloo.solo.io.RouteExtension](../jwt.proto.sk/#routeextension) | JWT route config for the JWT filter that runs after the extauth filter. |
+| `beforeExtAuth` | [.jwt.options.gloo.solo.io.RouteExtension](../jwt.proto.sk/#routeextension) | Per-route JWT config for the JWT filter that runs before the extauth filter. |
+| `afterExtAuth` | [.jwt.options.gloo.solo.io.RouteExtension](../jwt.proto.sk/#routeextension) | Per-route JWT config for the JWT filter that runs before the extauth filter. |
 
 
 

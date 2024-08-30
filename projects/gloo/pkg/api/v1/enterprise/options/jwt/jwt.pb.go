@@ -88,9 +88,9 @@ type JwtStagedRouteProvidersExtension struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// JWT route config for the JWT filter that runs after the extauth filter.
+	// Per-route JWT config for the JWT filter that runs before the extauth filter.
 	BeforeExtAuth *VhostExtension `protobuf:"bytes,1,opt,name=before_ext_auth,json=beforeExtAuth,proto3" json:"before_ext_auth,omitempty"`
-	// JWT route config for the JWT filter that runs after the extauth filter.
+	// Per-route JWT config for the JWT filter that runs before the extauth filter.
 	AfterExtAuth *VhostExtension `protobuf:"bytes,2,opt,name=after_ext_auth,json=afterExtAuth,proto3" json:"after_ext_auth,omitempty"`
 }
 
@@ -145,9 +145,9 @@ type JwtStagedRouteExtension struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// JWT route config for the JWT filter that runs after the extauth filter.
+	// Per-route JWT config for the JWT filter that runs before the extauth filter.
 	BeforeExtAuth *RouteExtension `protobuf:"bytes,1,opt,name=before_ext_auth,json=beforeExtAuth,proto3" json:"before_ext_auth,omitempty"`
-	// JWT route config for the JWT filter that runs after the extauth filter.
+	// Per-route JWT config for the JWT filter that runs before the extauth filter.
 	AfterExtAuth *RouteExtension `protobuf:"bytes,2,opt,name=after_ext_auth,json=afterExtAuth,proto3" json:"after_ext_auth,omitempty"`
 }
 
