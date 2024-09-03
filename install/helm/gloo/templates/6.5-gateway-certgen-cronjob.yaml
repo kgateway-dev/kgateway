@@ -10,6 +10,7 @@ metadata:
   labels:
 {{ include "gloo.labels" . | indent 4}}
     gloo: gateway-certgen-cronjob
+    gloo.solo.io/component: certgen
   name: gateway-certgen-cronjob
   namespace: {{ .Release.Namespace }}
 spec:

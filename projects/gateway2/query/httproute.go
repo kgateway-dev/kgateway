@@ -43,12 +43,12 @@ type HTTPRouteInfo struct {
 	Children BackendMap[[]*HTTPRouteInfo]
 }
 
-func (h HTTPRouteInfo) GetName() string {
-	return h.HTTPRoute.GetName()
+func (hr HTTPRouteInfo) GetName() string {
+	return hr.HTTPRoute.GetName()
 }
 
-func (h HTTPRouteInfo) GetNamespace() string {
-	return h.HTTPRoute.GetNamespace()
+func (hr HTTPRouteInfo) GetNamespace() string {
+	return hr.HTTPRoute.GetNamespace()
 }
 
 func (hr *HTTPRouteInfo) Hostnames() []string {
@@ -80,6 +80,11 @@ func (hr *HTTPRouteInfo) Clone() *HTTPRouteInfo {
 		Backends:  hr.Backends,
 		Children:  hr.Children,
 	}
+}
+
+// UniqueRouteName returns a unique name for the route, based on the index of the route in the parent.
+func (hr *HTTPRouteInfo) UniqueRouteName(index int) string {
+	return fmt.Sprintf("%s-%s-%d", hr.GetName(), hr.GetNamespace(), index)
 }
 
 // GetHTTPRouteChain recursively resolves all backends of the given HTTPRoute.

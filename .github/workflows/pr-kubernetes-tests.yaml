@@ -113,3 +113,4 @@ jobs:
         test-args: ${{ matrix.test.go-test-args }}
         run-regex: ${{ matrix.test.go-test-run-regex }}
         istio-version: ${{ steps.dotenv.outputs.istio_version }}
+        matrix-label: "pr"
