@@ -111,6 +111,7 @@ jobs:
           test-args: ${{ matrix.test.go-test-args }}
           run-regex: ${{ matrix.test.go-test-run-regex }}
           istio-version: ${{ steps.dotenv.outputs.istio_version }}
+          matrix-label: ${{ matrix.version-files.label }}
 
   end_to_end_tests_main:
     name: End-to-End (branch=main, cluster=${{ matrix.test.cluster-name }}, version=${{ matrix.version-files.label }} )
@@ -171,6 +172,7 @@ jobs:
           test-args: ${{ matrix.test.go-test-args }}
           run-regex: ${{ matrix.test.go-test-run-regex }}
           istio-version: ${{ steps.dotenv.outputs.istio_version }}
+          matrix-label: ${{ matrix.version-files.label }}
 
   end_to_end_tests_17:
     name: End-to-End (branch=v1.17.x, cluster=${{ matrix.test.cluster-name }}, version=${{ matrix.version-files.label }} )
@@ -231,6 +233,7 @@ jobs:
           test-args: ${{ matrix.test.go-test-args }}
           run-regex: ${{ matrix.test.go-test-run-regex }}
           istio-version: ${{ steps.dotenv.outputs.istio_version }}
+          matrix-label: ${{ matrix.version-files.label }}
 
   regression_tests_on_demand:
     name: on demand regression tests

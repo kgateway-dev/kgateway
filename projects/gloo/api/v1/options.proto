@@ -518,6 +518,15 @@ message RouteOptions {
         // AfterExtAuth validation runs after external authentication service, which is useful for verifying
         // JWTs obtained during extauth (e.g. oauth/oidc)
         jwt.options.gloo.solo.io.JwtStagedRouteExtension jwt_staged = 25;
+
+        // Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other
+        // headers to make routing decisions or combine with RBAC for fine-grained access control.
+        // JWT configuration has stages "BeforeExtAuth" and "AfterExtAuth". BeforeExtAuth JWT
+        // validation runs before the external authentication service. This is useful when JWT
+        // is used in conjunction with other auth mechanisms specified in the [boolean expression Extauth API](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig).
+        // AfterExtAuth validation runs after external authentication service, which is useful for verifying
+        // JWTs obtained during extauth (e.g. oauth/oidc)
+        jwt.options.gloo.solo.io.JwtStagedRouteProvidersExtension jwt_providers_staged = 32;
     }
 
     // Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims)
