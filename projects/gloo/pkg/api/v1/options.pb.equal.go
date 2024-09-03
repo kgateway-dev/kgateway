@@ -1448,6 +1448,21 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 			}
 		}
 
+	case *RouteOptions_JwtProvidersStaged:
+		if _, ok := target.JwtConfig.(*RouteOptions_JwtProvidersStaged); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetJwtProvidersStaged()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetJwtProvidersStaged()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetJwtProvidersStaged(), target.GetJwtProvidersStaged()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.JwtConfig != target.JwtConfig {

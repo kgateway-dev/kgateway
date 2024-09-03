@@ -230,7 +230,7 @@ func isJwtConfiguredOnVirtualHost(in *v1.VirtualHost) bool {
 }
 
 func isJwtConfiguredOnRoute(in *v1.Route) bool {
-	return in.GetOptions().GetJwtConfig() != nil
+	return in.GetOptions().GetJwtConfig() != nil || in.GetOptions().GetJwtStaged() != nil || in.GetOptions().GetJwtProvidersStaged() != nil
 }
 
 // leftmost_xff_address
