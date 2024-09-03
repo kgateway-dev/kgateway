@@ -3,45 +3,18 @@ package directresponse
 import (
 	"context"
 	"net/http"
-	"path/filepath"
 	"time"
 
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/solo-io/skv2/codegen/util"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
-)
-
-var (
-	setupManifest                  = filepath.Join(util.MustGetThisDir(), "testdata", "setup.yaml")
-	gatewayManifest                = filepath.Join(util.MustGetThisDir(), "testdata", "gateway.yaml")
-	basicDirectResposeManifests    = filepath.Join(util.MustGetThisDir(), "testdata", "basic-direct-response.yaml")
-	basicDelegationManifests       = filepath.Join(util.MustGetThisDir(), "testdata", "basic-delegation-direct-response.yaml")
-	invalidDirectResponseManifests = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-direct-response.yaml")
-)
-
-var (
-	glooProxyObjectMeta = metav1.ObjectMeta{
-		Name:      "gloo-proxy-gw",
-		Namespace: "default",
-	}
-	proxyDeployment   = &appsv1.Deployment{ObjectMeta: glooProxyObjectMeta}
-	proxyService      = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
-	httpbinDeployment = &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "httpbin",
-			Namespace: "httpbin",
-		},
-	}
+	testdefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
 )
 
 type testingSuite struct {
@@ -66,6 +39,9 @@ func (s *testingSuite) SetupSuite() {
 	// Check that the common setup manifest is applied
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
 	s.NoError(err, "can apply "+setupManifest)
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.CurlPodManifest)
+	s.NoError(err, "can apply curl pod manifest")
+
 	// Check that istio injection is successful and httpbin is running
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, httpbinDeployment)
 	// httpbin can take a while to start up with Istio sidecar
@@ -87,6 +63,8 @@ func (s *testingSuite) SetupSuite() {
 func (s *testingSuite) TearDownSuite() {
 	err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
 	s.NoError(err, "can delete setup manifest")
+	err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, testdefaults.CurlPodManifest)
+	s.NoError(err, "can delete curl pod manifest")
 	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, httpbinDeployment)
 }
 

@@ -40,7 +40,7 @@ type DirectResponseRouteSpec struct {
 	//
 	// +kubebuilder:validation:MaxLength=4096
 	// +kubebuilder:validation:Optional
-	Body *string `json:"body,omitempty"`
+	Body string `json:"body,omitempty"`
 }
 
 // DirectResponseRouteStatus defines the observed state of a DirectResponseRoute.
@@ -55,9 +55,9 @@ func (in *DirectResponseRoute) GetStatus() *uint32 {
 }
 
 // GetBody returns the content to be returned in the HTTP response body.
-func (in *DirectResponseRoute) GetBody() *string {
+func (in *DirectResponseRoute) GetBody() string {
 	if in == nil {
-		return nil
+		return ""
 	}
 	return in.Spec.Body
 }

@@ -33,57 +33,46 @@ func (p *plugin) ApplyRoutePlugin(
 	routeCtx *plugins.RouteContext,
 	outputRoute *v1.Route,
 ) error {
-	// TODO(tim): Investigate whether this validation approach is consistent
-	// with the status wellknown pattern in the upstream codebase. In particular,
-	// the `RouteConditionPartiallyInvalid` condition has an intereting godoc comment.
-
 	// determine whether there are any direct response routes that should be
 	// applied to the current route. otherwise, we'll return early.
 	match, err := findDirectResponseExtension(routeCtx)
 	if err != nil {
+		outputRoute.Action = ErrorResponseAction()
 		routeCtx.Reporter.SetCondition(reports.HTTPRouteCondition{
 			Type:    gwv1.RouteConditionResolvedRefs,
 			Status:  metav1.ConditionFalse,
 			Reason:  gwv1.RouteReasonBackendNotFound,
 			Message: fmt.Sprintf("Error while resolving DirectResponseRoute extensionRef: %v", err),
 		})
-		outputRoute.Action = &v1.Route_DirectResponseAction{
-			DirectResponseAction: &v1.DirectResponseAction{
-				Status: http.StatusInternalServerError,
-			},
-		}
 		return err
 	}
 	if match == nil {
+		// exit early, no DRRs were found in the extension refs.
 		return nil
 	}
 
 	// find the direct response route that matches the extension ref on the route filter.
-	// note: we don't support cross-namespace extension references, so we're always looking
-	// for the DRR in the same namespace as the HTTPRoute.
+	// we don't support cross-namespace extension references, so we're always looking for
+	// the DRR in the same namespace as the HTTPRoute.
 	drr := &v1alpha1.DirectResponseRoute{}
 	if err := p.Get(ctx, client.ObjectKey{
 		Name:      string(match.ExtensionRef.Name),
 		Namespace: routeCtx.Route.GetNamespace(),
 	}, drr); err != nil {
+		outputRoute.Action = ErrorResponseAction()
 		routeCtx.Reporter.SetCondition(reports.HTTPRouteCondition{
 			Type:    gwv1.RouteConditionResolvedRefs,
 			Status:  metav1.ConditionFalse,
 			Reason:  gwv1.RouteReasonBackendNotFound,
 			Message: fmt.Sprintf("No DirectResponseRoute resource matches the extensionRef specified on the HTTPRoute: %v", err),
 		})
-		outputRoute.Action = &v1.Route_DirectResponseAction{
-			DirectResponseAction: &v1.DirectResponseAction{
-				Status: http.StatusInternalServerError,
-			},
-		}
 		return err
 	}
 
 	outputRoute.Action = &v1.Route_DirectResponseAction{
 		DirectResponseAction: &v1.DirectResponseAction{
-			Status: *drr.Spec.Status,
-			Body:   *drr.Spec.Body,
+			Status: *drr.GetStatus(),
+			Body:   drr.GetBody(),
 		},
 	}
 	routeCtx.Reporter.SetCondition(reports.HTTPRouteCondition{
@@ -130,4 +119,15 @@ func findDirectResponseExtension(routeCtx *plugins.RouteContext) (*gwv1.HTTPRout
 	// know upstream doesn't have guidance on the order of filters in the HTTPRoute,
 	// but I think mirroring Envoy's fitler chain semantics is a good idea.
 	return &matches[0], nil
+}
+
+// ErrorResponseAction returns a direct response action with a 500 status code.
+// This is primarily used when an error occurs while translating the route.
+// Exported for testing purposes.
+func ErrorResponseAction() *v1.Route_DirectResponseAction {
+	return &v1.Route_DirectResponseAction{
+		DirectResponseAction: &v1.DirectResponseAction{
+			Status: http.StatusInternalServerError,
+		},
+	}
 }

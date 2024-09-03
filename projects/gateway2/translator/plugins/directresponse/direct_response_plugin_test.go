@@ -2,7 +2,6 @@ package directresponse_test
 
 import (
 	"context"
-	"net/http"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -51,7 +50,7 @@ var _ = Describe("DirectResponseRoute", func() {
 				},
 				Spec: v1alpha1.DirectResponseRouteSpec{
 					Status: ptr.To(uint32(200)),
-					Body:   ptr.To(string("hello, world")),
+					Body:   "hello, world",
 				},
 			}
 			deps = []client.Object{drr}
@@ -106,6 +105,72 @@ var _ = Describe("DirectResponseRoute", func() {
 		})
 	})
 
+	When("an empty spec.body is configured in a DRR resource", func() {
+		var (
+			drr *v1alpha1.DirectResponseRoute
+		)
+		BeforeEach(func() {
+			drr = &v1alpha1.DirectResponseRoute{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "empty-body",
+					Namespace: "httpbin",
+				},
+				Spec: v1alpha1.DirectResponseRouteSpec{
+					Status: ptr.To(uint32(404)),
+					Body:   "",
+				},
+			}
+			deps = []client.Object{drr}
+		})
+
+		It("should apply the direct response route to the route", func() {
+			rt := &gwv1.HTTPRoute{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "httpbin",
+				},
+			}
+			reportsMap := reports.NewReportMap()
+			reporter := reports.NewReporter(&reportsMap)
+			parentRefReporter := reporter.Route(rt).ParentRef(&gwv1.ParentReference{
+				Name: "parent-gw",
+			})
+			route := &v1.Route{}
+
+			routeCtx := &plugins.RouteContext{
+				Route: rt,
+				Rule: &gwv1.HTTPRouteRule{
+					Filters: []gwv1.HTTPRouteFilter{{
+						Type: gwv1.HTTPRouteFilterExtensionRef,
+						ExtensionRef: &gwv1.LocalObjectReference{
+							Group: v1alpha1.Group,
+							Kind:  v1alpha1.DirectResponseRouteKind,
+							Name:  gwv1.ObjectName(drr.GetName()),
+						},
+					}},
+				},
+				Reporter: parentRefReporter,
+			}
+
+			By("verifying the output route has a direct response action")
+			err := p.ApplyRoutePlugin(ctx, routeCtx, route)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(route).ToNot(BeNil())
+			Expect(route.GetDirectResponseAction()).To(BeEquivalentTo(&v1.DirectResponseAction{
+				Status: 404,
+			}))
+
+			By("verifying the HTTPRoute status is set correctly")
+			status := reportsMap.BuildRouteStatus(ctx, *rt, "")
+			Expect(status).NotTo(BeNil())
+			Expect(status.Parents).To(HaveLen(1))
+			resolvedRefs := meta.FindStatusCondition(status.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
+			Expect(resolvedRefs).NotTo(BeNil())
+			Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonResolvedRefs))
+			Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
+		})
+	})
+
 	When("an HTTPRoute references a non-existent DRR resource", func() {
 		var (
 			drr *v1alpha1.DirectResponseRoute
@@ -118,7 +183,7 @@ var _ = Describe("DirectResponseRoute", func() {
 				},
 				Spec: v1alpha1.DirectResponseRouteSpec{
 					Status: ptr.To(uint32(200)),
-					Body:   ptr.To(string("hello, world")),
+					Body:   "hello, world",
 				},
 			}
 			deps = []client.Object{drr}
@@ -155,9 +220,7 @@ var _ = Describe("DirectResponseRoute", func() {
 			By("verifying the output route has no direct response action")
 			err := p.ApplyRoutePlugin(ctx, routeCtx, route)
 			Expect(err).To(HaveOccurred())
-			Expect(route.GetDirectResponseAction()).To(BeEquivalentTo(&v1.DirectResponseAction{
-				Status: http.StatusInternalServerError,
-			}))
+			Expect(route.GetAction()).To(BeEquivalentTo(directresponse.ErrorResponseAction()))
 
 			By("verifying the HTTPRoute status is reflecting an error")
 			status := reportsMap.BuildRouteStatus(ctx, *rt, "")
@@ -192,7 +255,7 @@ var _ = Describe("DirectResponseRoute", func() {
 				},
 				Spec: v1alpha1.DirectResponseRouteSpec{
 					Status: ptr.To(uint32(200)),
-					Body:   ptr.To(string("hello from DRR 1")),
+					Body:   "hello from DRR 1",
 				},
 			}
 			drr2 = &v1alpha1.DirectResponseRoute{
@@ -202,7 +265,7 @@ var _ = Describe("DirectResponseRoute", func() {
 				},
 				Spec: v1alpha1.DirectResponseRouteSpec{
 					Status: ptr.To(uint32(404)),
-					Body:   ptr.To(string("hello from DRR 2")),
+					Body:   "hello from DRR 2",
 				},
 			}
 			deps = []client.Object{drr1, drr2}
@@ -251,9 +314,7 @@ var _ = Describe("DirectResponseRoute", func() {
 			err := p.ApplyRoutePlugin(ctx, routeCtx, route)
 			Expect(err).To(HaveOccurred())
 			Expect(route).ToNot(BeNil())
-			Expect(route.GetDirectResponseAction()).To(BeEquivalentTo(&v1.DirectResponseAction{
-				Status: http.StatusInternalServerError,
-			}))
+			Expect(route.GetAction()).To(BeEquivalentTo(directresponse.ErrorResponseAction()))
 
 			By("verifying the HTTPRoute status is set correctly")
 			status := reportsMap.BuildRouteStatus(ctx, *rt, "")
@@ -278,7 +339,7 @@ var _ = Describe("DirectResponseRoute", func() {
 				},
 				Spec: v1alpha1.DirectResponseRouteSpec{
 					Status: ptr.To(uint32(200)),
-					Body:   ptr.To(string("hello, world")),
+					Body:   "hello, world",
 				},
 			}
 			deps = []client.Object{drr}
