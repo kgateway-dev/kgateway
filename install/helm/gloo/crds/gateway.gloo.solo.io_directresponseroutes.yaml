@@ -39,15 +39,11 @@ spec:
               status:
                 format: int32
                 maximum: 599
-                minimum: 100
+                minimum: 200
                 type: integer
             required:
             - status
             type: object
-            x-kubernetes-validations:
-            - message: The 'body' field is required when 'status' is a 2xx status
-                code
-              rule: self.status < 200 || self.status >= 300 || has(self.body)
           status:
             type: object
         type: object

@@ -68,19 +68,12 @@ func (p *plugin) ApplyRoutePlugin(
 		})
 		return err
 	}
-
 	outputRoute.Action = &v1.Route_DirectResponseAction{
 		DirectResponseAction: &v1.DirectResponseAction{
-			Status: *drr.GetStatus(),
+			Status: drr.GetStatus(),
 			Body:   drr.GetBody(),
 		},
 	}
-	routeCtx.Reporter.SetCondition(reports.HTTPRouteCondition{
-		Type:    gwv1.RouteConditionResolvedRefs,
-		Status:  metav1.ConditionTrue,
-		Reason:  gwv1.RouteReasonResolvedRefs,
-		Message: "DirectResponseRoute successfully resolved",
-	})
 
 	return nil
 }
@@ -114,10 +107,7 @@ func findDirectResponseExtension(routeCtx *plugins.RouteContext) (*gwv1.HTTPRout
 	if len(matches) > 1 {
 		return nil, fmt.Errorf("multiple DirectResponseRoute resources found in extension refs. only one is allowed")
 	}
-	// else, return the first match we found.
-	// TODO(tim): is this deterministic? do we need to sort the matches? AFAIK, I
-	// know upstream doesn't have guidance on the order of filters in the HTTPRoute,
-	// but I think mirroring Envoy's fitler chain semantics is a good idea.
+	// else, we found a single DRR that matches the extension ref.
 	return &matches[0], nil
 }
 

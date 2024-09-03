@@ -1,5 +1,4 @@
 ---
-
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -20,9 +19,7 @@ spec:
       namespace: "httpbin"
       kind: HTTPRoute
       group: gateway.networking.k8s.io
-
 ---
-
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -49,9 +46,7 @@ spec:
         name: ip
         group: gateway.gloo.solo.io
         kind: DirectResponseRoute
-
 ---
-
 apiVersion: gateway.gloo.solo.io/v1alpha1
 kind: DirectResponseRoute
 metadata:

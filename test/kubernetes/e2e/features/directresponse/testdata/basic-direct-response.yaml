@@ -1,5 +1,4 @@
 ---
-
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -31,9 +30,7 @@ spec:
         name: robots-txt
         group: gateway.gloo.solo.io
         kind: DirectResponseRoute
-
 ---
-
 apiVersion: gateway.gloo.solo.io/v1alpha1
 kind: DirectResponseRoute
 metadata:

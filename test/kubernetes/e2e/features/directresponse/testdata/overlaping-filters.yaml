@@ -1,5 +1,4 @@
 ---
-
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -37,9 +36,7 @@ spec:
           name: test-2
           group: gateway.gloo.solo.io
           kind: DirectResponseRoute
-
 ---
-
 apiVersion: gateway.gloo.solo.io/v1alpha1
 kind: DirectResponseRoute
 metadata:
@@ -48,9 +45,7 @@ metadata:
 spec:
   status: 301
   body: "Test 1 body"
-
 ---
-
 apiVersion: gateway.gloo.solo.io/v1alpha1
 kind: DirectResponseRoute
 metadata:

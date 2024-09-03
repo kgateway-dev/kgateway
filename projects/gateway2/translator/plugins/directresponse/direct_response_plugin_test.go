@@ -49,7 +49,7 @@ var _ = Describe("DirectResponseRoute", func() {
 					Namespace: "httpbin",
 				},
 				Spec: v1alpha1.DirectResponseRouteSpec{
-					Status: ptr.To(uint32(200)),
+					Status: uint32(200),
 					Body:   "hello, world",
 				},
 			}
@@ -89,19 +89,12 @@ var _ = Describe("DirectResponseRoute", func() {
 			err := p.ApplyRoutePlugin(ctx, routeCtx, route)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(route).ToNot(BeNil())
-			Expect(route.GetDirectResponseAction()).To(BeEquivalentTo(&v1.DirectResponseAction{
-				Status: 200,
-				Body:   "hello, world",
+			Expect(route.GetAction()).To(BeEquivalentTo(&v1.Route_DirectResponseAction{
+				DirectResponseAction: &v1.DirectResponseAction{
+					Status: drr.GetStatus(),
+					Body:   drr.GetBody(),
+				},
 			}))
-
-			By("verifying the HTTPRoute status is set correctly")
-			status := reportsMap.BuildRouteStatus(ctx, *rt, "")
-			Expect(status).NotTo(BeNil())
-			Expect(status.Parents).To(HaveLen(1))
-			resolvedRefs := meta.FindStatusCondition(status.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
-			Expect(resolvedRefs).NotTo(BeNil())
-			Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonResolvedRefs))
-			Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
 		})
 	})
 
@@ -116,7 +109,7 @@ var _ = Describe("DirectResponseRoute", func() {
 					Namespace: "httpbin",
 				},
 				Spec: v1alpha1.DirectResponseRouteSpec{
-					Status: ptr.To(uint32(404)),
+					Status: uint32(404),
 					Body:   "",
 				},
 			}
@@ -156,18 +149,12 @@ var _ = Describe("DirectResponseRoute", func() {
 			err := p.ApplyRoutePlugin(ctx, routeCtx, route)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(route).ToNot(BeNil())
-			Expect(route.GetDirectResponseAction()).To(BeEquivalentTo(&v1.DirectResponseAction{
-				Status: 404,
+			Expect(route.GetAction()).To(BeEquivalentTo(&v1.Route_DirectResponseAction{
+				DirectResponseAction: &v1.DirectResponseAction{
+					Status: drr.GetStatus(),
+					Body:   drr.GetBody(),
+				},
 			}))
-
-			By("verifying the HTTPRoute status is set correctly")
-			status := reportsMap.BuildRouteStatus(ctx, *rt, "")
-			Expect(status).NotTo(BeNil())
-			Expect(status.Parents).To(HaveLen(1))
-			resolvedRefs := meta.FindStatusCondition(status.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
-			Expect(resolvedRefs).NotTo(BeNil())
-			Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonResolvedRefs))
-			Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
 		})
 	})
 
@@ -182,7 +169,7 @@ var _ = Describe("DirectResponseRoute", func() {
 					Namespace: "httpbin",
 				},
 				Spec: v1alpha1.DirectResponseRouteSpec{
-					Status: ptr.To(uint32(200)),
+					Status: uint32(200),
 					Body:   "hello, world",
 				},
 			}
@@ -254,7 +241,7 @@ var _ = Describe("DirectResponseRoute", func() {
 					Namespace: "httpbin",
 				},
 				Spec: v1alpha1.DirectResponseRouteSpec{
-					Status: ptr.To(uint32(200)),
+					Status: uint32(200),
 					Body:   "hello from DRR 1",
 				},
 			}
@@ -264,7 +251,7 @@ var _ = Describe("DirectResponseRoute", func() {
 					Namespace: "httpbin",
 				},
 				Spec: v1alpha1.DirectResponseRouteSpec{
-					Status: ptr.To(uint32(404)),
+					Status: uint32(404),
 					Body:   "hello from DRR 2",
 				},
 			}
@@ -338,7 +325,7 @@ var _ = Describe("DirectResponseRoute", func() {
 					Namespace: "httpbin",
 				},
 				Spec: v1alpha1.DirectResponseRouteSpec{
-					Status: ptr.To(uint32(200)),
+					Status: uint32(200),
 					Body:   "hello, world",
 				},
 			}
@@ -363,6 +350,12 @@ var _ = Describe("DirectResponseRoute", func() {
 				Reporter: parentRefReporter,
 				Rule: &gwv1.HTTPRouteRule{
 					BackendRefs: []gwv1.HTTPBackendRef{{
+						BackendRef: gwv1.BackendRef{
+							BackendObjectReference: gwv1.BackendObjectReference{
+								Name: "httpbin",
+								Port: ptr.To(gwv1.PortNumber(8080)),
+							},
+						},
 						Filters: []gwv1.HTTPRouteFilter{{
 							Type: gwv1.HTTPRouteFilterExtensionRef,
 							ExtensionRef: &gwv1.LocalObjectReference{
@@ -379,7 +372,74 @@ var _ = Describe("DirectResponseRoute", func() {
 			err := p.ApplyRoutePlugin(ctx, routeCtx, route)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(route).ToNot(BeNil())
-			Expect(route.GetDirectResponseAction()).To(BeNil())
+			Expect(route.GetAction()).To(BeNil())
+		})
+	})
+
+	When("an HTTPRoute route configures multiple route actions", func() {
+		var (
+			drr *v1alpha1.DirectResponseRoute
+		)
+		BeforeEach(func() {
+			drr = &v1alpha1.DirectResponseRoute{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "httpbin",
+				},
+				Spec: v1alpha1.DirectResponseRouteSpec{
+					Status: uint32(200),
+					Body:   "hello, world",
+				},
+			}
+			deps = []client.Object{drr}
+		})
+		It("should apply the direct response route to the route", func() {
+			rt := &gwv1.HTTPRoute{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "httpbin",
+				},
+			}
+			reportsMap := reports.NewReportMap()
+			reporter := reports.NewReporter(&reportsMap)
+			parentRefReporter := reporter.Route(rt).ParentRef(&gwv1.ParentReference{
+				Name: "parent-gw",
+			})
+			route := &v1.Route{}
+
+			routeCtx := &plugins.RouteContext{
+				Route:    rt,
+				Reporter: parentRefReporter,
+				Rule: &gwv1.HTTPRouteRule{
+					Filters: []gwv1.HTTPRouteFilter{{
+						Type: gwv1.HTTPRouteFilterExtensionRef,
+						ExtensionRef: &gwv1.LocalObjectReference{
+							Group: v1alpha1.Group,
+							Kind:  v1alpha1.DirectResponseRouteKind,
+							Name:  gwv1.ObjectName(drr.GetName()),
+						},
+					}},
+					BackendRefs: []gwv1.HTTPBackendRef{{
+						BackendRef: gwv1.BackendRef{
+							BackendObjectReference: gwv1.BackendObjectReference{
+								Name: "httpbin",
+								Port: ptr.To(gwv1.PortNumber(8080)),
+							},
+						}},
+					},
+				},
+			}
+
+			By("verifying the output route has a direct response action")
+			err := p.ApplyRoutePlugin(ctx, routeCtx, route)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(route).ToNot(BeNil())
+			Expect(route.GetAction()).To(BeEquivalentTo(&v1.Route_DirectResponseAction{
+				DirectResponseAction: &v1.DirectResponseAction{
+					Status: drr.GetStatus(),
+					Body:   drr.GetBody(),
+				},
+			}))
 		})
 	})
 
