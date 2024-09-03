@@ -35,6 +35,9 @@ func (p *plugin) ApplyRoutePlugin(
 ) error {
 	// determine whether there are any direct response routes that should be
 	// applied to the current route. otherwise, we'll return early.
+	//
+	// TODO(tim): determine the right UX when standard rules like URLRewrite
+	// and RequestRedirects are also applied to a route with a DirectResponseRoute.
 	match, err := findDirectResponseExtension(routeCtx)
 	if err != nil {
 		outputRoute.Action = ErrorResponseAction()
