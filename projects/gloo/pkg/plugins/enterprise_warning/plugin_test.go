@@ -156,13 +156,43 @@ var _ = Describe("enterprise_warning plugin", func() {
 			ExpectEnterpriseOnlyErr(err)
 		})
 
-		It("will err if jwt is configured", func() {
+		It("will err if jwt is configured on route", func() {
+			p := NewPlugin()
+			route := &v1.Route{
+				Name: "route1",
+				Options: &v1.RouteOptions{
+					JwtConfig: &v1.RouteOptions_Jwt{
+						Jwt: &jwt.RouteExtension{},
+					},
+				},
+			}
+
+			err := p.ProcessRoute(plugins.RouteParams{}, route, &envoy_config_route.Route{})
+			ExpectEnterpriseOnlyErr(err)
+		})
+
+		It("will err if staged jwt is configured on route", func() {
 			p := NewPlugin()
 			route := &v1.Route{
 				Name: "route1",
 				Options: &v1.RouteOptions{
 					JwtConfig: &v1.RouteOptions_JwtStaged{
 						JwtStaged: &jwt.JwtStagedRouteExtension{},
+					},
+				},
+			}
+
+			err := p.ProcessRoute(plugins.RouteParams{}, route, &envoy_config_route.Route{})
+			ExpectEnterpriseOnlyErr(err)
+		})
+
+		It("will err if staged jwt provider is configured on route", func() {
+			p := NewPlugin()
+			route := &v1.Route{
+				Name: "route1",
+				Options: &v1.RouteOptions{
+					JwtConfig: &v1.RouteOptions_JwtProvidersStaged{
+						JwtProvidersStaged: &jwt.JwtStagedRouteProvidersExtension{},
 					},
 				},
 			}
