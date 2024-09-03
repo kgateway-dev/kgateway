@@ -21,7 +21,7 @@ Installing Gloo Gateway will require an environment for installation. Kubernetes
    - [OpenShift](#openshift)
    - [Google Kubernetes Engine (GKE)](#google-kubernetes-engine-gke)
    - [Azure Kubernetes Service (AKS)](#azure-kubernetes-service-aks)
-   - [Amazon Elastic Container Service for Kubernetes (EKS)]   (#amazon-elastic-container-service-for-kubernetes-eks)
+   - [Amazon Elastic Container Service for Kubernetes (EKS)](#amazon-elastic-container-service-for-kubernetes-eks)
    - [Additional Notes](#additional-notes)
      - [DNS Records](#dns-records)
      - [Certificate Management](#certificate-management)
