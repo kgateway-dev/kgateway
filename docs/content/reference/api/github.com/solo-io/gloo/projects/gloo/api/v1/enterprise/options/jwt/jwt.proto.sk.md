@@ -79,16 +79,14 @@ weight: 5
 "providers": map<string, .jwt.options.gloo.solo.io.Provider>
 "allowMissingOrFailedJwt": bool
 "allowMissingJwt": bool
-"allowFailedJwt": bool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `providers` | `map<string, .jwt.options.gloo.solo.io.Provider>` | Map of JWT provider name to Provider. If specified, multiple providers will be `OR`-ed together and will allow validation to any of the providers. |
-| `allowMissingOrFailedJwt` | `bool` | Allow pass through of JWT requests for this virtual host, even if JWT token is missing or JWT auth failed. If this is false (default false), requests that fail JWT authentication will fail authorization immediately. For example, if a request requires either JWT auth OR another auth method, this can be enabled to allow a failed JWT auth request to pass through to the other auth method. @deprecated Use allow_missing_jwt and allow_failed_jwt instead. |
+| `allowMissingOrFailedJwt` | `bool` | Allow pass through of JWT requests for this virtual host, even if JWT token is missing or JWT auth failed. If this is false (default false), requests that fail JWT authentication will fail authorization immediately. For example, if a request requires either JWT auth OR another auth method, this can be enabled to allow a failed JWT auth request to pass through to the other auth method. |
 | `allowMissingJwt` | `bool` | Allow pass through of JWT requests for this virtual host, even if JWT token is missing. If this is false (default false), requests that are missing a JWT token will fail authorization immediately. |
-| `allowFailedJwt` | `bool` | Allow pass through of JWT requests for this virtual host, even if JWT auth failed. If this is false (default false), requests that fail JWT authentication will fail authorization immediately. For example, if a request requires either JWT auth OR another auth method, this can be enabled to allow a failed JWT auth request to pass through to the other auth method. |
 
 
 

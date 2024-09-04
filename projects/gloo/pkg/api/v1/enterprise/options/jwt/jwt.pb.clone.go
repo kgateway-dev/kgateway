@@ -104,8 +104,6 @@ func (m *VhostExtension) Clone() proto.Message {
 
 	target.AllowMissingJwt = m.GetAllowMissingJwt()
 
-	target.AllowFailedJwt = m.GetAllowFailedJwt()
-
 	return target
 }
 
