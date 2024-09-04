@@ -18,6 +18,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/httproute"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/directresponse"
 	httplisquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/httplisteneroptions/query"
 	lisquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/listeneroptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
@@ -152,7 +153,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 		})
 	})
 
-	When("an HTTPRoute configures multiple route actions within a single rule", func() {
+	When("an HTTPRoute configures a backendRef and references the DRR extension filter", func() {
 		var (
 			drr               *v1alpha1.DirectResponseRoute
 			route             gwv1.HTTPRoute
@@ -242,15 +243,108 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 			pluginRegistry = registry.NewPluginRegistry(registry.BuildPlugins(queries, fakeClient, routeOptionClient, vhOptionClient, statusReporter))
 		})
 
-		It("sets the action to the direct response configuration", func() {
+		It("replaces the route due to incompatible filters being configured", func() {
 			routes := httproute.TranslateGatewayHTTPRouteRules(ctx, pluginRegistry, gwListener, routeInfo, parentRefReporter, baseReporter)
 			Expect(routes).To(HaveLen(1))
-			Expect(routes[0].GetAction()).To(BeEquivalentTo(&v1.Route_DirectResponseAction{
-				DirectResponseAction: &v1.DirectResponseAction{
-					Status: drr.GetStatus(),
-					Body:   drr.GetBody(),
+			Expect(routes[0].GetAction()).To(BeEquivalentTo(directresponse.ErrorResponseAction()))
+		})
+	})
+
+	When("an HTTPRoute configures multiple route actions", func() {
+		var (
+			drr               *v1alpha1.DirectResponseRoute
+			route             gwv1.HTTPRoute
+			routeInfo         *query.HTTPRouteInfo
+			parentRef         *gwv1.ParentReference
+			pluginRegistry    registry.PluginRegistry
+			baseReporter      reports.Reporter
+			parentRefReporter reports.ParentRefReporter
+			gwListener        gwv1.Listener
+		)
+		BeforeEach(func() {
+			gwListener = gwv1.Listener{} // Initialize appropriately
+
+			drr = &v1alpha1.DirectResponseRoute{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: "bar",
 				},
-			}))
+				Spec: v1alpha1.DirectResponseRouteSpec{
+					Status: 200,
+				},
+			}
+
+			parentRef = &gwv1.ParentReference{
+				Name: "my-gw",
+			}
+
+			route = gwv1.HTTPRoute{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo-httproute",
+					Namespace: "bar",
+				},
+				Spec: gwv1.HTTPRouteSpec{
+					Hostnames: []gwv1.Hostname{"example.com"},
+					CommonRouteSpec: gwv1.CommonRouteSpec{
+						ParentRefs: []gwv1.ParentReference{*parentRef},
+					},
+					Rules: []gwv1.HTTPRouteRule{{
+						Matches: []gwv1.HTTPRouteMatch{{
+							Path: &gwv1.HTTPPathMatch{
+								Type:  ptr.To(gwv1.PathMatchPathPrefix),
+								Value: ptr.To("/"),
+							},
+						}},
+						Filters: []gwv1.HTTPRouteFilter{
+							{
+								Type: gwv1.HTTPRouteFilterRequestRedirect,
+								RequestRedirect: &gwv1.HTTPRequestRedirectFilter{
+									Hostname:   ptr.To(gwv1.PreciseHostname("foo")),
+									StatusCode: ptr.To(301),
+								},
+							},
+							{
+								Type: gwv1.HTTPRouteFilterExtensionRef,
+								ExtensionRef: &gwv1.LocalObjectReference{
+									Group: v1alpha1.Group,
+									Kind:  v1alpha1.DirectResponseRouteKind,
+									Name:  gwv1.ObjectName(drr.GetName()),
+								},
+							},
+						},
+					}},
+				},
+			}
+			routeInfo = &query.HTTPRouteInfo{
+				HTTPRoute: route,
+			}
+			reportsMap := reports.NewReportMap()
+			baseReporter := reports.NewReporter(&reportsMap)
+			parentRefReporter = baseReporter.Route(&route).ParentRef(parentRef)
+
+			fakeClient := testutils.BuildIndexedFakeClient(
+				[]client.Object{drr},
+				rtoptquery.IterateIndices,
+				vhoptquery.IterateIndices,
+				lisquery.IterateIndices,
+				httplisquery.IterateIndices,
+			)
+
+			queries := testutils.BuildGatewayQueriesWithClient(fakeClient)
+			resourceClientFactory := &factory.MemoryResourceClientFactory{
+				Cache: memory.NewInMemoryResourceCache(),
+			}
+			routeOptionClient, _ := sologatewayv1.NewRouteOptionClient(ctx, resourceClientFactory)
+			vhOptionClient, _ := sologatewayv1.NewVirtualHostOptionClient(ctx, resourceClientFactory)
+			statusClient := statusutils.GetStatusClientForNamespace("gloo-system")
+			statusReporter := reporter.NewReporter(defaults.KubeGatewayReporter, statusClient, routeOptionClient.BaseClient())
+			pluginRegistry = registry.NewPluginRegistry(registry.BuildPlugins(queries, fakeClient, routeOptionClient, vhOptionClient, statusReporter))
+		})
+
+		It("should replace the route due to incompatible filters", func() {
+			routes := httproute.TranslateGatewayHTTPRouteRules(ctx, pluginRegistry, gwListener, routeInfo, parentRefReporter, baseReporter)
+			Expect(routes).To(HaveLen(1))
+			Expect(routes[0].GetAction()).To(BeEquivalentTo(directresponse.ErrorResponseAction()))
 		})
 	})
 })

@@ -13,29 +13,17 @@ spec:
   - name: gw
     namespace: default
   rules:
-  - matches:
-    - path:
-        type: Exact
-        value: /test/1
-    filters:
+  - filters:
     - type: ExtensionRef
       extensionRef:
         name: test-1
         group: gateway.gloo.solo.io
         kind: DirectResponseRoute
-  - matches:
-    - path:
-        type: Exact
-        value: /test/2
-    backendRefs:
-    - name: httpbin
-      port: 8000
-      filters:
-      - type: ExtensionRef
-        extensionRef:
-          name: test-2
-          group: gateway.gloo.solo.io
-          kind: DirectResponseRoute
+    - type: ExtensionRef
+      extensionRef:
+        name: test-2
+        group: gateway.gloo.solo.io
+        kind: DirectResponseRoute
 ---
 apiVersion: gateway.gloo.solo.io/v1alpha1
 kind: DirectResponseRoute

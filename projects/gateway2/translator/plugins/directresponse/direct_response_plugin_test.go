@@ -29,7 +29,8 @@ var _ = Describe("DirectResponseRoute", func() {
 	)
 	JustBeforeEach(func() {
 		c = testutils.BuildIndexedFakeClient(deps)
-		p = directresponse.NewPlugin(c)
+		queries := testutils.BuildGatewayQueriesWithClient(c)
+		p = directresponse.NewPlugin(queries)
 	})
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
@@ -152,7 +153,6 @@ var _ = Describe("DirectResponseRoute", func() {
 			Expect(route.GetAction()).To(BeEquivalentTo(&v1.Route_DirectResponseAction{
 				DirectResponseAction: &v1.DirectResponseAction{
 					Status: drr.GetStatus(),
-					Body:   drr.GetBody(),
 				},
 			}))
 		})
@@ -220,16 +220,6 @@ var _ = Describe("DirectResponseRoute", func() {
 		})
 	})
 
-	// TODO(tim): determine whether this is the right approach to validation.
-	// I previously had test cases for duplicate DRR resource references,
-	// one valid and one invalid, and both valid and unique, but I wasn't
-	// able to find a real use cases where you'd want to reference multiple
-	// DRR resources in a single route rule. The only issue with the new
-	// approach is that it's potentially fail open where a user configured a
-	// valid HTTPRoute rule, then edits it to include multiple DRR resources,
-	// and now the route is broken. With that in mind, I replaced the route with
-	// a 500 response, so we're not breaking the route, but we're also not
-	// applying the desired state.
 	When("an HTTPRoute references multiple DRR resources", func() {
 		var (
 			drr1, drr2 *v1alpha1.DirectResponseRoute

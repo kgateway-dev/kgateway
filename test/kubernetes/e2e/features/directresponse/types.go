@@ -11,11 +11,13 @@ import (
 )
 
 var (
-	setupManifest                  = filepath.Join(util.MustGetThisDir(), "testdata", "setup.yaml")
-	gatewayManifest                = filepath.Join(util.MustGetThisDir(), "testdata", "gateway.yaml")
-	basicDirectResposeManifests    = filepath.Join(util.MustGetThisDir(), "testdata", "basic-direct-response.yaml")
-	basicDelegationManifests       = filepath.Join(util.MustGetThisDir(), "testdata", "basic-delegation-direct-response.yaml")
-	invalidDirectResponseManifests = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-direct-response.yaml")
+	setupManifest                        = filepath.Join(util.MustGetThisDir(), "testdata", "setup.yaml")
+	gatewayManifest                      = filepath.Join(util.MustGetThisDir(), "testdata", "gateway.yaml")
+	basicDirectResposeManifests          = filepath.Join(util.MustGetThisDir(), "testdata", "basic-direct-response.yaml")
+	basicDelegationManifests             = filepath.Join(util.MustGetThisDir(), "testdata", "basic-delegation-direct-response.yaml")
+	invalidDirectResponseManifests       = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-direct-response.yaml")
+	invalidOverlappingFiltersManifests   = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-overlapping-filters.yaml")
+	invalidMultipleRouteActionsManifests = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-multiple-route-actions.yaml")
 
 	glooProxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gloo-proxy-gw",

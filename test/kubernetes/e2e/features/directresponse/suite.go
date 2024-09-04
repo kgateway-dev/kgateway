@@ -6,8 +6,11 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
@@ -19,8 +22,8 @@ import (
 
 type testingSuite struct {
 	suite.Suite
-	ctx              context.Context
-	testInstallation *e2e.TestInstallation
+	ctx context.Context
+	ti  *e2e.TestInstallation
 	// maps test name to a list of manifests to apply before the test
 	manifests map[string][]string
 }
@@ -30,22 +33,22 @@ func NewTestingSuite(
 	testInst *e2e.TestInstallation,
 ) suite.TestingSuite {
 	return &testingSuite{
-		ctx:              ctx,
-		testInstallation: testInst,
+		ctx: ctx,
+		ti:  testInst,
 	}
 }
 
 func (s *testingSuite) SetupSuite() {
 	// Check that the common setup manifest is applied
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
+	err := s.ti.Actions.Kubectl().ApplyFile(s.ctx, setupManifest)
 	s.NoError(err, "can apply "+setupManifest)
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.CurlPodManifest)
+	err = s.ti.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.CurlPodManifest)
 	s.NoError(err, "can apply curl pod manifest")
 
 	// Check that istio injection is successful and httpbin is running
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, httpbinDeployment)
+	s.ti.Assertions.EventuallyObjectsExist(s.ctx, httpbinDeployment)
 	// httpbin can take a while to start up with Istio sidecar
-	s.testInstallation.Assertions.EventuallyPodsRunning(
+	s.ti.Assertions.EventuallyPodsRunning(
 		s.ctx,
 		httpbinDeployment.ObjectMeta.GetNamespace(),
 		metav1.ListOptions{LabelSelector: "app=httpbin"},
@@ -54,18 +57,20 @@ func (s *testingSuite) SetupSuite() {
 
 	// include gateway manifests for the tests, so we recreate it for each test run
 	s.manifests = map[string][]string{
-		"TestBasicDirectResponse":        {gatewayManifest, basicDirectResposeManifests},
-		"TestDelegation":                 {gatewayManifest, basicDelegationManifests},
-		"TestInvalidDirectResponseRoute": {gatewayManifest, invalidDirectResponseManifests},
+		"TestBasicDirectResponse":         {gatewayManifest, basicDirectResposeManifests},
+		"TestDelegation":                  {gatewayManifest, basicDelegationManifests},
+		"TestInvalidDirectResponseRoute":  {gatewayManifest, invalidDirectResponseManifests},
+		"TestInvalidOverlappingFilters":   {gatewayManifest, invalidOverlappingFiltersManifests},
+		"TestInvalidMultipleRouteActions": {gatewayManifest, invalidMultipleRouteActionsManifests},
 	}
 }
 
 func (s *testingSuite) TearDownSuite() {
-	err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
+	err := s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, setupManifest)
 	s.NoError(err, "can delete setup manifest")
-	err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, testdefaults.CurlPodManifest)
+	err = s.ti.Actions.Kubectl().DeleteFileSafe(s.ctx, testdefaults.CurlPodManifest)
 	s.NoError(err, "can delete curl pod manifest")
-	s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, httpbinDeployment)
+	s.ti.Assertions.EventuallyObjectsNotExist(s.ctx, httpbinDeployment)
 }
 
 func (s *testingSuite) BeforeTest(suiteName, testName string) {
@@ -74,14 +79,14 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 		s.FailNow("no manifests found for %s, manifest map contents: %v", testName, s.manifests)
 	}
 	for _, manifest := range manifests {
-		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
+		err := s.ti.Actions.Kubectl().ApplyFile(s.ctx, manifest)
 		s.Assert().NoError(err, "can apply manifest "+manifest)
 	}
 
 	// we recreate the `Gateway` resource (and thus dynamically provision the proxy pod) for each test run
 	// so let's assert the proxy svc and pod is ready before moving on
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
-	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
+	s.ti.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
+	s.ti.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app.kubernetes.io/name=gloo-proxy-gw",
 	})
 }
@@ -93,14 +98,14 @@ func (s *testingSuite) AfterTest(suiteName, testName string) {
 	}
 
 	for _, manifest := range manifests {
-		output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, manifest)
-		s.testInstallation.Assertions.ExpectObjectDeleted(manifest, err, output)
+		output, err := s.ti.Actions.Kubectl().DeleteFileWithOutput(s.ctx, manifest)
+		s.ti.Assertions.ExpectObjectDeleted(manifest, err, output)
 	}
 }
 
 func (s *testingSuite) TestBasicDirectResponse() {
 	// verify that a direct response route works as expected
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.ti.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -118,7 +123,7 @@ func (s *testingSuite) TestBasicDirectResponse() {
 
 func (s *testingSuite) TestDelegation() {
 	// verify that a direct response route works as expected
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.ti.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -135,7 +140,7 @@ func (s *testingSuite) TestDelegation() {
 }
 
 func (s *testingSuite) TestInvalidDirectResponseRoute() {
-	s.testInstallation.Assertions.AssertEventualCurlResponse(
+	s.ti.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
@@ -148,4 +153,54 @@ func (s *testingSuite) TestInvalidDirectResponseRoute() {
 		},
 		time.Minute,
 	)
+}
+
+func (s *testingSuite) TestInvalidOverlappingFilters() {
+	// verify that the route was replaced with a 500 direct response due to the
+	// invalid configuration.
+	s.ti.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(glooProxyObjectMeta)),
+			curl.WithHostHeader("www.example.com"),
+			curl.WithPath("/"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusInternalServerError,
+		},
+		time.Minute,
+	)
+	c := s.ti.ClusterContext.Client
+	s.Require().EventuallyWithT(func(t *assert.CollectT) {
+		route := &gwv1.HTTPRoute{}
+		err := c.Get(s.ctx, client.ObjectKeyFromObject(httpbinDeployment), route)
+		assert.NoError(t, err, "route not found")
+		s.ti.Assertions.AssertHTTPRouteStatusContainsReason(route, string(gwv1.RouteReasonBackendNotFound))
+	}, 10*time.Second, 1*time.Second)
+}
+
+func (s *testingSuite) TestInvalidMultipleRouteActions() {
+	// verify the route was replaced with a 500 direct response due to the
+	// invalid configuration.
+	s.ti.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(glooProxyObjectMeta)),
+			curl.WithHostHeader("www.example.com"),
+			curl.WithPath("/"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusInternalServerError,
+		},
+		time.Minute,
+	)
+	c := s.ti.ClusterContext.Client
+	s.Require().EventuallyWithT(func(t *assert.CollectT) {
+		route := &gwv1.HTTPRoute{}
+		err := c.Get(s.ctx, client.ObjectKeyFromObject(httpbinDeployment), route)
+		assert.NoError(t, err, "route not found")
+		s.ti.Assertions.AssertHTTPRouteStatusContainsReason(route, string(gwv1.RouteReasonIncompatibleFilters))
+	}, 10*time.Second, 1*time.Second)
 }
