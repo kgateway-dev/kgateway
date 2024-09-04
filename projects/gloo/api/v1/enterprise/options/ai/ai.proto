@@ -96,6 +96,22 @@ message UpstreamSpec {
     CustomHost custom_host = 2;
   }
 
+  // Settings for the Azure OpenAI API
+  message AzureOpenAI {
+    // Auth Token to use for the OpenAI API
+    // This token will be placed into the `api-key` header
+    oneof auth_token_source {
+      SingleAuthToken auth_token = 1;
+      // use AD or other workload identity mechanism
+    }
+
+    string api_version = 2;
+
+    string endpoint = 3;
+
+    string deployment_name = 4;
+  }
+
   // Settings for the Mistral API
   message Mistral {
     // Auth Token to use for the Mistral API.
@@ -123,6 +139,7 @@ message UpstreamSpec {
     OpenAI openai = 1;
     Mistral mistral = 2;
     Anthropic anthropic = 3;
+    AzureOpenAI azure_openai = 4;
   }
 }
 
@@ -292,8 +309,23 @@ message Embedding {
     }
   }
 
+  message AzureOpenAI {
+    oneof auth_token_source {
+      SingleAuthToken auth_token = 1;
+      // re-use the token from the backend
+      // google.protobuf.Empty inherit_backend_token = 3;
+    }
+
+    string api_version = 2;
+
+    string endpoint = 3;
+
+    string deployment_name = 4;
+  }
+
   oneof embedding {
     OpenAI openai = 1;
+    AzureOpenAI azure_openai = 2;
   }
 }
 
