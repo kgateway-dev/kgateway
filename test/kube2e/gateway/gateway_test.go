@@ -1911,6 +1911,9 @@ var _ = Describe("Kube2e: gateway", func() {
 			// Therefore, before the tests start, we must attempt updates that should be rejected
 			// They will only be rejected once a Proxy exists in the ApiSnapshot
 
+			// NOTE: The error used to check this behavior is a warning, meaning
+			// this function is ineffective when testing with allowWarnings=false
+
 			placeholderUs := &gloov1.Upstream{
 				Metadata: &core.Metadata{
 					Name:      "",
@@ -2207,6 +2210,129 @@ spec:
 				}
 			})
 
+			Context("secret validation", func() {
+				const secretName = "tls-secret"
+				BeforeEach(func() {
+					tlsSecret := helpers.GetTlsSecret(secretName, testHelper.InstallNamespace)
+					glooResources.Secrets = gloov1.SecretList{tlsSecret}
+
+					// Modify the VirtualService to include the created SslConfig
+					testRunnerVs.SslConfig = &ssl.SslConfig{
+						SslSecrets: &ssl.SslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{
+								Name:      tlsSecret.GetMetadata().GetName(),
+								Namespace: tlsSecret.GetMetadata().GetNamespace(),
+							},
+						},
+					}
+				})
+				When("warnMissingTlsSecret=true", Ordered, func() {
+					BeforeAll(func() {
+						kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+							settings.GetGateway().GetValidation().WarnMissingTlsSecret = &wrappers.BoolValue{Value: true}
+						}, testHelper.InstallNamespace)
+					})
+
+					AfterAll(func() {
+						kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+							settings.GetGateway().GetValidation().WarnMissingTlsSecret = &wrappers.BoolValue{Value: false}
+						}, testHelper.InstallNamespace)
+					})
+
+					It("should act as expected with secret validation", func() {
+						By("waiting for the modified VS to be accepted")
+						helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+							return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, testRunnerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
+						})
+
+						// verifyGlooValidationWorks()
+						// The method ^ that uses to check the validation server doesn't work with
+						// allowWarnings=true
+						time.Sleep(time.Second * 10)
+
+						By("successfully deleting a secret that is in use")
+						err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+
+						Expect(err).NotTo(HaveOccurred())
+					})
+
+					It("can delete a secret that is not in use", func() {
+						tlsSecret := helpers.GetKubeSecret("tls-secret-2", testHelper.InstallNamespace)
+						tlsSecret, err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Create(ctx, tlsSecret, metav1.CreateOptions{})
+						Expect(err).NotTo(HaveOccurred())
+
+						err = resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, tlsSecret.GetName(), metav1.DeleteOptions{})
+						Expect(err).NotTo(HaveOccurred())
+					})
+				})
+
+				// this is the default mode for this version
+				When("warnMissingTlsSecret=false", Ordered, func() {
+					BeforeAll(func() {
+						kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+							settings.GetGateway().GetValidation().WarnMissingTlsSecret = &wrappers.BoolValue{Value: false}
+						}, testHelper.InstallNamespace)
+					})
+
+					AfterAll(func() {
+						// Our tests default to using warnMissingTlsSecret=false, so we just need to ensure we leave it that way
+					})
+
+					// There are times when the VirtualService + Proxy do not update Status with the error when deleting the referenced Secret, therefore the validation error doesn't occur.
+					// It isn't until later - either a few minutes and/or after forcing an update by updating the VS - that the error status appears.
+					// The reason is still unknown, so we retry on flakes in the meantime.
+					It("should act as expected with secret validation", func() {
+						By("waiting for the modified VS to be accepted")
+						helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+							return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, testRunnerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
+						})
+
+						// verifyGlooValidationWorks()
+						// The method ^ that uses to check the validation server doesn't work with
+						// allowWarnings=true
+						time.Sleep(time.Second * 10)
+
+						By("failing to delete a secret that is in use")
+						err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+
+						Expect(err).To(HaveOccurred())
+						Expect(err).To(MatchError(ContainSubstring(utils.SslSecretNotFoundError.Error())))
+
+						By("successfully deleting a secret that is no longer in use")
+						// We patch the VirtualService to remove the ssl reference, allowing the Secret to be removed
+						err = helpers.PatchResource(
+							ctx,
+							&core.ResourceRef{
+								Namespace: testHelper.InstallNamespace,
+								Name:      testRunnerVs.GetMetadata().Name,
+							},
+							func(resource resources.Resource) resources.Resource {
+								vs := resource.(*gatewayv1.VirtualService)
+								vs.SslConfig = nil
+								return vs
+							},
+							resourceClientset.VirtualServiceClient().BaseClient())
+						Expect(err).NotTo(HaveOccurred())
+						helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+							return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, testRunnerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
+						})
+
+						// Although these tests delete the secret handled by our SnapshotWriter, because we set `IgnoreNotFound` when deleting snapshot resources, this won't cause an issue.
+						Eventually(func() error {
+							return resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+						}).WithPolling(500 * time.Millisecond).WithTimeout(30 * time.Second).ShouldNot(HaveOccurred())
+					})
+
+					It("can delete a secret that is not in use", func() {
+						tlsSecret := helpers.GetKubeSecret("tls-secret-2", testHelper.InstallNamespace)
+						tlsSecret, err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Create(ctx, tlsSecret, metav1.CreateOptions{})
+						Expect(err).NotTo(HaveOccurred())
+
+						err = resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, tlsSecret.GetName(), metav1.DeleteOptions{})
+						Expect(err).NotTo(HaveOccurred())
+					})
+				})
+			})
 		})
 
 		Context("DisableTransformationValidation", func() {
