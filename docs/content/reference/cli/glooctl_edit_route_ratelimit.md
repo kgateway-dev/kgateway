@@ -1,5 +1,6 @@
 ---
 title: "glooctl edit route ratelimit"
+description: "Reference for the 'glooctl edit route ratelimit' command."
 weight: 5
 ---
 ## glooctl edit route ratelimit

@@ -1,5 +1,6 @@
 ---
 title: "glooctl check-crds"
+description: "Reference for the 'glooctl check-crds' command."
 weight: 5
 ---
 ## glooctl check-crds
