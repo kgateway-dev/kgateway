@@ -1,5 +1,4 @@
 ---
-
 kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
@@ -14,9 +13,7 @@ spec:
     allowedRoutes:
       namespaces:
         from: All
-
 ---
-
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -28,34 +25,32 @@ spec:
   hostnames:
   - "www.example.com"
   parentRefs:
-  - name: http
-    namespace: gloo-system
+  - name: gw
+    namespace: default
   rules:
-  - backendRefs:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
     - name: httpbin
       port: 8000
-    matches:
-    - headers:
-      - name: Authorization
-        type: RegularExpression
-        value: "Bearer .*"
-  - backendRefs:
-    - name: httpbin
-      port: 8000
+  - matches:
+    - path:
+        type: Exact
+        value: /robots.txt
     filters:
     - type: ExtensionRef
       extensionRef:
+        name: robots-txt
         group: gateway.gloo.solo.io
         kind: DirectResponseRoute
-        name: test
-
 ---
-
 apiVersion: gateway.gloo.solo.io/v1alpha1
 kind: DirectResponseRoute
 metadata:
-  name: test
+  name: robots-txt
   namespace: httpbin
 spec:
-  code: 401
-  body: "Unauthorized: No token provided"
+  status: 200
+  body: "User-agent: *\nDisallow: /custom\n"

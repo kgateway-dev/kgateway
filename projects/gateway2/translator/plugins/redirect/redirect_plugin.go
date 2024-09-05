@@ -30,11 +30,6 @@ func (p *plugin) ApplyRoutePlugin(
 		return nil
 	}
 
-	// TODO(tim): is this validation logic accurate? do we need to replace the route here,
-	// or set the ResolvedRefs condition?
-	// TODO(tim): add a unit test for the outputRoute.Action != nil case.
-	// TODO(tim): "All filters are expected to be compatible with each other except for the URLRewrite
-	// 			   and RequestRedirect filters, which may not be combined"
 	config := filter.RequestRedirect
 	if config == nil {
 		return errors.Errorf("RequestRedirect filter supplied does not define requestRedirect config")
