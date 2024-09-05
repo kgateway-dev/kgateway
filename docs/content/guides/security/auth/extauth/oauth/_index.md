@@ -170,6 +170,39 @@ You can also override the revocation endpoint through the [DiscoveryOverride fie
 If the authorization server has a service error, Gloo logs out the user, but does not retry revoking the access token. Check the logs and your identity provider for errors, and manually revoke the access token.
 {{% /notice %}}
 
+### Front Channel Logout
+
+Gloo also supports Front Channel Logout [RFC](https://openid.net/specs/openid-connect-frontchannel-1_0-final.html). Front channel logout is used when the OpenId provider is handling multiple logged in sessions and the logout endpoint should log out of all of them. The endpoint defined in `frontChannelLogout.path`
+is registered with the OP and is called for each application when the user goes to the `logoutPath` endpoint.
+
+
+{{< highlight yaml "hl_lines=20-21" >}}
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: oidc-dex
+  namespace: gloo-system
+spec:
+  configs:
+  - oauth2:
+      oidcAuthorizationCode:
+        appUrl: http://localhost:8080/
+        callbackPath: /callback
+        clientId: gloo
+        clientSecretRef:
+          name: oauth
+          namespace: gloo-system
+        issuerUrl: http://dex.gloo-system.svc.cluster.local:32000/
+        scopes:
+        - email
+        logoutPath: /logout
+        frontChannelLogout:
+          path: /front_channel_logout
+{{< /highlight >}}
+
+
+
+
 ## Sessions in Cookies
 
 You can store the ID token, access token, and other tokens that are returned from your OIDC provider in a cookie on the client side. To do this, you configure your cookie options, such as the `keyPrefix` that you want to add to the token name, in the `oauth2.oidcAuthorizationCode.session.cookie` section of your authconfig as shown in the following example. After a client successfully authenticates with the OIDC provider, the tokens are stored in the `Set-Cookie` response header and sent to the client. If you set a `keyPrefix` value in your cookie configuration, the prefix is added to the name of the token before it is sent to the client, such as `Set-Cookie: <myprefix>_id-token=<ID_token>`. To prove successful authentication with the OIDC provider in subsequent requests, clients send their tokens in a `Cookie` header. 
