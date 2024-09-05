@@ -353,18 +353,22 @@ type isUpstreamSpec_Llm interface {
 }
 
 type UpstreamSpec_Openai struct {
+	// OpenAI upstream
 	Openai *UpstreamSpec_OpenAI `protobuf:"bytes,1,opt,name=openai,proto3,oneof"`
 }
 
 type UpstreamSpec_Mistral_ struct {
+	// Mistral upstream
 	Mistral *UpstreamSpec_Mistral `protobuf:"bytes,2,opt,name=mistral,proto3,oneof"`
 }
 
 type UpstreamSpec_Anthropic_ struct {
+	// Anthropic upstream
 	Anthropic *UpstreamSpec_Anthropic `protobuf:"bytes,3,opt,name=anthropic,proto3,oneof"`
 }
 
 type UpstreamSpec_AzureOpenai struct {
+	// Azure OpenAI upstream
 	AzureOpenai *UpstreamSpec_AzureOpenAI `protobuf:"bytes,4,opt,name=azure_openai,json=azureOpenai,proto3,oneof"`
 }
 
@@ -768,10 +772,12 @@ type isEmbedding_Embedding interface {
 }
 
 type Embedding_Openai struct {
+	// OpenAI embedding
 	Openai *Embedding_OpenAI `protobuf:"bytes,1,opt,name=openai,proto3,oneof"`
 }
 
 type Embedding_AzureOpenai struct {
+	// Azure OpenAI embedding
 	AzureOpenai *Embedding_AzureOpenAI `protobuf:"bytes,2,opt,name=azure_openai,json=azureOpenai,proto3,oneof"`
 }
 
@@ -1206,9 +1212,6 @@ type UpstreamSpec_AzureOpenAI struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Auth Token to use for the OpenAI API
-	// This token will be placed into the `api-key` header
-	//
 	// Types that are assignable to AuthTokenSource:
 	//
 	//	*UpstreamSpec_AzureOpenAI_AuthToken
@@ -1277,6 +1280,8 @@ type isUpstreamSpec_AzureOpenAI_AuthTokenSource interface {
 }
 
 type UpstreamSpec_AzureOpenAI_AuthToken struct {
+	// Auth Token to use for the OpenAI API
+	// This token will be placed into the `api-key` header
 	AuthToken *SingleAuthToken `protobuf:"bytes,1,opt,name=auth_token,json=authToken,proto3,oneof"` // use AD or other workload identity mechanism
 }
 
@@ -1569,6 +1574,8 @@ type isEmbedding_AzureOpenAI_AuthTokenSource interface {
 }
 
 type Embedding_AzureOpenAI_AuthToken struct {
+	// Auth Token to use for the OpenAI API
+	// This token will be placed into the `api-key` header
 	AuthToken *SingleAuthToken `protobuf:"bytes,1,opt,name=auth_token,json=authToken,proto3,oneof"`
 }
 

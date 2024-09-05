@@ -134,10 +134,10 @@ port: 443 # Port is optional and will default to 443 for HTTPS
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `openai` | [.ai.options.gloo.solo.io.UpstreamSpec.OpenAI](../ai.proto.sk/#openai) |  Only one of `openai`, `mistral`, `anthropic`, or `azureOpenai` can be set. |
-| `mistral` | [.ai.options.gloo.solo.io.UpstreamSpec.Mistral](../ai.proto.sk/#mistral) |  Only one of `mistral`, `openai`, `anthropic`, or `azureOpenai` can be set. |
-| `anthropic` | [.ai.options.gloo.solo.io.UpstreamSpec.Anthropic](../ai.proto.sk/#anthropic) |  Only one of `anthropic`, `openai`, `mistral`, or `azureOpenai` can be set. |
-| `azureOpenai` | [.ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI](../ai.proto.sk/#azureopenai) |  Only one of `azureOpenai`, `openai`, `mistral`, or `anthropic` can be set. |
+| `openai` | [.ai.options.gloo.solo.io.UpstreamSpec.OpenAI](../ai.proto.sk/#openai) | OpenAI upstream. Only one of `openai`, `mistral`, `anthropic`, or `azureOpenai` can be set. |
+| `mistral` | [.ai.options.gloo.solo.io.UpstreamSpec.Mistral](../ai.proto.sk/#mistral) | Mistral upstream. Only one of `mistral`, `openai`, `anthropic`, or `azureOpenai` can be set. |
+| `anthropic` | [.ai.options.gloo.solo.io.UpstreamSpec.Anthropic](../ai.proto.sk/#anthropic) | Anthropic upstream. Only one of `anthropic`, `openai`, `mistral`, or `azureOpenai` can be set. |
+| `azureOpenai` | [.ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI upstream. Only one of `azureOpenai`, `openai`, `mistral`, or `anthropic` can be set. |
 
 
 
@@ -195,7 +195,7 @@ Settings for the Azure OpenAI API
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) |  |
+| `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the OpenAI API This token will be placed into the `api-key` header. |
 | `endpoint` | `string` | (REQUIRED) The endpoint to use This should be the endpoint to the Azure OpenAI API, e.g. my-endpoint.openai.azure.com If the scheme is included it will be stripped. |
 
 
@@ -332,8 +332,8 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `openai` | [.ai.options.gloo.solo.io.Embedding.OpenAI](../ai.proto.sk/#openai) |  Only one of `openai` or `azureOpenai` can be set. |
-| `azureOpenai` | [.ai.options.gloo.solo.io.Embedding.AzureOpenAI](../ai.proto.sk/#azureopenai) |  Only one of `azureOpenai` or `openai` can be set. |
+| `openai` | [.ai.options.gloo.solo.io.Embedding.OpenAI](../ai.proto.sk/#openai) | OpenAI embedding. Only one of `openai` or `azureOpenai` can be set. |
+| `azureOpenai` | [.ai.options.gloo.solo.io.Embedding.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI embedding. Only one of `azureOpenai` or `openai` can be set. |
 
 
 
@@ -370,7 +370,7 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) |  |
+| `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the OpenAI API This token will be placed into the `api-key` header. |
 | `apiVersion` | `string` | (REQUIRED) The version of the API to use. |
 | `endpoint` | `string` | (REQUIRED) The endpoint to use This should be the endpoint to the Azure OpenAI API, e.g. https://my-endpoint.openai.azure.com If the scheme isn't included it will be added. |
 | `deploymentName` | `string` | (REQUIRED) The deployment/model name to use. |

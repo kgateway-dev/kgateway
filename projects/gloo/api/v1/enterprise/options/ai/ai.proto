@@ -98,9 +98,9 @@ message UpstreamSpec {
 
   // Settings for the Azure OpenAI API
   message AzureOpenAI {
-    // Auth Token to use for the OpenAI API
-    // This token will be placed into the `api-key` header
     oneof auth_token_source {
+      // Auth Token to use for the OpenAI API
+      // This token will be placed into the `api-key` header
       SingleAuthToken auth_token = 1;
       // use AD or other workload identity mechanism
     }
@@ -135,9 +135,13 @@ message UpstreamSpec {
   }
 
   oneof llm {
+    // OpenAI upstream
     OpenAI openai = 1;
+    // Mistral upstream
     Mistral mistral = 2;
+    // Anthropic upstream
     Anthropic anthropic = 3;
+    // Azure OpenAI upstream
     AzureOpenAI azure_openai = 4;
   }
 }
@@ -310,6 +314,8 @@ message Embedding {
 
   message AzureOpenAI {
     oneof auth_token_source {
+      // Auth Token to use for the OpenAI API
+      // This token will be placed into the `api-key` header
       SingleAuthToken auth_token = 1;
       // re-use the token from the backend
       // google.protobuf.Empty inherit_backend_token = 3;
@@ -326,7 +332,9 @@ message Embedding {
   }
 
   oneof embedding {
+    // OpenAI embedding
     OpenAI openai = 1;
+    // Azure OpenAI embedding
     AzureOpenAI azure_openai = 2;
   }
 }
