@@ -1,5 +1,6 @@
 ---
 title: "glooctl demo federation"
+description: "Reference for the 'glooctl demo federation' command."
 weight: 5
 ---
 ## glooctl demo federation
