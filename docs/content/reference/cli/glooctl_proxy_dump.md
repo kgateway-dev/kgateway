@@ -1,5 +1,6 @@
 ---
 title: "glooctl proxy dump"
+description: "Reference for the 'glooctl proxy dump' command."
 weight: 5
 ---
 ## glooctl proxy dump

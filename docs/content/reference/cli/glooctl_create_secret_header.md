@@ -1,5 +1,6 @@
 ---
 title: "glooctl create secret header"
+description: "Reference for the 'glooctl create secret header' command."
 weight: 5
 ---
 ## glooctl create secret header

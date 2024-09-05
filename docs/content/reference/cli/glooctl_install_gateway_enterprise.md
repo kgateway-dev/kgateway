@@ -1,5 +1,6 @@
 ---
 title: "glooctl install gateway enterprise"
+description: "Reference for the 'glooctl install gateway enterprise' command."
 weight: 5
 ---
 ## glooctl install gateway enterprise

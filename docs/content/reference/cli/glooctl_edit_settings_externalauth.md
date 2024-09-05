@@ -1,5 +1,6 @@
 ---
 title: "glooctl edit settings externalauth"
+description: "Reference for the 'glooctl edit settings externalauth' command."
 weight: 5
 ---
 ## glooctl edit settings externalauth

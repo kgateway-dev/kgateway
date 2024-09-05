@@ -1,5 +1,6 @@
 ---
 title: "glooctl version"
+description: "Reference for the 'glooctl version' command."
 weight: 5
 ---
 ## glooctl version

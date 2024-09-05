@@ -1,5 +1,6 @@
 ---
 title: "glooctl proxy"
+description: "Reference for the 'glooctl proxy' command."
 weight: 5
 ---
 ## glooctl proxy
