@@ -105,11 +105,7 @@ message UpstreamSpec {
       // use AD or other workload identity mechanism
     }
 
-    string api_version = 2;
-
-    string endpoint = 3;
-
-    string deployment_name = 4;
+    string endpoint = 2;
   }
 
   // Settings for the Mistral API

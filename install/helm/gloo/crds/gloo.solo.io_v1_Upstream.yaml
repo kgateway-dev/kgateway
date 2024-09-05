@@ -53,8 +53,6 @@ spec:
                     type: object
                   azureOpenai:
                     properties:
-                      apiVersion:
-                        type: string
                       authToken:
                         properties:
                           inline:
@@ -67,8 +65,6 @@ spec:
                                 type: string
                             type: object
                         type: object
-                      deploymentName:
-                        type: string
                       endpoint:
                         type: string
                     type: object

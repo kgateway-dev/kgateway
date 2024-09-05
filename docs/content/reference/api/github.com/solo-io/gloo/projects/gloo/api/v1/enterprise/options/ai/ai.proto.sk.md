@@ -189,18 +189,14 @@ Settings for the Azure OpenAI API
 
 ```yaml
 "authToken": .ai.options.gloo.solo.io.SingleAuthToken
-"apiVersion": string
 "endpoint": string
-"deploymentName": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) |  |
-| `apiVersion` | `string` |  |
 | `endpoint` | `string` |  |
-| `deploymentName` | `string` |  |
 
 
 

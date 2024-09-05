@@ -435,11 +435,7 @@ func (m *UpstreamSpec_AzureOpenAI) Clone() proto.Message {
 	}
 	target = &UpstreamSpec_AzureOpenAI{}
 
-	target.ApiVersion = m.GetApiVersion()
-
 	target.Endpoint = m.GetEndpoint()
-
-	target.DeploymentName = m.GetDeploymentName()
 
 	switch m.AuthTokenSource.(type) {
 
