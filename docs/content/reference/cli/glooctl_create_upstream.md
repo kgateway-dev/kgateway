@@ -1,5 +1,6 @@
 ---
 title: "glooctl create upstream"
+description: "Reference for the 'glooctl create upstream' command."
 weight: 5
 ---
 ## glooctl create upstream
