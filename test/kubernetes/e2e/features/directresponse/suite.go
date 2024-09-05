@@ -122,18 +122,50 @@ func (s *testingSuite) TestBasicDirectResponse() {
 }
 
 func (s *testingSuite) TestDelegation() {
-	// verify that a direct response route works as expected
+	// verify the regular child route works as expected.
 	s.ti.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(glooProxyObjectMeta)),
 			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/ip"),
+			curl.WithPath("/headers"),
 		},
 		&matchers.HttpResponse{
-			StatusCode: http.StatusNotFound,
-			Body:       ContainSubstring(`/ip is not supported`),
+			StatusCode: http.StatusOK,
+			Body:       ContainSubstring(`"headers"`),
+		},
+		time.Minute,
+	)
+
+	// verify the parent's DRR works as expected.
+	s.ti.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(glooProxyObjectMeta)),
+			curl.WithHostHeader("www.example.com"),
+			curl.WithPath("/test-1"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusFound,
+			Body:       ContainSubstring(`Hello from parent`),
+		},
+		time.Minute,
+	)
+
+	// verify that the child's DRR works as expected.
+	s.ti.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(glooProxyObjectMeta)),
+			curl.WithHostHeader("www.example.com"),
+			curl.WithPath("/test-2"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusFound,
+			Body:       ContainSubstring(`Hello from child`),
 		},
 		time.Minute,
 	)

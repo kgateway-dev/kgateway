@@ -93,6 +93,6 @@ func BuildPlugins(
 		httplisteneroptions.NewPlugin(queries, client),
 		listeneroptions.NewPlugin(queries, client),
 		urlrewrite.NewPlugin(),
-		directresponse.NewPlugin(queries), // direct response needs to run last
+		directresponse.NewPlugin(queries), // direct response needs to run after any plugin that might set an action
 	}
 }

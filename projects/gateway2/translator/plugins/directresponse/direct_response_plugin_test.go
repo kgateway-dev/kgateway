@@ -365,10 +365,4 @@ var _ = Describe("DirectResponseRoute", func() {
 			Expect(route.GetAction()).To(BeNil())
 		})
 	})
-
-	When("an HTTPRoute references a DRR resource in a delegated route", func() {
-		// Context: parent route references a DRR resource
-		// Context: child route references a DRR resource
-		// Context: parent and child references the same DRR resource.
-	})
 })
