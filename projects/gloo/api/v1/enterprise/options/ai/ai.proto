@@ -98,6 +98,8 @@ message UpstreamSpec {
 
   // Settings for the Azure OpenAI API
   message AzureOpenAI {
+    // Auth Token to use for the Azure OpenAI API
+    // This token will be placed into the `api-key` header
     oneof auth_token_source {
       // Auth Token to use for the OpenAI API
       // This token will be placed into the `api-key` header

@@ -1212,6 +1212,9 @@ type UpstreamSpec_AzureOpenAI struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Auth Token to use for the Azure OpenAI API
+	// This token will be placed into the `api-key` header
+	//
 	// Types that are assignable to AuthTokenSource:
 	//
 	//	*UpstreamSpec_AzureOpenAI_AuthToken
