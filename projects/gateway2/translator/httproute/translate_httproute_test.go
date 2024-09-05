@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -59,6 +60,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 			baseReporter      reports.Reporter
 			parentRefReporter reports.ParentRefReporter
 			gwListener        gwv1.Listener
+			reportsMap        reports.ReportMap
 		)
 
 		BeforeEach(func() {
@@ -121,7 +123,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				HTTPRoute: route,
 			}
 
-			reportsMap := reports.NewReportMap()
+			reportsMap = reports.NewReportMap()
 			baseReporter := reports.NewReporter(&reportsMap)
 			parentRefReporter = baseReporter.Route(&route).ParentRef(parentRef)
 		})
@@ -150,6 +152,14 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				},
 			}))
 			Expect(routes[0].Matchers[0].PathSpecifier).To(Equal(&matchers.Matcher_Prefix{Prefix: "/"}))
+
+			routeStatus := reportsMap.BuildRouteStatus(ctx, route, "")
+			Expect(routeStatus).NotTo(BeNil())
+			Expect(routeStatus.Parents).To(HaveLen(1))
+			resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+			Expect(resolvedRefs).NotTo(BeNil())
+			Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
+			Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonAccepted))
 		})
 	})
 
@@ -163,6 +173,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 			baseReporter      reports.Reporter
 			parentRefReporter reports.ParentRefReporter
 			gwListener        gwv1.Listener
+			reportsMap        reports.ReportMap
 		)
 		BeforeEach(func() {
 			gwListener = gwv1.Listener{} // Initialize appropriately
@@ -220,7 +231,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 			routeInfo = &query.HTTPRouteInfo{
 				HTTPRoute: route,
 			}
-			reportsMap := reports.NewReportMap()
+			reportsMap = reports.NewReportMap()
 			baseReporter := reports.NewReporter(&reportsMap)
 			parentRefReporter = baseReporter.Route(&route).ParentRef(parentRef)
 
@@ -247,10 +258,18 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 			routes := httproute.TranslateGatewayHTTPRouteRules(ctx, pluginRegistry, gwListener, routeInfo, parentRefReporter, baseReporter)
 			Expect(routes).To(HaveLen(1))
 			Expect(routes[0].GetAction()).To(BeEquivalentTo(directresponse.ErrorResponseAction()))
+
+			routeStatus := reportsMap.BuildRouteStatus(ctx, route, "")
+			Expect(routeStatus).NotTo(BeNil())
+			Expect(routeStatus.Parents).To(HaveLen(1))
+			resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+			Expect(resolvedRefs).NotTo(BeNil())
+			Expect(resolvedRefs.Status).To(Equal(metav1.ConditionFalse))
+			Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonIncompatibleFilters))
 		})
 	})
 
-	When("an HTTPRoute configures multiple route actions", func() {
+	When("an HTTPRoute configures incompatible filters", func() {
 		var (
 			drr               *v1alpha1.DirectResponseRoute
 			route             gwv1.HTTPRoute
@@ -260,6 +279,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 			baseReporter      reports.Reporter
 			parentRefReporter reports.ParentRefReporter
 			gwListener        gwv1.Listener
+			reportsMap        reports.ReportMap
 		)
 		BeforeEach(func() {
 			gwListener = gwv1.Listener{} // Initialize appropriately
@@ -318,7 +338,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 			routeInfo = &query.HTTPRouteInfo{
 				HTTPRoute: route,
 			}
-			reportsMap := reports.NewReportMap()
+			reportsMap = reports.NewReportMap()
 			baseReporter := reports.NewReporter(&reportsMap)
 			parentRefReporter = baseReporter.Route(&route).ParentRef(parentRef)
 
@@ -341,10 +361,18 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 			pluginRegistry = registry.NewPluginRegistry(registry.BuildPlugins(queries, fakeClient, routeOptionClient, vhOptionClient, statusReporter))
 		})
 
-		It("should replace the route due to incompatible filters", func() {
+		It("should replaces the route with a 500 direct response", func() {
 			routes := httproute.TranslateGatewayHTTPRouteRules(ctx, pluginRegistry, gwListener, routeInfo, parentRefReporter, baseReporter)
 			Expect(routes).To(HaveLen(1))
 			Expect(routes[0].GetAction()).To(BeEquivalentTo(directresponse.ErrorResponseAction()))
+
+			routeStatus := reportsMap.BuildRouteStatus(ctx, route, "")
+			Expect(routeStatus).NotTo(BeNil())
+			Expect(routeStatus.Parents).To(HaveLen(1))
+			resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+			Expect(resolvedRefs).NotTo(BeNil())
+			Expect(resolvedRefs.Status).To(Equal(metav1.ConditionFalse))
+			Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonIncompatibleFilters))
 		})
 	})
 })
