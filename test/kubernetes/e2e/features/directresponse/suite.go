@@ -62,6 +62,7 @@ func (s *testingSuite) SetupSuite() {
 		"TestInvalidDirectResponseRoute":  {gatewayManifest, invalidDirectResponseManifests},
 		"TestInvalidOverlappingFilters":   {gatewayManifest, invalidOverlappingFiltersManifests},
 		"TestInvalidMultipleRouteActions": {gatewayManifest, invalidMultipleRouteActionsManifests},
+		"TestInvalidBackendRefFilter":     {gatewayManifest, invalidBackendRefFilterManifests},
 	}
 }
 
@@ -235,4 +236,23 @@ func (s *testingSuite) TestInvalidMultipleRouteActions() {
 		assert.NoError(t, err, "route not found")
 		s.ti.Assertions.AssertHTTPRouteStatusContainsReason(route, string(gwv1.RouteReasonIncompatibleFilters))
 	}, 10*time.Second, 1*time.Second)
+}
+
+func (s *testingSuite) TestInvalidBackendRefFilter() {
+	// verify that configuring a DRR with a backendRef filter results in a 404 as
+	// this configuration is not supported / ignored by the direct response plugin.
+	s.ti.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(glooProxyObjectMeta)),
+			curl.WithHostHeader("www.example.com"),
+			curl.WithPath("/not-implemented"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusNotFound,
+			Body:       ContainSubstring(`Not Found (go-httpbin does not handle the path /not-implemented)`),
+		},
+		time.Minute,
+	)
 }

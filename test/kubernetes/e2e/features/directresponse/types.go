@@ -18,6 +18,7 @@ var (
 	invalidDirectResponseManifests       = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-direct-response.yaml")
 	invalidOverlappingFiltersManifests   = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-overlapping-filters.yaml")
 	invalidMultipleRouteActionsManifests = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-multiple-route-actions.yaml")
+	invalidBackendRefFilterManifests     = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-backendRef-filter.yaml")
 
 	glooProxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gloo-proxy-gw",
