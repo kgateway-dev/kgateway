@@ -1,5 +1,6 @@
 ---
 title: "glooctl delete virtualservice"
+description: "Reference for the 'glooctl delete virtualservice' command."
 weight: 5
 ---
 ## glooctl delete virtualservice

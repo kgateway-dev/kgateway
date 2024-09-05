@@ -1,5 +1,6 @@
 ---
 title: "glooctl create secret authcredentials"
+description: "Reference for the 'glooctl create secret authcredentials' command."
 weight: 5
 ---
 ## glooctl create secret authcredentials

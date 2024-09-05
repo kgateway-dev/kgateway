@@ -1,5 +1,6 @@
 ---
 title: "glooctl create upstream kube"
+description: "Reference for the 'glooctl create upstream kube' command."
 weight: 5
 ---
 ## glooctl create upstream kube
