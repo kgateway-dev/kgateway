@@ -105,6 +105,9 @@ message UpstreamSpec {
       // use AD or other workload identity mechanism
     }
 
+    // (REQUIRED) The endpoint to use
+    // This should be the endpoint to the Azure OpenAI API, e.g. my-endpoint.openai.azure.com
+    // If the scheme is included it will be stripped.
     string endpoint = 2;
   }
 
@@ -312,10 +315,13 @@ message Embedding {
       // google.protobuf.Empty inherit_backend_token = 3;
     }
 
+    // (REQUIRED) The version of the API to use
     string api_version = 2;
-
+    // (REQUIRED) The endpoint to use
+    // This should be the endpoint to the Azure OpenAI API, e.g. https://my-endpoint.openai.azure.com
+    // If the scheme isn't included it will be added.
     string endpoint = 3;
-
+    // (REQUIRED) The deployment/model name to use
     string deployment_name = 4;
   }
 

@@ -1213,7 +1213,10 @@ type UpstreamSpec_AzureOpenAI struct {
 	//
 	//	*UpstreamSpec_AzureOpenAI_AuthToken
 	AuthTokenSource isUpstreamSpec_AzureOpenAI_AuthTokenSource `protobuf_oneof:"auth_token_source"`
-	Endpoint        string                                     `protobuf:"bytes,2,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
+	// (REQUIRED) The endpoint to use
+	// This should be the endpoint to the Azure OpenAI API, e.g. my-endpoint.openai.azure.com
+	// If the scheme is included it will be stripped.
+	Endpoint string `protobuf:"bytes,2,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
 }
 
 func (x *UpstreamSpec_AzureOpenAI) Reset() {
@@ -1484,9 +1487,14 @@ type Embedding_AzureOpenAI struct {
 	//
 	//	*Embedding_AzureOpenAI_AuthToken
 	AuthTokenSource isEmbedding_AzureOpenAI_AuthTokenSource `protobuf_oneof:"auth_token_source"`
-	ApiVersion      string                                  `protobuf:"bytes,2,opt,name=api_version,json=apiVersion,proto3" json:"api_version,omitempty"`
-	Endpoint        string                                  `protobuf:"bytes,3,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
-	DeploymentName  string                                  `protobuf:"bytes,4,opt,name=deployment_name,json=deploymentName,proto3" json:"deployment_name,omitempty"`
+	// (REQUIRED) The version of the API to use
+	ApiVersion string `protobuf:"bytes,2,opt,name=api_version,json=apiVersion,proto3" json:"api_version,omitempty"`
+	// (REQUIRED) The endpoint to use
+	// This should be the endpoint to the Azure OpenAI API, e.g. https://my-endpoint.openai.azure.com
+	// If the scheme isn't included it will be added.
+	Endpoint string `protobuf:"bytes,3,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
+	// (REQUIRED) The deployment/model name to use
+	DeploymentName string `protobuf:"bytes,4,opt,name=deployment_name,json=deploymentName,proto3" json:"deployment_name,omitempty"`
 }
 
 func (x *Embedding_AzureOpenAI) Reset() {

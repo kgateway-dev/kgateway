@@ -196,7 +196,7 @@ Settings for the Azure OpenAI API
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) |  |
-| `endpoint` | `string` |  |
+| `endpoint` | `string` | (REQUIRED) The endpoint to use This should be the endpoint to the Azure OpenAI API, e.g. my-endpoint.openai.azure.com If the scheme is included it will be stripped. |
 
 
 
@@ -371,9 +371,9 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) |  |
-| `apiVersion` | `string` |  |
-| `endpoint` | `string` |  |
-| `deploymentName` | `string` |  |
+| `apiVersion` | `string` | (REQUIRED) The version of the API to use. |
+| `endpoint` | `string` | (REQUIRED) The endpoint to use This should be the endpoint to the Azure OpenAI API, e.g. https://my-endpoint.openai.azure.com If the scheme isn't included it will be added. |
+| `deploymentName` | `string` | (REQUIRED) The deployment/model name to use. |
 
 
 
