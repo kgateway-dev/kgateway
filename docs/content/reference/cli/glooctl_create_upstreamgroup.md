@@ -1,5 +1,6 @@
 ---
 title: "glooctl create upstreamgroup"
+description: "Reference for the 'glooctl create upstreamgroup' command."
 weight: 5
 ---
 ## glooctl create upstreamgroup

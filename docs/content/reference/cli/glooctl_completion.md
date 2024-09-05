@@ -1,5 +1,6 @@
 ---
 title: "glooctl completion"
+description: "Reference for the 'glooctl completion' command."
 weight: 5
 ---
 ## glooctl completion

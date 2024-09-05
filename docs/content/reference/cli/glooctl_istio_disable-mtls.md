@@ -1,5 +1,6 @@
 ---
 title: "glooctl istio disable-mtls"
+description: "Reference for the 'glooctl istio disable-mtls' command."
 weight: 5
 ---
 ## glooctl istio disable-mtls

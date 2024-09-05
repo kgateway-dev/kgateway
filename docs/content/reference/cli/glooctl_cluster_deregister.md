@@ -1,5 +1,6 @@
 ---
 title: "glooctl cluster deregister"
+description: "Reference for the 'glooctl cluster deregister' command."
 weight: 5
 ---
 ## glooctl cluster deregister
