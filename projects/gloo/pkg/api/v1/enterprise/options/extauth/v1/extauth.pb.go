@@ -2301,7 +2301,10 @@ type OidcAuthorizationCode struct {
 	//
 	//	*OidcAuthorizationCode_Default_
 	//	*OidcAuthorizationCode_Azure_
-	Provider           isOidcAuthorizationCode_Provider          `protobuf_oneof:"Provider"`
+	Provider isOidcAuthorizationCode_Provider `protobuf_oneof:"Provider"`
+	// Configuration for front channel logout. This is used to log out the user from multiple apps/clients associated with one OIDC provider (OP)
+	// When this is configured here and in OP, when the user goes to the logout endpoint they will be directed to a page OP's end_session endpoint which
+	// will render an iframe which calls the FrontChannelLogout.path for each logged in app/client.
 	FrontChannelLogout *OidcAuthorizationCode_FrontChannelLogout `protobuf:"bytes,28,opt,name=front_channel_logout,json=frontChannelLogout,proto3" json:"front_channel_logout,omitempty"`
 }
 
@@ -8031,7 +8034,10 @@ type ExtAuthConfig_OidcAuthorizationCodeConfig struct {
 	//
 	//	*ExtAuthConfig_OidcAuthorizationCodeConfig_Default_
 	//	*ExtAuthConfig_OidcAuthorizationCodeConfig_Azure_
-	Provider           isExtAuthConfig_OidcAuthorizationCodeConfig_Provider          `protobuf_oneof:"Provider"`
+	Provider isExtAuthConfig_OidcAuthorizationCodeConfig_Provider `protobuf_oneof:"Provider"`
+	// Configuration for front channel logout. This is used to log out the user from multiple apps/clients associated with one OIDC provider (OP)
+	// When this is configured here and in OP, when the user goes to the logout endpoint they will be directed to a page OP's end_session endpoint which
+	// will render an iframe which calls the FrontChannelLogout.path for each logged in app/client.
 	FrontChannelLogout *ExtAuthConfig_OidcAuthorizationCodeConfig_FrontChannelLogout `protobuf:"bytes,28,opt,name=front_channel_logout,json=frontChannelLogout,proto3" json:"front_channel_logout,omitempty"`
 }
 
