@@ -199,7 +199,7 @@ func (m *VhostExtension) Equal(that interface{}) bool {
 		return false
 	}
 
-	if m.GetAllowMissingJwt() != target.GetAllowMissingJwt() {
+	if m.GetValidationPolicy() != target.GetValidationPolicy() {
 		return false
 	}
 

@@ -554,8 +554,6 @@ spec:
                     properties:
                       afterExtAuth:
                         properties:
-                          allowMissingJwt:
-                            type: boolean
                           allowMissingOrFailedJwt:
                             type: boolean
                           providers:
@@ -630,11 +628,12 @@ spec:
                                   type: object
                               type: object
                             type: object
+                          validationPolicy:
+                            type: string
+                            x-kubernetes-int-or-string: true
                         type: object
                       beforeExtAuth:
                         properties:
-                          allowMissingJwt:
-                            type: boolean
                           allowMissingOrFailedJwt:
                             type: boolean
                           providers:
@@ -709,6 +708,9 @@ spec:
                                   type: object
                               type: object
                             type: object
+                          validationPolicy:
+                            type: string
+                            x-kubernetes-int-or-string: true
                         type: object
                     type: object
                   jwtStaged:
