@@ -57,12 +57,13 @@ func (s *testingSuite) SetupSuite() {
 
 	// include gateway manifests for the tests, so we recreate it for each test run
 	s.manifests = map[string][]string{
-		"TestBasicDirectResponse":         {gatewayManifest, basicDirectResposeManifests},
-		"TestDelegation":                  {gatewayManifest, basicDelegationManifests},
-		"TestMissingRef":                  {gatewayManifest, invalidMissingRefManifests},
-		"TestInvalidOverlappingFilters":   {gatewayManifest, invalidOverlappingFiltersManifests},
-		"TestInvalidMultipleRouteActions": {gatewayManifest, invalidMultipleRouteActionsManifests},
-		"TestInvalidBackendRefFilter":     {gatewayManifest, invalidBackendRefFilterManifests},
+		"TestBasicDirectResponse":                 {gatewayManifest, basicDirectResposeManifests},
+		"TestDelegation":                          {gatewayManifest, basicDelegationManifests},
+		"TestInvalidDelegationConflictingFilters": {gatewayManifest, invalidDelegationConflictingFiltersManifests},
+		"TestInvalidMissingRef":                   {gatewayManifest, invalidMissingRefManifests},
+		"TestInvalidOverlappingFilters":           {gatewayManifest, invalidOverlappingFiltersManifests},
+		"TestInvalidMultipleRouteActions":         {gatewayManifest, invalidMultipleRouteActionsManifests},
+		"TestInvalidBackendRefFilter":             {gatewayManifest, invalidBackendRefFilterManifests},
 	}
 }
 
@@ -146,7 +147,7 @@ func (s *testingSuite) TestDelegation() {
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(glooProxyObjectMeta)),
 			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/test-1"),
+			curl.WithPath("/parent"),
 		},
 		&matchers.HttpResponse{
 			StatusCode: http.StatusFound,
@@ -162,7 +163,7 @@ func (s *testingSuite) TestDelegation() {
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(glooProxyObjectMeta)),
 			curl.WithHostHeader("www.example.com"),
-			curl.WithPath("/test-2"),
+			curl.WithPath("/child"),
 		},
 		&matchers.HttpResponse{
 			StatusCode: http.StatusFound,
@@ -172,7 +173,24 @@ func (s *testingSuite) TestDelegation() {
 	)
 }
 
-func (s *testingSuite) TestMissingRef() {
+func (s *testingSuite) TestInvalidDelegationConflictingFilters() {
+	// verify that the child's DR works as expected.
+	s.ti.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(glooProxyObjectMeta)),
+			curl.WithHostHeader("www.example.com"),
+			curl.WithPath("/headers"),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusInternalServerError,
+		},
+		time.Minute,
+	)
+}
+
+func (s *testingSuite) TestInvalidMissingRef() {
 	s.ti.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		defaults.CurlPodExecOpt,

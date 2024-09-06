@@ -20,10 +20,6 @@ spec:
       namespace: "httpbin"
       kind: HTTPRoute
       group: gateway.networking.k8s.io
-  - matches:
-    - path:
-        type: Exact
-        value: /parent
     filters:
     - type: ExtensionRef
       extensionRef:
@@ -42,21 +38,11 @@ spec:
   rules:
   - matches:
     - path:
-        type: Exact
-        value: /headers
+        type: PathPrefix
+        value: /
     backendRefs:
     - name: httpbin
       port: 8000
-  - matches:
-    - path:
-        type: Exact
-        value: /child
-    filters:
-    - type: ExtensionRef
-      extensionRef:
-        name: child-dr
-        group: gateway.gloo.solo.io
-        kind: DirectResponse
 ---
 apiVersion: gateway.gloo.solo.io/v1alpha1
 kind: DirectResponse
@@ -66,12 +52,3 @@ metadata:
 spec:
   status: 302
   body: "Hello from parent route"
----
-apiVersion: gateway.gloo.solo.io/v1alpha1
-kind: DirectResponse
-metadata:
-  name: child-dr
-  namespace: httpbin
-spec:
-  status: 302
-  body: "Hello from child route"
