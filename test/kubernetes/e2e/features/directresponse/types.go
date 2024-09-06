@@ -15,7 +15,7 @@ var (
 	gatewayManifest                      = filepath.Join(util.MustGetThisDir(), "testdata", "gateway.yaml")
 	basicDirectResposeManifests          = filepath.Join(util.MustGetThisDir(), "testdata", "basic-direct-response.yaml")
 	basicDelegationManifests             = filepath.Join(util.MustGetThisDir(), "testdata", "basic-delegation-direct-response.yaml")
-	invalidDirectResponseManifests       = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-direct-response.yaml")
+	invalidMissingRefManifests           = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-missing-ref-direct-response.yaml")
 	invalidOverlappingFiltersManifests   = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-overlapping-filters.yaml")
 	invalidMultipleRouteActionsManifests = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-multiple-route-actions.yaml")
 	invalidBackendRefFilterManifests     = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-backendRef-filter.yaml")

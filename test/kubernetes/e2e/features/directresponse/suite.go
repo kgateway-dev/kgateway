@@ -59,7 +59,7 @@ func (s *testingSuite) SetupSuite() {
 	s.manifests = map[string][]string{
 		"TestBasicDirectResponse":         {gatewayManifest, basicDirectResposeManifests},
 		"TestDelegation":                  {gatewayManifest, basicDelegationManifests},
-		"TestInvalidDirectResponse":       {gatewayManifest, invalidDirectResponseManifests},
+		"TestMissingRef":                  {gatewayManifest, invalidMissingRefManifests},
 		"TestInvalidOverlappingFilters":   {gatewayManifest, invalidOverlappingFiltersManifests},
 		"TestInvalidMultipleRouteActions": {gatewayManifest, invalidMultipleRouteActionsManifests},
 		"TestInvalidBackendRefFilter":     {gatewayManifest, invalidBackendRefFilterManifests},
@@ -172,7 +172,7 @@ func (s *testingSuite) TestDelegation() {
 	)
 }
 
-func (s *testingSuite) TestInvalidDirectResponse() {
+func (s *testingSuite) TestMissingRef() {
 	s.ti.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		defaults.CurlPodExecOpt,
