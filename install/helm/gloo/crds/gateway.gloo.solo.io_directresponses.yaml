@@ -7,18 +7,18 @@ metadata:
   labels:
     app: gloo-gateway
     app.kubernetes.io/name: gloo-gateway
-  name: directresponseroutes.gateway.gloo.solo.io
+  name: directresponses.gateway.gloo.solo.io
 spec:
   group: gateway.gloo.solo.io
   names:
     categories:
     - gloo-gateway
-    kind: DirectResponseRoute
-    listKind: DirectResponseRouteList
-    plural: directresponseroutes
+    kind: DirectResponse
+    listKind: DirectResponseList
+    plural: directresponses
     shortNames:
-    - drr
-    singular: directresponseroute
+    - dr
+    singular: directresponse
   scope: Namespaced
   versions:
   - name: v1alpha1

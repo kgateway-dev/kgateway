@@ -18,15 +18,15 @@ spec:
       extensionRef:
         name: test-1
         group: gateway.gloo.solo.io
-        kind: DirectResponseRoute
+        kind: DirectResponse
     - type: ExtensionRef
       extensionRef:
         name: test-2
         group: gateway.gloo.solo.io
-        kind: DirectResponseRoute
+        kind: DirectResponse
 ---
 apiVersion: gateway.gloo.solo.io/v1alpha1
-kind: DirectResponseRoute
+kind: DirectResponse
 metadata:
   name: test-1
   namespace: httpbin
@@ -35,7 +35,7 @@ spec:
   body: "Test 1 body"
 ---
 apiVersion: gateway.gloo.solo.io/v1alpha1
-kind: DirectResponseRoute
+kind: DirectResponse
 metadata:
   name: test-2
   namespace: httpbin

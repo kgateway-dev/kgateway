@@ -25,10 +25,10 @@ spec:
         extensionRef:
           name: robots-txt
           group: gateway.gloo.solo.io
-          kind: DirectResponseRoute
+          kind: DirectResponse
 ---
 apiVersion: gateway.gloo.solo.io/v1alpha1
-kind: DirectResponseRoute
+kind: DirectResponse
 metadata:
   name: robots-txt
   namespace: httpbin

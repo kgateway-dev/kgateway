@@ -190,14 +190,14 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 			reportsMap        reports.ReportMap
 		)
 
-		// Helper function to create a DirectResponseRoute
-		createDirectResponseRoute := func(name, namespace string, status uint32) *v1alpha1.DirectResponseRoute {
-			return &v1alpha1.DirectResponseRoute{
+		// Helper function to create a DirectResponse
+		createDirectResponse := func(name, namespace string, status uint32) *v1alpha1.DirectResponse {
+			return &v1alpha1.DirectResponse{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      name,
 					Namespace: namespace,
 				},
-				Spec: v1alpha1.DirectResponseRouteSpec{
+				Spec: v1alpha1.DirectResponseSpec{
 					Status: status,
 				},
 			}
@@ -239,8 +239,8 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 
 		When("an HTTPRoute configures the backendRef and direct response actions", func() {
 			BeforeEach(func() {
-				drr := createDirectResponseRoute("test", "bar", 200)
-				deps = append(deps, drr)
+				dr := createDirectResponse("test", "bar", 200)
+				deps = append(deps, dr)
 
 				backendRefs := []gwv1.HTTPBackendRef{{
 					BackendRef: gwv1.BackendRef{
@@ -255,8 +255,8 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 					Type: gwv1.HTTPRouteFilterExtensionRef,
 					ExtensionRef: &gwv1.LocalObjectReference{
 						Group: v1alpha1.Group,
-						Kind:  v1alpha1.DirectResponseRouteKind,
-						Name:  gwv1.ObjectName(drr.GetName()),
+						Kind:  v1alpha1.DirectResponseKind,
+						Name:  gwv1.ObjectName(dr.GetName()),
 					},
 				}}
 
@@ -282,8 +282,8 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 
 		When("an HTTPRoute configures the redirect and direct response actions", func() {
 			BeforeEach(func() {
-				drr := createDirectResponseRoute("test", "bar", 200)
-				deps = append(deps, drr)
+				dr := createDirectResponse("test", "bar", 200)
+				deps = append(deps, dr)
 
 				filters := []gwv1.HTTPRouteFilter{
 					{
@@ -297,8 +297,8 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 						Type: gwv1.HTTPRouteFilterExtensionRef,
 						ExtensionRef: &gwv1.LocalObjectReference{
 							Group: v1alpha1.Group,
-							Kind:  v1alpha1.DirectResponseRouteKind,
-							Name:  gwv1.ObjectName(drr.GetName()),
+							Kind:  v1alpha1.DirectResponseKind,
+							Name:  gwv1.ObjectName(dr.GetName()),
 						},
 					},
 				}

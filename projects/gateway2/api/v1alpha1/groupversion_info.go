@@ -11,8 +11,8 @@ const (
 
 	// GatewayParametersKind is the kind for the GatewayParameters CRD.
 	GatewayParametersKind = "GatewayParameters"
-	// DirectResponseRouteKind is the kind for the DirectResponseRoute CRD.
-	DirectResponseRouteKind = "DirectResponseRoute"
+	// DirectResponseKind is the kind for the DirectResponse CRD.
+	DirectResponseKind = "DirectResponse"
 )
 
 var (
@@ -31,9 +31,9 @@ var (
 		Kind:    GatewayParametersKind,
 	}
 
-	DirectResponseRouteGVK = schema.GroupVersionKind{
+	DirectResponseGVK = schema.GroupVersionKind{
 		Group:   Group,
 		Version: Version,
-		Kind:    DirectResponseRouteKind,
+		Kind:    DirectResponseKind,
 	}
 )

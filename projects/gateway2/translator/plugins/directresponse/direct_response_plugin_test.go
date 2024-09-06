@@ -19,7 +19,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
-var _ = Describe("DirectResponseRoute", func() {
+var _ = Describe("DirectResponse", func() {
 	var (
 		ctx    context.Context
 		cancel context.CancelFunc
@@ -41,20 +41,20 @@ var _ = Describe("DirectResponseRoute", func() {
 
 	When("a valid direct response route is present", func() {
 		var (
-			drr *v1alpha1.DirectResponseRoute
+			dr *v1alpha1.DirectResponse
 		)
 		BeforeEach(func() {
-			drr = &v1alpha1.DirectResponseRoute{
+			dr = &v1alpha1.DirectResponse{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
 					Namespace: "httpbin",
 				},
-				Spec: v1alpha1.DirectResponseRouteSpec{
+				Spec: v1alpha1.DirectResponseSpec{
 					Status: uint32(200),
 					Body:   "hello, world",
 				},
 			}
-			deps = []client.Object{drr}
+			deps = []client.Object{dr}
 		})
 
 		It("should apply the direct response route to the route", func() {
@@ -78,8 +78,8 @@ var _ = Describe("DirectResponseRoute", func() {
 						Type: gwv1.HTTPRouteFilterExtensionRef,
 						ExtensionRef: &gwv1.LocalObjectReference{
 							Group: v1alpha1.Group,
-							Kind:  v1alpha1.DirectResponseRouteKind,
-							Name:  gwv1.ObjectName(drr.GetName()),
+							Kind:  v1alpha1.DirectResponseKind,
+							Name:  gwv1.ObjectName(dr.GetName()),
 						},
 					}},
 				},
@@ -92,29 +92,29 @@ var _ = Describe("DirectResponseRoute", func() {
 			Expect(route).ToNot(BeNil())
 			Expect(route.GetAction()).To(BeEquivalentTo(&v1.Route_DirectResponseAction{
 				DirectResponseAction: &v1.DirectResponseAction{
-					Status: drr.GetStatus(),
-					Body:   drr.GetBody(),
+					Status: dr.GetStatus(),
+					Body:   dr.GetBody(),
 				},
 			}))
 		})
 	})
 
-	When("an empty spec.body is configured in a DRR resource", func() {
+	When("an empty spec.body is configured in a DR resource", func() {
 		var (
-			drr *v1alpha1.DirectResponseRoute
+			dr *v1alpha1.DirectResponse
 		)
 		BeforeEach(func() {
-			drr = &v1alpha1.DirectResponseRoute{
+			dr = &v1alpha1.DirectResponse{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "empty-body",
 					Namespace: "httpbin",
 				},
-				Spec: v1alpha1.DirectResponseRouteSpec{
+				Spec: v1alpha1.DirectResponseSpec{
 					Status: uint32(404),
 					Body:   "",
 				},
 			}
-			deps = []client.Object{drr}
+			deps = []client.Object{dr}
 		})
 
 		It("should apply the direct response route to the route", func() {
@@ -138,8 +138,8 @@ var _ = Describe("DirectResponseRoute", func() {
 						Type: gwv1.HTTPRouteFilterExtensionRef,
 						ExtensionRef: &gwv1.LocalObjectReference{
 							Group: v1alpha1.Group,
-							Kind:  v1alpha1.DirectResponseRouteKind,
-							Name:  gwv1.ObjectName(drr.GetName()),
+							Kind:  v1alpha1.DirectResponseKind,
+							Name:  gwv1.ObjectName(dr.GetName()),
 						},
 					}},
 				},
@@ -152,28 +152,28 @@ var _ = Describe("DirectResponseRoute", func() {
 			Expect(route).ToNot(BeNil())
 			Expect(route.GetAction()).To(BeEquivalentTo(&v1.Route_DirectResponseAction{
 				DirectResponseAction: &v1.DirectResponseAction{
-					Status: drr.GetStatus(),
+					Status: dr.GetStatus(),
 				},
 			}))
 		})
 	})
 
-	When("an HTTPRoute references a non-existent DRR resource", func() {
+	When("an HTTPRoute references a non-existent DR resource", func() {
 		var (
-			drr *v1alpha1.DirectResponseRoute
+			dr *v1alpha1.DirectResponse
 		)
 		BeforeEach(func() {
-			drr = &v1alpha1.DirectResponseRoute{
+			dr = &v1alpha1.DirectResponse{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
 					Namespace: "httpbin",
 				},
-				Spec: v1alpha1.DirectResponseRouteSpec{
+				Spec: v1alpha1.DirectResponseSpec{
 					Status: uint32(200),
 					Body:   "hello, world",
 				},
 			}
-			deps = []client.Object{drr}
+			deps = []client.Object{dr}
 		})
 		It("should produce an error on the HTTPRoute resource", func() {
 			rt := &gwv1.HTTPRoute{
@@ -196,7 +196,7 @@ var _ = Describe("DirectResponseRoute", func() {
 						Type: gwv1.HTTPRouteFilterExtensionRef,
 						ExtensionRef: &gwv1.LocalObjectReference{
 							Group: v1alpha1.Group,
-							Kind:  v1alpha1.DirectResponseRouteKind,
+							Kind:  v1alpha1.DirectResponseKind,
 							Name:  "non-existent",
 						},
 					}},
@@ -220,32 +220,32 @@ var _ = Describe("DirectResponseRoute", func() {
 		})
 	})
 
-	When("an HTTPRoute references multiple DRR resources", func() {
+	When("an HTTPRoute references multiple DR resources", func() {
 		var (
-			drr1, drr2 *v1alpha1.DirectResponseRoute
+			dr1, dr2 *v1alpha1.DirectResponse
 		)
 		BeforeEach(func() {
-			drr1 = &v1alpha1.DirectResponseRoute{
+			dr1 = &v1alpha1.DirectResponse{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "drr1",
+					Name:      "dr1",
 					Namespace: "httpbin",
 				},
-				Spec: v1alpha1.DirectResponseRouteSpec{
+				Spec: v1alpha1.DirectResponseSpec{
 					Status: uint32(200),
-					Body:   "hello from DRR 1",
+					Body:   "hello from DR 1",
 				},
 			}
-			drr2 = &v1alpha1.DirectResponseRoute{
+			dr2 = &v1alpha1.DirectResponse{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "drr2",
+					Name:      "dr2",
 					Namespace: "httpbin",
 				},
-				Spec: v1alpha1.DirectResponseRouteSpec{
+				Spec: v1alpha1.DirectResponseSpec{
 					Status: uint32(404),
-					Body:   "hello from DRR 2",
+					Body:   "hello from DR 2",
 				},
 			}
-			deps = []client.Object{drr1, drr2}
+			deps = []client.Object{dr1, dr2}
 		})
 
 		It("should produce an error on the HTTPRoute resource", func() {
@@ -270,16 +270,16 @@ var _ = Describe("DirectResponseRoute", func() {
 							Type: gwv1.HTTPRouteFilterExtensionRef,
 							ExtensionRef: &gwv1.LocalObjectReference{
 								Group: v1alpha1.Group,
-								Kind:  v1alpha1.DirectResponseRouteKind,
-								Name:  gwv1.ObjectName(drr1.GetName()),
+								Kind:  v1alpha1.DirectResponseKind,
+								Name:  gwv1.ObjectName(dr1.GetName()),
 							},
 						},
 						{
 							Type: gwv1.HTTPRouteFilterExtensionRef,
 							ExtensionRef: &gwv1.LocalObjectReference{
 								Group: v1alpha1.Group,
-								Kind:  v1alpha1.DirectResponseRouteKind,
-								Name:  gwv1.ObjectName(drr2.GetName()),
+								Kind:  v1alpha1.DirectResponseKind,
+								Name:  gwv1.ObjectName(dr2.GetName()),
 							},
 						},
 					},
@@ -304,22 +304,22 @@ var _ = Describe("DirectResponseRoute", func() {
 		})
 	})
 
-	When("an HTTPRoute references a DRR resource in the backendRef filters", func() {
+	When("an HTTPRoute references a DR resource in the backendRef filters", func() {
 		var (
-			drr *v1alpha1.DirectResponseRoute
+			dr *v1alpha1.DirectResponse
 		)
 		BeforeEach(func() {
-			drr = &v1alpha1.DirectResponseRoute{
+			dr = &v1alpha1.DirectResponse{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
 					Namespace: "httpbin",
 				},
-				Spec: v1alpha1.DirectResponseRouteSpec{
+				Spec: v1alpha1.DirectResponseSpec{
 					Status: uint32(200),
 					Body:   "hello, world",
 				},
 			}
-			deps = []client.Object{drr}
+			deps = []client.Object{dr}
 		})
 		It("should apply the direct response route to the route", func() {
 			rt := &gwv1.HTTPRoute{
@@ -350,8 +350,8 @@ var _ = Describe("DirectResponseRoute", func() {
 							Type: gwv1.HTTPRouteFilterExtensionRef,
 							ExtensionRef: &gwv1.LocalObjectReference{
 								Group: v1alpha1.Group,
-								Kind:  v1alpha1.DirectResponseRouteKind,
-								Name:  gwv1.ObjectName(drr.GetName()),
+								Kind:  v1alpha1.DirectResponseKind,
+								Name:  gwv1.ObjectName(dr.GetName()),
 							},
 						}},
 					}},

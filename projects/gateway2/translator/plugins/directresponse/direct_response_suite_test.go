@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestDirectResponseRoute(t *testing.T) {
+func TestDirectResponse(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "DirectResponseRoute Suite")
+	RunSpecs(t, "DirectResponse Suite")
 }

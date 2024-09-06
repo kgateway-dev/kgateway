@@ -36,28 +36,28 @@ func (p *plugin) ApplyRoutePlugin(
 ) error {
 	// determine whether there are any direct response routes that should be
 	// applied to the current route. otherwise, we'll return early.
-	drr, err := findDirectResponseExtension(ctx, routeCtx, p.gwQueries)
+	dr, err := findDirectResponseExtension(ctx, routeCtx, p.gwQueries)
 	if err != nil {
 		outputRoute.Action = ErrorResponseAction()
 		routeCtx.Reporter.SetCondition(reports.HTTPRouteCondition{
 			Type:    gwv1.RouteConditionResolvedRefs,
 			Status:  metav1.ConditionFalse,
 			Reason:  gwv1.RouteReasonBackendNotFound,
-			Message: fmt.Sprintf("Error while resolving DirectResponseRoute extensionRef: %v", err),
+			Message: fmt.Sprintf("Error while resolving DirectResponse extensionRef: %v", err),
 		})
 		return err
 	}
-	if drr == nil {
+	if dr == nil {
 		// exit early, no DRRs were found in the extension refs.
 		return nil
 	}
 
-	// at this point, we have a valid DRR reference that we should apply to the route.
+	// at this point, we have a valid DR reference that we should apply to the route.
 	if outputRoute.GetAction() != nil {
-		// the output route already has an action, which is incompatible with the DirectResponseRoute,
+		// the output route already has an action, which is incompatible with the DirectResponse,
 		// so we'll return an error. note: the direct response plugin runs after other route plugins
 		// that modify the output route (e.g. the redirect plugin), so this should be a rare case.
-		errMsg := fmt.Sprintf("DirectResponseRoute cannot be applied to route with existing action: %T", outputRoute.GetAction())
+		errMsg := fmt.Sprintf("DirectResponse cannot be applied to route with existing action: %T", outputRoute.GetAction())
 		routeCtx.Reporter.SetCondition(reports.HTTPRouteCondition{
 			Type:    gwv1.RouteConditionAccepted,
 			Status:  metav1.ConditionFalse,
@@ -70,8 +70,8 @@ func (p *plugin) ApplyRoutePlugin(
 
 	outputRoute.Action = &v1.Route_DirectResponseAction{
 		DirectResponseAction: &v1.DirectResponseAction{
-			Status: drr.GetStatus(),
-			Body:   drr.GetBody(),
+			Status: dr.GetStatus(),
+			Body:   dr.GetBody(),
 		},
 	}
 
@@ -79,15 +79,15 @@ func (p *plugin) ApplyRoutePlugin(
 }
 
 // findDirectResponseExtension searches for any extension ref filters on the current route ctx
-// and returns the first DirectResponseRoute that matches the extension ref. In the case that
+// and returns the first DirectResponse that matches the extension ref. In the case that
 // multiple DRRs are found, an error is returned. If no DRRs are found, nil is returned.
 func findDirectResponseExtension(
 	ctx context.Context,
 	routeCtx *plugins.RouteContext,
 	queries query.GatewayQueries,
-) (*v1alpha1.DirectResponseRoute, error) {
+) (*v1alpha1.DirectResponse, error) {
 	// search for any extension ref filters on the current route ctx.
-	filters := utils.FindExtensionRefFilters(routeCtx.Rule, v1alpha1.DirectResponseRouteGVK.GroupKind())
+	filters := utils.FindExtensionRefFilters(routeCtx.Rule, v1alpha1.DirectResponseGVK.GroupKind())
 	if len(filters) == 0 {
 		// no extension ref filters were found on the route.
 		return nil, nil
@@ -95,30 +95,30 @@ func findDirectResponseExtension(
 
 	var (
 		errors []error
-		drrs   []*v1alpha1.DirectResponseRoute
+		drs    []*v1alpha1.DirectResponse
 	)
 	for _, filter := range filters {
-		drr, err := utils.GetExtensionRefObj[*v1alpha1.DirectResponseRoute](ctx, routeCtx.Route, queries, filter.ExtensionRef)
+		dr, err := utils.GetExtensionRefObj[*v1alpha1.DirectResponse](ctx, routeCtx.Route, queries, filter.ExtensionRef)
 		if err != nil {
 			errors = append(errors, err)
 			continue
 		}
-		drrs = append(drrs, drr)
+		drs = append(drs, dr)
 	}
 	if len(errors) > 0 {
-		return nil, fmt.Errorf("failed to resolve the DirectResponseRoute extension refs: %v", utilerrors.NewAggregate(errors))
+		return nil, fmt.Errorf("failed to resolve the DirectResponse extension refs: %v", utilerrors.NewAggregate(errors))
 	}
 
-	switch len(drrs) {
+	switch len(drs) {
 	case 0:
 		// no DRRs were found in the extension refs. nothing to do.
 		return nil, nil
 	case 1:
-		// we found a single DRR, which we'll return.
-		return drrs[0], nil
+		// we found a single DR, which we'll return.
+		return drs[0], nil
 	default:
 		// we don't support multiple DRRs on a single route.
-		return nil, fmt.Errorf("multiple DirectResponseRoute resources found in extension refs. expected 1, found %d", len(drrs))
+		return nil, fmt.Errorf("multiple DirectResponse resources found in extension refs. expected 1, found %d", len(drs))
 	}
 }
 

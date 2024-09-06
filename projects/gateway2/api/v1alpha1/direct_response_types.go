@@ -4,29 +4,29 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// DirectResponseRoute contains configuration for defining direct response routes.
+// DirectResponse contains configuration for defining direct response routes.
 //
 // +kubebuilder:object:root=true
 // +kubebuilder:metadata:labels={app=gloo-gateway,app.kubernetes.io/name=gloo-gateway}
-// +kubebuilder:resource:categories=gloo-gateway,shortName=drr
+// +kubebuilder:resource:categories=gloo-gateway,shortName=dr
 // +kubebuilder:subresource:status
-type DirectResponseRoute struct {
+type DirectResponse struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   DirectResponseRouteSpec   `json:"spec,omitempty"`
-	Status DirectResponseRouteStatus `json:"status,omitempty"`
+	Spec   DirectResponseSpec   `json:"spec,omitempty"`
+	Status DirectResponseStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
-type DirectResponseRouteList struct {
+type DirectResponseList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []DirectResponseRoute `json:"items"`
+	Items           []DirectResponse `json:"items"`
 }
 
-// DirectResponseRouteSpec describes the desired state of a DirectResponseRoute.
-type DirectResponseRouteSpec struct {
+// DirectResponseSpec describes the desired state of a DirectResponse.
+type DirectResponseSpec struct {
 	// Status defines the HTTP status code to return for this route.
 	//
 	// +kubebuilder:validation:Required
@@ -41,11 +41,11 @@ type DirectResponseRouteSpec struct {
 	Body string `json:"body,omitempty"`
 }
 
-// DirectResponseRouteStatus defines the observed state of a DirectResponseRoute.
-type DirectResponseRouteStatus struct{}
+// DirectResponseStatus defines the observed state of a DirectResponse.
+type DirectResponseStatus struct{}
 
 // GetStatus returns the HTTP status code to return for this route.
-func (in *DirectResponseRoute) GetStatus() uint32 {
+func (in *DirectResponse) GetStatus() uint32 {
 	if in == nil {
 		return 0
 	}
@@ -53,7 +53,7 @@ func (in *DirectResponseRoute) GetStatus() uint32 {
 }
 
 // GetBody returns the content to be returned in the HTTP response body.
-func (in *DirectResponseRoute) GetBody() string {
+func (in *DirectResponse) GetBody() string {
 	if in == nil {
 		return ""
 	}
@@ -61,5 +61,5 @@ func (in *DirectResponseRoute) GetBody() string {
 }
 
 func init() {
-	SchemeBuilder.Register(&DirectResponseRoute{}, &DirectResponseRouteList{})
+	SchemeBuilder.Register(&DirectResponse{}, &DirectResponseList{})
 }

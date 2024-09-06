@@ -22,4 +22,4 @@ spec:
       extensionRef:
         name: non-existent-ref
         group: gateway.gloo.solo.io
-        kind: DirectResponseRoute
+        kind: DirectResponse

@@ -59,7 +59,7 @@ func (s *testingSuite) SetupSuite() {
 	s.manifests = map[string][]string{
 		"TestBasicDirectResponse":         {gatewayManifest, basicDirectResposeManifests},
 		"TestDelegation":                  {gatewayManifest, basicDelegationManifests},
-		"TestInvalidDirectResponseRoute":  {gatewayManifest, invalidDirectResponseManifests},
+		"TestInvalidDirectResponse":       {gatewayManifest, invalidDirectResponseManifests},
 		"TestInvalidOverlappingFilters":   {gatewayManifest, invalidOverlappingFiltersManifests},
 		"TestInvalidMultipleRouteActions": {gatewayManifest, invalidMultipleRouteActionsManifests},
 		"TestInvalidBackendRefFilter":     {gatewayManifest, invalidBackendRefFilterManifests},
@@ -139,7 +139,7 @@ func (s *testingSuite) TestDelegation() {
 		time.Minute,
 	)
 
-	// verify the parent's DRR works as expected.
+	// verify the parent's DR works as expected.
 	s.ti.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		defaults.CurlPodExecOpt,
@@ -155,7 +155,7 @@ func (s *testingSuite) TestDelegation() {
 		time.Minute,
 	)
 
-	// verify that the child's DRR works as expected.
+	// verify that the child's DR works as expected.
 	s.ti.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		defaults.CurlPodExecOpt,
@@ -172,7 +172,7 @@ func (s *testingSuite) TestDelegation() {
 	)
 }
 
-func (s *testingSuite) TestInvalidDirectResponseRoute() {
+func (s *testingSuite) TestInvalidDirectResponse() {
 	s.ti.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		defaults.CurlPodExecOpt,
@@ -239,7 +239,7 @@ func (s *testingSuite) TestInvalidMultipleRouteActions() {
 }
 
 func (s *testingSuite) TestInvalidBackendRefFilter() {
-	// verify that configuring a DRR with a backendRef filter results in a 404 as
+	// verify that configuring a DR with a backendRef filter results in a 404 as
 	// this configuration is not supported / ignored by the direct response plugin.
 	s.ti.Assertions.AssertEventualCurlResponse(
 		s.ctx,

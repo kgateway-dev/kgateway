@@ -73,7 +73,7 @@ rules:
   - "gateway.gloo.solo.io"
   resources:
   - gatewayparameters
-  - directresponseroutes
+  - directresponses
   verbs: ["get", "list", "watch"]
 - apiGroups:
   - ""

@@ -86,7 +86,7 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 		controllerBuilder.addRtOptIndexes,
 		controllerBuilder.addVhOptIndexes,
 		controllerBuilder.addGwParamsIndexes,
-		controllerBuilder.watchDirectResponseRoutes,
+		controllerBuilder.watchDirectResponses,
 	)
 }
 
@@ -356,13 +356,13 @@ func (c *controllerBuilder) watchServices(_ context.Context) error {
 	return nil
 }
 
-// watchDirectResponseRoutes watches for DirectResponseRoutes and triggers
+// watchDirectResponses watches for DirectResponses and triggers
 // reconciliation of the Gateway that references them.
-func (c *controllerBuilder) watchDirectResponseRoutes(_ context.Context) error {
+func (c *controllerBuilder) watchDirectResponses(_ context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
-		For(&v1alpha1.DirectResponseRoute{}).
-		Complete(reconcile.Func(c.reconciler.ReconcileDirectResponseRoutes))
+		For(&v1alpha1.DirectResponse{}).
+		Complete(reconcile.Func(c.reconciler.ReconcileDirectResponses))
 	if err != nil {
 		return err
 	}
@@ -393,7 +393,7 @@ func (r *controllerReconciler) ReconcileRouteOptions(ctx context.Context, req ct
 	return ctrl.Result{}, nil
 }
 
-func (r *controllerReconciler) ReconcileDirectResponseRoutes(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *controllerReconciler) ReconcileDirectResponses(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// TODO(tim): eventually reconcile only effected routes.
 	r.kick(ctx)
 	return ctrl.Result{}, nil
