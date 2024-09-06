@@ -154,6 +154,28 @@ func (m *UpstreamSpec) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
+	case *UpstreamSpec_AzureOpenai:
+
+		if h, ok := interface{}(m.GetAzureOpenai()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("AzureOpenai")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetAzureOpenai(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("AzureOpenai")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
 	}
 
 	return hasher.Sum64(), nil
@@ -385,6 +407,28 @@ func (m *Embedding) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			} else {
 				if _, err = hasher.Write([]byte("Openai")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *Embedding_AzureOpenai:
+
+		if h, ok := interface{}(m.GetAzureOpenai()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("AzureOpenai")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetAzureOpenai(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("AzureOpenai")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
@@ -750,6 +794,52 @@ func (m *UpstreamSpec_OpenAI) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
+func (m *UpstreamSpec_AzureOpenAI) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.UpstreamSpec_AzureOpenAI")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetEndpoint())); err != nil {
+		return 0, err
+	}
+
+	switch m.AuthTokenSource.(type) {
+
+	case *UpstreamSpec_AzureOpenAI_AuthToken:
+
+		if h, ok := interface{}(m.GetAuthToken()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("AuthToken")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetAuthToken(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("AuthToken")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
 func (m *UpstreamSpec_Mistral) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -881,6 +971,60 @@ func (m *Embedding_OpenAI) Hash(hasher hash.Hash64) (uint64, error) {
 	switch m.AuthTokenSource.(type) {
 
 	case *Embedding_OpenAI_AuthToken:
+
+		if h, ok := interface{}(m.GetAuthToken()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("AuthToken")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetAuthToken(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("AuthToken")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *Embedding_AzureOpenAI) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.Embedding_AzureOpenAI")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetApiVersion())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetEndpoint())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetDeploymentName())); err != nil {
+		return 0, err
+	}
+
+	switch m.AuthTokenSource.(type) {
+
+	case *Embedding_AzureOpenAI_AuthToken:
 
 		if h, ok := interface{}(m.GetAuthToken()).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("AuthToken")); err != nil {
