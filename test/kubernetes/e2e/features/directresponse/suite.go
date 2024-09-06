@@ -48,12 +48,12 @@ func (s *testingSuite) SetupSuite() {
 	// Check that istio injection is successful and httpbin is running
 	s.ti.Assertions.EventuallyObjectsExist(s.ctx, httpbinDeployment)
 	// httpbin can take a while to start up with Istio sidecar
-	s.ti.Assertions.EventuallyPodsRunning(
-		s.ctx,
-		httpbinDeployment.ObjectMeta.GetNamespace(),
-		metav1.ListOptions{LabelSelector: "app=httpbin"},
-		time.Minute*2,
-	)
+	s.ti.Assertions.EventuallyPodsRunning(s.ctx, httpbinDeployment.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app=httpbin",
+	})
+	s.ti.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=curl",
+	})
 
 	// include gateway manifests for the tests, so we recreate it for each test run
 	s.manifests = map[string][]string{

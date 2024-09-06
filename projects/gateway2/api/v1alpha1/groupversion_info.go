@@ -31,7 +31,7 @@ var (
 		Kind:    GatewayParametersKind,
 	}
 
-	DirectResponserouteGVK = schema.GroupVersionKind{
+	DirectResponseRouteGVK = schema.GroupVersionKind{
 		Group:   Group,
 		Version: Version,
 		Kind:    DirectResponseRouteKind,

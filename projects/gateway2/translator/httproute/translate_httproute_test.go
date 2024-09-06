@@ -35,10 +35,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-const (
-	defaultNamespace = "gloo-system"
-)
-
 var _ = Describe("GatewayHttpRouteTranslator", func() {
 	var (
 		ctrl       *gomock.Controller
@@ -66,7 +62,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 		}
 		routeOptionClient, _ = sologatewayv1.NewRouteOptionClient(ctx, resourceClientFactory)
 		vhOptionClient, _ = sologatewayv1.NewVirtualHostOptionClient(ctx, resourceClientFactory)
-		statusClient = statusutils.GetStatusClientForNamespace(defaultNamespace)
+		statusClient = statusutils.GetStatusClientForNamespace(defaults.GlooSystem)
 		statusReporter = reporter.NewReporter(defaults.KubeGatewayReporter, statusClient, routeOptionClient.BaseClient())
 	})
 	AfterEach(func() {

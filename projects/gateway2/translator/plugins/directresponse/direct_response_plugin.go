@@ -87,7 +87,7 @@ func findDirectResponseExtension(
 	queries query.GatewayQueries,
 ) (*v1alpha1.DirectResponseRoute, error) {
 	// search for any extension ref filters on the current route ctx.
-	filters := utils.FindExtensionRefFilters(routeCtx.Rule, v1alpha1.DirectResponserouteGVK.GroupKind())
+	filters := utils.FindExtensionRefFilters(routeCtx.Rule, v1alpha1.DirectResponseRouteGVK.GroupKind())
 	if len(filters) == 0 {
 		// no extension ref filters were found on the route.
 		return nil, nil

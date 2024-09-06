@@ -244,7 +244,7 @@ func shouldIgnoreStatusChild(gvk schema.GroupVersionKind) bool {
 	return gvk.Kind == "Deployment"
 }
 
-func (c *controllerBuilder) watchGwClass(ctx context.Context) error {
+func (c *controllerBuilder) watchGwClass(_ context.Context) error {
 	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		WithEventFilter(predicate.NewPredicateFuncs(func(object client.Object) bool {
@@ -258,7 +258,7 @@ func (c *controllerBuilder) watchGwClass(ctx context.Context) error {
 		Complete(reconcile.Func(c.reconciler.ReconcileGatewayClasses))
 }
 
-func (c *controllerBuilder) watchHttpRoute(ctx context.Context) error {
+func (c *controllerBuilder) watchHttpRoute(_ context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&apiv1.HTTPRoute{}).
@@ -269,7 +269,7 @@ func (c *controllerBuilder) watchHttpRoute(ctx context.Context) error {
 	return nil
 }
 
-func (c *controllerBuilder) watchReferenceGrant(ctx context.Context) error {
+func (c *controllerBuilder) watchReferenceGrant(_ context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&apiv1beta1.ReferenceGrant{}).
@@ -280,7 +280,7 @@ func (c *controllerBuilder) watchReferenceGrant(ctx context.Context) error {
 	return nil
 }
 
-func (c *controllerBuilder) watchNamespaces(ctx context.Context) error {
+func (c *controllerBuilder) watchNamespaces(_ context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		For(&corev1.Namespace{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileNamespaces))
@@ -290,7 +290,7 @@ func (c *controllerBuilder) watchNamespaces(ctx context.Context) error {
 	return nil
 }
 
-func (c *controllerBuilder) watchHttpListenerOptions(ctx context.Context) error {
+func (c *controllerBuilder) watchHttpListenerOptions(_ context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&sologatewayv1.HttpListenerOption{}).
@@ -301,7 +301,7 @@ func (c *controllerBuilder) watchHttpListenerOptions(ctx context.Context) error 
 	return nil
 }
 
-func (c *controllerBuilder) watchListenerOptions(ctx context.Context) error {
+func (c *controllerBuilder) watchListenerOptions(_ context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&sologatewayv1.ListenerOption{}).
@@ -312,7 +312,7 @@ func (c *controllerBuilder) watchListenerOptions(ctx context.Context) error {
 	return nil
 }
 
-func (c *controllerBuilder) watchRouteOptions(ctx context.Context) error {
+func (c *controllerBuilder) watchRouteOptions(_ context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&sologatewayv1.RouteOption{}).
@@ -323,7 +323,7 @@ func (c *controllerBuilder) watchRouteOptions(ctx context.Context) error {
 	return nil
 }
 
-func (c *controllerBuilder) watchVirtualHostOptions(ctx context.Context) error {
+func (c *controllerBuilder) watchVirtualHostOptions(_ context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&sologatewayv1.VirtualHostOption{}).
@@ -334,7 +334,7 @@ func (c *controllerBuilder) watchVirtualHostOptions(ctx context.Context) error {
 	return nil
 }
 
-func (c *controllerBuilder) watchUpstreams(ctx context.Context) error {
+func (c *controllerBuilder) watchUpstreams(_ context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&gloov1.Upstream{}).
@@ -345,7 +345,7 @@ func (c *controllerBuilder) watchUpstreams(ctx context.Context) error {
 	return nil
 }
 
-func (c *controllerBuilder) watchServices(ctx context.Context) error {
+func (c *controllerBuilder) watchServices(_ context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&corev1.Service{}).
