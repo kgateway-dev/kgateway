@@ -436,7 +436,12 @@ You can apply different filters on your access logs to reduce and optimize the n
                comparison:
                  op: GE
                  value: 
-                   runtimeKey: "400"
+                   default: 400
+                   # Note that `runtimeKey` is only effective if Envoy is configured 
+                   # appropriately with a runtime value of matching key. This can be achieved
+                   # with the admin interface of the gateway proxy or via the helm value 
+                   # [gatewayProxies.NAME.customStaticLayer]({{< versioned_link_path fromRoot="/reference/helm_chart_values/" >}})
+                   runtimeKey: "my_status_code_filter"
      proxyNames:
      - gateway-proxy
      ssl: false
