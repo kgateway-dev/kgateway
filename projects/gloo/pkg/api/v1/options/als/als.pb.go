@@ -725,7 +725,10 @@ type ComparisonFilter struct {
 
 	// Comparison operator.
 	Op ComparisonFilter_Op `protobuf:"varint,1,opt,name=op,proto3,enum=als.options.gloo.solo.io.ComparisonFilter_Op" json:"op,omitempty"`
-	// Value to compare against.
+	// Value to compare against. Note that the field defaultValue must be defined unless the runtimeKey matches a key
+	// defined in Envoy's runtime configuration layer. Gloo does not include one by default, but it can be included
+	// by specifying the key/value pair in [gatewayProxies.NAME.customStaticLayer]({{< versioned_link_path fromRoot="/reference/helm_chart_values/" >}})
+	// or at runtime via the gateway proxy admin interface.
 	Value *v3.RuntimeUInt32 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 }
 

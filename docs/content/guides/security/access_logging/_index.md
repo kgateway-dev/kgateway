@@ -436,17 +436,18 @@ You can apply different filters on your access logs to reduce and optimize the n
                comparison:
                  op: GE
                  value: 
-                   default: 400
-                   # Note that `runtimeKey` is only effective if Envoy is configured 
-                   # appropriately with a runtime value of matching key. This can be achieved
-                   # with the admin interface of the gateway proxy or via the helm value 
-                   # [gatewayProxies.NAME.customStaticLayer]({{< versioned_link_path fromRoot="/reference/helm_chart_values/" >}})
+                   defaultValue: 400
+                   # see note below about runtimeKey
                    runtimeKey: "my_status_code_filter"
      proxyNames:
      - gateway-proxy
      ssl: false
      useProxyProto: false
    ```
+
+{{% notice note %}}
+Note that `runtimeKey` is only effective if Envoy is configured appropriately with a runtime value of matching key. This can be achieved with the admin interface of the gateway proxy or via the Helm value [gatewayProxies.NAME.customStaticLayer]({{< versioned_link_path fromRoot="/reference/helm_chart_values/" >}}).
+{{% /notice %}}
 
 For more configuration options, see {{% protobuf name="als.options.gloo.solo.io.AccessLogFilter" display="AccessLogFilter"%}}.
 
