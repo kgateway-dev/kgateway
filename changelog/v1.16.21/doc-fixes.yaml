@@ -1,5 +1,5 @@
 changelog:
   - type: NON_USER_FACING
     description: >- 
-      Weekly doc fixes such as links, grammar, typos, and version updates.
+      Weekly doc fixes such as links, grammar, typos, version updates, and backports.
       skipCI-kube-tests:true
