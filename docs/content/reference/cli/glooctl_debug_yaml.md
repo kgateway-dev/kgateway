@@ -1,6 +1,5 @@
 ---
 title: "glooctl debug yaml"
-description: "Reference for the 'glooctl debug yaml' command."
 weight: 5
 ---
 ## glooctl debug yaml

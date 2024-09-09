@@ -1,6 +1,5 @@
 ---
 title: "glooctl get upstream"
-description: "Reference for the 'glooctl get upstream' command."
 weight: 5
 ---
 ## glooctl get upstream

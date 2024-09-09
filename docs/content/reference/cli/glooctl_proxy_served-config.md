@@ -1,6 +1,5 @@
 ---
 title: "glooctl proxy served-config"
-description: "Reference for the 'glooctl proxy served-config' command."
 weight: 5
 ---
 ## glooctl proxy served-config

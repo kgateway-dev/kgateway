@@ -1,6 +1,5 @@
 ---
 title: "glooctl edit upstream"
-description: "Reference for the 'glooctl edit upstream' command."
 weight: 5
 ---
 ## glooctl edit upstream

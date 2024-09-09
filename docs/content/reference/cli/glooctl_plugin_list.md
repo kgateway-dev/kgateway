@@ -1,6 +1,5 @@
 ---
 title: "glooctl plugin list"
-description: "Reference for the 'glooctl plugin list' command."
 weight: 5
 ---
 ## glooctl plugin list

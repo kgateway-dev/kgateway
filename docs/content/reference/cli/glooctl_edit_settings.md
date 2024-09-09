@@ -1,6 +1,5 @@
 ---
 title: "glooctl edit settings"
-description: "Reference for the 'glooctl edit settings' command."
 weight: 5
 ---
 ## glooctl edit settings

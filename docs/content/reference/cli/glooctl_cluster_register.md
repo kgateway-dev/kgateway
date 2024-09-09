@@ -1,6 +1,5 @@
 ---
 title: "glooctl cluster register"
-description: "Reference for the 'glooctl cluster register' command."
 weight: 5
 ---
 ## glooctl cluster register

@@ -1,6 +1,5 @@
 ---
 title: "glooctl get routetable"
-description: "Reference for the 'glooctl get routetable' command."
 weight: 5
 ---
 ## glooctl get routetable

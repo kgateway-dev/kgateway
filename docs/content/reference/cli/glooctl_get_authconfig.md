@@ -1,6 +1,5 @@
 ---
 title: "glooctl get authconfig"
-description: "Reference for the 'glooctl get authconfig' command."
 weight: 5
 ---
 ## glooctl get authconfig

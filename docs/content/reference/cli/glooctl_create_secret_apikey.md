@@ -1,6 +1,5 @@
 ---
 title: "glooctl create secret apikey"
-description: "Reference for the 'glooctl create secret apikey' command."
 weight: 5
 ---
 ## glooctl create secret apikey

@@ -1,6 +1,5 @@
 ---
 title: "glooctl add route"
-description: "Reference for the 'glooctl add route' command."
 weight: 5
 ---
 ## glooctl add route

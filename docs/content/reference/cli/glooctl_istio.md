@@ -1,6 +1,5 @@
 ---
 title: "glooctl istio"
-description: "Reference for the 'glooctl istio' command."
 weight: 5
 ---
 ## glooctl istio

@@ -1,6 +1,5 @@
 ---
 title: "glooctl create secret tls"
-description: "Reference for the 'glooctl create secret tls' command."
 weight: 5
 ---
 ## glooctl create secret tls

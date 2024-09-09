@@ -1,6 +1,5 @@
 ---
 title: "glooctl delete upstreamgroup"
-description: "Reference for the 'glooctl delete upstreamgroup' command."
 weight: 5
 ---
 ## glooctl delete upstreamgroup

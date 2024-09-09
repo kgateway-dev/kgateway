@@ -1,6 +1,5 @@
 ---
 title: "glooctl get virtualservice"
-description: "Reference for the 'glooctl get virtualservice' command."
 weight: 5
 ---
 ## glooctl get virtualservice

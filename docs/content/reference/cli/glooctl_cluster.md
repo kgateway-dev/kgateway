@@ -1,6 +1,5 @@
 ---
 title: "glooctl cluster"
-description: "Reference for the 'glooctl cluster' command."
 weight: 5
 ---
 ## glooctl cluster

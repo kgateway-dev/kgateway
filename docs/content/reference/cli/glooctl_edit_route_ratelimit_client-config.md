@@ -1,6 +1,5 @@
 ---
 title: "glooctl edit route ratelimit client-config"
-description: "Reference for the 'glooctl edit route ratelimit client-config' command."
 weight: 5
 ---
 ## glooctl edit route ratelimit client-config

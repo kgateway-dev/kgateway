@@ -1,6 +1,5 @@
 ---
 title: "glooctl uninstall"
-description: "Reference for the 'glooctl uninstall' command."
 weight: 5
 ---
 ## glooctl uninstall

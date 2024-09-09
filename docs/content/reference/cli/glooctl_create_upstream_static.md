@@ -1,6 +1,5 @@
 ---
 title: "glooctl create upstream static"
-description: "Reference for the 'glooctl create upstream static' command."
 weight: 5
 ---
 ## glooctl create upstream static

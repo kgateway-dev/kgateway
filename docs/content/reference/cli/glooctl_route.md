@@ -1,6 +1,5 @@
 ---
 title: "glooctl route"
-description: "Reference for the 'glooctl route' command."
 weight: 5
 ---
 ## glooctl route

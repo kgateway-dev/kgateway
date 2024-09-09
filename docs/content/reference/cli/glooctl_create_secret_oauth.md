@@ -1,6 +1,5 @@
 ---
 title: "glooctl create secret oauth"
-description: "Reference for the 'glooctl create secret oauth' command."
 weight: 5
 ---
 ## glooctl create secret oauth

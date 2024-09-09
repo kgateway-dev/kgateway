@@ -1,6 +1,5 @@
 ---
 title: "glooctl debug"
-description: "Reference for the 'glooctl debug' command."
 weight: 5
 ---
 ## glooctl debug

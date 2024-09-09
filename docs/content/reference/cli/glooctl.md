@@ -1,6 +1,5 @@
 ---
 title: "glooctl"
-description: "Reference for the 'glooctl' command."
 weight: 5
 ---
 ## glooctl

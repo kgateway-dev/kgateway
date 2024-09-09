@@ -1,6 +1,5 @@
 ---
 title: "glooctl upgrade"
-description: "Reference for the 'glooctl upgrade' command."
 weight: 5
 ---
 ## glooctl upgrade

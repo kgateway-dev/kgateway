@@ -1,6 +1,5 @@
 ---
 title: "glooctl delete upstream"
-description: "Reference for the 'glooctl delete upstream' command."
 weight: 5
 ---
 ## glooctl delete upstream

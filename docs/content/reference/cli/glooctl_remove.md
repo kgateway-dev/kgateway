@@ -1,6 +1,5 @@
 ---
 title: "glooctl remove"
-description: "Reference for the 'glooctl remove' command."
 weight: 5
 ---
 ## glooctl remove

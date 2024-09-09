@@ -1,6 +1,5 @@
 ---
 title: "glooctl create upstream consul"
-description: "Reference for the 'glooctl create upstream consul' command."
 weight: 5
 ---
 ## glooctl create upstream consul

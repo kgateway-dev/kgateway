@@ -1,6 +1,5 @@
 ---
 title: "glooctl get proxy"
-description: "Reference for the 'glooctl get proxy' command."
 weight: 5
 ---
 ## glooctl get proxy

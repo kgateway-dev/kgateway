@@ -1,6 +1,5 @@
 ---
 title: "glooctl delete proxy"
-description: "Reference for the 'glooctl delete proxy' command."
 weight: 5
 ---
 ## glooctl delete proxy

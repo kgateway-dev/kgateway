@@ -1,6 +1,5 @@
 ---
 title: "glooctl create secret azure"
-description: "Reference for the 'glooctl create secret azure' command."
 weight: 5
 ---
 ## glooctl create secret azure

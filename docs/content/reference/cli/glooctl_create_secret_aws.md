@@ -1,6 +1,5 @@
 ---
 title: "glooctl create secret aws"
-description: "Reference for the 'glooctl create secret aws' command."
 weight: 5
 ---
 ## glooctl create secret aws

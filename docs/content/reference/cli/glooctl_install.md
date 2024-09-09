@@ -1,6 +1,5 @@
 ---
 title: "glooctl install"
-description: "Reference for the 'glooctl install' command."
 weight: 5
 ---
 ## glooctl install

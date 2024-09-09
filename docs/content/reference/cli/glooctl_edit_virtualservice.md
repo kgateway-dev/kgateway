@@ -1,6 +1,5 @@
 ---
 title: "glooctl edit virtualservice"
-description: "Reference for the 'glooctl edit virtualservice' command."
 weight: 5
 ---
 ## glooctl edit virtualservice

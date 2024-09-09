@@ -1,6 +1,5 @@
 ---
 title: "glooctl istio uninject"
-description: "Reference for the 'glooctl istio uninject' command."
 weight: 5
 ---
 ## glooctl istio uninject

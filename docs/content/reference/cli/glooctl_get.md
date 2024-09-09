@@ -1,6 +1,5 @@
 ---
 title: "glooctl get"
-description: "Reference for the 'glooctl get' command."
 weight: 5
 ---
 ## glooctl get

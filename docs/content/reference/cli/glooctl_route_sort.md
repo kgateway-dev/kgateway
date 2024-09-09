@@ -1,6 +1,5 @@
 ---
 title: "glooctl route sort"
-description: "Reference for the 'glooctl route sort' command."
 weight: 5
 ---
 ## glooctl route sort

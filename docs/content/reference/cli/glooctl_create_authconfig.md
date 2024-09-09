@@ -1,6 +1,5 @@
 ---
 title: "glooctl create authconfig"
-description: "Reference for the 'glooctl create authconfig' command."
 weight: 5
 ---
 ## glooctl create authconfig
