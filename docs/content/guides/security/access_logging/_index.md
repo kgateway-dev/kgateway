@@ -446,7 +446,7 @@ You can apply different filters on your access logs to reduce and optimize the n
    ```
 
 {{% notice note %}}
-Note that `runtimeKey` is only effective if Envoy is configured appropriately with a runtime value of matching key. This can be achieved with the admin interface of the gateway proxy or via the Helm value [gatewayProxies.NAME.customStaticLayer]({{< versioned_link_path fromRoot="/reference/helm_chart_values/" >}}).
+Note that the `runtimeKey` is enforced only if it matches a key that is defined in Envoy's runtime configuration layer. Gloo Gateway does not include a key by default. To specify a key-value pair, use the [gatewayProxies.NAME.customStaticLayer]({{< versioned_link_path fromRoot="/reference/helm_chart_values/" >}}) Helm value or set the key at runtime by using the gateway proxy admin interface.
 {{% /notice %}}
 
 For more configuration options, see {{% protobuf name="als.options.gloo.solo.io.AccessLogFilter" display="AccessLogFilter"%}}.
