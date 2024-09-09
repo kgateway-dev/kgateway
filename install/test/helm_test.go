@@ -4029,6 +4029,7 @@ spec:
 							valuesArgs: []string{
 								"gateway.validation.disableTransformationValidation=true",
 								"gateway.validation.warnRouteShortCircuiting=true",
+								"gateway.validation.warnMissingTlsSecret=true",
 							},
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
@@ -4228,6 +4229,7 @@ spec:
       proxyValidationServerAddr: gloo:9988
       alwaysAccept: true
       allowWarnings: true
+      warnMissingTlsSecret: false
       serverEnabled: true
       disableTransformationValidation: false
       warnRouteShortCircuiting: false
