@@ -50,8 +50,8 @@ var _ = Describe("DirectResponse", func() {
 					Namespace: "httpbin",
 				},
 				Spec: v1alpha1.DirectResponseSpec{
-					Status: uint32(200),
-					Body:   "hello, world",
+					StatusCode: uint32(200),
+					Body:       "hello, world",
 				},
 			}
 			deps = []client.Object{dr}
@@ -92,7 +92,7 @@ var _ = Describe("DirectResponse", func() {
 			Expect(route).ToNot(BeNil())
 			Expect(route.GetAction()).To(BeEquivalentTo(&v1.Route_DirectResponseAction{
 				DirectResponseAction: &v1.DirectResponseAction{
-					Status: dr.GetStatus(),
+					Status: dr.GetStatusCode(),
 					Body:   dr.GetBody(),
 				},
 			}))
@@ -110,8 +110,8 @@ var _ = Describe("DirectResponse", func() {
 					Namespace: "httpbin",
 				},
 				Spec: v1alpha1.DirectResponseSpec{
-					Status: uint32(404),
-					Body:   "",
+					StatusCode: uint32(404),
+					Body:       "",
 				},
 			}
 			deps = []client.Object{dr}
@@ -152,7 +152,7 @@ var _ = Describe("DirectResponse", func() {
 			Expect(route).ToNot(BeNil())
 			Expect(route.GetAction()).To(BeEquivalentTo(&v1.Route_DirectResponseAction{
 				DirectResponseAction: &v1.DirectResponseAction{
-					Status: dr.GetStatus(),
+					Status: dr.GetStatusCode(),
 				},
 			}))
 		})
@@ -169,8 +169,8 @@ var _ = Describe("DirectResponse", func() {
 					Namespace: "httpbin",
 				},
 				Spec: v1alpha1.DirectResponseSpec{
-					Status: uint32(200),
-					Body:   "hello, world",
+					StatusCode: uint32(200),
+					Body:       "hello, world",
 				},
 			}
 			deps = []client.Object{dr}
@@ -231,8 +231,8 @@ var _ = Describe("DirectResponse", func() {
 					Namespace: "httpbin",
 				},
 				Spec: v1alpha1.DirectResponseSpec{
-					Status: uint32(200),
-					Body:   "hello from DR 1",
+					StatusCode: uint32(200),
+					Body:       "hello from DR 1",
 				},
 			}
 			dr2 = &v1alpha1.DirectResponse{
@@ -241,8 +241,8 @@ var _ = Describe("DirectResponse", func() {
 					Namespace: "httpbin",
 				},
 				Spec: v1alpha1.DirectResponseSpec{
-					Status: uint32(404),
-					Body:   "hello from DR 2",
+					StatusCode: uint32(404),
+					Body:       "hello from DR 2",
 				},
 			}
 			deps = []client.Object{dr1, dr2}
@@ -315,8 +315,8 @@ var _ = Describe("DirectResponse", func() {
 					Namespace: "httpbin",
 				},
 				Spec: v1alpha1.DirectResponseSpec{
-					Status: uint32(200),
-					Body:   "hello, world",
+					StatusCode: uint32(200),
+					Body:       "hello, world",
 				},
 			}
 			deps = []client.Object{dr}

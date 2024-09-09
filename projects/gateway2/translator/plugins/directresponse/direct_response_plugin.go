@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
@@ -70,7 +69,7 @@ func (p *plugin) ApplyRoutePlugin(
 
 	outputRoute.Action = &v1.Route_DirectResponseAction{
 		DirectResponseAction: &v1.DirectResponseAction{
-			Status: dr.GetStatus(),
+			Status: dr.GetStatusCode(),
 			Body:   dr.GetBody(),
 		},
 	}
@@ -92,34 +91,15 @@ func findDirectResponseExtension(
 		// no extension ref filters were found on the route.
 		return nil, nil
 	}
-
-	var (
-		errors []error
-		drs    []*v1alpha1.DirectResponse
-	)
-	for _, filter := range filters {
-		dr, err := utils.GetExtensionRefObj[*v1alpha1.DirectResponse](ctx, routeCtx.Route, queries, filter.ExtensionRef)
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
-		drs = append(drs, dr)
+	if len(filters) > 1 {
+		// we don't support multiple extension ref filters on a single route.
+		return nil, fmt.Errorf("multiple DirectResponse extension refs found. expected 1, found %d", len(filters))
 	}
-	if len(errors) > 0 {
-		return nil, fmt.Errorf("failed to resolve the DirectResponse extension refs: %v", utilerrors.NewAggregate(errors))
+	dr, err := utils.GetExtensionRefObj[*v1alpha1.DirectResponse](ctx, routeCtx.Route, queries, filters[0].ExtensionRef)
+	if err != nil {
+		return nil, err
 	}
-
-	switch len(drs) {
-	case 0:
-		// no DRRs were found in the extension refs. nothing to do.
-		return nil, nil
-	case 1:
-		// we found a single DR, which we'll return.
-		return drs[0], nil
-	default:
-		// we don't support multiple DRRs on a single route.
-		return nil, fmt.Errorf("multiple DirectResponse resources found in extension refs. expected 1, found %d", len(drs))
-	}
+	return dr, nil
 }
 
 // ErrorResponseAction returns a direct response action with a 500 status code.

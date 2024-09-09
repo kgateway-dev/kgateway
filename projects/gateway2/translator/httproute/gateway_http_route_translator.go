@@ -311,7 +311,18 @@ func setRouteAction(
 			delegates = true
 			// Flatten delegated HTTPRoute references
 			err := flattenDelegatedRoutes(
-				ctx, gwroute, backendRef, reporter, baseReporter, pluginRegistry, gwListener, match, outputs, routesVisited, delegationChain)
+				ctx,
+				gwroute,
+				backendRef,
+				reporter,
+				baseReporter,
+				pluginRegistry,
+				gwListener,
+				match,
+				outputs,
+				routesVisited,
+				delegationChain,
+			)
 			if err != nil {
 				query.ProcessBackendError(err, reporter)
 			}

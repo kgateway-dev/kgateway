@@ -27,12 +27,12 @@ type DirectResponseList struct {
 
 // DirectResponseSpec describes the desired state of a DirectResponse.
 type DirectResponseSpec struct {
-	// Status defines the HTTP status code to return for this route.
+	// StatusCode defines the HTTP status code to return for this route.
 	//
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Minimum=200
 	// +kubebuilder:validation:Maximum=599
-	Status uint32 `json:"status"`
+	StatusCode uint32 `json:"status"`
 	// Body defines the content to be returned in the HTTP response body.
 	// The maximum length of the body is restricted to prevent excessively large responses.
 	//
@@ -45,11 +45,11 @@ type DirectResponseSpec struct {
 type DirectResponseStatus struct{}
 
 // GetStatus returns the HTTP status code to return for this route.
-func (in *DirectResponse) GetStatus() uint32 {
+func (in *DirectResponse) GetStatusCode() uint32 {
 	if in == nil {
 		return 0
 	}
-	return in.Spec.Status
+	return in.Spec.StatusCode
 }
 
 // GetBody returns the content to be returned in the HTTP response body.

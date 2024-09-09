@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
@@ -90,7 +91,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 		))
 	})
 
-	When("translating a basic HTTPRoute", func() {
+	Context("HTTPRoute resource routing", func() {
 		var (
 			route             gwv1.HTTPRoute
 			routeInfo         *query.HTTPRouteInfo
@@ -98,8 +99,12 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 			baseReporter      reports.Reporter
 			parentRefReporter reports.ParentRefReporter
 			reportsMap        reports.ReportMap
+			backingSvc        *corev1.Service
+			backends          query.BackendMap[client.Object]
 		)
+
 		BeforeEach(func() {
+			// Common setup for both happy path and negative test cases
 			parentRef = &gwv1.ParentReference{
 				Name: "my-gw",
 			}
@@ -127,8 +132,10 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 								{
 									BackendRef: gwv1.BackendRef{
 										BackendObjectReference: gwv1.BackendObjectReference{
-											Name: "foo",
-											Port: ptr.To(gwv1.PortNumber(8080)),
+											Name:      gwv1.ObjectName("foo"),
+											Namespace: ptr.To(gwv1.Namespace("bar")),
+											Kind:      ptr.To(gwv1.Kind("Service")),
+											Port:      ptr.To(gwv1.PortNumber(8080)),
 										},
 									},
 								},
@@ -137,47 +144,118 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 					},
 				},
 			}
-			routeInfo = &query.HTTPRouteInfo{
-				HTTPRoute: route,
-			}
-
 			reportsMap = reports.NewReportMap()
-			baseReporter := reports.NewReporter(&reportsMap)
+			baseReporter = reports.NewReporter(&reportsMap)
 			parentRefReporter = baseReporter.Route(&route).ParentRef(parentRef)
 		})
 
-		It("translates the route correctly", func() {
-			routes := httproute.TranslateGatewayHTTPRouteRules(ctx, pluginRegistry, gwListener, routeInfo, parentRefReporter, baseReporter)
+		When("referencing a valid backing service", func() {
+			BeforeEach(func() {
+				// Setup the backing service
+				backingSvc = &corev1.Service{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "foo",
+						Namespace: "bar",
+					},
+					Spec: corev1.ServiceSpec{
+						Ports: []corev1.ServicePort{{
+							Name: "http",
+							Port: 8080,
+						}},
+					},
+				}
 
-			Expect(routes).To(HaveLen(1))
-			Expect(routes[0].Name).To(Equal("foo-httproute-bar-0"))
-			Expect(routes[0].Matchers).To(HaveLen(1))
-			Expect(routes[0].GetAction()).To(BeEquivalentTo(&v1.Route_RouteAction{
-				RouteAction: &v1.RouteAction{
-					Destination: &v1.RouteAction_Single{
-						Single: &v1.Destination{
-							DestinationType: &v1.Destination_Kube{
-								Kube: &v1.KubernetesServiceDestination{
-									Ref: &core.ResourceRef{
-										Name:      "blackhole_cluster",
-										Namespace: "blackhole_ns",
+				// Add backing service to backend map
+				backends = query.NewBackendMap[client.Object]()
+				backends.Add(route.Spec.Rules[0].BackendRefs[0].BackendObjectReference, backingSvc)
+
+				// Build HTTPRouteInfo
+				routeInfo = &query.HTTPRouteInfo{
+					HTTPRoute: route,
+					Backends:  backends,
+				}
+			})
+
+			It("translates the route correctly", func() {
+				routes := httproute.TranslateGatewayHTTPRouteRules(ctx, pluginRegistry, gwListener, routeInfo, parentRefReporter, baseReporter)
+
+				Expect(routes).To(HaveLen(1))
+				Expect(routes[0].Name).To(Equal("foo-httproute-bar-0"))
+				Expect(routes[0].Matchers).To(HaveLen(1))
+				Expect(routes[0].GetAction()).To(BeEquivalentTo(&v1.Route_RouteAction{
+					RouteAction: &v1.RouteAction{
+						Destination: &v1.RouteAction_Single{
+							Single: &v1.Destination{
+								DestinationType: &v1.Destination_Kube{
+									Kube: &v1.KubernetesServiceDestination{
+										Ref: &core.ResourceRef{
+											Name:      backingSvc.GetName(),
+											Namespace: backingSvc.GetNamespace(),
+										},
+										Port: uint32(backingSvc.Spec.Ports[0].Port),
 									},
-									Port: 8080,
 								},
 							},
 						},
 					},
-				},
-			}))
-			Expect(routes[0].Matchers[0].PathSpecifier).To(Equal(&matchers.Matcher_Prefix{Prefix: "/"}))
+				}))
+				Expect(routes[0].Matchers[0].PathSpecifier).To(Equal(&matchers.Matcher_Prefix{Prefix: "/"}))
 
-			routeStatus := reportsMap.BuildRouteStatus(ctx, route, "")
-			Expect(routeStatus).NotTo(BeNil())
-			Expect(routeStatus.Parents).To(HaveLen(1))
-			resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
-			Expect(resolvedRefs).NotTo(BeNil())
-			Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
-			Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonAccepted))
+				routeStatus := reportsMap.BuildRouteStatus(ctx, route, "")
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(resolvedRefs).NotTo(BeNil())
+				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
+				Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonAccepted))
+			})
+		})
+
+		When("referencing a non-existent backing service", func() {
+			BeforeEach(func() {
+				// Do not add the backing service to the backend map (simulate missing service)
+				backends = query.NewBackendMap[client.Object]()
+
+				// Build HTTPRouteInfo
+				routeInfo = &query.HTTPRouteInfo{
+					HTTPRoute: route,
+					Backends:  backends,
+				}
+			})
+
+			It("falls back to a blackhole cluster", func() {
+				routes := httproute.TranslateGatewayHTTPRouteRules(ctx, pluginRegistry, gwListener, routeInfo, parentRefReporter, baseReporter)
+
+				Expect(routes).To(HaveLen(1))
+				Expect(routes[0].Name).To(Equal("foo-httproute-bar-0"))
+				Expect(routes[0].Matchers).To(HaveLen(1))
+				Expect(routes[0].GetAction()).To(BeEquivalentTo(&v1.Route_RouteAction{
+					RouteAction: &v1.RouteAction{
+						Destination: &v1.RouteAction_Single{
+							Single: &v1.Destination{
+								DestinationType: &v1.Destination_Kube{
+									Kube: &v1.KubernetesServiceDestination{
+										Ref: &core.ResourceRef{
+											Name:      "blackhole_cluster",
+											Namespace: "blackhole_ns",
+										},
+										Port: uint32(8080),
+									},
+								},
+							},
+						},
+					},
+				}))
+				Expect(routes[0].Matchers[0].PathSpecifier).To(Equal(&matchers.Matcher_Prefix{Prefix: "/"}))
+
+				routeStatus := reportsMap.BuildRouteStatus(ctx, route, "")
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(resolvedRefs).NotTo(BeNil())
+				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
+				Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteConditionAccepted))
+			})
 		})
 	})
 
@@ -198,7 +276,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 					Namespace: namespace,
 				},
 				Spec: v1alpha1.DirectResponseSpec{
-					Status: status,
+					StatusCode: status,
 				},
 			}
 		}
@@ -320,6 +398,90 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				Expect(resolvedRefs).NotTo(BeNil())
 				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionFalse))
 				Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonIncompatibleFilters))
+			})
+		})
+
+		When("an HTTPRoute configures the redirect and backendRef actions", func() {
+			var (
+				backingSvc *corev1.Service
+			)
+			BeforeEach(func() {
+				backingSvc = &corev1.Service{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "foo",
+						Namespace: "bar",
+					},
+					Spec: corev1.ServiceSpec{
+						Ports: []corev1.ServicePort{{
+							Name: "http",
+							Port: 8080,
+						}},
+					},
+				}
+
+				backendRefs := []gwv1.HTTPBackendRef{{
+					BackendRef: gwv1.BackendRef{
+						BackendObjectReference: gwv1.BackendObjectReference{
+							Name:      gwv1.ObjectName(backingSvc.GetName()),
+							Namespace: ptr.To(gwv1.Namespace(backingSvc.GetNamespace())),
+							Kind:      ptr.To(gwv1.Kind("Service")),
+							Port:      ptr.To(gwv1.PortNumber(backingSvc.Spec.Ports[0].Port)),
+						},
+					},
+				}}
+
+				filters := []gwv1.HTTPRouteFilter{
+					{
+						Type: gwv1.HTTPRouteFilterRequestRedirect,
+						RequestRedirect: &gwv1.HTTPRequestRedirectFilter{
+							Hostname:   ptr.To(gwv1.PreciseHostname("foo")),
+							StatusCode: ptr.To(301),
+						},
+					},
+				}
+
+				route = createHTTPRoute(backendRefs, filters)
+				backends := query.NewBackendMap[client.Object]()
+				backends.Add(route.Spec.Rules[0].BackendRefs[0].BackendObjectReference, backingSvc)
+				routeInfo = &query.HTTPRouteInfo{
+					HTTPRoute: route,
+					Backends:  backends,
+				}
+				parentRefReporter = baseReporter.Route(&route).ParentRef(&gwv1.ParentReference{Name: "my-gw"})
+			})
+
+			// Note(tim): the current behavior is that the redirect plugin will return an error
+			// but the route won't be replaced with a 500 response. Similarly, the HTTPRoute will
+			// reflect an ACCEPTED status as the HTTP route translator logs the error but doesn't
+			// handle it.
+			It("should ignore the redirect filter and translate the backendRef successfully", func() {
+				routes := httproute.TranslateGatewayHTTPRouteRules(ctx, pluginRegistry, gwListener, routeInfo, parentRefReporter, baseReporter)
+				Expect(routes).To(HaveLen(1))
+				Expect(routes[0].GetAction()).To(BeEquivalentTo(&v1.Route_RouteAction{
+					RouteAction: &v1.RouteAction{
+						Destination: &v1.RouteAction_Single{
+							Single: &v1.Destination{
+								DestinationType: &v1.Destination_Kube{
+									Kube: &v1.KubernetesServiceDestination{
+										Ref: &core.ResourceRef{
+											Name:      backingSvc.GetName(),
+											Namespace: backingSvc.GetNamespace(),
+										},
+										Port: uint32(backingSvc.Spec.Ports[0].Port),
+									},
+								},
+							},
+						},
+					},
+				}))
+
+				routeStatus := reportsMap.BuildRouteStatus(ctx, route, "")
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(resolvedRefs).NotTo(BeNil())
+				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
+				Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonAccepted))
 			})
 		})
 	})
