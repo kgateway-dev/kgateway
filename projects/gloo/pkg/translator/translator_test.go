@@ -111,7 +111,15 @@ var _ = Describe("Translator", func() {
 		ctrl = gomock.NewController(T)
 
 		cluster = nil
-		settings = &v1.Settings{}
+		settings = &v1.Settings{
+			Gateway: &v1.GatewayOptions{
+				Validation: &v1.GatewayOptions_ValidationOptions{
+					// This is the default value, specifying false explicitly here as it
+					// is not default-on until 1.18
+					WarnMissingTlsSecret: &wrapperspb.BoolValue{Value: false},
+				},
+			},
+		}
 		memoryClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
@@ -2863,7 +2871,7 @@ var _ = Describe("Translator", func() {
 			Expect(hcmTypedCfg.GetHttpFilters()).To(HaveLen(1)) // only the router filter should be configured
 		})
 
-		It("skips listeners with invalid downstream ssl config", func() {
+		It("skips listeners with missing downstream ssl config with error", func() {
 			invalidSslSecretRef := &ssl.SslConfig_SecretRef{
 				SecretRef: &core.ResourceRef{
 					Name:      "invalid",
@@ -2879,6 +2887,29 @@ var _ = Describe("Translator", func() {
 			_, errs, _ := translator.Translate(params, proxyClone)
 			Expect(errs.Validate()).To(HaveOccurred())
 			Expect(errs.Validate().Error()).To(ContainSubstring("Listener Error: SSLConfigError. Reason: SSL secret not found: list did not find secret"))
+		})
+
+		When("WarnMissingTlsSecret=true", func() {
+			BeforeEach(func() {
+				settings.GetGateway().GetValidation().WarnMissingTlsSecret = &wrapperspb.BoolValue{Value: true}
+			})
+			It("skips listeners with missing downstream ssl config with warning", func() {
+				invalidSslSecretRef := &ssl.SslConfig_SecretRef{
+					SecretRef: &core.ResourceRef{
+						Name:      "invalid",
+						Namespace: "invalid",
+					},
+				}
+
+				proxyClone := proto.Clone(proxy).(*v1.Proxy)
+				proxyClone.GetListeners()[2].GetHybridListener().GetMatchedListeners()[1].SslConfigurations = []*ssl.SslConfig{{
+					SslSecrets: invalidSslSecretRef,
+				}}
+
+				_, errs, _ := translator.Translate(params, proxyClone)
+				Expect(errs.ValidateStrict()).To(HaveOccurred())
+				Expect(errs.ValidateStrict().Error()).To(ContainSubstring("Listener Warning: SSLConfigWarning. Reason: SSL secret not found: list did not find secret"))
+			})
 		})
 
 	})
