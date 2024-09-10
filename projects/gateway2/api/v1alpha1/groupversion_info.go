@@ -9,7 +9,10 @@ const (
 	Group   = "gateway.gloo.solo.io"
 	Version = "v1alpha1"
 
+	// GatewayParametersKind is the kind for the GatewayParameters CRD.
 	GatewayParametersKind = "GatewayParameters"
+	// DirectResponseKind is the kind for the DirectResponse CRD.
+	DirectResponseKind = "DirectResponse"
 )
 
 var (
@@ -26,5 +29,11 @@ var (
 		Group:   Group,
 		Version: Version,
 		Kind:    GatewayParametersKind,
+	}
+
+	DirectResponseGVK = schema.GroupVersionKind{
+		Group:   Group,
+		Version: Version,
+		Kind:    DirectResponseKind,
 	}
 )

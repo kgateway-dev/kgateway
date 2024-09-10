@@ -4,18 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
-	"github.com/solo-io/gloo/projects/gateway2/deployer"
-	"github.com/solo-io/gloo/projects/gateway2/extensions"
-	"github.com/solo-io/gloo/projects/gateway2/query"
-	httplisoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/httplisteneroptions/query"
-	lisoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/listeneroptions/query"
-	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
-	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
-	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,6 +21,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+
+	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
+	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
+	"github.com/solo-io/gloo/projects/gateway2/deployer"
+	"github.com/solo-io/gloo/projects/gateway2/extensions"
+	"github.com/solo-io/gloo/projects/gateway2/query"
+	httplisoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/httplisteneroptions/query"
+	lisoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/listeneroptions/query"
+	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
+	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 )
 
 const (
@@ -85,6 +86,7 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 		controllerBuilder.addRtOptIndexes,
 		controllerBuilder.addVhOptIndexes,
 		controllerBuilder.addGwParamsIndexes,
+		controllerBuilder.watchDirectResponses,
 	)
 }
 
@@ -242,7 +244,7 @@ func shouldIgnoreStatusChild(gvk schema.GroupVersionKind) bool {
 	return gvk.Kind == "Deployment"
 }
 
-func (c *controllerBuilder) watchGwClass(ctx context.Context) error {
+func (c *controllerBuilder) watchGwClass(_ context.Context) error {
 	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		WithEventFilter(predicate.NewPredicateFuncs(func(object client.Object) bool {
@@ -256,7 +258,7 @@ func (c *controllerBuilder) watchGwClass(ctx context.Context) error {
 		Complete(reconcile.Func(c.reconciler.ReconcileGatewayClasses))
 }
 
-func (c *controllerBuilder) watchHttpRoute(ctx context.Context) error {
+func (c *controllerBuilder) watchHttpRoute(_ context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&apiv1.HTTPRoute{}).
@@ -267,7 +269,7 @@ func (c *controllerBuilder) watchHttpRoute(ctx context.Context) error {
 	return nil
 }
 
-func (c *controllerBuilder) watchReferenceGrant(ctx context.Context) error {
+func (c *controllerBuilder) watchReferenceGrant(_ context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&apiv1beta1.ReferenceGrant{}).
@@ -278,7 +280,7 @@ func (c *controllerBuilder) watchReferenceGrant(ctx context.Context) error {
 	return nil
 }
 
-func (c *controllerBuilder) watchNamespaces(ctx context.Context) error {
+func (c *controllerBuilder) watchNamespaces(_ context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		For(&corev1.Namespace{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileNamespaces))
@@ -288,7 +290,7 @@ func (c *controllerBuilder) watchNamespaces(ctx context.Context) error {
 	return nil
 }
 
-func (c *controllerBuilder) watchHttpListenerOptions(ctx context.Context) error {
+func (c *controllerBuilder) watchHttpListenerOptions(_ context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&sologatewayv1.HttpListenerOption{}).
@@ -299,7 +301,7 @@ func (c *controllerBuilder) watchHttpListenerOptions(ctx context.Context) error 
 	return nil
 }
 
-func (c *controllerBuilder) watchListenerOptions(ctx context.Context) error {
+func (c *controllerBuilder) watchListenerOptions(_ context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&sologatewayv1.ListenerOption{}).
@@ -310,7 +312,7 @@ func (c *controllerBuilder) watchListenerOptions(ctx context.Context) error {
 	return nil
 }
 
-func (c *controllerBuilder) watchRouteOptions(ctx context.Context) error {
+func (c *controllerBuilder) watchRouteOptions(_ context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&sologatewayv1.RouteOption{}).
@@ -321,7 +323,7 @@ func (c *controllerBuilder) watchRouteOptions(ctx context.Context) error {
 	return nil
 }
 
-func (c *controllerBuilder) watchVirtualHostOptions(ctx context.Context) error {
+func (c *controllerBuilder) watchVirtualHostOptions(_ context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&sologatewayv1.VirtualHostOption{}).
@@ -332,7 +334,7 @@ func (c *controllerBuilder) watchVirtualHostOptions(ctx context.Context) error {
 	return nil
 }
 
-func (c *controllerBuilder) watchUpstreams(ctx context.Context) error {
+func (c *controllerBuilder) watchUpstreams(_ context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&gloov1.Upstream{}).
@@ -343,11 +345,24 @@ func (c *controllerBuilder) watchUpstreams(ctx context.Context) error {
 	return nil
 }
 
-func (c *controllerBuilder) watchServices(ctx context.Context) error {
+func (c *controllerBuilder) watchServices(_ context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&corev1.Service{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileServices))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// watchDirectResponses watches for DirectResponses and triggers
+// reconciliation of the Gateway that references them.
+func (c *controllerBuilder) watchDirectResponses(_ context.Context) error {
+	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		WithEventFilter(predicate.GenerationChangedPredicate{}).
+		For(&v1alpha1.DirectResponse{}).
+		Complete(reconcile.Func(c.reconciler.ReconcileDirectResponses))
 	if err != nil {
 		return err
 	}
@@ -374,6 +389,12 @@ func (r *controllerReconciler) ReconcileListenerOptions(ctx context.Context, req
 
 func (r *controllerReconciler) ReconcileRouteOptions(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// eventually reconcile only effected routes/listeners etc
+	r.kick(ctx)
+	return ctrl.Result{}, nil
+}
+
+func (r *controllerReconciler) ReconcileDirectResponses(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// TODO(tim): eventually reconcile only effected routes.
 	r.kick(ctx)
 	return ctrl.Result{}, nil
 }
