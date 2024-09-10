@@ -1,0 +1,54 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: gateway
+  namespace: default
+spec:
+  hostnames:
+  - "www.example.com"
+  parentRefs:
+  - name: gw
+    namespace: default
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: "*"
+      namespace: "httpbin"
+      kind: HTTPRoute
+      group: gateway.networking.k8s.io
+    filters:
+    - type: ExtensionRef
+      extensionRef:
+        name: parent-dr
+        group: gateway.gloo.solo.io
+        kind: DirectResponse
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: httpbin
+  namespace: httpbin
+  labels:
+    app: httpbin
+spec:
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: httpbin
+      port: 8000
+---
+apiVersion: gateway.gloo.solo.io/v1alpha1
+kind: DirectResponse
+metadata:
+  name: parent-dr
+  namespace: default
+spec:
+  status: 302
+  body: "Hello from parent route"
