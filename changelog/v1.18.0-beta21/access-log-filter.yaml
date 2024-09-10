@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/9995
+    resolvesIssue: false
+    description: >-
+      Add some clarity in the guide on how to work with the fields used to 
+      configure access log filters.
+
+      skipCI-kube-tests: true

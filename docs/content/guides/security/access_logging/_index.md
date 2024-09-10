@@ -436,12 +436,18 @@ You can apply different filters on your access logs to reduce and optimize the n
                comparison:
                  op: GE
                  value: 
-                   runtimeKey: "400"
+                   defaultValue: 400
+                   # see note below about runtimeKey
+                   runtimeKey: "my_status_code_filter"
      proxyNames:
      - gateway-proxy
      ssl: false
      useProxyProto: false
    ```
+
+{{% notice note %}}
+Note that the `runtimeKey` is enforced only if it matches a key that is defined in Envoy's [runtime configuration layer](https://www.envoyproxy.io/docs/envoy/v1.30.0/configuration/operations/runtime#config-runtime-bootstrap). Gloo Gateway does not include a key by default. To specify a key-value pair, use the [gatewayProxies.NAME.customStaticLayer]({{< versioned_link_path fromRoot="/reference/helm_chart_values/" >}}) Helm value or set the key at runtime by using the gateway proxy admin interface.
+{{% /notice %}}
 
 For more configuration options, see {{% protobuf name="als.options.gloo.solo.io.AccessLogFilter" display="AccessLogFilter"%}}.
 
