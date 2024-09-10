@@ -51,6 +51,23 @@ spec:
                       version:
                         type: string
                     type: object
+                  azureOpenai:
+                    properties:
+                      authToken:
+                        properties:
+                          inline:
+                            type: string
+                          secretRef:
+                            properties:
+                              name:
+                                type: string
+                              namespace:
+                                type: string
+                            type: object
+                        type: object
+                      endpoint:
+                        type: string
+                    type: object
                   mistral:
                     properties:
                       authToken:

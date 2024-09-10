@@ -1,5 +1,6 @@
 ---
 title: "glooctl demo"
+description: "Reference for the 'glooctl demo' command."
 weight: 5
 ---
 ## glooctl demo

@@ -1,5 +1,6 @@
 ---
 title: "glooctl install ingress"
+description: "Reference for the 'glooctl install ingress' command."
 weight: 5
 ---
 ## glooctl install ingress
