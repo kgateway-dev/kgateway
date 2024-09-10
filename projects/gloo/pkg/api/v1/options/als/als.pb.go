@@ -175,8 +175,7 @@ func (GrpcStatusFilter_Status) EnumDescriptor() ([]byte, []int) {
 }
 
 // Contains various settings for Envoy's access logging service.
-// See here for more information:
-// https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto
+// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto
 type AccessLoggingService struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
