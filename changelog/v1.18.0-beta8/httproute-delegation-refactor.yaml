@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Separates query logic from delegation logic. This allows using other
+      querying mechanisms like
+      [krt](https://github.com/istio/istio/blob/master/pkg/kube/krt/README.md)
+      while re-using the more complex parts of the translation code.

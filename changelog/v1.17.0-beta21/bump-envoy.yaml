@@ -1,0 +1,13 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: envoy-gloo
+  dependencyTag: v1.29.3-patch1
+  issueLink: https://github.com/solo-io/solo-projects/issues/6008
+  resolvesIssue: false
+  description: >-
+    Bump envoy-gloo to bring us onto 1.29.3-patch1
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/9232
+  resolvesIssue: false
+  description: Revert "Hardcode Envoy's reloadable feature for TE header sanitization to false" (#9307)

@@ -1,0 +1,40 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: httpbin-vs
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+    - httpbin
+    routes:
+    - matchers:
+      - prefix: /
+      routeAction:
+        single:
+          upstream:
+            name: httpbin-upstream-upstream-ssl-config-edge-apis
+            namespace: gloo-system
+---
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  name: httpbin-upstream-upstream-ssl-config-edge-apis
+  namespace: gloo-system
+spec:
+  disableIstioAutoMtls: false
+  kube:
+    selector:
+      app: httpbin
+    serviceName: httpbin
+    serviceNamespace: httpbin
+    servicePort: 8000
+  sslConfig:
+    alpnProtocols:
+    - istio
+    sds:
+      certificatesSecretName: istio_server_cert
+      clusterName: gateway_proxy_sds
+      targetUri: 127.0.0.1:8234
+      validationContextName: istio_validation_context
+---

@@ -16,7 +16,6 @@ import (
 )
 
 var _ = Describe("Routes interactive", func() {
-
 	var (
 		ctx    context.Context
 		cancel context.CancelFunc
@@ -69,7 +68,6 @@ var _ = Describe("Routes interactive", func() {
 
 			c.ExpectEOF()
 		}, func() {
-
 			err := testutils.Glooctl("add route -i")
 			Expect(err).NotTo(HaveOccurred())
 
@@ -80,5 +78,4 @@ var _ = Describe("Routes interactive", func() {
 			Expect(ug.GetNamespace()).To(Equal("default"))
 		})
 	})
-
 })

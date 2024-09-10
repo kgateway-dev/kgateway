@@ -31,7 +31,7 @@ func MakeGatewayRoute(pathType, length int) *gatewayv1.Route {
 
 func MakeMatcher(pathType, length int) *matchers.Matcher {
 	pathStr := "/"
-	for i := 0; i < length; i++ {
+	for range length {
 		pathStr += "s/"
 	}
 	m := &matchers.Matcher{}

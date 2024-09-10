@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5934
+    resolvesIssue: false
+    description: >-
+      Move objects needed for construction of OSS GGv2 plugins to a param object

@@ -1,0 +1,19 @@
+syntax = "proto3";
+package gcp.options.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/gcp";
+
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.clone_all) = true;
+option (extproto.equal_all) = true;
+
+// Enterprise-only: Configuration to enable GCP authentication for upstreams.
+message UpstreamSpec {
+  // Required. host of the GCP service to be connected to
+  string host = 1;
+
+  // Optional override for the audience used to fetch the token from the GCP metadata server.
+  // By default it will use the URL of the service
+  string audience = 2;
+}

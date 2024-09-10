@@ -8,7 +8,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: gloo-mtls-certgen
   name: gloo-mtls-certgen
   namespace: {{ .Release.Namespace }}
@@ -52,11 +52,11 @@ spec:
         - image: {{template "gloo.image" $image}}
           imagePullPolicy: {{ $image.pullPolicy }}
           name: certgen
-          securityContext:
-            runAsNonRoot: true
-            {{- if not .Values.gateway.certGenJob.floatingUserId }}
-            runAsUser: {{ printf "%.0f" (float64 .Values.gateway.certGenJob.runAsUser) -}}
-            {{- end }}
+          {{- $securityDefaults := dict "runAsNonRoot" true }}
+          {{- if not .Values.gateway.certGenJob.floatingUserId }}
+            {{- $_ := set $securityDefaults "runAsUser" .Values.gateway.certGenJob.runAsUser }}
+          {{- end }}
+          {{- include "gloo.containerSecurityContext" (dict "values" .Values.gateway.certGenJob.containerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 10 "globalSec" .Values.global.securitySettings) }}
           {{- with .Values.gateway.certGenJob.resources }}
           resources: {{ toYaml . | nindent 12}}
           {{- end }}

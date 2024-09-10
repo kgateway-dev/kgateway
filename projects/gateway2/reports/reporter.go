@@ -3,6 +3,7 @@ package reports
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -27,6 +28,7 @@ type RouteReport struct {
 	observedGeneration int64
 }
 
+// TODO: rename to e.g. RouteParentRefReport
 type ParentRefReport struct {
 	Conditions []metav1.Condition
 }
@@ -157,17 +159,22 @@ func (r *reporter) Route(route *gwv1.HTTPRoute) HTTPRouteReporter {
 	return rr
 }
 
+// TODO: flesh out
 func getParentRefKey(parentRef *gwv1.ParentReference) ParentRefKey {
+	var group string
+	if parentRef.Group != nil {
+		group = string(*parentRef.Group)
+	}
 	var kind string
 	if parentRef.Kind != nil {
 		kind = string(*parentRef.Kind)
 	}
 	var ns string
 	if parentRef.Namespace != nil {
-		kind = string(*parentRef.Namespace)
+		ns = string(*parentRef.Namespace)
 	}
 	return ParentRefKey{
-		Group: string(parentRef.Name),
+		Group: group,
 		Kind:  kind,
 		NamespacedName: types.NamespacedName{
 			Namespace: ns,
@@ -190,6 +197,23 @@ func (r *RouteReport) parentRef(parentRef *gwv1.ParentReference) *ParentRefRepor
 	return prr
 }
 
+// parentRefs returns a list of ParentReferences associated with the RouteReport.
+// It is used to update the Status of delegatee routes who may not specify
+// the parentRefs field.
+func (r *RouteReport) parentRefs() []gwv1.ParentReference {
+	var refs []gwv1.ParentReference
+	for key := range r.parents {
+		parentRef := gwv1.ParentReference{
+			Group:     ptr.To(gwv1.Group(key.Group)),
+			Kind:      ptr.To(gwv1.Kind(key.Kind)),
+			Name:      gwv1.ObjectName(key.Name),
+			Namespace: ptr.To(gwv1.Namespace(key.Namespace)),
+		}
+		refs = append(refs, parentRef)
+	}
+	return refs
+}
+
 func (r *RouteReport) ParentRef(parentRef *gwv1.ParentReference) ParentRefReporter {
 	return r.parentRef(parentRef)
 }
@@ -209,7 +233,6 @@ func NewReporter(reportMap *ReportMap) Reporter {
 }
 
 type Reporter interface {
-	// returns the object reporter for the given type
 	Gateway(gateway *gwv1.Gateway) GatewayReporter
 	Route(route *gwv1.HTTPRoute) HTTPRouteReporter
 }
@@ -229,6 +252,7 @@ type HTTPRouteReporter interface {
 	ParentRef(parentRef *gwv1.ParentReference) ParentRefReporter
 }
 
+// TODO: rename to e.g. RouteParentReporter
 type ParentRefReporter interface {
 	SetCondition(condition HTTPRouteCondition)
 }

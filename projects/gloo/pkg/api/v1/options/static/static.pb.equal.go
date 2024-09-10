@@ -149,6 +149,23 @@ func (m *Host) Equal(that interface{}) bool {
 		}
 	}
 
+	if len(m.GetMetadata()) != len(target.GetMetadata()) {
+		return false
+	}
+	for k, v := range m.GetMetadata() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetMetadata()[k]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetMetadata()[k]) {
+				return false
+			}
+		}
+
+	}
+
 	return true
 }
 

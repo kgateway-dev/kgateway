@@ -118,7 +118,7 @@ Represents global settings for all the Gloo components.
 | `directoryArtifactSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directoryArtifactSource`, `kubernetesArtifactSource`, or `consulKvArtifactSource` can be set. |
 | `consulKvArtifactSource` | [.gloo.solo.io.Settings.ConsulKv](../settings.proto.sk/#consulkv) |  Only one of `consulKvArtifactSource`, `kubernetesArtifactSource`, or `directoryArtifactSource` can be set. |
 | `refreshRate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | How frequently to resync watches, etc. |
-| `devMode` | `bool` | Enable serving debug data on port 9090. |
+| `devMode` | `bool` | DEPRECATED: In the past DevMode was used to expose endpoints that behave as an Admin API https://github.com/solo-io/gloo/issues/6494 We now support an Admin API on port 9091. See the following guide for more details https://docs.solo.io/gloo-edge/latest/operations/debugging_gloo/#debugging-the-control-plane. |
 | `linkerd` | `bool` | Enable automatic linkerd upstream header addition for easier routing to linkerd services. |
 | `knative` | [.gloo.solo.io.Settings.KnativeOptions](../settings.proto.sk/#knativeoptions) | Configuration options for the Clusteringress Controller (for Knative). Deprecated: Will not be available in Gloo Edge 1.11. |
 | `discovery` | [.gloo.solo.io.Settings.DiscoveryOptions](../settings.proto.sk/#discoveryoptions) | Options for configuring Gloo's Discovery service. |
@@ -780,7 +780,7 @@ Policy for how Gloo should handle invalid config
 | ----- | ---- | ----------- | 
 | `replaceInvalidRoutes` | `bool` | if set to `true`, Gloo removes any routes from the provided configuration which point to a missing destination. Routes that are removed in this way will instead return a configurable direct response to clients. When routes are replaced, Gloo will configure Envoy with a special listener which serves direct responses. Note: enabling this option allows Gloo to accept partially valid proxy configurations. |
 | `invalidRouteResponseCode` | `int` | replaced routes reply to clients with this response code. default is 404. |
-| `invalidRouteResponseBody` | `string` | replaced routes reply to clients with this response body. default is 'Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.'. |
+| `invalidRouteResponseBody` | `string` | replaced routes reply to clients with this response body. default is 'Gloo Edge has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.'. |
 
 
 
@@ -793,13 +793,15 @@ Policy for how Gloo should handle invalid config
 ```yaml
 "appendXForwardedHost": .google.protobuf.BoolValue
 "enableAutoMtls": .google.protobuf.BoolValue
+"enableIntegration": .google.protobuf.BoolValue
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `appendXForwardedHost` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set to false to disable adding X-Forwarded-Host header in Istio integration Defaults to true. |
+| `appendXForwardedHost` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set to false to disable adding X-Forwarded-Host header in Istio integration Defaults to true Warning: This value is deprecated and will be removed in a future release. Also, you cannot use this value with a Kubernetes Gateway API proxy. |
 | `enableAutoMtls` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set to true to enable automatic mTLS for all upstreams. Istio integration must be enabled for this to take effect. Defaults to false. |
+| `enableIntegration` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Istio integration is enabled via global.istioIntegration.enabled on the helm chart. If enabled, an istio-proxy container and sds container are assumed to exist alongside the gateway proxy. These containers are created by enabling the istioIntegration.enabled option in the helm chart. Defaults to false. |
 
 
 
@@ -876,6 +878,7 @@ options for configuring admission control / validation
 "disableTransformationValidation": .google.protobuf.BoolValue
 "validationServerGrpcMaxSizeBytes": .google.protobuf.Int32Value
 "serverEnabled": .google.protobuf.BoolValue
+"warnMissingTlsSecret": .google.protobuf.BoolValue
 
 ```
 
@@ -886,11 +889,12 @@ options for configuring admission control / validation
 | `validationWebhookTlsKey` | `string` | Path to TLS Private Key for Kubernetes Validating webhook. Defaults to `/etc/gateway/validation-certs/tls.key`. |
 | `ignoreGlooValidationFailure` | `bool` | Deprecated: the Gateway and the Gloo pods are now merged together, there are no longer requests made to a Gloo Validation server. When Gateway cannot communicate with Gloo (e.g. Gloo is offline) resources will be rejected by default. Enable the `ignoreGlooValidationFailure` to prevent the Validation server from rejecting resources due to network errors. |
 | `alwaysAccept` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Always accept resources even if validation produced an error. Validation will still log the error and increment the validation.gateway.solo.io/resources_rejected stat. Currently defaults to true - must be set to `false` to prevent writing invalid resources to storage. |
-| `allowWarnings` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Accept resources if validation produced a warning (defaults to true). By setting to false, this means that validation will start rejecting resources that would result in warnings, rather than just those that would result in errors. |
+| `allowWarnings` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Accept resources if validation produced a warning (defaults to true). By setting to false, this means that validation will start rejecting resources that would result in warnings, rather than just those that would result in errors. Note that this setting has no impact on Kubernetes Gateway API validation, as warnings will always be allowed in that context. |
 | `warnRouteShortCircuiting` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Deprecated: See `server_enabled` and consider configuring it to `false` instead. Write a warning to route resources if validation produced a route ordering warning (defaults to false). By setting to true, this means that Gloo will start assigning warnings to resources that would result in route short-circuiting within a virtual host, for example: - prefix routes that make later routes unreachable - regex routes that make later routes unreachable - duplicate matchers. |
-| `disableTransformationValidation` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Deprecated: See `server_enabled` and consider configuring it to `false` instead. By default gloo will attempt to validate transformations by calling out to a local envoy binary in `validate` mode. Calling this local envoy binary can become slow when done many times during a single validation. Setting this to true will stop gloo from calling out to envoy to validate the transformations, which may speed up the validation time considerably, but may also cause the transformation config to fail after being sent to envoy. When disabling this, ensure that your transformations are valid prior to applying them. |
+| `disableTransformationValidation` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | By default gloo will attempt to validate transformations by calling out to a local envoy binary in `validate` mode. Calling this local envoy binary can become slow when done many times during a single validation. Setting this to true will stop gloo from calling out to envoy to validate the transformations, which may speed up the validation time considerably, but may also cause the transformation config to fail after being sent to envoy. When disabling this, ensure that your transformations are valid prior to applying them. |
 | `validationServerGrpcMaxSizeBytes` | [.google.protobuf.Int32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/int-32-value) | By default, gRPC validation messages between gateway and gloo pods have a max message size of 100 MB. Setting this value sets the gRPC max message size in bytes for the gloo validation server. This should only be changed if necessary. If not included, the gRPC max message size will be the default of 100 MB. |
 | `serverEnabled` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | By providing the validation field (parent of this object) the user is implicitly opting into validation. This field allows the user to opt out of the validation server, while still configuring pre-existing fields such as `warn_route_short_circuiting` and `disable_transformation_validation`. If not included, the validation server will be enabled. |
+| `warnMissingTlsSecret` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Allows configuring validation to report a missing TLS secret referenced by a SslConfig or UpstreamSslConfig as a warning instead of an error. This will allow for eventually consistent workloads, but will also permit the accidental deletion of secrets being referenced, which would cause disruption in traffic. |
 
 
 

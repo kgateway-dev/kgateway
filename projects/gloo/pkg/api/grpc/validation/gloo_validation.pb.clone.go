@@ -297,6 +297,19 @@ func (m *ListenerReport) Clone() proto.Message {
 		}
 	}
 
+	if m.GetWarnings() != nil {
+		target.Warnings = make([]*ListenerReport_Warning, len(m.GetWarnings()))
+		for idx, v := range m.GetWarnings() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Warnings[idx] = h.Clone().(*ListenerReport_Warning)
+			} else {
+				target.Warnings[idx] = proto.Clone(v).(*ListenerReport_Warning)
+			}
+
+		}
+	}
+
 	switch m.ListenerTypeReport.(type) {
 
 	case *ListenerReport_HttpListenerReport:
@@ -653,6 +666,21 @@ func (m *ListenerReport_Error) Clone() proto.Message {
 }
 
 // Clone function
+func (m *ListenerReport_Warning) Clone() proto.Message {
+	var target *ListenerReport_Warning
+	if m == nil {
+		return target
+	}
+	target = &ListenerReport_Warning{}
+
+	target.Type = m.GetType()
+
+	target.Reason = m.GetReason()
+
+	return target
+}
+
+// Clone function
 func (m *HttpListenerReport_Error) Clone() proto.Message {
 	var target *HttpListenerReport_Error
 	if m == nil {
@@ -663,6 +691,12 @@ func (m *HttpListenerReport_Error) Clone() proto.Message {
 	target.Type = m.GetType()
 
 	target.Reason = m.GetReason()
+
+	if h, ok := interface{}(m.GetMetadata()).(clone.Cloner); ok {
+		target.Metadata = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.SourceMetadata)
+	} else {
+		target.Metadata = proto.Clone(m.GetMetadata()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.SourceMetadata)
+	}
 
 	return target
 }
@@ -679,6 +713,12 @@ func (m *VirtualHostReport_Error) Clone() proto.Message {
 
 	target.Reason = m.GetReason()
 
+	if h, ok := interface{}(m.GetMetadata()).(clone.Cloner); ok {
+		target.Metadata = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.SourceMetadata)
+	} else {
+		target.Metadata = proto.Clone(m.GetMetadata()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.SourceMetadata)
+	}
+
 	return target
 }
 
@@ -693,6 +733,12 @@ func (m *RouteReport_Error) Clone() proto.Message {
 	target.Type = m.GetType()
 
 	target.Reason = m.GetReason()
+
+	if h, ok := interface{}(m.GetMetadata()).(clone.Cloner); ok {
+		target.Metadata = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.SourceMetadata)
+	} else {
+		target.Metadata = proto.Clone(m.GetMetadata()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.SourceMetadata)
+	}
 
 	return target
 }

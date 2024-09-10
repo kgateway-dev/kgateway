@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Update the CONTRIBUTING.md file and replace any references to the
+      old Gloo Edge project name with Gloo. Silence any markdown linting
+      warnings.

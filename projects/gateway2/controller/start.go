@@ -3,23 +3,24 @@ package controller
 import (
 	"context"
 
+	"github.com/solo-io/gloo/pkg/schemes"
+
+	"k8s.io/apimachinery/pkg/util/sets"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
-	"github.com/solo-io/gloo/projects/gateway2/discovery"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
+	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 	"github.com/solo-io/gloo/projects/gateway2/secrets"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-	"github.com/solo-io/gloo/projects/gateway2/xds"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	api "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
-	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
 const (
@@ -28,11 +29,7 @@ const (
 	AutoProvision = true
 )
 
-var (
-	gatewayClass = apiv1.ObjectName(wellknown.GatewayClassName)
-
-	setupLog = ctrl.Log.WithName("setup")
-)
+var setupLog = ctrl.Log.WithName("setup")
 
 type StartConfig struct {
 	Dev  bool
@@ -49,6 +46,23 @@ type StartConfig struct {
 	// ProxyClient is the client that writes Proxy resources into an in-memory cache
 	// This cache is utilized by the debug.ProxyEndpointServer
 	ProxyClient v1.ProxyClient
+
+	// AuthConfigClient is the client used for retrieving AuthConfig objects within the Portal Plugin
+	AuthConfigClient api.AuthConfigClient
+
+	// RouteOptionClient is the client used for retrieving RouteOption objects within the RouteOptionsPlugin
+	// NOTE: We may be able to move this entirely to the RouteOptionsPlugin
+	RouteOptionClient gatewayv1.RouteOptionClient
+	// VirtualHostOptionClient is the client used for retrieving VirtualHostOption objects within the VirtualHostOptionsPlugin
+	// NOTE: We may be able to move this entirely to the VirtualHostOptionsPlugin
+	VirtualHostOptionClient gatewayv1.VirtualHostOptionClient
+	// StatusReporter is used within any StatusPlugins that must persist a GE-classic style status
+	StatusReporter reporter.StatusReporter
+
+	// A callback to initialize the gateway status syncer with the same dependencies
+	// as the gateway controller (in another start func)
+	// TODO(ilackarms) refactor to enable the status syncer to be started in the same start func
+	QueueStatusForProxies proxy_syncer.QueueStatusForProxiesFn
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -63,7 +77,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 	ctrl.SetLogger(zap.New(opts...))
 
 	mgrOpts := ctrl.Options{
-		Scheme:           scheme.NewScheme(),
+		Scheme:           schemes.DefaultScheme(),
 		PprofBindAddress: "127.0.0.1:9099",
 		// if you change the port here, also change the port "health" in the helmchart.
 		HealthProbeBindAddress: ":9093",
@@ -80,49 +94,47 @@ func Start(ctx context.Context, cfg StartConfig) error {
 	// TODO: replace this with something that checks that we have xds snapshot ready (or that we don't need one).
 	mgr.AddReadyzCheck("ready-ping", healthz.Ping)
 
-	glooTranslator := translator.NewDefaultTranslator(
-		cfg.Opts.Settings,
-		cfg.GlooPluginRegistryFactory(ctx))
-	var sanz sanitizer.XdsSanitizers
-	inputChannels := xds.NewXdsInputChannels()
+	inputChannels := proxy_syncer.NewGatewayInputChannels()
 
-	k8sGwExtensions, err := cfg.ExtensionsFactory(mgr)
+	k8sGwExtensions, err := cfg.ExtensionsFactory(ctx, extensions.K8sGatewayExtensionsFactoryParameters{
+		Mgr:                     mgr,
+		RouteOptionClient:       cfg.RouteOptionClient,
+		VirtualHostOptionClient: cfg.VirtualHostOptionClient,
+		StatusReporter:          cfg.StatusReporter,
+		KickXds:                 inputChannels.Kick,
+		AuthConfigClient:        cfg.AuthConfigClient,
+	})
 	if err != nil {
 		setupLog.Error(err, "unable to create k8s gw extensions")
 		return err
 	}
 
-	xdsSyncer := xds.NewXdsSyncer(
+	// Create the proxy syncer for the Gateway API resources
+	proxySyncer := proxy_syncer.NewProxySyncer(
 		wellknown.GatewayControllerName,
-		glooTranslator,
-		sanz,
-		cfg.Opts.ControlPlane.SnapshotCache,
-		false,
+		cfg.Opts.WriteNamespace,
 		inputChannels,
 		mgr,
 		k8sGwExtensions,
 		cfg.ProxyClient,
+		cfg.QueueStatusForProxies,
 	)
-	if err := mgr.Add(xdsSyncer); err != nil {
-		setupLog.Error(err, "unable to add xdsSyncer runnable")
+	if err := mgr.Add(proxySyncer); err != nil {
+		setupLog.Error(err, "unable to add proxySyncer runnable")
 		return err
 	}
 
 	gwCfg := GatewayConfig{
 		Mgr:            mgr,
-		GWClass:        gatewayClass,
+		GWClasses:      sets.New(append(cfg.Opts.ExtraGatewayClasses, wellknown.GatewayClassName)...),
 		ControllerName: wellknown.GatewayControllerName,
 		AutoProvision:  AutoProvision,
 		ControlPlane:   cfg.Opts.ControlPlane,
 		IstioValues:    cfg.Opts.GlooGateway.IstioValues,
 		Kick:           inputChannels.Kick,
+		Extensions:     k8sGwExtensions,
 	}
 	if err = NewBaseGatewayController(ctx, gwCfg); err != nil {
-		setupLog.Error(err, "unable to create controller")
-		return err
-	}
-
-	if err = discovery.NewDiscoveryController(ctx, mgr, inputChannels); err != nil {
 		setupLog.Error(err, "unable to create controller")
 		return err
 	}

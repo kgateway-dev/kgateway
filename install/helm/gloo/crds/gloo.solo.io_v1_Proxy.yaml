@@ -34,7 +34,8 @@ spec:
                     bindAddress:
                       type: string
                     bindPort:
-                      format: int32
+                      maximum: 4294967295
+                      minimum: 0
                       type: integer
                     httpListener:
                       type: object
@@ -100,7 +101,8 @@ spec:
                                               value:
                                                 properties:
                                                   defaultValue:
-                                                    format: int32
+                                                    maximum: 4294967295
+                                                    minimum: 0
                                                     type: integer
                                                   runtimeKey:
                                                     type: string
@@ -179,7 +181,8 @@ spec:
                                                 type: string
                                                 x-kubernetes-int-or-string: true
                                               numerator:
-                                                format: int32
+                                                maximum: 4294967295
+                                                minimum: 0
                                                 type: integer
                                             type: object
                                           runtimeKey:
@@ -197,7 +200,8 @@ spec:
                                               value:
                                                 properties:
                                                   defaultValue:
-                                                    format: int32
+                                                    maximum: 4294967295
+                                                    minimum: 0
                                                     type: integer
                                                   runtimeKey:
                                                     type: string
@@ -242,6 +246,168 @@ spec:
                                 x-kubernetes-preserve-unknown-fields: true
                               type: object
                           type: object
+                        listenerAccessLoggingService:
+                          properties:
+                            accessLog:
+                              items:
+                                properties:
+                                  fileSink:
+                                    properties:
+                                      jsonFormat:
+                                        type: object
+                                        x-kubernetes-preserve-unknown-fields: true
+                                      path:
+                                        type: string
+                                      stringFormat:
+                                        type: string
+                                    type: object
+                                  filter:
+                                    properties:
+                                      andFilter:
+                                        type: object
+                                        x-kubernetes-preserve-unknown-fields: true
+                                      durationFilter:
+                                        properties:
+                                          comparison:
+                                            properties:
+                                              op:
+                                                type: string
+                                                x-kubernetes-int-or-string: true
+                                              value:
+                                                properties:
+                                                  defaultValue:
+                                                    maximum: 4294967295
+                                                    minimum: 0
+                                                    type: integer
+                                                  runtimeKey:
+                                                    type: string
+                                                type: object
+                                            type: object
+                                        type: object
+                                      grpcStatusFilter:
+                                        properties:
+                                          exclude:
+                                            type: boolean
+                                          statuses:
+                                            items:
+                                              type: string
+                                              x-kubernetes-int-or-string: true
+                                            type: array
+                                        type: object
+                                      headerFilter:
+                                        properties:
+                                          header:
+                                            properties:
+                                              exactMatch:
+                                                type: string
+                                              invertMatch:
+                                                type: boolean
+                                              name:
+                                                type: string
+                                              prefixMatch:
+                                                type: string
+                                              presentMatch:
+                                                type: boolean
+                                              rangeMatch:
+                                                properties:
+                                                  end:
+                                                    format: int64
+                                                    type: integer
+                                                    x-kubernetes-int-or-string: true
+                                                  start:
+                                                    format: int64
+                                                    type: integer
+                                                    x-kubernetes-int-or-string: true
+                                                type: object
+                                              safeRegexMatch:
+                                                properties:
+                                                  googleRe2:
+                                                    properties:
+                                                      maxProgramSize:
+                                                        maximum: 4294967295
+                                                        minimum: 0
+                                                        nullable: true
+                                                        type: integer
+                                                    type: object
+                                                  regex:
+                                                    type: string
+                                                type: object
+                                              suffixMatch:
+                                                type: string
+                                            type: object
+                                        type: object
+                                      notHealthCheckFilter:
+                                        type: object
+                                      orFilter:
+                                        type: object
+                                        x-kubernetes-preserve-unknown-fields: true
+                                      responseFlagFilter:
+                                        properties:
+                                          flags:
+                                            items:
+                                              type: string
+                                            type: array
+                                        type: object
+                                      runtimeFilter:
+                                        properties:
+                                          percentSampled:
+                                            properties:
+                                              denominator:
+                                                type: string
+                                                x-kubernetes-int-or-string: true
+                                              numerator:
+                                                maximum: 4294967295
+                                                minimum: 0
+                                                type: integer
+                                            type: object
+                                          runtimeKey:
+                                            type: string
+                                          useIndependentRandomness:
+                                            type: boolean
+                                        type: object
+                                      statusCodeFilter:
+                                        properties:
+                                          comparison:
+                                            properties:
+                                              op:
+                                                type: string
+                                                x-kubernetes-int-or-string: true
+                                              value:
+                                                properties:
+                                                  defaultValue:
+                                                    maximum: 4294967295
+                                                    minimum: 0
+                                                    type: integer
+                                                  runtimeKey:
+                                                    type: string
+                                                type: object
+                                            type: object
+                                        type: object
+                                      traceableFilter:
+                                        type: object
+                                    type: object
+                                  grpcService:
+                                    properties:
+                                      additionalRequestHeadersToLog:
+                                        items:
+                                          type: string
+                                        type: array
+                                      additionalResponseHeadersToLog:
+                                        items:
+                                          type: string
+                                        type: array
+                                      additionalResponseTrailersToLog:
+                                        items:
+                                          type: string
+                                        type: array
+                                      logName:
+                                        type: string
+                                      staticClusterName:
+                                        type: string
+                                    type: object
+                                type: object
+                              type: array
+                          type: object
                         perConnectionBufferLimitBytes:
                           maximum: 4294967295
                           minimum: 0
@@ -262,7 +428,8 @@ spec:
                                         type: string
                                     type: object
                                   tlvType:
-                                    format: int32
+                                    maximum: 4294967295
+                                    minimum: 0
                                     type: integer
                                 type: object
                               type: array

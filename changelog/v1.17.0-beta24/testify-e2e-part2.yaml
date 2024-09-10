@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6093
+    resolvesIssue: false
+    description: >-
+      Convert existing e2e tests to rely on the testify framework

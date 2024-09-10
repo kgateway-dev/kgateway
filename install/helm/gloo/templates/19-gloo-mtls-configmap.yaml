@@ -7,7 +7,7 @@ metadata:
   name: envoy-sidecar-config
   namespace: {{ $.Release.Namespace }}
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: gloo
 data:
   envoy-sidecar.yaml: |

@@ -1,6 +1,6 @@
 ---
 title: Server Config (Enterprise)
-description: Advanced configuration for Gloo Edge Enterprise's rate-limit service.
+description: Advanced configuration for Gloo Gateway Enterprise's rate-limit service.
 weight: 40
 ---
 
@@ -22,35 +22,35 @@ To achieve global rate limiting, Envoy queries an external server that is backed
 
 ## Change the rate limit server's backing database {#database}
 
-By default, the rate limit server is backed by a Redis instance that Gloo Edge deploys for you. Redis is a good choice for global rate limiting data storage because of its low latency. However, you might want to use a different database for the following reasons:
+By default, the rate limit server is backed by a Redis instance that Gloo Gateway deploys for you. Redis is a good choice for global rate limiting data storage because of its low latency. However, you might want to use a different database for the following reasons:
 * Rate limiting across multiple data centers
 * Replicating data for multiple replicas of the database
 * Using an existing database
 * Using a database that is external to the cluster, such as for data privacy concerns
 
-Gloo Edge supports the following external databases for the rate limit server:
+Gloo Gateway supports the following external databases for the rate limit server:
 * [Aerospike](#aerospike)
 * [DynamoDB](#dynamodb)
 * [Redis](#redis)
 
 ### Aerospike-backed rate limit server {#aerospike}
 
-You can use [Aerospike](https://docs.aerospike.com/database) as the backing storage database for the Gloo Edge rate limit server. Aerospike is a real-time data platform with support for helpful features such as in-memory storage and streaming.
+You can use [Aerospike](https://docs.aerospike.com/database) as the backing storage database for the Gloo Gateway rate limit server. Aerospike is a real-time data platform with support for helpful features such as in-memory storage and streaming.
 
 {{% notice note %}}
-You can use Aerospike with **Gloo Edge Enterprise** version 1.13.0 or later.<br><br>
+You can use Aerospike with **Gloo Gateway Enterprise** version 1.13.0 or later.<br><br>
 If you use also use Aerospike to store your Gloo Portal API keys, your Aerospike configurations must match. For example, use the same Aerospike IP address, port, and namespace in your Gloo Portal Storage custom resoure configuration and the rate limit server.
 {{% /notice %}}
 
 1. Create an Aerospike database instance to use as the backing storage for the rate limit server. For setup steps, see the [Gloo Portal documentation](https://docs.solo.io/gloo-portal/main/guides/portal_features/apikey_storage/). 
 2. To rate limit APIs that you manage with Gloo Portal, make sure that your configuration matches the configuration that you used with your [Gloo Portal Storage custom resource](https://docs.solo.io/gloo-portal/main/guides/portal_features/apikey_storage/).
-3. [Install]({{< versioned_link_path fromRoot="/installation/enterprise/">}}) or [upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/">}}) your Gloo Edge Enterprise Helm installation by completing the following steps:
+3. [Install]({{< versioned_link_path fromRoot="/installation/enterprise/">}}) or [upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/">}}) your Gloo Gateway Enterprise Helm installation by completing the following steps:
    1. Disable the default Redis server backing storage by setting `rateLimit.enabled` to `false`.
    2. Provide the rate limiting Aerospike Helm chart configuration options, as shown in the following table. These values match what you configured in your Aerospike database setup. 
 
 | Option | Type | Description |
 | --- | --- | --- |
-|rateLimit.deployment.aerospike.address|string|The IP address or hostname of the Aerospike database. The address must be reachable from Gloo Edge, such as in a virtual machine with a public IP address or in a pod in the cluster. By setting this value, you also enable Aerospike database as the backing storage for the rate limit service.|
+|rateLimit.deployment.aerospike.address|string|The IP address or hostname of the Aerospike database. The address must be reachable from Gloo Gateway, such as in a virtual machine with a public IP address or in a pod in the cluster. By setting this value, you also enable Aerospike database as the backing storage for the rate limit service.|
 |rateLimit.deployment.aerospike.namespace|string|The Aerospike namespace of the database. The default value is `solo-namespace`.|
 |rateLimit.deployment.aerospike.set|string|The Aerospike name of the database set. The default value is `ratelimiter`.|
 |rateLimit.deployment.aerospike.port|int|The port of the `rateLimit.deployment.aerospike.address`. The default port is `3000`.|
@@ -67,17 +67,17 @@ If you use also use Aerospike to store your Gloo Portal API keys, your Aerospike
 
 ### DynamoDB-backed rate limit server {#dynamodb}
 
-You can use DynamoDB as the backing storage database for the Gloo Edge rate limit server. DynamoDB is built for single-millisecond latencies. It includes features such as built-in replication ([DynamoDB Global Tables](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GlobalTables.html)) that can help you set up global rate limiting across multiple instances or multiple data centers.
+You can use DynamoDB as the backing storage database for the Gloo Gateway rate limit server. DynamoDB is built for single-millisecond latencies. It includes features such as built-in replication ([DynamoDB Global Tables](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GlobalTables.html)) that can help you set up global rate limiting across multiple instances or multiple data centers.
 
 {{% notice note %}}
-You can use DynamoDB with **Gloo Edge Enterprise** version 0.18.29 or later.
+You can use DynamoDB with **Gloo Gateway Enterprise** version 0.18.29 or later.
 {{% /notice %}}
 
 1. [Create a secret]({{< versioned_link_path fromRoot="/reference/cli/glooctl_create_secret_aws/">}}) in your cluster that includes your AWS credentials for the DynamoDB that you want to use. The secret must be in the same namespace as your Gloo installation, such as `gloo-system`. For more information, see the [AWS docs](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/SettingUp.DynamoWebService.html).
    ```shell
    glooctl create secret aws -n gloo-system --access-key <aws_access_key> --secret-key <aws_secret_key>
    ```
-2. [Install]({{< versioned_link_path fromRoot="/installation/enterprise/">}}) or [upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/">}}) your Gloo Edge Enterprise Helm installation by completing the following steps:
+2. [Install]({{< versioned_link_path fromRoot="/installation/enterprise/">}}) or [upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/">}}) your Gloo Gateway Enterprise Helm installation by completing the following steps:
    1. Disable the default Redis server backing storage by setting `rateLimit.enabled` to `false`.
    2. Provide the rate limiting DynamoDB Helm chart configuration options, as shown in the following table.
 
@@ -89,24 +89,24 @@ You can use DynamoDB with **Gloo Edge Enterprise** version 0.18.29 or later.
 | rateLimit.deployment.dynamodb.consistentReads             | bool     | If `true`, the reading response from DynamoDB is _strongly consistent_, or the most up-to-date data. The default value is `false`, or _eventually consistent_, which might be less accurate but also has lower latency and less chance of a 500 response than _strongly consistent_. For more information, see the [DynamoDB docs](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html).|
 | rateLimit.deployment.dynamodb.batchSize                   | uint8    | The batch size for `GET` requests to DynamoDB. The max value is `100`, which is also the default value. |
 
-As part of the rate limit service deployment, Gloo Edge uses the provided AWS credentials to automatically create the rate limits DynamoDB table (default name `rate-limits`) in your AWS region (default `us-east-2`). If you want to turn the table into a globally replicated table, you
+As part of the rate limit service deployment, Gloo Gateway uses the provided AWS credentials to automatically create the rate limits DynamoDB table (default name `rate-limits`) in your AWS region (default `us-east-2`). If you want to turn the table into a globally replicated table, you
 can select the regions to replicate to in the DynamoDB AWS console UI.
 
 ### Redis-backed rate limit server {#redis}
 
-You can use a clustered Redis instance as the backing storage database for the Gloo Edge rate limit server. Redis is an open source, in-memory database with features such as data persistence, server-side scripting and Redis Functions, extensibility, and sharding for horizontal scalability, clustering for high availability. For more information, see [the Redis docs](https://redis.io/docs/getting-started/).
+You can use a clustered Redis instance as the backing storage database for the Gloo Gateway rate limit server. Redis is an open source, in-memory database with features such as data persistence, server-side scripting and Redis Functions, extensibility, and sharding for horizontal scalability, clustering for high availability. For more information, see [the Redis docs](https://redis.io/docs/getting-started/).
 
-1. Install a clustered Redis instance in your cluster. The following example uses a Helm chart and Redis version 6. You can use the following versions of Redis with Gloo Edge.
+1. Install a clustered Redis instance in your cluster. The following example uses a Helm chart and Redis version 6. You can use the following versions of Redis with Gloo Gateway.
    * Redis 6
-   * Redis 7 in Gloo Edge 1.13 or later
+   * Redis 7 in Gloo Gateway 1.13 or later
    ```sh
    helm repo add bitnami https://charts.bitnami.com/bitnami
    helm repo update
    helm install redis -n redis bitnami/redis-cluster --set fullnameOverride=redis --set global.redis.password=redis --set image.tag=6.2.12-debian-11-r0 --version 8.1.1 --create-namespace
    ```
-2. Create a secret with your Redis credentials in the same namespace as your Gloo Edge installation, such as `gloo-system`. Make sure to encode your credentials in base64. For more information, see the [Redis security docs](https://redis.io/docs/management/security/acl/).
+2. Create a secret with your Redis credentials in the same namespace as your Gloo Gateway installation, such as `gloo-system`. Make sure to encode your credentials in base64. For more information, see the [Redis security docs](https://redis.io/docs/management/security/acl/).
    ```yaml
-   cat << EOF | kubectl apply -f -
+   kubectl apply -f - << EOF
    apiVersion: v1
    kind: Secret
    metadata:
@@ -120,7 +120,7 @@ You can use a clustered Redis instance as the backing storage database for the G
      users.acl: <base64_access-control-list>
    EOF
    ```
-3. [Install]({{< versioned_link_path fromRoot="/installation/enterprise/">}}) or [upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/">}}) your Gloo Edge Enterprise Helm installation by completing the following steps:
+3. [Install]({{< versioned_link_path fromRoot="/installation/enterprise/">}}) or [upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/">}}) your Gloo Gateway Enterprise Helm installation by completing the following steps:
    1. Disable the default Redis server backing storage by setting `rateLimit.enabled` to `false`.
    2. Provide the rate limiting Redis Helm chart configuration options, as shown in the following table.
 

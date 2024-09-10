@@ -1,0 +1,8 @@
+changelog:
+  - type: NEW_FEATURE
+    description: |
+      Add new API fields to AI Semantic Caching API.
+      - Mode field to control whether the proxy will cache responses, or only read.
+      - scoreThreshold field to control the minimum similarity score required for a cached response to be used.
+    resolvesIssue: false
+    issueLink: https://github.com/solo-io/solo-projects/issues/6783

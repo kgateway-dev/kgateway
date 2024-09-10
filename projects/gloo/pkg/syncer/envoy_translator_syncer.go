@@ -7,29 +7,31 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/solo-io/gloo/pkg/utils/syncutil"
-	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
-	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/hashutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/hashutils"
+	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+
+	"github.com/solo-io/gloo/pkg/utils/syncutil"
+	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
+	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 )
 
 const (
 	// The port used to expose a developer server
+	// Deprecated: https://github.com/solo-io/gloo/issues/6494
 	devModePort = 10010
 )
 
@@ -54,7 +56,7 @@ func init() {
 const emptyVersionKey = "empty"
 
 var (
-	emptyResource = cache.Resources{
+	emptyResource = envoycache.Resources{
 		Version: emptyVersionKey,
 		Items:   map[string]envoycache.Resource{},
 	}
@@ -72,12 +74,14 @@ func measureResource(ctx context.Context, resource string, length int) {
 	}
 }
 
-// syncEnvoy will translate, sanatize, and set the snapshot for each of the proxies, all while merging all the reports into allReports.
+// syncEnvoy will translate, sanitize, and set the snapshot for each of the proxies, all while merging all the reports into allReports.
 func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot, allReports reporter.ResourceReports) {
 	ctx, span := trace.StartSpan(ctx, "gloo.syncer.Sync")
 	defer span.End()
 
+	s.snapshotHistory.SetApiSnapshot(snap)
 	s.latestSnap = snap
+
 	ctx = contextutils.WithLogger(ctx, "envoyTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 	snapHash := hashutils.MustHash(snap)
@@ -104,7 +108,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 			allKeys[key] = false
 		}
 		// Get all valid node ID keys for Proxies
-		for _, key := range xds.SnapshotCacheKeys(utils.GlooEdgeTranslatorValue, snap.Proxies) {
+		for _, key := range xds.SnapshotCacheKeys(snap.Proxies) {
 			allKeys[key] = true
 		}
 		// Get all valid node ID keys for syncerExtensions (rate-limit, ext-auth)
@@ -114,24 +118,27 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 
 		// preserve keys from the current list of proxies, set previous invalid snapshots to empty snapshot
 		for key, valid := range allKeys {
-			if !valid && xds.SnapshotBelongsTo(key, utils.GlooEdgeTranslatorValue) {
+			if !valid {
 				s.xdsCache.SetSnapshot(key, emptySnapshot)
 			}
 		}
 	}
+	var proxiesWithReports []translatorutils.ProxyWithReports
 	for _, proxy := range snap.Proxies {
 		proxyCtx := ctx
-		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(syncerstats.ProxyNameKey, proxy.GetMetadata().Ref().Key())); err == nil {
+		metaKey := xds.SnapshotCacheKey(proxy)
+		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(syncerstats.ProxyNameKey, metaKey)); err == nil {
 			proxyCtx = ctxWithTags
 		}
 
 		params := plugins.Params{
 			Ctx:      proxyCtx,
+			Settings: s.settings,
 			Snapshot: snap,
 			Messages: map[*core.ResourceRef][]string{},
 		}
 
-		xdsSnapshot, reports, _ := s.translator.Translate(params, proxy)
+		xdsSnapshot, reports, proxyReport := s.translator.Translate(params, proxy)
 
 		// Messages are aggregated during translation, and need to be added to reports
 		for _, messages := range params.Messages {
@@ -152,8 +159,15 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 
 		// Merge reports after sanitization to capture changes made by the sanitizers
 		allReports.Merge(reports)
-		key := xds.SnapshotCacheKey(utils.GlooEdgeTranslatorValue, proxy)
+		key := xds.SnapshotCacheKey(proxy)
 		s.xdsCache.SetSnapshot(key, sanitizedSnapshot)
+		proxiesWithReports = append(proxiesWithReports, translatorutils.ProxyWithReports{
+			Proxy: proxy,
+			Reports: translatorutils.TranslationReports{
+				ProxyReport:     proxyReport,
+				ResourceReports: reports,
+			},
+		})
 
 		// Record some metrics
 		clustersLen := len(xdsSnapshot.GetResources(types.ClusterTypeV3).Items)
@@ -175,13 +189,26 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 		logger.Debugf("Full snapshot for proxy %v: %+v", proxy.GetMetadata().GetName(), xdsSnapshot)
 	}
 
+	// Call the callback with the proxies and reports
+	if s.onProxyTranslated != nil {
+		s.onProxyTranslated(ctx, proxiesWithReports)
+	}
+
 	logger.Debugf("gloo reports to be written: %v", allReports)
 }
 
 // ServeXdsSnapshots exposes Gloo configuration as an API when `devMode` in Settings is True.
-// TODO(ilackarms): move this somewhere else, make it part of dev-mode
-// https://github.com/solo-io/gloo/issues/6494
+// Deprecated: https://github.com/solo-io/gloo/issues/6494
+// Prefer to use the iosnapshot.History and pkg/servers/admin
 func (s *translatorSyncer) ServeXdsSnapshots() error {
+	return s.ContextuallyServeXdsSnapshots(context.Background())
+}
+
+// ContextuallyServeXdsSnapshots exposes Gloo configuration as an API when `devMode` in Settings is True.
+// Deprecated: https://github.com/solo-io/gloo/issues/6494
+// Prefer to use the iosnapshot.History and pkg/servers/admin
+func (s *translatorSyncer) ContextuallyServeXdsSnapshots(ctx context.Context) error {
+
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -201,7 +228,15 @@ func (s *translatorSyncer) ServeXdsSnapshots() error {
 		_, _ = fmt.Fprintf(w, "%+v", prettify(s.latestSnap))
 	})
 
-	return http.ListenAndServe(fmt.Sprintf(":%d", devModePort), r)
+	server := &http.Server{Addr: fmt.Sprintf(":%d", devModePort), Handler: r}
+
+	go func() {
+		<-ctx.Done()
+		_ = server.Close()
+	}()
+
+	return server.ListenAndServe()
+
 }
 
 func prettify(original interface{}) string {

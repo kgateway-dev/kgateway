@@ -9,7 +9,7 @@ data from the request, the routing destination, and the response. The proxy can 
 
 An access log may be written locally to a file or the `stdout` pipe in the proxy container, or it can be exported to a gRPC server for custom handling.
 
-With Gloo Edge (starting in `0.18.1`), access logs can be enabled and customized per Envoy listener by modifying the **Gateway** Custom Resource.
+With Gloo Gateway (starting in `0.18.1`), access logs can be enabled and customized per Envoy listener by modifying the **Gateway** Custom Resource.
 
 ## Data Available for Logging
 
@@ -34,18 +34,18 @@ proxy are connection properties: bytes received and sent.
 
 ## File-based Access Logging
 
-File-based access logging can be enabled in Gloo Edge by customizing the **Gateway** CRD. For file-based access logs (also referred to 
+File-based access logging can be enabled in Gloo Gateway by customizing the **Gateway** CRD. For file-based access logs (also referred to 
 as file sink access logs), there are two main configurations to set:
 * Path: This is where the logs are written, either to `/dev/stdout` or to a file that is in a writable volume in the proxy container 
 * Format: This provides a log template for either string or json-formatted logs
 
 ## File-based Standard logging
 
-You can enable file-based standard logging (stdout/stderr) in Gloo Edge during [Helm installation]({{% versioned_link_path fromRoot="/reference/helm_chart_values/enterprise_helm_chart_values/" %}}). For more information about Envoy logging, see [the Envoy docs](https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#envoy-logging).
+You can enable file-based standard logging (stdout/stderr) in Gloo Gateway during [Helm installation]({{% versioned_link_path fromRoot="/reference/helm_chart_values/enterprise_helm_chart_values/" %}}). For more information about Envoy logging, see [the Envoy docs](https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#envoy-logging).
 
 To enable, you use the `--log-path path` Helm setting in the `gloo.gatewayProxies.gatewayProxy.extraEnvoyArgs[]` parameter. Because the filesystem is read-only, you must also mount an additional volume in the `gateway-proxy` deployment.
 
-The following steps show an example for Gloo Edge Enterprise installations. Before you begin, set the Gloo Edge Enterprise version (`$VERSION`) and license key (`$YOUR_LICENSE_KEY`) as variables. For more information or open source steps, see the [Installation guide]({{% versioned_link_path fromRoot="/installation/" %}}).
+The following steps show an example for Gloo Gateway Enterprise installations. Before you begin, set the Gloo Gateway Enterprise version (`$VERSION`) and license key (`$YOUR_LICENSE_KEY`) as variables. For more information or open source steps, see the [Installation guide]({{% versioned_link_path fromRoot="/installation/" %}}).
 
 1. Prepare a Helm values configuration file with override settings such as the following.
    ```yaml
@@ -62,9 +62,9 @@ The following steps show an example for Gloo Edge Enterprise installations. Befo
          extraEnvoyArgs: # Add extra arguments to Envoy.
          -  --log-path /var/log/gloo/envoy_log
    ```
-2. Upgrade or install the Gloo Edge Enterprise Helm chart with your override settings.
+2. Upgrade or install the Gloo Gateway Enterprise Helm chart with your override settings.
    ```bash
-   helm upgrade --install gloo-edge gloo-ee/gloo-ee --namespace gloo-system --set-string license_key=$YOUR_LICENSE_KEY --version $VERSION -f value-overrides.yaml
+   helm upgrade --install gloo-gateway gloo-ee/gloo-ee --namespace gloo-system --set-string license_key=$YOUR_LICENSE_KEY --version $VERSION -f value-overrides.yaml
    ```
 3. Verify that the `gateway-proxy` deployment mounts the logs volumes.
    ```bash
@@ -174,7 +174,7 @@ $ kubectl logs -n gloo-system deploy/gateway-proxy
 [2020-03-17T18:49:55.191Z] "GET /sample-route-1 HTTP/1.1" 200 - 0 86 1 1 "-" "curl/7.54.0" "4a0013d3-f0e6-44b8-ad5f-fa181852e6cd" "35.196.131.38" "10.52.0.54:8080"
 ```
 
-For more details about the Envoy string format, check out the [envoy docs](https://www.envoyproxy.io/docs/envoy/v1.10.0/configuration/access_log#config-access-log-format-strings). 
+For more details about the Envoy string format, check out the [envoy docs](https://www.envoyproxy.io/docs/envoy/v1.30.2/configuration/observability/access_log/usage#format-strings). 
 
 ### Outputting structured json
 
@@ -272,7 +272,7 @@ as writing them to a file in the access log gRPC service container, or sending t
 
 ### Deploying the open source gRPC access logger
 
-Open source Gloo Edge includes an optional gRPC access log server implementation that can be turned on and deployed using
+Open source Gloo Gateway includes an optional gRPC access log server implementation that can be turned on and deployed using
 the following helm values:
 
 ```yaml
@@ -353,13 +353,13 @@ The code for this server implementation is available [here](https://github.com/s
 
 ### Building a custom service
 
-If you are building a custom access logging gRPC service, you will need get it deployed alongside Gloo Edge. The Envoy
-config (that Gloo Edge stores in `gateway-proxy-envoy-config`) will need to include a new static cluster pointing to your 
+If you are building a custom access logging gRPC service, you will need get it deployed alongside Gloo Gateway. The Envoy
+config (that Gloo Gateway stores in `gateway-proxy-envoy-config`) will need to include a new static cluster pointing to your 
 custom access log server. Once you have a named static cluster in your envoy config, you can reference it in 
 your **gateway** CRD. 
 
-The Gloo Edge access logger was written to be customizable with callbacks, so it may provide a useful starting point. Feel free
-to open an issue in the Gloo Edge repo to track improvements to the existing implementation. 
+The Gloo Gateway access logger was written to be customizable with callbacks, so it may provide a useful starting point. Feel free
+to open an issue in the Gloo Gateway repo to track improvements to the existing implementation. 
 
 To verify your Envoy access logging configuration, use `glooctl check`. If there is a problem configuring the Envoy 
 listener with your custom access logging server, it should be reported there. 

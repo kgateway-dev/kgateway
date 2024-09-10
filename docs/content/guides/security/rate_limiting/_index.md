@@ -12,12 +12,12 @@ Incoming requests can be numerous and varied -- protecting backend services and 
 can become incredibly complex being handled at the application level. Using an API gateway we can define client
 request limits to these varied services in one place.
 
-#### Rate Limiting in Gloo Edge
+#### Rate Limiting in Gloo Gateway
 
-Gloo Edge exposes Envoy's rate-limit API, which allows users to provide their own implementation of an Envoy gRPC rate-limit
+Gloo Gateway exposes Envoy's rate-limit API, which allows users to provide their own implementation of an Envoy gRPC rate-limit
 service. Lyft provides an example implementation of this gRPC rate-limit service
-[here](https://github.com/lyft/ratelimit). To configure Gloo Edge to use your rate-limit server implementation,
-install Gloo Edge gateway and then modify the settings to use your rate limit server upstream:
+[here](https://github.com/lyft/ratelimit). To configure Gloo Gateway to use your rate-limit server implementation,
+install Gloo Gateway and then modify the settings to use your rate limit server upstream:
 
 Open editor to modify the settings:
 ```shell script
@@ -66,16 +66,16 @@ This necessarily means the loss of extauth-aware rate limiting features, like pr
 vs non-authenticated users.
 {{% /notice %}}
 
-Gloo Edge Enterprise provides an enhanced version of [Lyft's rate limit service](https://github.com/lyft/ratelimit) that
+Gloo Gateway Enterprise provides an enhanced version of [Lyft's rate limit service](https://github.com/lyft/ratelimit) that
 supports the full Envoy rate limit server API (with some additional enhancements, e.g. rule priority), as well as a
-simplified API built on top of this service. Gloo Edge uses this rate-limit service to enforce rate-limits. The rate-limit
-service can work in tandem with the Gloo Edge external auth service to define separate rate-limit policies for authorized &
-unauthorized users. The Gloo Edge Enteprise rate-limit service is enabled and configured by default, no configuration is needed
-to point Gloo Edge toward the rate-limit service.
+simplified API built on top of this service. Gloo Gateway uses this rate-limit service to enforce rate-limits. The rate-limit
+service can work in tandem with the Gloo Gateway external auth service to define separate rate-limit policies for authorized &
+unauthorized users. The Gloo Gateway Enteprise rate-limit service is enabled and configured by default, no configuration is needed
+to point Gloo Gateway toward the rate-limit service.
 
 ### Logging
 
-If Gloo Edge is running on kubernetes, the rate limiting logs can be viewed with:
+If Gloo Gateway is running on kubernetes, the rate limiting logs can be viewed with:
 ```
 kubectl logs -n gloo-system deploy/rate-limit -f
 ```
@@ -91,7 +91,7 @@ When it starts up correctly, you should see a log line similar to:
 Setting the value `enableXRatelimitHeaders` to true will configure Envoy to return the headers defined in their [rate limit API](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ratelimit/v3/rate_limit.proto.html#envoy-v3-api-field-extensions-filters-http-ratelimit-v3-ratelimit-enable-x-ratelimit-headers)
 to the downstream.
 
-Check out the guides for each of the Gloo Edge rate-limit APIs and configuration options for Gloo Edge Enterprise's rate-limit
+Check out the guides for each of the Gloo Gateway rate-limit APIs and configuration options for Gloo Gateway Enterprise's rate-limit
 service:
 
 {{% children description="true" %}}

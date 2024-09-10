@@ -1225,6 +1225,12 @@ func (m *GlooOptions_IstioOptions) Clone() proto.Message {
 		target.EnableAutoMtls = proto.Clone(m.GetEnableAutoMtls()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
+	if h, ok := interface{}(m.GetEnableIntegration()).(clone.Cloner); ok {
+		target.EnableIntegration = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.EnableIntegration = proto.Clone(m.GetEnableIntegration()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	return target
 }
 
@@ -1278,6 +1284,12 @@ func (m *GatewayOptions_ValidationOptions) Clone() proto.Message {
 		target.ServerEnabled = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	} else {
 		target.ServerEnabled = proto.Clone(m.GetServerEnabled()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
+	if h, ok := interface{}(m.GetWarnMissingTlsSecret()).(clone.Cloner); ok {
+		target.WarnMissingTlsSecret = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.WarnMissingTlsSecret = proto.Clone(m.GetWarnMissingTlsSecret()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
 	return target

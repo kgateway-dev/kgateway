@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 
 	"github.com/ghodss/yaml"
 
@@ -54,8 +55,8 @@ var (
 	resourceTypeKey, _ = tag.NewKey("resource_type")
 	resourceRefKey, _  = tag.NewKey("resource_ref")
 
-	mGatewayResourcesAccepted = utils.MakeSumCounter("validation.gateway.solo.io/resources_accepted", "The number of resources accepted")
-	mGatewayResourcesRejected = utils.MakeSumCounter("validation.gateway.solo.io/resources_rejected", "The number of resources rejected")
+	mGatewayResourcesAccepted = statsutils.MakeSumCounter("validation.gateway.solo.io/resources_accepted", "The number of resources accepted")
+	mGatewayResourcesRejected = statsutils.MakeSumCounter("validation.gateway.solo.io/resources_rejected", "The number of resources rejected")
 
 	unmarshalErrMsg     = "could not unmarshal raw object"
 	UnmarshalErr        = errors.New(unmarshalErrMsg)
@@ -75,7 +76,7 @@ const (
 )
 
 func incrementMetric(ctx context.Context, resource string, ref *core.ResourceRef, m *stats.Int64Measure) {
-	utils.MeasureOne(
+	statsutils.MeasureOne(
 		ctx,
 		m,
 		tag.Insert(resourceTypeKey, resource),
@@ -99,9 +100,19 @@ type WebhookConfig struct {
 	alwaysAccept                  bool // accept all resources
 	readGatewaysFromAllNamespaces bool
 	webhookNamespace              string
+	kubeGatewayEnabled            bool
 }
 
-func NewWebhookConfig(ctx context.Context, validator validation.Validator, watchNamespaces []string, port int, serverCertPath, serverKeyPath string, alwaysAccept, readGatewaysFromAllNamespaces bool, webhookNamespace string) WebhookConfig {
+func NewWebhookConfig(
+	ctx context.Context,
+	validator validation.Validator,
+	watchNamespaces []string,
+	port int,
+	serverCertPath, serverKeyPath string,
+	alwaysAccept, readGatewaysFromAllNamespaces bool,
+	webhookNamespace string,
+	kubeGatewayEnabled bool,
+) WebhookConfig {
 	return WebhookConfig{
 		ctx:                           ctx,
 		validator:                     validator,
@@ -111,7 +122,9 @@ func NewWebhookConfig(ctx context.Context, validator validation.Validator, watch
 		serverKeyPath:                 serverKeyPath,
 		alwaysAccept:                  alwaysAccept,
 		readGatewaysFromAllNamespaces: readGatewaysFromAllNamespaces,
-		webhookNamespace:              webhookNamespace}
+		webhookNamespace:              webhookNamespace,
+		kubeGatewayEnabled:            kubeGatewayEnabled,
+	}
 }
 
 func NewGatewayValidatingWebhook(cfg WebhookConfig) (*http.Server, error) {
@@ -124,6 +137,7 @@ func NewGatewayValidatingWebhook(cfg WebhookConfig) (*http.Server, error) {
 	alwaysAccept := cfg.alwaysAccept
 	readGatewaysFromAllNamespaces := cfg.readGatewaysFromAllNamespaces
 	webhookNamespace := cfg.webhookNamespace
+	kubeGatewayEnabled := cfg.kubeGatewayEnabled
 
 	certProvider, err := NewCertificateProvider(serverCertPath, serverKeyPath, log.New(&debugLogger{ctx: ctx}, "validation-webhook-certificate-watcher", log.LstdFlags), ctx, 10*time.Second)
 	if err != nil {
@@ -137,6 +151,7 @@ func NewGatewayValidatingWebhook(cfg WebhookConfig) (*http.Server, error) {
 		alwaysAccept,
 		readGatewaysFromAllNamespaces,
 		webhookNamespace,
+		kubeGatewayEnabled,
 	)
 
 	mux := http.NewServeMux()
@@ -165,6 +180,7 @@ type gatewayValidationWebhook struct {
 	alwaysAccept                  bool                 // read only so no races
 	readGatewaysFromAllNamespaces bool                 // read only so no races
 	webhookNamespace              string               // read only so no races
+	kubeGatewayEnabled            bool                 // read only so no races
 }
 
 type AdmissionReviewWithProxies struct {
@@ -183,13 +199,24 @@ type AdmissionResponseWithProxies struct {
 	Proxies []*gloov1.Proxy `json:"proxies,omitempty"`
 }
 
-func NewGatewayValidationHandler(ctx context.Context, validator validation.Validator, watchNamespaces []string, alwaysAccept bool, readGatewaysFromAllNamespaces bool, webhookNamespace string) *gatewayValidationWebhook {
-	return &gatewayValidationWebhook{ctx: ctx,
+func NewGatewayValidationHandler(
+	ctx context.Context,
+	validator validation.Validator,
+	watchNamespaces []string,
+	alwaysAccept bool,
+	readGatewaysFromAllNamespaces bool,
+	webhookNamespace string,
+	kubeGatewayEnabled bool,
+) *gatewayValidationWebhook {
+	return &gatewayValidationWebhook{
+		ctx:                           ctx,
 		validator:                     validator,
 		watchNamespaces:               watchNamespaces,
 		alwaysAccept:                  alwaysAccept,
 		readGatewaysFromAllNamespaces: readGatewaysFromAllNamespaces,
-		webhookNamespace:              webhookNamespace}
+		webhookNamespace:              webhookNamespace,
+		kubeGatewayEnabled:            kubeGatewayEnabled,
+	}
 }
 
 func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -441,6 +468,11 @@ func (wh *gatewayValidationWebhook) validateGvk(ctx context.Context, gvk schema.
 	var reports *validation.Reports
 	newResourceFunc := gloosnapshot.ApiGvkToHashableResource[gvk]
 
+	// check to see if we should perform validation for this GVK
+	if !wh.shouldValidateGvk(gvk) {
+		return nil, nil
+	}
+
 	newResource := newResourceFunc()
 	oldResource := newResourceFunc()
 
@@ -475,6 +507,17 @@ func (wh *gatewayValidationWebhook) validateList(ctx context.Context, rawJson []
 	return reports, nil
 }
 
+func (wh *gatewayValidationWebhook) shouldValidateGvk(gvk schema.GroupVersionKind) bool {
+	if gvk == gwv1.RouteOptionGVK || gvk == gwv1.VirtualHostOptionGVK {
+		// only validate RouteOption and VirtualHostOption resources if K8s Gateway is enabled
+		return wh.kubeGatewayEnabled
+	}
+
+	// no other special considerations at this point, so continue with validation
+	return true
+}
+
+// shouldValidateResource determines if a resource should be validated AND populates `resource` (and `oldResource` if applicable) from the objects[s] in the `admissionRequest`
 func (wh *gatewayValidationWebhook) shouldValidateResource(ctx context.Context, admissionRequest *v1beta1.AdmissionRequest, resource, oldResource resources.HashableResource) (bool, error) {
 	logger := contextutils.LoggerFrom(ctx)
 

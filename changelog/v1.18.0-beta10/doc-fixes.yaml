@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >- 
+      Minor doc fixes (links, typos, etc). 
+      skipCI-kube-tests:true

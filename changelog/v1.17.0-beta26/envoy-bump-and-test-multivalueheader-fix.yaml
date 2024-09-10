@@ -1,0 +1,11 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: envoy-gloo
+    dependencyTag: v1.29.3-patch2
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/8867
+    resolvesIssue: false
+    description: >-
+      Fix a bug where Lambdas returning multiValueHeaders with non-string type with `unwrapAsApiGateway` enabled 
+      would result in a 500 response to the caller

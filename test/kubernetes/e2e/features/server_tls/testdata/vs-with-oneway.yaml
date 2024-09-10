@@ -1,0 +1,21 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: vs-with-oneway
+spec:
+  sslConfig:
+    sniDomains:
+      - vs-with-oneway
+    oneWayTls: true
+    secretRef:
+      name: tls-secret-with-ca
+      namespace: ${INSTALL_NAMESPACE}
+  virtualHost:
+    domains:
+    - 'vs-with-oneway'
+    routes:
+    - matchers:
+      - exact: /
+      directResponseAction:
+        status: 200
+        body: "success from vs-with-oneway"

@@ -1,5 +1,0 @@
-gloo:
-  deployment:
-    customEnv:
-    - name: GG_EXPERIMENTAL_K8S_GW_CONTROLLER
-      value: "true"

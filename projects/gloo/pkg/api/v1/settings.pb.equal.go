@@ -2121,6 +2121,16 @@ func (m *GlooOptions_IstioOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetEnableIntegration()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetEnableIntegration()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetEnableIntegration(), target.GetEnableIntegration()) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -2217,6 +2227,16 @@ func (m *GatewayOptions_ValidationOptions) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetServerEnabled(), target.GetServerEnabled()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetWarnMissingTlsSecret()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetWarnMissingTlsSecret()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetWarnMissingTlsSecret(), target.GetWarnMissingTlsSecret()) {
 			return false
 		}
 	}

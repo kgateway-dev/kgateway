@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6121
+    resolvesIssue: false
+    description: >-
+      "Route delegation: update status message for cyclic references and tweak test manifests so that they do not cleanup resources referenced in the common manifest."

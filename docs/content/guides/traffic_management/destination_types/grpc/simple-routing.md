@@ -1,10 +1,10 @@
 ---
 title: Set up routing to gRPC services
 weight: 20
-description: Use a demo app to explore how to set up routing to a gRPC upstream in Gloo Edge. 
+description: Use a demo app to explore how to set up routing to a gRPC upstream in Gloo Gateway. 
 ---
 
-In this guide, you learn how to expose a gRPC `Upstream` through a Gloo Edge `Virtual Service`, and connect to it with a gRPC client. Then, you explore how to secure the communication between the gRPC client and the Envoy proxy by using TLS certificates. 
+In this guide, you learn how to expose a gRPC `Upstream` through a Gloo Gateway `Virtual Service`, and connect to it with a gRPC client. Then, you explore how to secure the communication between the gRPC client and the Envoy proxy by using TLS certificates. 
 
 The following tasks are included in this guide: 
 
@@ -17,7 +17,7 @@ The following tasks are included in this guide:
 Make sure to complete the following tasks before you get started with this guide. 
 
 - Create or use an existing [Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}). 
-- [Install Gloo Edge 1.14 or later]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
+- [Install Gloo Gateway 1.14 or later]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
 - [Install `grpcurl`](https://github.com/fullstorydev/grpcurl) to act as the gRPC client. 
 - Install `openssl` to generate self-signed TLS certificates. For example, to install `openssl` on a Mac, run `brew install openssl`. 
 
@@ -31,12 +31,12 @@ Use the gRPC Store app to explore how to set up routing to gRPC services.
    kubectl expose deployment grpcstore-demo --port 80 --target-port=8080
    ```
    
-2. Verify that Gloo Edge automatically discovered the gRPC app and created an upstream for it. 
+2. Verify that Gloo Gateway automatically discovered the gRPC app and created an upstream for it. 
    ```shell
    kubectl get upstream -n gloo-system default-grpcstore-demo-80
    ```
    
-3. Enable Gloo Edge function discovery (FDS) so the proto descriptor can be found. The proto descriptor binary includes the gRPC functions that are available in the store service as well as any HTTP mappings that were added for HTTP to gRPC transcoding. For more information, see [gRPC transcoding]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc/about/#grpc-transcoding" %}}). 
+3. Enable Gloo Gateway function discovery (FDS) so the proto descriptor can be found. The proto descriptor binary includes the gRPC functions that are available in the store service as well as any HTTP mappings that were added for HTTP to gRPC transcoding. For more information, see [gRPC transcoding]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc/about/#grpc-transcoding" %}}). 
    ```shell
    kubectl label upstream -n gloo-system default-grpcstore-demo-80 discovery.solo.io/function_discovery=enabled
    ```
@@ -87,6 +87,18 @@ status:
     gloo-system:
       reportedBy: gloo
       state: 1
+    details:
+      fields:
+        functionNames:
+          structValue:
+            fields:
+              solo.examples.v1.StoreService:
+                listValue:
+                  values:
+                    - stringValue: CreateItem
+                    - stringValue: ListItems
+                    - stringValue: DeleteItem
+                    - stringValue: GetItem
    {{< /highlight >}}
 
 5. Optional: Decode the `spec.kube.serviceSpec.grpcJsonTanscoder` proto descriptor field. Note that the field is truncated in the example command. Make sure to add the entire `spec.kube.serviceSpec.grpcJsonTanscoder` value to this command. 
@@ -125,14 +137,9 @@ status:
               services:
               - solo.examples.v1.StoreService
         useHttp2: true
-      status:
-        statuses:
-          gloo-system:
-            reportedBy: gloo
-            state: Accepted
       {{< /highlight >}}
 
-7. Create the virtual service so that you can route incoming requests to the gRPC store app. The virtual service assumes that you use the `gloo-system` namespace for your Gloo Edge installation. In this configuration, the prefix `/` is matched for all domains. 
+7. Create the virtual service so that you can route incoming requests to the gRPC store app. The virtual service assumes that you use the `gloo-system` namespace for your Gloo Gateway installation. In this configuration, the prefix `/` is matched for all domains. 
    ```
    kubectl apply -f- <<EOF
    apiVersion: gateway.solo.io/v1
@@ -360,6 +367,6 @@ Enable encryption between the gRPC client and the Envoy proxy on a specific doma
 
 ## Summary and next steps
 
-Excellent! In this guide, you explored how to connect to a gRPC Upstream from a gRPC client by using Gloo Edge. You also learned how to limit routing to certain domains and how to secure the connection between the gRPC client and your upstream with TLS certificates. 
+Excellent! In this guide, you explored how to connect to a gRPC Upstream from a gRPC client by using Gloo Gateway. You also learned how to limit routing to certain domains and how to secure the connection between the gRPC client and your upstream with TLS certificates. 
 
-To learn how to connect to a gRPC upstream through Gloo Edge by using a REST API, check out the [Transcode HTTP requests to gRPC]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc/grpc-transcoding" %}}) guide. For more information about how to further secure your Gloo Edge deployment, see the [Network Encryption]({{% versioned_link_path fromRoot="/guides/security/tls/" %}}) guides. 
+To learn how to connect to a gRPC upstream through Gloo Gateway by using a REST API, check out the [Transcode HTTP requests to gRPC]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc/grpc-transcoding" %}}) guide. For more information about how to further secure your Gloo Gateway deployment, see the [Network Encryption]({{% versioned_link_path fromRoot="/guides/security/tls/" %}}) guides. 

@@ -21,6 +21,8 @@ weight: 5
 - [ObjectSelector](#objectselector)
 - [Expression](#expression)
 - [Operator](#operator)
+- [PolicyTargetReference](#policytargetreference)
+- [PolicyTargetReferenceWithSectionName](#policytargetreferencewithsectionname)
   
 
 
@@ -245,6 +247,66 @@ Object Selector expression operator, while the set-based syntax differs from Kub
 | `DoesNotExist` | ! |
 | `GreaterThan` | gt |
 | `LessThan` | lt |
+
+
+
+
+---
+### PolicyTargetReference
+
+ 
+PolicyTargetReference identifies Gateway API objects to directly apply policy to.
+This is a copy of the upstream K8s Gateway API `targetRef` API.
+See the following for more information:
+* https://gateway-api.sigs.k8s.io/geps/gep-713/
+* https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io%2fv1alpha2.PolicyTargetReference
+* https://github.com/kubernetes-sigs/gateway-api/blob/b4f0307cc9269e73187300e72979e7e111ab74ab/apis/v1alpha2/policy_types.go#L34-L56
+
+```yaml
+"group": string
+"kind": string
+"name": string
+"namespace": .google.protobuf.StringValue
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `group` | `string` |  |
+| `kind` | `string` |  |
+| `name` | `string` |  |
+| `namespace` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Optional, if unspecified, the local namespace of the policy is inferred. |
+
+
+
+
+---
+### PolicyTargetReferenceWithSectionName
+
+ 
+PolicyTargetReferenceWithSectionName identifies Gateway API objects, and optionally a specific section of those objects, to directly apply policy to.
+This is a copy of the upstream K8s Gateway API `targetRef` API.
+See the following for more information:
+* https://gateway-api.sigs.k8s.io/geps/gep-713/
+* https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io%2fv1alpha2.PolicyTargetReferenceWithSectionName
+* https://github.com/kubernetes-sigs/gateway-api/blob/b4f0307cc9269e73187300e72979e7e111ab74ab/apis/v1alpha2/policy_types.go#L58-L83
+
+```yaml
+"group": string
+"kind": string
+"name": string
+"namespace": .google.protobuf.StringValue
+"sectionName": .google.protobuf.StringValue
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `group` | `string` |  |
+| `kind` | `string` |  |
+| `name` | `string` |  |
+| `namespace` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Optional, if unspecified, the local namespace of the policy is inferred. |
+| `sectionName` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Name of the section within the targeted resource to attach to. For `Gateway` resources, this refers to a `Listener` name. Optional, if unspecified, the entire object referenced is selected. |
 
 
 

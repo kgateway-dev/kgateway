@@ -9,6 +9,7 @@ option (extproto.hash_all) = true;
 option (extproto.clone_all) = true;
 
 import "google/protobuf/wrappers.proto";
+import "google/protobuf/struct.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/service_spec.proto";
 import "validate/validate.proto";
 
@@ -64,4 +65,11 @@ message Host {
 
     // (Enterprise Only): Host specific health checking configuration.
     HealthCheckConfig health_check_config = 3;
+
+    // Additional metadata to add to the endpoint. This metadata can be used in upstream HTTP filters
+    // or other specific Envoy configurations.
+    // The following keys are added by Gloo Edge and are ignored if set:
+    // - "envoy.transport_socket_match"
+    // - "io.solo.health_checkers.advanced_http"
+    map<string, google.protobuf.Struct> metadata = 6;
 }

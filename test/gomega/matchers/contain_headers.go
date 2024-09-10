@@ -42,7 +42,7 @@ func ConsistOfHeaders(headers http.Header) types.GomegaMatcher {
 	return gomega.And(headerMatchers...)
 }
 
-// ContainHeaders produces a matcher that will only match if all provided header keys exist.
+// ContainHeaderKeys produces a matcher that will only match if all provided header keys exist.
 func ContainHeaderKeys(keys []string) types.GomegaMatcher {
 	if len(keys) == 0 {
 		// If no keys are defined, we create a matcher that always succeeds
@@ -55,4 +55,20 @@ func ContainHeaderKeys(keys []string) types.GomegaMatcher {
 	//nolint:bodyclose // The caller of this matcher constructor should be responsible for ensuring the body close
 	matcher := gomega.WithTransform(transforms.WithHeaderKeys(), gomega.ContainElements(keys))
 	return gomega.And(matcher)
+}
+
+// ContainHeaderKeysExact produces a matcher that will only match if all provided header keys exist and no others.
+func ContainHeaderKeysExact(keys []string) types.GomegaMatcher {
+	if len(keys) == 0 {
+		// If no keys are defined, we create a matcher that always succeeds
+		return gstruct.Ignore()
+	}
+	for i, key := range keys {
+		keys[i] = textproto.CanonicalMIMEHeaderKey(key)
+	}
+	//nolint:bodyclose // The caller of this matcher constructor should be responsible for ensuring the body close
+	lenMatcher := gomega.WithTransform(transforms.WithHeaderKeys(), gomega.HaveLen(len(keys)))
+	//nolint:bodyclose // The caller of this matcher constructor should be responsible for ensuring the body close
+	keyMatcher := gomega.WithTransform(transforms.WithHeaderKeys(), gomega.ContainElements(keys))
+	return gomega.And(lenMatcher, keyMatcher)
 }

@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/solo-io/gloo/pkg/utils/helmutils"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options/contextoptions"
 
 	"github.com/ghodss/yaml"
@@ -27,8 +29,7 @@ var (
 )
 
 const (
-	betaMessage   = "NOTE: this feature is still in beta and may return false positives, if this is suspected use the --show-yaml flag and inspect CRDs manually\n "
-	helmChartRepo = "https://storage.googleapis.com/solo-public-helm/charts/"
+	betaMessage = "NOTE: this feature is still in beta and may return false positives, if this is suspected use the --show-yaml flag and inspect CRDs manually\n "
 )
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
@@ -48,6 +49,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	flagutils.AddVersionFlag(pflags, &opts.CheckCRD.Version)
 	flagutils.AddLocalChartFlag(pflags, &opts.CheckCRD.LocalChart)
 	flagutils.AddShowYamlFlag(pflags, &opts.CheckCRD.ShowYaml)
+	flagutils.AddNamespaceFlag(pflags, &opts.Metadata.Namespace)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
@@ -60,7 +62,7 @@ func CheckCRDS(opts *options.Options) error {
 	if err != nil {
 		return err
 	}
-	chartPath := helmChartRepo + "gloo-" + version + ".tgz"
+	chartPath := helmutils.GetRemoteChartUri(version)
 	if opts.CheckCRD.LocalChart != "" {
 		chartPath = opts.CheckCRD.LocalChart
 	}

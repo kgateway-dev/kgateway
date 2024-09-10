@@ -1,18 +1,18 @@
 ---
 title: Authenticate with Auth0
 weight: 10
-description: Integrating Gloo Edge and Auth0 for identity management
+description: Integrating Gloo Gateway and Auth0 for identity management
 ---
 
 [Auth0](https://auth0.com) is an [OpenID Connect](https://openid.net) identity hub. Auth0 can be used to expose a consistent OIDC interface to your applications while allowing your users to authenticate using credentials managed by Auth0.
 
 In this guide we will see how to authenticate users with your application via an OIDC flow that uses Auth0 as the identity provider. This guide is an example to get you started for test purposes with Auth0.  It omits many of the factors that need to be considered for full production deployments.
 
-First, we will use Gloo Edge to expose a simple [httpbin](https://httpbin.org/) Service running on Kubernetes.
+First, we will use Gloo Gateway to expose a simple [httpbin](https://httpbin.org/) Service running on Kubernetes.
 
-Second, we’ll secure the access using Auth0 OIDC.  Auth0 will return a JWT token, and we’ll use Gloo Edge to extract some claims from this token create new headers corresponding to these claims.
+Second, we’ll secure the access using Auth0 OIDC.  Auth0 will return a JWT token, and we’ll use Gloo Gateway to extract some claims from this token create new headers corresponding to these claims.
 
-Finally, we’ll see how Gloo Edge RBAC rules can be created to leverage the claims contained in the JWT token.
+Finally, we’ll see how Gloo Gateway RBAC rules can be created to leverage the claims contained in the JWT token.
 
 ## Expose a Kubernetes Service
 
@@ -30,7 +30,7 @@ This example was created and tested using a GKE cluster running k8s v1.18.12, bu
 
 ### Verify the Upstream
 
-Gloo Edge discovers Kubernetes services automatically.  So, running the `glooctl get upstreams` command, you should be able to see a new Gloo Edge Upstream `default-httpbin-8000`, based on the naming convention `namespace-serviceName-portNumber`:
+Gloo Gateway discovers Kubernetes services automatically.  So, running the `glooctl get upstreams` command, you should be able to see a new Gloo Gateway Upstream `default-httpbin-8000`, based on the naming convention `namespace-serviceName-portNumber`:
 
 ```shell
 % glooctl get upstreams default-httpbin-8000
@@ -48,7 +48,7 @@ Gloo Edge discovers Kubernetes services automatically.  So, running the `glooctl
 
 ### Create the Virtual Service
 
-Use `kubectl` to create the following Gloo Edge Virtual Service that will route all requests from domain `glootest.com` to the new Upstream.
+Use `kubectl` to create the following Gloo Gateway Virtual Service that will route all requests from domain `glootest.com` to the new Upstream.
 
 ```yaml
 apiVersion: gateway.solo.io/v1
@@ -70,7 +70,7 @@ spec:
             namespace: gloo-system
 ```
 
-Run the following `glooctl` command to confirm that the new Route was accepted by Gloo Edge.
+Run the following `glooctl` command to confirm that the new Route was accepted by Gloo Gateway.
 
 ```shell
 % glooctl get virtualservice httpbin-auth0-vs
@@ -196,7 +196,7 @@ Finally, we will use `curl` to confirm that we can access the new https endpoint
 
 ## Authenticate with Auth0 OIDC
 
-In this section, we will establish an Auth0 account and application, then modify our Gloo Edge configuration to authenticate using Auth0.
+In this section, we will establish an Auth0 account and application, then modify our Gloo Gateway configuration to authenticate using Auth0.
 
 ### Establish Auth0 Account
 
@@ -212,9 +212,9 @@ For new developer accounts, you need to establish one or more Auth0 users for te
 
 ### Establish Auth0 Application
 
-You will need to establish an Auth0 application to integrate with Gloo Edge.  In this guide we prioritized providing a quickstart for testing over production readiness.  In establishing the Auth0 application from the dashboard wizard, we defined this as a `Regular Web Application` type application and gave the application a name `GlooTest`.  Other possibilities we did not test were `Machine to Machine`, `Native`, and `Single Page Application`.
+You will need to establish an Auth0 application to integrate with Gloo Gateway.  In this guide we prioritized providing a quickstart for testing over production readiness.  In establishing the Auth0 application from the dashboard wizard, we defined this as a `Regular Web Application` type application and gave the application a name `GlooTest`.  Other possibilities we did not test were `Machine to Machine`, `Native`, and `Single Page Application`.
 
-For the "What technology are you using for your project?" question, we chose `Apache`, although that choice had no noticeable impact on our Gloo Edge setup.
+For the "What technology are you using for your project?" question, we chose `Apache`, although that choice had no noticeable impact on our Gloo Gateway setup.
 
 Beyond that, we changed only one of the default settings from the new-application wizard: `Allowed Callback URLs`, for which we provided a single value `https://glootest.com/callback`.  For more details on creating `Regular Web Application` integrations with Auth0, we found [this guide](https://auth0.com/docs/applications/set-up-an-application/register-regular-web-applications) helpful.
 
@@ -226,9 +226,9 @@ Finally, ensure from the Auth0 application's `Users` tab that at least some of y
 
 ![Auth0 Application Assignments](./auth0-app-assignments.png)
 
-### Establish Gloo Edge AuthConfig for Auth0 App
+### Establish Gloo Gateway AuthConfig for Auth0 App
 
-In this section we will establish the OAuth secret and an AuthConfig resource to connect Gloo Edge with the OIDC provider.  Be sure to have your Auth0 client ID and client secret ready, available from the details page for your Auth0 application, under `Basic Information`.
+In this section we will establish the OAuth secret and an AuthConfig resource to connect Gloo Gateway with the OIDC provider.  Be sure to have your Auth0 client ID and client secret ready, available from the details page for your Auth0 application, under `Basic Information`.
 
 Create the oauth secret in Kubernetes using `glooctl` with the Auth0 application secret.
 
@@ -243,7 +243,7 @@ Create the oauth secret in Kubernetes using `glooctl` with the Auth0 application
 +---------------------+-------+
 ```
 
-Create a Gloo Edge AuthConfig object to finish connecting the gateway to the OIDC provider.  Use `kubectl` to apply this change.
+Create a Gloo Gateway AuthConfig object to finish connecting the gateway to the OIDC provider.  Use `kubectl` to apply this change.
 
 ```yaml
 apiVersion: enterprise.gloo.solo.io/v1
@@ -338,7 +338,7 @@ After this callback, the normal request flow continues and the upstream `httpbin
 
 ![GlooTest Response](./auth0-glootest-get-1.png)
 
-You can also test other `httpbin` endpoints via the Gloo Edge gateway.  For example, consider this base64 conversion service endpoint:  https://glootest.com/base64/R2xvbyBpcyBhd2Vzb21lCg==
+You can also test other `httpbin` endpoints via the gateway.  For example, consider this base64 conversion service endpoint:  https://glootest.com/base64/R2xvbyBpcyBhd2Vzb21lCg==
 
 ![GlooTest Base64 Conversion](./httpbin-base64.png)
 
@@ -357,7 +357,7 @@ The `id_token` contains a [JWT](https://jwt.io/) from which we can extract claim
 
 It will use a regular expression to extract the JWT token from the Cookie header.  Then it will create a new `Jwt` header containing the token.  Finally, we will remove the cookie header from the request.
 
-Apply these transformation changes to the Gloo Edge Virtual Service.
+Apply these transformation changes to the Gloo Gateway Virtual Service.
 
 {{< highlight yaml "hl_lines=27-42" >}}
 apiVersion: gateway.solo.io/v1
@@ -416,7 +416,7 @@ If we paste the contents of the `Jwt` header into the JWT decoder at jwt.io, we 
 
 In this section, we will use JWKS (JSON Web Key Set) to transform the JWT we extracted from the Auth0 callback into a specific `email` header that can drive fine-grained authorization decisions.  Auth0 publishes a read-only JWKS endpoint where public keys can be extracted that allow us to decode our JWT and then place its claims into request headers.  Details about how Auth0 publishes its JWKS keys is available [here](https://auth0.com/docs/tokens/json-web-tokens/json-web-key-sets).
 
-First, we need to specify a Gloo Edge Upstream that exposes the JWKS endpoint that Auth0 publishes for our development account.  Use `kubectl` to apply this Upstream to our cluster.
+First, we need to specify a Gloo Gateway Upstream that exposes the JWKS endpoint that Auth0 publishes for our development account.  Use `kubectl` to apply this Upstream to our cluster.
 
 ```yaml
 apiVersion: gloo.solo.io/v1
@@ -594,7 +594,7 @@ Let's briefly review where we are.  The request flow that we have constructed so
 
 While this approach is functional, some users will raise concerns about its security and scalability.  From a security standpoint, many will balk at holding bearer token information in the web browser.  They prefer the actual token to be stored on the server side with a simple pointer to it managed by the browser.  In addition, for some users this approach doesn't scale well to production deployments because a JWT with many claims can exceed cookie size thresholds enforced by web browsers.
 
-For these reasons, Gloo offers a facility that allows users to cache the actual token in the Gloo Edge Redis instance with only a handle stored in the browser.  Note that you are not restricted to using the bundled Redis; you can point this configuration at any valid instance.
+For these reasons, Gloo offers a facility that allows users to cache the actual token in the Gloo Gateway Redis instance with only a handle stored in the browser.  Note that you are not restricted to using the bundled Redis; you can point this configuration at any valid instance.
 
 To demonstrate JWT caching, we will expand our AuthConfig to use the bundled Redis to store our access token and simply hold a reference to it in a cookie named `auth0-session`.  Apply these changes to your cluster.
 

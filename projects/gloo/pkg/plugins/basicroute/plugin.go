@@ -5,13 +5,16 @@ import (
 	"fmt"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_retry_priorities_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/retry/priority/previous_priorities/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/upgradeconfig"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
@@ -21,7 +24,8 @@ var (
 )
 
 const (
-	ExtensionName = "basic_route"
+	ExtensionName                   = "basic_route"
+	PreviousPrioritiesExtensionName = "envoy.retry_priorities.previous_priorities"
 )
 
 // Handles a RoutePlugin APIs which map directly to basic Envoy config
@@ -227,7 +231,14 @@ func applyHostRewrite(ctx context.Context, in *v1.Route, out *envoy_config_route
 		routeAction.Route.HostRewriteSpecifier = &envoy_config_route_v3.RouteAction_AutoHostRewrite{
 			AutoHostRewrite: rewriteType.AutoHostRewrite,
 		}
-
+	case *v1.RouteOptions_HostRewriteHeader:
+		err := headers.ValidateHeaderKey(rewriteType.HostRewriteHeader.GetValue())
+		if err != nil {
+			return err
+		}
+		routeAction.Route.HostRewriteSpecifier = &envoy_config_route_v3.RouteAction_HostRewriteHeader{
+			HostRewriteHeader: rewriteType.HostRewriteHeader.GetValue(),
+		}
 	case *v1.RouteOptions_HostRewritePathRegex:
 		regex, err := ConvertRegexMatchAndSubstitute(ctx, rewriteType.HostRewritePathRegex)
 		if err != nil {
@@ -303,6 +314,27 @@ func convertPolicy(policy *retries.RetryPolicy) (*envoy_config_route_v3.RetryPol
 	if numRetries == 0 {
 		numRetries = 1
 	}
+	var retryPriority *envoy_config_route_v3.RetryPolicy_RetryPriority
+	if policy.GetPreviousPriorities() != nil {
+		previous := envoy_retry_priorities_v3.PreviousPrioritiesConfig{}
+		if policy.GetPreviousPriorities().GetUpdateFrequency() != nil {
+			previous.UpdateFrequency = int32(policy.GetPreviousPriorities().GetUpdateFrequency().GetValue())
+		} else {
+			// It's not happy with zero
+			previous.UpdateFrequency = 1
+		}
+
+		marshalled, err := utils.MessageToAny(&previous)
+		if err != nil {
+			return nil, err
+		}
+		retryPriority = &envoy_config_route_v3.RetryPolicy_RetryPriority{
+			Name: PreviousPrioritiesExtensionName,
+			ConfigType: &envoy_config_route_v3.RetryPolicy_RetryPriority_TypedConfig{
+				TypedConfig: marshalled,
+			},
+		}
+	}
 
 	v3RetryPolicyBackOff := &envoy_config_route_v3.RetryPolicy_RetryBackOff{}
 
@@ -357,6 +389,7 @@ func convertPolicy(policy *retries.RetryPolicy) (*envoy_config_route_v3.RetryPol
 			NumRetries:    &wrappers.UInt32Value{Value: numRetries},
 			PerTryTimeout: policy.GetPerTryTimeout(),
 			RetryBackOff:  v3RetryPolicyBackOff,
+			RetryPriority: retryPriority,
 		}, nil
 	}
 
@@ -364,5 +397,6 @@ func convertPolicy(policy *retries.RetryPolicy) (*envoy_config_route_v3.RetryPol
 		RetryOn:       policy.GetRetryOn(),
 		NumRetries:    &wrappers.UInt32Value{Value: numRetries},
 		PerTryTimeout: policy.GetPerTryTimeout(),
+		RetryPriority: retryPriority,
 	}, nil
 }

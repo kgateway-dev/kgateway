@@ -1,25 +1,25 @@
 ---
 title: OpenTelemetry tracing
 weight: 1
-description: Leverage OpenTelementry tracing capabilities in Gloo Edge.
+description: Leverage OpenTelementry tracing capabilities in Gloo Gateway.
 ---
 
 Enable [OpenTelemetry](https://opentelemetry.io/) (OTel) tracing capabilities to obtain visibility and track requests as they pass through your API gateway to distributed backends.
 
 OTel provides a standardized protocol for reporting traces, and a standardized collector through which to recieve metrics. Additionally, OTel supports exporting metrics to several types of distributed tracing platforms. For the full list of supported platforms, see the [OTel GitHub respository](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter).
 
-To get started, deploy an OTel collector and agents to your Gloo Edge cluster to trace requests, and modify your gateway proxy with the OTel tracing configuration. Then, use a tracing provider to collect and visualize the sampled spans.
+To get started, deploy an OTel collector and agents to your Gloo Gateway cluster to trace requests, and modify your gateway proxy with the OTel tracing configuration. Then, use a tracing provider to collect and visualize the sampled spans.
 
 {{% notice note %}}
-The OTel integration is supported as a beta feature in Gloo Edge 1.13.0 and later.
+The OTel integration is supported as a beta feature in Gloo Gateway 1.13.0 and later.
 </br></br>
-This guide uses the Zipkin tracing platform as an example to show how to set up tracing with OTel in Gloo Edge. To set up other tracing platforms, refer to the platform-specific documentation.
+This guide uses the Zipkin tracing platform as an example to show how to set up tracing with OTel in Gloo Gateway. To set up other tracing platforms, refer to the platform-specific documentation.
 {{% /notice %}}
 
-**Before you begin**: Create or update your Gloo Edge installation to version 1.13.0 or later.
+**Before you begin**: Create or update your Gloo Gateway installation to version 1.13.0 or later.
 
 1. Download the [otel-config.yaml](../otel-config.yaml) file, which contains the configmaps, daemonset, deployment, and service for the OTel collector and agents. You can optionally check out the contents to see the OTel collector configuration.
-   * For example, in the `otel-collector-conf` configmap that begins on line 92, the `data.otel-agent-config.receivers` section enables gRPC and HTTP protocols for data collection. The `data.otel-agent-config.exporters` section enables logging data to Zipkin for tracing and to the Edge console for debugging.
+   * For example, in the `otel-collector-conf` configmap that begins on line 92, the `data.otel-agent-config.receivers` section enables gRPC and HTTP protocols for data collection. The `data.otel-agent-config.exporters` section enables logging data to Zipkin for tracing and to the Gloo Gateway console for debugging.
    * In the `otel-collector` deployment, you can comment out the ports that begin on line 194 so that only the tracing platform you want to use is enabled, such as Zipkin for this guide.
    * For more information about this configuration, see the [OTel documentation](https://opentelemetry.io/docs/collector/configuration/). For more information and examples about the exporters you can configure, see the [OTel GitHub repo](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter).
    ```sh
@@ -52,7 +52,7 @@ This guide uses the Zipkin tracing platform as an example to show how to set up 
    kubectl -n gloo-system expose deployments/zipkin --port 9411 --target-port 9411
    ```
 
-5. Create the following Gloo Edge `Upstream`, `Gateway`, and `VirtualService` custom resources. 
+5. Create the following Gloo Gateway `Upstream`, `Gateway`, and `VirtualService` custom resources. 
    * The `Upstream` defines the OTel network address and port that Envoy reports data to.
    * The `Gateway` resource modifies your default HTTP gateway proxy with the OTel tracing configuration, which references the OTel upstream.
    * The `VirtualService` defines a direct response action so that requests to the `/` path respond with `hello world` for testing purposes.
@@ -162,6 +162,13 @@ This guide uses the Zipkin tracing platform as an example to show how to set up 
         -> response_flags: Str(-)
    	{"kind": "exporter", "data_type": "traces", "name": "logging"}
     ```
+
+    Note that the `Status code` in the `Span` of the above trace is `Unset`. This is the recommended value in accordance with the OpenTelemetry [semantic conventions](https://opentelemetry.io/docs/specs/semconv/http/http-spans/), which state:
+
+    > Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges, unless there was another error (e.g., network error receiving the response body; or 3xx codes with max redirects exceeded), in which case status MUST be set to Error.
+    > ... For HTTP status codes in the 5xx range, as well as any other code the client failed to interpret, span status MUST be set to Error.
+
+    To observe this behavior, update the `status` that is returned by the `directResponseAction` to `500`. Subsequent requests that are sent to this endpoint receive a `Status code: Error` instead of `Status code: Unset`.
 
 9. [Open the Zipkin web interface.](http://localhost:9411/zipkin/)
 

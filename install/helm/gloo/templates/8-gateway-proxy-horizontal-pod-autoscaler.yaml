@@ -10,7 +10,7 @@ apiVersion: {{ $spec.horizontalPodAutoscaler.apiVersion }}
 kind: HorizontalPodAutoscaler
 metadata:
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
   name: {{ $name | kebabcase }}-hpa

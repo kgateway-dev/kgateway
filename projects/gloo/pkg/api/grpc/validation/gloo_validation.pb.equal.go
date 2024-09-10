@@ -482,6 +482,23 @@ func (m *ListenerReport) Equal(that interface{}) bool {
 
 	}
 
+	if len(m.GetWarnings()) != len(target.GetWarnings()) {
+		return false
+	}
+	for idx, v := range m.GetWarnings() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetWarnings()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetWarnings()[idx]) {
+				return false
+			}
+		}
+
+	}
+
 	switch m.ListenerTypeReport.(type) {
 
 	case *ListenerReport_HttpListenerReport:
@@ -1039,6 +1056,38 @@ func (m *ListenerReport_Error) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *ListenerReport_Warning) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ListenerReport_Warning)
+	if !ok {
+		that2, ok := that.(ListenerReport_Warning)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if m.GetType() != target.GetType() {
+		return false
+	}
+
+	if strings.Compare(m.GetReason(), target.GetReason()) != 0 {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
 func (m *HttpListenerReport_Error) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -1065,6 +1114,16 @@ func (m *HttpListenerReport_Error) Equal(that interface{}) bool {
 
 	if strings.Compare(m.GetReason(), target.GetReason()) != 0 {
 		return false
+	}
+
+	if h, ok := interface{}(m.GetMetadata()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMetadata()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMetadata(), target.GetMetadata()) {
+			return false
+		}
 	}
 
 	return true
@@ -1099,6 +1158,16 @@ func (m *VirtualHostReport_Error) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetMetadata()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMetadata()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMetadata(), target.GetMetadata()) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -1129,6 +1198,16 @@ func (m *RouteReport_Error) Equal(that interface{}) bool {
 
 	if strings.Compare(m.GetReason(), target.GetReason()) != 0 {
 		return false
+	}
+
+	if h, ok := interface{}(m.GetMetadata()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMetadata()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMetadata(), target.GetMetadata()) {
+			return false
+		}
 	}
 
 	return true

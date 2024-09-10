@@ -153,7 +153,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 		// do a **single** poll.
 		Expect(usChan).To(Receive(HaveLen(4)))
 
-		for i := 0; i < 5; i++ {
+		for i := range 5 {
 			// add another upstream give time to process and try again
 			writeAnotherUpstream()
 			time.Sleep(time.Second / 10)

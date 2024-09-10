@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rotisserie/eris"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options/contextoptions"
 
 	versioncmd "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
@@ -133,7 +135,20 @@ func GetGlooVersion(ctx context.Context, namespace string) (string, error) {
 	if len(openSourceVersions) > 1 {
 		fmt.Printf("Found multiple gloo versions, picking %s", openSourceVersions[0].String())
 	}
-	return openSourceVersions[0].String(), nil
+
+	ossVersion := openSourceVersions[0]
+	if ossVersion.Label != "" && ossVersion.LabelVersion == 0 {
+		// NOTE TO DEVELOPERS: Due to the String generation logic, if a version has a label and a labelVersion=0, then the label will be wiped
+		// This led to issues where a version was 1.0.0-ci, but the returning Stringer method returned a 1.0.0
+		// We have 2 options for this behavior:
+		//	1. Use the label that is defined, quietly
+		//	2. Error loudly, as we do here
+		//
+		// We opted for option 2, as the Stringer logic on this type is used elsewhere, so we'd rather be consistent
+		return "", eris.Errorf("Invalid Gloo version found: %+v. The label is non-empty, but the labelVersion is 0, so the returned String() will erase the label, leading to incorrect behavior", ossVersion)
+	}
+
+	return ossVersion.String(), nil
 }
 
 // GetGlooVersionWithoutV mirrors the above function but returns the version without the leading 'v'

@@ -12,11 +12,11 @@ In certain cases - such as during testing or when releasing a new API to a small
 convenient to secure a Virtual Service using [**Basic Authentication**](https://en.wikipedia.org/wiki/Basic_access_authentication). 
 With this simple authentication mechanism the encoded user credentials are sent along with the request in a standard header.
 
-To secure your Virtual Services using Basic Authentication, you first need to provide Gloo Edge with a set of known users and 
+To secure your Virtual Services using Basic Authentication, you first need to provide Gloo Gateway with a set of known users and 
 their passwords. You can then use this information to decide who is allowed to access which routes.
-If a request matches a route on which Basic Authentication is configured, Gloo Edge will verify the credentials in the 
+If a request matches a route on which Basic Authentication is configured, Gloo Gateway will verify the credentials in the 
 standard `Authorization` header before sending the request to its destination. If the user associated with the credentials 
-is not explicitly allowed to access that route, Gloo Edge will return a 401 response to the downstream client.
+is not explicitly allowed to access that route, Gloo Gateway will return a 401 response to the downstream client.
 
 Be sure to check the external auth [configuration overview]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/#auth-configuration-overview" >}}) 
 for detailed information about how authentication is configured on Virtual Services.
@@ -37,7 +37,7 @@ glooctl create upstream static --static-hosts jsonplaceholder.typicode.com:80 --
 {{< /tabs >}}
 
 ## Creating a Virtual Service
-Now let's configure Gloo Edge to route requests to the upstream we just created. To do that, we define a simple Virtual 
+Now let's configure Gloo Gateway to route requests to the upstream we just created. To do that, we define a simple Virtual 
 Service to match all requests that:
 
 - contain a `Host` header with value `foo` and
@@ -46,7 +46,7 @@ Service to match all requests that:
 Apply the following virtual service:
 {{< readfile file="guides/security/auth/extauth/basic_auth/test-no-auth-vs.yaml" markdown="true">}}
 
-Let's send a request that matches the above route to the Gloo Edge gateway and make sure it works:
+Let's send a request that matches the above route to the gateway proxy and make sure it works:
 
 ```shell
 curl -H "Host: foo" $(glooctl proxy url)/posts/1
@@ -69,9 +69,9 @@ The above command should produce the following output:
 {{% /notice %}}
 
 As we just saw, we were able to reach the upstream without having to provide any credentials. This is because by default 
-Gloo Edge allows any request on routes that do not specify authentication configuration. Let's change this behavior. 
+Gloo Gateway allows any request on routes that do not specify authentication configuration. Let's change this behavior. 
 We will update the Virtual Service so that only requests by the user `user` with password `password` are allowed.
-Gloo Edge expects password to be hashed and [salted](https://en.wikipedia.org/wiki/Salt_(cryptography)) using the
+Gloo Gateway expects password to be hashed and [salted](https://en.wikipedia.org/wiki/Salt_(cryptography)) using the
 [APR1](https://httpd.apache.org/docs/2.4/misc/password_encryptions.html) format. Passwords in this format follow this pattern:
 
 > $apr1$**SALT**$**HASHED_PASSWORD**
@@ -149,7 +149,7 @@ Let's try and resend the same request we sent earlier:
 curl -v -H "Host: foo" $(glooctl proxy url)/posts/1
 ```
 
-You will see that the response now contains a **401 Unauthorized** code, indicating that Gloo Edge denied the request.
+You will see that the response now contains a **401 Unauthorized** code, indicating that Gloo Gateway denied the request.
 
 {{< highlight shell "hl_lines=6" >}}
 > GET /posts/1 HTTP/1.1
@@ -197,7 +197,7 @@ We are now able to reach the upstream again!
 
 ### Logging
 
-If Gloo Edge is running on kubernetes, the extauth server logs can be viewed with:
+If Gloo Gateway is running on kubernetes, the extauth server logs can be viewed with:
 ```
 kubectl logs -n gloo-system deploy/extauth -f
 ```
@@ -208,7 +208,7 @@ If the auth config has been received successfully, you should see the log line:
 
 ### Extended configuration
 {{% notice warning %}}
-The auth configuration format that is shown on this page was introduced with [Gloo Edge Enterprise release 1.16.0]({{< versioned_link_path fromRoot="/reference/changelog/enterprise" >}}).
+The auth configuration format that is shown on this page was introduced with [Gloo Gateway Enterprise release 1.16.0]({{< versioned_link_path fromRoot="/reference/changelog/enterprise" >}}).
 To find the configuration format for an earlier version, see [Configuration format history]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/configuration_format_history/" >}}). 
 {{% /notice %}}
 
@@ -268,7 +268,7 @@ curl -H "Proxy- Authorization: basic dXNlcjpwYXNzd29yZA==" -H "Host: foo" $(gloo
 
 ## Summary
 
-In this tutorial, we installed Gloo Edge Enterprise and created an unauthenticated Virtual Service that routes requests to a 
+In this tutorial, we installed Gloo Gateway Enterprise and created an unauthenticated Virtual Service that routes requests to a 
 static upstream. We then created a Basic Authentication `AuthConfig` object and used it to secure our Virtual Service. 
 We first showed how unauthenticated requests fail with a `401 Unauthorized` response, and then showed how to send 
 authenticated requests successfully to the upstream. 

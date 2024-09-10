@@ -1,20 +1,20 @@
 ---
 title: Updating Enterprise Licenses
-description: How do I replace an expired license for Gloo Edge Enterprise?
+description: How do I replace an expired license for Gloo Gateway Enterprise?
 weight: 50
 ---
 
-Gloo Edge Enterprise requires a time-limited license key in order to fully operate. You initially provide this license at installation time, as described [here]({{< versioned_link_path fromRoot="/installation/enterprise/" >}}).
+{{< readfile file="static/content/license-key" markdown="true">}} This guide provides instructions for how to update the enterprise license.
 
-The license key is stored as a Kubernetes secret in the cluster. When the key expires, the pods that mount the secret might crash. To update the license key, patch the secret and restart the Gloo Edge deployments. During the upgrade, the data plane continues to run, but you might not be able to modify the configurations for Gloo custom resources through the management plane.
+The license key is stored as a Kubernetes secret in the cluster. When the key expires, the pods that mount the secret might crash. To update the license key, patch the secret and restart the Gloo Gateway deployments. During the upgrade, the data plane continues to run, but you might not be able to modify the configurations for Gloo custom resources through the management plane.
 
 {{% notice tip %}}
-When you first install Gloo Edge in your cluster, confirm the license key expiration date with your Account Representative, such as in **30 days**. Then, set a reminder for before the license key expires, and complete these steps, such as on Day 30, so that your Gloo Edge pods do not crash.
+When you first install Gloo Gateway in your cluster, confirm the license key expiration date with your Account Representative, such as in **30 days**. Then, set a reminder for before the license key expires, and complete these steps, such as on Day 30, so that your Gloo Gateway pods do not crash.
 {{% /notice %}}
 
 ## Confirm that your license expired
 
-Whether you're a prospective user using a trial license or a full Gloo Edge subscriber, this license can expire. When it does, you may see warnings on your Gloo Edge deployments that are new to you.
+Whether you're a prospective user using a trial license or a full Gloo Gateway subscriber, this license can expire. When it does, you may see warnings on your Gloo Gateway deployments that are new to you.
 
 For example, when your license expires, you may see the following logs on the `observability` deployment:
 
@@ -31,7 +31,7 @@ You can confirm that the license key is expired by copying and pasting your curr
 
 If you're a new user whose trial license has expired, contact your Solo.io Account Representative for a new license key, or fill out [this form](https://lp.solo.io/request-trial). Make sure to note the expiration date so that you can later replace this new license key before it expires.
 
-The Gloo Edge Enterprise license is installed by default into a Kubernetes `Secret` named `license` in the `gloo-system` namespace. If that is the case for your installation, then you can use a simple bash script to replace the expired key by patching the `license` secret:
+The Gloo Gateway Enterprise license is installed by default into a Kubernetes `Secret` named `license` in the `gloo-system` namespace. If that is the case for your installation, then you can use a simple bash script to replace the expired key by patching the `license` secret:
 
 1. Save the new license key in an environment variable.
    ```bash
@@ -66,7 +66,7 @@ Taking a fresh look at the k9s console shows us that all three of the failing po
 
 ![k9s Display with Refreshed License]({{% versioned_link_path fromRoot="/img/k9s-license-refreshed.png" %}})
 
-Congratulations! You have successfully replaced your Gloo Edge Enterprise license key.
+Congratulations! You have successfully replaced your Gloo Gateway Enterprise license key.
 
 ## Updating legacy-formatted licenses
 
@@ -77,4 +77,4 @@ The internal format of licenses has been recently updated. If your license was c
 {"level":"warn","ts":"2023-03-23T18:56:48.554Z","logger":"observability","caller":"client/client.go:195","msg":"Your gloo license graphql addon is outdated. Please contact support to update your license.","version":"1.14.0-beta10"}
 ```
 
-Gloo Edge still functions correctly, as both the new and deprecated license formats are accepted. If you want to remove the warning in the logs, you can contact support to get a new license key.
+Gloo Gateway still functions correctly, as both the new and deprecated license formats are accepted. If you want to remove the warning in the logs, you can contact support to get a new license key.

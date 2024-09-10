@@ -18,7 +18,7 @@ Let's get started!
 
 ## Prerequisites
 
-To follow along with this guide, you will need to have a [Kubernetes cluster deployed]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}) with [Gloo Edge installed]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) and service discovery enabled. 
+To follow along with this guide, you will need to have a [Kubernetes cluster deployed]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}) with [Gloo Gateway installed]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) and service discovery enabled. 
 
 ---
 
@@ -35,7 +35,7 @@ deployment.apps/petstore created
 service/petstore created
 ```
 
-Let's take a look at the configuration of the service for the Pet Store application and the Upstream Gloo Edge has created for it.
+Let's take a look at the configuration of the service for the Pet Store application and the Upstream Gloo Gateway has created for it.
 
 ```shell
 kubectl get service petstore -oyaml
@@ -109,7 +109,7 @@ You'll note that the setting `spec.useHttp2` is not present.
 
 ### Enable HTTP/2 through annotation
 
-One of the ways to enable HTTP/2, is to set an annotation value on the Kubernetes service. The field for the annotation is `gloo.solo.io/h2_service` and it can be set to `true` or `false`. Gloo Edge will update the Upstream automatically if the field is present, based on the value set for the field. 
+One of the ways to enable HTTP/2, is to set an annotation value on the Kubernetes service. The field for the annotation is `gloo.solo.io/h2_service` and it can be set to `true` or `false`. Gloo Gateway will update the Upstream automatically if the field is present, based on the value set for the field. 
 
 Let's update our Pet Store service with the annotation and check the Upstream.
 

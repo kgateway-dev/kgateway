@@ -22,7 +22,7 @@ func TestArgoCD(t *testing.T) {
 var _ = BeforeSuite(func() {
 	version = os.Getenv("VERSION")
 	if version == "" {
-		version = "1.0.0-ci"
+		version = "1.0.0-ci1"
 	}
 
 	installArgoCD()

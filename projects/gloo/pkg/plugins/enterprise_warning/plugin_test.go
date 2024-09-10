@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extproc"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/jwt"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/rbac"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/stateful_session"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/waf"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/advanced_http"
 	awsapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
@@ -155,13 +156,43 @@ var _ = Describe("enterprise_warning plugin", func() {
 			ExpectEnterpriseOnlyErr(err)
 		})
 
-		It("will err if jwt is configured", func() {
+		It("will err if jwt is configured on route", func() {
+			p := NewPlugin()
+			route := &v1.Route{
+				Name: "route1",
+				Options: &v1.RouteOptions{
+					JwtConfig: &v1.RouteOptions_Jwt{
+						Jwt: &jwt.RouteExtension{},
+					},
+				},
+			}
+
+			err := p.ProcessRoute(plugins.RouteParams{}, route, &envoy_config_route.Route{})
+			ExpectEnterpriseOnlyErr(err)
+		})
+
+		It("will err if staged jwt is configured on route", func() {
 			p := NewPlugin()
 			route := &v1.Route{
 				Name: "route1",
 				Options: &v1.RouteOptions{
 					JwtConfig: &v1.RouteOptions_JwtStaged{
 						JwtStaged: &jwt.JwtStagedRouteExtension{},
+					},
+				},
+			}
+
+			err := p.ProcessRoute(plugins.RouteParams{}, route, &envoy_config_route.Route{})
+			ExpectEnterpriseOnlyErr(err)
+		})
+
+		It("will err if staged jwt provider is configured on route", func() {
+			p := NewPlugin()
+			route := &v1.Route{
+				Name: "route1",
+				Options: &v1.RouteOptions{
+					JwtConfig: &v1.RouteOptions_JwtProvidersStaged{
+						JwtProvidersStaged: &jwt.JwtStagedRouteProvidersExtension{},
 					},
 				},
 			}
@@ -558,6 +589,30 @@ var _ = Describe("enterprise_warning plugin", func() {
 
 			err := p.ProcessRoute(plugins.RouteParams{}, route, &envoy_config_route.Route{})
 			ExpectEnterpriseOnlyErr(err)
+		})
+
+	})
+
+	Context("statefulSession", func() {
+
+		It("should not add filter if statefulsession config is nil", func() {
+			p := NewPlugin()
+			f, err := p.HttpFilters(plugins.Params{}, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(f).To(BeNil())
+		})
+
+		It("should error if statefulsession is configured on listener", func() {
+			p := NewPlugin()
+			hl := &v1.HttpListener{
+				Options: &v1.HttpListenerOptions{
+					StatefulSession: &stateful_session.StatefulSession{},
+				},
+			}
+
+			f, err := p.HttpFilters(plugins.Params{}, hl)
+			ExpectEnterpriseOnlyErr(err)
+			Expect(f).To(BeNil())
 		})
 
 	})

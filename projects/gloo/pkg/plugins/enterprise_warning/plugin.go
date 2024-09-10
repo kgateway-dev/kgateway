@@ -22,6 +22,7 @@ var (
 	_ plugins.HttpFilterPlugin  = new(plugin)
 	_ plugins.VirtualHostPlugin = new(plugin)
 	_ plugins.RoutePlugin       = new(plugin)
+	_ plugins.UpstreamPlugin    = new(plugin)
 )
 
 // A series of names to be emitted in errors
@@ -33,6 +34,7 @@ const (
 	CachingExtensionName               = "caching"
 	DlpExtensionName                   = "dlp"
 	FailoverExtensionName              = "failover"
+	GcpExtensionName                   = "failover"
 	JwtExtensionName                   = "jwt"
 	LeftmostXffAddressExtensionName    = "leftmost_xff_address"
 	ProxyLatencyExtensionName          = "proxy_latency"
@@ -43,6 +45,7 @@ const (
 	Aws                                = "aws"
 	ExtProcExtensionName               = "extproc"
 	TapFilterExtensionName             = "tap"
+	StatefulSessionName                = "stateful_session"
 )
 
 type plugin struct{}
@@ -128,6 +131,10 @@ func (p *plugin) ProcessUpstream(_ plugins.Params, in *v1.Upstream, _ *envoy_con
 		enterpriseExtensions = append(enterpriseExtensions, FailoverExtensionName)
 	}
 
+	if isGcpConfiguredOnUpstream(in) {
+		enterpriseExtensions = append(enterpriseExtensions, GcpExtensionName)
+	}
+
 	return GetErrorForEnterpriseOnlyExtensions(enterpriseExtensions)
 }
 
@@ -170,6 +177,10 @@ func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 		enterpriseExtensions = append(enterpriseExtensions, TapFilterExtensionName)
 	}
 
+	if isStatefulSessionConfiguredOnListener(listener) {
+		enterpriseExtensions = append(enterpriseExtensions, StatefulSessionName)
+	}
+
 	return nil, GetErrorForEnterpriseOnlyExtensions(enterpriseExtensions)
 }
 
@@ -208,13 +219,18 @@ func isFailoverConfiguredOnUpstream(in *v1.Upstream) bool {
 	return in.GetFailover() != nil
 }
 
+// failover
+func isGcpConfiguredOnUpstream(in *v1.Upstream) bool {
+	return in.GetGcp() != nil
+}
+
 // jwt
 func isJwtConfiguredOnVirtualHost(in *v1.VirtualHost) bool {
 	return in.GetOptions().GetJwtConfig() != nil
 }
 
 func isJwtConfiguredOnRoute(in *v1.Route) bool {
-	return in.GetOptions().GetJwtConfig() != nil
+	return in.GetOptions().GetJwtConfig() != nil || in.GetOptions().GetJwtStaged() != nil || in.GetOptions().GetJwtProvidersStaged() != nil
 }
 
 // leftmost_xff_address
@@ -244,6 +260,11 @@ func isSanitizeClusterHeaderConfiguredOnListener(in *v1.HttpListener) bool {
 // tap
 func isTapConfiguredOnListener(in *v1.HttpListener) bool {
 	return in.GetOptions().GetTap() != nil
+}
+
+// stateful session
+func isStatefulSessionConfiguredOnListener(in *v1.HttpListener) bool {
+	return in.GetOptions().GetStatefulSession() != nil
 }
 
 // waf

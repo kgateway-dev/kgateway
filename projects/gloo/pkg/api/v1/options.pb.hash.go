@@ -162,6 +162,26 @@ func (m *ListenerOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if h, ok := interface{}(m.GetListenerAccessLoggingService()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("ListenerAccessLoggingService")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetListenerAccessLoggingService(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("ListenerAccessLoggingService")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	return hasher.Sum64(), nil
 }
 
@@ -730,6 +750,46 @@ func (m *HttpListenerOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if h, ok := interface{}(m.GetStatefulSession()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("StatefulSession")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetStatefulSession(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("StatefulSession")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetHeaderValidationSettings()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("HeaderValidationSettings")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetHeaderValidationSettings(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("HeaderValidationSettings")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	switch m.ExtProcConfig.(type) {
 
 	case *HttpListenerOptions_DisableExtProc:
@@ -1202,6 +1262,26 @@ func (m *VirtualHostOptions) Hash(hasher hash.Hash64) (uint64, error) {
 			return 0, err
 		} else {
 			if _, err = hasher.Write([]byte("ExtProc")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetCorsPolicyMergeSettings()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("CorsPolicyMergeSettings")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetCorsPolicyMergeSettings(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("CorsPolicyMergeSettings")); err != nil {
 				return 0, err
 			}
 			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
@@ -1961,6 +2041,26 @@ func (m *RouteOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if h, ok := interface{}(m.GetAi()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Ai")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetAi(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Ai")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	switch m.HostRewriteType.(type) {
 
 	case *RouteOptions_HostRewrite:
@@ -2005,6 +2105,28 @@ func (m *RouteOptions) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			} else {
 				if _, err = hasher.Write([]byte("HostRewritePathRegex")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *RouteOptions_HostRewriteHeader:
+
+		if h, ok := interface{}(m.GetHostRewriteHeader()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("HostRewriteHeader")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetHostRewriteHeader(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("HostRewriteHeader")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
@@ -2197,6 +2319,28 @@ func (m *RouteOptions) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			} else {
 				if _, err = hasher.Write([]byte("JwtStaged")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *RouteOptions_JwtProvidersStaged:
+
+		if h, ok := interface{}(m.GetJwtProvidersStaged()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("JwtProvidersStaged")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetJwtProvidersStaged(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("JwtProvidersStaged")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {

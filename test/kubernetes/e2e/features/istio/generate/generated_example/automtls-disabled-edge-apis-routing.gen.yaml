@@ -1,0 +1,32 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: httpbin-vs
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+    - httpbin
+    routes:
+    - matchers:
+      - prefix: /
+      routeAction:
+        single:
+          upstream:
+            name: httpbin-upstream-disable-automtls-edge-apis-routing
+            namespace: gloo-system
+---
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  name: httpbin-upstream-disable-automtls-edge-apis-routing
+  namespace: gloo-system
+spec:
+  disableIstioAutoMtls: true
+  kube:
+    selector:
+      app: httpbin
+    serviceName: httpbin
+    serviceNamespace: httpbin
+    servicePort: 8000
+---

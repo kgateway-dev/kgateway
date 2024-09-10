@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -19,11 +20,13 @@ import (
 
 var (
 	ErrMissingReferenceGrant      = fmt.Errorf("missing reference grant")
-	ErrUnknownKind                = fmt.Errorf("unknown kind")
+	ErrUnknownBackendKind         = fmt.Errorf("unknown backend kind")
 	ErrNoMatchingListenerHostname = fmt.Errorf("no matching listener hostname")
 	ErrNoMatchingParent           = fmt.Errorf("no matching parent")
 	ErrNotAllowedByListeners      = fmt.Errorf("not allowed by listeners")
 	ErrLocalObjRefMissingKind     = fmt.Errorf("localObjRef provided with empty kind")
+	ErrCyclicReference            = fmt.Errorf("cyclic reference detected while evaluating delegated routes")
+	ErrUnresolvedReference        = fmt.Errorf("unresolved reference")
 )
 
 type Error struct {
@@ -111,8 +114,6 @@ func (f FromGkNs) Namespace() string {
 type GatewayQueries interface {
 	ObjToFrom(obj client.Object) From
 
-	// Returns map of listener names -> list of http routes.
-	GetRoutesForGw(ctx context.Context, gw *apiv1.Gateway) (RoutesForGwResult, error)
 	// Given a backendRef that resides in namespace obj, return the service that backs it.
 	// This will error with `ErrMissingReferenceGrant` if there is no reference grant allowing the reference
 	// return value depends on the group/kind in the backendRef.
@@ -121,6 +122,11 @@ type GatewayQueries interface {
 	GetSecretForRef(ctx context.Context, obj From, secretRef apiv1.SecretObjectReference) (client.Object, error)
 
 	GetLocalObjRef(ctx context.Context, from From, localObjRef apiv1.LocalObjectReference) (client.Object, error)
+
+	// GetRoutesForGateway finds the top level HTTPRoutes attached to a Gateway
+	GetRoutesForGateway(ctx context.Context, gw *apiv1.Gateway) (RoutesForGwResult, error)
+	// GetHTTPRouteChain resolves backends and delegated routes for a HTTPRoute
+	GetHTTPRouteChain(ctx context.Context, route apiv1.HTTPRoute, hostnames []string, parentRef apiv1.ParentReference) *HTTPRouteInfo
 }
 
 type RoutesForGwResult struct {
@@ -131,13 +137,7 @@ type RoutesForGwResult struct {
 
 type ListenerResult struct {
 	Error  error
-	Routes []*ListenerRouteResult
-}
-
-type ListenerRouteResult struct {
-	Route     apiv1.HTTPRoute
-	ParentRef apiv1.ParentReference
-	Hostnames []string
+	Routes []*HTTPRouteInfo
 }
 
 type RouteError struct {
@@ -156,7 +156,6 @@ type gatewayQueries struct {
 }
 
 func (r *gatewayQueries) referenceAllowed(ctx context.Context, from metav1.GroupKind, fromns string, to metav1.GroupKind, tons, toname string) (bool, error) {
-
 	var list apiv1beta1.ReferenceGrantList
 	err := r.client.List(ctx, &list, client.InNamespace(tons), client.MatchingFieldsSelector{Selector: fields.OneTermEqualSelector(ReferenceGrantFromField, fromns)})
 	if err != nil {
@@ -168,137 +167,6 @@ func (r *gatewayQueries) referenceAllowed(ctx context.Context, from metav1.Group
 
 func (r *gatewayQueries) ObjToFrom(obj client.Object) From {
 	return FromObject{Object: obj, Scheme: r.scheme}
-}
-
-func (r *gatewayQueries) GetRoutesForGw(ctx context.Context, gw *apiv1.Gateway) (RoutesForGwResult, error) {
-	ret := RoutesForGwResult{
-		ListenerResults: map[string]*ListenerResult{},
-	}
-
-	nns := types.NamespacedName{
-		Namespace: gw.Namespace,
-		Name:      gw.Name,
-	}
-
-	var hrlist apiv1.HTTPRouteList
-	err := r.client.List(ctx, &hrlist, client.MatchingFieldsSelector{Selector: fields.OneTermEqualSelector(HttpRouteTargetField, nns.String())})
-	if err != nil {
-		return ret, err
-	}
-
-	for _, hr := range hrlist.Items {
-		refs := getParentRefsForGw(gw, &hr)
-		for _, ref := range refs {
-			anyRoutesAllowed := false
-			anyListenerMatched := false
-			anyHostsMatch := false
-			for _, l := range gw.Spec.Listeners {
-				lr := ret.ListenerResults[string(l.Name)]
-
-				if lr == nil {
-					lr = &ListenerResult{}
-					ret.ListenerResults[string(l.Name)] = lr
-				}
-
-				allowedNs, allowedKinds, err := r.allowedRoutes(gw, &l)
-				if err != nil {
-					lr.Error = err
-					continue
-				}
-
-				if isHttpRouteAllowed(allowedKinds) {
-					if !allowedNs(hr.Namespace) {
-						continue
-					}
-					anyRoutesAllowed = true
-
-					if !parentRefMatchListener(ref, &l) {
-						continue
-					}
-					anyListenerMatched = true
-					if ok, hostnames := hostnameIntersect(&l, &hr); ok {
-						lrr := &ListenerRouteResult{
-							Route:     hr,
-							Hostnames: hostnames,
-							ParentRef: ref,
-						}
-						anyHostsMatch = true
-						lr.Routes = append(lr.Routes, lrr)
-					}
-				}
-			}
-
-			if !anyRoutesAllowed {
-				ret.RouteErrors = append(ret.RouteErrors, &RouteError{
-					Route:     hr,
-					ParentRef: ref,
-					Error:     Error{E: ErrNotAllowedByListeners, Reason: apiv1.RouteReasonNotAllowedByListeners},
-				})
-			} else if !anyListenerMatched {
-				ret.RouteErrors = append(ret.RouteErrors, &RouteError{
-					Route:     hr,
-					ParentRef: ref,
-					Error:     Error{E: ErrNoMatchingParent, Reason: apiv1.RouteReasonNoMatchingParent},
-				})
-			} else if !anyHostsMatch {
-				ret.RouteErrors = append(ret.RouteErrors, &RouteError{
-					Route:     hr,
-					ParentRef: ref,
-					Error:     Error{E: ErrNoMatchingListenerHostname, Reason: apiv1.RouteReasonNoMatchingListenerHostname},
-				})
-			}
-		}
-	}
-	return ret, nil
-}
-
-func (r *gatewayQueries) allowedRoutes(gw *apiv1.Gateway, l *apiv1.Listener) (func(string) bool, []metav1.GroupKind, error) {
-	var allowedKinds []metav1.GroupKind
-
-	switch l.Protocol {
-	case apiv1.HTTPSProtocolType:
-		fallthrough
-	case apiv1.HTTPProtocolType:
-		allowedKinds = []metav1.GroupKind{{Kind: "HTTPRoute", Group: "gateway.networking.k8s.io"}}
-	case apiv1.TLSProtocolType:
-		fallthrough
-	case apiv1.TCPProtocolType:
-		allowedKinds = []metav1.GroupKind{{}}
-	case apiv1.UDPProtocolType:
-		allowedKinds = []metav1.GroupKind{{}}
-	}
-
-	allowedNs := SameNamespace(gw.Namespace)
-	if ar := l.AllowedRoutes; ar != nil {
-		if ar.Kinds != nil {
-			allowedKinds = nil
-			for _, k := range ar.Kinds {
-				gk := metav1.GroupKind{Kind: string(k.Kind)}
-				if k.Group != nil {
-					gk.Group = string(*k.Group)
-				} else {
-					gk.Group = "gateway.networking.k8s.io"
-				}
-				allowedKinds = append(allowedKinds, gk)
-			}
-		}
-		if ar.Namespaces != nil && ar.Namespaces.From != nil {
-			switch *ar.Namespaces.From {
-			case apiv1.NamespacesFromAll:
-				allowedNs = AllNamespace()
-			case apiv1.NamespacesFromSelector:
-				if ar.Namespaces.Selector == nil {
-					return nil, nil, fmt.Errorf("selector must be set")
-				}
-				selector, err := metav1.LabelSelectorAsSelector(ar.Namespaces.Selector)
-				if err != nil {
-					return nil, nil, err
-				}
-				allowedNs = r.NamespaceSelector(selector)
-			}
-		}
-	}
-	return allowedNs, allowedKinds, nil
 }
 
 func parentRefMatchListener(ref apiv1.ParentReference, l *apiv1.Listener) bool {
@@ -451,7 +319,7 @@ func (r *gatewayQueries) getRef(ctx context.Context, from From, backendName stri
 	versions := r.scheme.VersionsForGroupKind(gk)
 	// versions are prioritized by order in the scheme, so we can just take the first one
 	if len(versions) == 0 {
-		return nil, ErrUnknownKind
+		return nil, ErrUnknownBackendKind
 	}
 	newObj, err := r.scheme.New(gk.WithVersion(versions[0].Version))
 	if err != nil {
@@ -467,18 +335,17 @@ func (r *gatewayQueries) getRef(ctx context.Context, from From, backendName stri
 		return nil, err
 	}
 	return ret, nil
-
 }
 
 func isHttpRouteAllowed(allowedKinds []metav1.GroupKind) bool {
-	return isRouteAllowed("gateway.networking.k8s.io", "HTTPRoute", allowedKinds)
+	return isRouteAllowed(apiv1.GroupName, wellknown.HTTPRouteKind, allowedKinds)
 }
 
 func isRouteAllowed(group, kind string, allowedKinds []metav1.GroupKind) bool {
 	for _, k := range allowedKinds {
 		var allowedGroup string = k.Group
 		if allowedGroup == "" {
-			allowedGroup = "gateway.networking.k8s.io"
+			allowedGroup = apiv1.GroupName
 		}
 
 		if allowedGroup == group && k.Kind == kind {

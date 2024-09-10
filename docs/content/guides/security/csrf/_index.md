@@ -12,13 +12,13 @@ According to [OWASP](https://owasp.org/www-community/attacks/csrf):
 
 Application owners can battle CSRF attacks at multiple levels of their stack.  At the application level, most popular frameworks support one or more CSRF prevention [options](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#use-built-in-or-existing-csrf-implementations-for-csrf-protection).
 
-A primary benefit of API Gateways like Gloo Edge is that they provide these weapons at a controlled access point and thus can off-load responsibilities from the application team.
+A primary benefit of API Gateways like Gloo Gateway is that they provide these weapons at a controlled access point and thus can off-load responsibilities from the application team.
 
-One option for Gloo Edge Enterprise users is to  activate its [Web Application Firewall]({{% versioned_link_path fromRoot="/guides/security/waf/" %}}) based on Apache ModSecurity.  It supports use of CSRF rules in the OWASP [Core Rule Set](https://coreruleset.org/).
+One option for Gloo Gateway Enterprise users is to  activate its [Web Application Firewall]({{% versioned_link_path fromRoot="/guides/security/waf/" %}}) based on Apache ModSecurity.  It supports use of CSRF rules in the OWASP [Core Rule Set](https://coreruleset.org/).
 
 Alternatively, Envoy provides a simple [CSRF filter](https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/csrf/v2/csrf.proto) that may be applied to an entire Gloo `Gateway`, a `VirtualService`, or even individual `Routes` within a `VirtualService`.  To understand more about how this filter works in Envoy, we recommend playing in their CSRF [sandbox](https://www.envoyproxy.io/docs/envoy/latest/start/sandboxes/csrf).
 
-The purpose of this guide is to demonstrate how to apply the Envoy CSRF filter to a Gloo Edge `VirtualService`.
+The purpose of this guide is to demonstrate how to apply the Envoy CSRF filter to a Gloo Gateway `VirtualService`.
 
 ### Deploy the Httpbin Service
 
@@ -29,7 +29,7 @@ This example was created and tested using a GKE cluster running k8s v1.16.15, bu
 {{< /notice >}}
 
 ```shell
-cat <<EOF | kubectl apply -f -
+kubectl apply -f - << EOF
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -77,7 +77,7 @@ EOF
 
 ### Verify the Upstream
 
-Gloo Edge discovers Kubernetes services automatically.  So, running the `glooctl get upstreams` command, you should be able to see a new Gloo Edge `Upstream` `default-httpbin-8000` with an `Accepted` status.  The name of the discovered `Upstream` was generated automatically by Gloo Edge based on the naming convention `namespace-serviceName-portNumber`:
+Gloo Gateway discovers Kubernetes services automatically.  So, running the `glooctl get upstreams` command, you should be able to see a new Gloo Gateway `Upstream` `default-httpbin-8000` with an `Accepted` status.  The name of the discovered `Upstream` was generated automatically by Gloo Gateway based on the naming convention `namespace-serviceName-portNumber`:
 
 ```shell
 % glooctl get upstreams default-httpbin-8000
@@ -93,10 +93,10 @@ Gloo Edge discovers Kubernetes services automatically.  So, running the `glooctl
 
 ### Create the Virtual Service
 
-Create the following Gloo Edge `VirtualService` that will route all its requests to the new `Upstream`.
+Create the following Gloo Gateway `VirtualService` that will route all its requests to the new `Upstream`.
 
 ```shell
-cat <<EOF | kubectl apply -f -
+kubectl apply -f - << EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -117,7 +117,7 @@ spec:
 EOF
 ```
 
-Run the following `glooctl` command to confirm that the new `Route` was accepted by Gloo Edge.
+Run the following `glooctl` command to confirm that the new `Route` was accepted by Gloo Gateway.
 
 ```shell
 % glooctl get virtualservice httpbin
@@ -210,7 +210,7 @@ The CSRF filter configuration supports both policy shadowing and policy enforcem
 In this section, we will modify our `VirtualService` to apply the filter to all requests and report evaluation results using the Envoy metrics.  Note that we have added a `shadowEnabled` policy that evaluates 100% of the traffic and reports -- but does not block -- violations.
 
 ```shell
-cat <<EOF | kubectl apply -f -
+kubectl apply -f - << EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -249,14 +249,14 @@ http.http.csrf.request_valid: 1
 
 ### CSRF Policy Scoping
 
-Note that CSRF policies may be scoped at different levels of the Gloo Edge hierarchy.  In this example, we are applying the policy at the [virtual host level]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#virtualhostoptions" %}}).  In addition, we may scope them more broadly, at the [listener level]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#httplisteneroptions" %}}) for an entire gateway.  Or we may scope these policies more narrowly, even down to the [individual route level]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#routeoptions" %}}).
+Note that CSRF policies may be scoped at different levels of the Gloo Gateway hierarchy.  In this example, we are applying the policy at the [virtual host level]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#virtualhostoptions" %}}).  In addition, we may scope them more broadly, at the [listener level]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#httplisteneroptions" %}}) for an entire gateway.  Or we may scope these policies more narrowly, even down to the [individual route level]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#routeoptions" %}}).
 
 ### Enforce the CSRF Policy
 
 Next we enable CSRF policy enforcement for our `VirtualService`.  This requires only a single-line change to our policy from `shadowEnabled` to `filterEnabled`.
 
 ```shell
-cat <<EOF | kubectl apply -f -
+kubectl apply -f - << EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -373,7 +373,7 @@ http.http.csrf.request_valid: 2
 The `origin` header and target host require a precise match by default. However, you may configure `additionalOrigins` as a filter option to allow alternative request sources.  For example, in our case assume we want to allow requests that originate from any derivative of example.com.  We could modify our `VirtualService` to supply a single `additionalOrigins` entry as follows.
 
 ```shell
-cat <<EOF | kubectl apply -f -
+kubectl apply -f - << EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -438,6 +438,6 @@ x-envoy-upstream-service-time: 2
 
 ### Summary
 
-In this guide, we described what is Cross Site Request Forgery (CSRF) and approaches for dealing with these attacks.  We delved into one Gloo Edge approach that directly uses an integrated Envoy filter.
+In this guide, we described what is Cross Site Request Forgery (CSRF) and approaches for dealing with these attacks.  We delved into one Gloo Gateway approach that directly uses an integrated Envoy filter.
 
 For more information, check out both the [Envoy docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/csrf_filter#config-http-filters-csrf) and [Gloo docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/csrf/v3/csrf.proto.sk/" %}}).

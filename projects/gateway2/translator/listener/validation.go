@@ -4,13 +4,13 @@ import (
 	"slices"
 
 	"github.com/solo-io/gloo/projects/gateway2/reports"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 const NormalizedHTTPSTLSType = "HTTPS/TLS"
 const DefaultHostname = "*"
-const HTTPRouteKind = "HTTPRoute"
 
 type portProtocol struct {
 	hostnames map[gwv1.Hostname]int
@@ -28,12 +28,12 @@ func getSupportedProtocolsRoutes() map[protocol]map[groupName][]routeKind {
 	supportedProtocolToKinds := map[protocol]map[groupName][]routeKind{
 		string(gwv1.HTTPProtocolType): {
 			gwv1.GroupName: []string{
-				HTTPRouteKind,
+				wellknown.HTTPRouteKind,
 			},
 		},
 		string(gwv1.HTTPSProtocolType): {
 			gwv1.GroupName: []string{
-				HTTPRouteKind,
+				wellknown.HTTPRouteKind,
 			},
 		},
 	}

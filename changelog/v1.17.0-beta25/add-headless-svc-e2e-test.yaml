@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6048
+    resolvesIssue: false
+    description: >-
+      Add headless service e2e test to check that headless services are correctly routed to by Gloo Gateway.

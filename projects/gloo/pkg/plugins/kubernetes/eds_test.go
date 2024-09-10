@@ -59,7 +59,16 @@ var _ = Describe("Eds", func() {
 		Expect(err).NotTo(HaveOccurred())
 		watcher.List("foo", clients.ListOpts{Ctx: ctx})
 		Expect(func() {}).NotTo(Panic())
+	})
 
+	It("should default to watchNamespaces if no upstreams exist", func() {
+		watchNamespaces := []string{"gloo-system"}
+		_, err := newEndpointWatcherForUpstreams(func(namespaces []string) KubePluginSharedFactory {
+			Expect(namespaces).To(Equal(watchNamespaces))
+			return mockSharedFactory
+		},
+			mockCache, v1.UpstreamList{}, clients.WatchOpts{Ctx: ctx}, &v1.Settings{WatchNamespaces: watchNamespaces})
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Context("Istio integration", func() {
@@ -67,16 +76,27 @@ var _ = Describe("Eds", func() {
 		It("isIstioInjectionEnabled should respond correctly to ENABLE_ISTIO_SIDECAR_ON_GATEWAY env var", func() {
 
 			os.Setenv(constants.IstioInjectionEnabled, "true")
-			Expect(isIstioInjectionEnabled()).To(BeTrue())
+			istioEnabled, warnsToLog := isIstioInjectionEnabled()
+			Expect(istioEnabled).To(BeTrue())
+			Expect(warnsToLog).To(HaveLen(1), "expected to have 1 warning")
+			Expect(warnsToLog).To(ContainElements(enableIstioSidecarOnGatewayDeprecatedWarning), "expected deprecation warning for enableIstioSidecarOnGateway")
 
 			os.Setenv(constants.IstioInjectionEnabled, "TRUE")
-			Expect(isIstioInjectionEnabled()).To(BeTrue())
+			istioEnabled, warnsToLog = isIstioInjectionEnabled()
+			Expect(istioEnabled).To(BeTrue())
+			Expect(warnsToLog).To(HaveLen(1), "expected to have 1 warning")
+			Expect(warnsToLog).To(ContainElements(enableIstioSidecarOnGatewayDeprecatedWarning), "expected deprecation warning for enableIstioSidecarOnGateway")
 
 			os.Unsetenv(constants.IstioInjectionEnabled)
-			Expect(isIstioInjectionEnabled()).To(BeFalse())
+			istioEnabled, warnsToLog = isIstioInjectionEnabled()
+			Expect(istioEnabled).To(BeFalse())
+			Expect(warnsToLog).To(BeEmpty(), "expected to have no warning")
 
 			os.Setenv(constants.IstioInjectionEnabled, "false")
-			Expect(isIstioInjectionEnabled()).To(BeFalse())
+			istioEnabled, warnsToLog = isIstioInjectionEnabled()
+			Expect(istioEnabled).To(BeFalse())
+			Expect(warnsToLog).To(BeEmpty(), "expected to have no warning")
+
 		})
 
 		It("should translate EDS metadata", func() {

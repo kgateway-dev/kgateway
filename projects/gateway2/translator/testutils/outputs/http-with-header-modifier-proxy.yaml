@@ -1,0 +1,67 @@
+listeners:
+- aggregateListener:
+    httpFilterChains:
+    - matcher: {}
+      virtualHostRefs:
+      - http~example_com
+    httpResources:
+      virtualHosts:
+        http~example_com:
+          domains:
+          - example.com
+          name: http~example_com
+          routes:
+          - matchers:
+            - prefix: /header
+            options:
+              headerManipulation:
+                requestHeadersToAdd:
+                - append: true
+                  header:
+                    key: X-Header-Add-1
+                    value: header-add-1
+                - append: true
+                  header:
+                    key: X-Header-Add-2
+                    value: header-add-2
+                - append: true
+                  header:
+                    key: X-Header-Add-3
+                    value: header-add-3
+                - append: false
+                  header:
+                    key: X-Header-Set-1
+                    value: header-set-1
+                - append: false
+                  header:
+                    key: X-Header-Set-2
+                    value: header-set-2
+                requestHeadersToRemove:
+                - X-Header-Remove-1
+                - X-Header-Remove-2
+            routeAction:
+              single:
+                kube:
+                  port: 8080
+                  ref:
+                    name: example-svc
+                    namespace: default
+          - matchers:
+            - prefix: /
+            options: {}
+            routeAction:
+              single:
+                kube:
+                  port: 8080
+                  ref:
+                    name: example-svc
+                    namespace: default
+  bindAddress: '::'
+  bindPort: 8080
+  name: http
+metadata:
+  labels:
+    created_by: gloo-kube-gateway-api
+    gateway_namespace: default
+  name: default-gw
+  namespace: gloo-system

@@ -4,8 +4,8 @@ weight: 10
 description: Authenticating using an external Http service. 
 ---
 
-When using Gloo Edge's external authentication server, it may be convenient to authenticate requests with your own HTTP server.
-By creating requests from the external authentication server to your own authentication component, Gloo Edge can use your authentication server
+When using Gloo Gateway's external authentication server, it may be convenient to authenticate requests with your own HTTP server.
+By creating requests from the external authentication server to your own authentication component, Gloo Gateway can use your authentication server
 to authenticate requests.
 
 ## Setup
@@ -52,7 +52,7 @@ spec:
 EOF
 {{< /highlight >}}
 
-The source code for the Http service can be found in the Gloo Edge repository [here](https://github.com/solo-io/gloo/tree/main/docs/examples/http-passthrough-auth).
+The source code for the Http service can be found in the Gloo Gateway repository [here](https://github.com/solo-io/gloo/tree/main/docs/examples/http-passthrough-auth).
 
 Once we create the authentication service, we also want to apply the following Service to assign it a static cluster IP.
 {{< highlight shell >}}
@@ -73,7 +73,7 @@ EOF
 {{< /highlight >}}
 
 ## Creating a Virtual Service
-Now let's configure Gloo Edge to route requests to the upstream we just created. To do that, we define a simple Virtual 
+Now let's configure Gloo Gateway to route requests to the upstream we just created. To do that, we define a simple Virtual 
 Service to match all requests that:
 
 - contain a `Host` header with value `foo` and
@@ -82,7 +82,7 @@ Service to match all requests that:
 Apply the following virtual service:
 {{< readfile file="guides/security/auth/extauth/basic_auth/test-no-auth-vs.yaml" markdown="true">}}
 
-Let's send a request that matches the above route to the Gloo Edge gateway and make sure it works:
+Let's send a request that matches the above route to the gateway proxy and make sure it works:
 
 ```shell
 curl -H "Host: foo" $(glooctl proxy url)/posts/1
@@ -103,7 +103,7 @@ If you are getting a connection error, make sure you are port-forwarding the `gl
 
 # Securing the Virtual Service 
 As we just saw, we were able to reach the upstream without having to provide any credentials. This is because by default 
-Gloo Edge allows any request on routes that do not specify authentication configuration. Let's change this behavior. 
+Gloo Gateway allows any request on routes that do not specify authentication configuration. Let's change this behavior. 
 We will update the Virtual Service so that all requests will be authenticated by our own Http auth service.
 
 {{< highlight shell "hl_lines=9-14" >}}
@@ -166,7 +166,7 @@ inherit its `AuthConfig`, unless it [overwrites or disables]({{< versioned_link_
 ### Metrics
 
 {{% notice note %}}
-For more information on how Gloo Edge handles observability and metrics, view our [observability introduction]({{< versioned_link_path fromRoot="/introduction/observability/" >}}).
+For more information on how Gloo Gateway handles observability and metrics, view our [observability introduction]({{< versioned_link_path fromRoot="/introduction/observability/" >}}).
 {{% /notice %}}
 
 * Failure Mode Allow
@@ -176,7 +176,7 @@ For more information on how Gloo Edge handles observability and metrics, view ou
 
 ### Logging
 
-If Gloo Edge is running on kubernetes, the extauth server logs can be viewed with:
+If Gloo Gateway is running on kubernetes, the extauth server logs can be viewed with:
 ```
 kubectl logs -n gloo-system deploy/extauth -f
 ```
@@ -273,7 +273,7 @@ spec:
           # Setting this to true will include the envoy "filter metadata" in the request body.
           passThroughFilterMetadata: bool
           # Setting this to true will include the original http request's body in the body of the auth request.
-          # In order for the body to be passed through to the auth service, the settings.extauth.requestBody must be set in the Gloo Edge Settings CRD so that
+          # In order for the body to be passed through to the auth service, the settings.extauth.requestBody must be set in the Gloo Gateway Settings CRD so that
           # the request body is buffered and sent to the ext-auth service.
           passThroughBody: bool
         # These options will modify the original request to the upstream if the auth request is authorized

@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
+	"github.com/solo-io/gloo/pkg/utils/statsutils/metrics"
 
-	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	gloo_translator "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -37,7 +37,6 @@ import (
 
 type TranslatorSyncer struct {
 	writeNamespace     string
-	reporter           reporter.Reporter
 	proxyReconciler    reconciler.ProxyReconciler
 	translator         translator.Translator
 	statusSyncer       statusSyncer
@@ -47,13 +46,13 @@ type TranslatorSyncer struct {
 var (
 	// labels used to uniquely identify Proxies that are managed by the Gloo controllers
 	proxyLabelsToWrite = map[string]string{
-		glooutils.TranslatorKey: glooutils.GlooEdgeTranslatorValue,
+		glooutils.ProxyTypeKey: glooutils.GlooEdgeProxyValue,
 	}
 
 	// Previously, proxies would be identified with:
 	//   created_by: gateway
 	// Now, proxies are identified with:
-	//   created_by: gloo-gateway-translator
+	//   created_by: gloo-gateway
 	//
 	// We need to ensure that users can successfully upgrade from versions
 	// where the previous labels were used, to versions with the new labels.
@@ -62,14 +61,14 @@ var (
 	// This is only required for backwards compatibility.
 	// Once users have upgraded to a version with new labels, we can delete this code and read/write the same labels.
 	proxyLabelSelectorOptions = clients.ListOpts{
-		ExpressionSelector: glooutils.GetTranslatorSelectorExpression(glooutils.GlooEdgeTranslatorValue, "gateway"),
+		Selector:           proxyLabelsToWrite,
+		ExpressionSelector: glooutils.GetTranslatorSelectorExpression(glooutils.GlooEdgeProxyValue, "gateway"),
 	}
 )
 
 func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatcher gloov1.ProxyClient, proxyReconciler reconciler.ProxyReconciler, reporter reporter.StatusReporter, translator translator.Translator, statusClient resources.StatusClient, statusMetrics metrics.ConfigStatusMetrics, identity leaderelector.Identity) *TranslatorSyncer {
 	t := &TranslatorSyncer{
 		writeNamespace:  writeNamespace,
-		reporter:        reporter,
 		proxyReconciler: proxyReconciler,
 		translator:      translator,
 		statusSyncer:    newStatusSyncer(writeNamespace, proxyWatcher, reporter, statusClient, statusMetrics, identity),
@@ -107,8 +106,10 @@ func (s *TranslatorSyncer) Sync(ctx context.Context, snap *gloov1snap.ApiSnapsho
 
 // This replaced a watch on the proxy CR from when the gloo and gateway pods were separate
 // Now it is called at the end of the gloo translation loop after statuses have been set for proxies
-// This is where we update statuses on gateway types based on the proxy statuses
-func (s *TranslatorSyncer) UpdateProxies(ctx context.Context) {
+// This is where we update statuses on gateway types based on the proxy statuses.
+// After this method runs, all Proxies (those retrieved from the proxy client) will have their status
+// written, along with the translation reports that correspond to the Gateway resources.
+func (s *TranslatorSyncer) UpdateStatusForAllProxies(ctx context.Context) {
 	s.statusSyncer.handleUpdatedProxies(ctx)
 }
 func (s *TranslatorSyncer) GeneratedDesiredProxies(ctx context.Context, snap *gloov1snap.ApiSnapshot) (reconciler.GeneratedProxies, reconciler.InvalidProxies) {

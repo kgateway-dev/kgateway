@@ -11,10 +11,18 @@ import (
 //go:generate go run generate.go
 
 func main() {
-	log.Printf("starting generate")
+	log.Printf("starting generate for gloo")
 
+	// Explicitly specify the directories to be built (i.e. do not build gateway2 since
+	// it causes compilation errors in solo-kit, and also because gateway2 protos are not
+	// needed for gloo edge classic). See `projects/gateway2/api/README.md` for more info.
 	protoImports := sk_anyvendor.CreateDefaultMatchOptions(
-		[]string{"projects/**/*.proto", sk_anyvendor.SoloKitMatchPattern},
+		[]string{
+			"projects/gloo/**/*.proto",
+			"projects/gateway/**/*.proto",
+			"projects/ingress/**/*.proto",
+			sk_anyvendor.SoloKitMatchPattern,
+		},
 	)
 	protoImports.External["github.com/solo-io/solo-apis"] = []string{
 		"api/rate-limiter/**/*.proto", // Import rate limit API
@@ -67,10 +75,11 @@ func main() {
 				"gloo.solo.io.HybridListener",
 				"gloo.solo.io.AggregateListener",
 			},
+			DisableKubeMarkers: true,
 		},
 	}
 	if err := cmd.Generate(generateOptions); err != nil {
 		log.Fatalf("generate failed!: %v", err)
 	}
-	log.Printf("finished generating code")
+	log.Printf("finished generating code for gloo")
 }

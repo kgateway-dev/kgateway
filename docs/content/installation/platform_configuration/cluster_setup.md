@@ -1,33 +1,31 @@
 ---
 title: Kubernetes Cluster Setup
 weight: 10
-description: How to prepare a Kubernetes cluster for Gloo Edge installation.
+description: How to prepare a Kubernetes cluster for Gloo Gateway installation.
 ---
 
-Installing Gloo Edge will require an environment for installation. Kubernetes and OpenShift are common targets for the installation of Gloo Edge. In this document we will review how to prepare different Kubernetes and OpenShift environments for the installation of Gloo Edge. 
+Installing Gloo Gateway will require an environment for installation. Kubernetes and OpenShift are common targets for the installation of Gloo Gateway. In this document we will review how to prepare different Kubernetes and OpenShift environments for the installation of Gloo Gateway. 
 
-Click on the links below for details specific to your Kubernetes distribution:
+---
 
-- [Minikube](#minikube)
-- [Minishift](#minishift)
-- [Kind (Kubernetes in Docker)](#kind)
-- [OpenShift](#openshift)
-- [Google Kubernetes Engine (GKE)](#google-kubernetes-engine-gke)
-  - [Private clusters](#private-clusters)
-- [Azure Kubernetes Service (AKS)](#azure-kubernetes-service-aks)
-- [Amazon Elastic Container Service for Kubernetes (EKS)](#amazon-elastic-container-service-for-kubernetes-eks)
-- [Additional Notes](#additional-notes)
-  - [DNS Records](#dns-records)
-  - [Certificate Management](#certificate-management)
-- [Next Steps](#next-steps)
+## Before you begin
 
-{{% notice note %}}
-Minimum required Kubernetes is 1.11.x. For older versions see our [release support guide]({{% versioned_link_path fromRoot="/reference/support/#kubernetes" %}})
-{{% /notice %}}
+1. Plan to install a [supported version of Kubernetes]({{% versioned_link_path fromRoot="/reference/support/#kubernetes" %}}).
 
-{{% notice note %}}
-This document assumes you have `kubectl` installed. Details on how to install [here](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
-{{% /notice %}}
+2. [Install `kubectl`, the Kubernetes CLI tool](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
+
+3. Follow the instructions for your Kubernetes distribution:
+   - [Minikube](#minikube)
+   - [Minishift](#minishift)
+   - [Kind (Kubernetes in Docker)](#kind)
+   - [OpenShift](#openshift)
+   - [Google Kubernetes Engine (GKE)](#google-kubernetes-engine-gke)
+   - [Azure Kubernetes Service (AKS)](#azure-kubernetes-service-aks)
+   - [Amazon Elastic Container Service for Kubernetes (EKS)]   (#amazon-elastic-container-service-for-kubernetes-eks)
+   - [Additional Notes](#additional-notes)
+     - [DNS Records](#dns-records)
+     - [Certificate Management](#certificate-management)
+   - [Next Steps](#next-steps)
 
 ---
 
@@ -50,7 +48,7 @@ If it does not, you can switch to the `minikube` context by running the followin
 kubectl config use-context minikube
 ```
 
-Now you're all set to install Gloo Edge, simply follow the Gloo Edge installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
+Now you're all set to install Gloo Gateway, simply follow the Gloo Gateway installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
 
 {{% notice note %}}
 To avoid resource limitations, make sure to give your Minikube VM extra RAM and CPU. Minimally, 
@@ -87,7 +85,7 @@ minishift addons apply admin-user
 # Login as administrator
 oc login -u system:admin
 ```
-If you plan to install Gloo Edge Enterprise, you will need to enable certain permissions for storage and userid:
+If you plan to install Gloo Gateway Enterprise, you will need to enable certain permissions for storage and userid:
 
 ```bash
 oc adm policy add-scc-to-user anyuid  -z glooe-prometheus-server -n gloo-system 
@@ -96,7 +94,7 @@ oc adm policy add-scc-to-user anyuid  -z default -n gloo-system
 oc adm policy add-scc-to-user anyuid  -z glooe-grafana -n gloo-system
 ```
 
-Now you're all set to install Gloo Edge, simply follow the Gloo Edge installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
+Now you're all set to install Gloo Gateway, simply follow the Gloo Gateway installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
 
 ---
 
@@ -104,12 +102,12 @@ Now you're all set to install Gloo Edge, simply follow the Gloo Edge installatio
 
 [Kind](https://kind.sigs.k8s.io/) (Kubernetes in Docker) is a tool for running local Kubernetes clusters using Docker container “nodes”.  Kind was primarily designed for testing Kubernetes itself, but may be used for local development or CI.  
 
-Kind is ideal for getting started with Gloo Edge on your personal workstation.  It is simpler than Minikube or Minishift because no external hypervisor is required.
+Kind is ideal for getting started with Gloo Gateway on your personal workstation.  It is simpler than Minikube or Minishift because no external hypervisor is required.
 
 We advise customizing kind cluster creation slightly to make it easier to access your services from your host workstation.  Since services deployed in kind are inside a Docker container, you cannot easily access them.  It is more convenient if you expose ports from inside the container to your host machine.
 
 ```bash
-cat <<EOF | kind create cluster --name kind --image kindest/node:v1.25.3 --config=-
+kind create cluster --name kind --image kindest/node:v1.25.3 --config=- << EOF
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
@@ -142,9 +140,9 @@ kubectl cluster-info --context kind-kind
 Thanks for using kind! 😊
 ```
 
-It will also be necessary for you to customize Gloo Edge installation to use these same ports. See the special Kind instructions for both [open source]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#installing-on-kubernetes-with-glooctl" >}}) and [enterprise]({{< versioned_link_path fromRoot="/installation/enterprise/#installing-on-kubernetes-with-glooctl" >}}) versions.
+It will also be necessary for you to customize Gloo Gateway installation to use these same ports. See the special Kind instructions for both [open source]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#installing-on-kubernetes-with-glooctl" >}}) and [enterprise]({{< versioned_link_path fromRoot="/installation/enterprise/#installing-on-kubernetes-with-glooctl" >}}) versions.
 
-Note also that the url to invoke services published through Gloo Edge will be slightly different with Kind-hosted clusters. Much of the Gloo Edge documentation instructs you to use `$(glooctl proxy url)` as the header for your service url. This will not work with kind. For example, instead of using curl commands like this:
+Note also that the url to invoke services published through Gloo Gateway will be slightly different with Kind-hosted clusters. Much of the Gloo Gateway documentation instructs you to use `$(glooctl proxy url)` as the header for your service url. This will not work with kind. For example, instead of using curl commands like this:
 
 ```bash
 curl $(glooctl proxy url)/all-pets
@@ -190,7 +188,7 @@ If it does not, you can switch to the `kind-kind` context by running the followi
 kubectl config use-context kind-kind
 ```
 
-Now you're all set to install Gloo Edge. Simply follow the Gloo Edge installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}). Be sure to watch for the [special instructions]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#installing-on-kubernetes-with-glooctl" >}}) for installing with Kind.
+Now you're all set to install Gloo Gateway. Simply follow the Gloo Gateway installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}). Be sure to watch for the [special instructions]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#installing-on-kubernetes-with-glooctl" >}}) for installing with Kind.
 
 ---
 
@@ -198,86 +196,34 @@ Now you're all set to install Gloo Edge. Simply follow the Gloo Edge installatio
 
 OpenShift has some differences from vanilla Kubernetes, especially related to security. By default, [OpenShift will run containers with a "random" user ID](https://cookbook.openshift.org/users-and-role-based-access-control/why-do-my-applications-run-as-a-random-user-id.html). While administrators can utilize [Security Context Constraints (SCCs)](https://docs.openshift.com/container-platform/4.3/authentication/managing-security-context-constraints.html) to override the default behavior, in many organizations it is often desirable to adhere to OpenShift's default security behavior whenever possible.
 
-In order to respect the default OpenShift behavior, the various Gloo Edge components support running with an arbitrary user ID. Users can enable this behavior by [customizing the Gloo Edge installation via Helm values](https://docs.solo.io/gloo-edge/latest/installation/gateway/kubernetes/#customizing-your-installation-with-helm).
+In order to respect the default OpenShift behavior, the various Gloo Gateway components support running with an arbitrary user ID. Users can enable this behavior by [customizing the Gloo Gateway installation via Helm values](https://docs.solo.io/gloo-edge/latest/installation/gateway/kubernetes/#customizing-your-installation-with-helm).
 
 Additionally, OpenShift requires additional SCC configuration for workloads that want to run privileged containers or [utilize elevated capabilities](https://docs.docker.com/engine/reference/run/#runtime-privilege-and-linux-capabilities).
 
-Gloo Edge provides support for running the `gateway-proxy` (i.e. Envoy) as an unprivileged container and without needing the `NET_BIND_SERVICE` capability (note that this means the proxy can not bind to ports below 1024).
+Gloo Gateway provides support for running the `gateway-proxy` (i.e. Envoy) as an unprivileged container and without needing the `NET_BIND_SERVICE` capability (note that this means the proxy can not bind to ports below 1024).
 
-The following Helm chart `values.yaml` file uses floating user IDs for all Gloo Edge components, and does not require any special security rules. For more details regarding these Helm values, see the [Helm reference documentation]({{< versioned_link_path fromRoot="/reference/helm_chart_values" >}}).
+The following Helm chart `values.yaml` file uses floating user IDs for all Gloo Gateway components, and does not require any special security rules. For more details regarding these Helm values, see the [Helm reference documentation]({{< versioned_link_path fromRoot="/reference/helm_chart_values" >}}).
 
-You can use this Helm chart `values.yaml` file while following the [Gloo Edge installation guide]({{< versioned_link_path fromRoot="/installation" >}}).
+You can use this Helm chart `values.yaml` file while following the [Gloo Gateway installation guide]({{< versioned_link_path fromRoot="/installation" >}}).
 
 {{< tabs >}}
 {{< tab name="Enterprise" codelang="yaml" >}}
 global:
-  extensions:
-    extAuth:
-      deployment:
-        floatingUserId: true
-        fsGroup: ""
-    rateLimit:
-      deployment:
-        floatingUserId: true
-oberservability:
-  deployment:
+  securitySettings:
     floatingUserId: true
-redis:
-  deployment:
-    floatingUserId: true
-    enablePodSecurityContext: false
-gloo:
-  gloo:
-    deployment:
-      floatingUserId: true
-  discovery:
-    deployment:
-      floatingUserId: true
-      enablePodSecurityContext: false
-  gateway:
-    deployment:
-      floatingUserId: true
-    certGenJob:
-      floatingUserId: true
-  observability:
-    deployment:
-      floatingUserId: true
-  gatewayProxies:
-    gatewayProxy:
-      podTemplate:
-        floatingUserId: true
-        enablePodSecurityContext: false
 gloo-fed:
   enabled: false
   glooFedApiserver:
     enable: false #optionally disable the admin console, too
-    floatingUserId: true
 prometheus:
   enabled: false
 grafana:
   defaultInstallationEnabled: false
 {{< /tab >}}
 {{< tab name="Open Source" codelang="yaml">}}
-gloo:
-  deployment:
+global:
+  securitySettings:
     floatingUserId: true
-discovery:
-  deployment:
-    floatingUserId: true
-    enablePodSecurityContext: false
-gateway:
-  deployment:
-    floatingUserId: true
-  certGenJob:
-    floatingUserId: true
-observability:
-  deployment:
-    floatingUserId: true
-gatewayProxies:
-  gatewayProxy:
-    podTemplate:
-      floatingUserId: true
-      enablePodSecurityContext: false
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -288,10 +234,10 @@ gatewayProxies:
 Google Kubernetes Engine (GKE) is Google Cloud's managed Kubernetes service. GKE can run both development and production workloads, depending on the size and configuration of the clusters that you create. For more information, see the [GKE docs](https://cloud.google.com/kubernetes-engine/docs/quickstart).
 
 {{% notice note %}}
-Using a private network-only GKE cluster? A private cluster cannot access container repositories outside of Google. Follow the [Basic GKE example](https://cloud.google.com/nat/docs/gke-example) to configure the private cluster to use Cloud NAT for internet access. The Gloo Edge containers are hosted on Quay.io. A private cluster requires firewall rules to be in place for the API server on the master nodes to talk to the Gloo Edge pods. Create a firewall rule allowing TCP traffic on port 8443 from the *master address range* to tag for the worker node VMs. For more information, check out [this guide from Linkerd](https://linkerd.io/2/reference/cluster-configuration/#private-clusters).
+Using a private network-only GKE cluster? A private cluster cannot access container repositories outside of Google. Follow the [Basic GKE example](https://cloud.google.com/nat/docs/gke-example) to configure the private cluster to use Cloud NAT for internet access. The Gloo Gateway containers are hosted on Quay.io. A private cluster requires firewall rules to be in place for the API server on the master nodes to talk to the Gloo Gateway pods. Create a firewall rule allowing TCP traffic on port 8443 from the *master address range* to tag for the worker node VMs. For more information, check out [this guide from Linkerd](https://linkerd.io/2/reference/cluster-configuration/#private-clusters).
 {{% /notice %}}
 
-1. Create a GKE cluster. You can use the default settings in the `gcloud clusters create` command for a cluster that can run Gloo Edge and the [Traffic Management guides]({{< versioned_link_path fromRoot="/guides/traffic_management/" >}}). You can use the `gcloud` CLI locally if you have the [Google Cloud SDK](https://cloud.google.com/sdk/) or by using the Cloud Shell from the [GCP Console](https://console.cloud.google.com). The Cloud Shell already has `kubectl` installed along with the Google Cloud SDK. If you want, update the zone (*us-central1-a*) and cluster name (*myGKECluster*).
+1. Create a GKE cluster. You can use the default settings in the `gcloud clusters create` command for a cluster that can run Gloo Gateway and the [Traffic Management guides]({{< versioned_link_path fromRoot="/guides/traffic_management/" >}}). You can use the `gcloud` CLI locally if you have the [Google Cloud SDK](https://cloud.google.com/sdk/) or by using the Cloud Shell from the [GCP Console](https://console.cloud.google.com). The Cloud Shell already has `kubectl` installed along with the Google Cloud SDK. If you want, update the zone (*us-central1-a*) and cluster name (*myGKECluster*).
    ```bash
    gcloud container clusters create myGKECluster \
      --zone=us-central1-a
@@ -322,14 +268,14 @@ Using a private network-only GKE cluster? A private cluster cannot access contai
    
    The command should return `gke_YOUR-PROJECT-ID_us-central1-a_myGKECluster` as the context.
 
-4. Set up the cluster admin cluster role so that you have permissions to install Gloo Edge.
+4. Set up the cluster admin cluster role so that you have permissions to install Gloo Gateway.
 
    ```bash
    kubectl create clusterrolebinding cluster-admin-binding \
        --clusterrole cluster-admin \
        --user $(gcloud config get-value account)
    ```
-Now you're all set to install Gloo Edge! Follow the Gloo Edge installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
+Now you're all set to install Gloo Gateway! Follow the Gloo Gateway installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
 
 ---
 
@@ -337,7 +283,7 @@ Now you're all set to install Gloo Edge! Follow the Gloo Edge installation guide
 
 Azure Kubernetes Service is Microsoft Azure's managed Kubernetes service. AKS can run both development and production workloads depending on its size and configuration. You can find more details on AKS [here](https://docs.microsoft.com/en-us/azure/aks/).
 
-You will need to deploy an AKS cluster. The default settings in the `aks create` command should be sufficient for installing Gloo Edge and going through the [Traffic Management guides]({{< versioned_link_path fromRoot="/guides/traffic_management/" >}}). The commands below can be run as-is, although you may want to change the resource group location (*eastus*), resource group name (*myResourceGroup*), and cluster name (*myAKSCluster*).
+You will need to deploy an AKS cluster. The default settings in the `aks create` command should be sufficient for installing Gloo Gateway and going through the [Traffic Management guides]({{< versioned_link_path fromRoot="/guides/traffic_management/" >}}). The commands below can be run as-is, although you may want to change the resource group location (*eastus*), resource group name (*myResourceGroup*), and cluster name (*myAKSCluster*).
 
 These commands can be run locally if you have the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) installed or by using the [Azure Cloud Shell](https://shell.azure.com). The Azure Cloud Shell already has `kubectl` installed along with the Azure CLI.
 
@@ -368,7 +314,7 @@ az aks create \
 Next you will need to make sure that your `kubectl` context is correctly set to the newly created cluster. 
 
 {{% notice note %}}
-The `--admin` option logs you into the cluster as the cluster admin, which is needed to install Gloo Edge. It
+The `--admin` option logs you into the cluster as the cluster admin, which is needed to install Gloo Gateway. It
 assumes that you have granted "Azure Kubernetes Service Cluster Admin Role" to your current logged in user. More details
 on AKS role access [here](https://docs.microsoft.com/en-us/azure/role-based-access-control/role-assignments-cli).
 {{% /notice %}}
@@ -389,7 +335,7 @@ kubectl config current-context
 
 The command should return `myAKSCluster-admin` as the context.
 
-Now you're all set to install Gloo Edge, simply follow the Gloo Edge installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
+Now you're all set to install Gloo Gateway, simply follow the Gloo Gateway installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
 
 ---
 
@@ -403,7 +349,7 @@ Amazon Elastic Kubernetes Service is Amazon's managed Kubernetes service. EKS ca
 
 You will need to deploy an EKS cluster. We suggest using the `eksctl` tool from <https://eksctl.io/> as it complements the `aws` command line tool, and makes it super simple to create and manage an EKS cluster from the command line. To run the following commands, you will need both the AWS CLI and the `eksctl` tool installed on your local machine.
 
-The default settings in the `eks create cluster` command should be sufficient for installing Gloo Edge and going through the [Traffic Management guides]({{< versioned_link_path fromRoot="/guides/traffic_management/" >}}). The commands below can be run as-is, although you may want to change the region (*us-east-1*) and cluster name (*myEKSCluster*).
+The default settings in the `eks create cluster` command should be sufficient for installing Gloo Gateway and going through the [Traffic Management guides]({{< versioned_link_path fromRoot="/guides/traffic_management/" >}}). The commands below can be run as-is, although you may want to change the region (*us-east-1*) and cluster name (*myEKSCluster*).
 
 Example AKS cluster creation:
 
@@ -436,22 +382,22 @@ kubectl config current-context
 
 The command should `arn:aws:eks:us-east-1:ACCOUNT-ID:cluster/myEKSCluster` as the context.
 
-Now you're all set to install Gloo Edge, simply follow the Gloo Edge installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
+Now you're all set to install Gloo Gateway, simply follow the Gloo Gateway installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
 
 ---
 
 ## Additional Notes
 
-While these additional sections are not required to set up your Kubernetes cluster or install Gloo Edge, you may want to consider your approach for managing things like DNS and SSL certificates.
+While these additional sections are not required to set up your Kubernetes cluster or install Gloo Gateway, you may want to consider your approach for managing things like DNS and SSL certificates.
 
 ### DNS Records
 
-Kubernetes DNS will take care of the internal DNS for the cluster, but it does not publish public DNS records for services running inside the cluster including Gloo Edge. 
+Kubernetes DNS will take care of the internal DNS for the cluster, but it does not publish public DNS records for services running inside the cluster including Gloo Gateway. 
 
 ### Certificate Management
 
-Gloo Edge has the ability to provide TLS off-load for services running inside the Kubernetes cluster through Gloo Edge's VirtualService Custom Resource Definition (CRD). Gloo Edge does not handle the actual provisioning and management of certificates for use with TLS communication. You can use a tool like [cert-manager](https://github.com/jetstack/cert-manager/) to provision those SSL certificates and store them in Kubernetes Secrets for Gloo Edge to consume.
+Gloo Gateway has the ability to provide TLS off-load for services running inside the Kubernetes cluster through Gloo Gateway's VirtualService Custom Resource Definition (CRD). Gloo Gateway does not handle the actual provisioning and management of certificates for use with TLS communication. You can use a tool like [cert-manager](https://github.com/jetstack/cert-manager/) to provision those SSL certificates and store them in Kubernetes Secrets for Gloo Gateway to consume.
 
 ## Next Steps
 
-Woo-hoo! You've made it through the gauntlet of getting your Kubernetes cluster ready. Now let's get to the fun stuff, [installing Gloo Edge]({{< versioned_link_path fromRoot="/installation" >}})!
+Woo-hoo! You've made it through the gauntlet of getting your Kubernetes cluster ready. Now let's get to the fun stuff, [installing Gloo Gateway]({{< versioned_link_path fromRoot="/installation" >}})!

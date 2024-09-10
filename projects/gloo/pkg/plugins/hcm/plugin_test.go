@@ -18,6 +18,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/header_validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -34,8 +35,6 @@ var _ = Describe("Plugin", func() {
 
 		p            plugins.HttpConnectionManagerPlugin
 		pluginParams plugins.Params
-
-		settings *hcm.HttpConnectionManagerSettings
 	)
 
 	BeforeEach(func() {
@@ -45,25 +44,22 @@ var _ = Describe("Plugin", func() {
 		pluginParams = plugins.Params{
 			Ctx: ctx,
 		}
-		settings = &hcm.HttpConnectionManagerSettings{}
 	})
 
 	AfterEach(func() {
 		cancel()
 	})
 
-	processHcmNetworkFilter := func(cfg *envoyhttp.HttpConnectionManager) error {
+	processHcmNetworkFilter := func(cfg *envoyhttp.HttpConnectionManager, glooOptions *v1.HttpListenerOptions) error {
 		httpListener := &v1.HttpListener{
-			Options: &v1.HttpListenerOptions{
-				HttpConnectionManagerSettings: settings,
-			},
+			Options: glooOptions,
 		}
 		listener := &v1.Listener{}
 		return p.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
 	}
 
 	It("copy all settings to hcm filter", func() {
-		settings = &hcm.HttpConnectionManagerSettings{
+		settings := &hcm.HttpConnectionManagerSettings{
 			UseRemoteAddress:      &wrappers.BoolValue{Value: true},
 			AppendXForwardedPort:  &wrappers.BoolValue{Value: true},
 			XffNumTrustedHops:     &wrappers.UInt32Value{Value: 5},
@@ -146,7 +142,7 @@ var _ = Describe("Plugin", func() {
 		}
 
 		cfg := &envoyhttp.HttpConnectionManager{}
-		err := processHcmNetworkFilter(cfg)
+		err := processHcmNetworkFilter(cfg, &v1.HttpListenerOptions{HttpConnectionManagerSettings: settings})
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(cfg.UseRemoteAddress).To(Equal(settings.UseRemoteAddress))
@@ -178,6 +174,7 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.CommonHttpProtocolOptions.GetMaxRequestsPerConnection()).To(MatchProto(settings.MaxRequestsPerConnection))
 		Expect(cfg.CommonHttpProtocolOptions.GetMaxHeadersCount()).To(MatchProto(settings.MaxHeadersCount))
 		Expect(cfg.GetCodecType()).To(Equal(envoyhttp.HttpConnectionManager_HTTP1))
+		Expect(cfg.HttpProtocolOptions.AllowCustomMethods).To(BeFalse())
 
 		Expect(cfg.GetServerHeaderTransformation()).To(Equal(envoyhttp.HttpConnectionManager_OVERWRITE))
 		Expect(cfg.GetPathWithEscapedSlashesAction()).To(Equal(envoyhttp.HttpConnectionManager_REJECT_REQUEST))
@@ -221,7 +218,7 @@ var _ = Describe("Plugin", func() {
 	})
 
 	It("should reject invalid values for CidrRanges", func() {
-		settings = &hcm.HttpConnectionManagerSettings{
+		settings := &hcm.HttpConnectionManagerSettings{
 			InternalAddressConfig: &hcm.HttpConnectionManagerSettings_InternalAddressConfig{
 				UnixSockets: &wrappers.BoolValue{Value: true},
 				CidrRanges: []*hcm.HttpConnectionManagerSettings_CidrRange{
@@ -235,19 +232,19 @@ var _ = Describe("Plugin", func() {
 
 		settings.InternalAddressConfig.CidrRanges[0].AddressPrefix = "invalid_prefix"
 		cfg := &envoyhttp.HttpConnectionManager{}
-		err := processHcmNetworkFilter(cfg)
+		err := processHcmNetworkFilter(cfg, &v1.HttpListenerOptions{HttpConnectionManagerSettings: settings})
 		Expect(err).To(MatchError(ContainSubstring("invalid CIDR address")))
 	})
 
 	It("should copy stateful_formatter setting to hcm filter", func() {
-		settings = &hcm.HttpConnectionManagerSettings{
+		settings := &hcm.HttpConnectionManagerSettings{
 			HeaderFormat: &hcm.HttpConnectionManagerSettings_PreserveCaseHeaderKeyFormat{
 				PreserveCaseHeaderKeyFormat: &wrappers.BoolValue{Value: true},
 			},
 		}
 
 		cfg := &envoyhttp.HttpConnectionManager{}
-		err := processHcmNetworkFilter(cfg)
+		err := processHcmNetworkFilter(cfg, &v1.HttpListenerOptions{HttpConnectionManagerSettings: settings})
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(cfg.HttpProtocolOptions.GetHeaderKeyFormat().GetStatefulFormatter()).ToNot(BeNil()) // expect preserve_case_words to be set
@@ -255,12 +252,12 @@ var _ = Describe("Plugin", func() {
 	})
 
 	It("copy server_header_transformation setting to hcm filter", func() {
-		settings = &hcm.HttpConnectionManagerSettings{
+		settings := &hcm.HttpConnectionManagerSettings{
 			ServerHeaderTransformation: hcm.HttpConnectionManagerSettings_PASS_THROUGH,
 		}
 
 		cfg := &envoyhttp.HttpConnectionManager{}
-		err := processHcmNetworkFilter(cfg)
+		err := processHcmNetworkFilter(cfg, &v1.HttpListenerOptions{HttpConnectionManagerSettings: settings})
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(cfg.GetServerHeaderTransformation()).To(Equal(envoyhttp.HttpConnectionManager_PASS_THROUGH))
@@ -269,9 +266,9 @@ var _ = Describe("Plugin", func() {
 	Context("Default Values", func() {
 		It("should contain the default value for NormalizePath", func() {
 			T := &wrapperspb.BoolValue{Value: true}
-			settings = &hcm.HttpConnectionManagerSettings{}
+			settings := &hcm.HttpConnectionManagerSettings{}
 			cfg := &envoyhttp.HttpConnectionManager{}
-			err := processHcmNetworkFilter(cfg)
+			err := processHcmNetworkFilter(cfg, &v1.HttpListenerOptions{HttpConnectionManagerSettings: settings})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(cfg.NormalizePath).To(Equal(T))
 		})
@@ -280,26 +277,26 @@ var _ = Describe("Plugin", func() {
 	Context("Http2 passed", func() {
 		//validation uses the same shared code so no need to validate large and small for all fields
 		It(" should not accept connection streams that are too small", func() {
-			settings = &hcm.HttpConnectionManagerSettings{
+			settings := &hcm.HttpConnectionManagerSettings{
 				Http2ProtocolOptions: &protocol.Http2ProtocolOptions{
 					InitialConnectionWindowSize: &wrappers.UInt32Value{Value: 65534},
 				},
 			}
 
 			cfg := &envoyhttp.HttpConnectionManager{}
-			err := processHcmNetworkFilter(cfg)
+			err := processHcmNetworkFilter(cfg, &v1.HttpListenerOptions{HttpConnectionManagerSettings: settings})
 			Expect(err).To(HaveOccurred())
 		})
 
 		It("should not accept connection streams that are too large", func() {
-			settings = &hcm.HttpConnectionManagerSettings{
+			settings := &hcm.HttpConnectionManagerSettings{
 				Http2ProtocolOptions: &protocol.Http2ProtocolOptions{
 					InitialStreamWindowSize: &wrappers.UInt32Value{Value: 2147483648},
 				},
 			}
 
 			cfg := &envoyhttp.HttpConnectionManager{}
-			err := processHcmNetworkFilter(cfg)
+			err := processHcmNetworkFilter(cfg, &v1.HttpListenerOptions{HttpConnectionManagerSettings: settings})
 			Expect(err).To(HaveOccurred())
 		})
 	})
@@ -314,16 +311,8 @@ var _ = Describe("Plugin", func() {
 			cfg = &envoyhttp.HttpConnectionManager{}
 		})
 
-		It("enables websockets by default", func() {
-			err := processHcmNetworkFilter(cfg)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(cfg.GetUpgradeConfigs()).To(HaveLen(1))
-			Expect(cfg.GetUpgradeConfigs()[0].UpgradeType).To(Equal("websocket"))
-		})
-
 		It("enables websockets by default with no settings", func() {
-			err := processHcmNetworkFilter(cfg)
+			err := processHcmNetworkFilter(cfg, &v1.HttpListenerOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(cfg.GetUpgradeConfigs()).To(HaveLen(1))
@@ -331,24 +320,26 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("should error when there's a duplicate upgrade config", func() {
-			settings.Upgrades = []*protocol_upgrade.ProtocolUpgradeConfig{
-				{
-					UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Websocket{
-						Websocket: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
-							Enabled: &wrappers.BoolValue{Value: true},
+			settings := &hcm.HttpConnectionManagerSettings{
+				Upgrades: []*protocol_upgrade.ProtocolUpgradeConfig{
+					{
+						UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Websocket{
+							Websocket: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
+								Enabled: &wrappers.BoolValue{Value: true},
+							},
 						},
 					},
-				},
-				{
-					UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Websocket{
-						Websocket: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
-							Enabled: &wrappers.BoolValue{Value: true},
+					{
+						UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Websocket{
+							Websocket: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
+								Enabled: &wrappers.BoolValue{Value: true},
+							},
 						},
 					},
 				},
 			}
 
-			err := processHcmNetworkFilter(cfg)
+			err := processHcmNetworkFilter(cfg, &v1.HttpListenerOptions{HttpConnectionManagerSettings: settings})
 			Expect(err).To(MatchError(ContainSubstring("upgrade config websocket is not unique")))
 		})
 
@@ -361,7 +352,7 @@ var _ = Describe("Plugin", func() {
 			instanceType := instanceValue.Type()
 
 			fieldNames := []string{}
-			for i := 0; i < instanceValue.NumField(); i++ {
+			for i := range instanceValue.NumField() {
 				fieldNames = append(fieldNames, instanceType.Field(i).Name)
 			}
 
@@ -406,6 +397,20 @@ You can force this test to pass by adding the new fields listed below to project
 					newFields)
 				Fail(failureMessage)
 			}
+		})
+	})
+
+	Context("Header Validation Settings", func() {
+		It("Enables header validation settings", func() {
+			cfg := &envoyhttp.HttpConnectionManager{}
+			options := v1.HttpListenerOptions{
+				HeaderValidationSettings: &header_validation.HeaderValidationSettings{
+					HeaderMethodValidation: &header_validation.HeaderValidationSettings_DisableHttp1MethodValidation{},
+				},
+			}
+			err := processHcmNetworkFilter(cfg, &options)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(cfg.GetHttpProtocolOptions().AllowCustomMethods).To(BeTrue())
 		})
 	})
 })

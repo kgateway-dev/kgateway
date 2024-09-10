@@ -2,7 +2,9 @@ package translator
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 
 	"github.com/solo-io/gloo/projects/gateway2/query"
@@ -23,6 +25,7 @@ type K8sGwTranslator interface {
 	TranslateProxy(
 		ctx context.Context,
 		gateway *gwv1.Gateway,
+		writeNamespace string,
 		reporter reports.Reporter,
 	) *v1.Proxy
 }
@@ -42,10 +45,14 @@ type translator struct {
 func (t *translator) TranslateProxy(
 	ctx context.Context,
 	gateway *gwv1.Gateway,
+	writeNamespace string,
 	reporter reports.Reporter,
 ) *v1.Proxy {
+	stopwatch := statsutils.NewTranslatorStopWatch("TranslateProxy")
+	stopwatch.Start()
+	defer stopwatch.Stop(ctx)
 
-	routesForGw, err := t.queries.GetRoutesForGw(ctx, gateway)
+	routesForGw, err := t.queries.GetRoutesForGateway(ctx, gateway)
 	if err != nil {
 		// TODO(ilackarms): fill in the specific error / validation
 		// reporter.Gateway(gateway).Err(err.Error())
@@ -63,6 +70,7 @@ func (t *translator) TranslateProxy(
 	for _, listener := range gateway.Spec.Listeners {
 		availRoutes := 0
 		if res, ok := routesForGw.ListenerResults[string(listener.Name)]; ok {
+			// TODO we've never checked if the ListenerResult has an error.. is it already on RouteErrors?
 			availRoutes = len(res.Routes)
 		}
 		reporter.Gateway(gateway).Listener(&listener).SetAttachedRoutes(uint(availRoutes))
@@ -78,20 +86,25 @@ func (t *translator) TranslateProxy(
 	)
 
 	return &v1.Proxy{
-		Metadata:  proxyMetadata(gateway),
+		Metadata:  proxyMetadata(gateway, writeNamespace),
 		Listeners: listeners,
 	}
 }
 
-func proxyMetadata(gateway *gwv1.Gateway) *core.Metadata {
-	// TODO(ilackarms) what should the proxy ID be
-	// ROLE ON ENVOY MUST MATCH <proxy_namespace>~<proxy_name>
-	// equal to role: {{.Values.settings.writeNamespace | default .Release.Namespace }}~{{ $name | kebabcase }}
+func proxyMetadata(gateway *gwv1.Gateway, writeNamespace string) *core.Metadata {
 	return &core.Metadata{
-		Name:      gateway.Name,
-		Namespace: gateway.Namespace,
+		// Add the gateway name to the proxy name to ensure uniqueness of proxies
+		Name: fmt.Sprintf("%s-%s", gateway.GetNamespace(), gateway.GetName()),
+
+		// This needs to match the writeNamespace because the proxyClient will only look at namespaces in the whitelisted namespace list
+		Namespace: writeNamespace,
+
+		// All proxies are created in the writeNamespace (ie. gloo-system).
+		// We apply a label to maintain a reference to where the originating Gateway was defined
 		Labels: map[string]string{
-			utils.TranslatorKey: utils.GlooGatewayTranslatorValue,
+			// the proxy type key/value must stay in sync with the one defined in projects/gateway2/proxy_syncer/proxy_syncer.go
+			utils.ProxyTypeKey:        utils.GatewayApiProxyValue,
+			utils.GatewayNamespaceKey: gateway.GetNamespace(),
 		},
 	}
 }

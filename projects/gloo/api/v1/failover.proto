@@ -7,6 +7,7 @@ option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 option (extproto.clone_all) = true;
 import "google/protobuf/wrappers.proto";
+import "google/protobuf/struct.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl/ssl.proto";
 import "validate/validate.proto";
 
@@ -126,6 +127,13 @@ message LbEndpoint {
     // LocalityLbEndpoints. If unspecified, each host is presumed to have equal
     // weight in a locality.
     google.protobuf.UInt32Value load_balancing_weight = 5 [(validate.rules).uint32.gte = 1];
+
+    // Additional metadata to add to the endpoint. This metadata can be used in upstream HTTP filters
+    // or other specific Envoy configurations.
+    // The following keys are added by Gloo Edge and are ignored if set:
+    // - "envoy.transport_socket_match"
+    // - "io.solo.health_checkers.advanced_http"
+    map<string, google.protobuf.Struct> metadata = 6;
 }
 
 // Identifies location of where either Envoy runs or where upstream hosts run.

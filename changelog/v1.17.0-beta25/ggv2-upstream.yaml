@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/6129
+    resolvesIssue: false
+    description: |
+      Upstream Support: enable the use of Gloo Edge v1 Upstreams as destinations for using routes and mirror policy from the K8s Gateway API.

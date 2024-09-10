@@ -7,7 +7,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: resource-migration
   name: gloo-resource-migration
   namespace: {{ .Release.Namespace }}
@@ -44,11 +44,11 @@ spec:
         - name: kubectl
           image: {{template "gloo.image" $image}}
           imagePullPolicy: {{ $image.pullPolicy }}
-          securityContext:
-            runAsNonRoot: true
-            {{- if not .Values.gateway.rolloutJob.floatingUserId }}
-            runAsUser: {{ printf "%.0f" (float64 .Values.gateway.rolloutJob.runAsUser) -}}
-            {{- end }}
+          {{- $securityDefaults := dict "runAsNonRoot" true }}
+          {{- if not .Values.gateway.rolloutJob.floatingUserId -}}
+            {{- $_ := set $securityDefaults "runAsUser" .Values.gateway.rolloutJob.runAsUser }}
+          {{- end -}}
+          {{- include "gloo.containerSecurityContext" (dict "values" .Values.gateway.rolloutJob.containerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 10 "globalSec" .Values.global.securitySettings) }}
           {{- with .Values.gateway.rolloutJob.resources }}
           resources: {{ toYaml . | nindent 12}}
           {{- end }}

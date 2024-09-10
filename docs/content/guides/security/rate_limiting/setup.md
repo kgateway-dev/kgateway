@@ -4,33 +4,33 @@ weight: 5
 description: Set up and verify your rate limiting environment
 ---
 
-Learn about different setup options for rate limiting in Gloo Edge. For more information about how rate limiting works, see [Rate limiting]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/" >}}).
+Learn about different setup options for rate limiting in Gloo Gateway. For more information about how rate limiting works, see [Rate limiting]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/" >}}).
 
 ## Before you begin
 
 1. [Create your environment]({{< versioned_link_path fromRoot="/installation/platform_configuration/" >}}), such as a Kubernetes cluster in a cloud provider.
-2. Install Gloo Edge.
-   * [Gloo Edge Enterprise]({{< versioned_link_path fromRoot="/installation/enterprise/" >}}): You can use all supported rate limiting APIs, including Envoy, Set-Style, and Gloo Edge. The [Envoy-based rate limit server](https://github.com/envoyproxy/ratelimit) is automatically included in your installation.
-   * [Gloo Edge Open Source]({{< versioned_link_path fromRoot="/installation/gateway/" >}}): You can use only the Envoy API rate limiting. Additionally, you must [build your own rate limit server](https://github.com/envoyproxy/ratelimit).
+2. Install Gloo Gateway.
+   * [Gloo Gateway Enterprise]({{< versioned_link_path fromRoot="/installation/enterprise/" >}}): You can use all supported rate limiting APIs, including Envoy, Set-Style, and Gloo Gateway. The [Envoy-based rate limit server](https://github.com/envoyproxy/ratelimit) is automatically included in your installation.
+   * [Gloo Gateway Open Source]({{< versioned_link_path fromRoot="/installation/gateway/" >}}): You can use only the Envoy API rate limiting. Additionally, you must [build your own rate limit server](https://github.com/envoyproxy/ratelimit).
 3. Install a test app, such as Pet Store from the [Hello World tutorial]({{< versioned_link_path fromRoot="/guides/traffic_management/hello_world/" >}}).
 4. Optional (Enterprise-only): [Configure your rate limiting server]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/enterprise/" >}}) to change the defaults, such as to update the query behavior or to use a different backing database.
 
 ## Decide which rate limiting API to use {#api}
 
-Depending on the type of Gloo Edge that you installed, you have multiple options for rate limiting.
+Depending on the type of Gloo Gateway that you installed, you have multiple options for rate limiting.
 
 | Rate limiting API | Supported Product | Description |
 | ----------------- | ----------------- | ----------- |
-| [Envoy API]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/envoy/" >}}) | Gloo Edge Open Source or Enterprise | To use the Envoy rate limiting API, you configure descriptors (required key and optional value pairs to attach to a request) and actions (counters to use for the request). The order of descriptors matter, and requests are only limited if the ordered descriptors match a rule exactly. For example, say that you want to have two different rate limiting behaviors for requests:<ul><li>Limit requests with an `x-type` header.</li><li>Limit requests with both `x-type` and `x-number: 5` headers.</li></ul>To set this rate limiting up, you must have two corresponding actions:<ul><li>Get only the value of `x-type` header.</li><li>Get the values of both the `x-type` and `x-number` headers.</li></ul> This approach lets you set up many rate limiting use cases. As such, the Envoy API is well-suited for any of your rate limiting needs, but you might choose a different API style if you have more complex (set-style) or simpler (Gloo Edge) use cases.|
-| [Set-Style API]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/set/" >}}) | Gloo Edge Enterprise | Like the Envoy API, the set-style API is based on descriptors (`setDescriptors`) and actions (`setActions`). Unlike the Envoy API, the set-style descriptors are unordered and can be used in combination with other descriptors. For example, you might set up a wildcard matching rule to rate limit requests with:<ul><li>An `x-type: a` header.</li><li>An `x-number: 1` header.</li><li>Any `x-color` header (`x-color: *`).</li></ul>At scale, this approach is more flexible than the Envoy API approach. You can also use Envoy and set-style APIs together. |
-| [Gloo Edge API]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/simple/" >}}) | Gloo Edge Enterprise | For simple rate limiting per route or host, you can use the Gloo Edge rate limiting API. In this approach, you do not have to set up complicated descriptors and actions. Instead, you simply specify the requests per unit and time unit for each route or host directly within the virtual service resource. You can also have different rate limiting behavior for authorized versus anonymous requests.|
+| [Envoy API]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/envoy/" >}}) | Gloo Gateway Open Source or Enterprise | To use the Envoy rate limiting API, you configure descriptors (required key and optional value pairs to attach to a request) and actions (counters to use for the request). The order of descriptors matter, and requests are only limited if the ordered descriptors match a rule exactly. For example, say that you want to have two different rate limiting behaviors for requests:<ul><li>Limit requests with an `x-type` header.</li><li>Limit requests with both `x-type` and `x-number: 5` headers.</li></ul>To set this rate limiting up, you must have two corresponding actions:<ul><li>Get only the value of `x-type` header.</li><li>Get the values of both the `x-type` and `x-number` headers.</li></ul> This approach lets you set up many rate limiting use cases. As such, the Envoy API is well-suited for any of your rate limiting needs, but you might choose a different API style if you have more complex (set-style) or simpler (Gloo Gateway) use cases.|
+| [Set-Style API]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/set/" >}}) | Gloo Gateway Enterprise | Like the Envoy API, the set-style API is based on descriptors (`setDescriptors`) and actions (`setActions`). Unlike the Envoy API, the set-style descriptors are unordered and can be used in combination with other descriptors. For example, you might set up a wildcard matching rule to rate limit requests with:<ul><li>An `x-type: a` header.</li><li>An `x-number: 1` header.</li><li>Any `x-color` header (`x-color: *`).</li></ul>At scale, this approach is more flexible than the Envoy API approach. You can also use Envoy and set-style APIs together. |
+| [Gloo Gateway API]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/simple/" >}}) | Gloo Gateway Enterprise | For simple rate limiting per route or host, you can use the Gloo Gateway rate limiting API. In this approach, you do not have to set up complicated descriptors and actions. Instead, you simply specify the requests per unit and time unit for each route or host directly within the virtual service resource. You can also have different rate limiting behavior for authorized versus anonymous requests.|
 
 ## Implement rate limiting {#implement}
 
-Depending on the rate limiting API that you chose to use, you have several options on how to implement rate limiting in your Gloo Edge routing, host, and settings resources.
+Depending on the rate limiting API that you chose to use, you have several options on how to implement rate limiting in your Gloo Gateway routing, host, and settings resources.
 
 * [Envoy or Set-Style API](#implement-envoy-set)
-* [Gloo Edge API](#implement-gloo-edge)
+* [Gloo Gateway API](#implement-gloo-edge)
 
 {{% notice note %}}
 For testing purposes, the following examples across all rate limiting API styles apply a limit of one request per minute. You can update the examples with the descriptors and actions that you configured in the previous section.
@@ -38,12 +38,12 @@ For testing purposes, the following examples across all rate limiting API styles
 ### Envoy or Set-Style API {#implement-envoy-set}
 
 Choose between two implementation approaches:
-* **Enterprise-only**: [In the RateLimitConfig resource](#implement-rlc). The Gloo Edge RateLimitConfig custom resource is a flexible way to keep together and reuse your rate limiting descriptors and actions across virtual services. This approach is more flexible at scale, and less likely to cause errors in configuring your resources.
-* **Open Source or Enterprise**: [In separate Gloo Edge resources](#implement-separate). You configure descriptors in the Gloo Edge Settings for the entire cluster. Then, you configure the actions directly in each VirtualService that you want to rate limit. This approach is not as flexible at scale. Also, because you have to edit the Settings and `VirtualServices` resources more extensively, you might be likelier to make a configuration error or encounter merge conflicts if multiple people edit a configuration at once. If you use Gloo Edge Open Source, you must take this implementation approach.
+* **Enterprise-only**: [In the RateLimitConfig resource](#implement-rlc). The Gloo Gateway RateLimitConfig custom resource is a flexible way to keep together and reuse your rate limiting descriptors and actions across virtual services. This approach is more flexible at scale, and less likely to cause errors in configuring your resources.
+* **Open Source or Enterprise**: [In separate Gloo Gateway resources](#implement-separate). You configure descriptors in the Gloo Gateway Settings for the entire cluster. Then, you configure the actions directly in each VirtualService that you want to rate limit. This approach is not as flexible at scale. Also, because you have to edit the Settings and `VirtualServices` resources more extensively, you might be likelier to make a configuration error or encounter merge conflicts if multiple people edit a configuration at once. If you use Gloo Gateway Open Source, you must take this implementation approach.
 
 ### In the RateLimitConfig resource {#implement-rlc}
 
-The Gloo Edge RateLimitConfig custom resource is a flexible way to keep together and reuse your rate limiting descriptors and actions across virtual services. This approach is available only with a Gloo Edge Enterprise license. 
+The Gloo Gateway RateLimitConfig custom resource is a flexible way to keep together and reuse your rate limiting descriptors and actions across virtual services. This approach is available only with a Gloo Gateway Enterprise license. 
 
 1. Define the descriptors and actions in the RateLimitConfig resource. For more information, see [RateLimitConfigs (Enterprise)]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/crds/" >}}).
    ```yaml
@@ -140,7 +140,7 @@ spec:
    ```
 ### In separate resources {#implement-separate}
 
-You can configure descriptors in the Gloo Edge Settings for the entire cluster. Then, you configure the actions directly in each VirtualService that you want to rate limit. If you have an Enterprise license, consider using a [RateLimitConfig resource instead](#implement-rlc). If you have an Open Source license, you must take this approach for Envoy API rate limiting.
+You can configure descriptors in the Gloo Gateway Settings for the entire cluster. Then, you configure the actions directly in each VirtualService that you want to rate limit. If you have an Enterprise license, consider using a [RateLimitConfig resource instead](#implement-rlc). If you have an Open Source license, you must take this approach for Envoy API rate limiting.
 
 1. Define the rate limit descriptors in the Settings resource.
    1. Create a file with your rate limit descriptors.
@@ -166,6 +166,8 @@ You can configure descriptors in the Gloo Edge Settings for the entire cluster. 
 {{% tab name="All routes in the virtual host" %}}
 ```yaml
 cat > vs-host-patch.yaml - <<EOF
+spec:
+  virtualHost:
     options:
       ratelimit:
         rateLimits:
@@ -192,12 +194,12 @@ EOF
       {{< tabs >}} 
 {{% tab name="All routes in the virtual host" %}}
 ```sh
-kubectl patch -n gloo-system vs default --type merge --patch "$(cat > vs-host-patch.yaml)"
+kubectl patch -n gloo-system vs default --type merge --patch "$(cat vs-host-patch.yaml)"
 ```
 {{% /tab %}} 
 {{% tab name="Per route" %}}  
 ```sh
-kubectl patch -n gloo-system vs default --type merge --patch "$(cat > vs-route-patch.yaml)"
+kubectl patch -n gloo-system vs default --type merge --patch "$(cat vs-route-patch.yaml)"
 ```
 {{% /tab %}} 
       {{< /tabs >}} 
@@ -205,11 +207,11 @@ kubectl patch -n gloo-system vs default --type merge --patch "$(cat > vs-route-p
    ```
    kubectl describe vs default -n gloo-system
    ```
-### Gloo Edge API {#implement-gloo-edge}
+### Gloo Gateway API {#implement-gloo-edge}
 
-To apply basic Gloo Edge rate limiting, update the virtual service. You can apply rate limiting at the virtual host level to apply to all routes or per route. This approach is a simple way to meet your basic rate limiting needs, and is available only with a Gloo Edge Enterprise license.
+To apply basic Gloo Gateway rate limiting, update the virtual service. You can apply rate limiting at the virtual host level to apply to all routes or per route. This approach is a simple way to meet your basic rate limiting needs, and is available only with a Gloo Gateway Enterprise license.
 
-1. Create a file with your basic Gloo Edge rate limiting configuration.
+1. Create a file with your basic Gloo Gateway rate limiting configuration.
    {{< tabs >}} 
 {{% tab name="All routes in the virtual host" %}}
 ```yaml
@@ -290,5 +292,5 @@ The examples in this guide limited requests to 1 per minute. Depending on how yo
 Now that you know the basic steps to set up rate limiting, you might explore the following options.
 
 * Use rate limiting [metrics]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/metrics/" >}}) or [access logs]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/access_logs/" >}}) to improve rate limiting.
-* Try out more examples of the [Envoy]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/envoy/" >}}), [Set-Style]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/set/" >}}), and [Gloo Edge]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/simple/" >}}) rate limiting API.
-* Explore other ways to [secure network traffic with Gloo Edge]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/" >}}).
+* Try out more examples of the [Envoy]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/envoy/" >}}), [Set-Style]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/set/" >}}), and [Gloo Gateway]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/simple/" >}}) rate limiting API.
+* Explore other ways to [secure network traffic with Gloo Gateway]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/" >}}).

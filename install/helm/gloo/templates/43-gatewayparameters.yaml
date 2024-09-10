@@ -1,0 +1,120 @@
+{{- if .Values.kubeGateway.enabled -}}
+{{- $global := .Values.global -}}
+kind: GatewayParameters
+apiVersion: gateway.gloo.solo.io/v1alpha1
+metadata:
+  labels:
+    {{- include "gloo-gateway.constLabels" . | nindent 4 }}
+  name: gloo-gateway
+  namespace: {{ .Release.Namespace }}
+spec:
+  kube:
+{{- $gg := dict -}}
+{{- if .Values.kubeGateway.gatewayParameters -}}
+{{- if .Values.kubeGateway.gatewayParameters.glooGateway -}}
+{{- $gg = .Values.kubeGateway.gatewayParameters.glooGateway -}}
+{{- end }}{{/* if .Values.kubeGateway.gatewayParameters.glooGateway */}}
+{{- end }}{{/* if .Values.kubeGateway.gatewayParameters */}}
+{{- $replicas := 1 -}}
+{{- if $gg.proxyDeployment -}}
+{{- if $gg.proxyDeployment.replicas -}}
+{{- $replicas = $gg.proxyDeployment.replicas -}}
+{{- end -}}{{/* if $gg.proxyDeployment.replicas */}}
+{{- end }}{{/* if $gg.proxyDeployment */}}
+    deployment:
+      replicas: {{ $replicas }}
+{{- $serviceType := "LoadBalancer" -}}
+{{- if $gg.service -}}
+{{- if $gg.service.type -}}
+{{- $serviceType = $gg.service.type -}}
+{{- end -}}{{/* if $gg.service.type */}}
+{{- end }}{{/* if $gg.service */}}
+    service:
+      type: {{ $serviceType }}
+    floatingUserId: {{ hasKey $global.securitySettings "floatingUserId" | ternary $global.securitySettings.floatingUserId (or $gg.floatingUserId false) }}
+    envoyContainer:
+      image:
+        {{- $envoyImage := dict -}}
+        {{- if $gg.envoyContainer -}}
+        {{- if $gg.envoyContainer.image -}}
+        {{- $envoyImage = $gg.envoyContainer.image -}}
+        {{- end -}}{{/* if $gg.envoyContainer.image */}}
+        {{- end }}{{/* if $gg.envoyContainer */}}
+        {{- merge $envoyImage $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
+{{- if $gg.envoyContainer -}}
+{{- if $gg.envoyContainer.securityContext }}
+      securityContext:
+        {{- toYaml $gg.envoyContainer.securityContext | nindent 8 }}
+{{- end }}{{/* if $gg.envoyContainer.securityContext */}}
+{{- if $gg.envoyContainer.resources }}
+      resources:
+        {{- toYaml $gg.envoyContainer.resources | nindent 8 }}
+{{- end }}{{/* if $gg.envoyContainer.resources */}}
+{{- end }}{{/* if $gg.envoyContainer */}}
+    podTemplate:
+      extraLabels:
+        {{- include "gloo-gateway.constLabels" . | nindent 8 }}
+{{- if $gg.sdsContainer }}
+    sdsContainer:
+      image:
+        {{- merge $gg.sdsContainer.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
+{{- if $gg.sdsContainer.securityContext }}
+      securityContext:
+        {{- toYaml $gg.sdsContainer.securityContext | nindent 8 }}
+{{- end }}{{/* if $gg.sdsContainer.securityContext */}}
+{{- if $gg.sdsContainer.logLevel }}
+      bootstrap:
+        logLevel: {{ $gg.sdsContainer.logLevel }}
+{{- end }}{{/* if $gg.sdsContainer.logLevel */}}
+{{- if $gg.sdsContainer.sdsResources }}
+      resources:
+        {{- toYaml $gg.sdsContainer.sdsResources | nindent 8 }}
+{{- end }}{{/* if $gg.sdsContainer.sdsResources */}}
+    istio:
+{{- if $gg.istio.customSidecars }}
+      customSidecars:
+        {{- toYaml $gg.istio.customSidecars | nindent 6 }}
+{{- end }}{{/* if $gg.istio.customSidecars */}}
+{{- if and $gg.istio.istioProxyContainer (not $gg.istio.customSidecars) }}
+      istioProxyContainer:
+        image:
+          {{- merge $gg.istio.istioProxyContainer.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 10 }}
+{{- if $gg.istio.istioProxyContainer.securityContext }}
+        securityContext:
+          {{- toYaml $gg.istio.istioProxyContainer.securityContext | nindent 10 }}
+{{- end }}{{/* if $gg.istio.istioProxyContainer.securityContext */}}
+{{- if $gg.istio.istioProxyContainer.logLevel }}
+        logLevel: {{ $gg.istio.istioProxyContainer.logLevel }}
+{{- end }}{{/* if $gg.istio.istioProxyContainer.logLevel */}}
+        istioDiscoveryAddress: {{ $gg.istio.istioProxyContainer.istioDiscoveryAddress }}
+        istioMetaMeshId: {{ $gg.istio.istioProxyContainer.istioMetaMeshId }}
+        istioMetaClusterId: {{ $gg.istio.istioProxyContainer.istioMetaClusterId }}
+{{- if $gg.stats }}
+    stats:
+    {{- toYaml $gg.stats | nindent 6 }}
+{{- end -}}{{/* if $gg.stats */}}
+{{- end }}{{/* if and $gg.istio.istioProxyContainer (not $gg.istio.customSidecars) */}}
+{{- end }}{{/* if $gg.sdsContainer */}}
+{{- if $gg.aiExtension }}
+    aiExtension:
+      enabled: {{ $gg.aiExtension.enabled }}
+      image:
+        {{- merge $gg.aiExtension.image $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
+{{- if $gg.aiExtension.securityContext }}
+      securityContext:
+        {{- toYaml $gg.aiExtension.securityContext | nindent 8 }}
+{{- end }}{{/* if $gg.aiExtension.securityContext */}}
+{{- if $gg.aiExtension.resources }}
+      resources:
+        {{- toYaml $gg.aiExtension.resources | nindent 8 }}
+{{- end }}{{/* if $gg.aiExtension.resources */}}
+{{- if $gg.aiExtension.env }}
+      env:
+{{ toYaml $gg.aiExtension.env | indent 6 }}
+{{- end }} {{/* if $gg.aiExtension.env */}}
+{{- if $gg.aiExtension.ports }}
+      ports:
+{{ toYaml $gg.aiExtension.ports | indent 6 }}
+{{- end }} {{/* if $gg.aiExtension.ports */}}
+{{- end }}{{/* if $gg.aiExtension */}}
+{{- end }}{{/* if .Values.kubeGateway.enabled */}}

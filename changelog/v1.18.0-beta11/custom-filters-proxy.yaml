@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Add fields to TcpListenerOptions and HttpListenerOptions that allow
+      GGv2 translation to direclty configure Envoy. While this is technically
+      accessible by users, we will not document or encourage its usage.

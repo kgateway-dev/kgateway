@@ -494,6 +494,30 @@ func (m *ListenerReport) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
+	for _, v := range m.GetWarnings() {
+
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
 	switch m.ListenerTypeReport.(type) {
 
 	case *ListenerReport_HttpListenerReport:
@@ -1148,6 +1172,31 @@ func (m *ListenerReport_Error) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
+func (m *ListenerReport_Warning) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation.ListenerReport_Warning")); err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetType())
+	if err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetReason())); err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
 func (m *HttpListenerReport_Error) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -1167,6 +1216,26 @@ func (m *HttpListenerReport_Error) Hash(hasher hash.Hash64) (uint64, error) {
 
 	if _, err = hasher.Write([]byte(m.GetReason())); err != nil {
 		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetMetadata()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Metadata")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetMetadata(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Metadata")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	return hasher.Sum64(), nil
@@ -1194,6 +1263,26 @@ func (m *VirtualHostReport_Error) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	if h, ok := interface{}(m.GetMetadata()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Metadata")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetMetadata(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Metadata")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	return hasher.Sum64(), nil
 }
 
@@ -1217,6 +1306,26 @@ func (m *RouteReport_Error) Hash(hasher hash.Hash64) (uint64, error) {
 
 	if _, err = hasher.Write([]byte(m.GetReason())); err != nil {
 		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetMetadata()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Metadata")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetMetadata(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Metadata")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	return hasher.Sum64(), nil

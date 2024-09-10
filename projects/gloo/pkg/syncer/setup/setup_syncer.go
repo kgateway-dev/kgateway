@@ -11,7 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/utils/envutils"
+	"github.com/solo-io/gloo/pkg/utils/statsutils/metrics"
+	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 
 	"github.com/golang/protobuf/ptypes/duration"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -19,9 +22,31 @@ import (
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	consulapi "github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
+	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+
+	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/errutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
+	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
+	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
+
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/utils/channelutils"
+	"github.com/solo-io/gloo/pkg/utils/envutils"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 	gateway "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -30,9 +55,9 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmission"
 	gwsyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
 	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
-	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 	gwvalidation "github.com/solo-io/gloo/projects/gateway/pkg/validation"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
+	"github.com/solo-io/gloo/projects/gateway2/status"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	rlv1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -42,7 +67,6 @@ import (
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	bootstrap_clients "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
-	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -59,25 +83,6 @@ import (
 	sslutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
-	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/errutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
-	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
-	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-	"github.com/solo-io/solo-kit/pkg/errors"
-	"github.com/solo-io/solo-kit/pkg/utils/prototime"
-	"go.uber.org/zap"
-	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 // TODO: (copied from gateway) switch AcceptAllResourcesByDefault to false after validation has been tested in user environments
@@ -459,8 +464,9 @@ func RunGloo(opts bootstrap.Opts) error {
 			ratelimitExt.NewTranslatorSyncerExtension,
 			extauthExt.NewTranslatorSyncerExtension,
 		},
-		ApiEmitterChannel: make(chan struct{}),
-		XdsCallbacks:      nil,
+		ApiEmitterChannel:      make(chan struct{}),
+		XdsCallbacks:           nil,
+		SnapshotHistoryFactory: iosnapshot.GetHistoryFactory(),
 	}
 
 	return RunGlooWithExtensions(opts, glooExtensions)
@@ -485,10 +491,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	runErrorGroup, _ := errgroup.WithContext(watchOpts.Ctx)
 	logger := contextutils.LoggerFrom(watchOpts.Ctx)
 
-	endpointsFactory := &factory.MemoryResourceClientFactory{
-		Cache: memory.NewInMemoryResourceCache(),
-	}
-
+	// MARK: build resource clients
 	upstreamClient, err := v1.NewUpstreamClient(watchOpts.Ctx, opts.Upstreams)
 	if err != nil {
 		return err
@@ -522,6 +525,11 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
+	// create in-memory cache for endpoints
+	// see (https://github.com/solo-io/gloo/blob/main/devel/architecture/endpoint-discovery.md) for more info
+	endpointsFactory := &factory.MemoryResourceClientFactory{
+		Cache: memory.NewInMemoryResourceCache(),
+	}
 	endpointClient, err := v1.NewEndpointClient(watchOpts.Ctx, endpointsFactory)
 	if err != nil {
 		return err
@@ -619,6 +627,9 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	if opts.ProxyCleanup != nil {
 		opts.ProxyCleanup()
 	}
+
+	statusClient := gloostatusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
+
 	// Register grpc endpoints to the grpc server
 	xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
 
@@ -636,7 +647,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	errs := make(chan error)
 
-	statusClient := gloostatusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
+	// MARK: build and run EDS loop
 	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, statusClient, discoveryPlugins)
 	edsSync := discovery.NewEdsSyncer(disc, discovery.Opts{}, watchOpts.RefreshRate)
 	discoveryCache := v1.NewEdsEmitter(hybridUsClient)
@@ -669,27 +680,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	// We are ready!
 
 	go errutils.AggregateErrs(watchOpts.Ctx, errs, edsErrs, "eds.gloo")
-	apiCache := v1snap.NewApiEmitterWithEmit(
-		artifactClient,
-		endpointClient,
-		proxyClient,
-		upstreamGroupClient,
-		secretClient,
-		hybridUsClient,
-		authConfigClient,
-		rlClient,
-		virtualServiceClient,
-		rtClient,
-		gatewayClient,
-		virtualHostOptionClient,
-		routeOptionClient,
-		matchableHttpGatewayClient,
-		matchableTcpGatewayClient,
-		graphqlApiClient,
-		extensions.ApiEmitterChannel,
-	)
 
-	rpt := reporter.NewReporter("gloo",
+	rpt := reporter.NewReporter(defaults.GlooReporter,
 		statusClient,
 		hybridUsClient.BaseClient(),
 		proxyClient.BaseClient(),
@@ -751,7 +743,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 	if opts.ProxyDebugServer.StartGrpcServer {
 		proxyDebugServer := opts.ProxyDebugServer
-		proxyDebugServer.Server.RegisterProxyReader(debug.EdgeGatewayTranslation, proxyClient)
+		proxyDebugServer.Server.RegisterProxyReader(proxyClient)
 		proxyDebugServer.Server.Register(proxyDebugServer.GrpcServer)
 		lis, err := net.Listen(opts.ProxyDebugServer.BindAddr.Network(), opts.ProxyDebugServer.BindAddr.String())
 		if err != nil {
@@ -768,24 +760,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 			}
 		}()
 		opts.ProxyDebugServer.StartGrpcServer = false
-	}
-	gwOpts := gwtranslator.Opts{
-		GlooNamespace:                  opts.WriteNamespace,
-		WriteNamespace:                 opts.WriteNamespace,
-		StatusReporterNamespace:        opts.StatusReporterNamespace,
-		WatchNamespaces:                opts.WatchNamespaces,
-		Gateways:                       opts.Gateways,
-		VirtualServices:                opts.VirtualServices,
-		RouteTables:                    opts.RouteTables,
-		Proxies:                        opts.Proxies,
-		RouteOptions:                   opts.RouteOptions,
-		VirtualHostOptions:             opts.VirtualHostOptions,
-		WatchOpts:                      opts.WatchOpts,
-		DevMode:                        opts.DevMode,
-		ReadGatewaysFromAllNamespaces:  opts.ReadGatwaysFromAllNamespaces,
-		Validation:                     opts.ValidationOpts,
-		ConfigStatusMetricOpts:         nil,
-		IsolateVirtualHostsBySslConfig: opts.Settings.GetGateway().GetIsolateVirtualHostsBySslConfig().GetValue(),
 	}
 
 	resourceHasher := translator.EnvoyCacheResourcesListToFnvHash
@@ -804,6 +778,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		syncerExtensions = append(syncerExtensions, syncerExtension)
 	}
 
+	// MARK: build gloo translator
 	sharedTranslator := translator.NewTranslatorWithHasher(
 		sslutils.NewSslConfigTranslator(),
 		opts.Settings,
@@ -825,6 +800,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		GlooValidatorConfig: validation.GlooValidatorConfig{
 			XdsSanitizer: xdsSanitizers,
 			Translator:   sharedTranslator,
+			Settings:     opts.Settings,
 		},
 	}
 	validator := validation.NewValidator(vc)
@@ -832,6 +808,25 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		opts.ValidationServer.Server.SetValidator(validator)
 	}
 
+	// MARK: build gateway translator
+	gwOpts := gwtranslator.Opts{
+		GlooNamespace:                  opts.WriteNamespace,
+		WriteNamespace:                 opts.WriteNamespace,
+		StatusReporterNamespace:        opts.StatusReporterNamespace,
+		WatchNamespaces:                opts.WatchNamespaces,
+		Gateways:                       opts.Gateways,
+		VirtualServices:                opts.VirtualServices,
+		RouteTables:                    opts.RouteTables,
+		Proxies:                        opts.Proxies,
+		RouteOptions:                   opts.RouteOptions,
+		VirtualHostOptions:             opts.VirtualHostOptions,
+		WatchOpts:                      opts.WatchOpts,
+		DevMode:                        opts.DevMode,
+		ReadGatewaysFromAllNamespaces:  opts.ReadGatwaysFromAllNamespaces,
+		Validation:                     opts.ValidationOpts,
+		ConfigStatusMetricOpts:         nil,
+		IsolateVirtualHostsBySslConfig: opts.Settings.GetGateway().GetIsolateVirtualHostsBySslConfig().GetValue(),
+	}
 	var (
 		gwTranslatorSyncer *gwsyncer.TranslatorSyncer
 		gatewayTranslator  *gwtranslator.GwTranslator
@@ -881,12 +876,51 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 	gwValidationSyncer := gwvalidation.NewValidator(validationConfig)
 
+	// startFuncs represents the set of StartFunc that should be executed at startup
+	// At the moment, the functionality is used minimally.
+	// Overtime, we should break up this large function into smaller StartFunc
+	startFuncs := map[string]StartFunc{}
+
+	// snapshotHistory is a utility for managing the state of the input/output snapshots that the Control Plane
+	// consumes and produces. This object is then used by our Admin Server, to provide this data on demand
+	snapshotHistory := extensions.SnapshotHistoryFactory(iosnapshot.HistoryFactoryParameters{
+		Settings:                    opts.Settings,
+		Cache:                       opts.ControlPlane.SnapshotCache,
+		EnableK8sGatewayIntegration: opts.GlooGateway.EnableK8sGatewayController,
+	})
+
+	startFuncs["admin-server"] = AdminServerStartFunc(snapshotHistory)
+
+	var (
+		gwv2StatusSyncer       status.GatewayStatusSyncer
+		gwv2StatusSyncCallback syncer.OnProxiesTranslatedFn
+	)
+	// MARK: build k8s gw start func
+	if opts.GlooGateway.EnableK8sGatewayController {
+		gwv2StatusSyncer = status.NewStatusSyncerFactory()
+		gwv2StatusSyncCallback = gwv2StatusSyncer.HandleProxyReports
+
+		// Share proxyClient and status syncer with the gateway controller
+		startFuncs["k8s-gateway-controller"] = K8sGatewayControllerStartFunc(
+			proxyClient,
+			gwv2StatusSyncer.QueueStatusForProxies,
+			authConfigClient,
+			routeOptionClient,
+			virtualHostOptionClient,
+			statusClient,
+		)
+	}
+
+	// MARK: build translator syncer
 	translationSync := syncer.NewTranslatorSyncer(
 		watchOpts.Ctx,
 		sharedTranslator,
 		opts.ControlPlane.SnapshotCache,
 		xdsSanitizers,
 		rpt,
+		// opts.DevMode should be deprecated
+		// https://github.com/solo-io/gloo/issues/6494
+		// We are starting to build out a true Admin Server, and enhancements should be added to that server
 		opts.DevMode,
 		syncerExtensions,
 		opts.Settings,
@@ -894,8 +928,31 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		gwTranslatorSyncer,
 		proxyClient,
 		opts.WriteNamespace,
-		opts.Identity)
+		opts.Identity,
+		gwv2StatusSyncCallback,
+		snapshotHistory,
+	)
 
+	// MARK: build & run api snap loop
+	apiCache := v1snap.NewApiEmitterWithEmit(
+		artifactClient,
+		endpointClient,
+		proxyClient,
+		upstreamGroupClient,
+		secretClient,
+		hybridUsClient,
+		authConfigClient,
+		rlClient,
+		virtualServiceClient,
+		rtClient,
+		gatewayClient,
+		virtualHostOptionClient,
+		routeOptionClient,
+		matchableHttpGatewayClient,
+		matchableTcpGatewayClient,
+		graphqlApiClient,
+		extensions.ApiEmitterChannel,
+	)
 	syncers := v1snap.ApiSyncers{
 		validator,
 		translationSync,
@@ -920,15 +977,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}
 	}()
 
-	// startFuncs represents the set of StartFunc that should be executed at startup
-	// At the moment, the functionality is used minimally.
-	// Overtime, we should break up this large function into smaller StartFunc
-	startFuncs := map[string]StartFunc{}
-
-	if opts.GlooGateway.EnableK8sGatewayController {
-		startFuncs["k8s-gateway-controller"] = K8sGatewayControllerStartFunc()
-	}
-
+	// MARK: start validation server
 	validationMustStart := os.Getenv("VALIDATION_MUST_START")
 	// only starting validation server if the env var is true or empty (previously, it always started, so this avoids causing unwanted changes for users)
 	if validationMustStart == "true" || validationMustStart == "" {
@@ -964,6 +1013,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 					gwOpts.Validation.AlwaysAcceptResources,
 					gwOpts.ReadGatewaysFromAllNamespaces,
 					gwOpts.GlooNamespace,
+					opts.GlooGateway.EnableK8sGatewayController, // controls validation of KubeGateway policies (e.g. RouteOption, VirtualHostOption)
 				),
 			)
 			if err != nil {
@@ -1010,7 +1060,10 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	go func() {
 		// It is critical that the RunGlooWithExtensions function does not block.
 		// As a result, we monitor the runErrorGroup and just drop errors on the shared "errs" channel if one occurs
-		errs <- runErrorGroup.Wait()
+		runErr := runErrorGroup.Wait()
+		if runErr != nil {
+			errs <- runErr
+		}
 	}()
 
 	go func() {
@@ -1290,24 +1343,22 @@ func constructOpts(ctx context.Context, params constructOptsParams) (bootstrap.O
 		ReadGatwaysFromAllNamespaces: readGatewaysFromAllNamespaces,
 		GatewayControllerEnabled:     gatewayMode,
 		ProxyCleanup:                 proxyCleanup,
-		GlooGateway:                  constructGlooGatewayBootstrapOpts(),
+		GlooGateway:                  constructGlooGatewayBootstrapOpts(params.settings),
 	}, nil
 }
 
-func constructGlooGatewayBootstrapOpts() bootstrap.GlooGateway {
+func constructGlooGatewayBootstrapOpts(settings *v1.Settings) bootstrap.GlooGateway {
 	return bootstrap.GlooGateway{
 		// TODO: This value should be inherited at installation time, to determine if the k8s controller is enabled
 		// In the interim, we use an env variable to control the value
 		EnableK8sGatewayController: envutils.IsEnvTruthy(constants.GlooGatewayEnableK8sGwControllerEnv),
-		IstioValues:                constructIstioBootstrapOpts(),
+		IstioValues:                constructIstioBootstrapOpts(settings),
 	}
 }
 
-func constructIstioBootstrapOpts() bootstrap.IstioValues {
+func constructIstioBootstrapOpts(settings *v1.Settings) bootstrap.IstioValues {
 	istioValues := bootstrap.IstioValues{
-		// TODO: This value should be inherited at installation time, to determine if the istio integration is enabled
-		// In the interim, we use an env variable to control the value
-		SDSEnabled: envutils.IsEnvTruthy(constants.IstioMtlsEnabled),
+		IntegrationEnabled: settings.GetGloo().GetIstioOptions().GetEnableIntegration().GetValue(),
 
 		// TODO: enableIstioSidecarOnGateway should be removed as part of: https://github.com/solo-io/solo-projects/issues/5743
 		SidecarOnGatewayEnabled: envutils.IsEnvTruthy(constants.IstioInjectionEnabled),

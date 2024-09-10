@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/6121
+    resolvesIssue: false
+    description: |
+      Route delegation: enable HTTP route delegation with Gateway API, such that a parent route may delegate routing decisions to other routes that match the parent route rules consisting of path prefix, headers, and query parameters.
+    skipCI: false

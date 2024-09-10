@@ -19,7 +19,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/route/v3
 import "google/protobuf/struct.proto";
 
 // Contains various settings for Envoy's access logging service.
-// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/accesslog/v2/accesslog.proto#envoy-api-msg-config-filter-accesslog-v2-accesslog
+// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto
 message AccessLoggingService {
     repeated AccessLog access_log = 1;
 }

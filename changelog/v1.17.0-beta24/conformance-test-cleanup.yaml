@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5751
+    description: Clean up the k8s gateway api conformance test make targets and workflows, and add to nightlies.

@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/5934
+    resolvesIssue: true
+    description: >-
+      RouteOption resources used for policy attachment (via targetRef) will now have their
+      status correctly set based on the result of translation

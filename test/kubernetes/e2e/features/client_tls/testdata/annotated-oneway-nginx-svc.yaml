@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  namespace: nginx
+  annotations:
+    gloo.solo.io/sslService.secret: "my-tls"
+    gloo.solo.io/sslService.oneWayTls: "true"
+spec:
+  selector:
+    app.kubernetes.io/name: nginx
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: http-web-svc
+      name: http
+    - protocol: TCP
+      port: 8443
+      targetPort: https-web-svc
+      name: https
+

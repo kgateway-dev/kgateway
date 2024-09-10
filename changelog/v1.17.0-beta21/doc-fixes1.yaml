@@ -1,0 +1,6 @@
+changelog:
+- type: NON_USER_FACING  
+  description: >- 
+    Removes unit from value in advanced config.
+    skipCI-kube-tests:true
+  resolvesIssue: false

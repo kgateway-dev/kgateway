@@ -40,7 +40,7 @@ Constant labels - labels that are stable across releases
 We want this label to remain constant as it is used in glooctl version.
 */}}
 {{- define "gloo-gateway.gateway.constLabels" -}}
-gloo: gateway-v2
+gloo: kube-gateway
 {{- end }}
 
 
@@ -62,15 +62,16 @@ Selector labels
 {{- define "gloo-gateway.gateway.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "gloo-gateway.gateway.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
+gateway.networking.k8s.io/gateway-name: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-Create the name of the service account to use
+Return a container image value as a string
 */}}
-{{- define "gloo-gateway.gateway.serviceAccountName" -}}
-{{- if .Values.gateway.serviceAccount.create }}
-{{- default (include "gloo-gateway.gateway.fullname" .) .Values.gateway.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.gateway.serviceAccount.name }}
-{{- end }}
-{{- end }}
+{{- define "gloo-gateway.gateway.image" -}}
+{{- $image := printf "%s/%s:%s" .registry .repository .tag -}}
+{{- if .digest -}}
+{{- $image = printf "%s@%s" $image .digest -}}
+{{- end -}}{{- /* if .digest */ -}}
+{{ $image }}
+{{- end -}}{{- /* define "gloo-gateway.gateway.image" */ -}}

@@ -48,7 +48,7 @@ var _ = Describe("Route Configs", func() {
 			Expect(translator.ValidateRoutePath(strings.ToUpper(string(i)))).ToNot(HaveOccurred())
 		}
 		// digit
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			Expect(translator.ValidateRoutePath(strconv.Itoa(i))).ToNot(HaveOccurred())
 		}
 		unreservedChars := "-._~"

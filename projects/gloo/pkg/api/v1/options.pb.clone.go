@@ -29,6 +29,8 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ai "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_caching "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/caching"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_dlp "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/dlp"
@@ -42,6 +44,8 @@ import (
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_rbac "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/rbac"
+
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_stateful_session "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/stateful_session"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_waf "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/waf"
 
@@ -66,6 +70,8 @@ import (
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_grpc_web "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_web"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_hcm "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
+
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_header_validation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/header_validation"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_headers "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 
@@ -162,6 +168,12 @@ func (m *ListenerOptions) Clone() proto.Message {
 		target.ConnectionBalanceConfig = h.Clone().(*ConnectionBalanceConfig)
 	} else {
 		target.ConnectionBalanceConfig = proto.Clone(m.GetConnectionBalanceConfig()).(*ConnectionBalanceConfig)
+	}
+
+	if h, ok := interface{}(m.GetListenerAccessLoggingService()).(clone.Cloner); ok {
+		target.ListenerAccessLoggingService = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_als.AccessLoggingService)
+	} else {
+		target.ListenerAccessLoggingService = proto.Clone(m.GetListenerAccessLoggingService()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_als.AccessLoggingService)
 	}
 
 	return target
@@ -353,6 +365,18 @@ func (m *HttpListenerOptions) Clone() proto.Message {
 		target.Tap = proto.Clone(m.GetTap()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_tap.Tap)
 	}
 
+	if h, ok := interface{}(m.GetStatefulSession()).(clone.Cloner); ok {
+		target.StatefulSession = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_stateful_session.StatefulSession)
+	} else {
+		target.StatefulSession = proto.Clone(m.GetStatefulSession()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_stateful_session.StatefulSession)
+	}
+
+	if h, ok := interface{}(m.GetHeaderValidationSettings()).(clone.Cloner); ok {
+		target.HeaderValidationSettings = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_header_validation.HeaderValidationSettings)
+	} else {
+		target.HeaderValidationSettings = proto.Clone(m.GetHeaderValidationSettings()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_header_validation.HeaderValidationSettings)
+	}
+
 	switch m.ExtProcConfig.(type) {
 
 	case *HttpListenerOptions_DisableExtProc:
@@ -521,6 +545,12 @@ func (m *VirtualHostOptions) Clone() proto.Message {
 		target.ExtProc = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.RouteSettings)
 	} else {
 		target.ExtProc = proto.Clone(m.GetExtProc()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.RouteSettings)
+	}
+
+	if h, ok := interface{}(m.GetCorsPolicyMergeSettings()).(clone.Cloner); ok {
+		target.CorsPolicyMergeSettings = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_cors.CorsPolicyMergeSettings)
+	} else {
+		target.CorsPolicyMergeSettings = proto.Clone(m.GetCorsPolicyMergeSettings()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_cors.CorsPolicyMergeSettings)
 	}
 
 	switch m.RateLimitEarlyConfigType.(type) {
@@ -816,6 +846,12 @@ func (m *RouteOptions) Clone() proto.Message {
 		target.ExtProc = proto.Clone(m.GetExtProc()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.RouteSettings)
 	}
 
+	if h, ok := interface{}(m.GetAi()).(clone.Cloner); ok {
+		target.Ai = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ai.RouteSettings)
+	} else {
+		target.Ai = proto.Clone(m.GetAi()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ai.RouteSettings)
+	}
+
 	switch m.HostRewriteType.(type) {
 
 	case *RouteOptions_HostRewrite:
@@ -845,6 +881,18 @@ func (m *RouteOptions) Clone() proto.Message {
 		} else {
 			target.HostRewriteType = &RouteOptions_HostRewritePathRegex{
 				HostRewritePathRegex: proto.Clone(m.GetHostRewritePathRegex()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.RegexMatchAndSubstitute),
+			}
+		}
+
+	case *RouteOptions_HostRewriteHeader:
+
+		if h, ok := interface{}(m.GetHostRewriteHeader()).(clone.Cloner); ok {
+			target.HostRewriteType = &RouteOptions_HostRewriteHeader{
+				HostRewriteHeader: h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue),
+			}
+		} else {
+			target.HostRewriteType = &RouteOptions_HostRewriteHeader{
+				HostRewriteHeader: proto.Clone(m.GetHostRewriteHeader()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue),
 			}
 		}
 
@@ -957,6 +1005,18 @@ func (m *RouteOptions) Clone() proto.Message {
 		} else {
 			target.JwtConfig = &RouteOptions_JwtStaged{
 				JwtStaged: proto.Clone(m.GetJwtStaged()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_jwt.JwtStagedRouteExtension),
+			}
+		}
+
+	case *RouteOptions_JwtProvidersStaged:
+
+		if h, ok := interface{}(m.GetJwtProvidersStaged()).(clone.Cloner); ok {
+			target.JwtConfig = &RouteOptions_JwtProvidersStaged{
+				JwtProvidersStaged: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_jwt.JwtStagedRouteProvidersExtension),
+			}
+		} else {
+			target.JwtConfig = &RouteOptions_JwtProvidersStaged{
+				JwtProvidersStaged: proto.Clone(m.GetJwtProvidersStaged()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_jwt.JwtStagedRouteProvidersExtension),
 			}
 		}
 

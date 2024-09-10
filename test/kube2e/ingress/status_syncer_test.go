@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/solo-io/gloo/test/testutils/kubeutils"
+	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
 
 	"github.com/solo-io/gloo/projects/ingress/pkg/translator"
 
@@ -41,7 +41,7 @@ var _ = Describe("StatusSyncer", func() {
 			namespace = helpers.RandString(8)
 			ctx, cancel = context.WithCancel(context.Background())
 			var err error
-			kube = kubeutils.MustClientset()
+			kube = kubetestclients.MustClientset()
 			_, err = kube.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: namespace,
@@ -191,7 +191,7 @@ var _ = Describe("StatusSyncer", func() {
 
 		BeforeEach(func() {
 			ctx, cancel = context.WithCancel(context.Background())
-			kubeClientset = kubeutils.MustClientset()
+			kubeClientset = kubetestclients.MustClientset()
 
 			// Create test namespace
 			namespace = helpers.RandString(8)

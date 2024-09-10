@@ -130,6 +130,7 @@ An Endpoint that Envoy can route traffic to.
 "healthCheckConfig": .gloo.solo.io.LbEndpoint.HealthCheckConfig
 "upstreamSslConfig": .gloo.solo.io.UpstreamSslConfig
 "loadBalancingWeight": .google.protobuf.UInt32Value
+"metadata": map<string, .google.protobuf.Struct>
 
 ```
 
@@ -140,6 +141,7 @@ An Endpoint that Envoy can route traffic to.
 | `healthCheckConfig` | [.gloo.solo.io.LbEndpoint.HealthCheckConfig](../failover.proto.sk/#healthcheckconfig) | The optional health check configuration is used as configuration for the health checker to contact the health checked host. This takes into effect only for upstreams with active health checking enabled. |
 | `upstreamSslConfig` | [.gloo.solo.io.UpstreamSslConfig](../ssl/ssl.proto.sk/#upstreamsslconfig) |  |
 | `loadBalancingWeight` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The optional load balancing weight of the upstream host; at least 1. Envoy uses the load balancing weight in some of the built in load balancers. The load balancing weight for an endpoint is divided by the sum of the weights of all endpoints in the endpoint's locality to produce a percentage of traffic for the endpoint. This percentage is then further weighted by the endpoint's locality's load balancing weight from LocalityLbEndpoints. If unspecified, each host is presumed to have equal weight in a locality. |
+| `metadata` | `map<string, .google.protobuf.Struct>` | Additional metadata to add to the endpoint. This metadata can be used in upstream HTTP filters or other specific Envoy configurations. The following keys are added by Gloo Edge and are ignored if set: - "envoy.transport_socket_match" - "io.solo.health_checkers.advanced_http". |
 
 
 

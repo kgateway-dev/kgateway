@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Fix helm error with outdated cache in helm when installing cilium for kube2e tests

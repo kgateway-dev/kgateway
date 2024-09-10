@@ -2,6 +2,7 @@ package regexutils
 
 import (
 	"context"
+	"regexp"
 
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
@@ -11,22 +12,49 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
-func NewRegex(ctx context.Context, regex string) *envoy_type_matcher_v3.RegexMatcher {
-	settings := settingsutil.MaybeFromContext(ctx)
-	return NewRegexFromSettings(settings, regex)
+// NewCheckedRegex creates a new regex matcher with the given regex.
+// It is tightly coupled to envoy's implementation of regex.
+func NewCheckedRegex(ctx context.Context, candidateRegex string) (*envoy_type_matcher_v3.RegexMatcher, error) {
+	if err := CheckRegexString(candidateRegex); err != nil {
+		return nil, err
+	}
+	return NewRegex(ctx, candidateRegex), nil
 }
 
-func NewRegexFromSettings(settings *v1.Settings, regex string) *envoy_type_matcher_v3.RegexMatcher {
+// CheckRegexString to make sure the string is a valid RE2 expression
+func CheckRegexString(candidateRegex string) error {
+	// https://github.com/envoyproxy/envoy/blob/v1.30.0/source/common/common/regex.cc#L19C8-L19C14
+	// Envoy uses the RE2 library for regex matching in google's owned c++ impl.
+	// go has https://pkg.go.dev/regexp which implements RE2 with a single caveat.
+	_, err := regexp.Compile(candidateRegex)
+	return err
+}
+
+// NewRegex creates a new regex matcher with the given regex.
+// It is tightly coupled to envoy's implementation of regex.
+// Wraps NewRegexFromSettings which wraps NewRegexWithProgramSize which leads to the tight coupling.
+// NOTE: Call this after having checked regex with CheckRegexString.
+func NewRegex(ctx context.Context, candidateRegex string) *envoy_type_matcher_v3.RegexMatcher {
+	settings := settingsutil.MaybeFromContext(ctx)
+	return NewRegexFromSettings(settings, candidateRegex)
+}
+
+// NewRegexFromSettings wraps NewRegexWithProgramSize with the program size from the settings.
+// NOTE: Call this after having checked regex with CheckRegexString.
+func NewRegexFromSettings(settings *v1.Settings, candidateRegex string) *envoy_type_matcher_v3.RegexMatcher {
 	var programsize *uint32
 	if settings != nil {
 		if max_size := settings.GetGloo().GetRegexMaxProgramSize(); max_size != nil {
 			programsize = &max_size.Value
 		}
 	}
-	return NewRegexWithProgramSize(regex, programsize)
+	return NewRegexWithProgramSize(candidateRegex, programsize)
 }
 
-func NewRegexWithProgramSize(regex string, programsize *uint32) *envoy_type_matcher_v3.RegexMatcher {
+// NewRegexWithProgramSize creates a new regex matcher with the given program size.
+// This means its tightly coupled to envoy's implementation of regex.
+// NOTE: Call this after having checked regex with CheckRegexString.
+func NewRegexWithProgramSize(candidateRegex string, programsize *uint32) *envoy_type_matcher_v3.RegexMatcher {
 
 	var maxProgramSize *wrappers.UInt32Value
 	if programsize != nil {
@@ -39,7 +67,7 @@ func NewRegexWithProgramSize(regex string, programsize *uint32) *envoy_type_matc
 		EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
 			GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{MaxProgramSize: maxProgramSize},
 		},
-		Regex: regex,
+		Regex: candidateRegex,
 	}
 }
 

@@ -6,7 +6,7 @@ description: Explore local GraphQL resolution with the Bookinfo sample applicati
 
 Next, explore local GraphQL resolution with the Bookinfo sample application. 
 
-In Gloo Edge, you can create GraphQL resolvers to fetch the data from your backend when using _local execution_. Today Gloo Edge supports _local execution_ with REST and gRPC resolvers, and _remote execution_ for GraphQL servers. In the following steps, you create resolvers that point to Bookinfo services and use the resolvers in a GraphQL schema.
+In Gloo Gateway, you can create GraphQL resolvers to fetch the data from your backend when using _local execution_. Today Gloo Gateway supports _local execution_ with REST and gRPC resolvers, and _remote execution_ for GraphQL servers. In the following steps, you create resolvers that point to Bookinfo services and use the resolvers in a GraphQL schema.
 
 Note that this example uses _local execution_, which means the Envoy server executes GraphQL queries locally before it proxies them to the Bookinfo upstreams that provide the data requested in the queries.
 
@@ -15,12 +15,12 @@ Note that this example uses _local execution_, which means the Envoy server exec
    kubectl apply -f https://raw.githubusercontent.com/istio/istio/master/samples/bookinfo/platform/kube/bookinfo.yaml
    ```
 
-2. Verify that Gloo Edge automatically discovered the Bookinfo services and created corresponding `default-productpage-9080` upstream, which you will use in the REST resolver.
+2. Verify that Gloo Gateway automatically discovered the Bookinfo services and created corresponding `default-productpage-9080` upstream, which you will use in the REST resolver.
    ```sh
    kubectl get upstream -n gloo-system
    ```
 
-3. Check out the contents of the following Gloo Edge GraphQL API CRD. Specifically, take a look at the `restResolver` and `schemaDefinition` sections.
+3. Check out the contents of the following Gloo Gateway GraphQL API CRD. Specifically, take a look at the `restResolver` and `schemaDefinition` sections.
    ```sh
    curl https://raw.githubusercontent.com/solo-io/graphql-bookinfo/main/kubernetes/bookinfo-gql.yaml
    ```
@@ -73,7 +73,7 @@ Note that this example uses _local execution_, which means the Envoy server exec
 
 5. Update the `default` virtual service that you previously created to route traffic to `/graphql` to the new `bookinfo-graphql` GraphQL API.
    {{< highlight yaml "hl_lines=12-16" >}}
-cat << EOF | kubectl apply -f -
+kubectl apply -f - << EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:

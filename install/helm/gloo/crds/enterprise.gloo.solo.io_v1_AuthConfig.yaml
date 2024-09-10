@@ -41,10 +41,12 @@ spec:
                             certPath:
                               type: string
                             commitAll:
-                              format: int32
+                              maximum: 4294967295
+                              minimum: 0
                               type: integer
                             commitMaster:
-                              format: int32
+                              maximum: 4294967295
+                              minimum: 0
                               type: integer
                             hostname:
                               type: string
@@ -64,25 +66,31 @@ spec:
                             readModeAp:
                               properties:
                                 readModeApAll:
-                                  format: int32
+                                  maximum: 4294967295
+                                  minimum: 0
                                   type: integer
                                 readModeApOne:
-                                  format: int32
+                                  maximum: 4294967295
+                                  minimum: 0
                                   type: integer
                               type: object
                             readModeSc:
                               properties:
                                 readModeScAllowUnavailable:
-                                  format: int32
+                                  maximum: 4294967295
+                                  minimum: 0
                                   type: integer
                                 readModeScLinearize:
-                                  format: int32
+                                  maximum: 4294967295
+                                  minimum: 0
                                   type: integer
                                 readModeScReplica:
-                                  format: int32
+                                  maximum: 4294967295
+                                  minimum: 0
                                   type: integer
                                 readModeScSession:
-                                  format: int32
+                                  maximum: 4294967295
+                                  minimum: 0
                                   type: integer
                               type: object
                             rootCaPath:
@@ -93,16 +101,20 @@ spec:
                               items:
                                 properties:
                                   curveP256:
-                                    format: int32
+                                    maximum: 4294967295
+                                    minimum: 0
                                     type: integer
                                   curveP384:
-                                    format: int32
+                                    maximum: 4294967295
+                                    minimum: 0
                                     type: integer
                                   curveP521:
-                                    format: int32
+                                    maximum: 4294967295
+                                    minimum: 0
                                     type: integer
                                   x25519:
-                                    format: int32
+                                    maximum: 4294967295
+                                    minimum: 0
                                     type: integer
                                 type: object
                               type: array
@@ -210,7 +222,11 @@ spec:
                                     type: string
                                 type: object
                               type: array
+                          required:
+                          - secretRefs
                           type: object
+                      required:
+                      - secretRefs
                       type: object
                     jwt:
                       maxProperties: 0
@@ -256,6 +272,8 @@ spec:
                           type: string
                         userDnTemplate:
                           type: string
+                      required:
+                      - address
                       type: object
                     name:
                       nullable: true
@@ -285,6 +303,8 @@ spec:
                           items:
                             type: string
                           type: array
+                      required:
+                      - appUrl
                       type: object
                     oauth2:
                       properties:
@@ -314,6 +334,8 @@ spec:
                                   type: string
                                 userIdAttributeName:
                                   type: string
+                              required:
+                              - introspectionUrl
                               type: object
                             introspectionUrl:
                               type: string
@@ -325,6 +347,8 @@ spec:
                                   properties:
                                     inlineString:
                                       type: string
+                                  required:
+                                  - inlineString
                                   type: object
                                 remoteJwks:
                                   properties:
@@ -332,6 +356,8 @@ spec:
                                       type: string
                                     url:
                                       type: string
+                                  required:
+                                  - url
                                   type: object
                               type: object
                             requiredScopes:
@@ -462,6 +488,12 @@ spec:
                               additionalProperties:
                                 type: string
                               type: object
+                          required:
+                          - clientId
+                          - appUrl
+                          - callbackPath
+                          - authEndpoint
+                          - tokenEndpoint
                           type: object
                         oidcAuthorizationCode:
                           properties:
@@ -550,6 +582,8 @@ spec:
                                       type: object
                                     validFor:
                                       type: string
+                                  required:
+                                  - signingKeyRef
                                   type: object
                               type: object
                             clientId:
@@ -615,6 +649,11 @@ spec:
                                   type: string
                                   x-kubernetes-int-or-string: true
                               type: object
+                            frontChannelLogout:
+                              properties:
+                                path:
+                                  type: string
+                              type: object
                             headers:
                               properties:
                                 accessTokenHeader:
@@ -647,7 +686,8 @@ spec:
                                   maxProperties: 0
                                   type: object
                                 maxIdpReqPerPollingInterval:
-                                  format: int32
+                                  maximum: 4294967295
+                                  minimum: 0
                                   type: integer
                                 never:
                                   maxProperties: 0
@@ -745,6 +785,11 @@ spec:
                               additionalProperties:
                                 type: string
                               type: object
+                          required:
+                          - clientId
+                          - issuerUrl
+                          - appUrl
+                          - callbackPath
                           type: object
                       type: object
                     opaAuth:
@@ -767,6 +812,8 @@ spec:
                           type: object
                         query:
                           type: string
+                      required:
+                      - query
                       type: object
                     opaServerAuth:
                       properties:
@@ -783,6 +830,8 @@ spec:
                           type: string
                         serverAddr:
                           type: string
+                      required:
+                      - package
                       type: object
                     passThroughAuth:
                       properties:
@@ -814,6 +863,8 @@ spec:
                               type: object
                             tlsConfig:
                               type: object
+                          required:
+                          - address
                           type: object
                         http:
                           properties:
@@ -855,6 +906,8 @@ spec:
                               type: object
                             url:
                               type: string
+                          required:
+                          - url
                           type: object
                       type: object
                     pluginAuth:
@@ -868,6 +921,8 @@ spec:
                           type: string
                         pluginFileName:
                           type: string
+                      required:
+                      - config
                       type: object
                   type: object
                 type: array
@@ -881,6 +936,8 @@ spec:
                       x-kubernetes-preserve-unknown-fields: true
                     type: object
                 type: object
+            required:
+            - configs
             type: object
           status:
             default: {}

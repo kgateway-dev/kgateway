@@ -125,7 +125,7 @@ func getReleaseWithAsset(ctx context.Context, httpClient *http.Client, tag strin
 	// inexact version requested may be prerelease and not have assets
 	// We do assume that within a minor version we use monotonically increasing patch numbers
 	// We also assume that the first release that is not strict semver is technically the largest
-	for i := 0; i < maxPages; i++ {
+	for i := range maxPages {
 		// Get the next page of
 		listOpts := github.ListOptions{PerPage: 10, Page: i} // max per request
 		releases, _, err := g.Repositories.ListReleases(ctx, "solo-io", "gloo", &listOpts)

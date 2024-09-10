@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5939
+    resolvesIssue: false
+    description: >-
+      Combined the xDS syncers for the k8s Gateway and classic Edge proxies into a single syncer. Replaced the k8s Gateway
+      xDS syncer with proxy syncer. Removed k8s Gateway upstream and endpoint discovery in favor of classic Edge kube 
+      service discovery.

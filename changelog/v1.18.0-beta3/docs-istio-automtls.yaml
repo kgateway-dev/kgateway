@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >- 
+      Adds in the new auto-mtls feature for the Istio integration
+      skipCI-kube-tests:true

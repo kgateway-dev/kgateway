@@ -4,7 +4,25 @@ weight: 10
 description: Routing to explicitly and statically defined Upstreams
 ---
 
-Let's configure Gloo Edge to route to a single, static Upstream. In this case, we'll route requests through Gloo Edge to the JSON testing API available at `http://jsonplaceholder.typicode.com/`. 
+Let's configure Gloo Gateway to route to a single, static Upstream. In this case, we'll route requests through Gloo Gateway to the JSON testing API available at `http://jsonplaceholder.typicode.com/`. 
+
+{{% notice note %}}
+When you create a static upstream resource that points to a Kubernetes service address, such as in the following example, Gloo Gateway relies on `kube-proxy` to perform load balancing which might impact performance. To avoid performance impacts, you can use [dynamic Upstreams]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/discovered_upstream/" %}}) or manually create upstream resources that use label selectors to find the backing destination. 
+
+```yaml
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  name: httpbin-httpbin-static-8000
+  namespace: gloo-deployments
+spec:
+  static:
+    hosts:
+      - addr: httpbin.httpbin.svc.cluster.local
+        port: 8000
+```
+{{% /notice %}}
+
 
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
 

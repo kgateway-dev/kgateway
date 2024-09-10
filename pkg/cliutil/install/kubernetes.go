@@ -10,18 +10,7 @@ import (
 	"github.com/solo-io/gloo/pkg/cliutil"
 )
 
-func KubectlApply(manifest []byte, extraArgs ...string) error {
-	return Kubectl(bytes.NewBuffer(manifest), append([]string{"apply", "-f", "-"}, extraArgs...)...)
-}
-
-func KubectlApplyOut(manifest []byte, extraArgs ...string) ([]byte, error) {
-	return KubectlOut(bytes.NewBuffer(manifest), append([]string{"apply", "-f", "-"}, extraArgs...)...)
-}
-
-func KubectlDelete(manifest []byte, extraArgs ...string) error {
-	return Kubectl(bytes.NewBuffer(manifest), append([]string{"delete", "-f", "-"}, extraArgs...)...)
-}
-
+// Deprecated: Prefer kubectl.Cli
 type KubeCli interface {
 	Kubectl(stdin io.Reader, args ...string) error
 	KubectlOut(stdin io.Reader, args ...string) ([]byte, error)
@@ -45,24 +34,13 @@ func SetVerbose(b bool) {
 	verbose = b
 }
 
+// Deprecated: Prefer kubectl.Cli
 func Kubectl(stdin io.Reader, args ...string) error {
-	kubectl := exec.Command("kubectl", args...)
-	if stdin != nil {
-		kubectl.Stdin = stdin
-	}
-	if verbose {
-		fmt.Fprintf(os.Stderr, "running kubectl command: %v\n", kubectl.Args)
-		kubectl.Stdout = os.Stdout
-		kubectl.Stderr = os.Stderr
-	} else {
-		// use logfile
-		cliutil.Initialize()
-		kubectl.Stdout = cliutil.GetLogger()
-		kubectl.Stderr = cliutil.GetLogger()
-	}
-	return kubectl.Run()
+	_, err := KubectlOut(stdin, args...)
+	return err
 }
 
+// Deprecated: Prefer kubectl.Cli
 func KubectlOut(stdin io.Reader, args ...string) ([]byte, error) {
 	kubectl := exec.Command("kubectl", args...)
 

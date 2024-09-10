@@ -16,6 +16,7 @@ spec:
     validation:
       alwaysAccept: true
       allowWarnings: true
+      warnMissingTlsSecret: true
       serverEnabled: true
       disableTransformationValidation: false
       warnRouteShortCircuiting: false
@@ -36,6 +37,7 @@ spec:
     istioOptions:
      appendXForwardedHost: true
      enableAutoMtls: false
+     enableIntegration: false
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
   kubernetesSecretSource: {}

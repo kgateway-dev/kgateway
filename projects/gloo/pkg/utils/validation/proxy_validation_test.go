@@ -23,7 +23,7 @@ var _ = Describe("validation utils", func() {
 	numHttpListeners := 2
 	makeHttpProxy := func() *v1.Proxy {
 		proxy := &v1.Proxy{}
-		for i := 0; i < numListeners; i++ {
+		for range numListeners {
 			httpListener := &v1.HttpListener{}
 			proxy.Listeners = append(proxy.Listeners, &v1.Listener{
 				ListenerType: &v1.Listener_HttpListener{
@@ -31,11 +31,11 @@ var _ = Describe("validation utils", func() {
 				},
 			})
 
-			for j := 0; j < numVhosts; j++ {
+			for range numVhosts {
 				vh := &v1.VirtualHost{}
 				httpListener.VirtualHosts = append(httpListener.VirtualHosts, vh)
 
-				for k := 0; k < numRoutes; k++ {
+				for range numRoutes {
 					vh.Routes = append(vh.Routes, &v1.Route{})
 				}
 			}
@@ -44,7 +44,7 @@ var _ = Describe("validation utils", func() {
 	}
 	makeTcpProxy := func() *v1.Proxy {
 		proxy := &v1.Proxy{}
-		for i := 0; i < numListeners; i++ {
+		for range numListeners {
 			tcpListener := &v1.TcpListener{}
 			proxy.Listeners = append(proxy.Listeners, &v1.Listener{
 				ListenerType: &v1.Listener_TcpListener{
@@ -52,7 +52,7 @@ var _ = Describe("validation utils", func() {
 				},
 			})
 
-			for j := 0; j < numVhosts; j++ {
+			for range numVhosts {
 				vh := &v1.TcpHost{}
 				tcpListener.TcpHosts = append(tcpListener.TcpHosts, vh)
 			}
@@ -61,7 +61,7 @@ var _ = Describe("validation utils", func() {
 	}
 	makeHybridProxy := func() *v1.Proxy {
 		proxy := &v1.Proxy{}
-		for i := 0; i < numListeners; i++ {
+		for range numListeners {
 			hybridListener := &v1.HybridListener{}
 			proxy.Listeners = append(proxy.Listeners, &v1.Listener{
 				ListenerType: &v1.Listener_HybridListener{
@@ -69,10 +69,10 @@ var _ = Describe("validation utils", func() {
 				},
 			})
 
-			for l := 0; l < numTcpListeners; l++ {
+			for l := range numTcpListeners {
 				tcpListener := &v1.TcpListener{}
 
-				for j := 0; j < numVhosts; j++ {
+				for range numVhosts {
 					vh := &v1.TcpHost{}
 					tcpListener.TcpHosts = append(tcpListener.TcpHosts, vh)
 				}
@@ -89,14 +89,14 @@ var _ = Describe("validation utils", func() {
 					},
 				})
 			}
-			for l := 0; l < numHttpListeners; l++ {
+			for l := range numHttpListeners {
 				httpListener := &v1.HttpListener{}
 
-				for j := 0; j < numVhosts; j++ {
+				for range numVhosts {
 					vh := &v1.VirtualHost{}
 					httpListener.VirtualHosts = append(httpListener.VirtualHosts, vh)
 
-					for k := 0; k < numRoutes; k++ {
+					for range numRoutes {
 						vh.Routes = append(vh.Routes, &v1.Route{})
 					}
 				}

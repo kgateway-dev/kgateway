@@ -14,7 +14,7 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	errors "github.com/rotisserie/eris"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -39,15 +39,18 @@ var (
 	// for finding "pchar" characters = unreserved / pct-encoded / sub-delims / ":" / "@"
 	validPathRegexCharacters = "^(?:([A-Za-z0-9/:@._~!$&'()*+,:=;-]*|[%][0-9a-fA-F]{2}))*$"
 
-	NoDestinationSpecifiedError       = errors.New("must specify at least one weighted destination for multi destination routes")
-	SubsetsMisconfiguredErr           = errors.New("route has a subset config, but the upstream does not")
-	CompilingRoutePathRegexError      = errors.Errorf("error compiling route path regex: %s", validPathRegexCharacters)
-	ValidRoutePatternError            = errors.Errorf("must only contain valid characters matching pattern %s", validPathRegexCharacters)
+	// SubsetsMisconfiguredErr is a configuration warning error that should be reported
+	// as a resource validation warning, not error
+	SubsetsMisconfiguredErr = plugins.NewWarningConfigurationError("route has a subset config, but the upstream does not")
+
+	NoDestinationSpecifiedError       = eris.New("must specify at least one weighted destination for multi destination routes")
+	CompilingRoutePathRegexError      = eris.Errorf("error compiling route path regex: %s", validPathRegexCharacters)
+	ValidRoutePatternError            = eris.Errorf("must only contain valid characters matching pattern %s", validPathRegexCharacters)
 	PathContainsInvalidCharacterError = func(s, invalid string) error {
-		return errors.Errorf("path [%s] cannot contain [%s]", s, invalid)
+		return eris.Errorf("path [%s] cannot contain [%s]", s, invalid)
 	}
 	PathEndsWithInvalidCharactersError = func(s, invalid string) error {
-		return errors.Errorf("path [%s] cannot end with [%s]", s, invalid)
+		return eris.Errorf("path [%s] cannot end with [%s]", s, invalid)
 	}
 )
 
@@ -91,7 +94,7 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(params plug
 		VirtualHosts:                   h.computeVirtualHosts(params),
 		MaxDirectResponseBodySizeBytes: h.parentListener.GetRouteOptions().GetMaxDirectResponseBodySizeBytes(),
 	}
-	if h.translatorName == utils.GlooGatewayTranslatorValue {
+	if h.translatorName == utils.GatewayApiProxyValue {
 		// Gateway API spec requires that port values in HTTP Host headers be ignored when performing a match
 		// See https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io/v1.HTTPRouteSpec - hostnames field
 		cfg.IgnorePortInHostMatching = true
@@ -127,7 +130,6 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	virtualHost *v1.VirtualHost,
 	vhostReport *validationapi.VirtualHostReport,
 ) *envoy_config_route_v3.VirtualHost {
-
 	sanitizedName := utils.SanitizeForEnvoy(params.Ctx, virtualHost.GetName(), "virtual host")
 	if sanitizedName != virtualHost.GetName() {
 		virtualHost = virtualHost.Clone().(*v1.VirtualHost)
@@ -135,6 +137,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	}
 	var envoyRoutes []*envoy_config_route_v3.Route
 	for i, route := range virtualHost.GetRoutes() {
+
 		routeParams := plugins.RouteParams{
 			VirtualHostParams: params,
 			VirtualHost:       virtualHost,
@@ -164,11 +167,12 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	// run the plugins
 	for _, plugin := range h.pluginRegistry.GetVirtualHostPlugins() {
 		if err := plugin.ProcessVirtualHost(params, virtualHost, out); err != nil {
-			validation.AppendVirtualHostError(
+			reportVirtualHostPluginProcessingError(
+				params,
+				virtualHost,
 				vhostReport,
-				validationapi.VirtualHostReport_Error_ProcessingError,
-				fmt.Sprintf("invalid virtual host [%s]: %v", virtualHost.GetName(), err.Error()),
-			)
+				plugin,
+				err)
 		}
 	}
 	return out
@@ -286,7 +290,7 @@ func (h *httpRouteConfigurationTranslator) setAction(
 		}
 
 		routeAction := &envoy_config_route_v3.RouteAction{}
-		if h.translatorName == utils.GlooGatewayTranslatorValue {
+		if h.translatorName == utils.GatewayApiProxyValue {
 			// Gateway API spec requires that invalid refs result in a 500 status code
 			// See https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io/v1.HTTPRouteRule - backendRefs field
 			routeAction.ClusterNotFoundResponseCode = envoy_config_route_v3.RouteAction_INTERNAL_SERVER_ERROR
@@ -296,18 +300,7 @@ func (h *httpRouteConfigurationTranslator) setAction(
 		}
 
 		if err := h.setRouteAction(params, action.RouteAction, out.GetAction().(*envoy_config_route_v3.Route_Route).Route, routeReport, out.GetName()); err != nil {
-			if isWarningErr(err) {
-				validation.AppendRouteWarning(routeReport,
-					validationapi.RouteReport_Warning_InvalidDestinationWarning,
-					err.Error(),
-				)
-			} else {
-				validation.AppendRouteError(routeReport,
-					validationapi.RouteReport_Error_ProcessingError,
-					err.Error(),
-					out.GetName(),
-				)
-			}
+			reportRouteActionProcessingError(routeReport, out, err)
 		}
 		h.runRoutePlugins(params, routeReport, in, out)
 		h.runRouteActionPlugins(params, routeReport, in, out)
@@ -384,17 +377,13 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 	// run the plugins for RoutePlugin
 	for _, plugin := range h.pluginRegistry.GetRoutePlugins() {
 		if err := plugin.ProcessRoute(params, in, out); err != nil {
-			// plugins can return errors on missing upstream/upstream group
-			// we only want to report errors that are plugin-specific
-			// missing upstream(group) should produce a warning above
-			if isWarningErr(err) {
-				continue
-			}
-			validation.AppendRouteError(routeReport,
-				validationapi.RouteReport_Error_ProcessingError,
-				fmt.Sprintf("%T: %v", plugin, err.Error()),
-				out.GetName(),
-			)
+			reportRoutePluginProcessingError(
+				params,
+				routeReport,
+				in,
+				out,
+				plugin,
+				err)
 		}
 	}
 }
@@ -415,15 +404,12 @@ func (h *httpRouteConfigurationTranslator) runRouteActionPlugins(
 			Route:       in,
 		}
 		if err := plugin.ProcessRouteAction(raParams, in.GetRouteAction(), out.GetRoute()); err != nil {
-			// same as above
-			if isWarningErr(err) {
-				continue
-			}
-			validation.AppendRouteError(routeReport,
-				validationapi.RouteReport_Error_ProcessingError,
-				err.Error(),
-				out.GetName(),
-			)
+			reportRouteActionPluginProcessingError(
+				raParams,
+				routeReport,
+				out,
+				plugin,
+				err)
 		}
 	}
 }
@@ -451,7 +437,7 @@ func (h *httpRouteConfigurationTranslator) setRouteAction(params plugins.RoutePa
 			out.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{
 				Cluster: "",
 			}
-			return pluginutils.NewUpstreamGroupNotFoundErr(*upstreamGroupRef)
+			return pluginutils.NewUpstreamGroupNotFoundErr(upstreamGroupRef)
 		}
 		md := &v1.MultiDestination{
 			Destinations: upstreamGroup.GetDestinations(),
@@ -469,7 +455,7 @@ func (h *httpRouteConfigurationTranslator) setRouteAction(params plugins.RoutePa
 		}
 		return nil
 	}
-	return errors.Errorf("unknown upstream destination type")
+	return eris.Errorf("unknown upstream destination type")
 }
 
 func (h *httpRouteConfigurationTranslator) setWeightedClusters(params plugins.RouteParams, multiDest *v1.MultiDestination, out *envoy_config_route_v3.RouteAction, routeReport *validationapi.RouteReport, routeName string) error {
@@ -507,11 +493,13 @@ func (h *httpRouteConfigurationTranslator) setWeightedClusters(params plugins.Ro
 		// run the plugins for Weighted Destinations
 		for _, plugin := range h.pluginRegistry.GetWeightedDestinationPlugins() {
 			if err := plugin.ProcessWeightedDestination(params, weightedDest, weightedCluster); err != nil {
-				validation.AppendRouteError(routeReport,
-					validationapi.RouteReport_Error_ProcessingError,
-					err.Error(),
+				reportWeightedDestinationPluginProcessingError(
+					params,
+					routeReport,
 					routeName,
-				)
+					weightedCluster.GetName(),
+					plugin,
+					err)
 			}
 		}
 
@@ -583,7 +571,7 @@ func checkThatSubsetMatchesUpstream(params plugins.Params, dest *v1.Destination)
 
 	upstream, err := params.Snapshot.Upstreams.Find(ref.GetNamespace(), ref.GetName())
 	if err != nil {
-		return pluginutils.NewUpstreamNotFoundErr(*ref)
+		return pluginutils.NewUpstreamNotFoundErr(ref)
 	}
 
 	subsetConfig := getSubsets(upstream)
@@ -611,7 +599,7 @@ Outerloop:
 	}
 
 	if !found {
-		return errors.Errorf("route has a subset config, but none of the subsets in the upstream match it")
+		return eris.Errorf("route has a subset config, but none of the subsets in the upstream match it")
 
 	}
 	return nil
@@ -640,7 +628,7 @@ func (h *httpRouteConfigurationTranslator) setEnvoyPathMatcher(ctx context.Conte
 			SafeRegex: regexutils.NewRegex(ctx, path.Regex),
 		}
 	case *matchers.Matcher_Prefix:
-		if h.translatorName == utils.GlooGatewayTranslatorValue {
+		if h.translatorName == utils.GatewayApiProxyValue {
 			// Gateway API spec treats each path segment as a full word, i.e. a request with path /abcd should not match
 			// the matcher prefix /abc (but request to /abc/def should match) so we must use PathSeparatedPrefix unless
 			// the matcher path ends in / in which case we need to use Prefix (PathSeparatedPrefix cannot end in /)
@@ -800,7 +788,7 @@ func ValidateRouteDestinations(snap *v1snap.ApiSnapshot, action *v1.RouteAction)
 		// no need to validate dynamic forward proxy cluster as it's generated by the control plane
 		return nil
 	}
-	return errors.Errorf("must specify either 'singleDestination', 'multipleDestinations', 'upstreamGroup', 'clusterHeader', or 'dynamicForwardProxy' for action")
+	return eris.Errorf("must specify either 'singleDestination', 'multipleDestinations', 'upstreamGroup', 'clusterHeader', or 'dynamicForwardProxy' for action")
 }
 
 func ValidateTcpRouteDestinations(snap *v1snap.ApiSnapshot, action *v1.TcpHost_TcpAction) error {
@@ -816,14 +804,14 @@ func ValidateTcpRouteDestinations(snap *v1snap.ApiSnapshot, action *v1.TcpHost_T
 	case *v1.TcpHost_TcpAction_ForwardSniClusterName:
 		return nil
 	}
-	return errors.Errorf("must specify either 'singleDestination', 'multipleDestinations', 'upstreamGroup' or 'forwardSniClusterName' for action")
+	return eris.Errorf("must specify either 'singleDestination', 'multipleDestinations', 'upstreamGroup' or 'forwardSniClusterName' for action")
 }
 
 func validateUpstreamGroup(snap *v1snap.ApiSnapshot, ref *core.ResourceRef) error {
 
 	upstreamGroup, err := snap.UpstreamGroups.Find(ref.GetNamespace(), ref.GetName())
 	if err != nil {
-		return pluginutils.NewUpstreamGroupNotFoundErr(*ref)
+		return pluginutils.NewUpstreamGroupNotFoundErr(ref)
 	}
 	upstreams := snap.Upstreams
 
@@ -837,7 +825,7 @@ func validateUpstreamGroup(snap *v1snap.ApiSnapshot, ref *core.ResourceRef) erro
 func validateMultiDestination(upstreams []*v1.Upstream, destinations []*v1.WeightedDestination) error {
 	for _, dest := range destinations {
 		if err := validateSingleDestination(upstreams, dest.GetDestination()); err != nil {
-			return errors.Wrap(err, "invalid destination in weighted destination list")
+			return eris.Wrap(err, "invalid destination in weighted destination list")
 		}
 	}
 	return nil
@@ -850,14 +838,14 @@ func validateSingleDestination(upstreams v1.UpstreamList, destination *v1.Destin
 	}
 	_, err = upstreams.Find(upstreamRef.Strings())
 	if err != nil {
-		return pluginutils.NewUpstreamNotFoundErr(*upstreamRef)
+		return pluginutils.NewUpstreamNotFoundErr(upstreamRef)
 	}
 	return nil
 }
 
 func validateClusterHeader(header string) error {
 	// check that header name is only ASCII characters
-	for i := 0; i < len(header); i++ {
+	for i := range len(header) {
 		if header[i] > unicode.MaxASCII || header[i] == ':' {
 			return fmt.Errorf("%s is an invalid HTTP header name", header)
 		}
@@ -873,26 +861,15 @@ func DataSourceFromString(str string) *envoy_config_core_v3.DataSource {
 	}
 }
 
-func isWarningErr(err error) bool {
-	switch {
-	case err == SubsetsMisconfiguredErr:
-		fallthrough
-	case pluginutils.IsDestinationNotFoundErr(err):
-		return true
-	default:
-		return false
-	}
-}
-
 func validatePath(path, name string, routeReport *validationapi.RouteReport) {
 	if err := ValidateRoutePath(path); err != nil {
-		validation.AppendRouteError(routeReport, validationapi.RouteReport_Error_ProcessingError, errors.Wrapf(err, "the path is invalid: %s", path).Error(), name)
+		validation.AppendRouteError(routeReport, validationapi.RouteReport_Error_ProcessingError, eris.Wrapf(err, "the path is invalid: %s", path).Error(), name)
 	}
 }
 
 func validatePrefixRewrite(rewrite, name string, routeReport *validationapi.RouteReport) {
 	if err := ValidatePrefixRewrite(rewrite); err != nil {
-		validation.AppendRouteError(routeReport, validationapi.RouteReport_Error_ProcessingError, errors.Wrapf(err, "the rewrite is invalid: %s", rewrite).Error(), name)
+		validation.AppendRouteError(routeReport, validationapi.RouteReport_Error_ProcessingError, eris.Wrapf(err, "the rewrite is invalid: %s", rewrite).Error(), name)
 	}
 }
 

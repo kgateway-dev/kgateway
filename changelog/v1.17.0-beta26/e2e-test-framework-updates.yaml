@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5981
+    resolvesIssue: false
+    description: >-
+      E2E test framework updates to support enterprise e2e tests.

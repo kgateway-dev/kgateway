@@ -10,7 +10,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: gateway-proxy-access-logger
   name: gateway-proxy-access-logger
   namespace: {{ $.Release.Namespace }}
@@ -57,6 +57,7 @@ spec:
         - image: {{ template "gloo.image" $image }}
           imagePullPolicy: {{ $image.pullPolicy }}
           name: access-logger
+          {{- include "gloo.containerSecurityContext" (dict "values" .Values.accessLogger.accessLoggerContainerSecurityContext "podSecurityStandards" .Values.global.podSecurityStandards "indent" 10 "globalSec" .Values.global.securitySettings) }}
 {{- if .Values.accessLogger.resources }}
           resources:
 {{ toYaml .Values.accessLogger.resources | indent 12}}

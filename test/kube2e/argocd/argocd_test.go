@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/helmutils"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -31,7 +33,7 @@ var _ = Describe("Kube2e: ArgoCD", func() {
 
 		testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 			defaults.RootDir = filepath.Join(cwd, "../../..")
-			defaults.HelmChartName = "gloo"
+			defaults.HelmChartName = helmutils.ChartName
 			defaults.InstallNamespace = namespace
 			defaults.Verbose = true
 			return defaults
@@ -150,5 +152,5 @@ func checkGlooHealthy(testHelper *helper.SoloTestHelper) {
 	for _, deploymentName := range deploymentNames {
 		runAndCleanCommand("kubectl", "rollout", "status", "deployment", "-n", testHelper.InstallNamespace, deploymentName)
 	}
-	kube2e.GlooctlCheckEventuallyHealthy(2, testHelper, "90s")
+	kube2e.GlooctlCheckEventuallyHealthy(2, testHelper.InstallNamespace, "90s")
 }

@@ -7,7 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/solo-io/gloo/test/testutils/kubeutils"
+	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
+
+	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 
 	kubeutils2 "github.com/solo-io/gloo/test/testutils"
 
@@ -46,6 +48,8 @@ var (
 	testHelper        *helper.SoloTestHelper
 	resourceClientset *kube2e.KubeResourceClientSet
 	snapshotWriter    helpers.SnapshotWriter
+
+	kubeCli *kubectl.Cli
 )
 
 var _ = BeforeSuite(StartTestHelper)
@@ -57,7 +61,9 @@ func StartTestHelper() {
 
 	testHelper, err = kube2e.GetTestHelper(ctx, namespace)
 	Expect(err).NotTo(HaveOccurred())
-	skhelpers.RegisterPreFailHandler(helpers.StandardGlooDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
+	skhelpers.RegisterPreFailHandler(helpers.StandardGlooDumpOnFail(GinkgoWriter, metav1.ObjectMeta{Namespace: testHelper.InstallNamespace}))
+
+	kubeCli = kubectl.NewCli().WithReceiver(GinkgoWriter)
 
 	// Allow skipping of install step for running multiple times
 	if !kubeutils2.ShouldSkipInstall() {
@@ -86,7 +92,7 @@ func installGloo() {
 	Expect(err).NotTo(HaveOccurred())
 
 	// Check that everything is OK
-	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper.InstallNamespace, "90s")
 
 	// Ensure gloo reaches valid state and doesn't continually resync
 	// we can consider doing the same for leaking go-routines after resyncs
@@ -97,6 +103,6 @@ func uninstallGloo() {
 	Expect(testHelper).ToNot(BeNil())
 	err := testHelper.UninstallGloo()
 	Expect(err).NotTo(HaveOccurred())
-	_, err = kubeutils.MustClientset().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
+	_, err = kubetestclients.MustClientset().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
 	Expect(apierrors.IsNotFound(err)).To(BeTrue())
 }

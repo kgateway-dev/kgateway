@@ -1,6 +1,6 @@
 # Pull Request Reviews
 
-This doc explains the best practices for reviewing a pull request in the [Gloo Edge project](https://github.com/solo-io/gloo).
+This doc explains the best practices for reviewing a pull request in the [Gloo Gateway project](https://github.com/solo-io/gloo).
 If you are looking to contribute to the project, check out the [writing pull requests guide](pull-requests.md).
 
 - [Reviewing Pull Requests](#reviewing-pull-requests)
@@ -30,13 +30,17 @@ try
 
 _"Am I understanding this correctly? Can you explain why...?"_
 
+Internal developers should not be shy about posting questions on the issue rather than in a private message. Having these conversations on the issue itself is valuable for increasing visibility both for other reviewers and future developers trying to understand past decision-making. Conversations that occur in Slack can be summarized and linked.
+
 ### Identify Nits
 Use the prefix “nit” when making a comment about something nitpicky, such as code style/formatting, variable names, etc. Nits express your opinion that something could be better, but that it’s not critical or necessary for correctness or system health. The author can choose to ignore such feedback, but it’s still useful to provide it.
+
+When you identify a comment as a nit, you are delegating "ownernship" of that conversation to the PR author. That means that they have the ability to respond to the proposal, implement a change, or just resolve the conversation without taking any action.
 
 ### Requesting Changes
 Be mindful of the manner (especially the language) in which you deliver critical feedback, especially feedback that may require the author to make significant changes. You might also consider reaching out to the author directly to discuss things offline after submitting the review. 
 
-Don’t be afraid to give critical feedback, whether it is technical feedback on a PR or interpersonal feedback about behavior. We assume good intent and remember that we are on the same team.
+_Don’t be afraid to give critical feedback, whether it is technical feedback on a PR or interpersonal feedback about behavior. We assume good intent and remember that we are on the same team._
 
 ### Providing Guidance
 When requesting a change, provide clear guidance on how it should be done instead. This can include direct suggestions in the PR review, links to a GitHub issue, a Slack conversation, a design doc, or another project's codebase.
@@ -56,9 +60,9 @@ After pulling down the code, you should try running the tests locally to ensure 
 ## Approving Pull Requests
 
 ### Code Maintainers
-Solo.io has a dedicated team maintaining the Gloo Edge project. When you submit a PR for Gloo Edge, one of these maintainers will initiate the automation on your PR, and provide a review.
+Solo.io has a dedicated team maintaining the Gloo Gateway project. When you submit a PR for Gloo Gateway, one of these maintainers will initiate the automation on your PR, and provide a review.
 
-If there are particular areas of the codebase that are being modified, it is important to identify subject-matter experts (SME) for those changes. If you do know know who this is, use the `@solo-io/gloo-edge-leads` GitHub handle to tag the Gloo Edge technical leads, and they will identify the SMEs. If you can explicitly identify the domains that are being affected, it is easier to identify the relevant parties to review the code.
+If there are particular areas of the codebase that are being modified, it is important to identify subject-matter experts (SME) for those changes. If you do not know the SME, use the `@solo-io/gloo-edge-leads` GitHub handle to tag the Gloo Gateway technical leads, and they will identify the SMEs. If you can explicitly identify the domains that are being affected, it is easier to identify the relevant parties to review the code.
 
 ### Requirements
 Each PR requires 2 maintainers to approve the changes. The intention here is to distribute knowledge across more people, and provide an opportunity for broader perspective when reviewing the changes.
@@ -67,3 +71,14 @@ Each PR requires 2 maintainers to approve the changes. The intention here is to 
 By approving a pull request, you are indicating that you have reviewed the changes and are confident that they are correct and to your understanding will not cause any issues. You are signing on as a co-author of the changes, and we expect that if you are comfortable approving a PR, you are also comfortable with this responsibility, which includes being a point of contact regarding these changes in the future.
 
 *If the changes look good to you, but you recognize that you are not the best person to review the changes, instead of approving the PR, comment that the changes look good to you and clarify why you aren't comfortable approving.*
+
+### Open Conversations
+We have branch protection rules that prevent a PR from merging when there are open conversations on a PR.
+
+It it up to the author and reviewers to make sure all conversations are resolved, though we recommend the following strategy:
+- If there is a trivial technical proposal that the PR author implemented, they can resolve the conversation when it's completed
+- If there is a nit, the PR author has complete autonomy to decide how to proceed
+- If there is a non-trivial technical proposal that the PR author implemented, they should leave the conversation open to ensure the reviewer is satisfied with the change
+
+**An important side-effect of this, is that as a reviewer if you only have nits on a PR, you should approve that PR**
+

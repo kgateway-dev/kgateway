@@ -54,13 +54,13 @@ When you contact Solo Support, you can choose a priority for your request:
 
 |Priority Level| Standard Support Policy    |Enhanced Support Policy|
 |--|----------------------------|--|
-|Urgent**| 1 hour (24/7/365)          |15 minutes (24/7/365)|
+|Urgent`**`| 1 hour (24/7/365)          |15 minutes (24/7/365)|
 |High|4 Business Hours Local Time |2 hours (24/7/365)|
 |Normal|8 Business Hours Local Time|4 Business Hours Local Time|
 |Low|24 Business Hours Local Time|12 Business Hours Local Time|
 
 {{% notice warning %}}
-**To report Urgent priority, production-related issues, you must contact Solo’s Support Hotline at `+1-601-476-5646`. 
+`**`For urgent priority issues that impact production, call the [Support Hotline](https://support.solo.io/hc/en-us/articles/25251551340692-Support-Number).
 {{% /notice %}} 
 
 {{% notice note %}}
@@ -83,8 +83,8 @@ If the macro hasn't been added to a channel, ask a Solo team member to assist yo
 Check out the following guides to start troubleshooting your environment and to collect the information to provide in your support request. 
 
 - Downloadable version of our versioned [Technical Support Policy](https://legal.solo.io/#technical-support-policy)
-- [Gloo Edge contribution guidelines]({{% versioned_link_path fromRoot="/contributing/" %}})
-- [Gloo Edge community](https://github.com/solo-io/gloo/tree/main)
+- [Gloo Gateway contribution guidelines]({{% versioned_link_path fromRoot="/contributing/" %}})
+- [Gloo Gateway community](https://github.com/solo-io/gloo/tree/main)
 
 <!--
 - [Communities of Practice repository on GitHub](https://github.com/solo-io/solo-cop)

@@ -1,15 +1,11 @@
 ---
-title: "Installing Gloo Edge on Kubernetes"
+title: "Installing Gloo Gateway on Kubernetes"
 menuTitle: "Kubernetes"
-description: How to install Gloo Edge to run in Gateway Mode on Kubernetes (Default).
+description: How to install Gloo Gateway to run in Gateway Mode on Kubernetes (Default).
 weight: 10
 ---
 
-Gloo Edge can be installed on a Kubernetes cluster by using either the [`glooctl` command line tool](#installing-on-kubernetes-with-glooctl) or a [Helm chart](#installing-on-kubernetes-with-helm). The following document will take you through the process of either installation, [verifying the installation](#verify-your-installation), and [how to remove Gloo Edge](#uninstall) if necessary.
-
-{{% notice note %}}
-Minimum required Kubernetes is 1.11.x. For older versions see our [release support guide]({{% versioned_link_path fromRoot="/reference/support/#kubernetes" %}})
-{{% /notice %}}
+Gloo Gateway can be installed on a Kubernetes cluster by using either the [`glooctl` command line tool](#installing-on-kubernetes-with-glooctl) or a [Helm chart](#installing-on-kubernetes-with-helm). Follow this guide to install, [verify the installation](#verify-your-installation), or [uninstall](#uninstall) Gloo Gateway.
 
 ---
 
@@ -17,13 +13,12 @@ Minimum required Kubernetes is 1.11.x. For older versions see our [release suppo
 
 1. Make sure that you prepared your Kubernetes cluster according to the [instructions for platform configuration]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}).
    {{% notice note %}}
-   Pay attention to provider-specific information in the setup guide. For example, [OpenShift]({{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/#openshift" >}}) requires stricter multi-tenant support, so the setup guide includes an example Helm chart `values.yaml` file that you must supply while installing Gloo Edge Enterprise.
+   Pay attention to provider-specific information in the setup guide. For example, [OpenShift]({{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/#openshift" >}}) requires stricter multi-tenant support, so the setup guide includes an example Helm chart `values.yaml` file that you must supply while installing Gloo Gateway Enterprise.
    {{% /notice %}}
-2. Get your Gloo Edge Enterprise license key. If you don't have one already, you may request a trial license key [here](https://www.solo.io/products/gloo/#enterprise-trial).
-   {{% notice info %}}
-   You must provide the license key during the installation process. When you install Gloo Edge, a Kubernetes secret is created to store the license key. Note that each trial license key is typically valid for **30 days**. When the license key expires, you can request a new license key by contacting your Account Representative or filling out [this form](https://lp.solo.io/request-trial). For more information, see [Updating Enterprise Licenses]({{< versioned_link_path fromRoot="/operations/updating_license/" >}}).
-   {{% /notice %}}
-3. Check whether `glooctl`, the Gloo Edge command line tool (CLI), is installed.
+
+2. **Enterprise Edition only**: Get your Gloo Gateway Enterprise license key. {{< readfile file="static/content/license-key" markdown="true">}}
+
+3. Check whether `glooctl`, the Gloo Gateway command line tool (CLI), is installed.
    ```bash
    glooctl version
    ```
@@ -32,24 +27,24 @@ Minimum required Kubernetes is 1.11.x. For older versions see our [release suppo
 
 {{< readfile file="installation/glooctl_setup.md" markdown="true" >}}
 
-## Installing Gloo Edge on Kubernetes
+## Installing Gloo Gateway on Kubernetes
 
-Review the following steps to install Gloo Edge with `glooctl` or with Helm.
+Review the following steps to install Gloo Gateway with `glooctl` or with Helm.
 
 ### Installing on Kubernetes with `glooctl`
 
-Once your Kubernetes cluster is up and running, run the following command to deploy Gloo Edge to the `gloo-system` namespace:
+Once your Kubernetes cluster is up and running, run the following command to deploy Gloo Gateway to the `gloo-system` namespace:
 
 ```bash
 glooctl install gateway
 ```
 
 <details>
-<summary>Special Instructions to Install Gloo Edge on Kind</summary>
-If you followed the cluster setup instructions for Kind <a href="{{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/#kind" >}}">here</a>, then you should have exposed custom ports 31500 (for http) and 32500 (https) from your cluster's Docker container to its host machine. The purpose of this is to make it easier to access your service endpoints from your host workstation.  Use the following custom installation for Gloo Edge to publish those same ports from the proxy as well.
+<summary>Special Instructions to Install Gloo Gateway on Kind</summary>
+If you followed the cluster setup instructions for Kind <a href="{{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/#kind" >}}">here</a>, then you should have exposed custom ports 31500 (for http) and 32500 (https) from your cluster's Docker container to its host machine. The purpose of this is to make it easier to access your service endpoints from your host workstation.  Use the following custom installation for Gloo Gateway to publish those same ports from the proxy as well.
 
 ```bash
-cat <<EOF | glooctl install gateway --values -
+glooctl install gateway --values - << EOF
 gatewayProxies:
   gatewayProxy:
     service:
@@ -63,12 +58,12 @@ EOF
 
 ```
 Creating namespace gloo-system... Done.
-Starting Gloo Edge installation...
+Starting Gloo Gateway installation...
 
-Gloo Edge was successfully installed!
+Gloo Gateway was successfully installed!
 ```
 
-Note also that the url to invoke services published via Gloo Edge will be slightly different with Kind-hosted clusters.  Much of the Gloo Edge documentation instructs you to use `$(glooctl proxy url)` as the header for your service url.  This will not work with kind.  For example, instead of using curl commands like this:
+Note also that the url to invoke services published via Gloo Gateway will be slightly different with Kind-hosted clusters.  Much of the Gloo Gateway documentation instructs you to use `$(glooctl proxy url)` as the header for your service url.  This will not work with kind.  For example, instead of using curl commands like this:
 
 ```bash
 curl $(glooctl proxy url)/all-pets
@@ -87,22 +82,22 @@ curl http://localhost:31500/all-pets
   <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/glooctl-gateway-install.mp4" type="video/mp4">
 </video>
 
-Once you've installed Gloo Edge, please be sure [to verify your installation]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/#verify-your-installation" %}}).
+Once you've installed Gloo Gateway, please be sure [to verify your installation]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/#verify-your-installation" %}}).
 
 
 {{% notice note %}}
 You can run the command with the flag `--dry-run` to output the Kubernetes manifests (as `yaml`) that `glooctl` will apply to the cluster instead of installing them.
-Note that a proper Gloo Edge installation depends on [Helm Chart Hooks](https://helm.sh/docs/topics/charts_hooks/), so the behavior of your installation
+Note that a proper Gloo Gateway installation depends on [Helm Chart Hooks](https://helm.sh/docs/topics/charts_hooks/), so the behavior of your installation
 may not be correct if you install by directly applying the dry run manifests, e.g. `glooctl install gateway --dry-run | kubectl apply -f -`.
 {{% /notice %}}
 
 ### Installing on Kubernetes with Helm
 
 {{% notice warning %}}
-Using Helm 2 is not supported in Gloo Edge.
+Using Helm 2 is not supported in Gloo Gateway.
 {{% /notice %}}
 
-As a first step, you have to add the Gloo Edge repository to the list of known chart repositories, as well as prepare the installation namespace:
+As a first step, you have to add the Gloo Gateway repository to the list of known chart repositories, as well as prepare the installation namespace:
 
 ```shell
 helm repo add gloo https://storage.googleapis.com/solo-public-helm
@@ -116,13 +111,13 @@ For an installation with all the default values, use one of the following comman
 helm install gloo gloo/gloo --namespace my-namespace
 ```
 
-Once you've installed Gloo Edge, please be sure [to verify your installation]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/#verify-your-installation" %}}).
+Once you've installed Gloo Gateway, please be sure [to verify your installation]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/#verify-your-installation" %}}).
 
 <br>
 
 #### Customizing your installation with Helm
 
-You can customize the Gloo Edge installation by providing your own Helm chart values file.
+You can customize the Gloo Gateway installation by providing your own Helm chart values file.
 
 For example, you can create a file named `value-overrides.yaml` with the following content.
 
@@ -134,15 +129,23 @@ global:
 settings:
   # configure gloo to write generated custom resources to a custom namespace
   writeNamespace: my-custom-namespace
+  watchNamespaces:
+  - default
+  - my-custom-namespace
+gloo:
+  gateway:
+    # For multiple gateways: read Gateway config in all 'watchNamespaces',
+    # not just the namespace that the gateway controller is deployed to
+    readGatewaysFromAllNamespaces: true 
 ```
 
-Then, refer to the file during installation to override default values in the Gloo Edge Helm chart.
+Then, refer to the file during installation to override default values in the Gloo Gateway Helm chart.
 
 ```shell
 helm install gloo-custom-0-7-6 gloo/gloo --namespace my-namespace -f value-overrides.yaml
 ```
 
-#### List of Gloo Edge Helm chart values
+#### List of Gloo Gateway Helm chart values
 
 The [Helm Chart Values page]({{< versioned_link_path fromRoot="/reference/helm_chart_values/" >}}) describes all the values that you can override in your custom values file.
 
@@ -150,7 +153,7 @@ The [Helm Chart Values page]({{< versioned_link_path fromRoot="/reference/helm_c
 
 ## Verify your Installation
 
-To verify that your installation was successful, check that the Gloo Edge pods and services have been created. Depending on your install options, you may see some differences from the following example. If you choose to install Gloo Edge into a namespace other than the default `gloo-system`, you will need to query your chosen namespace instead.
+To verify that your installation was successful, check that the Gloo Gateway pods and services have been created. Depending on your install options, you may see some differences from the following example. If you choose to install Gloo Gateway into a namespace other than the default `gloo-system`, you will need to query your chosen namespace instead.
 
 ```shell
 kubectl get all -n gloo-system
@@ -191,7 +194,7 @@ NOT opening the listener ports when there are no listeners (routes) is by design
 
 ## Uninstall {#uninstall}
 
-To uninstall Gloo Edge, you can use the `glooctl` CLI. If you installed Gloo Edge to a different namespace, include the `-n` option.
+To uninstall Gloo Gateway, you can use the `glooctl` CLI. If you installed Gloo Gateway to a different namespace, include the `-n` option.
 
 ```shell
 glooctl uninstall -n my-namespace
@@ -200,7 +203,7 @@ glooctl uninstall -n my-namespace
 By default, the `gloo-system` namespace and Custom Resource Definitions created by the `glooctl install` command are not removed. To remove the namespace and CRDs, include the `--all` option. 
 
 {{% notice warning %}}
-Make sure that your cluster has no other instances of Gloo Edge running, such as by running `kubectl get pods --all-namespaces`. If you remove the CRDs while Gloo Edge is still installed, you will experience errors.
+Make sure that your cluster has no other instances of Gloo Gateway running, such as by running `kubectl get pods --all-namespaces`. If you remove the CRDs while Gloo Gateway is still installed, you will experience errors.
 {{% /notice %}}
 
 ```shell
@@ -217,6 +220,6 @@ glooctl uninstall --all
 
 ## Next Steps
 
-After you've installed Gloo Edge, please check out our user guides on [Traffic Management]({{< versioned_link_path fromRoot="/guides/traffic_management/" >}}).
+After you've installed Gloo Gateway, please check out our user guides on [Traffic Management]({{< versioned_link_path fromRoot="/guides/traffic_management/" >}}).
 
 {{< readfile file="static/content/upgrade-note.md" markdown="true">}}

@@ -1,5 +1,6 @@
 ---
 title: "glooctl"
+description: "Reference for the 'glooctl' command."
 weight: 5
 ---
 ## glooctl
@@ -42,9 +43,10 @@ glooctl is the unified CLI for Gloo.
 * [glooctl demo](../glooctl_demo)	 - Demos (requires 4 tools to be installed and accessible via the PATH: glooctl, kubectl, docker, and kind.)
 * [glooctl edit](../glooctl_edit)	 - Edit a Gloo resource
 * [glooctl get](../glooctl_get)	 - Display one or a list of Gloo resources
-* [glooctl init-plugin-manager](../glooctl_init-plugin-manager)	 - Install the Gloo Edge Enterprise CLI plugin manager
+* [glooctl init-plugin-manager](../glooctl_init-plugin-manager)	 - Install the Gloo Gateway Enterprise CLI plugin manager
 * [glooctl install](../glooctl_install)	 - install gloo on different platforms
 * [glooctl istio](../glooctl_istio)	 - Commands for interacting with Istio in Gloo
+* [glooctl license](../glooctl_license)	 - subcommands for interacting with the license
 * [glooctl plugin](../glooctl_plugin)	 - Commands for interacting with glooctl plugins
 * [glooctl proxy](../glooctl_proxy)	 - interact with proxy instances managed by Gloo
 * [glooctl remove](../glooctl_remove)	 - remove configuration items from a top-level Gloo resource

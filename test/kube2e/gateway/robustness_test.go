@@ -324,6 +324,16 @@ var _ = Describe("Robustness tests", func() {
 				}, "15s", "0.5s").Should(BeTrue())
 			})
 
+			// See helper.CurlOpts.Retries for explanation about why retries are useful
+			withBasicRetries := func(opts helper.CurlOpts) helper.CurlOpts {
+				opts.Retries = struct {
+					Retry        int
+					RetryDelay   int
+					RetryMaxTime int
+				}{Retry: 3, RetryDelay: 0, RetryMaxTime: 5}
+				return opts
+			}
+
 			firstRouteCurlOpts := func() helper.CurlOpts {
 				return helper.CurlOpts{
 					Protocol:          "http",
@@ -366,7 +376,7 @@ var _ = Describe("Robustness tests", func() {
 						return testHelper.Curl(firstRouteCurlOpts())
 					}, "30s", "1s").Should(ContainSubstring(validRouteResponse))
 					g.Consistently(func() (string, error) {
-						return testHelper.Curl(firstRouteCurlOpts())
+						return testHelper.Curl(withBasicRetries(firstRouteCurlOpts()))
 					}, "5s", "1s").Should(ContainSubstring(validRouteResponse))
 
 					// can no longer route to appName2 since its k8s service has been removed
@@ -377,7 +387,7 @@ var _ = Describe("Robustness tests", func() {
 						return testHelper.Curl(secondRouteCurlOpts())
 					}, "30s", "1s").Should(ContainSubstring(invalidRouteResponse))
 					g.Consistently(func() (string, error) {
-						return testHelper.Curl(secondRouteCurlOpts())
+						return testHelper.Curl(withBasicRetries(secondRouteCurlOpts()))
 					}, "5s", "1s").Should(ContainSubstring(invalidRouteResponse))
 
 				}, "30s").Should(Succeed())

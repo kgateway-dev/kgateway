@@ -9,7 +9,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: discovery
   name: discovery
   namespace: {{ .Release.Namespace }}
@@ -58,16 +58,16 @@ spec:
 {{ toYaml .Values.discovery.deployment.resources | indent 10}}
 {{- end}}
         # container security context
-        securityContext:
-          readOnlyRootFilesystem: true
-          allowPrivilegeEscalation: false
-          runAsNonRoot: true
-          {{- if not .Values.discovery.deployment.floatingUserId }}
-          runAsUser: {{ printf "%.0f" (float64 .Values.discovery.deployment.runAsUser) -}}
-          {{- end }}
-          capabilities:
-            drop:
-            - ALL
+        {{- $capabilities := dict "drop" (list "ALL") -}}
+        {{- $securityDefaults := dict
+            "readOnlyRootFilesystem" true
+            "allowPrivilegeEscalation" false
+            "runAsNonRoot" true
+            "capabilities" $capabilities -}}
+        {{- if not .Values.discovery.deployment.floatingUserId -}}
+          {{- $_ := set $securityDefaults "runAsUser" .Values.discovery.deployment.runAsUser }}
+        {{- end -}}
+        {{- include "gloo.containerSecurityContext" (dict "values" .Values.discovery.deployment.discoveryContainerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8 "globalSec" .Values.global.securitySettings) }}
         env:
 {{- if .Values.license_secret_name }}
           - name: GLOO_LICENSE_KEY
@@ -96,15 +96,16 @@ spec:
           - name: http-monitoring
             containerPort: 9091
         {{- end }}
-      # Pod security context
-      {{- if .Values.discovery.deployment.enablePodSecurityContext }}
-      securityContext:
+      {{- /* Pod Security Context */ -}}
+      {{- if and .Values.discovery.deployment.enablePodSecurityContext (not .Values.global.securitySettings.floatingUserId) }}
+        {{- $securityDefaults := dict -}}
         {{- if .Values.discovery.deployment.fsGroup }}
-        fsGroup: {{ printf "%.0f" (float64 .Values.discovery.deployment.fsGroup) }}
-        {{- end}}
+          {{- $_ := set $securityDefaults "fsGroup" (int64 (printf "%.0f" (float64 .Values.discovery.deployment.fsGroup))) -}}
+        {{- end -}}
         {{- if .Values.discovery.deployment.runAsUser }}
-        runAsUser: {{ printf "%.0f" (float64 .Values.discovery.deployment.runAsUser) }}
+          {{- $_ := set $securityDefaults "runAsUser" (int64 (printf "%.0f" (float64 .Values.discovery.deployment.runAsUser))) -}}
         {{- end }}
+        {{- include "gloo.securityContext" (dict "defaults" $securityDefaults "indent" 6 "globalSec" .Values.global.securitySettings) -}}
       {{- end}}
 {{- end }}
 {{- end }} {{/* define "discovery.deploymentSpec"*/}}

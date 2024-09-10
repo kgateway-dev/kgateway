@@ -13,6 +13,14 @@ const (
 	// installation from a previous run
 	SkipInstall = "SKIP_INSTALL"
 
+	// InstallNamespace is the namespace in which Gloo is installed
+	InstallNamespace = "INSTALL_NAMESPACE"
+
+	// SkipIstioInstall is a flag that indicates whether to skip the install of Istio.
+	// This is used to test against an existing installation of Istio so that the
+	// test framework does not need to install/uninstall Istio.
+	SkipIstioInstall = "SKIP_ISTIO_INSTALL"
+
 	// KubeTestType is used to indicate which kube2e suite should be run while executing regression tests
 	KubeTestType = "KUBE2E_TESTS"
 
@@ -72,6 +80,9 @@ const (
 
 	// Gloo Gateway setup
 	GlooGatewaySetup = "GLOO_GATEWAY_SETUP"
+
+	// ClusterName is the name of the cluster used for e2e tests
+	ClusterName = "CLUSTER_NAME"
 )
 
 // ShouldTearDown returns true if any assets that were created before a test (for example Gloo being installed)
@@ -85,6 +96,13 @@ func ShouldTearDown() bool {
 // both the tear down and install of Gloo Edge.
 func ShouldSkipInstall() bool {
 	return IsEnvTruthy(SkipInstall)
+}
+
+// ShouldSkipIstioInstall returns true if any assets that need to be created before a test (for example Gloo being installed)
+// should be skipped. This is typically used in tandem with ShouldTearDown when running consecutive tests and skipping
+// both the tear down and install of Gloo Edge.
+func ShouldSkipIstioInstall() bool {
+	return IsEnvTruthy(SkipIstioInstall)
 }
 
 // ShouldSkipTempDisabledTests returns true if temporarily disabled tests should be skipped

@@ -2,7 +2,7 @@
 title: Using Cross-Account Lambda Functions
 weight: 101
 description: |
-  This guide describes how to configure Gloo Edge to route to AWS Lambda functions in different accounts than the one used to authenticate with AWS.
+  This guide describes how to configure Gloo Gateway to route to AWS Lambda functions in different accounts than the one used to authenticate with AWS.
 ---
 
 Route to AWS Lambda functions that exist in different accounts than the account you use to authenticate with AWS.
@@ -13,7 +13,7 @@ You can set up multi-account routing in the following ways:
 
 ## IAM Roles for Service Accounts/Role-chained configuration {#irsa}
 
-Use AWS IAM Roles for Service Accounts (IRSA) to configure routing to functions in different accounts. This method is recommended for using cross-account Lambda functions with Gloo Edge.
+Use AWS IAM Roles for Service Accounts (IRSA) to configure routing to functions in different accounts. This method is recommended for using cross-account Lambda functions with Gloo Gateway.
 
 ### AWS configuration
 
@@ -42,7 +42,7 @@ Create roles in your authentication and Lambda AWS accounts. In the account that
           ]
       }
       ```
-   3. Create an IAM role that uses your invocation policy. In the role, specify the ARN of the authentication account's role that you created in step 1, such as the following example. After you create this role, make sure to note the role's ARN, which you specify in a Gloo Edge upstream resource in subsequent steps.
+   3. Create an IAM role that uses your invocation policy. In the role, specify the ARN of the authentication account's role that you created in step 1, such as the following example. After you create this role, make sure to note the role's ARN, which you specify in a Gloo Gateway upstream resource in subsequent steps.
       ```json
       {
           "Version": "2012-10-17",
@@ -59,12 +59,12 @@ Create roles in your authentication and Lambda AWS accounts. In the account that
       }
       ```
    
-### Gloo Edge configuration
+### Gloo Gateway configuration
 
-Modify your Gloo Edge installation settings and upstream resources to support routing to the Lambda functions.
+Modify your Gloo Gateway installation settings and upstream resources to support routing to the Lambda functions.
 
 1. Disable Function Discovery (FDS), which automatically discovers functions in your authentication account. You can disable FDS in one of the following ways:
-   - In the Gloo Edge Enterprise Helm chart, set `gloo.discovery.fdsMode` to `DISABLED`.
+   - In the Gloo Gateway Enterprise Helm chart, set `gloo.discovery.fdsMode` to `DISABLED`.
    - In the `gloo.solo.io/v1.Settings` custom resource, set `spec.discovery.fdsMode` to `DISABLED`.
 
 2. Create an upstream resource for each Lambda function that you want to route to.
@@ -116,12 +116,12 @@ For the AWS configuration, you create a user or role in the authentication accou
          * Specify the ARN of the user or role in the authentication account as the principal.
          * Select `lambda:InvokeFunction` as the action.
 
-### Gloo Edge configuration
+### Gloo Gateway configuration
 
-Modify your Gloo Edge installation settings and upstream resources to support routing to the Lambda functions.
+Modify your Gloo Gateway installation settings and upstream resources to support routing to the Lambda functions.
 
 1. Disable Function Discovery (FDS), which automatically discovers functions in your authentication account. You can disable FDS in one of the following ways:
-   - In the Gloo Edge Enterprise Helm chart, set `gloo.discovery.fdsMode` to `DISABLED`.
+   - In the Gloo Gateway Enterprise Helm chart, set `gloo.discovery.fdsMode` to `DISABLED`.
    - In the `gloo.solo.io/v1.Settings` custom resource, set `spec.discovery.fdsMode` to `DISABLED`.
 
 2. Create an upstream resource for each Lambda function that you want to route to.

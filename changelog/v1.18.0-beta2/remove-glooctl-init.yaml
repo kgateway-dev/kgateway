@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Remove init from glooctl root cmd introduced in https://github.com/solo-io/gloo/pull/9666

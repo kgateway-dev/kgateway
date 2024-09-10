@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >- 
+      Add route option Gloo Gateway e2e tests

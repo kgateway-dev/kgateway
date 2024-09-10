@@ -5,22 +5,27 @@ import (
 	"sync"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
-
-	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
-	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/gloo/pkg/utils/statsutils/metrics"
+	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 
 	"github.com/hashicorp/go-multierror"
-	gwsyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/rotisserie/eris"
+
+	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+
+	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
+	gwsyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
+	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
+	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
+
+type OnProxiesTranslatedFn func(ctx context.Context, proxiesWithReports []translatorutils.ProxyWithReports)
 
 type translatorSyncer struct {
 	translator translator.Translator
@@ -36,9 +41,18 @@ type translatorSyncer struct {
 	writeNamespace   string
 
 	// used for debugging purposes only
+	// Deprecated: https://github.com/solo-io/gloo/issues/6494
+	// Prefer to use the iosnapshot.History
 	latestSnap *v1snap.ApiSnapshot
 
+	// snapshotHistory is used for debugging purposes
+	// The syncer updates the History each time it runs, and the History is then used by the Admin Server
+	snapshotHistory iosnapshot.History
+
 	statusSyncer *statusSyncer
+
+	// callback after proxy translation
+	onProxyTranslated OnProxiesTranslatedFn
 }
 
 type statusSyncer struct {
@@ -67,6 +81,8 @@ func NewTranslatorSyncer(
 	proxyClient v1.ProxyClient,
 	writeNamespace string,
 	identity leaderelector.Identity,
+	onProxyTranslated OnProxiesTranslatedFn,
+	snapshotHistory iosnapshot.History,
 ) v1snap.ApiSyncer {
 	s := &translatorSyncer{
 		translator:       translator,
@@ -86,11 +102,13 @@ func NewTranslatorSyncer(
 			leaderStartupAction: leaderelector.NewLeaderStartupAction(identity),
 			reportsLock:         sync.RWMutex{},
 		},
+		onProxyTranslated: onProxyTranslated,
+		snapshotHistory:   snapshotHistory,
 	}
 	if devMode {
 		// TODO(ilackarms): move this somewhere else?
 		go func() {
-			_ = s.ServeXdsSnapshots()
+			_ = s.ContextuallyServeXdsSnapshots(ctx)
 		}()
 	}
 	go s.statusSyncer.syncStatusOnEmit(ctx)
@@ -128,7 +146,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 
 	// After reports are written for proxies, save in gateway syncer (previously gw watched for status changes to proxies)
 	if s.gatewaySyncer != nil {
-		s.gatewaySyncer.UpdateProxies(ctx)
+		s.gatewaySyncer.UpdateStatusForAllProxies(ctx)
 	}
 
 	s.statusSyncer.reportsLock.Lock()

@@ -4,7 +4,7 @@ weight: 50
 description: Debug complex sequences of transformations.
 ---
 
-You can use Gloo Edge's debug logging feature to debug complex sequences of transformations.
+You can use Gloo Gateway's debug logging feature to debug complex sequences of transformations.
 
 {{% notice warning %}}
 This feature has the potential to log sensitive information. Do not enable this feature in production environments.
@@ -37,7 +37,7 @@ spec:
 {{< /tab >}}
 {{< /tabs >}}
 
-Test that the configuration was correctly picked up by Gloo Edge by executing the following command:
+Test that the configuration was correctly picked up by Gloo Gateway by executing the following command:
 
 ```shell
 curl $(glooctl proxy url)/get | jq
@@ -103,7 +103,7 @@ spec:
                     text: "regular"
    {{< /highlight >}}
 
-1. Test that Gloo Edge picked up the configuration update.
+1. Test that Gloo Gateway picked up the configuration update.
 
    ```shell
    curl $(glooctl proxy url)/get | jq

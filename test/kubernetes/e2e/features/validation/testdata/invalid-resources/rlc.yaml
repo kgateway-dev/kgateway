@@ -1,0 +1,17 @@
+# This is invalid: The RLC is an enterprise API
+apiVersion: ratelimit.solo.io/v1alpha1
+kind: RateLimitConfig
+metadata:
+  name: rlc
+spec:
+  raw:
+    descriptors:
+      - key: foo
+        value: foo
+        rateLimit:
+          requestsPerUnit: 1
+          unit: MINUTE
+    rateLimits:
+      - actions:
+          - genericKey:
+              descriptorValue: bar

@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/selectors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -141,7 +142,7 @@ var _ = Describe("Aggregate translator", func() {
 		// run 100 times to ensure idempotency
 		// not sure if 100 times is valid; in anecdotal testing it tended to fail in under 20
 		var originalOrder, currentOrder string
-		for i := 0; i < 100; i++ {
+		for range 100 {
 			l := aggregateTranslator.ComputeListener(NewTranslatorParams(ctx, snap, reports), proxyName, snap.Gateways[0])
 			Expect(l).NotTo(BeNil())
 			Expect(l.GetAggregateListener()).NotTo(BeNil())
@@ -156,7 +157,7 @@ var _ = Describe("Aggregate translator", func() {
 			if originalOrder == "" {
 				originalOrder = currentOrder
 				// ensure that all sni domains (sni-1 through sni-5) are present though we do not care what order the hasher has output them in at least the first time.
-				for i := 0; i < 5; i++ {
+				for i := range 5 {
 					Expect(originalOrder).To(ContainSubstring(fmt.Sprintf("sni-%d", i)))
 				}
 			}
@@ -195,6 +196,31 @@ var _ = Describe("Aggregate translator", func() {
 			Expect(l).NotTo(BeNil())
 			Expect(l.GetAggregateListener()).NotTo(BeNil())
 			Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
+		})
+	})
+
+	When("The delegated gateways do not exist", func() {
+		JustBeforeEach(func() {
+			snap.VirtualServices = []*v1.VirtualService{}
+		})
+
+		It("throws an error", func() {
+			aggregateTranslator := &AggregateTranslator{VirtualServiceTranslator: &VirtualServiceTranslator{}}
+			genProxyWithIsolatedVirtualHosts()
+			proxyName := proxy.Metadata.Name
+			gw := snap.Gateways[2]
+			gw.GetHybridGateway().MatchedGateways = nil
+			gw.GetHybridGateway().DelegatedHttpGateways = &v1.DelegatedHttpGateway{
+				SelectionType: &v1.DelegatedHttpGateway_Selector{
+					Selector: &selectors.Selector{
+						Labels: map[string]string{"non-existing": "gateway"},
+					},
+				},
+			}
+			snap.Gateways = v1.GatewayList{gw}
+			l := aggregateTranslator.ComputeListener(NewTranslatorParams(ctx, snap, reports), proxyName, gw)
+			Expect(l).To(BeNil())
+			Expect(reports.ValidateStrict().Error()).To(ContainSubstring(EmptyHybridGatewayMessage))
 		})
 	})
 })

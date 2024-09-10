@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
+	"github.com/solo-io/gloo/pkg/utils/statsutils/metrics"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
-	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
@@ -78,7 +78,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		proxyClient, err = gloov1.NewProxyClient(ctx, memFactory)
 		Expect(err).NotTo(HaveOccurred())
 		proxyReconciler := reconciler.NewProxyReconciler(nil, proxyClient, statusClient)
-		rpt := reporter.NewReporter("gateway", statusClient, gatewayClient.BaseClient(), virtualServiceClient.BaseClient(), routeTableClient.BaseClient())
+		rpt := reporter.NewReporter(defaults.EdgeGatewayReporter, statusClient, gatewayClient.BaseClient(), virtualServiceClient.BaseClient(), routeTableClient.BaseClient())
 		xlator := translator.NewDefaultTranslator(translator.Opts{
 			WriteNamespace: defaults.GlooSystem,
 		})
@@ -195,7 +195,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		// write the proxy status.
 		AcceptProxy()
 		ts, _ := ts.(*TranslatorSyncer)
-		ts.UpdateProxies(ctx)
+		ts.UpdateStatusForAllProxies(ctx)
 		// wait for the proxy status to be written in the VS
 		EventuallyProxyStatusInVs().Should(Equal(core.Status_Accepted))
 
@@ -212,7 +212,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 
 		// re-sync to process the new VS
 		ts.Sync(ctx, snapshot())
-		ts.UpdateProxies(ctx)
+		ts.UpdateStatusForAllProxies(ctx)
 		// wait for proxy status to become pending
 		EventuallyProxyStatus().Should(Equal(core.Status_Pending))
 
@@ -222,7 +222,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		// write the proxy status again to the same status as the one currently in the snapshot
 		AcceptProxy()
 
-		ts.UpdateProxies(ctx)
+		ts.UpdateStatusForAllProxies(ctx)
 		// status should be accepted.
 		// this tests the bug that we saw where the status stayed pending.
 		// the vs sub resource status did not update,

@@ -61,6 +61,11 @@ func (h *HttpRequestBuilder) WithOptionsMethod() *HttpRequestBuilder {
 	return h
 }
 
+func (h *HttpRequestBuilder) WithMethod(method string) *HttpRequestBuilder {
+	h.method = method
+	return h
+}
+
 func (h *HttpRequestBuilder) WithScheme(scheme string) *HttpRequestBuilder {
 	h.scheme = scheme
 	return h
@@ -168,6 +173,8 @@ func (h *HttpRequestBuilder) Clone() *HttpRequestBuilder {
 }
 
 func (h *HttpRequestBuilder) Build() *http.Request {
+	ginkgo.GinkgoHelper()
+
 	if err := h.errorIfInvalid(); err != nil {
 		// We error loudly here
 		// These types of errors are intended to prevent developers from creating resources

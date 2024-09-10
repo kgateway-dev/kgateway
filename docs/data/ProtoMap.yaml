@@ -11,6 +11,39 @@ apis:
   advancedhttp.options.gloo.solo.io.ResponseMatcher:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/advanced_http/advanced_http.proto.sk/#ResponseMatcher
     package: advancedhttp.options.gloo.solo.io
+  ai.options.gloo.solo.io.AIPromptEnrichment:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#AIPromptEnrichment
+    package: ai.options.gloo.solo.io
+  ai.options.gloo.solo.io.AIPromptGaurd:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#AIPromptGaurd
+    package: ai.options.gloo.solo.io
+  ai.options.gloo.solo.io.Embedding:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#Embedding
+    package: ai.options.gloo.solo.io
+  ai.options.gloo.solo.io.FieldDefault:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#FieldDefault
+    package: ai.options.gloo.solo.io
+  ai.options.gloo.solo.io.Postgres:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#Postgres
+    package: ai.options.gloo.solo.io
+  ai.options.gloo.solo.io.RAG:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#RAG
+    package: ai.options.gloo.solo.io
+  ai.options.gloo.solo.io.RateLimiting:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#RateLimiting
+    package: ai.options.gloo.solo.io
+  ai.options.gloo.solo.io.RouteSettings:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#RouteSettings
+    package: ai.options.gloo.solo.io
+  ai.options.gloo.solo.io.SemanticCache:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#SemanticCache
+    package: ai.options.gloo.solo.io
+  ai.options.gloo.solo.io.SingleAuthToken:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#SingleAuthToken
+    package: ai.options.gloo.solo.io
+  ai.options.gloo.solo.io.UpstreamSpec:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#UpstreamSpec
+    package: ai.options.gloo.solo.io
   als.options.gloo.solo.io.AccessLog:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#AccessLog
     package: als.options.gloo.solo.io
@@ -110,6 +143,12 @@ apis:
   core.skv2.solo.io.ObjectSelector:
     relativepath: reference/api/github.com/solo-io/skv2/api/core/v1/core.proto.sk/#ObjectSelector
     package: core.skv2.solo.io
+  core.skv2.solo.io.PolicyTargetReference:
+    relativepath: reference/api/github.com/solo-io/skv2/api/core/v1/core.proto.sk/#PolicyTargetReference
+    package: core.skv2.solo.io
+  core.skv2.solo.io.PolicyTargetReferenceWithSectionName:
+    relativepath: reference/api/github.com/solo-io/skv2/api/core/v1/core.proto.sk/#PolicyTargetReferenceWithSectionName
+    package: core.skv2.solo.io
   core.skv2.solo.io.Status:
     relativepath: reference/api/github.com/solo-io/skv2/api/core/v1/core.proto.sk/#Status
     package: core.skv2.solo.io
@@ -136,6 +175,9 @@ apis:
     package: core.solo.io
   cors.options.gloo.solo.io.CorsPolicy:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/cors/cors.proto.sk/#CorsPolicy
+    package: cors.options.gloo.solo.io
+  cors.options.gloo.solo.io.CorsPolicyMergeSettings:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/cors/cors.proto.sk/#CorsPolicyMergeSettings
     package: cors.options.gloo.solo.io
   dfp.options.gloo.solo.io.AppleDnsResolverConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/dynamic_forward_proxy/dynamic_forward_proxy.proto.sk/#AppleDnsResolverConfig
@@ -368,6 +410,9 @@ apis:
   envoy.api.v2.filter.http.MergeExtractorsToBody:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#MergeExtractorsToBody
     package: envoy.api.v2.filter.http
+  envoy.api.v2.filter.http.MergeJsonKeys:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#MergeJsonKeys
+    package: envoy.api.v2.filter.http
   envoy.api.v2.filter.http.Passthrough:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#Passthrough
     package: envoy.api.v2.filter.http
@@ -527,6 +572,9 @@ apis:
   envoy.config.filter.http.transformation_ee.v2.TransformationRule:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#TransformationRule
     package: envoy.config.filter.http.transformation_ee.v2
+  envoy.config.filter.http.upstream_wait.v2.UpstreamWaitFilterConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/upstream_wait/upstream_wait_filter.proto.sk/#UpstreamWaitFilterConfig
+    package: envoy.config.filter.http.upstream_wait.v2
   envoy.config.filter.listener.tls_cipher_inspector.v3.TlsCipherInspector:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/filter/listener/tls_cipher_inspector/v3/tls_cipher_inspector.proto.sk/#TlsCipherInspector
     package: envoy.config.filter.listener.tls_cipher_inspector.v3
@@ -653,8 +701,14 @@ apis:
   gateway.solo.io.HttpGateway:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/http_gateway.proto.sk/#HttpGateway
     package: gateway.solo.io
+  gateway.solo.io.HttpListenerOption:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/external_options.proto.sk/#HttpListenerOption
+    package: gateway.solo.io
   gateway.solo.io.HybridGateway:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#HybridGateway
+    package: gateway.solo.io
+  gateway.solo.io.ListenerOption:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/external_options.proto.sk/#ListenerOption
     package: gateway.solo.io
   gateway.solo.io.MatchableHttpGateway:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/matchable_http_gateway.proto.sk/#MatchableHttpGateway
@@ -695,6 +749,9 @@ apis:
   gateway.solo.io.VirtualServiceSelectorExpressions:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/http_gateway.proto.sk/#VirtualServiceSelectorExpressions
     package: gateway.solo.io
+  gcp.options.gloo.solo.io.UpstreamSpec:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/gcp/gcp.proto.sk/#UpstreamSpec
+    package: gcp.options.gloo.solo.io
   gloo.solo.io.AccountCredentialsSecret:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto.sk/#AccountCredentialsSecret
     package: gloo.solo.io
@@ -733,6 +790,9 @@ apis:
     package: gloo.solo.io
   gloo.solo.io.ConsulServiceDestination:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#ConsulServiceDestination
+    package: gloo.solo.io
+  gloo.solo.io.CustomEnvoyFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#CustomEnvoyFilter
     package: gloo.solo.io
   gloo.solo.io.DeletedResources:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#DeletedResources
@@ -1190,6 +1250,9 @@ apis:
   hcm.options.gloo.solo.io.HttpConnectionManagerSettings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/hcm/hcm.proto.sk/#HttpConnectionManagerSettings
     package: hcm.options.gloo.solo.io
+  header_validation.options.gloo.solo.io.HeaderValidationSettings:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/header_validation/header_validation.proto.sk/#HeaderValidationSettings
+    package: header_validation.options.gloo.solo.io
   headers.options.gloo.solo.io.HeaderManipulation:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/headers/headers.proto.sk/#HeaderManipulation
     package: headers.options.gloo.solo.io
@@ -1246,6 +1309,9 @@ apis:
     package: jwt.options.gloo.solo.io
   jwt.options.gloo.solo.io.JwtStagedRouteExtension:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto.sk/#JwtStagedRouteExtension
+    package: jwt.options.gloo.solo.io
+  jwt.options.gloo.solo.io.JwtStagedRouteProvidersExtension:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto.sk/#JwtStagedRouteProvidersExtension
     package: jwt.options.gloo.solo.io
   jwt.options.gloo.solo.io.JwtStagedVhostExtension:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto.sk/#JwtStagedVhostExtension
@@ -1817,6 +1883,45 @@ apis:
   solo.io.envoy.extensions.wasm.v3.WasmService:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/wasm/v3/wasm.proto.sk/#WasmService
     package: solo.io.envoy.extensions.wasm.v3
+  solo.io.envoy.service.ext_proc.v3.BodyMutation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#BodyMutation
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.BodyResponse:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#BodyResponse
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.CommonResponse:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#CommonResponse
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.GrpcStatus:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#GrpcStatus
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.HeaderMutation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#HeaderMutation
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.HeadersResponse:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#HeadersResponse
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.HttpBody:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#HttpBody
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.HttpHeaders:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#HttpHeaders
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.HttpTrailers:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#HttpTrailers
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.ImmediateResponse:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#ImmediateResponse
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.ProcessingRequest:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#ProcessingRequest
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.ProcessingResponse:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#ProcessingResponse
+    package: solo.io.envoy.service.ext_proc.v3
+  solo.io.envoy.service.ext_proc.v3.TrailersResponse:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.sk/#TrailersResponse
+    package: solo.io.envoy.service.ext_proc.v3
   solo.io.envoy.type.DoubleRange:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/range.proto.sk/#DoubleRange
     package: solo.io.envoy.type
@@ -1859,6 +1964,9 @@ apis:
   solo.io.envoy.type.v3.FractionalPercent:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/v3/percent.proto.sk/#FractionalPercent
     package: solo.io.envoy.type.v3
+  solo.io.envoy.type.v3.HttpStatus:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/v3/http_status.proto.sk/#HttpStatus
+    package: solo.io.envoy.type.v3
   solo.io.envoy.type.v3.Int32Range:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/v3/range.proto.sk/#Int32Range
     package: solo.io.envoy.type.v3
@@ -1886,6 +1994,15 @@ apis:
   solo.io.udpa.annotations.VersioningAnnotation:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/udpa/annotations/versioning.proto.sk/#VersioningAnnotation
     package: solo.io.udpa.annotations
+  stateful_session.options.gloo.solo.io.CookieBasedSessionState:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/stateful_session/stateful_session.proto.sk/#CookieBasedSessionState
+    package: stateful_session.options.gloo.solo.io
+  stateful_session.options.gloo.solo.io.HeaderBasedSessionState:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/stateful_session/stateful_session.proto.sk/#HeaderBasedSessionState
+    package: stateful_session.options.gloo.solo.io
+  stateful_session.options.gloo.solo.io.StatefulSession:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/stateful_session/stateful_session.proto.sk/#StatefulSession
+    package: stateful_session.options.gloo.solo.io
   static.options.gloo.solo.io.Host:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/static/static.proto.sk/#Host
     package: static.options.gloo.solo.io
@@ -1945,6 +2062,9 @@ apis:
     package: transformation.options.gloo.solo.io
   transformation.options.gloo.solo.io.MergeExtractorsToBody:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#MergeExtractorsToBody
+    package: transformation.options.gloo.solo.io
+  transformation.options.gloo.solo.io.MergeJsonKeys:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#MergeJsonKeys
     package: transformation.options.gloo.solo.io
   transformation.options.gloo.solo.io.Parameters:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/parameters.proto.sk/#Parameters

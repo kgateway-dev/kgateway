@@ -38,6 +38,7 @@ weight: 5
 - [DirectResponseAction](#directresponseaction)
 - [SourceMetadata](#sourcemetadata)
 - [SourceRef](#sourceref)
+- [CustomEnvoyFilter](#customenvoyfilter)
   
 
 
@@ -135,6 +136,7 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 "tcpHosts": []gloo.solo.io.TcpHost
 "options": .gloo.solo.io.TcpListenerOptions
 "statPrefix": string
+"customNetworkFilters": []gloo.solo.io.CustomEnvoyFilter
 
 ```
 
@@ -143,6 +145,7 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 | `tcpHosts` | [[]gloo.solo.io.TcpHost](../proxy.proto.sk/#tcphost) | List of filter chains to match on for this listener. |
 | `options` | [.gloo.solo.io.TcpListenerOptions](../options.proto.sk/#tcplisteneroptions) | Options contains top-level configuration to be applied to a listener. Listener config is applied to traffic for the given listener. Some configuration here can be overridden in Virtual Host Options configuration or Route Options configuration. |
 | `statPrefix` | `string` | prefix for addressing envoy stats for the tcp proxy. |
+| `customNetworkFilters` | [[]gloo.solo.io.CustomEnvoyFilter](../proxy.proto.sk/#customenvoyfilter) | Additional arbitrary network Filters that will be inserted directly into xDS. |
 
 
 
@@ -205,6 +208,8 @@ Some traffic policies can be configured to work both on the listener and virtual
 "virtualHosts": []gloo.solo.io.VirtualHost
 "options": .gloo.solo.io.HttpListenerOptions
 "statPrefix": string
+"customHttpFilters": []gloo.solo.io.CustomEnvoyFilter
+"customNetworkFilters": []gloo.solo.io.CustomEnvoyFilter
 
 ```
 
@@ -213,6 +218,8 @@ Some traffic policies can be configured to work both on the listener and virtual
 | `virtualHosts` | [[]gloo.solo.io.VirtualHost](../proxy.proto.sk/#virtualhost) | the set of virtual hosts that will be accessible by clients connecting to this listener. at least one virtual host must be specified for this listener to be active (else connections will be refused) the set of domains for each virtual host must be unique, or the config will be considered invalid. |
 | `options` | [.gloo.solo.io.HttpListenerOptions](../options.proto.sk/#httplisteneroptions) | HttpListenerOptions contains optional top-level configuration to be applied to a listener. Listener config is applied to traffic for the given listener. Some configuration here can be overridden in VirtualHostOptions configuration, RouteOptions configuration, or WeightedDestinationOptions configuration. |
 | `statPrefix` | `string` | prefix for addressing envoy stats for the http connection manager. |
+| `customHttpFilters` | [[]gloo.solo.io.CustomEnvoyFilter](../proxy.proto.sk/#customenvoyfilter) | Additional arbitrary HTTPFilters that will be inserted directly into xDS. |
+| `customNetworkFilters` | [[]gloo.solo.io.CustomEnvoyFilter](../proxy.proto.sk/#customenvoyfilter) | Additional arbitrary network Filters that will be inserted directly into xDS. |
 
 
 
@@ -284,14 +291,18 @@ Some traffic policies can be configured to work both on the listener and virtual
 ```yaml
 "sslConfig": .gloo.solo.io.SslConfig
 "sourcePrefixRanges": []solo.io.envoy.config.core.v3.CidrRange
+"prefixRanges": []solo.io.envoy.config.core.v3.CidrRange
+"destinationPort": .google.protobuf.UInt32Value
 "passthroughCipherSuites": []string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `sslConfig` | [.gloo.solo.io.SslConfig](../ssl/ssl.proto.sk/#sslconfig) |  |
-| `sourcePrefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../external/envoy/config/core/v3/address.proto.sk/#cidrrange) |  |
+| `sslConfig` | [.gloo.solo.io.SslConfig](../ssl/ssl.proto.sk/#sslconfig) | Gloo use SNI domains as matching criteria for Gateway selection The other ssl_config properties will be applied to the outputFilterChain's transport socket SslConfig from VirtualServices will be ignored in a MatchedGateway. |
+| `sourcePrefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../external/envoy/config/core/v3/address.proto.sk/#cidrrange) | Source addresses to match. This value is either the actual addresses used to connect, or addresses that are overridden by using PROXY protocol or original_src. |
+| `prefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../external/envoy/config/core/v3/address.proto.sk/#cidrrange) | Destination addresses to match. This value is either the actual addresses used to connect, or addresses that are overridden by using PROXY protocol or original_dst. |
+| `destinationPort` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Optional destination port to consider in determining a filter chain match. Filter chains that specify the destination port of incoming traffic are the most specific match. If no filter chain specifies the exact destination port, the filter chains which do not specify ports are the most specific match. |
 | `passthroughCipherSuites` | `[]string` |  |
 
 
@@ -347,6 +358,8 @@ An AggregateListener defines a set of Gloo configuration which will map to a uni
 "matcher": .gloo.solo.io.Matcher
 "httpOptionsRef": string
 "virtualHostRefs": []string
+"customHttpFilters": []gloo.solo.io.CustomEnvoyFilter
+"customNetworkFilters": []gloo.solo.io.CustomEnvoyFilter
 
 ```
 
@@ -355,6 +368,8 @@ An AggregateListener defines a set of Gloo configuration which will map to a uni
 | `matcher` | [.gloo.solo.io.Matcher](../proxy.proto.sk/#matcher) | Matching criteria used to generate both the FilterChainMatch and TransportSocket for the Envoy FilterChain. |
 | `httpOptionsRef` | `string` | The ref pointing to HttpListenerOptions which are used to configure the HCM on this HttpFilterChain Corresponds to an entry in the HttpResources.HttpOptions map. |
 | `virtualHostRefs` | `[]string` | The set of refs pointing to VirtualHosts which are available on this HttpFilterChain Each ref corresponds to an entry in the HttpResources.VirtualHosts map. |
+| `customHttpFilters` | [[]gloo.solo.io.CustomEnvoyFilter](../proxy.proto.sk/#customenvoyfilter) | Additional arbitrary HTTPFilters that will be inserted directly into xDS. |
+| `customNetworkFilters` | [[]gloo.solo.io.CustomEnvoyFilter](../proxy.proto.sk/#customenvoyfilter) | Additional arbitrary network Filters that will be inserted directly into xDS. |
 
 
 
@@ -691,6 +706,29 @@ SourceMetadata is an internal message used to track ownership of nested proxy ob
 | `resourceRef` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The resource being referenced. |
 | `resourceKind` | `string` | The resource Kind. |
 | `observedGeneration` | `int` | The observed generation of the resource. |
+
+
+
+
+---
+### CustomEnvoyFilter
+
+ 
+CustomEnvoyFilter contains an arbitrary filter.
+These may be HTTPFilters or NetworkFilters, depending on the context they're used.
+
+```yaml
+"filterStage": .filters.gloo.solo.io.FilterStage
+"name": string
+"config": .google.protobuf.Any
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `filterStage` | [.filters.gloo.solo.io.FilterStage](../filters/stages.proto.sk/#filterstage) | Determines filter ordering. |
+| `name` | `string` | The name of the filter configuration. |
+| `config` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | Filter specific configuration. |
 
 
 

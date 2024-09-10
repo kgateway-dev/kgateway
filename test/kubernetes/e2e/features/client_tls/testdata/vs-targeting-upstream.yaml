@@ -1,0 +1,16 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: vs-targeting-upstream
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matchers:
+      - exact: /
+      routeAction:
+        single:
+          upstream:
+            name: nginx
+            namespace: nginx

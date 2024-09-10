@@ -5,13 +5,6 @@ endif
 
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 
-tests/conformance/conformance_test.go:
-	echo "//go:build conformance" > $@
-	cat $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/conformance_test.go >> $@
-	go fmt $@
-
-CONFORMANCE_ARGS:=-gateway-class=gloo-gateway -supported-features=Gateway,ReferenceGrant,HTTPRoute,HTTPRouteQueryParamMatching,HTTPRouteMethodMatching,HTTPRouteResponseHeaderModification,HTTPRoutePortRedirect,HTTPRouteHostRewrite,HTTPRouteSchemeRedirect,HTTPRoutePathRedirect,HTTPRouteHostRewrite,HTTPRoutePathRewrite,HTTPRouteRequestMirror
-
 # TODO (Law[revert]): need to add CLI tests here, see CI pr.yaml workflow
 .PHONY: test
 test:
@@ -20,14 +13,6 @@ test:
 .PHONY: test-full
 test-full:
 	go test -ldflags=$(LDFLAGS) -count=1 ./...
-
-.PHONY: conformance
-conformance: tests/conformance/conformance_test.go
-	go test -ldflags=$(LDFLAGS) -tags conformance -test.v ./tests/conformance/... -args $(CONFORMANCE_ARGS)
-
-conformance-%: tests/conformance/conformance_test.go
-	go test -ldflags=$(LDFLAGS) -tags conformance -test.v ./tests/conformance/... -args $(CONFORMANCE_ARGS) \
-	-run-test=$*
 
 # internal target used by controller_suite_test.go
 envtest:

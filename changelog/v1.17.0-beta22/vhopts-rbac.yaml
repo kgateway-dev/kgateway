@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Fix an rbac oversight in original implementation of virtualhostoptions plugin for k8s gateway

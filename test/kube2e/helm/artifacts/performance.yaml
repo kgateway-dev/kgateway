@@ -1,7 +1,7 @@
 # The following config is to enable better performance
 # Ref : https://docs.solo.io/gloo-edge/latest/operations/production_deployment/#performance-tips
 settings:
-  # The following config is to disable transfomation validation for performance
+  # The following config is to disable transformation validation for performance
   # Ref: https://docs.solo.io/gloo-edge/latest/operations/production_deployment/#transformations
   disableTransformationValidation: true
 

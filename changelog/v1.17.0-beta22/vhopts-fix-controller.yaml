@@ -1,0 +1,7 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/solo-projects/issues/6002
+  resolvesIssue: false
+  description: >-
+    Fix controller plumbing to watch for and reconcile changes to VirtualHostOption resources in the
+    Kubernetes Gateway controller

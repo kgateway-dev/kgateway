@@ -1,0 +1,7 @@
+changelog:
+- type: NON_USER_FACING  
+  description: >- 
+    Adds readGatewaysFromAllNamespaces setting to docs.
+    skipCI-kube-tests:true
+  resolvesIssue: true
+  issueLink: https://github.com/solo-io/gloo/issues/7171

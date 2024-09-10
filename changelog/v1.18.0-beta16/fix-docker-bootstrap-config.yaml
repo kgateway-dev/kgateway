@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Remove duplicated key in the static envoy-config.yaml file used for bootstrapping Gloo Gateway in Docker compose.

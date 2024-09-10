@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/test/ginkgo/parallel"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/solo-io/gloo/test/kube2e"
 
@@ -40,7 +41,7 @@ var _ = BeforeSuite(func() {
 	randomNumber := time.Now().Unix() % 10000
 	testHelper, err = kube2e.GetTestHelper(ctx, "ingress-test-"+fmt.Sprintf("%d-%d", randomNumber, parallel.GetParallelProcessCount()))
 	Expect(err).NotTo(HaveOccurred())
-	skhelpers.RegisterPreFailHandler(helpers.StandardGlooDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
+	skhelpers.RegisterPreFailHandler(helpers.StandardGlooDumpOnFail(GinkgoWriter, metav1.ObjectMeta{Namespace: testHelper.InstallNamespace}))
 	testHelper.Verbose = true
 
 	// Define helm overrides

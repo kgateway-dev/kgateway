@@ -2,6 +2,7 @@ package protoutils
 
 import (
 	"bytes"
+	"io"
 
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
@@ -14,6 +15,7 @@ var (
 	jsonpbMarshaler               = &jsonpb.Marshaler{OrigName: false}
 	jsonpbMarshalerEmitZeroValues = &jsonpb.Marshaler{OrigName: false, EmitDefaults: true}
 	jsonpbMarshalerIndented       = &jsonpb.Marshaler{OrigName: false, Indent: "  "}
+	jsonpbUnmarshalerAllowUnknown = &jsonpb.Unmarshaler{AllowUnknownFields: true}
 
 	NilStructError = eris.New("cannot unmarshal nil struct")
 )
@@ -60,6 +62,14 @@ func MarshalBytesEmitZeroValues(pb proto.Message) ([]byte, error) {
 
 func UnmarshalBytes(data []byte, into proto.Message) error {
 	return jsonpb.Unmarshal(bytes.NewBuffer(data), into)
+}
+
+func UnmarshalBytesAllowUnknown(data []byte, into proto.Message) error {
+	return UnmarshalAllowUnknown(bytes.NewBuffer(data), into)
+}
+
+func UnmarshalAllowUnknown(r io.Reader, into proto.Message) error {
+	return jsonpbUnmarshalerAllowUnknown.Unmarshal(r, into)
 }
 
 func UnmarshalYaml(data []byte, into proto.Message) error {

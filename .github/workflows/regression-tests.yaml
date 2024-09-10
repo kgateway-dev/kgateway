@@ -4,7 +4,7 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
 
 env:
-  VERSION: '1.0.0-ci'
+  VERSION: '1.0.0-ci1'
   GITHUB_TOKEN: ${{ github.token }} # necessary to pass upgrade tests
 
 jobs:
@@ -16,11 +16,11 @@ jobs:
       should-auto-succeed-regression-tests: ${{ steps.run-strategy.outputs.auto_succeed }}
     steps:
     - name: Cancel Previous Actions
-      uses: styfle/cancel-workflow-action@0.11.0
+      uses: styfle/cancel-workflow-action@0.12.1
       with:
         access_token: ${{ github.token }}
     - id: checkout-code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         # We require gathering the branch and tag history since we rely on a `git diff`
         # which compares the state of two branches
@@ -47,9 +47,10 @@ jobs:
       fail-fast: false
       matrix:
         # upgrade tests are run on LTS but not on main branch, for main they are run nightly
+        # ingress will be deprecated from 1.17. Ref: https://solo-io-corp.slack.com/archives/G01EERAK3KJ/p1716389614777799
         # this is the github action version of ternary op
-        kube-e2e-test-type: [ 'gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'istio', 'upgrade' ]
-        kube-version: [ { node: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31', kubectl: 'v1.28.4', kind: 'v0.20.0', helm: 'v3.13.2' } ]
+        kube-e2e-test-type: [ 'gateway', 'gloo', 'helm', 'upgrade' ]
+        kube-version: [ { node: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245', kubectl: 'v1.29.2', kind: 'v0.20.0', helm: 'v3.14.4' } ]
         image-variant:
           - distroless
         merge-to-main:
@@ -58,7 +59,7 @@ jobs:
           - merge-to-main: true
             kube-e2e-test-type: upgrade
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - id: run-tests
       if: needs.prepare_env.outputs.should-auto-succeed-regression-tests != 'true'
       uses: ./.github/workflows/composite-actions/regression-tests
@@ -66,3 +67,29 @@ jobs:
       if: needs.prepare_env.outputs.should-auto-succeed-regression-tests == 'true'
       run: |
         echo "Regression tests auto-succeeded"
+
+  kube_gateway_api_conformance_tests:
+    name: kubernetes gateway api conformance tests (${{matrix.image-variant}})
+    needs: prepare_env
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    if: ${{ !github.event.pull_request.draft }}
+    strategy:
+      fail-fast: false
+      matrix:
+        kube-version: [ { node: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245', kubectl: 'v1.29.2', kind: 'v0.20.0', helm: 'v3.14.4' } ]
+        # use standard since other variants don't currently work with these tests
+        # (see https://github.com/solo-io/solo-projects/issues/6094)
+        image-variant:
+          - standard
+        profile:
+        - standard
+    steps:
+    - uses: actions/checkout@v4
+    - id: auto-succeed-tests
+      if: needs.prepare_env.outputs.should-auto-succeed-regression-tests == 'true'
+      run: |
+        echo "Kubernetes Gateway API conformance tests auto-succeeded"
+    - id: run-tests
+      if: needs.prepare_env.outputs.should-auto-succeed-regression-tests != 'true'
+      uses: ./.github/workflows/composite-actions/kube-gateway-api-conformance-tests

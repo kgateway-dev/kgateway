@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Update test fail handler to output information about the cluster. Also creates a separate dir for each
+      tested namespace such that multiple failures don't overwrite previous failures' output

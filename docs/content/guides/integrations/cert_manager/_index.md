@@ -1,22 +1,22 @@
 ---
 title: "Cert-manager"
 menuTitle: Cert-manager
-description: Secure your ingress traffic using Gloo Edge and cert-manager
+description: Secure your ingress traffic using Gloo Gateway and cert-manager
 weight: 20
 ---
 
-Secure ingress traffic to your host domain by using Gloo Edge and cert-manager to manage your domain's certificates.
+Secure ingress traffic to your host domain by using Gloo Gateway and cert-manager to manage your domain's certificates.
 
 The guide includes examples for the following scenarios and Certificate Authorities (CA):
 * Verify domain ownership with the [DNS-01 challenge](#dns-01) with Let's Encrypt CA and cert-manager in an AWS environment.
 * Verify domain ownership with the [HTTP-01 challenge](#http-01) with Let's Encrypt CA and cert-manager in an AWS environment.
-* Set up [HashiCorp Vault as the CA](#vault-ca) for certificates used by cert-manager and Gloo Edge.
+* Set up [HashiCorp Vault as the CA](#vault-ca) for certificates used by cert-manager and Gloo Gateway.
 
 ## Before you begin
 
 1. [Create a Kubernetes cluster]({{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/">}}).
-2. Make sure that your cluster has a load-balancer so that when Gloo Edge is installed, the proxy service gets an external IP address.
-3. [Install Gloo Edge]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/">}}).
+2. Make sure that your cluster has a load-balancer so that when Gloo Gateway is installed, the proxy service gets an external IP address.
+3. [Install Gloo Gateway]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/">}}).
 4. [Install cert-manager](https://cert-manager.io/docs/installation/), such as with the following example command.
    ```shell
    kubectl create namespace cert-manager
@@ -31,7 +31,7 @@ To verify ownership of your domain, you can perform the ACME DNS-01 challenge wi
 
 ### Step 1: Update your AWS record {#dns-01-aws-record}
 
-Update the AWS route53 through the AWS CLI. This example uses the domain name `test-123456789.solo.io` for the *RECORD* and *HOSTED_ZONE*, which you can replace with your own values. You create an `A` record that maps to the IP address of the gateway proxy that you installed with Gloo Edge.
+Update the AWS route53 through the AWS CLI. This example uses the domain name `test-123456789.solo.io` for the *RECORD* and *HOSTED_ZONE*, which you can replace with your own values. You create an `A` record that maps to the IP address of the gateway proxy that you installed with Gloo Gateway.
 
 ```shell
 export GLOO_HOST=$(kubectl get svc -l gloo=gateway-proxy -n gloo-system -o 'jsonpath={.items[0].status.loadBalancer.ingress[0].ip}')
@@ -62,7 +62,7 @@ For development and testing environments, you can use an AWS key pair to grant c
    ```
 3. Create a cluster issuer for the Let's Encrypt CA with Route 53 that refers to secret.
    ```shell
-   cat << EOF | kubectl apply -f -
+   kubectl apply -f - << EOF
    apiVersion: cert-manager.io/v1
    kind: ClusterIssuer
    metadata:
@@ -199,9 +199,9 @@ For production environments, you can use AWS IAM roles for service accounts (IRS
    ```
 
 
-### Step 3: Configure Gloo Edge resources to verify your domain {#dns-01-aws-edge}
+### Step 3: Configure Gloo Gateway resources to verify your domain {#dns-01-aws-edge}
 
-Now that the AWS access is configured, you can configure the Gloo Edge resources to test your verified domain.
+Now that the AWS access is configured, you can configure the Gloo Gateway resources to test your verified domain.
 
 1. Make sure that the Let's Encrypt cluster issuer is in a ready state.
 
@@ -209,9 +209,9 @@ Now that the AWS access is configured, you can configure the Gloo Edge resources
    kubectl get clusterissuer letsencrypt-staging -o jsonpath='{.status.conditions[0].type}{"\n"}'
    Ready
    ```
-2. Create the certificate for the Gloo Edge ingress traffic along your host domain, such as `test-123456789.solo.io`.
+2. Create the certificate for the Gloo Gateway ingress traffic along your host domain, such as `test-123456789.solo.io`.
    ```shell
-   cat << EOF | kubectl apply -f -
+   kubectl apply -f - << EOF
    apiVersion: cert-manager.io/v1
    kind: Certificate
    metadata:
@@ -232,9 +232,9 @@ Now that the AWS access is configured, you can configure the Gloo Edge resources
    NAME                   TYPE                                  DATA      AGE
    test-123456789.solo.io kubernetes.io/tls                     2         3h
    ```
-4. Configure Gloo Edge's default VirtualService to refer to the TLS secret and to route the pet clinic sample app to the host domain.
+4. Configure Gloo Gateway's default VirtualService to refer to the TLS secret and to route the pet clinic sample app to the host domain.
    ```shell
-   cat <<EOF | kubectl create -f -
+   kubectl create -f - << EOF
    apiVersion: gateway.solo.io/v1
    kind: VirtualService
    metadata:
@@ -268,17 +268,17 @@ To verify ownership of your domain, you can perform the ACME HTTP-01 challenge w
 The following example shows how to perform this challenge in an AWS environment with Let's Encrypt as the CA. To use HashiCorp Vault instead, refer to [Use HashiCorp Vault as a Certificate Authority](#vault-ca). A `LoadBalancer` service in the cluster provides the external IP address. [nip.io](https://nip.io/) maps this IP address to a specific domain name via DNS.
 
 {{% notice note %}}
-These steps are specific for Gloo Edge running in gateway mode. When running in ingress mode, cert-manager automatically creates the `Ingress` resources. Therefore, you can skip adding or modifying the VirtualService.
+These steps are specific for Gloo Gateway running in gateway mode. When running in ingress mode, cert-manager automatically creates the `Ingress` resources. Therefore, you can skip adding or modifying the VirtualService.
 {{% /notice %}}
 
 ### Step 1: Create the ClusterIssuer and Certificate resources for the HTTP-01 challenge {#http-01-certs}
 
 1. Create a `ClusterIssuer` with the following details:
    * Uses the `http01` solver for the HTTP-01 challenge.
-   * Sets the ingress service type to `ClusterIP`.  By default, cert-manager creates a NodePort service that an Ingress resource routes to. However, because you run Gloo Edge in gateway mode, incoming traffic is routed through a VirtualService instead. Therefore, you do not need a NodePort and can set the service type to ClusterIP.
+   * Sets the ingress service type to `ClusterIP`.  By default, cert-manager creates a NodePort service that an Ingress resource routes to. However, because you run Gloo Gateway in gateway mode, incoming traffic is routed through a VirtualService instead. Therefore, you do not need a NodePort and can set the service type to ClusterIP.
    * Sets the `dnsName` to be a [nip.io](https://nip.io/) subdomain with the IP address of the externally facing LoadBalancer IP address. The inline command uses `glooctl proxy address` to get the externally facing IP address of the proxy. Then, you append the `nip.io` domain, which results in a domain that looks something like: `34.71.xx.xx.nip.io`.
    ```shell
-   cat << EOF | kubectl apply -f -
+   kubectl apply -f - << EOF
    apiVersion: cert-manager.io/v1
    kind: ClusterIssuer
    metadata:
@@ -302,7 +302,7 @@ These steps are specific for Gloo Edge running in gateway mode. When running in 
 2. Create the `Certificate` that uses the `ClusterIssuer`. Behind the scenes, cert-manager creates the relevant `CertificateRequest` and `Order` resources. To satisfy the order, cert-manager spins up a pod and service that present the correct token.
 
    ```shell
-   cat << EOF | kubectl apply -f -
+   kubectl apply -f - << EOF
    apiVersion: cert-manager.io/v1
    kind: Certificate
    metadata:
@@ -321,7 +321,7 @@ These steps are specific for Gloo Edge running in gateway mode. When running in 
 
 ### Step 2: Configure the routing resources {#http-01-routing}
 
-Now that the pod to serve the token is created, you must configure Gloo Edge to route to the pod. You can create a VirtualService for the custom domain that routes requests for the path `/.well-known/acme-challenge/<TOKEN>` to the cert-manager token pod.
+Now that the pod to serve the token is created, you must configure Gloo Gateway to route to the pod. You can create a VirtualService for the custom domain that routes requests for the path `/.well-known/acme-challenge/<TOKEN>` to the cert-manager token pod.
 
 1. Check that the token pod and service are running in the `default` namespace.
    ```shell
@@ -335,7 +335,7 @@ Now that the pod to serve the token is created, you must configure Gloo Edge to 
    NAME                        TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)                               AGE
    cm-acme-http-solver-f6mdb   ClusterIP      10.35.254.161   <none>           8089/TCP                              2m5s
    ```
-2. With Upstream discovery enabled, Gloo Edge automatically creates an Upstream to the service.
+2. With Upstream discovery enabled, Gloo Gateway automatically creates an Upstream to the service.
    ```shell
    % glooctl get us default-cm-acme-http-solver-f6mdb-8089
    +----------------------------------------+------------+----------+--------------------------------+
@@ -356,7 +356,7 @@ Now that the pod to serve the token is created, you must configure Gloo Edge to 
 4. Create a VirtualService to route to the cert-manager token pod at the expected well known path. Note that the domain matches the [nip.io](https://nip.io/) domain and routes requests for the path that Let's Encrypt expects, `/.well-known/acme-challenge/<TOKEN>` to the Upstream.
 
    ```shell
-   cat << EOF | kubectl apply -f -
+   kubectl apply -f - << EOF
    apiVersion: gateway.solo.io/v1
    kind: VirtualService
    metadata:
@@ -395,7 +395,7 @@ Now that the server can reach the cert-manager token pod, the HTTP-01 challenge 
    ```
 3. Configure the VirtualService to use the newly created TLS secret and to route to the pet store sample app.
    ```shell
-   cat << EOF | kubectl apply -f -
+   kubectl apply -f - << EOF
    apiVersion: gateway.solo.io/v1
    kind: VirtualService
    metadata:
@@ -440,11 +440,11 @@ You just confirmed that the service is accessible over the HTTPS port and that E
 
 ## Use HashiCorp Vault as a Certificate Authority {#vault-ca}
 
-Cert-manager supports using HashiCorp Vault as a CA. For Gloo Edge to use the certificates from Vault, you must set up a Vault instance as the CA. Then, set up cert-manager to use that Vault instance as an `Issuer`.
+Cert-manager supports using HashiCorp Vault as a CA. For Gloo Gateway to use the certificates from Vault, you must set up a Vault instance as the CA. Then, set up cert-manager to use that Vault instance as an `Issuer`.
 
 1. [Set up Vault as a CA by using the PKI secrets engine to generate certificates](https://developer.hashicorp.com/vault/docs/secrets/pki).
 2. [Create a cert-manager `Issuer` for the Vault CA](https://cert-manager.io/docs/configuration/vault/).
-3. If you use Vault to store other, non-TLS secrets, then configure your default Gloo Edge Settings.
+3. If you use Vault to store other, non-TLS secrets, then configure your default Gloo Gateway Settings.
    ```shell
    kubectl -n gloo-system edit settings default
    ```
@@ -484,4 +484,4 @@ Cert-manager supports using HashiCorp Vault as a CA. For Gloo Edge to use the ce
      requestTimeout: 0.5s
    {{< /highlight >}}
 
-For a more in-depth guide to configuring Vault as a secret source, refer to [Storing Gloo Edge secrets in HashiCorp Vault]({{< versioned_link_path fromRoot="/installation/advanced_configuration/vault_secrets">}}).
+For a more in-depth guide to configuring Vault as a secret source, refer to [Storing Gloo Gateway secrets in HashiCorp Vault]({{< versioned_link_path fromRoot="/installation/advanced_configuration/vault_secrets">}}).

@@ -5,7 +5,7 @@ apiVersion: gloo.solo.io/v1
 kind: Settings
 metadata:
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: settings
   name: default
   namespace: {{ .Release.Namespace }}
@@ -76,6 +76,11 @@ spec:
     istioOptions:
       appendXForwardedHost: {{ .Values.global.istioIntegration.appendXForwardedHost }}
       enableAutoMtls: {{ .Values.global.istioIntegration.enableAutoMtls }}
+      {{- if .Values.global.istioIntegration.enabled }}
+      enableIntegration: true
+      {{- else }}
+      enableIntegration: false
+      {{- end }}
   {{- end }}
 
   {{- if .Values.settings.integrations.consul }}
@@ -125,9 +130,9 @@ spec:
 {{- if .Values.gateway.validation.enabled }}
     validation:
       proxyValidationServerAddr: "gloo:{{ .Values.gloo.deployment.validationPort }}"
-{{- /* need to do this weird if/else because Helm cannot differentiate between 'false' and 'unset' */}}
       alwaysAccept: {{ .Values.gateway.validation.alwaysAcceptResources }}
       allowWarnings: {{ .Values.gateway.validation.allowWarnings }}
+      warnMissingTlsSecret: {{ .Values.gateway.validation.warnMissingTlsSecret }}
       serverEnabled: {{ .Values.gateway.validation.serverEnabled }}
       disableTransformationValidation: {{ .Values.gateway.validation.disableTransformationValidation }}
       warnRouteShortCircuiting: {{ .Values.gateway.validation.warnRouteShortCircuiting }}

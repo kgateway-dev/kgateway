@@ -12,15 +12,15 @@ import (
 
 var _ = Describe("NodeHash", func() {
 
-	DescribeTable("ClassicEdgeNodeHash",
+	DescribeTable("NodeRoleHasher",
 		func(nodeMetadata *structpb.Struct, expectedHash types.GomegaMatcher) {
-			nodeHash := xds.NewClassicEdgeNodeHash()
+			nodeHash := xds.NewNodeRoleHasher()
 
 			node := &envoy_config_core_v3.Node{
 				Metadata: nodeMetadata,
 			}
 			Expect(nodeHash.ID(node)).To(expectedHash,
-				"ClassicEdgeNodeHash should produce the expected string identifier for the Envoy node.")
+				"NodeRoleHasher should produce the expected string identifier for the Envoy node.")
 		},
 		Entry("empty metadata", &structpb.Struct{}, Equal(xds.FallbackNodeCacheKey)),
 		Entry("metadata without role", &structpb.Struct{
@@ -32,89 +32,17 @@ var _ = Describe("NodeHash", func() {
 			Fields: map[string]*structpb.Value{
 				"role": structpb.NewStringValue("proxy-namespace~proxy-name"),
 			},
-		}, Equal("gloo-gateway-translator~proxy-namespace~proxy-name")),
+		}, Equal("proxy-namespace~proxy-name")),
+		Entry("metadata with owner and proxy workload", &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"role": structpb.NewStringValue("gloo-gateway~proxy-namespace~proxy-name"),
+			},
+		}, Equal("gloo-gateway~proxy-namespace~proxy-name")),
 		Entry("metadata with non-proxy workload", &structpb.Struct{
 			Fields: map[string]*structpb.Value{
 				"role": structpb.NewStringValue("no-tilde-in-role"),
 			},
 		}, Equal("no-tilde-in-role")),
-	)
-
-	DescribeTable("GlooGatewayNodeHash",
-		func(nodeMetadata *structpb.Struct, expectedHash types.GomegaMatcher) {
-			nodeHash := xds.NewGlooGatewayNodeHash()
-
-			node := &envoy_config_core_v3.Node{
-				Metadata: nodeMetadata,
-			}
-			Expect(nodeHash.ID(node)).To(expectedHash,
-				"GlooGatewayNodeHash should produce the expected string identifier for the Envoy node.")
-		},
-		Entry("empty metadata", &structpb.Struct{}, Equal(xds.FallbackNodeCacheKey)),
-		Entry("metadata without gateway field", &structpb.Struct{
-			Fields: map[string]*structpb.Value{
-				"non-gateway-field": structpb.NewStringValue("non-gateway-value"),
-			},
-		}, Equal(xds.FallbackNodeCacheKey)),
-		Entry("metadata with gateway field", &structpb.Struct{
-			Fields: map[string]*structpb.Value{
-				"gateway": structpb.NewStructValue(&structpb.Struct{
-					Fields: map[string]*structpb.Value{
-						"name":      structpb.NewStringValue("name"),
-						"namespace": structpb.NewStringValue("namespace"),
-					},
-				}),
-			},
-		}, Equal("gloo-kube-gateway-api-translator~namespace~name")),
-	)
-
-	DescribeTable("AggregateNodeHash",
-		func(nodeMetadata *structpb.Struct, expectedHash types.GomegaMatcher) {
-			nodeHash := xds.NewAggregateNodeHash()
-
-			node := &envoy_config_core_v3.Node{
-				Metadata: nodeMetadata,
-			}
-			Expect(nodeHash.ID(node)).To(expectedHash,
-				"AggregateNodeHash should produce the expected string identifier for the Envoy node.")
-		},
-		Entry("empty metadata", &structpb.Struct{}, Equal(xds.FallbackNodeCacheKey)),
-		Entry("metadata without gateway or role field", &structpb.Struct{
-			Fields: map[string]*structpb.Value{
-				"non-gateway-field": structpb.NewStringValue("non-gateway-value"),
-			},
-		}, Equal(xds.FallbackNodeCacheKey)),
-		Entry("metadata with gateway field", &structpb.Struct{
-			Fields: map[string]*structpb.Value{
-				"gateway": structpb.NewStructValue(&structpb.Struct{
-					Fields: map[string]*structpb.Value{
-						"name":      structpb.NewStringValue("name"),
-						"namespace": structpb.NewStringValue("namespace"),
-					},
-				}),
-			},
-		}, Equal("gloo-kube-gateway-api-translator~namespace~name")),
-		Entry("metadata with proxy workload role", &structpb.Struct{
-			Fields: map[string]*structpb.Value{
-				"role": structpb.NewStringValue("proxy-namespace~proxy-name"),
-			},
-		}, Equal("gloo-gateway-translator~proxy-namespace~proxy-name")),
-		Entry("metadata with non-proxy workload role", &structpb.Struct{
-			Fields: map[string]*structpb.Value{
-				"role": structpb.NewStringValue("no-tilde-in-role"),
-			},
-		}, Equal("no-tilde-in-role")),
-		Entry("metadata with gateway and role field", &structpb.Struct{
-			Fields: map[string]*structpb.Value{
-				"role": structpb.NewStringValue("role-value"),
-				"gateway": structpb.NewStructValue(&structpb.Struct{
-					Fields: map[string]*structpb.Value{
-						"name":      structpb.NewStringValue("name"),
-						"namespace": structpb.NewStringValue("namespace"),
-					},
-				}),
-			},
-		}, Equal("gloo-kube-gateway-api-translator~namespace~name")),
 	)
 
 })

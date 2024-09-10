@@ -56,7 +56,7 @@ func getConcurrencyChan(maxOnCurrency uint) chan struct{} {
 	}
 	ret := make(chan struct{}, maxOnCurrency)
 	go func() {
-		for i := uint(0); i < maxOnCurrency; i++ {
+		for range maxOnCurrency {
 			ret <- struct{}{}
 		}
 	}()

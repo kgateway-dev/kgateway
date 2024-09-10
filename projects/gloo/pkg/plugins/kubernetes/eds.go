@@ -114,6 +114,12 @@ func newEndpointWatcherForUpstreams(kubeFactoryFactory func(ns []string) KubePlu
 		}
 	}
 
+	// If there are no upstreams to watch (eg: if discovery is disabled), namespaces remains an empty list.
+	// When creating the InformerFactory, by convention, an empty namespace list means watch all namespaces.
+	// To ensure that we only watch what we are supposed to, fallback to WatchNamespaces if namespaces is an empty list.
+	if len(namespaces) == 0 {
+		namespaces = settings.GetWatchNamespaces()
+	}
 	kubeFactory := kubeFactoryFactory(namespaces)
 	// this can take a bit of time some make sure we are still in business
 	if opts.Ctx.Err() != nil {
@@ -219,12 +225,18 @@ func (c *edsWatcher) List(writeNamespace string, opts clients.ListOpts) (v1.Endp
 	return eps, nil
 }
 
-// Returns true for when configured for Istio integration where endpoints must
-// be defined by IP address rather than hostnames. For details, see:
-// * https://github.com/solo-io/gloo/issues/6195
-func isIstioInjectionEnabled() bool {
+const enableIstioSidecarOnGatewayDeprecatedWarning = "istioIntegration.enableIstioSidecarOnGateway is deprecated. Use istioSDS.enabled instead."
+
+// isIstioInjectionEnabled returns true if Istio integration is enabled, where endpoints
+// must be defined by IP address rather than hostnames. For more details, see:
+// https://github.com/solo-io/gloo/issues/6195
+func isIstioInjectionEnabled() (bool, []string) {
 	lookupResult, found := os.LookupEnv(constants.IstioInjectionEnabled)
-	return found && strings.ToLower(lookupResult) == "true"
+	istioIsEnabled := found && strings.EqualFold(lookupResult, "true")
+	if istioIsEnabled {
+		return true, []string{enableIstioSidecarOnGatewayDeprecatedWarning}
+	}
+	return false, nil
 }
 
 func (c *edsWatcher) watch(writeNamespace string, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
@@ -341,7 +353,10 @@ func computeGlooEndpoints(
 	var warnsToLog, errorsToLog []string
 	endpointsMap := make(map[Epkey][]*core.ResourceRef)
 
-	istioInjectionEnabled := isIstioInjectionEnabled()
+	istioInjectionEnabled, warnings := isIstioInjectionEnabled()
+	if len(warnings) > 0 {
+		warnsToLog = append(warnsToLog, warnings...)
+	}
 
 	// for each upstream
 	for usRef, spec := range upstreams {

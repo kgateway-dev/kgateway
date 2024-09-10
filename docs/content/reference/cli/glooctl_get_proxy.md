@@ -1,5 +1,6 @@
 ---
 title: "glooctl get proxy"
+description: "Reference for the 'glooctl get proxy' command."
 weight: 5
 ---
 ## glooctl get proxy
@@ -17,11 +18,9 @@ glooctl get proxy [flags]
 ### Options
 
 ```
-      --all               get all proxies
-      --edge              include proxies produced from edge gateway resources
-  -h, --help              help for proxy
-      --kube              include proxies produced from k8s gateway resources
-      --proxy-ns string   namespace where proxies are persisted (default "gloo-system")
+      --edge   include proxies produced from edge gateway resources (ignored if name is provided)
+  -h, --help   help for proxy
+      --kube   include proxies produced from k8s gateway resources (ignored if name is provided)
 ```
 
 ### Options inherited from parent commands

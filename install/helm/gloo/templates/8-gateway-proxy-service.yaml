@@ -8,7 +8,7 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
   name: {{ $svcName | kebabcase }}
@@ -108,7 +108,7 @@ metadata:
   name: {{ $name | kebabcase }}-config-dump-service
   namespace: {{ $spec.namespace | default .Release.Namespace }}
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
 spec:
@@ -131,7 +131,7 @@ metadata:
   name: {{ $name | kebabcase }}-monitoring-service
   namespace: {{ $spec.namespace | default .Release.Namespace }}
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
 spec:

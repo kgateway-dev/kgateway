@@ -1,4 +1,8 @@
-# Gloo Edge docs
+# Gloo Gateway (Gloo Edge API) docs
+
+> [!IMPORTANT]  
+> This information is relevant only for the Gloo Gateway (Gloo Edge API) docs that are built from this `solo-io/gloo/docs` GitHub repository and rendered on the [docs.solo.io/gloo-edge](https://docs.solo.io/gloo-edge/latest/) website.
+> For the documentation for Gloo Gateway (Kubernetes Gateway API), see the `solo-io/docs` GitHub repository or the [docs.solo.io/gateway](https://docs.solo.io/gateway/latest/) website.
 
 ## Deploying to a test site
 

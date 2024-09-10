@@ -77,7 +77,6 @@ func EventuallyWithOffsetStatisticsMatchAssertions(offset int, statsPortFwd Stat
 		portForwarder.WaitForStop()
 	}()
 
-	By("Ensure port-forward is open before performing assertions")
 	statsRequest, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/", statsPortFwd.LocalPort), nil)
 	ExpectWithOffset(offset+1, err).NotTo(HaveOccurred())
 	EventuallyWithOffset(offset+1, func(g Gomega) {
@@ -90,7 +89,6 @@ func EventuallyWithOffsetStatisticsMatchAssertions(offset int, statsPortFwd Stat
 		}))
 	}).Should(Succeed())
 
-	By("Perform the assertions while the port forward is open")
 	for _, assertion := range assertions {
 		assertion.WithOffset(offset + 1).ShouldNot(HaveOccurred())
 	}
@@ -143,14 +141,18 @@ func IntStatisticReachesConsistentValueAssertion(prometheusStat string, inARow i
 	}, "2m", SafeTimeToSyncStats), currentStatValue
 }
 
+// ExpectStatLastValueMatches is a helper function that retrieves the last value of a statistic and asserts that it matches the passed matcher
 func ExpectStatLastValueMatches(measure *stats2.Int64Measure, lastValueMatcher types.GomegaMatcher) {
+	GinkgoHelper()
 	rows, err := view.RetrieveData(measure.Name())
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	ExpectWithOffset(1, rows).To(WithTransform(transforms.WithLastValueTransform(), lastValueMatcher))
+	Expect(err).NotTo(HaveOccurred())
+	Expect(rows).To(WithTransform(transforms.WithLastValueTransform(), lastValueMatcher))
 }
 
+// ExpectStatSumMatches is a helper function that retrieves the sum of a statistic and asserts that it matches the passed matcher
 func ExpectStatSumMatches(measure *stats2.Int64Measure, sumValueMatcher types.GomegaMatcher) {
+	GinkgoHelper()
 	rows, err := view.RetrieveData(measure.Name())
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	ExpectWithOffset(1, rows).To(WithTransform(transforms.WithSumValueTransform(), sumValueMatcher))
+	Expect(err).NotTo(HaveOccurred())
+	Expect(rows).To(WithTransform(transforms.WithSumValueTransform(), sumValueMatcher))
 }

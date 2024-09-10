@@ -4,16 +4,6 @@ weight: 40
 description: How to setup ApiKey authentication. 
 ---
 
-{{% notice note %}}
-The API keys authentication feature was introduced with **Gloo Edge Enterprise**, release 0.18.5. If you are using an earlier version, this tutorial will not work.
-{{% /notice %}}
-
-{{% notice note %}}
-The API key secret format shown in this guide was introduced with **Gloo Edge Enterprise**, release v1.5.0-beta8. 
-If you are using an earlier version, please refer to the [previous version](https://docs.solo.io/gloo-edge/1.3.0/security/auth/apikey_auth/) 
-of this guide.
-{{% /notice %}}
-
 Sometimes when you need to protect a service, the set of users that will need to access it is known in advance and does 
 not change frequently. For example, these users might be other services or specific persons or teams in your organization. 
 
@@ -27,17 +17,17 @@ It is important to note that **your services are only as secure as your API keys
 rotation is up to the user, thus the security of the routes is up to the user.
 {{% /notice %}}
 
-To secure your services using API keys, you first need to provide Gloo Edge with your secret API keys in the form of `Secrets`. After your API key secrets are in place, you can configure authentication on your Virtual Services by referencing the secrets in one of two ways:
+To secure your services using API keys, you first need to provide Gloo Gateway with your secret API keys in the form of `Secrets`. After your API key secrets are in place, you can configure authentication on your Virtual Services by referencing the secrets in one of two ways:
 
 1. You can specify a **label selector** that matches one or more labelled API key secrets (this is the preferred option), or
 1. You can **explicitly reference** a set of secrets by their identifier (namespace and name).
 
-When Gloo Edge matches a request to a route secured with API keys, it looks for a valid API key in the request headers. 
+When Gloo Gateway matches a request to a route secured with API keys, it looks for a valid API key in the request headers. 
 The name of the header that is expected to contain the API key is configurable. If the header is not present, 
 or if the API key it contains does not match one of the API keys in the secrets referenced on the Virtual Service, 
-Gloo Edge will deny the request and return a 401 response to the downstream client.
+Gloo Gateway will deny the request and return a 401 response to the downstream client.
 
-Internally, Gloo Edge will generate a mapping of API keys to _user identities_ for all API keys present in the system. The _user identity_ for a given API key is the name of the `Secret` which contains the API key. The _user identity_ will be added to the request as a header, `x-user-id` by default, which can be utilized in subsequent filters. In this specific case, the extauth plugin (which handles the api key flow) is part of the `AuthNStage` stage, so filters after this stage will have access to the `user identity` header. For example, this functionality is used in [Gloo Edge's rate limiting API to provide different rate limits for anonymous vs. authorized users]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/simple" >}}). For security reasons, this header will be sanitized from the response before it leaves the proxy.
+Internally, Gloo Gateway will generate a mapping of API keys to _user identities_ for all API keys present in the system. The _user identity_ for a given API key is the name of the `Secret` which contains the API key. The _user identity_ will be added to the request as a header, `x-user-id` by default, which can be utilized in subsequent filters. In this specific case, the extauth plugin (which handles the api key flow) is part of the `AuthNStage` stage, so filters after this stage will have access to the `user identity` header. For example, this functionality is used in [Gloo Gateway's rate limiting API to provide different rate limits for anonymous vs. authorized users]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/simple" >}}). For security reasons, this header will be sanitized from the response before it leaves the proxy.
 
 Be sure to check the external auth [configuration overview]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/#auth-configuration-overview" >}}) for detailed information about how authentication is configured on Virtual Services.
 
@@ -56,7 +46,7 @@ glooctl create upstream static --static-hosts jsonplaceholder.typicode.com:80 --
 {{< /tabs >}}
 
 ## Creating a Virtual Service
-Now let's configure Gloo Edge to route requests to the upstream we just created. To do that, we define a simple Virtual Service to match all requests that:
+Now let's configure Gloo Gateway to route requests to the upstream we just created. To do that, we define a simple Virtual Service to match all requests that:
 
 - Contain a `Host` header with value `foo` and
 - Have a path that starts with `/` (this will match all requests).
@@ -67,7 +57,7 @@ Now let's configure Gloo Edge to route requests to the upstream we just created.
 {{< /tab >}}
 {{< /tabs >}} 
 
-Let's send a request that matches the above route to the Gloo Edge gateway and make sure it works:
+Let's send a request that matches the above route to the gateway proxy and make sure it works:
 
 ```shell
 curl -H "Host: foo" $(glooctl proxy url)/posts/1
@@ -90,7 +80,7 @@ The above command should return:
 {{% /notice %}}
 
 As we just saw, we were able to reach the upstream without having to provide any credentials. 
-This is because by default Gloo Edge allows any request on routes that do not specify authentication configuration. 
+This is because by default Gloo Gateway allows any request on routes that do not specify authentication configuration. 
 Let's change this behavior. We will update the Virtual Service so that only requests containing 
 a valid API key are allowed.
 
@@ -106,7 +96,7 @@ The above command creates a secret that:
 
 - is named `infra-apikey`,
 - is placed in the `gloo-system` namespace (this  is the default if no namespace is provided via the `--namespace` flag),
-- is of kind `apikey` (this is just a Kubernetes secret which contains the API key in the `data` entry with the key expected by Gloo Edge),
+- is of kind `apikey` (this is just a Kubernetes secret which contains the API key in the `data` entry with the key expected by Gloo Gateway),
 - is marked with a label named `team` with value `infrastructure`, and 
 - contains an API key with value `N2YwMDIxZTEtNGUzNS1jNzgzLTRkYjAtYjE2YzRkZGVmNjcy`.
 
@@ -202,7 +192,7 @@ Let's try and resend the same request we sent earlier:
 curl -v -H "Host: foo" $(glooctl proxy url)/posts/1
 ```
 
-You will see that the response now contains a **401 Unauthorized** code, indicating that Gloo Edge denied the request.
+You will see that the response now contains a **401 Unauthorized** code, indicating that Gloo Gateway denied the request.
 
 {{< highlight shell "hl_lines=6" >}}
 > GET /posts/1 HTTP/1.1
@@ -238,7 +228,7 @@ We are now able to reach the Upstream again!
 
 ## Summary
 
-In this tutorial, we installed Gloo Edge Enterprise and created an unauthenticated Virtual Service that routes requests to a 
+In this tutorial, we installed Gloo Gateway Enterprise and created an unauthenticated Virtual Service that routes requests to a 
 static upstream. We then created an API key `AuthConfig` object and used it to secure our Virtual Service. 
 We first showed how unauthenticated requests fail with a `401 Unauthorized` response, and then showed how to send 
 authenticated requests successfully to the upstream. 

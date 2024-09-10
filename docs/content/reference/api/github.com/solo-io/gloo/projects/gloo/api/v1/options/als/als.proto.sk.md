@@ -44,7 +44,7 @@ weight: 5
 
  
 Contains various settings for Envoy's access logging service.
-See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/accesslog/v2/accesslog.proto#envoy-api-msg-config-filter-accesslog-v2-accesslog
+See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/accesslog/v3/accesslog.proto
 
 ```yaml
 "accessLog": []als.options.gloo.solo.io.AccessLog

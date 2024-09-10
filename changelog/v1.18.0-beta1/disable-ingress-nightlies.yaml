@@ -1,0 +1,7 @@
+changelog:
+- type: NON_USER_FACING
+  description: >-
+    Disable ingress tests on v1.17 nightly runs
+
+    skipCI-kube-tests:true
+    skipCI-docs-build:true

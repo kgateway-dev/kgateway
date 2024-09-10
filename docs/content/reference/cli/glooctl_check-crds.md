@@ -1,5 +1,6 @@
 ---
 title: "glooctl check-crds"
+description: "Reference for the 'glooctl check-crds' command."
 weight: 5
 ---
 ## glooctl check-crds
@@ -19,6 +20,7 @@ glooctl check-crds [flags]
 ```
   -h, --help                 help for check-crds
       --local-chart string   check against CRDs in helm chart at path specified by this flag (supersedes --version)
+  -n, --namespace string     namespace for reading or writing resources (default "gloo-system")
       --show-yaml            show full yaml of both CRDs that differ
       --version string       version of gloo's CRDs to check against
 ```

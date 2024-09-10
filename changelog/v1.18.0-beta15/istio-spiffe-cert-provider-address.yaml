@@ -1,0 +1,7 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/9855
+    resolvesIssue: false
+    description: >-
+      Introduce `gatewayProxies.gatewayProxy.istioSpiffeCertProviderAddress` which overrides the Istio SPIFFE
+      certificate provider (`CA_ADDR` env variable). It defaults to `gatewayProxies.gatewayProxy.discoveryAddress`.

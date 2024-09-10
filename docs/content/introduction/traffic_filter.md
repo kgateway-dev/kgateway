@@ -3,12 +3,12 @@ title: Traffic processing
 weight: 25
 ---
 
-With Gloo Edge, you can configure the gateway listener along with custom Envoy filters to process the traffic that enters into and out of your environment. By mutating requests to and responses from your upstream services, you can decouple and scale your services more dynamically.
+With Gloo Gateway, you can configure the gateway listener along with custom Envoy filters to process the traffic that enters into and out of your environment. By mutating requests to and responses from your upstream services, you can decouple and scale your services more dynamically.
 
 * [Types of request processing](#types-of-request-processing)
 * [Filter flow](#filter-flow)
 
-For an overview of Gloo Edge gateway, virtual service, and upstream configurations, see [Traffic management]({{% versioned_link_path fromRoot="/introduction/traffic_management/" %}}).
+For an overview of gateway, virtual service, and upstream configurations, see [Traffic management]({{% versioned_link_path fromRoot="/introduction/traffic_management/" %}}).
 
 ---
 
@@ -18,7 +18,7 @@ Review the following types of request processing that you can do, and see the li
 
 ### Transformations
 
-Transformations can be applied to *VirtualHosts*, *Routes*, and *WeightedDestinations* parts of a Gloo Edge Virtual Service custom resource. Example transformations include the following.
+Transformations can be applied to *VirtualHosts*, *Routes*, and *WeightedDestinations* parts of a Gloo Gateway Virtual Service custom resource. Example transformations include the following.
 
 * [Change the response status]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/change_response_status/" %}}) coming from an Upstream service.
 * [Add headers to the body]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/add_headers_to_body/" %}}) of a request. 
@@ -30,17 +30,17 @@ For example steps, see the [Transformation guides]({{% versioned_link_path fromR
 
 Not all requests should be sent to an Upstream destination. Review the following situations in which you might use a direct response or redirect.
 
-* You want to redirect the response to another website ([Host Redirect]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/redirect_action/" %}})) or to another Virtual Service in Gloo Edge. 
+* You want to redirect the response to another website ([Host Redirect]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/redirect_action/" %}})) or to another Virtual Service in Gloo Gateway. 
 * You want to redirect clients that request the HTTP version of a service to the [HTTPS version instead]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/https_redirect/" %}}). 
 * You want to return a [direct response]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/direct_response_action/" %}}) from the Virtual Service to the client's request, such as a `404 not found` error message.
 
 ### Faults
 
-Faults are a way to test the resilience of your services by injecting faults (errors and delays) into a percentage of your requests. Gloo Edge can do this automatically by [following this guide]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/faults/" %}}).
+Faults are a way to test the resilience of your services by injecting faults (errors and delays) into a percentage of your requests. Gloo Gateway can do this automatically by [following this guide]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/faults/" %}}).
 
 ### Timeouts and retries
 
-Gloo Edge will attempt to send requests to the proper Upstream, but there may be times when that Upstream service is unable to handle additional requests. The `timeout` and `retry` portions of the `options` section for a route define how long to wait for a response from the Upstream service and what type of retry strategy should be used.
+Gloo Gateway will attempt to send requests to the proper Upstream, but there may be times when that Upstream service is unable to handle additional requests. The `timeout` and `retry` portions of the `options` section for a route define how long to wait for a response from the Upstream service and what type of retry strategy should be used.
 
 ```yaml
       options:
@@ -76,7 +76,7 @@ For examples of inherited options, see the following guides:
 
 ## Filter flow
 
-The order that Envoy applies filters to traffic impacts how you configure your Gloo Edge resources. Review the following video and diagrams to understand the filter flow in Gloo Edge.
+The order that Envoy applies filters to traffic impacts how you configure your Gloo Gateway resources. Review the following video and diagrams to understand the filter flow in Gloo Gateway.
 
 For more information on configuring traffic filters, see the [Transformation guides]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/" %}}).
 
@@ -86,14 +86,14 @@ For more information on configuring traffic filters, see the [Transformation gui
 
 ### Filter flow description
 
-Review the following diagram of how Gloo Edge filters traffic, depending on what you configure. Notes on the filter policies that you can configure:
+Review the following diagram of how Gloo Gateway filters traffic, depending on what you configure. Notes on the filter policies that you can configure:
 * The filters are applied in the order that is shown in the diagram. For example, if you apply both CORS and DLP security filters, a request is processed for CORS first, and then DLP. You cannot change the order.
 * If you add a policy at both the `VirtualService` and `Route` levels, the `Route` policy takes precedence.
 
 <figure><img src="{{% versioned_link_path fromRoot="/img/traffic-filter-flow.svg" %}}">
 <figcaption style="text-align:center;font-style:italic">Figure: Filter flow.</figcaption></figure>
 
-1.  **External auth**: When you enable the external authorization and authentication service in Gloo Edge Enterprise, you can secure access to your apps with authentication tools like OIDC, API keys, OAuth2, or OPA. External auth is used to organize the flow in this diagram so that you can quickly see how traffic can be manipulated before or after requiring the client to log in. For more information, see [Authentication and authorization]({{% versioned_link_path fromRoot="/guides/security/auth/" %}}).
+1.  **External auth**: When you enable the external authorization and authentication service in Gloo Gateway Enterprise, you can secure access to your apps with authentication tools like OIDC, API keys, OAuth2, or OPA. External auth is used to organize the flow in this diagram so that you can quickly see how traffic can be manipulated before or after requiring the client to log in. For more information, see [Authentication and authorization]({{% versioned_link_path fromRoot="/guides/security/auth/" %}}).
 2.  **Before or after external auth**: You can configure several traffic filters either before, after, or both before and after a client request is authorized.
     *  **JWT**: You can verify a JSON web token (JWT) signature, check the claims, and add them to new headers. To set JWT before and/or after external auth, use the `JwtStaged` setting. For more information, see [JWT and access control]({{% versioned_link_path fromRoot="/guides/security/auth/jwt/access_control/" %}}).
     *  **Transformation**: Apply transformation templates to the header or body request. If the body is a JSON payload, you can also extract values from it. The `clearRouteCache` setting clears the route that was initially selected by the HTTP connection manager, with the final route selected when the request reaches the Router filter. To set transformations before and/or after external auth, use the `stagedTransformation` setting. For more information, see [Transformations]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/" %}}).

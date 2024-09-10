@@ -1,5 +1,6 @@
 ---
 title: "glooctl get ratelimitconfig"
+description: "Reference for the 'glooctl get ratelimitconfig' command."
 weight: 5
 ---
 ## glooctl get ratelimitconfig

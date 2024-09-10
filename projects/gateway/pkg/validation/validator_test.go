@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
@@ -61,7 +61,7 @@ var _ = Describe("Validator", func() {
 			ExtensionValidator: extensionValidator,
 			AllowWarnings:      false,
 		})
-		mValidConfig = utils.MakeGauge("validation.gateway.solo.io/valid_config", "A boolean indicating whether gloo config is valid")
+		mValidConfig = statsutils.MakeGauge("validation.gateway.solo.io/valid_config", "A boolean indicating whether gloo config is valid")
 	})
 
 	It("returns error before sync called", func() {
@@ -226,7 +226,7 @@ var _ = Describe("Validator", func() {
 			// Inputs:
 			// - disableValidationAgainstPreviousState bool - are we enabling the validation against the previous state or just checking errors/warnings as usual
 			// - allowWarnings bool - are warnings allowed
-			// - validator - Errors/Warnings/Success - what is returned from valiation.
+			// - validator - Errors/Warnings/Success - what is returned from validation.
 			// - errExpected bool - is an error expected
 			// the glooValidator returns two types of reports: ProxyReports and ResourceReports.
 			// Test that both are handled correctly. This test is focuses on the ProxyReports.
@@ -747,7 +747,7 @@ var _ = Describe("Validator", func() {
 		Context("valid config gauge", func() {
 			BeforeEach(func() {
 				// reset the value before each test
-				utils.Measure(context.TODO(), mValidConfig, -1)
+				statsutils.Measure(context.TODO(), mValidConfig, -1)
 			})
 			It("returns 1 when there are no validation errors", func() {
 				v.glooValidator = ValidateAccept
@@ -1314,7 +1314,7 @@ var _ = Describe("Validator", func() {
 			// start workers
 			wg := sync.WaitGroup{}
 			wg.Add(numberOfWorkers)
-			for i := 0; i < numberOfWorkers; i++ {
+			for i := range numberOfWorkers {
 				workerName := fmt.Sprintf("worker #%d", i)
 				// validateModifiedGvkWorker handles its own GinkgoRecover and
 				// stores errors in resultMap where we aggregate them later
@@ -1397,7 +1397,7 @@ const (
 
 // Validation functions here. There return reports that are processed by the validator
 // In order to test the secret valdiation logic, there needs to be a way to change the error message and/or warning.
-// These validation functions have the word "Change" in their names and will return a unqiue error/warning message each time they are called.
+// These validation functions have the word "Change" in their names and will return a unique error/warning message each time they are called.
 func ValidateFail(ctx context.Context, proxy *gloov1.Proxy, resource resources.Resource, shouldDelete bool) ([]*gloovalidation.GlooValidationReport, error) {
 	return ValidationAddErrorsAndWarnings(proxy, nil, []string{errString}, []string{})
 }

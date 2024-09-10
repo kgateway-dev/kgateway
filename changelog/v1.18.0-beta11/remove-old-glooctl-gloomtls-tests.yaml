@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6303
+    resolvesIssue: false
+    description: >-
+      Remove old gloomtls and glooctl tests from kube2e to new framework. New gloomtls tests were introduced in
+      https://github.com/solo-io/gloo/pull/9734. New glooctl tests were introduced in https://github.com/solo-io/gloo/pull/9718.
+      skipCI-docs-build:true

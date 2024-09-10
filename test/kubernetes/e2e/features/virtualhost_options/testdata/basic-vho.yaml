@@ -1,0 +1,13 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualHostOption
+metadata:
+  name: remove-content-length
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: gw
+  options:
+    headerManipulation:
+      responseHeadersToRemove:
+        - "content-length"

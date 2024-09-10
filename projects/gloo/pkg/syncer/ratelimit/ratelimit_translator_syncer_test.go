@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	skcore "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -67,6 +68,46 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 					Metadata: &skcore.Metadata{
 						Name:      "proxy",
 						Namespace: "gloo-system",
+					},
+					Listeners: []*gloov1.Listener{{
+						Name: "listener-::-8080",
+						ListenerType: &gloov1.Listener_HttpListener{
+							HttpListener: &gloov1.HttpListener{
+								VirtualHosts: []*gloov1.VirtualHost{
+									{
+										Name: "gloo-system.default",
+										Options: &gloov1.VirtualHostOptions{
+											RatelimitBasic: config,
+										},
+									},
+								},
+							},
+						},
+					}},
+				}
+			})
+
+			It("should error when enterprise ratelimitBasic config is set", func() {
+				ExpectSyncGeneratesEnterpriseOnlyError("ratelimitBasic")
+			})
+		})
+
+		Context("config ratelimitBasic on k8s Gateway proxy", func() {
+
+			BeforeEach(func() {
+				config := &ratelimit.IngressRateLimit{
+					AuthorizedLimits: nil,
+					AnonymousLimits:  nil,
+				}
+
+				proxy = &gloov1.Proxy{
+					Metadata: &skcore.Metadata{
+						Name:      "k8s-proxy",
+						Namespace: "gloo-system",
+						// Check that the Gloo Gateway proxy runs through the ratelimit plugin during sync
+						Labels: map[string]string{
+							utils.ProxyTypeKey: utils.GatewayApiProxyValue,
+						},
 					},
 					Listeners: []*gloov1.Listener{{
 						Name: "listener-::-8080",

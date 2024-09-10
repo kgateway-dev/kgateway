@@ -23,6 +23,100 @@ spec:
         properties:
           spec:
             properties:
+              ai:
+                properties:
+                  anthropic:
+                    properties:
+                      authToken:
+                        properties:
+                          inline:
+                            type: string
+                          secretRef:
+                            properties:
+                              name:
+                                type: string
+                              namespace:
+                                type: string
+                            type: object
+                        type: object
+                      customHost:
+                        properties:
+                          host:
+                            type: string
+                          port:
+                            maximum: 4294967295
+                            minimum: 0
+                            type: integer
+                        type: object
+                      version:
+                        type: string
+                    type: object
+                  azureOpenai:
+                    properties:
+                      authToken:
+                        properties:
+                          inline:
+                            type: string
+                          secretRef:
+                            properties:
+                              name:
+                                type: string
+                              namespace:
+                                type: string
+                            type: object
+                        type: object
+                      endpoint:
+                        type: string
+                    type: object
+                  mistral:
+                    properties:
+                      authToken:
+                        properties:
+                          inline:
+                            type: string
+                          secretRef:
+                            properties:
+                              name:
+                                type: string
+                              namespace:
+                                type: string
+                            type: object
+                        type: object
+                      customHost:
+                        properties:
+                          host:
+                            type: string
+                          port:
+                            maximum: 4294967295
+                            minimum: 0
+                            type: integer
+                        type: object
+                    type: object
+                  openai:
+                    properties:
+                      authToken:
+                        properties:
+                          inline:
+                            type: string
+                          secretRef:
+                            properties:
+                              name:
+                                type: string
+                              namespace:
+                                type: string
+                            type: object
+                        type: object
+                      customHost:
+                        properties:
+                          host:
+                            type: string
+                          port:
+                            maximum: 4294967295
+                            minimum: 0
+                            type: integer
+                        type: object
+                    type: object
+                type: object
               aws:
                 properties:
                   awsAccountId:
@@ -87,7 +181,8 @@ spec:
                       type: object
                     type: array
                   port:
-                    format: int32
+                    maximum: 4294967295
+                    minimum: 0
                     type: integer
                   publicIp:
                     type: boolean
@@ -158,7 +253,8 @@ spec:
                       idleTimeout:
                         type: string
                       maxHeadersCount:
-                        format: int32
+                        maximum: 4294967295
+                        minimum: 0
                         type: integer
                       maxStreamDuration:
                         type: string
@@ -178,7 +274,8 @@ spec:
                         type: boolean
                     type: object
                   maxRequestsPerConnection:
-                    format: int32
+                    maximum: 4294967295
+                    minimum: 0
                     type: integer
                   perConnectionBufferLimitBytes:
                     maximum: 4294967295
@@ -190,7 +287,8 @@ spec:
                       keepaliveInterval:
                         type: string
                       keepaliveProbes:
-                        format: int32
+                        maximum: 4294967295
+                        minimum: 0
                         type: integer
                       keepaliveTime:
                         type: string
@@ -321,6 +419,8 @@ spec:
                                 dynamicMetadataValues:
                                   items:
                                     properties:
+                                      jsonToProto:
+                                        type: boolean
                                       key:
                                         type: string
                                       metadataNamespace:
@@ -351,7 +451,8 @@ spec:
                                         nullable: true
                                         type: string
                                       subgroup:
-                                        format: int32
+                                        maximum: 4294967295
+                                        minimum: 0
                                         type: integer
                                     type: object
                                   type: object
@@ -381,6 +482,21 @@ spec:
                                 ignoreErrorOnParse:
                                   type: boolean
                                 mergeExtractorsToBody:
+                                  type: object
+                                mergeJsonKeys:
+                                  properties:
+                                    jsonKeys:
+                                      additionalProperties:
+                                        properties:
+                                          overrideEmpty:
+                                            type: boolean
+                                          tmpl:
+                                            properties:
+                                              text:
+                                                type: string
+                                            type: object
+                                        type: object
+                                      type: object
                                   type: object
                                 parseBodyBehavior:
                                   type: string
@@ -442,7 +558,8 @@ spec:
                                         path:
                                           type: string
                                         portValue:
-                                          format: int32
+                                          maximum: 4294967295
+                                          minimum: 0
                                           type: integer
                                       type: object
                                     loadBalancingWeight:
@@ -450,8 +567,14 @@ spec:
                                       minimum: 0
                                       nullable: true
                                       type: integer
+                                    metadata:
+                                      additionalProperties:
+                                        type: object
+                                        x-kubernetes-preserve-unknown-fields: true
+                                      type: object
                                     port:
-                                      format: int32
+                                      maximum: 4294967295
+                                      minimum: 0
                                       type: integer
                                     upstreamSslConfig:
                                       properties:
@@ -462,6 +585,9 @@ spec:
                                           items:
                                             type: string
                                           type: array
+                                        oneWayTls:
+                                          nullable: true
+                                          type: boolean
                                         parameters:
                                           properties:
                                             cipherSuites:
@@ -545,6 +671,13 @@ spec:
                           type: array
                       type: object
                     type: array
+                type: object
+              gcp:
+                properties:
+                  audience:
+                    type: string
+                  host:
+                    type: string
                 type: object
               healthChecks:
                 items:
@@ -696,7 +829,8 @@ spec:
                     intervalJitter:
                       type: string
                     intervalJitterPercent:
-                      format: int32
+                      maximum: 4294967295
+                      minimum: 0
                       type: integer
                     noTrafficInterval:
                       type: string
@@ -749,6 +883,9 @@ spec:
                     items:
                       type: string
                     type: array
+                  oneWayTls:
+                    nullable: true
+                    type: boolean
                   parameters:
                     properties:
                       cipherSuites:
@@ -839,7 +976,8 @@ spec:
                   serviceNamespace:
                     type: string
                   servicePort:
-                    format: int32
+                    maximum: 4294967295
+                    minimum: 0
                     type: integer
                   serviceSpec:
                     properties:
@@ -939,6 +1077,8 @@ spec:
                                 dynamicMetadataValues:
                                   items:
                                     properties:
+                                      jsonToProto:
+                                        type: boolean
                                       key:
                                         type: string
                                       metadataNamespace:
@@ -969,7 +1109,8 @@ spec:
                                         nullable: true
                                         type: string
                                       subgroup:
-                                        format: int32
+                                        maximum: 4294967295
+                                        minimum: 0
                                         type: integer
                                     type: object
                                   type: object
@@ -999,6 +1140,21 @@ spec:
                                 ignoreErrorOnParse:
                                   type: boolean
                                 mergeExtractorsToBody:
+                                  type: object
+                                mergeJsonKeys:
+                                  properties:
+                                    jsonKeys:
+                                      additionalProperties:
+                                        properties:
+                                          overrideEmpty:
+                                            type: boolean
+                                          tmpl:
+                                            properties:
+                                              text:
+                                                type: string
+                                            type: object
+                                        type: object
+                                      type: object
                                   type: object
                                 parseBodyBehavior:
                                   type: string
@@ -1042,7 +1198,8 @@ spec:
                   leastRequest:
                     properties:
                       choiceCount:
-                        format: int32
+                        maximum: 4294967295
+                        minimum: 0
                         type: integer
                       slowStartConfig:
                         properties:
@@ -1284,6 +1441,8 @@ spec:
                                 dynamicMetadataValues:
                                   items:
                                     properties:
+                                      jsonToProto:
+                                        type: boolean
                                       key:
                                         type: string
                                       metadataNamespace:
@@ -1314,7 +1473,8 @@ spec:
                                         nullable: true
                                         type: string
                                       subgroup:
-                                        format: int32
+                                        maximum: 4294967295
+                                        minimum: 0
                                         type: integer
                                     type: object
                                   type: object
@@ -1344,6 +1504,21 @@ spec:
                                 ignoreErrorOnParse:
                                   type: boolean
                                 mergeExtractorsToBody:
+                                  type: object
+                                mergeJsonKeys:
+                                  properties:
+                                    jsonKeys:
+                                      additionalProperties:
+                                        properties:
+                                          overrideEmpty:
+                                            type: boolean
+                                          tmpl:
+                                            properties:
+                                              text:
+                                                type: string
+                                            type: object
+                                        type: object
+                                      type: object
                                   type: object
                                 parseBodyBehavior:
                                   type: string
@@ -1382,6 +1557,9 @@ spec:
                     items:
                       type: string
                     type: array
+                  oneWayTls:
+                    nullable: true
+                    type: boolean
                   parameters:
                     properties:
                       cipherSuites:
@@ -1467,8 +1645,14 @@ spec:
                           minimum: 0
                           nullable: true
                           type: integer
+                        metadata:
+                          additionalProperties:
+                            type: object
+                            x-kubernetes-preserve-unknown-fields: true
+                          type: object
                         port:
-                          format: int32
+                          maximum: 4294967295
+                          minimum: 0
                           type: integer
                         sniAddr:
                           type: string
@@ -1572,6 +1756,8 @@ spec:
                                 dynamicMetadataValues:
                                   items:
                                     properties:
+                                      jsonToProto:
+                                        type: boolean
                                       key:
                                         type: string
                                       metadataNamespace:
@@ -1602,7 +1788,8 @@ spec:
                                         nullable: true
                                         type: string
                                       subgroup:
-                                        format: int32
+                                        maximum: 4294967295
+                                        minimum: 0
                                         type: integer
                                     type: object
                                   type: object
@@ -1632,6 +1819,21 @@ spec:
                                 ignoreErrorOnParse:
                                   type: boolean
                                 mergeExtractorsToBody:
+                                  type: object
+                                mergeJsonKeys:
+                                  properties:
+                                    jsonKeys:
+                                      additionalProperties:
+                                        properties:
+                                          overrideEmpty:
+                                            type: boolean
+                                          tmpl:
+                                            properties:
+                                              text:
+                                                type: string
+                                            type: object
+                                        type: object
+                                      type: object
                                   type: object
                                 parseBodyBehavior:
                                   type: string

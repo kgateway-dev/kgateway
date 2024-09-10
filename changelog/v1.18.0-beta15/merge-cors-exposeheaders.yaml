@@ -1,0 +1,9 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/7689
+    resolvesIssue: false
+    description: >-
+      Expose `CorsPolicyMergeSettings` on `VirtualHostOptions` which allows users to specify how to reconcile CORS settings 
+      when configured on both Route and VirtualHost. Specifically it is now possible to define a `UNION` merge strategy
+      for the `ExposeHeaders` field, resulting in the union of the headers set at Route and VirtualHost level being
+      applied to traffic for the Route. 

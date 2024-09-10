@@ -19,7 +19,7 @@ func AddGlooInstallFlags(set *pflag.FlagSet, install *options.Install) {
 
 func AddEnterpriseInstallFlags(set *pflag.FlagSet, install *options.Install) {
 	set.BoolVarP(&install.DryRun, "dry-run", "d", false, "Dump the raw installation yaml instead of applying it to kubernetes")
-	set.StringVar(&install.LicenseKey, "license-key", "", "License key to activate GlooE features")
+	set.StringVar(&install.LicenseKey, LicenseFlag, "", "License key to activate GlooE features")
 	set.BoolVar(&install.WithGlooFed, "with-gloo-fed", true, "Install Gloo-Fed alongside Gloo Enterprise")
 	// Gloo-fed
 	set.StringSliceVar(&install.Federation.HelmChartValueFileNames, "gloo-fed-values", []string{}, "List of files with value overrides for the Gloo Fed Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)")
@@ -38,7 +38,7 @@ func AddKnativeInstallFlags(set *pflag.FlagSet, install *options.Knative) {
 	set.BoolVarP(&install.InstallKnative, "install-knative", "k", true,
 		"Bundle Knative-Serving with your Gloo installation")
 	set.BoolVarP(&install.SkipGlooInstall, "skip-installing-gloo", "g", false,
-		"Skip installing Gloo Edge. Only Knative components will be installed")
+		"Skip installing Gloo Gateway. Only Knative components will be installed")
 	set.BoolVarP(&install.InstallKnativeEventing, "install-eventing", "e", false,
 		"Bundle Knative-Eventing with your Gloo installation. Requires install-knative to be true")
 	set.StringVar(&install.InstallKnativeEventingVersion, "install-eventing-version", "0.10.0",

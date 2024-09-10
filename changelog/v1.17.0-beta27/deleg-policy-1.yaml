@@ -1,0 +1,22 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/6161
+    resolvesIssue: false
+    description: |
+      This change implements policy inheritance, specifically
+      in the context of RouteOptions, such that a child route
+      in a delegation chain may inherit RouteOptions from its
+      ancestors. Parents higher in the hierarchy are given
+      preference when merging the RouteOptions down the delegation
+      chain, i.e. for a tree A->B->C the RouteOptions of A are
+      prioritized first, then the RouteOptions of B augment that
+      of A without overriding the options in A, then the options
+      of C augment the merge of A and B without overriding fields.
+
+      Additionally, it does the following:
+      - Refactors the RouteOption query API to perform merging
+        and prioritization within the query.
+      - Translator tests for the many scenarios of policy inheritance.
+      - Converts delegation translator test to a table-driven test.
+      - E2e tests to verify the inheritance and merge functionality.
+

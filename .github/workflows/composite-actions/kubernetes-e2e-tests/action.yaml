@@ -1,0 +1,55 @@
+name: Kubernetes End-to-End tests
+
+# These tests are located in the /test/kubernetes/e2e directory
+description: Kubernetes End-to-End tests
+
+inputs:
+  cluster-name:
+    required: true
+    description: The name of the KinD cluster
+  test-args:
+    required: true
+    description: The list of arguments passed to the test invocation
+  run-regex:
+    required: true
+    # In the future, it would be preferable to accept this as a list of strings
+    # and to then build the regex from that list
+    description: The regex passed to the test invocation with the -run flag
+  istio-version:
+    required: true
+    description: The version of Istio to use
+  matrix-label:
+    required: true
+    description: The version of the matrix being used - used to name artifacts to prevent filename collisions
+
+runs:
+  using: "composite"
+  steps:
+  - name: Install test tools
+    shell: bash
+    run: make install-test-tools
+  - name: Execute tests
+    env:
+      GO_TEST_USER_ARGS: ${{ inputs.test-args }} -run "${{ inputs.run-regex }}"
+      CLUSTER_NAME: ${{ inputs.cluster-name }}
+      TEST_PKG: ./test/kubernetes/e2e/tests
+      ISTIO_VERSION: ${{ inputs.istio-version }}
+    shell: bash
+    run: make go-test
+  - name: Summarize tests
+    # Print out a summary of ALL tests run under this action. In the future we can use this tool 
+    # with the --json flag to export the results for centralized processing.
+    shell: bash
+    run: go run ./ci/github-actions/go-test-summary
+  - name: Archive bug report directory on failure
+    if: ${{ failure() }}
+    uses: actions/upload-artifact@v4
+    with:
+      name: bug-report-${{ inputs.cluster-name }}
+      path: ./_test/bug_report/${{ inputs.cluster-name }}
+  - name: Archive test results
+    if: ${{ always() }}
+    uses: actions/upload-artifact@v4
+    with:
+      name: go-test-summary-${{ inputs.cluster-name }}-${{ inputs.matrix-label }}
+      path: ./_test/test_log/go-test-summary

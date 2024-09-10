@@ -10,12 +10,14 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/mirror"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/mirror/mocks"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-//go:generate mockgen -destination mocks/mock_queries.go -package mocks github.com/solo-io/gloo/projects/gateway2/query GatewayQueries
+//go:generate go run github.com/golang/mock/mockgen -destination mocks/mock_queries.go -package mocks github.com/solo-io/gloo/projects/gateway2/query GatewayQueries
 
 func TestSingleMirror(t *testing.T) {
 	g := gomega.NewWithT(t)
@@ -27,7 +29,7 @@ func TestSingleMirror(t *testing.T) {
 		RequestMirror: &gwv1.HTTPRequestMirrorFilter{
 			BackendRef: gwv1.BackendObjectReference{
 				Name: "foo",
-				Port: ptr(gwv1.PortNumber(8080)),
+				Port: ptr.To(gwv1.PortNumber(8080)),
 			},
 		},
 	}
@@ -59,7 +61,58 @@ func TestSingleMirror(t *testing.T) {
 	shadowing := outputRoute.GetOptions().GetShadowing()
 	g.Expect(shadowing).ToNot(gomega.BeNil())
 	g.Expect(shadowing.Upstream).ToNot(gomega.BeNil())
-	g.Expect(shadowing.Upstream.Name).To(gomega.Equal("bar-foo-8080"))
+	g.Expect(shadowing.Upstream.Name).To(gomega.Equal("kube-svc:bar-foo-8080"))
+	g.Expect(shadowing.Upstream.Namespace).To(gomega.Equal("bar"))
+	g.Expect(shadowing.Percentage).To(gomega.Equal(float32(100.0)))
+}
+
+func TestUpstreamMirror(t *testing.T) {
+	g := gomega.NewWithT(t)
+	ctrl := gomock.NewController(t)
+	queries := mocks.NewMockGatewayQueries(ctrl)
+
+	backendKind := gwv1.Kind(v1.UpstreamGVK.Kind)
+	backendGroup := gwv1.Group(v1.UpstreamGVK.Group)
+	filter := gwv1.HTTPRouteFilter{
+		Type: gwv1.HTTPRouteFilterRequestMirror,
+		RequestMirror: &gwv1.HTTPRequestMirrorFilter{
+			BackendRef: gwv1.BackendObjectReference{
+				Name:  "foo",
+				Port:  ptr.To(gwv1.PortNumber(8080)),
+				Kind:  &backendKind,
+				Group: &backendGroup,
+			},
+		},
+	}
+	rt := &gwv1.HTTPRoute{}
+	routeCtx := &plugins.RouteContext{
+		Route: rt,
+		Rule: &gwv1.HTTPRouteRule{
+			Filters: []gwv1.HTTPRouteFilter{
+				filter,
+			},
+		},
+	}
+	svc := &gloov1.Upstream{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "foo",
+			Namespace: "bar",
+		},
+	}
+
+	queries.EXPECT().ObjToFrom(rt).Return(nil)
+	queries.EXPECT().GetBackendForRef(context.Background(), gomock.Any(), &filter.RequestMirror.BackendRef).Return(svc, nil)
+	plugin := mirror.NewPlugin(queries)
+	outputRoute := &v1.Route{
+		Action:  &v1.Route_RouteAction{},
+		Options: &v1.RouteOptions{},
+	}
+	plugin.ApplyRoutePlugin(context.Background(), routeCtx, outputRoute)
+
+	shadowing := outputRoute.GetOptions().GetShadowing()
+	g.Expect(shadowing).ToNot(gomega.BeNil())
+	g.Expect(shadowing.Upstream).ToNot(gomega.BeNil())
+	g.Expect(shadowing.Upstream.Name).To(gomega.Equal("foo"))
 	g.Expect(shadowing.Upstream.Namespace).To(gomega.Equal("bar"))
 	g.Expect(shadowing.Percentage).To(gomega.Equal(float32(100.0)))
 }
@@ -123,7 +176,3 @@ func TestSingleMirror(t *testing.T) {
 // 	g.Expect(outputRoute.GetRoute().RequestMirrorPolicies[0].Cluster).To(gomega.Equal("bar-foo-8080"))
 // 	g.Expect(outputRoute.GetRoute().RequestMirrorPolicies[1].Cluster).To(gomega.Equal("foo-bar-8080"))
 // }
-
-func ptr[T any](i T) *T {
-	return &i
-}

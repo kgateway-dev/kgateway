@@ -33,7 +33,7 @@ kind: DaemonSet
 {{- end}}
 metadata:
   labels:
-    app: gloo
+{{ include "gloo.labels" . | indent 4}}
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
   name: {{ $name | kebabcase }}
@@ -101,12 +101,12 @@ spec:
         {{- end }}
 {{- end}}
     spec:
-{{ $securityDefaults := dict "fsGroup" $spec.podTemplate.fsGroup }}
+{{- $securityDefaults := dict "fsGroup" $spec.podTemplate.fsGroup -}}
 {{- if not $spec.podTemplate.floatingUserId -}}
   {{- $_ := set $securityDefaults "runAsUser" $spec.podTemplate.runAsUser }}
 {{ end -}}
-{{- if $spec.podTemplate.enablePodSecurityContext -}}
-{{ include "gloo.securityContext" (dict "values" $spec.podTemplate.podSecurityContext "defaults" $securityDefaults) | indent 6 -}}
+{{- if (and $spec.podTemplate.enablePodSecurityContext (not $global.securitySettings.floatingUserId)) -}}
+{{ include "gloo.securityContext" (dict "values" $spec.podTemplate.podSecurityContext "defaults" $securityDefaults "indent" 6 "globalSec" $global.securitySettings) -}}
 {{- end -}}
 
 {{- if $spec.kind.deployment }}
@@ -141,6 +141,11 @@ spec:
       {{- end}}
       {{- if $spec.podTemplate.nodeName }}
       nodeName: {{$spec.podTemplate.nodeName}}
+      {{- end }}
+      {{- if $spec.kind.deployment}}
+      {{- if $spec.kind.deployment.priorityClassName }}
+      priorityClassName: {{ $spec.kind.deployment.priorityClassName }}
+      {{- end }}
       {{- end }}
       {{- if $spec.podTemplate.nodeSelector }}
       nodeSelector:
@@ -217,8 +222,7 @@ spec:
         {{- if not $spec.podTemplate.floatingUserId -}}
           {{- $_ := set $securityDefaults "runAsUser" $spec.podTemplate.runAsUser }}
         {{- end -}}
-        {{- include "gloo.securityContext" (dict "values" $spec.podTemplate.glooContainerSecurityContext "defaults" $securityDefaults) | nindent 8 }}
-
+        {{- include "gloo.containerSecurityContext" (dict "values" $spec.podTemplate.glooContainerSecurityContext "defaults" $securityDefaults "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8 "globalSec" $global.securitySettings) }}
         ports:
         - containerPort: {{ $spec.podTemplate.httpPort }}
           name: http
@@ -297,14 +301,11 @@ spec:
           name: shared-data
 {{- include $spec.extraContainersHelper . | nindent 6 }}
 {{- end }} {{- /* $spec.extraContainersHelper */}}
-{{- if or $global.glooMtls.enabled $global.istioSDS.enabled }}
+{{- if or $global.glooMtls.enabled (or $global.istioSDS.enabled $global.istioIntegration.enabled) }}
       {{- $sdsImage := merge $global.glooMtls.sds.image $global.image }}
       - name: sds
         image: {{ template "gloo.image" $sdsImage }}
-        {{- with $global.glooMtls.sds.securityContext }}}
-        securityContext:
-        {{- toYaml . | nindent 10  }}
-        {{- end }}
+        {{- include "gloo.containerSecurityContext" (dict "values" $global.glooMtls.sds.securityContext "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8 "globalSec" $global.securitySettings) }}
         imagePullPolicy: {{ $sdsImage.pullPolicy }}
 {{- if $global.glooMtls.sdsResources }}
         resources:
@@ -323,7 +324,7 @@ spec:
           - name: GLOO_MTLS_SDS_ENABLED
             value: "true"
 {{- end }}
-{{- if $global.istioSDS.enabled }}
+{{- if or $global.istioSDS.enabled $global.istioIntegration.enabled }}
           - name: ISTIO_MTLS_SDS_ENABLED
             value: "true"
 {{- end }}
@@ -341,7 +342,7 @@ spec:
           name: gloo-mtls-certs
           readOnly: true
 {{- end }}
-{{- if $global.istioSDS.enabled }}
+{{- if or $global.istioSDS.enabled $global.istioIntegration.enabled }}
         - mountPath: /etc/istio-certs/
           name: istio-certs
         - mountPath: /etc/envoy
@@ -361,17 +362,14 @@ spec:
           initialDelaySeconds: 3
           periodSeconds: 10
           failureThreshold: 3
-{{- end }} {{- /* $global.glooMtls.enabled or $.Values.istioSDS.enabled */}}
-{{- if $global.istioSDS.enabled }}
+{{- end }} {{- /* or $global.glooMtls.enabled (or $.Values.istioSDS.enabled $global.istioIntegration.enabled) */}}
+{{- if or $global.istioSDS.enabled $global.istioIntegration.enabled }}
 {{- if $global.istioSDS.customSidecars }}
 {{ toYaml $global.istioSDS.customSidecars | indent 6}}
 {{- end }}
 {{- if not $global.istioSDS.customSidecars }}
       - name: istio-proxy
-        {{- with $global.glooMtls.istioProxy.securityContext }}
-        securityContext:
-        {{- toYaml . | nindent 10  }}
-        {{- end }}
+        {{- include "gloo.containerSecurityContext" (dict "values" $global.glooMtls.istioProxy.securityContext "podSecurityStandards" .Values.global.podSecurityStandards "indent" 8 "globalSec" $global.securitySettings) }}
         {{- $istioProxyImage := merge $global.glooMtls.istioProxy.image $global.image }}
         image: {{ template "gloo.image" $istioProxyImage }}
         imagePullPolicy: {{ $istioProxyImage.pullPolicy }}
@@ -400,7 +398,6 @@ spec:
         - NONE
         - --dnsRefreshRate
         - 300s
-        - --trust-domain=cluster.local
         - --controlPlaneBootstrap=false
         env:
           - name: OUTPUT_CERTS
@@ -410,14 +407,14 @@ spec:
           - name: PILOT_CERT_PROVIDER
             value: istiod
           - name: CA_ADDR
-            value: {{ $spec.istioDiscoveryAddress | default "istiod.istio-system.svc:15012" }}
+            value: {{ $spec.istioSpiffeCertProviderAddress | default $spec.istioDiscoveryAddress }}
           - name: ISTIO_META_MESH_ID
             value: {{ $spec.istioMetaMeshId | default "cluster.local"}}
           - name: ISTIO_META_CLUSTER_ID
             value: {{ $spec.istioMetaClusterId | default "Kubernetes"}}
           - name: PROXY_CONFIG
             value: |
-              {"discoveryAddress": {{ $spec.istioDiscoveryAddress | default "istiod.istio-system.svc:15012" }}}
+              {"discoveryAddress": {{ $spec.istioDiscoveryAddress }}}
           - name: POD_NAME
             valueFrom:
               fieldRef:
@@ -466,12 +463,12 @@ spec:
         - mountPath: /var/run/secrets/workload-spiffe-credentials
           name: workload-certs
 {{- end }} {{/* if not $global.istioSDS.customSidecars */}}
-{{- end }}{{/* if $global.istioSDS.enabled */}}
+{{- end }}{{/* if or $global.istioSDS.enabled $global.istioIntegration.enabled */}}
       volumes:
       - configMap:
           name: {{ $name | kebabcase }}-envoy-config
         name: envoy-config
-{{- if $global.istioSDS.enabled }}
+{{- if or $global.istioSDS.enabled $global.istioIntegration.enabled }}
       - name: istio-certs
         emptyDir:
           medium: Memory
