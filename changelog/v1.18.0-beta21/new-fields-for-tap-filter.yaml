@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/9656
+    resolvesIssue: false
+    description: >-
+      Expose max_buffered_{rx/tx}_bytes, record_headers_received_time
+      and record_downstream_connection settings for the Tap filter config.
