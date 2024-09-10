@@ -1,13 +1,13 @@
-## APIs for Gloo Gateway - Kubernetes Gateway API Integration
+# APIs for Gloo Gateway - Kubernetes Gateway API Integration
 
 This directory contains Go types for custom resources that Gloo Gateway uses with its Kubernetes Gateway API integration.
 
-### Adding a new API / CRD
+## Adding a new API / CRD
 
 These are the steps required to add a new CRD to be used in the Kubernetes Gateway integration:
 
 1. If creating a new API version (e.g. `v1`, `v2alpha1`), create a new directory for the version and create a `doc.go` file with the `// +kubebuilder:object:generate=true` annotation, so that Go types in that directory will be converted into CRDs when codegen is run.
-    - The `groupName` marker specifies the API group name for the generated CRD. 
+    - The `groupName` marker specifies the API group name for the generated CRD.
 2. Create a `_types.go` file in the API version directory. Following [gateway_parameters_types.go](/projects/gateway2/api/v1alpha1/gateway_parameters_types.go) as an example:
     - Define a struct for the resource (containing the metadata fields, `Spec`, and `Status`)
         - Tip: For spec fields, try to use pointer values when appropriate, as it makes inheritance easier (allows us to differentiate between zero values and nil).
@@ -19,8 +19,9 @@ These are the steps required to add a new CRD to be used in the Kubernetes Gatew
     - A `zz_generated.deepcopy.go` file is created in the same directory as the Go types.
     - A CRD file is generated in [install/helm/gloo/crds](/install/helm/gloo/crds)
 
+Note: You may need to manually add the new API to the install/helm/gloo/templates/44-rbac.yaml file.
 
-### Background
+## Background
 
 Historically, we have defined Gloo Gateway custom resources using protobuf files, which are then converted to Go types via solo-kit or skv2 codegen. This was also the initial implementation for the kube gateway resources, however we pivoted to using Go types for a few reasons.
 

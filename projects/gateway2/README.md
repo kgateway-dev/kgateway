@@ -1,8 +1,19 @@
-## Gloo Gateway
+# Gloo Gateway
 
 Note, all commands should be run from the root of the gloo repo.
 
-# Test Locally 
+## APIs
+
+The Kubernetes Gateway API integration is defined in the [api](./api) directory. For more information on how to add a new API or CRD, see the [API README](./api/README.md).
+
+## Quickstart
+
+### Prerequisites
+
+- [kind](https://kind.sigs.k8s.io/docs/user/quick-start/)
+- [helm](https://helm.sh/docs/intro/install/)
+
+### Setup
 
 To create the local test environment in kind, run:
 
@@ -18,9 +29,9 @@ Next use helm to install the gateway control plane:
 helm upgrade -i -n gloo-system gloo ./_test/gloo-1.0.0-ci1.tgz --create-namespace --set kubeGateway.enabled=true
 ```
 
-To create a gateway, use the Gateway resource: 
+To create a gateway, use the Gateway resource:
 
-```shell 
+```shell
 kubectl apply -f - <<EOF
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
@@ -38,16 +49,16 @@ spec:
 EOF
 ```
 
-Apply a test application such as bookinfo: 
+Apply a test application such as bookinfo:
 
-```shell  
+```shell
 kubectl create namespace bookinfo
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/bookinfo/platform/kube/bookinfo.yaml -n bookinfo
 ```
 
-Then create a corresponding HTTPRoute: 
+Then create a corresponding HTTPRoute:
 
-```shell 
+```shell
 kubectl apply -f- <<EOF
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
@@ -66,8 +77,10 @@ spec:
     - backendRefs:
         - name: productpage
           port: 9080
-EOF 
+EOF
 ```
+
+### Testing
 
 Expose the gateway that gets created via the Gateway resource:
 
@@ -81,7 +94,7 @@ Send some traffic through the gateway:
 curl -I localhost:8080/productpage -H "host: www.example.com" -v
 ```
 
-# Istio Integration
+## Istio Integration
 
 This will create the kind cluster, build the docker images.
 
@@ -147,9 +160,9 @@ EOF
 
 Then send traffic to reviews:
 
-```shell 
+```shell
 curl -I localhost:8080/reviews/1 -H "host: reviews" -v
-``` 
+```
 
 Test sending traffic to an application not in the mesh:
 
@@ -161,7 +174,7 @@ kubectl apply -f https://raw.githubusercontent.com/istio/istio/master/samples/he
 
 Apply an HTTPRoute for helloworld:
 
-```shell 
+```shell
 kubectl apply -f- <<EOF
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
@@ -185,6 +198,6 @@ EOF
 
 Send traffic to the non-mesh app:
 
-```shell 
+```shell
 curl -I localhost:8080/hello -H "host: helloworld" -v
 ```

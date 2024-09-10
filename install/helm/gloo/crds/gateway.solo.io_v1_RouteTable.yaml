@@ -219,6 +219,27 @@ spec:
                                   type: object
                                 embedding:
                                   properties:
+                                    azureOpenai:
+                                      properties:
+                                        apiVersion:
+                                          type: string
+                                        authToken:
+                                          properties:
+                                            inline:
+                                              type: string
+                                            secretRef:
+                                              properties:
+                                                name:
+                                                  type: string
+                                                namespace:
+                                                  type: string
+                                              type: object
+                                          type: object
+                                        deploymentName:
+                                          type: string
+                                        endpoint:
+                                          type: string
+                                      type: object
                                     openai:
                                       properties:
                                         authToken:
@@ -252,6 +273,27 @@ spec:
                                   type: object
                                 embedding:
                                   properties:
+                                    azureOpenai:
+                                      properties:
+                                        apiVersion:
+                                          type: string
+                                        authToken:
+                                          properties:
+                                            inline:
+                                              type: string
+                                            secretRef:
+                                              properties:
+                                                name:
+                                                  type: string
+                                                namespace:
+                                                  type: string
+                                              type: object
+                                          type: object
+                                        deploymentName:
+                                          type: string
+                                        endpoint:
+                                          type: string
+                                      type: object
                                     openai:
                                       properties:
                                         authToken:

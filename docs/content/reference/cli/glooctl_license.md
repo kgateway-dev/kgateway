@@ -1,5 +1,6 @@
 ---
 title: "glooctl license"
+description: "Reference for the 'glooctl license' command."
 weight: 5
 ---
 ## glooctl license

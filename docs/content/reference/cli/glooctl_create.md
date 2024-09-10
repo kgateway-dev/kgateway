@@ -1,5 +1,6 @@
 ---
 title: "glooctl create"
+description: "Reference for the 'glooctl create' command."
 weight: 5
 ---
 ## glooctl create

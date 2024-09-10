@@ -1,5 +1,6 @@
 ---
 title: "glooctl create upstream ec2"
+description: "Reference for the 'glooctl create upstream ec2' command."
 weight: 5
 ---
 ## glooctl create upstream ec2

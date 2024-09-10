@@ -1,5 +1,6 @@
 ---
 title: "glooctl edit settings ratelimit server-config"
+description: "Reference for the 'glooctl edit settings ratelimit server-config' command."
 weight: 5
 ---
 ## glooctl edit settings ratelimit server-config

@@ -4,6 +4,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/directresponse"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/headermodifier"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/httplisteneroptions"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/listeneroptions"
@@ -92,5 +93,6 @@ func BuildPlugins(
 		httplisteneroptions.NewPlugin(queries, client),
 		listeneroptions.NewPlugin(queries, client),
 		urlrewrite.NewPlugin(),
+		directresponse.NewPlugin(queries), // direct response needs to run after any plugin that might set an action
 	}
 }

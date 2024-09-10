@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/9510
+    resolvesIssue: false
+    description: >-
+      Add API support for OIDC [Front Channel Logout](https://openid.net/specs/openid-connect-frontchannel-1_0-final.html) with the OidcAuthorizationCode.FrontChannelLogout field

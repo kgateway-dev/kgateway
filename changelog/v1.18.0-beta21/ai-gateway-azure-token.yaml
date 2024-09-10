@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/6856
+    resolvesIssue: false
+    description: >-
+      Add API support for Azure OpenAI Token based auth with the AI Gateway.
