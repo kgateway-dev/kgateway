@@ -199,6 +199,10 @@ func (m *VhostExtension) Equal(that interface{}) bool {
 		return false
 	}
 
+	if m.GetValidationPolicy() != target.GetValidationPolicy() {
+		return false
+	}
+
 	return true
 }
 

@@ -444,6 +444,9 @@ spec:
                               type: object
                           type: object
                         type: object
+                      validationPolicy:
+                        type: string
+                        x-kubernetes-int-or-string: true
                     type: object
                   jwtStaged:
                     properties:
@@ -523,6 +526,9 @@ spec:
                                   type: object
                               type: object
                             type: object
+                          validationPolicy:
+                            type: string
+                            x-kubernetes-int-or-string: true
                         type: object
                       beforeExtAuth:
                         properties:
@@ -600,6 +606,9 @@ spec:
                                   type: object
                               type: object
                             type: object
+                          validationPolicy:
+                            type: string
+                            x-kubernetes-int-or-string: true
                         type: object
                     type: object
                   rateLimitConfigs:
