@@ -1,5 +1,6 @@
 ---
 title: "glooctl istio enable-mtls"
+description: "Reference for the 'glooctl istio enable-mtls' command."
 weight: 5
 ---
 ## glooctl istio enable-mtls

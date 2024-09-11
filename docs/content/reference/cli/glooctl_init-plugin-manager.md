@@ -1,5 +1,6 @@
 ---
 title: "glooctl init-plugin-manager"
+description: "Reference for the 'glooctl init-plugin-manager' command."
 weight: 5
 ---
 ## glooctl init-plugin-manager

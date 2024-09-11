@@ -57,6 +57,29 @@ func (m *JwtStagedVhostExtension) Clone() proto.Message {
 }
 
 // Clone function
+func (m *JwtStagedRouteProvidersExtension) Clone() proto.Message {
+	var target *JwtStagedRouteProvidersExtension
+	if m == nil {
+		return target
+	}
+	target = &JwtStagedRouteProvidersExtension{}
+
+	if h, ok := interface{}(m.GetBeforeExtAuth()).(clone.Cloner); ok {
+		target.BeforeExtAuth = h.Clone().(*VhostExtension)
+	} else {
+		target.BeforeExtAuth = proto.Clone(m.GetBeforeExtAuth()).(*VhostExtension)
+	}
+
+	if h, ok := interface{}(m.GetAfterExtAuth()).(clone.Cloner); ok {
+		target.AfterExtAuth = h.Clone().(*VhostExtension)
+	} else {
+		target.AfterExtAuth = proto.Clone(m.GetAfterExtAuth()).(*VhostExtension)
+	}
+
+	return target
+}
+
+// Clone function
 func (m *JwtStagedRouteExtension) Clone() proto.Message {
 	var target *JwtStagedRouteExtension
 	if m == nil {
@@ -101,6 +124,8 @@ func (m *VhostExtension) Clone() proto.Message {
 	}
 
 	target.AllowMissingOrFailedJwt = m.GetAllowMissingOrFailedJwt()
+
+	target.ValidationPolicy = m.GetValidationPolicy()
 
 	return target
 }

@@ -1,5 +1,6 @@
 ---
 title: "glooctl get upstreamgroup"
+description: "Reference for the 'glooctl get upstreamgroup' command."
 weight: 5
 ---
 ## glooctl get upstreamgroup

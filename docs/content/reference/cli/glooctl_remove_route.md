@@ -1,5 +1,6 @@
 ---
 title: "glooctl remove route"
+description: "Reference for the 'glooctl remove route' command."
 weight: 5
 ---
 ## glooctl remove route

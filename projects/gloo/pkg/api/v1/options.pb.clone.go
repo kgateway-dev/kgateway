@@ -1008,6 +1008,18 @@ func (m *RouteOptions) Clone() proto.Message {
 			}
 		}
 
+	case *RouteOptions_JwtProvidersStaged:
+
+		if h, ok := interface{}(m.GetJwtProvidersStaged()).(clone.Cloner); ok {
+			target.JwtConfig = &RouteOptions_JwtProvidersStaged{
+				JwtProvidersStaged: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_jwt.JwtStagedRouteProvidersExtension),
+			}
+		} else {
+			target.JwtConfig = &RouteOptions_JwtProvidersStaged{
+				JwtProvidersStaged: proto.Clone(m.GetJwtProvidersStaged()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_jwt.JwtStagedRouteProvidersExtension),
+			}
+		}
+
 	}
 
 	return target

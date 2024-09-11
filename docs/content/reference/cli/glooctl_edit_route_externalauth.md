@@ -1,5 +1,6 @@
 ---
 title: "glooctl edit route externalauth"
+description: "Reference for the 'glooctl edit route externalauth' command."
 weight: 5
 ---
 ## glooctl edit route externalauth

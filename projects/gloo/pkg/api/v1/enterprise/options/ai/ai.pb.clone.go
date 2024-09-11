@@ -108,6 +108,18 @@ func (m *UpstreamSpec) Clone() proto.Message {
 			}
 		}
 
+	case *UpstreamSpec_AzureOpenai:
+
+		if h, ok := interface{}(m.GetAzureOpenai()).(clone.Cloner); ok {
+			target.Llm = &UpstreamSpec_AzureOpenai{
+				AzureOpenai: h.Clone().(*UpstreamSpec_AzureOpenAI),
+			}
+		} else {
+			target.Llm = &UpstreamSpec_AzureOpenai{
+				AzureOpenai: proto.Clone(m.GetAzureOpenai()).(*UpstreamSpec_AzureOpenAI),
+			}
+		}
+
 	}
 
 	return target
@@ -225,6 +237,18 @@ func (m *Embedding) Clone() proto.Message {
 		} else {
 			target.Embedding = &Embedding_Openai{
 				Openai: proto.Clone(m.GetOpenai()).(*Embedding_OpenAI),
+			}
+		}
+
+	case *Embedding_AzureOpenai:
+
+		if h, ok := interface{}(m.GetAzureOpenai()).(clone.Cloner); ok {
+			target.Embedding = &Embedding_AzureOpenai{
+				AzureOpenai: h.Clone().(*Embedding_AzureOpenAI),
+			}
+		} else {
+			target.Embedding = &Embedding_AzureOpenai{
+				AzureOpenai: proto.Clone(m.GetAzureOpenai()).(*Embedding_AzureOpenAI),
 			}
 		}
 
@@ -404,6 +428,35 @@ func (m *UpstreamSpec_OpenAI) Clone() proto.Message {
 }
 
 // Clone function
+func (m *UpstreamSpec_AzureOpenAI) Clone() proto.Message {
+	var target *UpstreamSpec_AzureOpenAI
+	if m == nil {
+		return target
+	}
+	target = &UpstreamSpec_AzureOpenAI{}
+
+	target.Endpoint = m.GetEndpoint()
+
+	switch m.AuthTokenSource.(type) {
+
+	case *UpstreamSpec_AzureOpenAI_AuthToken:
+
+		if h, ok := interface{}(m.GetAuthToken()).(clone.Cloner); ok {
+			target.AuthTokenSource = &UpstreamSpec_AzureOpenAI_AuthToken{
+				AuthToken: h.Clone().(*SingleAuthToken),
+			}
+		} else {
+			target.AuthTokenSource = &UpstreamSpec_AzureOpenAI_AuthToken{
+				AuthToken: proto.Clone(m.GetAuthToken()).(*SingleAuthToken),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
 func (m *UpstreamSpec_Mistral) Clone() proto.Message {
 	var target *UpstreamSpec_Mistral
 	if m == nil {
@@ -469,6 +522,39 @@ func (m *Embedding_OpenAI) Clone() proto.Message {
 			}
 		} else {
 			target.AuthTokenSource = &Embedding_OpenAI_AuthToken{
+				AuthToken: proto.Clone(m.GetAuthToken()).(*SingleAuthToken),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *Embedding_AzureOpenAI) Clone() proto.Message {
+	var target *Embedding_AzureOpenAI
+	if m == nil {
+		return target
+	}
+	target = &Embedding_AzureOpenAI{}
+
+	target.ApiVersion = m.GetApiVersion()
+
+	target.Endpoint = m.GetEndpoint()
+
+	target.DeploymentName = m.GetDeploymentName()
+
+	switch m.AuthTokenSource.(type) {
+
+	case *Embedding_AzureOpenAI_AuthToken:
+
+		if h, ok := interface{}(m.GetAuthToken()).(clone.Cloner); ok {
+			target.AuthTokenSource = &Embedding_AzureOpenAI_AuthToken{
+				AuthToken: h.Clone().(*SingleAuthToken),
+			}
+		} else {
+			target.AuthTokenSource = &Embedding_AzureOpenAI_AuthToken{
 				AuthToken: proto.Clone(m.GetAuthToken()).(*SingleAuthToken),
 			}
 		}

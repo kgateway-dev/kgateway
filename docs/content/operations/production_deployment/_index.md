@@ -206,14 +206,15 @@ gatewayProxies:
 
 You can also scale up the ExtAuth service. Typically, one to two instances are sufficient.
 
-If you have multiple instances of the ExtAuth server, you might want to use the same JWT signing key in the OIDC policy for each instance. To reuse the JWT signing key, you must update your Helm configuration file with the following global extension.
+If you have multiple instances of the ExtAuth server, you might want to use the same JWT signing key in the OIDC policy for each instance. To reuse the JWT signing key, you must update your Helm configuration file with the following global extension. The example values use the default secret name.
 
 ```yaml
 global:
   extensions:
     extAuth:
       signingKey:
-        key: abcdef
+        name: extauth-signing-key
+        signing-key: <signing-key-value>
 ```
 
 #### Pod Disruption Budgets and Affinity/Anti-Affinity rules

@@ -857,6 +857,16 @@ message OidcAuthorizationCode {
         // To turn on Redis user session caching, use the `userSessionConfig` field.
         RedisOptions claims_caching_options = 4;
     }
+
+    // For the moment this is just path, but we may want to configure things like iss/sid validation
+    message FrontChannelLogout {
+        // Path to use for front channel logout. Should not be the same as logout or callback paths.
+        string path=1;
+    }
+
+    // Configuration for front channel logout. This is used to log out the user from multiple apps/clients associated with one OpenId Provider (OP).
+    // The path is registered with the OP and is called for each app/client that the user is logged into when the logout endpoint is called.
+    FrontChannelLogout front_channel_logout = 28;
 }
 
 message PlainOAuth2 {
@@ -1861,6 +1871,16 @@ message ExtAuthConfig {
             // To turn on Redis user session caching, use the `userSessionConfig` field.
             RedisOptions claims_caching_options = 4;
         }
+
+       // For the moment this is just path, but we may want to configure things like iss/sid validation
+        message FrontChannelLogout {
+            // Path to use for front channel logout. Should not be the same as logout or callback paths.
+            string path=1;
+        }
+
+    // Configuration for front channel logout. This is used to log out the user from multiple apps/clients associated with one OpenId Provider (OP).
+    // The path is registered with the OP and is called for each app/client that the user is logged into when the logout endpoint is called.
+        FrontChannelLogout front_channel_logout = 28;
     }
 
     message AccessTokenValidationConfig {

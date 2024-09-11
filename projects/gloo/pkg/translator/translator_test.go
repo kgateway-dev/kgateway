@@ -965,7 +965,7 @@ var _ = Describe("Translator", func() {
 				},
 				Options: options,
 			}
-			directResponseRoute := &v1.Route{
+			directResponse := &v1.Route{
 				Action: &v1.Route_DirectResponseAction{
 					DirectResponseAction: &v1.DirectResponseAction{
 						Status: 400,
@@ -973,7 +973,7 @@ var _ = Describe("Translator", func() {
 				},
 				Options: options,
 			}
-			routes = []*v1.Route{redirectRoute, directResponseRoute}
+			routes = []*v1.Route{redirectRoute, directResponse}
 		})
 
 		It("can process routeOptions properly", func() {
