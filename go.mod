@@ -1,6 +1,6 @@
 module github.com/solo-io/gloo
 
-go 1.22.4
+go 1.22.7
 
 // Note for developers: upgrading go will also require upgrading go in the following files:
 // ./cloudbuild-cache.yaml,
@@ -48,7 +48,7 @@ require (
 	github.com/saiskee/gettercheck v0.0.0-20210820204958-38443d06ebe0
 	github.com/sergi/go-diff v1.1.0
 	github.com/solo-io/go-list-licenses v0.1.4
-	github.com/solo-io/go-utils v0.24.8
+	github.com/solo-io/go-utils v0.25.3
 	github.com/solo-io/k8s-utils v0.7.2
 	github.com/solo-io/protoc-gen-ext v0.0.18
 	github.com/solo-io/protoc-gen-openapi v0.2.4

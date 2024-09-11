@@ -1,5 +1,6 @@
 ---
 title: "glooctl edit route"
+description: "Reference for the 'glooctl edit route' command."
 weight: 5
 ---
 ## glooctl edit route

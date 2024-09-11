@@ -2001,8 +2001,8 @@ github.com/solo-io/go-control-plane-fork-v2 v1.29.0-patch1/go.mod h1:ZBTaoJ23lqI
 github.com/solo-io/go-list-licenses v0.1.4 h1:u4xh1OUORT4iSWuAp3Q4NsfHcDaeUV8QRDH8ACQqbxw=
 github.com/solo-io/go-list-licenses v0.1.4/go.mod h1:x6LSp/NrYgVXwNum7ZOiaAYTpg6B3F6TrWYfcdHVroA=
 github.com/solo-io/go-utils v0.20.2/go.mod h1:6e8K1spnMWwlnJRSNp/J84GEyJbrcK4Gm7i+ehzCi8c=
-github.com/solo-io/go-utils v0.24.8 h1:gukFEvQ0SSRzIwysulI6w0c/dG08TCohO9QxwCqW6Lg=
-github.com/solo-io/go-utils v0.24.8/go.mod h1:bFFKO4Ih+sPViwNdVxv3z5dRrzMcJjNMHlx4zA8vxSg=
+github.com/solo-io/go-utils v0.25.3 h1:nk3ZcZRqL0lojyb+VjWwHilOz9bdKQ+feGFrlaa1a30=
+github.com/solo-io/go-utils v0.25.3/go.mod h1:bFFKO4Ih+sPViwNdVxv3z5dRrzMcJjNMHlx4zA8vxSg=
 github.com/solo-io/k8s-utils v0.7.2 h1:pIRiTOpwymdCHUOSjzKDi/Ay16FNtF7JV7NIRlC2ZNQ=
 github.com/solo-io/k8s-utils v0.7.2/go.mod h1:RrT6PVTSD1X0vteKCQmGzoAAfjI1U5oV/wA+T3T+NoM=
 github.com/solo-io/protoc-gen-ext v0.0.18 h1:zSAL8NzWpJUGYoA5IyjHiKASNyHjR0uxBQ7eQS94i3A=

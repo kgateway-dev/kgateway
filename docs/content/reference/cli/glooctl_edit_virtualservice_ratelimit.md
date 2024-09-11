@@ -1,5 +1,6 @@
 ---
 title: "glooctl edit virtualservice ratelimit"
+description: "Reference for the 'glooctl edit virtualservice ratelimit' command."
 weight: 5
 ---
 ## glooctl edit virtualservice ratelimit

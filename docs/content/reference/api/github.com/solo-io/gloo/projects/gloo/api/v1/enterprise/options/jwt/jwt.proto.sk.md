@@ -12,8 +12,10 @@ weight: 5
 
 
 - [JwtStagedVhostExtension](#jwtstagedvhostextension)
+- [JwtStagedRouteProvidersExtension](#jwtstagedrouteprovidersextension)
 - [JwtStagedRouteExtension](#jwtstagedrouteextension)
 - [VhostExtension](#vhostextension)
+- [ValidationPolicy](#validationpolicy)
 - [RouteExtension](#routeextension)
 - [Provider](#provider)
 - [Jwks](#jwks)
@@ -52,6 +54,25 @@ weight: 5
 
 
 ---
+### JwtStagedRouteProvidersExtension
+
+
+
+```yaml
+"beforeExtAuth": .jwt.options.gloo.solo.io.VhostExtension
+"afterExtAuth": .jwt.options.gloo.solo.io.VhostExtension
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `beforeExtAuth` | [.jwt.options.gloo.solo.io.VhostExtension](../jwt.proto.sk/#vhostextension) | Per-route JWT config for the JWT filter that runs before the extauth filter. |
+| `afterExtAuth` | [.jwt.options.gloo.solo.io.VhostExtension](../jwt.proto.sk/#vhostextension) | Per-route JWT config for the JWT filter that runs before the extauth filter. |
+
+
+
+
+---
 ### JwtStagedRouteExtension
 
 
@@ -64,8 +85,8 @@ weight: 5
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `beforeExtAuth` | [.jwt.options.gloo.solo.io.RouteExtension](../jwt.proto.sk/#routeextension) | JWT route config for the JWT filter that runs after the extauth filter. |
-| `afterExtAuth` | [.jwt.options.gloo.solo.io.RouteExtension](../jwt.proto.sk/#routeextension) | JWT route config for the JWT filter that runs after the extauth filter. |
+| `beforeExtAuth` | [.jwt.options.gloo.solo.io.RouteExtension](../jwt.proto.sk/#routeextension) | Per-route JWT config for the JWT filter that runs before the extauth filter. |
+| `afterExtAuth` | [.jwt.options.gloo.solo.io.RouteExtension](../jwt.proto.sk/#routeextension) | Per-route JWT config for the JWT filter that runs before the extauth filter. |
 
 
 
@@ -78,13 +99,29 @@ weight: 5
 ```yaml
 "providers": map<string, .jwt.options.gloo.solo.io.Provider>
 "allowMissingOrFailedJwt": bool
+"validationPolicy": .jwt.options.gloo.solo.io.VhostExtension.ValidationPolicy
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `providers` | `map<string, .jwt.options.gloo.solo.io.Provider>` | Map of JWT provider name to Provider. If specified, multiple providers will be `OR`-ed together and will allow validation to any of the providers. |
-| `allowMissingOrFailedJwt` | `bool` | Allow pass through of JWT requests for this virtual host, even if JWT token is missing or JWT auth failed. If this is false (default false), requests that fail JWT authentication will fail authorization immediately. For example, if a request requires either JWT auth OR another auth method, this can be enabled to allow a failed JWT auth request to pass through to the other auth method. |
+| `allowMissingOrFailedJwt` | `bool` | Allow pass through of JWT requests for this virtual host, even if JWT token is missing or JWT auth failed. If this is false (default false), requests that fail JWT authentication will fail authorization immediately. For example, if a request requires either JWT auth OR another auth method, this can be enabled to allow a failed JWT auth request to pass through to the other auth method. Deprecated: use validation_policy instead. |
+| `validationPolicy` | [.jwt.options.gloo.solo.io.VhostExtension.ValidationPolicy](../jwt.proto.sk/#validationpolicy) | Optional: Configure how JWT validation works, with the flexibility to handle requests with missing or invalid JWTs. By default, after applying JWT policy to a route, only requests that authenticate with a valid JWT succeed. |
+
+
+
+
+---
+### ValidationPolicy
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `REQUIRE_VALID` | Default value. Allow only requests that authenticate with a valid JWT to succeed. Note that the `allowMissingOrFailed=true` setting takes precedence. In such a case, even if you explicitly set `validationPolicy=REQUIRE_VALID`, this field is ignored. |
+| `ALLOW_MISSING` | Allow requests to succeed even if JWT authentication is missing, but fail when an invalid JWT token is presented. You might use this setting when later steps depend on input from the JWT. For example, you might add claims from the JWT to request headers with the claimsToHeaders field. As such, you may want to make sure that any provided JWT is valid. If not, the request fails, which informs the requester that their JWT is not valid. Requests without a JWT, however, still succeed and skip JWT validation. |
+| `ALLOW_MISSING_OR_FAILED` | Allow requests to succeed even when a JWT is missing or JWT verification fails. For example, you might apply multiple policies to your routes so that requests can authenticate with either a JWT or another method such as external auth. Use this value to allow a failed JWT auth request to pass through to the other authentication method. |
 
 
 

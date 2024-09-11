@@ -1,5 +1,6 @@
 ---
 title: "glooctl create secret encryptionkey"
+description: "Reference for the 'glooctl create secret encryptionkey' command."
 weight: 5
 ---
 ## glooctl create secret encryptionkey

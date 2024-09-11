@@ -1,5 +1,6 @@
 ---
 title: "glooctl create upstream azure"
+description: "Reference for the 'glooctl create upstream azure' command."
 weight: 5
 ---
 ## glooctl create upstream azure

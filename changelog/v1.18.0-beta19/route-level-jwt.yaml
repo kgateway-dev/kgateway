@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Added support for route level JWT configuration by introducing new `jwtProvidersStaged` field on the RouteOptions.
+    issueLink: https://github.com/solo-io/solo-projects/issues/6541

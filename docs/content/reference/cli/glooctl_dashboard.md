@@ -1,5 +1,6 @@
 ---
 title: "glooctl dashboard"
+description: "Reference for the 'glooctl dashboard' command."
 weight: 5
 ---
 ## glooctl dashboard

@@ -109,6 +109,27 @@ spec:
                             type: object
                           embedding:
                             properties:
+                              azureOpenai:
+                                properties:
+                                  apiVersion:
+                                    type: string
+                                  authToken:
+                                    properties:
+                                      inline:
+                                        type: string
+                                      secretRef:
+                                        properties:
+                                          name:
+                                            type: string
+                                          namespace:
+                                            type: string
+                                        type: object
+                                    type: object
+                                  deploymentName:
+                                    type: string
+                                  endpoint:
+                                    type: string
+                                type: object
                               openai:
                                 properties:
                                   authToken:
@@ -142,6 +163,27 @@ spec:
                             type: object
                           embedding:
                             properties:
+                              azureOpenai:
+                                properties:
+                                  apiVersion:
+                                    type: string
+                                  authToken:
+                                    properties:
+                                      inline:
+                                        type: string
+                                      secretRef:
+                                        properties:
+                                          name:
+                                            type: string
+                                          namespace:
+                                            type: string
+                                        type: object
+                                    type: object
+                                  deploymentName:
+                                    type: string
+                                  endpoint:
+                                    type: string
+                                type: object
                               openai:
                                 properties:
                                   authToken:
@@ -549,6 +591,169 @@ spec:
                     properties:
                       disable:
                         type: boolean
+                    type: object
+                  jwtProvidersStaged:
+                    properties:
+                      afterExtAuth:
+                        properties:
+                          allowMissingOrFailedJwt:
+                            type: boolean
+                          providers:
+                            additionalProperties:
+                              properties:
+                                audiences:
+                                  items:
+                                    type: string
+                                  type: array
+                                claimsToHeaders:
+                                  items:
+                                    properties:
+                                      append:
+                                        type: boolean
+                                      claim:
+                                        type: string
+                                      header:
+                                        type: string
+                                    type: object
+                                  type: array
+                                clockSkewSeconds:
+                                  maximum: 4294967295
+                                  minimum: 0
+                                  nullable: true
+                                  type: integer
+                                issuer:
+                                  type: string
+                                jwks:
+                                  properties:
+                                    local:
+                                      properties:
+                                        key:
+                                          type: string
+                                      type: object
+                                    remote:
+                                      properties:
+                                        asyncFetch:
+                                          properties:
+                                            fastListener:
+                                              type: boolean
+                                          type: object
+                                        cacheDuration:
+                                          type: string
+                                        upstreamRef:
+                                          properties:
+                                            name:
+                                              type: string
+                                            namespace:
+                                              type: string
+                                          type: object
+                                        url:
+                                          type: string
+                                      type: object
+                                  type: object
+                                keepToken:
+                                  type: boolean
+                                tokenSource:
+                                  properties:
+                                    headers:
+                                      items:
+                                        properties:
+                                          header:
+                                            type: string
+                                          prefix:
+                                            type: string
+                                        type: object
+                                      type: array
+                                    queryParams:
+                                      items:
+                                        type: string
+                                      type: array
+                                  type: object
+                              type: object
+                            type: object
+                          validationPolicy:
+                            type: string
+                            x-kubernetes-int-or-string: true
+                        type: object
+                      beforeExtAuth:
+                        properties:
+                          allowMissingOrFailedJwt:
+                            type: boolean
+                          providers:
+                            additionalProperties:
+                              properties:
+                                audiences:
+                                  items:
+                                    type: string
+                                  type: array
+                                claimsToHeaders:
+                                  items:
+                                    properties:
+                                      append:
+                                        type: boolean
+                                      claim:
+                                        type: string
+                                      header:
+                                        type: string
+                                    type: object
+                                  type: array
+                                clockSkewSeconds:
+                                  maximum: 4294967295
+                                  minimum: 0
+                                  nullable: true
+                                  type: integer
+                                issuer:
+                                  type: string
+                                jwks:
+                                  properties:
+                                    local:
+                                      properties:
+                                        key:
+                                          type: string
+                                      type: object
+                                    remote:
+                                      properties:
+                                        asyncFetch:
+                                          properties:
+                                            fastListener:
+                                              type: boolean
+                                          type: object
+                                        cacheDuration:
+                                          type: string
+                                        upstreamRef:
+                                          properties:
+                                            name:
+                                              type: string
+                                            namespace:
+                                              type: string
+                                          type: object
+                                        url:
+                                          type: string
+                                      type: object
+                                  type: object
+                                keepToken:
+                                  type: boolean
+                                tokenSource:
+                                  properties:
+                                    headers:
+                                      items:
+                                        properties:
+                                          header:
+                                            type: string
+                                          prefix:
+                                            type: string
+                                        type: object
+                                      type: array
+                                    queryParams:
+                                      items:
+                                        type: string
+                                      type: array
+                                  type: object
+                              type: object
+                            type: object
+                          validationPolicy:
+                            type: string
+                            x-kubernetes-int-or-string: true
+                        type: object
                     type: object
                   jwtStaged:
                     properties:

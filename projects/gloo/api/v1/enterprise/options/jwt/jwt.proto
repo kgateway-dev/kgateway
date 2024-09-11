@@ -22,12 +22,21 @@ message JwtStagedVhostExtension {
     VhostExtension after_ext_auth = 2;
 }
 
+message JwtStagedRouteProvidersExtension {
+
+   // Per-route JWT config for the JWT filter that runs before the extauth filter.
+    VhostExtension before_ext_auth = 1;
+
+   // Per-route JWT config for the JWT filter that runs before the extauth filter.
+    VhostExtension after_ext_auth = 2;
+}
+
 message JwtStagedRouteExtension {
 
-    // JWT route config for the JWT filter that runs after the extauth filter.
+   // Per-route JWT config for the JWT filter that runs before the extauth filter.
     RouteExtension before_ext_auth = 1;
 
-    // JWT route config for the JWT filter that runs after the extauth filter.
+   // Per-route JWT config for the JWT filter that runs before the extauth filter.
     RouteExtension after_ext_auth = 2;
 }
 
@@ -39,7 +48,32 @@ message VhostExtension {
     // Allow pass through of JWT requests for this virtual host, even if JWT token is missing or JWT auth failed.
     // If this is false (default false), requests that fail JWT authentication will fail authorization immediately.
     // For example, if a request requires either JWT auth OR another auth method, this can be enabled to allow a failed JWT auth request to pass through to the other auth method.
-    bool allow_missing_or_failed_jwt = 2;
+    // Deprecated: use validation_policy instead.
+    bool allow_missing_or_failed_jwt = 2 [deprecated = true];
+
+    // Optional: Configure how JWT validation works, with the flexibility to handle requests with missing or invalid JWTs.
+    // By default, after applying JWT policy to a route, only requests that authenticate with a valid JWT succeed.
+    ValidationPolicy validation_policy = 3;
+
+    enum ValidationPolicy {
+        // Default value. Allow only requests that authenticate with a valid JWT to succeed.
+        // Note that the `allowMissingOrFailed=true` setting takes precedence. In such a case, even if you explicitly set `validationPolicy=REQUIRE_VALID`, this field is ignored.
+        REQUIRE_VALID = 0;
+
+        // Allow requests to succeed even if JWT authentication is missing, but fail when an invalid JWT token is presented.
+        // You might use this setting when later steps depend on input from the JWT.
+        // For example, you might add claims from the JWT to request headers with the claimsToHeaders field.
+        // As such, you may want to make sure that any provided JWT is valid. If not, the request fails,
+        // which informs the requester that their JWT is not valid.
+        // Requests without a JWT, however, still succeed and skip JWT validation.
+        ALLOW_MISSING = 1;
+
+        // Allow requests to succeed even when a JWT is missing or JWT verification fails.
+        // For example, you might apply multiple policies to your routes so that requests can authenticate with either a
+        // JWT or another method such as external auth. Use this value
+        // to allow a failed JWT auth request to pass through to the other authentication method.
+        ALLOW_MISSING_OR_FAILED = 2;
+    }
 }
 
 message RouteExtension {
