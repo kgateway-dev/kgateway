@@ -259,114 +259,74 @@ func (c *controllerBuilder) watchGwClass(_ context.Context) error {
 }
 
 func (c *controllerBuilder) watchHttpRoute(_ context.Context) error {
-	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&apiv1.HTTPRoute{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileHttpRoutes))
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (c *controllerBuilder) watchReferenceGrant(_ context.Context) error {
-	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&apiv1beta1.ReferenceGrant{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileReferenceGrants))
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (c *controllerBuilder) watchNamespaces(_ context.Context) error {
-	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		For(&corev1.Namespace{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileNamespaces))
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (c *controllerBuilder) watchHttpListenerOptions(_ context.Context) error {
-	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&sologatewayv1.HttpListenerOption{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileHttpListenerOptions))
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (c *controllerBuilder) watchListenerOptions(_ context.Context) error {
-	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&sologatewayv1.ListenerOption{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileListenerOptions))
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (c *controllerBuilder) watchRouteOptions(_ context.Context) error {
-	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&sologatewayv1.RouteOption{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileRouteOptions))
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (c *controllerBuilder) watchVirtualHostOptions(_ context.Context) error {
-	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&sologatewayv1.VirtualHostOption{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileVirtualHostOptions))
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (c *controllerBuilder) watchUpstreams(_ context.Context) error {
-	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&gloov1.Upstream{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileUpstreams))
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (c *controllerBuilder) watchServices(_ context.Context) error {
-	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&corev1.Service{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileServices))
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // watchDirectResponses watches for DirectResponses and triggers
 // reconciliation of the Gateway that references them.
 func (c *controllerBuilder) watchDirectResponses(_ context.Context) error {
-	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&v1alpha1.DirectResponse{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileDirectResponses))
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 type controllerReconciler struct {
@@ -377,48 +337,56 @@ type controllerReconciler struct {
 
 func (r *controllerReconciler) ReconcileHttpListenerOptions(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// eventually reconcile only effected routes/listeners etc
+	// https://github.com/solo-io/gloo/issues/9997.
 	r.kick(ctx)
 	return ctrl.Result{}, nil
 }
 
 func (r *controllerReconciler) ReconcileListenerOptions(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// eventually reconcile only effected routes/listeners etc
+	// https://github.com/solo-io/gloo/issues/9997.
 	r.kick(ctx)
 	return ctrl.Result{}, nil
 }
 
 func (r *controllerReconciler) ReconcileRouteOptions(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// eventually reconcile only effected routes/listeners etc
+	// https://github.com/solo-io/gloo/issues/9997.
 	r.kick(ctx)
 	return ctrl.Result{}, nil
 }
 
 func (r *controllerReconciler) ReconcileDirectResponses(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// TODO(tim): eventually reconcile only effected routes.
+	// https://github.com/solo-io/gloo/issues/9997.
 	r.kick(ctx)
 	return ctrl.Result{}, nil
 }
 
 func (r *controllerReconciler) ReconcileVirtualHostOptions(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// eventually reconcile only effected listeners etc
+	// https://github.com/solo-io/gloo/issues/9997.
 	r.kick(ctx)
 	return ctrl.Result{}, nil
 }
 
 func (r *controllerReconciler) ReconcileUpstreams(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// eventually reconcile only effected listeners etc
+	// https://github.com/solo-io/gloo/issues/9997.
 	r.kick(ctx)
 	return ctrl.Result{}, nil
 }
 
 func (r *controllerReconciler) ReconcileServices(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// eventually reconcile only effected listeners etc
+	// https://github.com/solo-io/gloo/issues/9997.
 	r.kick(ctx)
 	return ctrl.Result{}, nil
 }
 
 func (r *controllerReconciler) ReconcileNamespaces(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// reconcile all gateways with namespace selector
+	// https://github.com/solo-io/gloo/issues/9997.
 	r.kick(ctx)
 	return ctrl.Result{}, nil
 }
@@ -435,7 +403,7 @@ func (r *controllerReconciler) ReconcileHttpRoutes(ctx context.Context, req ctrl
 }
 
 func (r *controllerReconciler) ReconcileReferenceGrants(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// reconcile all things?!
+	// reconcile all things?! https://github.com/solo-io/gloo/issues/9997
 	r.kick(ctx)
 	return ctrl.Result{}, nil
 }
@@ -444,8 +412,7 @@ func (r *controllerReconciler) ReconcileGatewayClasses(ctx context.Context, req 
 	log := log.FromContext(ctx).WithValues("gwclass", req.NamespacedName)
 
 	gwclass := &apiv1.GatewayClass{}
-	err := r.cli.Get(ctx, req.NamespacedName, gwclass)
-	if err != nil {
+	if err := r.cli.Get(ctx, req.NamespacedName, gwclass); err != nil {
 		// NOTE: if this reconciliation is a result of a DELETE event, this err will be a NotFound,
 		// therefore we will return a nil error here and thus skip any additional reconciliation below.
 		// At the time of writing this comment, the retrieved GWClass object is only used to update the status,
@@ -474,8 +441,7 @@ func (r *controllerReconciler) ReconcileGatewayClasses(ctx context.Context, req 
 	}
 	meta.SetStatusCondition(&gwclass.Status.Conditions, supportedVersionCondition)
 
-	err = r.cli.Status().Update(ctx, gwclass)
-	if err != nil {
+	if err := r.cli.Status().Update(ctx, gwclass); err != nil {
 		return ctrl.Result{}, err
 	}
 	log.Info("updated gateway class status")
