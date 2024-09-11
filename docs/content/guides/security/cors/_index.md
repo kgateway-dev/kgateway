@@ -85,7 +85,7 @@ spec:
         allowOrigin:
         - https://example.com
         allowOriginRegex:
-        - https://[a-zA-Z0-9]*.example.com
+        - https://[a-zA-Z0-9]*\.example\.com
         exposeHeaders:
         - origin
         maxAge: 1d
@@ -99,7 +99,7 @@ The following fields are available when configuring a CORS policy for your `Virt
 | Field              | Type       | Description                                                                                                                                                      | Default |
 | ------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
 | `allowOrigin`      | `[]string` | Specifies the origins that will be allowed to make CORS requests. An origin is allowed if either allow_origin or allow_origin_regex match.                       |         |
-| `allowOriginRegex` | `[]string` | Specifies regex patterns that match origins that will be allowed to make CORS requests. An origin is allowed if either `allow_origin` or `allow_origin_regex` match. Note that Gloo Gateway uses [ECMAScript](https://en.cppreference.com/w/cpp/regex/ecmascript) regex grammar. For example, to match all subdomains `https://example.com`, do not use `https://*.example.com`, but instead use `https://[a-zA-Z0-9]*.example.com`.   |         |
+| `allowOriginRegex` | `[]string` | Specifies regex patterns that match origins that will be allowed to make CORS requests. An origin is allowed if either `allow_origin` or `allow_origin_regex` match. Note that Gloo Gateway uses [ECMAScript](https://en.cppreference.com/w/cpp/regex/ecmascript) regex grammar. For example, to match all subdomains `https://example.com`, do not use `https://*.example.com`, but instead use `https://[a-zA-Z0-9]*\.example\.com`.   |         |
 | `allowMethods`     | `[]string` | Specifies the content for the *access-control-allow-methods* header.                                                                                             |         |
 | `allowHeaders`     | `[]string` | Specifies the content for the *access-control-allow-headers* header.                                                                                             |         |
 | `exposeHeaders`    | `[]string` | Specifies the content for the *access-control-expose-headers* header.                                                                                            |         |
@@ -135,7 +135,7 @@ The following fields are available when configuring a CORS policy for your `Virt
            allowOrigin:
            - https://example.com
            allowOriginRegex:
-           - https://[a-zA-Z0-9]*.example.com
+           - https://[a-zA-Z0-9]*\.example\.com
            exposeHeaders:
            - origin
            maxAge: 1d
@@ -232,7 +232,7 @@ The following fields are available when configuring a CORS policy for your `Virt
            allowOrigin:
            - https://fake.com
            allowOriginRegex:
-           - https://[a-zA-Z0-9]*.example.com
+           - https://[a-zA-Z0-9]*\.example\.com
            exposeHeaders:
            - origin
            - vh-header
@@ -305,7 +305,7 @@ The following fields are available when configuring a CORS policy for your `Virt
            allowOrigin:
            - https://fake.com
            allowOriginRegex:
-           - https://[a-zA-Z0-9]*.example.com
+           - https://[a-zA-Z0-9]*\.example\.com
            exposeHeaders:
            - origin
            - vh-header
