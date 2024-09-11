@@ -82,12 +82,7 @@ func (hr *HTTPRouteInfo) Clone() *HTTPRouteInfo {
 	}
 }
 
-/*
-Alternative approaches:
-1. name-namespace-ruleHash-index
-2. name-namespace-ruleIndex-matchesIndex
-*/
-// UniqueRouteName returns a unique name for the route, based on the index of the route in the parent.
+// UniqueRouteName returns a unique name for the route, based on the index of the route rule and route match.
 func (hr *HTTPRouteInfo) UniqueRouteName(ruleIdx, matchIdx int) string {
 	return fmt.Sprintf("%s-%s-%d-%d", hr.GetName(), hr.GetNamespace(), ruleIdx, matchIdx)
 }
