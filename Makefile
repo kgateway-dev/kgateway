@@ -306,9 +306,12 @@ GO_TEST_USER_ARGS ?=
 .PHONY: go-test
 go-test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 go-test: clean-bug-report clean-test-logs $(BUG_REPORT_DIR) $(TEST_LOG_DIR) # Ensure the bug_report dir is reset before each invocation
-	 $(GO_TEST_ENV) go test -ldflags=$(LDFLAGS) \
-	$(GO_TEST_ARGS) $(GO_TEST_USER_ARGS) \
-	$(TEST_PKG) | tee $(TEST_LOG_DIR)/go-test
+	@$(GO_TEST_ENV) go test -ldflags=$(LDFLAGS) \
+    $(GO_TEST_ARGS) $(GO_TEST_USER_ARGS) \
+    $(TEST_PKG) > $(TEST_LOG_DIR)/go-test 2>&1; \
+    RESULT=$$?; \
+    cat $(TEST_LOG_DIR)/go-test; \
+    if [ $$RESULT -ne 0 ]; then exit $$RESULT; fi  # ensure non-zero exit code if tests fail
 
 # https://go.dev/blog/cover#heat-maps
 .PHONY: go-test-with-coverage

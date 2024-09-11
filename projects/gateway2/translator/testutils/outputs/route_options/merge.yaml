@@ -41,6 +41,7 @@ listeners:
                     value: extref
               hostRewrite: foo.com
               prefixRewrite: /anything/rewrite
+            name: example-default-0-0
             routeAction:
               single:
                 kube:
