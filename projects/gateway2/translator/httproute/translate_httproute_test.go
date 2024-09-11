@@ -6,13 +6,18 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -30,10 +35,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 var _ = Describe("GatewayHttpRouteTranslator", func() {
@@ -204,10 +205,16 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				routeStatus := reportsMap.BuildRouteStatus(ctx, route, "")
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
-				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				By("verifying the route was accepted")
+				accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(accepted).NotTo(BeNil())
+				Expect(accepted.Status).To(Equal(metav1.ConditionTrue))
+				Expect(accepted.Reason).To(BeEquivalentTo(gwv1.RouteReasonAccepted))
+				By("verifying the route was resolved correctly")
+				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
 				Expect(resolvedRefs).NotTo(BeNil())
 				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
-				Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonAccepted))
+				Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonResolvedRefs))
 			})
 		})
 
@@ -251,10 +258,16 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				routeStatus := reportsMap.BuildRouteStatus(ctx, route, "")
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
-				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				By("verifying the route was accepted")
+				accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(accepted).NotTo(BeNil())
+				Expect(accepted.Status).To(Equal(metav1.ConditionTrue))
+				Expect(accepted.Reason).To(BeEquivalentTo(gwv1.RouteConditionAccepted))
+				By("verifying the route was not able to resolve the backend")
+				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
 				Expect(resolvedRefs).NotTo(BeNil())
-				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
-				Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteConditionAccepted))
+				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionFalse))
+				Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonBackendNotFound))
 			})
 		})
 	})
@@ -316,15 +329,33 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 		})
 
 		When("an HTTPRoute configures the backendRef and direct response actions", func() {
+			var (
+				backingSvc *corev1.Service
+			)
 			BeforeEach(func() {
+				backingSvc = &corev1.Service{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "foo",
+						Namespace: "bar",
+					},
+					Spec: corev1.ServiceSpec{
+						Ports: []corev1.ServicePort{{
+							Name: "http",
+							Port: 8080,
+						}},
+					},
+				}
+
 				dr := createDirectResponse("test", "bar", 200)
 				deps = append(deps, dr)
 
 				backendRefs := []gwv1.HTTPBackendRef{{
 					BackendRef: gwv1.BackendRef{
 						BackendObjectReference: gwv1.BackendObjectReference{
-							Name: "httpbin",
-							Port: ptr.To(gwv1.PortNumber(8000)),
+							Name:      gwv1.ObjectName(backingSvc.GetName()),
+							Namespace: ptr.To(gwv1.Namespace(backingSvc.GetNamespace())),
+							Kind:      ptr.To(gwv1.Kind("Service")),
+							Port:      ptr.To(gwv1.PortNumber(backingSvc.Spec.Ports[0].Port)),
 						},
 					},
 				}}
@@ -339,7 +370,12 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				}}
 
 				route = createHTTPRoute(backendRefs, filters)
-				routeInfo = &query.HTTPRouteInfo{HTTPRoute: route}
+				backends := query.NewBackendMap[client.Object]()
+				backends.Add(route.Spec.Rules[0].BackendRefs[0].BackendObjectReference, backingSvc)
+				routeInfo = &query.HTTPRouteInfo{
+					HTTPRoute: route,
+					Backends:  backends,
+				}
 				parentRefReporter = baseReporter.Route(&route).ParentRef(&gwv1.ParentReference{Name: "my-gw"})
 			})
 
@@ -351,10 +387,16 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				routeStatus := reportsMap.BuildRouteStatus(ctx, route, "")
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
-				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				By("verifying the route was not accepted")
+				accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(accepted).NotTo(BeNil())
+				Expect(accepted.Status).To(Equal(metav1.ConditionFalse))
+				Expect(accepted.Reason).To(BeEquivalentTo(gwv1.RouteReasonIncompatibleFilters))
+				By("verifying the route was resolved correctly")
+				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
 				Expect(resolvedRefs).NotTo(BeNil())
-				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionFalse))
-				Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonIncompatibleFilters))
+				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
+				Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonResolvedRefs))
 			})
 		})
 
@@ -394,10 +436,16 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				routeStatus := reportsMap.BuildRouteStatus(ctx, route, "")
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
-				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				By("verifying the route was not accepted due to incompatible filters")
+				accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(accepted).NotTo(BeNil())
+				Expect(accepted.Status).To(Equal(metav1.ConditionFalse))
+				Expect(accepted.Reason).To(BeEquivalentTo(gwv1.RouteReasonIncompatibleFilters))
+				By("verifying the route was resolved correctly")
+				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
 				Expect(resolvedRefs).NotTo(BeNil())
-				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionFalse))
-				Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonIncompatibleFilters))
+				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
+				Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonResolvedRefs))
 			})
 		})
 
@@ -478,10 +526,16 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				routeStatus := reportsMap.BuildRouteStatus(ctx, route, "")
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
-				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				By("verifying the route was accepted")
+				accepted := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
+				Expect(accepted).NotTo(BeNil())
+				Expect(accepted.Status).To(Equal(metav1.ConditionTrue))
+				Expect(accepted.Reason).To(BeEquivalentTo(gwv1.RouteReasonAccepted))
+				By("verifying the route was resolved correctly")
+				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
 				Expect(resolvedRefs).NotTo(BeNil())
 				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
-				Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonAccepted))
+				Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonResolvedRefs))
 			})
 		})
 	})
