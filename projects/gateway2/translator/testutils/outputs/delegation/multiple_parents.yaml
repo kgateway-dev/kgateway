@@ -16,7 +16,7 @@ listeners:
           - matchers:
             - exact: /a/1
             options: {}
-            name: route-a-a-0
+            name: route-a-a-18350707407122325392-0
             routeAction:
               single:
                 kube:
@@ -27,7 +27,7 @@ listeners:
           - matchers:
             - regex: /b/.*
             options: {}
-            name: route-b-b-0
+            name: route-b-b-775012068820278735-0
             routeAction:
               single:
                 kube:
@@ -38,7 +38,7 @@ listeners:
           - matchers:
             - prefix: /
             options: {}
-            name: example-route-infra-0
+            name: example-route-infra-15118666322911980746-0
             routeAction:
               single:
                 kube:
@@ -54,7 +54,7 @@ listeners:
           - matchers:
             - exact: /a/1
             options: {}
-            name: route-a-a-0
+            name: route-a-a-18350707407122325392-0
             routeAction:
               single:
                 kube:

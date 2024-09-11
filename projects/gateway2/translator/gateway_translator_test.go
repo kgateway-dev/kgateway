@@ -26,8 +26,6 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 		ctx := context.TODO()
 		dir := util.MustGetThisDir()
 
-		Fail("Test failure in ci is reported. TODO: remove me")
-
 		results, err := TestCase{
 			InputFiles: []string{filepath.Join(dir, "testutils/inputs/", in.inputFile)},
 		}.Run(ctx)
