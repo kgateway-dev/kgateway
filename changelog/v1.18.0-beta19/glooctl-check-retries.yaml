@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: >-
+      Increase timeout/retries for glooctl check when connecting to the gateway using port forwarding.
