@@ -16,6 +16,7 @@ listeners:
           - matchers:
             - prefix: /
             options: {}
+            name: example-route-infra-0-0
             routeAction:
               single:
                 kube:
@@ -31,6 +32,7 @@ listeners:
           - matchers:
             - prefix: /a/1
             options: {}
+            name: route-a-a-0-0
             routeAction:
               single:
                 kube:

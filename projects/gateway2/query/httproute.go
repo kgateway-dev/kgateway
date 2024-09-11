@@ -82,9 +82,9 @@ func (hr *HTTPRouteInfo) Clone() *HTTPRouteInfo {
 	}
 }
 
-// UniqueRouteName returns a unique name for the route, based on the index of the route in the parent.
-func (hr *HTTPRouteInfo) UniqueRouteName(index int) string {
-	return fmt.Sprintf("%s-%s-%d", hr.GetName(), hr.GetNamespace(), index)
+// UniqueRouteName returns a unique name for the route, based on the index of the route rule and route match.
+func (hr *HTTPRouteInfo) UniqueRouteName(ruleIdx, matchIdx int) string {
+	return fmt.Sprintf("%s-%s-%d-%d", hr.GetName(), hr.GetNamespace(), ruleIdx, matchIdx)
 }
 
 // GetHTTPRouteChain recursively resolves all backends of the given HTTPRoute.
