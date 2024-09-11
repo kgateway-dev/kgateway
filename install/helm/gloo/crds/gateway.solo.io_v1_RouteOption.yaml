@@ -208,6 +208,22 @@ spec:
                             minimum: 0
                             type: integer
                         type: object
+                      stats:
+                        properties:
+                          customLabels:
+                            items:
+                              properties:
+                                keyDelimiter:
+                                  type: string
+                                metadataKey:
+                                  type: string
+                                metadataNamespace:
+                                  type: string
+                                name:
+                                  type: string
+                              type: object
+                            type: array
+                        type: object
                     type: object
                   appendXForwardedHost:
                     nullable: true

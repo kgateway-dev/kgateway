@@ -284,6 +284,33 @@ message RouteSettings {
     ```
   */
   repeated FieldDefault defaults = 6;
+
+
+  Stats stats = 7;
+}
+
+message Stats {
+
+  message CustomLabel {
+    // Name of the label to use in the prometheus metrics
+    string name = 1;
+
+    // The dynamic metadata namespace to get the data from. If not specified, the default namespace will be
+    // the envoy JWT filter namespace.
+    // This can also be used in combination with early_transformations to insert custom data.
+    string metadata_namespace = 2;
+
+    // The key to use to get the data from the metadata namespace.
+    // If using a JWT data please see the following envoy docs: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/jwt_authn/v3/config.proto#envoy-v3-api-field-extensions-filters-http-jwt-authn-v3-jwtprovider-payload-in-metadata
+    string metadata_key = 3;
+
+    // The key delimiter to use, by default this is set to `:`.
+    // This allows for keys with `.` in them to be used.
+    string key_delimiter = 4;
+  }
+
+  // Custom labels to add to the prometheus metrics
+  repeated CustomLabel custom_labels = 1;
 }
 
 message FieldDefault {
