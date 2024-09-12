@@ -49,8 +49,10 @@ var (
 	//
 	// This is only required for backwards compatibility.
 	// Once users have upgraded to a version with new labels, we can delete this code and read/write the same labels.
+	// gloo-ingress-translator removed in 1.17
+	// ingress removed in 1.12
 	proxyLabelSelectorOptions = clients.ListOpts{
-		ExpressionSelector: glooutils.GetTranslatorSelectorExpression(glooutils.IngressProxyValue, "ingress"),
+		ExpressionSelector: glooutils.GetTranslatorSelectorExpression(glooutils.IngressProxyValue, "gloo-ingress-translator", "ingress"),
 	}
 )
 
