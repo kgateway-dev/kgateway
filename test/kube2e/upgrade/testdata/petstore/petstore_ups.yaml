@@ -5,12 +5,12 @@ metadata:
     app: petstore
     discovered_by: kubernetesplugin
   name: gloo-system-petstore-8080
-  namespace: gloo-system
+  namespace: ${INSTALL_NAMESPACE}
 spec:
   discoveryMetadata: {}
   kube:
     selector:
       app: petstore
     serviceName: petstore
-    serviceNamespace: gloo-system
+    serviceNamespace: ${INSTALL_NAMESPACE}
     servicePort: 8080

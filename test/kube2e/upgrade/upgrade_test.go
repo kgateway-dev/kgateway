@@ -463,7 +463,13 @@ func preUpgradeDataSetup(testHelper *helper.SoloTestHelper) {
 
 	// Note that this is really unclean, its not ordered and not our current standard.
 	for _, toApplyFile := range resourceFiles {
-		runAndCleanCommand("kubectl", "apply", "-f", filepath.Join(resDirPath, toApplyFile.Name()))
+		toApplyF := filepath.Join(resDirPath, toApplyFile.Name())
+		raw, err := os.ReadFile(toApplyF)
+		if err != nil {
+			Expect(err).ToNot(HaveOccurred())
+		}
+		toApply := os.ExpandEnv(string(raw))
+		runAndCleanCommand("kubectl", "apply", "-f", "-", toApply)
 	}
 
 	checkGlooHealthy(testHelper)
@@ -478,7 +484,13 @@ func postUpgradeDataStep(testHelper *helper.SoloTestHelper) {
 
 	// Note that this is really unclean, its not ordered and not our current standard.
 	for _, toApplyFile := range resourceFiles {
-		runAndCleanCommand("kubectl", "delete", "-f", filepath.Join(resDirPath, toApplyFile.Name()))
+		toApplyF := filepath.Join(resDirPath, toApplyFile.Name())
+		raw, err := os.ReadFile(toApplyF)
+		if err != nil {
+			Expect(err).ToNot(HaveOccurred())
+		}
+		toApply := os.ExpandEnv(string(raw))
+		runAndCleanCommand("kubectl", "apply", "-f", "-", toApply)
 	}
 	checkGlooHealthy(testHelper)
 	validatePetstoreTraffic(testHelper, "/some-pets")
