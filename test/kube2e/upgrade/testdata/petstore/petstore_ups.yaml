@@ -1,0 +1,16 @@
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  labels:
+    app: petstore
+    discovered_by: kubernetesplugin
+  name: gloo-system-petstore-8080
+  namespace: gloo-system
+spec:
+  discoveryMetadata: {}
+  kube:
+    selector:
+      app: petstore
+    serviceName: petstore
+    serviceNamespace: gloo-system
+    servicePort: 8080
