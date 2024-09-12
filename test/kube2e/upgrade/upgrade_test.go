@@ -241,6 +241,9 @@ func updateValidationWebhookTests(ctx context.Context, crdDir string, kubeClient
 	secret, err = secretClient.Get(ctx, "gateway-validation-certs", metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(webhookConfig.Webhooks[0].ClientConfig.CABundle).To(Equal(secret.Data[corev1.ServiceAccountRootCAKey]))
+
+	By("accepts and adopts valid configuration after upgrade")
+
 }
 
 // ===================================
@@ -263,7 +266,7 @@ func getGlooServerVersion(ctx context.Context, namespace string) (v string) {
 func installGloo(testHelper *helper.SoloTestHelper, fromRelease string, strictValidation bool) {
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred(), "working dir could not be retrieved while installing gloo")
-	helmValuesFile := filepath.Join(cwd, "artifacts", "helm.yaml")
+	helmValuesFile := filepath.Join(cwd, "testdata", "helm.yaml")
 
 	// construct helm args
 	var args = []string{"install", testHelper.HelmChartName}
@@ -299,6 +302,10 @@ func installGloo(testHelper *helper.SoloTestHelper, fromRelease string, strictVa
 
 	// Check that everything is OK
 	checkGlooHealthy(testHelper)
+
+	// install assets
+	preUpgradeDataSetup(testHelper)
+
 }
 
 // CRDs are applied to a cluster when performing a `helm install` operation
@@ -356,6 +363,8 @@ func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, targetRelea
 
 	//Check that everything is OK
 	checkGlooHealthy(testHelper)
+
+	postUpgradeDataStep(testHelper)
 }
 
 func uninstallGloo(testHelper *helper.SoloTestHelper, ctx context.Context, cancel context.CancelFunc) {
