@@ -368,6 +368,7 @@ spec:
   selector:
     {{- include "gloo-gateway.gateway.selectorLabels" . | nindent 4 }}
 ---
+{{- if (($gateway.aiExtension).enabled) }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -377,8 +378,9 @@ metadata:
     {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
 {{- if $gateway.aiExtension.stats }}
 data:
-  stats.json: $gateway.aiExtension.stats
+  stats.json: {{ $gateway.aiExtension.stats }}
 {{- end}}
+{{- end }}
 ---
 apiVersion: v1
 kind: ConfigMap
