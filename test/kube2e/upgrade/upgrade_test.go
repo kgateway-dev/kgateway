@@ -1,8 +1,10 @@
 package upgrade_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -424,8 +426,15 @@ var strictValidationArgs = []string{
 	"--set", "gateway.validation.alwaysAcceptResources=false",
 }
 
-func runAndCleanCommand(name string, arg ...string) []byte {
+func runAndCleanCommand(name string, args ...string) []byte {
+	return runWithSTDandCleanCommand(name, nil, args...)
+}
+
+func runWithSTDandCleanCommand(name string, stdin io.Reader, arg ...string) []byte {
 	cmd := exec.Command(name, arg...)
+	if stdin != nil {
+		cmd.Stdin = stdin
+	}
 	b, err := cmd.Output()
 	// for debugging in Cloud Build
 	if err != nil {
@@ -468,8 +477,10 @@ func preUpgradeDataSetup(testHelper *helper.SoloTestHelper) {
 		if err != nil {
 			Expect(err).ToNot(HaveOccurred())
 		}
-		toApply := os.ExpandEnv(string(raw))
-		runAndCleanCommand("kubectl", "apply", "-f", "-", toApply)
+		toApply := []byte(os.ExpandEnv(string(raw)))
+		args := []string{"apply", "-f", "-"}
+
+		runWithSTDandCleanCommand("kubectl", bytes.NewBuffer(toApply), args...)
 	}
 
 	checkGlooHealthy(testHelper)
@@ -489,8 +500,10 @@ func postUpgradeDataStep(testHelper *helper.SoloTestHelper) {
 		if err != nil {
 			Expect(err).ToNot(HaveOccurred())
 		}
-		toApply := os.ExpandEnv(string(raw))
-		runAndCleanCommand("kubectl", "apply", "-f", "-", toApply)
+		toApply := []byte(os.ExpandEnv(string(raw)))
+		args := []string{"apply", "-f", "-"}
+
+		runWithSTDandCleanCommand("kubectl", bytes.NewBuffer(toApply), args...)
 	}
 	checkGlooHealthy(testHelper)
 	validatePetstoreTraffic(testHelper, "/some-pets")
