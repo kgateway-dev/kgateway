@@ -430,6 +430,7 @@ func runAndCleanCommand(name string, arg ...string) []byte {
 	// for debugging in Cloud Build
 	if err != nil {
 		if v, ok := err.(*exec.ExitError); ok {
+			Expect(err).NotTo(HaveOccurred(), string(v.Stderr))
 			fmt.Println("ExitError: ", string(v.Stderr))
 		}
 	}
