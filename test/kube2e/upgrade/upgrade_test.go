@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/helmutils"
+	"github.com/solo-io/skv2/codegen/util"
 
 	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
 
@@ -435,4 +436,40 @@ func checkGlooHealthy(testHelper *helper.SoloTestHelper) {
 		runAndCleanCommand("kubectl", "rollout", "status", "deployment", "-n", testHelper.InstallNamespace, deploymentName)
 	}
 	kube2e.GlooctlCheckEventuallyHealthy(2, testHelper.InstallNamespace, "90s")
+}
+
+// ===================================
+// Resources for upgrade tests
+// ===================================
+// Sets up resources before upgrading
+
+// TODO(nfuden): either get this on testinstallation or entirely lift and shift the whole suite
+func preUpgradeDataSetup(testHelper *helper.SoloTestHelper) {
+
+	//hello world example
+	resDirPath := filepath.Join(util.MustGetThisDir(), "testdata", "petstore")
+	resourceFiles, err := os.ReadDir(resDirPath)
+	Expect(err).To(BeNil())
+
+	// Note that this is really unclean, its not ordered and not our current standard.
+	for _, toApplyFile := range resourceFiles {
+		runAndCleanCommand("kubectl", "apply", "-f", filepath.Join(resDirPath, toApplyFile.Name()))
+	}
+
+	checkGlooHealthy(testHelper)
+	validatePetstoreTraffic(testHelper, "/all-pets")
+}
+
+func postUpgradeDataStep(testHelper *helper.SoloTestHelper) {
+	//hello world example
+	resDirPath := filepath.Join(util.MustGetThisDir(), "testdata", "petstoreupdated")
+	resourceFiles, err := os.ReadDir(resDirPath)
+	Expect(err).To(BeNil())
+
+	// Note that this is really unclean, its not ordered and not our current standard.
+	for _, toApplyFile := range resourceFiles {
+		runAndCleanCommand("kubectl", "delete", "-f", filepath.Join(resDirPath, toApplyFile.Name()))
+	}
+	checkGlooHealthy(testHelper)
+	validatePetstoreTraffic(testHelper, "/some-pets")
 }
