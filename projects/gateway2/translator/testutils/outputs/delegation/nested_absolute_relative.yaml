@@ -31,6 +31,7 @@ listeners:
               - name: route-a-b-d-query
                 value: route-a-b-d-query-val
             options: {}
+            name: route-a-b-d-a-b-d-0-0
             routeAction:
               single:
                 kube:
@@ -53,6 +54,7 @@ listeners:
               - name: route-a-b-query
                 value: route-a-b-query-val
             options: {}
+            name: route-a-b-a-b-0-0
             routeAction:
               single:
                 kube:
@@ -73,6 +75,7 @@ listeners:
               - name: route-a-query
                 value: route-a-query-val
             options: {}
+            name: route-a-a-0-0
             routeAction:
               single:
                 kube:

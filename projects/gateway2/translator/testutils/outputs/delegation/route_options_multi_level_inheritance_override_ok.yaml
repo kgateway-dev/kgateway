@@ -41,6 +41,7 @@ listeners:
               headerManipulation:
                 requestHeadersToRemove:
                 - foo
+            name: route-a-a-0-0
             routeAction:
               single:
                 kube:
@@ -61,6 +62,7 @@ listeners:
                 abort:
                   httpStatus: 418
                   percentage: 100
+            name: example-route-infra-0-0
             routeAction:
               single:
                 kube:
