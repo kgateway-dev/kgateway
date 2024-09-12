@@ -449,7 +449,7 @@ func preUpgradeDataSetup(testHelper *helper.SoloTestHelper) {
 	//hello world example
 	resDirPath := filepath.Join(util.MustGetThisDir(), "testdata", "petstore")
 	resourceFiles, err := os.ReadDir(resDirPath)
-	Expect(err).To(BeNil())
+	Expect(err).ToNot(HaveOccurred())
 
 	// Note that this is really unclean, its not ordered and not our current standard.
 	for _, toApplyFile := range resourceFiles {
@@ -464,7 +464,7 @@ func postUpgradeDataStep(testHelper *helper.SoloTestHelper) {
 	//hello world example
 	resDirPath := filepath.Join(util.MustGetThisDir(), "testdata", "petstoreupdated")
 	resourceFiles, err := os.ReadDir(resDirPath)
-	Expect(err).To(BeNil())
+	Expect(err).ToNot(HaveOccurred())
 
 	// Note that this is really unclean, its not ordered and not our current standard.
 	for _, toApplyFile := range resourceFiles {
