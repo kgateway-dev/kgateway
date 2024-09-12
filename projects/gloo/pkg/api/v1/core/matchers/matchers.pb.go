@@ -7,13 +7,12 @@
 package matchers
 
 import (
-	reflect "reflect"
-	sync "sync"
-
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -37,7 +36,7 @@ type Matcher struct {
 	//	*Matcher_ConnectMatcher_
 	PathSpecifier isMatcher_PathSpecifier `protobuf_oneof:"path_specifier"`
 	// Indicates that prefix/path matching should be case sensitive. The default is true.
-	CaseSensitive *wrappers.BoolValue `protobuf:"bytes,4,opt,name=case_sensitive,json=caseSensitive,proto3" json:"case_sensitive,omitempty"`
+	CaseSensitive *wrapperspb.BoolValue `protobuf:"bytes,4,opt,name=case_sensitive,json=caseSensitive,proto3" json:"case_sensitive,omitempty"`
 	// Specifies a set of headers that the route should match on. The router will
 	// check the request’s headers against all the specified headers in the route
 	// config. A match will happen if all the headers in the route are present in
@@ -121,7 +120,7 @@ func (x *Matcher) GetConnectMatcher() *Matcher_ConnectMatcher {
 	return nil
 }
 
-func (x *Matcher) GetCaseSensitive() *wrappers.BoolValue {
+func (x *Matcher) GetCaseSensitive() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.CaseSensitive
 	}
@@ -481,7 +480,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_core_matchers_matchers_pro
 	(*HeaderMatcher)(nil),          // 1: matchers.core.gloo.solo.io.HeaderMatcher
 	(*QueryParameterMatcher)(nil),  // 2: matchers.core.gloo.solo.io.QueryParameterMatcher
 	(*Matcher_ConnectMatcher)(nil), // 3: matchers.core.gloo.solo.io.Matcher.ConnectMatcher
-	(*wrappers.BoolValue)(nil),     // 4: google.protobuf.BoolValue
+	(*wrapperspb.BoolValue)(nil),   // 4: google.protobuf.BoolValue
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_core_matchers_matchers_proto_depIdxs = []int32{
 	3, // 0: matchers.core.gloo.solo.io.Matcher.connect_matcher:type_name -> matchers.core.gloo.solo.io.Matcher.ConnectMatcher

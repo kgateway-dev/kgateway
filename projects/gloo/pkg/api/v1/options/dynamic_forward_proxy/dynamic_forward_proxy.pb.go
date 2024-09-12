@@ -7,17 +7,16 @@
 package dynamic_forward_proxy
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	duration "github.com/golang/protobuf/ptypes/duration"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	ssl "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -183,7 +182,7 @@ type DnsCacheCircuitBreakers struct {
 
 	// The maximum number of pending requests that Envoy will allow to the
 	// resolver. If not specified, the default is 1024.
-	MaxPendingRequests *wrappers.UInt32Value `protobuf:"bytes,1,opt,name=max_pending_requests,json=maxPendingRequests,proto3" json:"max_pending_requests,omitempty"`
+	MaxPendingRequests *wrapperspb.UInt32Value `protobuf:"bytes,1,opt,name=max_pending_requests,json=maxPendingRequests,proto3" json:"max_pending_requests,omitempty"`
 }
 
 func (x *DnsCacheCircuitBreakers) Reset() {
@@ -218,7 +217,7 @@ func (*DnsCacheCircuitBreakers) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_options_dynamic_forward_proxy_dynamic_forward_proxy_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *DnsCacheCircuitBreakers) GetMaxPendingRequests() *wrappers.UInt32Value {
+func (x *DnsCacheCircuitBreakers) GetMaxPendingRequests() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.MaxPendingRequests
 	}
@@ -248,7 +247,7 @@ type DnsCacheConfig struct {
 	//
 	// Once a host has been resolved, the refresh rate will be the DNS TTL, capped
 	// at a minimum of 5s.
-	DnsRefreshRate *duration.Duration `protobuf:"bytes,3,opt,name=dns_refresh_rate,json=dnsRefreshRate,proto3" json:"dns_refresh_rate,omitempty"`
+	DnsRefreshRate *durationpb.Duration `protobuf:"bytes,3,opt,name=dns_refresh_rate,json=dnsRefreshRate,proto3" json:"dns_refresh_rate,omitempty"`
 	// The TTL for hosts that are unused. Hosts that have not been used in the configured time
 	// interval will be purged. If not specified defaults to 5m.
 	//
@@ -261,7 +260,7 @@ type DnsCacheConfig struct {
 	//	.. note:
 	//
 	//	 The TTL has no relation to DNS TTL and is only used to control Envoy's resource usage.
-	HostTtl *duration.Duration `protobuf:"bytes,4,opt,name=host_ttl,json=hostTtl,proto3" json:"host_ttl,omitempty"`
+	HostTtl *durationpb.Duration `protobuf:"bytes,4,opt,name=host_ttl,json=hostTtl,proto3" json:"host_ttl,omitempty"`
 	// The maximum number of hosts that the cache will hold. If not specified defaults to 1024.
 	//
 	// .. note:
@@ -269,7 +268,7 @@ type DnsCacheConfig struct {
 	//	The implementation is approximate and enforced independently on each worker thread, thus
 	//	it is possible for the maximum hosts in the cache to go slightly above the configured
 	//	value depending on timing. This is similar to how other circuit breakers work.
-	MaxHosts *wrappers.UInt32Value `protobuf:"bytes,5,opt,name=max_hosts,json=maxHosts,proto3" json:"max_hosts,omitempty"`
+	MaxHosts *wrapperspb.UInt32Value `protobuf:"bytes,5,opt,name=max_hosts,json=maxHosts,proto3" json:"max_hosts,omitempty"`
 	// If the DNS failure refresh rate is specified,
 	// this is used as the cache's DNS refresh rate when DNS requests are failing. If this setting is
 	// not specified, the failure refresh rate defaults to the dns_refresh_rate.
@@ -290,7 +289,7 @@ type DnsCacheConfig struct {
 	// used by the underlying DNS implementation (e.g., c-areas and Apple DNS) which are opaque.
 	// Setting this timeout will ensure that queries succeed or fail within the specified time frame
 	// and are then retried using the standard refresh rates. Defaults to 5s if not set.
-	DnsQueryTimeout *duration.Duration `protobuf:"bytes,11,opt,name=dns_query_timeout,json=dnsQueryTimeout,proto3" json:"dns_query_timeout,omitempty"`
+	DnsQueryTimeout *durationpb.Duration `protobuf:"bytes,11,opt,name=dns_query_timeout,json=dnsQueryTimeout,proto3" json:"dns_query_timeout,omitempty"`
 }
 
 func (x *DnsCacheConfig) Reset() {
@@ -332,21 +331,21 @@ func (x *DnsCacheConfig) GetDnsLookupFamily() DnsLookupFamily {
 	return DnsLookupFamily_V4_PREFERRED
 }
 
-func (x *DnsCacheConfig) GetDnsRefreshRate() *duration.Duration {
+func (x *DnsCacheConfig) GetDnsRefreshRate() *durationpb.Duration {
 	if x != nil {
 		return x.DnsRefreshRate
 	}
 	return nil
 }
 
-func (x *DnsCacheConfig) GetHostTtl() *duration.Duration {
+func (x *DnsCacheConfig) GetHostTtl() *durationpb.Duration {
 	if x != nil {
 		return x.HostTtl
 	}
 	return nil
 }
 
-func (x *DnsCacheConfig) GetMaxHosts() *wrappers.UInt32Value {
+func (x *DnsCacheConfig) GetMaxHosts() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.MaxHosts
 	}
@@ -395,7 +394,7 @@ func (x *DnsCacheConfig) GetPreresolveHostnames() []*v3.SocketAddress {
 	return nil
 }
 
-func (x *DnsCacheConfig) GetDnsQueryTimeout() *duration.Duration {
+func (x *DnsCacheConfig) GetDnsQueryTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.DnsQueryTimeout
 	}
@@ -426,12 +425,12 @@ type RefreshRate struct {
 	// Specifies the base interval between refreshes. This parameter is required and must be greater
 	// than 1ms and less than
 	// :ref:`max_interval <envoy_v3_api_field_config.cluster.v3.Cluster.RefreshRate.max_interval>`.
-	BaseInterval *duration.Duration `protobuf:"bytes,1,opt,name=base_interval,json=baseInterval,proto3" json:"base_interval,omitempty"`
+	BaseInterval *durationpb.Duration `protobuf:"bytes,1,opt,name=base_interval,json=baseInterval,proto3" json:"base_interval,omitempty"`
 	// Specifies the maximum interval between refreshes. This parameter is optional, but must be
 	// greater than or equal to the
 	// :ref:`base_interval <envoy_v3_api_field_config.cluster.v3.Cluster.RefreshRate.base_interval>`  if set. The default
 	// is 10 times the :ref:`base_interval <envoy_v3_api_field_config.cluster.v3.Cluster.RefreshRate.base_interval>`.
-	MaxInterval *duration.Duration `protobuf:"bytes,2,opt,name=max_interval,json=maxInterval,proto3" json:"max_interval,omitempty"`
+	MaxInterval *durationpb.Duration `protobuf:"bytes,2,opt,name=max_interval,json=maxInterval,proto3" json:"max_interval,omitempty"`
 }
 
 func (x *RefreshRate) Reset() {
@@ -466,14 +465,14 @@ func (*RefreshRate) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_options_dynamic_forward_proxy_dynamic_forward_proxy_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *RefreshRate) GetBaseInterval() *duration.Duration {
+func (x *RefreshRate) GetBaseInterval() *durationpb.Duration {
 	if x != nil {
 		return x.BaseInterval
 	}
 	return nil
 }
 
-func (x *RefreshRate) GetMaxInterval() *duration.Duration {
+func (x *RefreshRate) GetMaxInterval() *durationpb.Duration {
 	if x != nil {
 		return x.MaxInterval
 	}
@@ -927,8 +926,8 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_dynamic_forward_pr
 	(*CaresDnsResolverConfig)(nil),  // 7: dfp.options.gloo.solo.io.CaresDnsResolverConfig
 	(*AppleDnsResolverConfig)(nil),  // 8: dfp.options.gloo.solo.io.AppleDnsResolverConfig
 	(*ssl.UpstreamSslConfig)(nil),   // 9: gloo.solo.io.UpstreamSslConfig
-	(*wrappers.UInt32Value)(nil),    // 10: google.protobuf.UInt32Value
-	(*duration.Duration)(nil),       // 11: google.protobuf.Duration
+	(*wrapperspb.UInt32Value)(nil),  // 10: google.protobuf.UInt32Value
+	(*durationpb.Duration)(nil),     // 11: google.protobuf.Duration
 	(*v3.SocketAddress)(nil),        // 12: solo.io.envoy.config.core.v3.SocketAddress
 	(*v3.Address)(nil),              // 13: solo.io.envoy.config.core.v3.Address
 }

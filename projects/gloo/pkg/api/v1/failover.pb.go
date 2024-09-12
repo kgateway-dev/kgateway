@@ -7,16 +7,15 @@
 package v1
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	_struct "github.com/golang/protobuf/ptypes/struct"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	ssl "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	structpb "google.golang.org/protobuf/types/known/structpb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -116,7 +115,7 @@ type LocalityLbEndpoints struct {
 	// localities at the same priority level to produce the effective percentage
 	// of traffic for the locality.
 	// To enable locality weighted load balancing, load_balancer_config.locality_weighted_lb_config must be set as well
-	LoadBalancingWeight *wrappers.UInt32Value `protobuf:"bytes,3,opt,name=load_balancing_weight,json=loadBalancingWeight,proto3" json:"load_balancing_weight,omitempty"`
+	LoadBalancingWeight *wrapperspb.UInt32Value `protobuf:"bytes,3,opt,name=load_balancing_weight,json=loadBalancingWeight,proto3" json:"load_balancing_weight,omitempty"`
 }
 
 func (x *LocalityLbEndpoints) Reset() {
@@ -165,7 +164,7 @@ func (x *LocalityLbEndpoints) GetLbEndpoints() []*LbEndpoint {
 	return nil
 }
 
-func (x *LocalityLbEndpoints) GetLoadBalancingWeight() *wrappers.UInt32Value {
+func (x *LocalityLbEndpoints) GetLoadBalancingWeight() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.LoadBalancingWeight
 	}
@@ -195,13 +194,13 @@ type LbEndpoint struct {
 	// weighted by the endpoint's locality's load balancing weight from
 	// LocalityLbEndpoints. If unspecified, each host is presumed to have equal
 	// weight in a locality.
-	LoadBalancingWeight *wrappers.UInt32Value `protobuf:"bytes,5,opt,name=load_balancing_weight,json=loadBalancingWeight,proto3" json:"load_balancing_weight,omitempty"`
+	LoadBalancingWeight *wrapperspb.UInt32Value `protobuf:"bytes,5,opt,name=load_balancing_weight,json=loadBalancingWeight,proto3" json:"load_balancing_weight,omitempty"`
 	// Additional metadata to add to the endpoint. This metadata can be used in upstream HTTP filters
 	// or other specific Envoy configurations.
 	// The following keys are added by Gloo Edge and are ignored if set:
 	// - "envoy.transport_socket_match"
 	// - "io.solo.health_checkers.advanced_http"
-	Metadata map[string]*_struct.Struct `protobuf:"bytes,6,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Metadata map[string]*structpb.Struct `protobuf:"bytes,6,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (x *LbEndpoint) Reset() {
@@ -264,14 +263,14 @@ func (x *LbEndpoint) GetUpstreamSslConfig() *ssl.UpstreamSslConfig {
 	return nil
 }
 
-func (x *LbEndpoint) GetLoadBalancingWeight() *wrappers.UInt32Value {
+func (x *LbEndpoint) GetLoadBalancingWeight() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.LoadBalancingWeight
 	}
 	return nil
 }
 
-func (x *LbEndpoint) GetMetadata() map[string]*_struct.Struct {
+func (x *LbEndpoint) GetMetadata() map[string]*structpb.Struct {
 	if x != nil {
 		return x.Metadata
 	}
@@ -417,7 +416,7 @@ type Failover_Policy struct {
 	//
 	// Read more at :ref:`priority levels <arch_overview_load_balancing_priority_levels>` and
 	// :ref:`localities <arch_overview_load_balancing_locality_weighted_lb>`.
-	OverprovisioningFactor *wrappers.UInt32Value `protobuf:"bytes,1,opt,name=overprovisioning_factor,json=overprovisioningFactor,proto3" json:"overprovisioning_factor,omitempty"`
+	OverprovisioningFactor *wrapperspb.UInt32Value `protobuf:"bytes,1,opt,name=overprovisioning_factor,json=overprovisioningFactor,proto3" json:"overprovisioning_factor,omitempty"`
 }
 
 func (x *Failover_Policy) Reset() {
@@ -452,7 +451,7 @@ func (*Failover_Policy) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_failover_proto_rawDescGZIP(), []int{0, 1}
 }
 
-func (x *Failover_Policy) GetOverprovisioningFactor() *wrappers.UInt32Value {
+func (x *Failover_Policy) GetOverprovisioningFactor() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.OverprovisioningFactor
 	}
@@ -669,9 +668,9 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_failover_proto_goTypes = [
 	(*Failover_Policy)(nil),              // 5: gloo.solo.io.Failover.Policy
 	(*LbEndpoint_HealthCheckConfig)(nil), // 6: gloo.solo.io.LbEndpoint.HealthCheckConfig
 	nil,                                  // 7: gloo.solo.io.LbEndpoint.MetadataEntry
-	(*wrappers.UInt32Value)(nil),         // 8: google.protobuf.UInt32Value
+	(*wrapperspb.UInt32Value)(nil),       // 8: google.protobuf.UInt32Value
 	(*ssl.UpstreamSslConfig)(nil),        // 9: gloo.solo.io.UpstreamSslConfig
-	(*_struct.Struct)(nil),               // 10: google.protobuf.Struct
+	(*structpb.Struct)(nil),              // 10: google.protobuf.Struct
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_failover_proto_depIdxs = []int32{
 	4,  // 0: gloo.solo.io.Failover.prioritized_localities:type_name -> gloo.solo.io.Failover.PrioritizedLocality

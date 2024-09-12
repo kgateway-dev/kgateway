@@ -7,16 +7,15 @@
 package transformation
 
 import (
-	reflect "reflect"
-	sync "sync"
-
-	empty "github.com/golang/protobuf/ptypes/empty"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	xslt "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformers/xslt"
 	matchers "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -429,13 +428,13 @@ type TransformationStages struct {
 	InheritTransformation bool `protobuf:"varint,3,opt,name=inherit_transformation,json=inheritTransformation,proto3" json:"inherit_transformation,omitempty"`
 	// When enabled, log request/response body and headers before and after all transformations defined here are applied.\
 	// This overrides the log_request_response_info field in the Transformation message.
-	LogRequestResponseInfo *wrappers.BoolValue `protobuf:"bytes,4,opt,name=log_request_response_info,json=logRequestResponseInfo,proto3" json:"log_request_response_info,omitempty"`
+	LogRequestResponseInfo *wrapperspb.BoolValue `protobuf:"bytes,4,opt,name=log_request_response_info,json=logRequestResponseInfo,proto3" json:"log_request_response_info,omitempty"`
 	// Use this field to set Inja behavior when rendering strings which contain
 	// characters that would need to be escaped to be valid JSON. Note that this
 	// sets the behavior for all staged transformations configured here. This setting
 	// can be overridden per-transformation using the field `escape_characters` on
 	// the TransformationTemplate.
-	EscapeCharacters *wrappers.BoolValue `protobuf:"bytes,5,opt,name=escape_characters,json=escapeCharacters,proto3" json:"escape_characters,omitempty"`
+	EscapeCharacters *wrapperspb.BoolValue `protobuf:"bytes,5,opt,name=escape_characters,json=escapeCharacters,proto3" json:"escape_characters,omitempty"`
 }
 
 func (x *TransformationStages) Reset() {
@@ -498,14 +497,14 @@ func (x *TransformationStages) GetInheritTransformation() bool {
 	return false
 }
 
-func (x *TransformationStages) GetLogRequestResponseInfo() *wrappers.BoolValue {
+func (x *TransformationStages) GetLogRequestResponseInfo() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.LogRequestResponseInfo
 	}
 	return nil
 }
 
-func (x *TransformationStages) GetEscapeCharacters() *wrappers.BoolValue {
+func (x *TransformationStages) GetEscapeCharacters() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.EscapeCharacters
 	}
@@ -672,7 +671,7 @@ type Extraction struct {
 	// to `std::regex_replace` as the replacement string.
 	//
 	//	For more informatino, see https://en.cppreference.com/w/cpp/regex/regex_replace.
-	ReplacementText *wrappers.StringValue `protobuf:"bytes,5,opt,name=replacement_text,json=replacementText,proto3" json:"replacement_text,omitempty"`
+	ReplacementText *wrapperspb.StringValue `protobuf:"bytes,5,opt,name=replacement_text,json=replacementText,proto3" json:"replacement_text,omitempty"`
 	// The mode of operation for the extraction.
 	// Defaults to EXTRACT.
 	Mode Extraction_Mode `protobuf:"varint,6,opt,name=mode,proto3,enum=transformation.options.gloo.solo.io.Extraction_Mode" json:"mode,omitempty"`
@@ -724,7 +723,7 @@ func (x *Extraction) GetHeader() string {
 	return ""
 }
 
-func (x *Extraction) GetBody() *empty.Empty {
+func (x *Extraction) GetBody() *emptypb.Empty {
 	if x, ok := x.GetSource().(*Extraction_Body); ok {
 		return x.Body
 	}
@@ -745,7 +744,7 @@ func (x *Extraction) GetSubgroup() uint32 {
 	return 0
 }
 
-func (x *Extraction) GetReplacementText() *wrappers.StringValue {
+func (x *Extraction) GetReplacementText() *wrapperspb.StringValue {
 	if x != nil {
 		return x.ReplacementText
 	}
@@ -770,7 +769,7 @@ type Extraction_Header struct {
 
 type Extraction_Body struct {
 	// Extract information from the request/response body
-	Body *empty.Empty `protobuf:"bytes,4,opt,name=body,proto3,oneof"`
+	Body *emptypb.Empty `protobuf:"bytes,4,opt,name=body,proto3,oneof"`
 }
 
 func (*Extraction_Header) isExtraction_Source() {}
@@ -858,7 +857,7 @@ type TransformationTemplate struct {
 	// characters that would need to be escaped to be valid JSON. Note that this
 	// sets the behavior for the entire transformation. Use raw_strings function
 	// for fine-grained control within a template.
-	EscapeCharacters *wrappers.BoolValue `protobuf:"bytes,12,opt,name=escape_characters,json=escapeCharacters,proto3" json:"escape_characters,omitempty"`
+	EscapeCharacters *wrapperspb.BoolValue `protobuf:"bytes,12,opt,name=escape_characters,json=escapeCharacters,proto3" json:"escape_characters,omitempty"`
 }
 
 func (x *TransformationTemplate) Reset() {
@@ -984,7 +983,7 @@ func (x *TransformationTemplate) GetDynamicMetadataValues() []*TransformationTem
 	return nil
 }
 
-func (x *TransformationTemplate) GetEscapeCharacters() *wrappers.BoolValue {
+func (x *TransformationTemplate) GetEscapeCharacters() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.EscapeCharacters
 	}
@@ -1856,10 +1855,10 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_transformation_tra
 	nil,                             // 20: transformation.options.gloo.solo.io.MergeJsonKeys.JsonKeysEntry
 	(*matchers.HeaderMatcher)(nil),  // 21: matchers.core.gloo.solo.io.HeaderMatcher
 	(*matchers.Matcher)(nil),        // 22: matchers.core.gloo.solo.io.Matcher
-	(*wrappers.BoolValue)(nil),      // 23: google.protobuf.BoolValue
+	(*wrapperspb.BoolValue)(nil),    // 23: google.protobuf.BoolValue
 	(*xslt.XsltTransformation)(nil), // 24: envoy.config.transformer.xslt.v2.XsltTransformation
-	(*empty.Empty)(nil),             // 25: google.protobuf.Empty
-	(*wrappers.StringValue)(nil),    // 26: google.protobuf.StringValue
+	(*emptypb.Empty)(nil),           // 25: google.protobuf.Empty
+	(*wrapperspb.StringValue)(nil),  // 26: google.protobuf.StringValue
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_transformation_transformation_proto_depIdxs = []int32{
 	21, // 0: transformation.options.gloo.solo.io.ResponseMatch.matchers:type_name -> matchers.core.gloo.solo.io.HeaderMatcher

@@ -7,16 +7,15 @@
 package static
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	_struct "github.com/golang/protobuf/ptypes/struct"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	options "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	structpb "google.golang.org/protobuf/types/known/structpb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -40,13 +39,13 @@ type UpstreamSpec struct {
 	Hosts []*Host `protobuf:"bytes,1,rep,name=hosts,proto3" json:"hosts,omitempty"`
 	// Attempt to use outbound TLS
 	// If not explicitly set, Gloo will automatically set this to true for port 443
-	UseTls *wrappers.BoolValue `protobuf:"bytes,3,opt,name=use_tls,json=useTls,proto3" json:"use_tls,omitempty"`
+	UseTls *wrapperspb.BoolValue `protobuf:"bytes,3,opt,name=use_tls,json=useTls,proto3" json:"use_tls,omitempty"`
 	// An optional Service Spec describing the service listening at this address
 	ServiceSpec *options.ServiceSpec `protobuf:"bytes,5,opt,name=service_spec,json=serviceSpec,proto3" json:"service_spec,omitempty"`
 	// When set, automatically set the sni address to use to the addr field.
 	// If both this and host.sni_addr are set, host.sni_addr has priority.
 	// defaults to "true".
-	AutoSniRewrite *wrappers.BoolValue `protobuf:"bytes,6,opt,name=auto_sni_rewrite,json=autoSniRewrite,proto3" json:"auto_sni_rewrite,omitempty"`
+	AutoSniRewrite *wrapperspb.BoolValue `protobuf:"bytes,6,opt,name=auto_sni_rewrite,json=autoSniRewrite,proto3" json:"auto_sni_rewrite,omitempty"`
 }
 
 func (x *UpstreamSpec) Reset() {
@@ -88,7 +87,7 @@ func (x *UpstreamSpec) GetHosts() []*Host {
 	return nil
 }
 
-func (x *UpstreamSpec) GetUseTls() *wrappers.BoolValue {
+func (x *UpstreamSpec) GetUseTls() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.UseTls
 	}
@@ -102,7 +101,7 @@ func (x *UpstreamSpec) GetServiceSpec() *options.ServiceSpec {
 	return nil
 }
 
-func (x *UpstreamSpec) GetAutoSniRewrite() *wrappers.BoolValue {
+func (x *UpstreamSpec) GetAutoSniRewrite() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.AutoSniRewrite
 	}
@@ -129,7 +128,7 @@ type Host struct {
 	// weighted by the endpoint's locality's load balancing weight from
 	// LocalityLbEndpoints. If unspecified, each host is presumed to have equal
 	// weight in a locality.
-	LoadBalancingWeight *wrappers.UInt32Value `protobuf:"bytes,5,opt,name=load_balancing_weight,json=loadBalancingWeight,proto3" json:"load_balancing_weight,omitempty"`
+	LoadBalancingWeight *wrapperspb.UInt32Value `protobuf:"bytes,5,opt,name=load_balancing_weight,json=loadBalancingWeight,proto3" json:"load_balancing_weight,omitempty"`
 	// (Enterprise Only): Host specific health checking configuration.
 	HealthCheckConfig *Host_HealthCheckConfig `protobuf:"bytes,3,opt,name=health_check_config,json=healthCheckConfig,proto3" json:"health_check_config,omitempty"`
 	// Additional metadata to add to the endpoint. This metadata can be used in upstream HTTP filters
@@ -137,7 +136,7 @@ type Host struct {
 	// The following keys are added by Gloo Edge and are ignored if set:
 	// - "envoy.transport_socket_match"
 	// - "io.solo.health_checkers.advanced_http"
-	Metadata map[string]*_struct.Struct `protobuf:"bytes,6,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Metadata map[string]*structpb.Struct `protobuf:"bytes,6,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (x *Host) Reset() {
@@ -193,7 +192,7 @@ func (x *Host) GetSniAddr() string {
 	return ""
 }
 
-func (x *Host) GetLoadBalancingWeight() *wrappers.UInt32Value {
+func (x *Host) GetLoadBalancingWeight() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.LoadBalancingWeight
 	}
@@ -207,7 +206,7 @@ func (x *Host) GetHealthCheckConfig() *Host_HealthCheckConfig {
 	return nil
 }
 
-func (x *Host) GetMetadata() map[string]*_struct.Struct {
+func (x *Host) GetMetadata() map[string]*structpb.Struct {
 	if x != nil {
 		return x.Metadata
 	}
@@ -365,10 +364,10 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_static_static_prot
 	(*Host)(nil),                   // 1: static.options.gloo.solo.io.Host
 	(*Host_HealthCheckConfig)(nil), // 2: static.options.gloo.solo.io.Host.HealthCheckConfig
 	nil,                            // 3: static.options.gloo.solo.io.Host.MetadataEntry
-	(*wrappers.BoolValue)(nil),     // 4: google.protobuf.BoolValue
+	(*wrapperspb.BoolValue)(nil),   // 4: google.protobuf.BoolValue
 	(*options.ServiceSpec)(nil),    // 5: options.gloo.solo.io.ServiceSpec
-	(*wrappers.UInt32Value)(nil),   // 6: google.protobuf.UInt32Value
-	(*_struct.Struct)(nil),         // 7: google.protobuf.Struct
+	(*wrapperspb.UInt32Value)(nil), // 6: google.protobuf.UInt32Value
+	(*structpb.Struct)(nil),        // 7: google.protobuf.Struct
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_static_static_proto_depIdxs = []int32{
 	1, // 0: static.options.gloo.solo.io.UpstreamSpec.hosts:type_name -> static.options.gloo.solo.io.Host

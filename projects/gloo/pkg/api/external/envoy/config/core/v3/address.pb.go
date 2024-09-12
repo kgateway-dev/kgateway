@@ -7,15 +7,14 @@
 package v3
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/udpa/annotations"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -276,14 +275,14 @@ type TcpKeepalive struct {
 	// Maximum number of keepalive probes to send without response before deciding
 	// the connection is dead. Default is to use the OS level configuration (unless
 	// overridden, Linux defaults to 9.)
-	KeepaliveProbes *wrappers.UInt32Value `protobuf:"bytes,1,opt,name=keepalive_probes,json=keepaliveProbes,proto3" json:"keepalive_probes,omitempty"`
+	KeepaliveProbes *wrapperspb.UInt32Value `protobuf:"bytes,1,opt,name=keepalive_probes,json=keepaliveProbes,proto3" json:"keepalive_probes,omitempty"`
 	// The number of seconds a connection needs to be idle before keep-alive probes
 	// start being sent. Default is to use the OS level configuration (unless
 	// overridden, Linux defaults to 7200s (i.e., 2 hours.)
-	KeepaliveTime *wrappers.UInt32Value `protobuf:"bytes,2,opt,name=keepalive_time,json=keepaliveTime,proto3" json:"keepalive_time,omitempty"`
+	KeepaliveTime *wrapperspb.UInt32Value `protobuf:"bytes,2,opt,name=keepalive_time,json=keepaliveTime,proto3" json:"keepalive_time,omitempty"`
 	// The number of seconds between keep-alive probes. Default is to use the OS
 	// level configuration (unless overridden, Linux defaults to 75s.)
-	KeepaliveInterval *wrappers.UInt32Value `protobuf:"bytes,3,opt,name=keepalive_interval,json=keepaliveInterval,proto3" json:"keepalive_interval,omitempty"`
+	KeepaliveInterval *wrapperspb.UInt32Value `protobuf:"bytes,3,opt,name=keepalive_interval,json=keepaliveInterval,proto3" json:"keepalive_interval,omitempty"`
 }
 
 func (x *TcpKeepalive) Reset() {
@@ -318,21 +317,21 @@ func (*TcpKeepalive) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_core_v3_address_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *TcpKeepalive) GetKeepaliveProbes() *wrappers.UInt32Value {
+func (x *TcpKeepalive) GetKeepaliveProbes() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.KeepaliveProbes
 	}
 	return nil
 }
 
-func (x *TcpKeepalive) GetKeepaliveTime() *wrappers.UInt32Value {
+func (x *TcpKeepalive) GetKeepaliveTime() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.KeepaliveTime
 	}
 	return nil
 }
 
-func (x *TcpKeepalive) GetKeepaliveInterval() *wrappers.UInt32Value {
+func (x *TcpKeepalive) GetKeepaliveInterval() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.KeepaliveInterval
 	}
@@ -353,7 +352,7 @@ type BindConfig struct {
 	// to false, the option *IP_FREEBIND* is disabled on the socket. When this
 	// flag is not set (default), the socket is not modified, i.e. the option is
 	// neither enabled nor disabled.
-	Freebind *wrappers.BoolValue `protobuf:"bytes,2,opt,name=freebind,proto3" json:"freebind,omitempty"`
+	Freebind *wrapperspb.BoolValue `protobuf:"bytes,2,opt,name=freebind,proto3" json:"freebind,omitempty"`
 	// Additional socket options that may not be present in Envoy source code or
 	// precompiled binaries.
 	SocketOptions []*SocketOption `protobuf:"bytes,3,rep,name=socket_options,json=socketOptions,proto3" json:"socket_options,omitempty"`
@@ -398,7 +397,7 @@ func (x *BindConfig) GetSourceAddress() *SocketAddress {
 	return nil
 }
 
-func (x *BindConfig) GetFreebind() *wrappers.BoolValue {
+func (x *BindConfig) GetFreebind() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.Freebind
 	}
@@ -506,7 +505,7 @@ type CidrRange struct {
 	// IPv4 or IPv6 address, e.g. “192.0.0.0“ or “2001:db8::“.
 	AddressPrefix string `protobuf:"bytes,1,opt,name=address_prefix,json=addressPrefix,proto3" json:"address_prefix,omitempty"`
 	// Length of prefix, e.g. 0, 32.
-	PrefixLen *wrappers.UInt32Value `protobuf:"bytes,2,opt,name=prefix_len,json=prefixLen,proto3" json:"prefix_len,omitempty"`
+	PrefixLen *wrapperspb.UInt32Value `protobuf:"bytes,2,opt,name=prefix_len,json=prefixLen,proto3" json:"prefix_len,omitempty"`
 }
 
 func (x *CidrRange) Reset() {
@@ -548,7 +547,7 @@ func (x *CidrRange) GetAddressPrefix() string {
 	return ""
 }
 
-func (x *CidrRange) GetPrefixLen() *wrappers.UInt32Value {
+func (x *CidrRange) GetPrefixLen() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.PrefixLen
 	}
@@ -700,16 +699,16 @@ func file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_core_v
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_core_v3_address_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_core_v3_address_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_core_v3_address_proto_goTypes = []interface{}{
-	(SocketAddress_Protocol)(0),  // 0: solo.io.envoy.config.core.v3.SocketAddress.Protocol
-	(*Pipe)(nil),                 // 1: solo.io.envoy.config.core.v3.Pipe
-	(*SocketAddress)(nil),        // 2: solo.io.envoy.config.core.v3.SocketAddress
-	(*TcpKeepalive)(nil),         // 3: solo.io.envoy.config.core.v3.TcpKeepalive
-	(*BindConfig)(nil),           // 4: solo.io.envoy.config.core.v3.BindConfig
-	(*Address)(nil),              // 5: solo.io.envoy.config.core.v3.Address
-	(*CidrRange)(nil),            // 6: solo.io.envoy.config.core.v3.CidrRange
-	(*wrappers.UInt32Value)(nil), // 7: google.protobuf.UInt32Value
-	(*wrappers.BoolValue)(nil),   // 8: google.protobuf.BoolValue
-	(*SocketOption)(nil),         // 9: solo.io.envoy.config.core.v3.SocketOption
+	(SocketAddress_Protocol)(0),    // 0: solo.io.envoy.config.core.v3.SocketAddress.Protocol
+	(*Pipe)(nil),                   // 1: solo.io.envoy.config.core.v3.Pipe
+	(*SocketAddress)(nil),          // 2: solo.io.envoy.config.core.v3.SocketAddress
+	(*TcpKeepalive)(nil),           // 3: solo.io.envoy.config.core.v3.TcpKeepalive
+	(*BindConfig)(nil),             // 4: solo.io.envoy.config.core.v3.BindConfig
+	(*Address)(nil),                // 5: solo.io.envoy.config.core.v3.Address
+	(*CidrRange)(nil),              // 6: solo.io.envoy.config.core.v3.CidrRange
+	(*wrapperspb.UInt32Value)(nil), // 7: google.protobuf.UInt32Value
+	(*wrapperspb.BoolValue)(nil),   // 8: google.protobuf.BoolValue
+	(*SocketOption)(nil),           // 9: solo.io.envoy.config.core.v3.SocketOption
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_core_v3_address_proto_depIdxs = []int32{
 	0,  // 0: solo.io.envoy.config.core.v3.SocketAddress.protocol:type_name -> solo.io.envoy.config.core.v3.SocketAddress.Protocol

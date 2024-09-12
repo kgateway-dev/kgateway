@@ -7,13 +7,12 @@
 package v1
 
 import (
-	reflect "reflect"
-	sync "sync"
-
-	_struct "github.com/golang/protobuf/ptypes/struct"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	structpb "google.golang.org/protobuf/types/known/structpb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -28,7 +27,7 @@ type Extensions struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Configs map[string]*_struct.Struct `protobuf:"bytes,1,rep,name=configs,proto3" json:"configs,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Configs map[string]*structpb.Struct `protobuf:"bytes,1,rep,name=configs,proto3" json:"configs,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (x *Extensions) Reset() {
@@ -63,7 +62,7 @@ func (*Extensions) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_extensions_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Extensions) GetConfigs() map[string]*_struct.Struct {
+func (x *Extensions) GetConfigs() map[string]*structpb.Struct {
 	if x != nil {
 		return x.Configs
 	}
@@ -75,7 +74,7 @@ type Extension struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Config *_struct.Struct `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
+	Config *structpb.Struct `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
 }
 
 func (x *Extension) Reset() {
@@ -110,7 +109,7 @@ func (*Extension) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_extensions_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *Extension) GetConfig() *_struct.Struct {
+func (x *Extension) GetConfig() *structpb.Struct {
 	if x != nil {
 		return x.Config
 	}
@@ -163,10 +162,10 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_extensions_proto_rawDescG
 
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_extensions_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_extensions_proto_goTypes = []interface{}{
-	(*Extensions)(nil),     // 0: gloo.solo.io.Extensions
-	(*Extension)(nil),      // 1: gloo.solo.io.Extension
-	nil,                    // 2: gloo.solo.io.Extensions.ConfigsEntry
-	(*_struct.Struct)(nil), // 3: google.protobuf.Struct
+	(*Extensions)(nil),      // 0: gloo.solo.io.Extensions
+	(*Extension)(nil),       // 1: gloo.solo.io.Extension
+	nil,                     // 2: gloo.solo.io.Extensions.ConfigsEntry
+	(*structpb.Struct)(nil), // 3: google.protobuf.Struct
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_extensions_proto_depIdxs = []int32{
 	2, // 0: gloo.solo.io.Extensions.configs:type_name -> gloo.solo.io.Extensions.ConfigsEntry

@@ -7,13 +7,12 @@
 package advanced_http
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	empty "github.com/golang/protobuf/ptypes/empty"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -277,7 +276,7 @@ func (x *ResponseMatch) GetHeader() string {
 	return ""
 }
 
-func (x *ResponseMatch) GetBody() *empty.Empty {
+func (x *ResponseMatch) GetBody() *emptypb.Empty {
 	if x, ok := x.GetSource().(*ResponseMatch_Body); ok {
 		return x.Body
 	}
@@ -302,7 +301,7 @@ type ResponseMatch_Header struct {
 
 type ResponseMatch_Body struct {
 	// Extract information from the request/response body
-	Body *empty.Empty `protobuf:"bytes,4,opt,name=body,proto3,oneof"`
+	Body *emptypb.Empty `protobuf:"bytes,4,opt,name=body,proto3,oneof"`
 }
 
 func (*ResponseMatch_Header) isResponseMatch_Source() {}
@@ -530,7 +529,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_advanced_http_adva
 	(*ResponseMatch)(nil),       // 3: advancedhttp.options.gloo.solo.io.ResponseMatch
 	(*JsonKey)(nil),             // 4: advancedhttp.options.gloo.solo.io.JsonKey
 	(*JsonKey_PathSegment)(nil), // 5: advancedhttp.options.gloo.solo.io.JsonKey.PathSegment
-	(*empty.Empty)(nil),         // 6: google.protobuf.Empty
+	(*emptypb.Empty)(nil),       // 6: google.protobuf.Empty
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_advanced_http_advanced_http_proto_depIdxs = []int32{
 	2, // 0: advancedhttp.options.gloo.solo.io.ResponseAssertions.response_matchers:type_name -> advancedhttp.options.gloo.solo.io.ResponseMatcher

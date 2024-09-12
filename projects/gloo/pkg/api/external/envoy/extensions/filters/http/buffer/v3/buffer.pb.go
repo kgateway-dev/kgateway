@@ -9,14 +9,13 @@
 package v3
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -33,7 +32,7 @@ type Buffer struct {
 
 	// The maximum request size that the filter will buffer before the connection
 	// manager will stop buffering and return a 413 response.
-	MaxRequestBytes *wrappers.UInt32Value `protobuf:"bytes,1,opt,name=max_request_bytes,json=maxRequestBytes,proto3" json:"max_request_bytes,omitempty"`
+	MaxRequestBytes *wrapperspb.UInt32Value `protobuf:"bytes,1,opt,name=max_request_bytes,json=maxRequestBytes,proto3" json:"max_request_bytes,omitempty"`
 }
 
 func (x *Buffer) Reset() {
@@ -68,7 +67,7 @@ func (*Buffer) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_extensions_filters_http_buffer_v3_buffer_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Buffer) GetMaxRequestBytes() *wrappers.UInt32Value {
+func (x *Buffer) GetMaxRequestBytes() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.MaxRequestBytes
 	}
@@ -223,9 +222,9 @@ func file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_extensions_fi
 
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_extensions_filters_http_buffer_v3_buffer_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_extensions_filters_http_buffer_v3_buffer_proto_goTypes = []interface{}{
-	(*Buffer)(nil),               // 0: solo.io.envoy.extensions.filters.http.buffer.v3.Buffer
-	(*BufferPerRoute)(nil),       // 1: solo.io.envoy.extensions.filters.http.buffer.v3.BufferPerRoute
-	(*wrappers.UInt32Value)(nil), // 2: google.protobuf.UInt32Value
+	(*Buffer)(nil),                 // 0: solo.io.envoy.extensions.filters.http.buffer.v3.Buffer
+	(*BufferPerRoute)(nil),         // 1: solo.io.envoy.extensions.filters.http.buffer.v3.BufferPerRoute
+	(*wrapperspb.UInt32Value)(nil), // 2: google.protobuf.UInt32Value
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_extensions_filters_http_buffer_v3_buffer_proto_depIdxs = []int32{
 	2, // 0: solo.io.envoy.extensions.filters.http.buffer.v3.Buffer.max_request_bytes:type_name -> google.protobuf.UInt32Value

@@ -7,13 +7,12 @@
 package lbhash
 
 import (
-	reflect "reflect"
-	sync "sync"
-
-	duration "github.com/golang/protobuf/ptypes/duration"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -86,7 +85,7 @@ type Cookie struct {
 	// required, the name of the cookie to be used to obtain the hash key
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// If specified, a cookie with the TTL will be generated if the cookie is not present. If the TTL is present and zero, the generated cookie will be a session cookie.
-	Ttl *duration.Duration `protobuf:"bytes,2,opt,name=ttl,proto3" json:"ttl,omitempty"`
+	Ttl *durationpb.Duration `protobuf:"bytes,2,opt,name=ttl,proto3" json:"ttl,omitempty"`
 	// The name of the path for the cookie. If no path is specified here, no path will be set for the cookie.
 	Path string `protobuf:"bytes,3,opt,name=path,proto3" json:"path,omitempty"`
 }
@@ -130,7 +129,7 @@ func (x *Cookie) GetName() string {
 	return ""
 }
 
-func (x *Cookie) GetTtl() *duration.Duration {
+func (x *Cookie) GetTtl() *durationpb.Duration {
 	if x != nil {
 		return x.Ttl
 	}
@@ -315,7 +314,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_lbhash_lbhash_prot
 	(*RouteActionHashConfig)(nil), // 0: lbhash.options.gloo.solo.io.RouteActionHashConfig
 	(*Cookie)(nil),                // 1: lbhash.options.gloo.solo.io.Cookie
 	(*HashPolicy)(nil),            // 2: lbhash.options.gloo.solo.io.HashPolicy
-	(*duration.Duration)(nil),     // 3: google.protobuf.Duration
+	(*durationpb.Duration)(nil),   // 3: google.protobuf.Duration
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_lbhash_lbhash_proto_depIdxs = []int32{
 	2, // 0: lbhash.options.gloo.solo.io.RouteActionHashConfig.hash_policies:type_name -> lbhash.options.gloo.solo.io.HashPolicy

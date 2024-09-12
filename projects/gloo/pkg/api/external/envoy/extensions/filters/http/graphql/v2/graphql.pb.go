@@ -7,16 +7,15 @@
 package v2
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	any1 "github.com/golang/protobuf/ptypes/any"
-	_ "github.com/golang/protobuf/ptypes/duration"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	anypb "google.golang.org/protobuf/types/known/anypb"
+	_ "google.golang.org/protobuf/types/known/durationpb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -1431,7 +1430,7 @@ type CacheControl struct {
 	// - root fields (i.e. Query, Mutation, Subscription) default to 0s
 	// - non-root, non-scalar fields (i.e. object, interface, or union; or a list of those types) default to 0s
 	// - all other fields inherit the max_age from their parent.
-	MaxAge *wrappers.UInt32Value `protobuf:"bytes,1,opt,name=max_age,json=maxAge,proto3" json:"max_age,omitempty"`
+	MaxAge *wrapperspb.UInt32Value `protobuf:"bytes,1,opt,name=max_age,json=maxAge,proto3" json:"max_age,omitempty"`
 	// provide controls to which users can access cached content
 	Scope CacheControl_CacheControlScope `protobuf:"varint,2,opt,name=scope,proto3,enum=envoy.config.filter.http.graphql.v2.CacheControl_CacheControlScope" json:"scope,omitempty"`
 	// whether or not to inherit the caching configuration of any parent fields
@@ -1470,7 +1469,7 @@ func (*CacheControl) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_extensions_graphql_graphql_proto_rawDescGZIP(), []int{18}
 }
 
-func (x *CacheControl) GetMaxAge() *wrappers.UInt32Value {
+func (x *CacheControl) GetMaxAge() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.MaxAge
 	}
@@ -1668,7 +1667,7 @@ type ExecutableSchema struct {
 	// how to execute the schema
 	Executor *Executor `protobuf:"bytes,2,opt,name=executor,proto3" json:"executor,omitempty"`
 	// Schema extensions
-	Extensions map[string]*any1.Any `protobuf:"bytes,3,rep,name=extensions,proto3" json:"extensions,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Extensions map[string]*anypb.Any `protobuf:"bytes,3,rep,name=extensions,proto3" json:"extensions,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Logs request / response sensitive information
 	// By default, this is false so no request or response sensitive information is logged.
 	LogRequestResponseInfo bool `protobuf:"varint,4,opt,name=log_request_response_info,json=logRequestResponseInfo,proto3" json:"log_request_response_info,omitempty"`
@@ -1720,7 +1719,7 @@ func (x *ExecutableSchema) GetExecutor() *Executor {
 	return nil
 }
 
-func (x *ExecutableSchema) GetExtensions() map[string]*any1.Any {
+func (x *ExecutableSchema) GetExtensions() map[string]*anypb.Any {
 	if x != nil {
 		return x.Extensions
 	}
@@ -3157,8 +3156,8 @@ var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_extensions_gra
 	(*v3.HttpUri)(nil),              // 46: solo.io.envoy.config.core.v3.HttpUri
 	(*v3.DataSource)(nil),           // 47: solo.io.envoy.config.core.v3.DataSource
 	(*v3.TypedExtensionConfig)(nil), // 48: solo.io.envoy.config.core.v3.TypedExtensionConfig
-	(*wrappers.UInt32Value)(nil),    // 49: google.protobuf.UInt32Value
-	(*any1.Any)(nil),                // 50: google.protobuf.Any
+	(*wrapperspb.UInt32Value)(nil),  // 49: google.protobuf.UInt32Value
+	(*anypb.Any)(nil),               // 50: google.protobuf.Any
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_extensions_graphql_graphql_proto_depIdxs = []int32{
 	2,  // 0: envoy.config.filter.http.graphql.v2.Path.segments:type_name -> envoy.config.filter.http.graphql.v2.PathSegment

@@ -7,14 +7,13 @@
 package consul
 
 import (
-	reflect "reflect"
-	sync "sync"
-
-	_ "github.com/golang/protobuf/ptypes/duration"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	_ "google.golang.org/protobuf/types/known/durationpb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -124,7 +123,7 @@ type QueryOptions struct {
 	//
 	// Defaults to true.
 	// opts users into background refresh caching https://www.consul.io/api-docs/features/caching#background-refresh-caching
-	UseCache *wrappers.BoolValue `protobuf:"bytes,1,opt,name=use_cache,json=useCache,proto3" json:"use_cache,omitempty"`
+	UseCache *wrapperspb.BoolValue `protobuf:"bytes,1,opt,name=use_cache,json=useCache,proto3" json:"use_cache,omitempty"`
 }
 
 func (x *QueryOptions) Reset() {
@@ -159,7 +158,7 @@ func (*QueryOptions) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_options_consul_query_options_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *QueryOptions) GetUseCache() *wrappers.BoolValue {
+func (x *QueryOptions) GetUseCache() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.UseCache
 	}
@@ -213,9 +212,9 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_options_consul_query_opti
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_consul_query_options_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_consul_query_options_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_consul_query_options_proto_goTypes = []interface{}{
-	(ConsulConsistencyModes)(0), // 0: consul.options.gloo.solo.io.ConsulConsistencyModes
-	(*QueryOptions)(nil),        // 1: consul.options.gloo.solo.io.QueryOptions
-	(*wrappers.BoolValue)(nil),  // 2: google.protobuf.BoolValue
+	(ConsulConsistencyModes)(0),  // 0: consul.options.gloo.solo.io.ConsulConsistencyModes
+	(*QueryOptions)(nil),         // 1: consul.options.gloo.solo.io.QueryOptions
+	(*wrapperspb.BoolValue)(nil), // 2: google.protobuf.BoolValue
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_consul_query_options_proto_depIdxs = []int32{
 	2, // 0: consul.options.gloo.solo.io.QueryOptions.use_cache:type_name -> google.protobuf.BoolValue

@@ -7,10 +7,6 @@
 package v1
 
 import (
-	reflect "reflect"
-	sync "sync"
-
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	selectors "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/selectors"
@@ -20,6 +16,9 @@ import (
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -56,7 +55,7 @@ type Gateway struct {
 	// If configured, the listener option (filter config) overrides any setting here.
 	//
 	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.
-	UseProxyProto *wrappers.BoolValue `protobuf:"bytes,8,opt,name=use_proxy_proto,json=useProxyProto,proto3" json:"use_proxy_proto,omitempty"`
+	UseProxyProto *wrapperspb.BoolValue `protobuf:"bytes,8,opt,name=use_proxy_proto,json=useProxyProto,proto3" json:"use_proxy_proto,omitempty"`
 	// The type of gateway being created
 	// HttpGateway creates a listener with an http_connection_manager
 	// TcpGateway creates a listener with a tcp proxy filter
@@ -165,7 +164,7 @@ func (x *Gateway) GetMetadata() *core.Metadata {
 }
 
 // Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.
-func (x *Gateway) GetUseProxyProto() *wrappers.BoolValue {
+func (x *Gateway) GetUseProxyProto() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.UseProxyProto
 	}
@@ -951,7 +950,7 @@ var file_github_com_solo_io_gloo_projects_gateway_api_v1_gateway_proto_goTypes =
 	(*v1.ListenerOptions)(nil),                // 7: gloo.solo.io.ListenerOptions
 	(*core.NamespacedStatuses)(nil),           // 8: core.solo.io.NamespacedStatuses
 	(*core.Metadata)(nil),                     // 9: core.solo.io.Metadata
-	(*wrappers.BoolValue)(nil),                // 10: google.protobuf.BoolValue
+	(*wrapperspb.BoolValue)(nil),              // 10: google.protobuf.BoolValue
 	(*HttpGateway)(nil),                       // 11: gateway.solo.io.HttpGateway
 	(*v1.RouteConfigurationOptions)(nil),      // 12: gloo.solo.io.RouteConfigurationOptions
 	(*v1.TcpHost)(nil),                        // 13: gloo.solo.io.TcpHost

@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
+	google_golang_org_protobuf_types_known_durationpb "google.golang.org/protobuf/types/known/durationpb"
 )
 
 // ensure the imports are used
@@ -38,9 +38,9 @@ func (m *HttpUri) Clone() proto.Message {
 	target.Uri = m.GetUri()
 
 	if h, ok := interface{}(m.GetTimeout()).(clone.Cloner); ok {
-		target.Timeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.Timeout = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.Timeout = proto.Clone(m.GetTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.Timeout = proto.Clone(m.GetTimeout()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	switch m.HttpUpstreamType.(type) {

@@ -7,15 +7,14 @@
 package tcp
 
 import (
-	reflect "reflect"
-	sync "sync"
-
-	duration "github.com/golang/protobuf/ptypes/duration"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	_ "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -32,8 +31,8 @@ type TcpProxySettings struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	MaxConnectAttempts *wrappers.UInt32Value `protobuf:"bytes,1,opt,name=max_connect_attempts,json=maxConnectAttempts,proto3" json:"max_connect_attempts,omitempty"`
-	IdleTimeout        *duration.Duration    `protobuf:"bytes,2,opt,name=idle_timeout,json=idleTimeout,proto3" json:"idle_timeout,omitempty"`
+	MaxConnectAttempts *wrapperspb.UInt32Value `protobuf:"bytes,1,opt,name=max_connect_attempts,json=maxConnectAttempts,proto3" json:"max_connect_attempts,omitempty"`
+	IdleTimeout        *durationpb.Duration    `protobuf:"bytes,2,opt,name=idle_timeout,json=idleTimeout,proto3" json:"idle_timeout,omitempty"`
 	// If set, this configures tunneling, e.g. configuration options to tunnel multiple TCP
 	// payloads over a shared HTTP tunnel. If this message is absent, the payload
 	// will be proxied upstream as per usual.
@@ -41,7 +40,7 @@ type TcpProxySettings struct {
 	// If set, Envoy will flush the access log on this time interval. Must be a
 	// minimum of 1 ms. By default, will only write to the access log when a
 	// connection is closed.
-	AccessLogFlushInterval *duration.Duration `protobuf:"bytes,15,opt,name=access_log_flush_interval,json=accessLogFlushInterval,proto3" json:"access_log_flush_interval,omitempty"`
+	AccessLogFlushInterval *durationpb.Duration `protobuf:"bytes,15,opt,name=access_log_flush_interval,json=accessLogFlushInterval,proto3" json:"access_log_flush_interval,omitempty"`
 }
 
 func (x *TcpProxySettings) Reset() {
@@ -76,14 +75,14 @@ func (*TcpProxySettings) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *TcpProxySettings) GetMaxConnectAttempts() *wrappers.UInt32Value {
+func (x *TcpProxySettings) GetMaxConnectAttempts() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.MaxConnectAttempts
 	}
 	return nil
 }
 
-func (x *TcpProxySettings) GetIdleTimeout() *duration.Duration {
+func (x *TcpProxySettings) GetIdleTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.IdleTimeout
 	}
@@ -97,7 +96,7 @@ func (x *TcpProxySettings) GetTunnelingConfig() *TcpProxySettings_TunnelingConfi
 	return nil
 }
 
-func (x *TcpProxySettings) GetAccessLogFlushInterval() *duration.Duration {
+func (x *TcpProxySettings) GetAccessLogFlushInterval() *durationpb.Duration {
 	if x != nil {
 		return x.AccessLogFlushInterval
 	}
@@ -113,7 +112,7 @@ type HeaderValueOption struct {
 	// Header name/value pair that this option applies to.
 	Header *HeaderValue `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	// If true (default), the value is appended to existing values.
-	Append *wrappers.BoolValue `protobuf:"bytes,2,opt,name=append,proto3" json:"append,omitempty"`
+	Append *wrapperspb.BoolValue `protobuf:"bytes,2,opt,name=append,proto3" json:"append,omitempty"`
 }
 
 func (x *HeaderValueOption) Reset() {
@@ -155,7 +154,7 @@ func (x *HeaderValueOption) GetHeader() *HeaderValue {
 	return nil
 }
 
-func (x *HeaderValueOption) GetAppend() *wrappers.BoolValue {
+func (x *HeaderValueOption) GetAppend() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.Append
 	}
@@ -365,9 +364,9 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_goTy
 	(*HeaderValueOption)(nil),                // 1: tcp.options.gloo.solo.io.HeaderValueOption
 	(*HeaderValue)(nil),                      // 2: tcp.options.gloo.solo.io.HeaderValue
 	(*TcpProxySettings_TunnelingConfig)(nil), // 3: tcp.options.gloo.solo.io.TcpProxySettings.TunnelingConfig
-	(*wrappers.UInt32Value)(nil),             // 4: google.protobuf.UInt32Value
-	(*duration.Duration)(nil),                // 5: google.protobuf.Duration
-	(*wrappers.BoolValue)(nil),               // 6: google.protobuf.BoolValue
+	(*wrapperspb.UInt32Value)(nil),           // 4: google.protobuf.UInt32Value
+	(*durationpb.Duration)(nil),              // 5: google.protobuf.Duration
+	(*wrapperspb.BoolValue)(nil),             // 6: google.protobuf.BoolValue
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tcp_tcp_proto_depIdxs = []int32{
 	4, // 0: tcp.options.gloo.solo.io.TcpProxySettings.max_connect_attempts:type_name -> google.protobuf.UInt32Value

@@ -10,11 +10,7 @@
 package als
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	_struct "github.com/golang/protobuf/ptypes/struct"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	v32 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
 	v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
@@ -22,6 +18,9 @@ import (
 	_ "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	structpb "google.golang.org/protobuf/types/known/structpb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -385,7 +384,7 @@ func (x *FileSink) GetStringFormat() string {
 	return ""
 }
 
-func (x *FileSink) GetJsonFormat() *_struct.Struct {
+func (x *FileSink) GetJsonFormat() *structpb.Struct {
 	if x, ok := x.GetOutputFormat().(*FileSink_JsonFormat); ok {
 		return x.JsonFormat
 	}
@@ -405,7 +404,7 @@ type FileSink_StringFormat struct {
 type FileSink_JsonFormat struct {
 	// the format object by which to envoy will emit the logs in a structured way.
 	// https://www.envoyproxy.io/docs/envoy/v1.14.1/configuration/observability/access_log#format-dictionaries
-	JsonFormat *_struct.Struct `protobuf:"bytes,3,opt,name=json_format,json=jsonFormat,proto3,oneof"`
+	JsonFormat *structpb.Struct `protobuf:"bytes,3,opt,name=json_format,json=jsonFormat,proto3,oneof"`
 }
 
 func (*FileSink_StringFormat) isFileSink_OutputFormat() {}
@@ -1585,7 +1584,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_als_als_proto_goTy
 	(*HeaderFilter)(nil),          // 15: als.options.gloo.solo.io.HeaderFilter
 	(*ResponseFlagFilter)(nil),    // 16: als.options.gloo.solo.io.ResponseFlagFilter
 	(*GrpcStatusFilter)(nil),      // 17: als.options.gloo.solo.io.GrpcStatusFilter
-	(*_struct.Struct)(nil),        // 18: google.protobuf.Struct
+	(*structpb.Struct)(nil),       // 18: google.protobuf.Struct
 	(*v3.RuntimeUInt32)(nil),      // 19: solo.io.envoy.config.core.v3.RuntimeUInt32
 	(*v31.FractionalPercent)(nil), // 20: solo.io.envoy.type.v3.FractionalPercent
 	(*v32.HeaderMatcher)(nil),     // 21: solo.io.envoy.config.route.v3.HeaderMatcher

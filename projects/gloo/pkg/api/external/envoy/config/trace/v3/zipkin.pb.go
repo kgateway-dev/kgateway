@@ -7,17 +7,16 @@
 package v3
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/annotations"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/udpa/annotations"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -109,10 +108,10 @@ type ZipkinConfig struct {
 	CollectorEndpoint string `protobuf:"bytes,2,opt,name=collector_endpoint,json=collectorEndpoint,proto3" json:"collector_endpoint,omitempty"`
 	// Determines whether a 128bit trace id will be used when creating a new
 	// trace instance. The default value is false, which will result in a 64 bit trace id being used.
-	TraceId_128Bit *wrappers.BoolValue `protobuf:"bytes,3,opt,name=trace_id_128bit,json=traceId128bit,proto3" json:"trace_id_128bit,omitempty"`
+	TraceId_128Bit *wrapperspb.BoolValue `protobuf:"bytes,3,opt,name=trace_id_128bit,json=traceId128bit,proto3" json:"trace_id_128bit,omitempty"`
 	// Determines whether client and server spans will share the same span context.
 	// The default value is true.
-	SharedSpanContext *wrappers.BoolValue `protobuf:"bytes,4,opt,name=shared_span_context,json=sharedSpanContext,proto3" json:"shared_span_context,omitempty"`
+	SharedSpanContext *wrapperspb.BoolValue `protobuf:"bytes,4,opt,name=shared_span_context,json=sharedSpanContext,proto3" json:"shared_span_context,omitempty"`
 	// Determines the selected collector endpoint version. By default, the “HTTP_JSON_V1“ will be
 	// used.
 	CollectorEndpointVersion ZipkinConfig_CollectorEndpointVersion `protobuf:"varint,5,opt,name=collector_endpoint_version,json=collectorEndpointVersion,proto3,enum=solo.io.envoy.config.trace.v3.ZipkinConfig_CollectorEndpointVersion" json:"collector_endpoint_version,omitempty"`
@@ -178,14 +177,14 @@ func (x *ZipkinConfig) GetCollectorEndpoint() string {
 	return ""
 }
 
-func (x *ZipkinConfig) GetTraceId_128Bit() *wrappers.BoolValue {
+func (x *ZipkinConfig) GetTraceId_128Bit() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.TraceId_128Bit
 	}
 	return nil
 }
 
-func (x *ZipkinConfig) GetSharedSpanContext() *wrappers.BoolValue {
+func (x *ZipkinConfig) GetSharedSpanContext() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.SharedSpanContext
 	}
@@ -320,7 +319,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_trace_v
 	(ZipkinConfig_CollectorEndpointVersion)(0), // 0: solo.io.envoy.config.trace.v3.ZipkinConfig.CollectorEndpointVersion
 	(*ZipkinConfig)(nil),                       // 1: solo.io.envoy.config.trace.v3.ZipkinConfig
 	(*core.ResourceRef)(nil),                   // 2: core.solo.io.ResourceRef
-	(*wrappers.BoolValue)(nil),                 // 3: google.protobuf.BoolValue
+	(*wrapperspb.BoolValue)(nil),               // 3: google.protobuf.BoolValue
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_trace_v3_zipkin_proto_depIdxs = []int32{
 	2, // 0: solo.io.envoy.config.trace.v3.ZipkinConfig.collector_upstream_ref:type_name -> core.solo.io.ResourceRef

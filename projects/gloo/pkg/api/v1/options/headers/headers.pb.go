@@ -7,14 +7,13 @@
 package headers
 
 import (
-	reflect "reflect"
-	sync "sync"
-
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -121,7 +120,7 @@ type HeaderValueOption struct {
 	// Specifies if the value should be appended or overwrite an existing header. Defaults to true.
 	// If set to true, this maps to Envoy's `append_value: APPEND_IF_EXISTS_OR_ADD`, where the value gets be appended the header's value(s) if exists, or created if it does not.
 	// If set to false, this maps to Envoy's `append_value: OVERWRITE_IF_EXISTS_OR_ADD`, where the header's value will be overwritten if it exists, or created if it does not.
-	Append *wrappers.BoolValue `protobuf:"bytes,2,opt,name=append,proto3" json:"append,omitempty"`
+	Append *wrapperspb.BoolValue `protobuf:"bytes,2,opt,name=append,proto3" json:"append,omitempty"`
 }
 
 func (x *HeaderValueOption) Reset() {
@@ -163,7 +162,7 @@ func (x *HeaderValueOption) GetHeader() *HeaderValue {
 	return nil
 }
 
-func (x *HeaderValueOption) GetAppend() *wrappers.BoolValue {
+func (x *HeaderValueOption) GetAppend() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.Append
 	}
@@ -305,7 +304,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_headers_headers_pr
 	(*HeaderValueOption)(nil),      // 1: headers.options.gloo.solo.io.HeaderValueOption
 	(*HeaderValue)(nil),            // 2: headers.options.gloo.solo.io.HeaderValue
 	(*core.HeaderValueOption)(nil), // 3: solo.io.envoy.api.v2.core.HeaderValueOption
-	(*wrappers.BoolValue)(nil),     // 4: google.protobuf.BoolValue
+	(*wrapperspb.BoolValue)(nil),   // 4: google.protobuf.BoolValue
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_headers_headers_proto_depIdxs = []int32{
 	3, // 0: headers.options.gloo.solo.io.HeaderManipulation.request_headers_to_add:type_name -> solo.io.envoy.api.v2.core.HeaderValueOption

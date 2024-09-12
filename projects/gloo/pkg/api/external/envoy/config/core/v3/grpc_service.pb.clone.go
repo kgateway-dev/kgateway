@@ -13,15 +13,15 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_any "github.com/golang/protobuf/ptypes/any"
+	google_golang_org_protobuf_types_known_anypb "google.golang.org/protobuf/types/known/anypb"
 
-	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
+	google_golang_org_protobuf_types_known_durationpb "google.golang.org/protobuf/types/known/durationpb"
 
-	github_com_golang_protobuf_ptypes_empty "github.com/golang/protobuf/ptypes/empty"
+	google_golang_org_protobuf_types_known_emptypb "google.golang.org/protobuf/types/known/emptypb"
 
-	github_com_golang_protobuf_ptypes_struct "github.com/golang/protobuf/ptypes/struct"
+	google_golang_org_protobuf_types_known_structpb "google.golang.org/protobuf/types/known/structpb"
 
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -44,9 +44,9 @@ func (m *GrpcService) Clone() proto.Message {
 	target = &GrpcService{}
 
 	if h, ok := interface{}(m.GetTimeout()).(clone.Cloner); ok {
-		target.Timeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.Timeout = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.Timeout = proto.Clone(m.GetTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.Timeout = proto.Clone(m.GetTimeout()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	if m.GetInitialMetadata() != nil {
@@ -148,15 +148,15 @@ func (m *GrpcService_GoogleGrpc) Clone() proto.Message {
 	target.CredentialsFactoryName = m.GetCredentialsFactoryName()
 
 	if h, ok := interface{}(m.GetConfig()).(clone.Cloner); ok {
-		target.Config = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Struct)
+		target.Config = h.Clone().(*google_golang_org_protobuf_types_known_structpb.Struct)
 	} else {
-		target.Config = proto.Clone(m.GetConfig()).(*github_com_golang_protobuf_ptypes_struct.Struct)
+		target.Config = proto.Clone(m.GetConfig()).(*google_golang_org_protobuf_types_known_structpb.Struct)
 	}
 
 	if h, ok := interface{}(m.GetPerStreamBufferLimitBytes()).(clone.Cloner); ok {
-		target.PerStreamBufferLimitBytes = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.PerStreamBufferLimitBytes = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.PerStreamBufferLimitBytes = proto.Clone(m.GetPerStreamBufferLimitBytes()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.PerStreamBufferLimitBytes = proto.Clone(m.GetPerStreamBufferLimitBytes()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	if h, ok := interface{}(m.GetChannelArgs()).(clone.Cloner); ok {
@@ -234,11 +234,11 @@ func (m *GrpcService_GoogleGrpc_ChannelCredentials) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetGoogleDefault()).(clone.Cloner); ok {
 			target.CredentialSpecifier = &GrpcService_GoogleGrpc_ChannelCredentials_GoogleDefault{
-				GoogleDefault: h.Clone().(*github_com_golang_protobuf_ptypes_empty.Empty),
+				GoogleDefault: h.Clone().(*google_golang_org_protobuf_types_known_emptypb.Empty),
 			}
 		} else {
 			target.CredentialSpecifier = &GrpcService_GoogleGrpc_ChannelCredentials_GoogleDefault{
-				GoogleDefault: proto.Clone(m.GetGoogleDefault()).(*github_com_golang_protobuf_ptypes_empty.Empty),
+				GoogleDefault: proto.Clone(m.GetGoogleDefault()).(*google_golang_org_protobuf_types_known_emptypb.Empty),
 			}
 		}
 
@@ -279,11 +279,11 @@ func (m *GrpcService_GoogleGrpc_CallCredentials) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetGoogleComputeEngine()).(clone.Cloner); ok {
 			target.CredentialSpecifier = &GrpcService_GoogleGrpc_CallCredentials_GoogleComputeEngine{
-				GoogleComputeEngine: h.Clone().(*github_com_golang_protobuf_ptypes_empty.Empty),
+				GoogleComputeEngine: h.Clone().(*google_golang_org_protobuf_types_known_emptypb.Empty),
 			}
 		} else {
 			target.CredentialSpecifier = &GrpcService_GoogleGrpc_CallCredentials_GoogleComputeEngine{
-				GoogleComputeEngine: proto.Clone(m.GetGoogleComputeEngine()).(*github_com_golang_protobuf_ptypes_empty.Empty),
+				GoogleComputeEngine: proto.Clone(m.GetGoogleComputeEngine()).(*google_golang_org_protobuf_types_known_emptypb.Empty),
 			}
 		}
 
@@ -416,11 +416,11 @@ func (m *GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin) C
 
 		if h, ok := interface{}(m.GetTypedConfig()).(clone.Cloner); ok {
 			target.ConfigType = &GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_TypedConfig{
-				TypedConfig: h.Clone().(*github_com_golang_protobuf_ptypes_any.Any),
+				TypedConfig: h.Clone().(*google_golang_org_protobuf_types_known_anypb.Any),
 			}
 		} else {
 			target.ConfigType = &GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_TypedConfig{
-				TypedConfig: proto.Clone(m.GetTypedConfig()).(*github_com_golang_protobuf_ptypes_any.Any),
+				TypedConfig: proto.Clone(m.GetTypedConfig()).(*google_golang_org_protobuf_types_known_anypb.Any),
 			}
 		}
 

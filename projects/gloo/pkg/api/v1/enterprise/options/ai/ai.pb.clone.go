@@ -13,9 +13,9 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_struct "github.com/golang/protobuf/ptypes/struct"
-
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	google_golang_org_protobuf_types_known_structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
 // ensure the imports are used
@@ -193,9 +193,9 @@ func (m *FieldDefault) Clone() proto.Message {
 	target.Field = m.GetField()
 
 	if h, ok := interface{}(m.GetValue()).(clone.Cloner); ok {
-		target.Value = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Value)
+		target.Value = h.Clone().(*google_golang_org_protobuf_types_known_structpb.Value)
 	} else {
-		target.Value = proto.Clone(m.GetValue()).(*github_com_golang_protobuf_ptypes_struct.Value)
+		target.Value = proto.Clone(m.GetValue()).(*google_golang_org_protobuf_types_known_structpb.Value)
 	}
 
 	target.Override = m.GetOverride()

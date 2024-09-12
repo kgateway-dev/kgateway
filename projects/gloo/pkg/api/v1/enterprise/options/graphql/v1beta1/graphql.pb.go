@@ -7,18 +7,17 @@
 package v1beta1
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	duration "github.com/golang/protobuf/ptypes/duration"
-	_ "github.com/golang/protobuf/ptypes/empty"
-	_struct "github.com/golang/protobuf/ptypes/struct"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	_ "google.golang.org/protobuf/types/known/emptypb"
+	structpb "google.golang.org/protobuf/types/known/structpb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -59,7 +58,7 @@ type RequestTemplate struct {
 	// Used to construct the outgoing body to the upstream from the
 	// graphql value providers.
 	// All string values can be templated strings.
-	Body *_struct.Value `protobuf:"bytes,3,opt,name=body,proto3" json:"body,omitempty"`
+	Body *structpb.Value `protobuf:"bytes,3,opt,name=body,proto3" json:"body,omitempty"`
 }
 
 func (x *RequestTemplate) Reset() {
@@ -108,7 +107,7 @@ func (x *RequestTemplate) GetQueryParams() map[string]string {
 	return nil
 }
 
-func (x *RequestTemplate) GetBody() *_struct.Value {
+func (x *RequestTemplate) GetBody() *structpb.Value {
 	if x != nil {
 		return x.Body
 	}
@@ -210,7 +209,7 @@ type GrpcRequestTemplate struct {
 	unknownFields protoimpl.UnknownFields
 
 	// json representation of outgoing gRPC message to be sent to gRPC service
-	OutgoingMessageJson *_struct.Value `protobuf:"bytes,1,opt,name=outgoing_message_json,json=outgoingMessageJson,proto3" json:"outgoing_message_json,omitempty"`
+	OutgoingMessageJson *structpb.Value `protobuf:"bytes,1,opt,name=outgoing_message_json,json=outgoingMessageJson,proto3" json:"outgoing_message_json,omitempty"`
 	// request has shape matching service with name registered in registry
 	// is the full_name(), e.g. main.Bookstore
 	ServiceName string `protobuf:"bytes,2,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
@@ -254,7 +253,7 @@ func (*GrpcRequestTemplate) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_graphql_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *GrpcRequestTemplate) GetOutgoingMessageJson() *_struct.Value {
+func (x *GrpcRequestTemplate) GetOutgoingMessageJson() *structpb.Value {
 	if x != nil {
 		return x.OutgoingMessageJson
 	}
@@ -297,7 +296,7 @@ type RESTResolver struct {
 	SpanName string            `protobuf:"bytes,4,opt,name=span_name,json=spanName,proto3" json:"span_name,omitempty"`
 	// The timeout to use for this resolver. If unset, the upstream connection timeout
 	// or a default of 1 second will be used.
-	Timeout *duration.Duration `protobuf:"bytes,5,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	Timeout *durationpb.Duration `protobuf:"bytes,5,opt,name=timeout,proto3" json:"timeout,omitempty"`
 }
 
 func (x *RESTResolver) Reset() {
@@ -360,7 +359,7 @@ func (x *RESTResolver) GetSpanName() string {
 	return ""
 }
 
-func (x *RESTResolver) GetTimeout() *duration.Duration {
+func (x *RESTResolver) GetTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.Timeout
 	}
@@ -487,7 +486,7 @@ type GrpcResolver struct {
 	SpanName         string               `protobuf:"bytes,4,opt,name=span_name,json=spanName,proto3" json:"span_name,omitempty"`
 	// The timeout to use for this resolver. If unset, the upstream connection timeout
 	// or a default of 1 second will be used.
-	Timeout *duration.Duration `protobuf:"bytes,5,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	Timeout *durationpb.Duration `protobuf:"bytes,5,opt,name=timeout,proto3" json:"timeout,omitempty"`
 }
 
 func (x *GrpcResolver) Reset() {
@@ -543,7 +542,7 @@ func (x *GrpcResolver) GetSpanName() string {
 	return ""
 }
 
-func (x *GrpcResolver) GetTimeout() *duration.Duration {
+func (x *GrpcResolver) GetTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.Timeout
 	}
@@ -650,7 +649,7 @@ func (m *MockResolver) GetResponse() isMockResolver_Response {
 	return nil
 }
 
-func (x *MockResolver) GetSyncResponse() *_struct.Value {
+func (x *MockResolver) GetSyncResponse() *structpb.Value {
 	if x, ok := x.GetResponse().(*MockResolver_SyncResponse); ok {
 		return x.SyncResponse
 	}
@@ -677,7 +676,7 @@ type isMockResolver_Response interface {
 
 type MockResolver_SyncResponse struct {
 	// The JSON response from the resolver that will be "responded" immediately.
-	SyncResponse *_struct.Value `protobuf:"bytes,1,opt,name=sync_response,json=syncResponse,proto3,oneof"`
+	SyncResponse *structpb.Value `protobuf:"bytes,1,opt,name=sync_response,json=syncResponse,proto3,oneof"`
 }
 
 type MockResolver_AsyncResponse_ struct {
@@ -716,7 +715,7 @@ type Resolution struct {
 	Resolver isResolution_Resolver `protobuf_oneof:"resolver"`
 	// The stats prefix which will be used for this resolver.
 	// If empty, will generate a stats prefix ${RESOLVER_NAME}
-	StatPrefix *wrappers.StringValue `protobuf:"bytes,3,opt,name=stat_prefix,json=statPrefix,proto3" json:"stat_prefix,omitempty"`
+	StatPrefix *wrapperspb.StringValue `protobuf:"bytes,3,opt,name=stat_prefix,json=statPrefix,proto3" json:"stat_prefix,omitempty"`
 }
 
 func (x *Resolution) Reset() {
@@ -779,7 +778,7 @@ func (x *Resolution) GetMockResolver() *MockResolver {
 	return nil
 }
 
-func (x *Resolution) GetStatPrefix() *wrappers.StringValue {
+func (x *Resolution) GetStatPrefix() *wrapperspb.StringValue {
 	if x != nil {
 		return x.StatPrefix
 	}
@@ -840,7 +839,7 @@ type GraphQLApi struct {
 	Schema isGraphQLApi_Schema `protobuf_oneof:"schema"`
 	// The stats prefix which will be used for this route config.
 	// If empty, will generate a stats prefix ${GRAPHQLAPI_REF}
-	StatPrefix *wrappers.StringValue `protobuf:"bytes,3,opt,name=stat_prefix,json=statPrefix,proto3" json:"stat_prefix,omitempty"`
+	StatPrefix *wrapperspb.StringValue `protobuf:"bytes,3,opt,name=stat_prefix,json=statPrefix,proto3" json:"stat_prefix,omitempty"`
 	// Configuration settings for persisted query cache
 	PersistedQueryCacheConfig *PersistedQueryCacheConfig `protobuf:"bytes,4,opt,name=persisted_query_cache_config,json=persistedQueryCacheConfig,proto3" json:"persisted_query_cache_config,omitempty"`
 	// Safelist: only allow queries to be executed that match these sha256 hashes.
@@ -917,7 +916,7 @@ func (x *GraphQLApi) GetStitchedSchema() *StitchedSchema {
 	return nil
 }
 
-func (x *GraphQLApi) GetStatPrefix() *wrappers.StringValue {
+func (x *GraphQLApi) GetStatPrefix() *wrapperspb.StringValue {
 	if x != nil {
 		return x.StatPrefix
 	}
@@ -1408,9 +1407,9 @@ type MockResolver_AsyncResponse struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The response from the resolver as a JSON.
-	Response *_struct.Value `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
+	Response *structpb.Value `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
 	// The delay time before this response is sent back to the graphql server
-	Delay *duration.Duration `protobuf:"bytes,2,opt,name=delay,proto3" json:"delay,omitempty"`
+	Delay *durationpb.Duration `protobuf:"bytes,2,opt,name=delay,proto3" json:"delay,omitempty"`
 }
 
 func (x *MockResolver_AsyncResponse) Reset() {
@@ -1445,14 +1444,14 @@ func (*MockResolver_AsyncResponse) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_graphql_proto_rawDescGZIP(), []int{7, 0}
 }
 
-func (x *MockResolver_AsyncResponse) GetResponse() *_struct.Value {
+func (x *MockResolver_AsyncResponse) GetResponse() *structpb.Value {
 	if x != nil {
 		return x.Response
 	}
 	return nil
 }
 
-func (x *MockResolver_AsyncResponse) GetDelay() *duration.Duration {
+func (x *MockResolver_AsyncResponse) GetDelay() *durationpb.Duration {
 	if x != nil {
 		return x.Delay
 	}
@@ -1727,7 +1726,7 @@ type Executor_Local_LocalExecutorOptions struct {
 	//	}
 	//
 	// If not configured, or the value is 0, the query depth will be unbounded.
-	MaxDepth *wrappers.UInt32Value `protobuf:"bytes,1,opt,name=max_depth,json=maxDepth,proto3" json:"max_depth,omitempty"`
+	MaxDepth *wrapperspb.UInt32Value `protobuf:"bytes,1,opt,name=max_depth,json=maxDepth,proto3" json:"max_depth,omitempty"`
 }
 
 func (x *Executor_Local_LocalExecutorOptions) Reset() {
@@ -1762,7 +1761,7 @@ func (*Executor_Local_LocalExecutorOptions) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_graphql_proto_rawDescGZIP(), []int{12, 0, 0}
 }
 
-func (x *Executor_Local_LocalExecutorOptions) GetMaxDepth() *wrappers.UInt32Value {
+func (x *Executor_Local_LocalExecutorOptions) GetMaxDepth() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.MaxDepth
 	}
@@ -2176,13 +2175,13 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql
 	nil,                             // 27: graphql.gloo.solo.io.Executor.Local.ResolutionsEntry
 	nil,                             // 28: graphql.gloo.solo.io.Executor.Remote.HeadersEntry
 	nil,                             // 29: graphql.gloo.solo.io.Executor.Remote.QueryParamsEntry
-	(*_struct.Value)(nil),           // 30: google.protobuf.Value
+	(*structpb.Value)(nil),          // 30: google.protobuf.Value
 	(*core.ResourceRef)(nil),        // 31: core.solo.io.ResourceRef
-	(*duration.Duration)(nil),       // 32: google.protobuf.Duration
-	(*wrappers.StringValue)(nil),    // 33: google.protobuf.StringValue
+	(*durationpb.Duration)(nil),     // 32: google.protobuf.Duration
+	(*wrapperspb.StringValue)(nil),  // 33: google.protobuf.StringValue
 	(*core.NamespacedStatuses)(nil), // 34: core.solo.io.NamespacedStatuses
 	(*core.Metadata)(nil),           // 35: core.solo.io.Metadata
-	(*wrappers.UInt32Value)(nil),    // 36: google.protobuf.UInt32Value
+	(*wrapperspb.UInt32Value)(nil),  // 36: google.protobuf.UInt32Value
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_graphql_v1beta1_graphql_proto_depIdxs = []int32{
 	13, // 0: graphql.gloo.solo.io.RequestTemplate.headers:type_name -> graphql.gloo.solo.io.RequestTemplate.HeadersEntry

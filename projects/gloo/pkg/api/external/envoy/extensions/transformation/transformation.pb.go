@@ -7,18 +7,17 @@
 package transformation
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	empty "github.com/golang/protobuf/ptypes/empty"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	v32 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
 	v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -497,7 +496,7 @@ type Transformation struct {
 	// By default, this is false so no request or response sensitive information is logged.
 	// If set to true, the filter will log the request/response body and headers before and
 	// after this transformation is applied.
-	LogRequestResponseInfo *wrappers.BoolValue `protobuf:"bytes,4,opt,name=log_request_response_info,json=logRequestResponseInfo,proto3" json:"log_request_response_info,omitempty"`
+	LogRequestResponseInfo *wrapperspb.BoolValue `protobuf:"bytes,4,opt,name=log_request_response_info,json=logRequestResponseInfo,proto3" json:"log_request_response_info,omitempty"`
 }
 
 func (x *Transformation) Reset() {
@@ -560,7 +559,7 @@ func (x *Transformation) GetTransformerConfig() *v32.TypedExtensionConfig {
 	return nil
 }
 
-func (x *Transformation) GetLogRequestResponseInfo() *wrappers.BoolValue {
+func (x *Transformation) GetLogRequestResponseInfo() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.LogRequestResponseInfo
 	}
@@ -643,7 +642,7 @@ type Extraction struct {
 	// to `std::regex_replace` as the replacement string.
 	//
 	//	For more informatino, see https://en.cppreference.com/w/cpp/regex/regex_replace.
-	ReplacementText *wrappers.StringValue `protobuf:"bytes,5,opt,name=replacement_text,json=replacementText,proto3" json:"replacement_text,omitempty"`
+	ReplacementText *wrapperspb.StringValue `protobuf:"bytes,5,opt,name=replacement_text,json=replacementText,proto3" json:"replacement_text,omitempty"`
 	// The mode of operation for the extraction.
 	// Defaults to EXTRACT.
 	Mode Extraction_Mode `protobuf:"varint,6,opt,name=mode,proto3,enum=envoy.api.v2.filter.http.Extraction_Mode" json:"mode,omitempty"`
@@ -695,7 +694,7 @@ func (x *Extraction) GetHeader() string {
 	return ""
 }
 
-func (x *Extraction) GetBody() *empty.Empty {
+func (x *Extraction) GetBody() *emptypb.Empty {
 	if x, ok := x.GetSource().(*Extraction_Body); ok {
 		return x.Body
 	}
@@ -716,7 +715,7 @@ func (x *Extraction) GetSubgroup() uint32 {
 	return 0
 }
 
-func (x *Extraction) GetReplacementText() *wrappers.StringValue {
+func (x *Extraction) GetReplacementText() *wrapperspb.StringValue {
 	if x != nil {
 		return x.ReplacementText
 	}
@@ -741,7 +740,7 @@ type Extraction_Header struct {
 
 type Extraction_Body struct {
 	// Extract information from the request/response body
-	Body *empty.Empty `protobuf:"bytes,4,opt,name=body,proto3,oneof"`
+	Body *emptypb.Empty `protobuf:"bytes,4,opt,name=body,proto3,oneof"`
 }
 
 func (*Extraction_Header) isExtraction_Source() {}
@@ -2174,9 +2173,9 @@ var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_extensions_tra
 	(*v3.HeaderMatcher)(nil),         // 26: solo.io.envoy.config.route.v3.HeaderMatcher
 	(*v31.StringMatcher)(nil),        // 27: solo.io.envoy.type.matcher.v3.StringMatcher
 	(*v32.TypedExtensionConfig)(nil), // 28: solo.io.envoy.config.core.v3.TypedExtensionConfig
-	(*wrappers.BoolValue)(nil),       // 29: google.protobuf.BoolValue
-	(*empty.Empty)(nil),              // 30: google.protobuf.Empty
-	(*wrappers.StringValue)(nil),     // 31: google.protobuf.StringValue
+	(*wrapperspb.BoolValue)(nil),     // 29: google.protobuf.BoolValue
+	(*emptypb.Empty)(nil),            // 30: google.protobuf.Empty
+	(*wrapperspb.StringValue)(nil),   // 31: google.protobuf.StringValue
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_extensions_transformation_transformation_proto_depIdxs = []int32{
 	3,  // 0: envoy.api.v2.filter.http.FilterTransformations.transformations:type_name -> envoy.api.v2.filter.http.TransformationRule
