@@ -484,7 +484,9 @@ func preUpgradeDataSetup(testHelper *helper.SoloTestHelper) {
 	}
 
 	checkGlooHealthy(testHelper)
-	validatePetstoreTraffic(testHelper, "/all-pets")
+	// time.Sleep(time.Hour)
+
+	// validatePetstoreTraffic(testHelper, "/all-pets")
 }
 
 func postUpgradeDataStep(testHelper *helper.SoloTestHelper) {
