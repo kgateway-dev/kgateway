@@ -9,8 +9,6 @@ metadata:
 spec:
   discoveryMetadata: {}
   kube:
-    selector:
-      app: petstore
     serviceName: petstore
     serviceNamespace: ${INSTALL_NAMESPACE}
     servicePort: 8080
