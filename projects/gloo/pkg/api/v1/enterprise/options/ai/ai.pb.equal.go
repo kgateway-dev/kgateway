@@ -264,16 +264,6 @@ func (m *RouteSettings) Equal(that interface{}) bool {
 
 	}
 
-	if h, ok := interface{}(m.GetStats()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetStats()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetStats(), target.GetStats()) {
-			return false
-		}
-	}
-
 	return true
 }
 

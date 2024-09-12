@@ -179,12 +179,6 @@ func (m *RouteSettings) Clone() proto.Message {
 		}
 	}
 
-	if h, ok := interface{}(m.GetStats()).(clone.Cloner); ok {
-		target.Stats = h.Clone().(*Stats)
-	} else {
-		target.Stats = proto.Clone(m.GetStats()).(*Stats)
-	}
-
 	return target
 }
 
