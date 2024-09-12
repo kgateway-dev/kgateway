@@ -1,6 +1,7 @@
 package deployer
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -190,9 +191,14 @@ func ComponentLogLevelsToString(vals map[string]string) (string, error) {
 	return strings.Join(parts, ","), nil
 }
 
-func getAIExtensionValues(config *v1alpha1.AiExtension) *helmAIExtension {
+func getAIExtensionValues(config *v1alpha1.AiExtension) (*helmAIExtension, error) {
 	if config == nil {
-		return nil
+		return nil, nil
+	}
+
+	byt, err := json.Marshal(config.GetStats())
+	if err != nil {
+		return nil, err
 	}
 
 	return &helmAIExtension{
@@ -202,5 +208,6 @@ func getAIExtensionValues(config *v1alpha1.AiExtension) *helmAIExtension {
 		Resources:       config.GetResources(),
 		Env:             config.GetEnv(),
 		Ports:           config.GetPorts(),
-	}
+		Stats:           byt,
+	}, nil
 }

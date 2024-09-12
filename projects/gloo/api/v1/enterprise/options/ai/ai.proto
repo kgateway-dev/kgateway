@@ -284,9 +284,6 @@ message RouteSettings {
     ```
   */
   repeated FieldDefault defaults = 6;
-
-
-  Stats stats = 7;
 }
 
 message Stats {
