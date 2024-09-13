@@ -414,9 +414,8 @@ gatewayProxies:
       # the new fields on the Gateway CR during the helm upgrade, and that it will pass validation)
       customHttpGateway:
         options:
-			headerValidationSettings:
-				disableHttp1MethodValidation: {}
-
+			buffer:
+				maxRequestBytes: 999999
 `))
 	Expect(err).NotTo(HaveOccurred())
 
