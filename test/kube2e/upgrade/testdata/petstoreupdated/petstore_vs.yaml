@@ -10,7 +10,7 @@ spec:
       - 'petstore'
     routes:
       - matchers:
-          - exact: /all-pets
+          - exact: /some-pets
         options:
           prefixRewrite: /api/pets
         routeAction:
@@ -19,7 +19,7 @@ spec:
               name: gloo-system-petstore-8080
               namespace: gloo-system
       - matchers:
-          - exact: /single-pet
+          - exact: /a-pet
         options:
           prefixRewrite: /api/pets
         routeAction:

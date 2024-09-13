@@ -2,7 +2,7 @@ apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
   name: petstore
-  namespace: ${INSTALL_NAMESPACE}
+  namespace: gloo-system
   ownerReferences: []
 spec:
   virtualHost:
@@ -17,7 +17,7 @@ spec:
           single:
             upstream:
               name: gloo-system-petstore-8080
-              namespace: ${INSTALL_NAMESPACE}
+              namespace: gloo-system
       - matchers:
           - exact: /single-pet
         options:
@@ -26,4 +26,4 @@ spec:
           single:
             upstream:
               name: gloo-system-petstore-8080
-              namespace: ${INSTALL_NAMESPACE}
+              namespace: gloo-system
