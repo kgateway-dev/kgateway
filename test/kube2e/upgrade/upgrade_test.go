@@ -57,14 +57,6 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 		strictValidation = false
 		testHelper, err = kube2e.GetTestHelper(ctx, namespace)
 		Expect(err).NotTo(HaveOccurred())
-		// we dont use the new install gloo so we need to spin this up here
-		testServer, err := helper.NewTestServer(testHelper.InstallNamespace)
-		if err != nil {
-			Expect(err).NotTo(HaveOccurred())
-		}
-		if err := testServer.DeployResources(5 * time.Minute); err != nil {
-			Expect(err).NotTo(HaveOccurred())
-		}
 
 	})
 
@@ -312,7 +304,14 @@ func installGloo(testHelper *helper.SoloTestHelper, fromRelease string, strictVa
 
 	fmt.Printf("running helm with args: %v\n", args)
 	runAndCleanCommand("helm", args...)
-
+	// we dont use the new install gloo so we need to spin this up here
+	testServer, err := helper.NewTestServer(testHelper.InstallNamespace)
+	if err != nil {
+		Expect(err).NotTo(HaveOccurred())
+	}
+	if err := testServer.DeployResources(5 * time.Minute); err != nil {
+		Expect(err).NotTo(HaveOccurred())
+	}
 	// Check that everything is OK
 	checkGlooHealthy(testHelper)
 
