@@ -198,7 +198,7 @@ func getAIExtensionValues(config *v1alpha1.AiExtension) (*helmAIExtension, error
 
 	// If we don't do this check, a byte array containing the characters "null" will be rendered
 	// This will not be marshallable by the component so instead we render nothing.
-	byt := []byte{}
+	var byt []byte
 	if config.GetStats() != nil {
 		var err error
 		byt, err = json.Marshal(config.GetStats())
