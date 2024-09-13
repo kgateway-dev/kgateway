@@ -6,6 +6,7 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/ta
 
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 import "validate/validate.proto";
+import "google/protobuf/wrappers.proto";
 import "google/protobuf/duration.proto";
 
 // Tap filter: a filter that copies the contents of HTTP requests and responses
@@ -16,6 +17,24 @@ message Tap {
   // Sinks to which tap data should be output. Currently, only a single sink
   // is supported.
   repeated Sink sinks = 1 [(validate.rules).repeated = {max_items: 1, min_items: 1}];
+
+  // For buffered tapping, the maximum amount of received body that will be buffered
+  // prior to truncation. If truncation occurs, the truncated field will be set.
+  // If not specified, the default is 1KiB.
+  google.protobuf.UInt32Value max_buffered_rx_bytes = 2;
+
+  // For buffered tapping, the maximum amount of transmitted body that will be buffered
+  // prior to truncation. If truncation occurs, the truncated field will be set.
+  // If not specified, the default is 1KiB.
+  google.protobuf.UInt32Value max_buffered_tx_bytes = 3;
+
+  // Indicates whether tap filter records the time stamp for request/response headers.
+  // Request headers time stamp is stored after receiving request headers.
+  // Response headers time stamp is stored after receiving response headers.
+  google.protobuf.BoolValue record_headers_received_time = 4;
+
+  // Indicates whether report downstream connection info
+  google.protobuf.BoolValue record_downstream_connection = 5;
 }
 
 message Sink {

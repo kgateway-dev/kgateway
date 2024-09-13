@@ -15,6 +15,7 @@ listeners:
           - matchers:
             - prefix: /a/1
             options: {}
+            name: route-a-a-0-0
             routeAction:
               single:
                 kube:
