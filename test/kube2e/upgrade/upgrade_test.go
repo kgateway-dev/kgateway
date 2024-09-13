@@ -466,7 +466,7 @@ func checkGlooHealthy(testHelper *helper.SoloTestHelper) {
 func preUpgradeDataSetup(testHelper *helper.SoloTestHelper) {
 
 	//hello world example
-	resDirPath := filepath.Join(util.MustGetThisDir(), "testdata", "petstore")
+	resDirPath := filepath.Join(util.MustGetThisDir(), "testdata", "petstorebase")
 	resourceFiles, err := os.ReadDir(resDirPath)
 	Expect(err).ToNot(HaveOccurred())
 	args := []string{"apply", "-f", "-"}
