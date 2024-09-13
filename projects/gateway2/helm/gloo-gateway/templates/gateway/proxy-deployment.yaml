@@ -300,9 +300,11 @@ spec:
       - configMap:
           name: {{ include "gloo-gateway.gateway.fullname" . }}
         name: envoy-config
+{{- if (($gateway.aiExtension).enabled) }}
       - configMap:
           name: {{ include "gloo-gateway.gateway.fullname" . }}-ai-stats-config
         name: ai-stats-config
+{{- end }} {{/* if (($gateway.aiExtension).enabled) */}}
 {{- if $gateway.istio.enabled }}
       - emptyDir:
           medium: Memory
