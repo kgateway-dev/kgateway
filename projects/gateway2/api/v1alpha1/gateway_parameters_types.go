@@ -575,7 +575,19 @@ type AiExtension struct {
 	// +kubebuilder:validation:Optional
 	Ports []*corev1.ContainerPort `json:"ports,omitempty"`
 
-	// Additional stats config for AI Extension
+	// Additional stats config for AI Extension.
+	// This config can be useful for adding custom labels to the request metrics.
+	// Example:
+	// ```yaml
+	// stats:
+	//   customLabels:
+	//     - name: "subject"
+	//       metadataNamespace: "envoy.filters.http.jwt_authn"
+	//       metadataKey: "principal:sub"
+	//     - name: "issuer"
+	//       metadataNamespace: "envoy.filters.http.jwt_authn"
+	//       metadataKey: "principal:iss"
+	// ```
 	//
 	// +kubebuilder:validation:Optional
 	Stats *AiExtensionStats `json:"stats,omitempty"`
