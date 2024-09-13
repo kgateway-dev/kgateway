@@ -26,6 +26,7 @@ weight: 5
 - [AzureOpenAI](#azureopenai)
 - [SemanticCache](#semanticcache)
 - [Redis](#redis)
+- [Weaviate](#weaviate)
 - [DataStore](#datastore)
 - [Mode](#mode)
 - [RAG](#rag)
@@ -421,6 +422,29 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 
 
 ---
+### Weaviate
+
+
+
+```yaml
+"host": string
+"httpPort": int
+"grpcPort": int
+"scoreThreshold": float
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `host` | `string` | Connection string to the Weaviate database. |
+| `httpPort` | `int` |  |
+| `grpcPort` | `int` |  |
+| `scoreThreshold` | `float` | Similarity score threshold value between 0.0 and 1.0 that determines how similar two queries need to be in order to return a cached result. The lower the number, the more similar the queries need to be for a cache hit. +kubebuilder:validation:Minimum=0 +kubebuilder:validation:Maximum=1. |
+
+
+
+
+---
 ### DataStore
 
  
@@ -428,12 +452,14 @@ Data store from which to cache the request/response pairs
 
 ```yaml
 "redis": .ai.options.gloo.solo.io.SemanticCache.Redis
+"weaviate": .ai.options.gloo.solo.io.SemanticCache.Weaviate
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `redis` | [.ai.options.gloo.solo.io.SemanticCache.Redis](../ai.proto.sk/#redis) |  |
+| `redis` | [.ai.options.gloo.solo.io.SemanticCache.Redis](../ai.proto.sk/#redis) |  Only one of `redis` or `weaviate` can be set. |
+| `weaviate` | [.ai.options.gloo.solo.io.SemanticCache.Weaviate](../ai.proto.sk/#weaviate) |  Only one of `weaviate` or `redis` can be set. |
 
 
 

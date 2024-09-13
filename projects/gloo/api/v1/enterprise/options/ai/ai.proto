@@ -354,10 +354,28 @@ message SemanticCache {
     // +kubebuilder:validation:Maximum=1
     float score_threshold = 2;
   }
+
+  message Weaviate {
+    // Connection string to the Weaviate database
+    string host = 1;
+
+    uint32 http_port = 2;
+
+    uint32 grpc_port = 3;
+
+    // Similarity score threshold value between 0.0 and 1.0 that determines how similar
+    // two queries need to be in order to return a cached result.
+    // The lower the number, the more similar the queries need to be for a cache hit.
+    //
+    // +kubebuilder:validation:Minimum=0
+    // +kubebuilder:validation:Maximum=1
+    float score_threshold = 4;
+  }
   // Data store from which to cache the request/response pairs
   message DataStore {
     oneof datastore {
       Redis redis = 1;
+      Weaviate weaviate = 2;
     }
   }
   enum Mode {
