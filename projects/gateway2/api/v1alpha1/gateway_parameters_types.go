@@ -646,17 +646,17 @@ type AiExtensionStats struct {
 	// Set of custom labels to be added to the request metrics.
 	// These will be added on each request which goes through the AI Extension.
 	// +optional
-	CustomLabels []*CustomLabels `json:"customLabels,omitempty"`
+	CustomLabels []*CustomLabel `json:"customLabels,omitempty"`
 }
 
-func (in *AiExtensionStats) GetCustomLabels() []*CustomLabels {
+func (in *AiExtensionStats) GetCustomLabels() []*CustomLabel {
 	if in == nil {
 		return nil
 	}
 	return in.CustomLabels
 }
 
-type CustomLabels struct {
+type CustomLabel struct {
 	// Name of the label to use in the prometheus metrics
 	//
 	// +kubebuilder:validation:MinLength=1
@@ -686,28 +686,28 @@ type CustomLabels struct {
 	KeyDelimiter *string `json:"keyDelimiter,omitempty"`
 }
 
-func (in *CustomLabels) GetName() string {
+func (in *CustomLabel) GetName() string {
 	if in == nil {
 		return ""
 	}
 	return in.Name
 }
 
-func (in *CustomLabels) GetMetadataNamespace() *string {
+func (in *CustomLabel) GetMetadataNamespace() *string {
 	if in == nil {
 		return nil
 	}
 	return in.MetadataNamespace
 }
 
-func (in *CustomLabels) GetMetdataKey() string {
+func (in *CustomLabel) GetMetdataKey() string {
 	if in == nil {
 		return ""
 	}
 	return in.MetdataKey
 }
 
-func (in *CustomLabels) GetKeyDelimiter() *string {
+func (in *CustomLabel) GetKeyDelimiter() *string {
 	if in == nil {
 		return nil
 	}
