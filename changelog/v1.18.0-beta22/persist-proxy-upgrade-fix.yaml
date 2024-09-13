@@ -9,3 +9,4 @@ changelog:
       Updates upgrade test with some of the extra functionality previously only in the enterprise test steps.
       This is used to validate the main issue for persistproxy spec.
       The changes do not adhere to our current best practices on writing tests but follow the prior art in enterprise.
+      This is set via gateway.persistProxySpec or in ee gloo.gateway.persistProxySpec
