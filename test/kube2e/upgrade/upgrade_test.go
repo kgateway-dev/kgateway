@@ -413,7 +413,7 @@ gatewayProxies:
       customHttpGateway:
         options:
           buffer:
-          	maxRequestBytes: 999999
+            maxRequestBytes: 999999
 `))
 	Expect(err).NotTo(HaveOccurred())
 
