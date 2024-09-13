@@ -29,6 +29,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/gloo/test/kube2e/helper"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -56,6 +57,15 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 		strictValidation = false
 		testHelper, err = kube2e.GetTestHelper(ctx, namespace)
 		Expect(err).NotTo(HaveOccurred())
+		// we dont use the new install gloo so we need to spin this up here
+		testServer, err := helper.NewTestServer(testHelper.InstallNamespace)
+		if err != nil {
+			Expect(err).NotTo(HaveOccurred())
+		}
+		if err := testServer.DeployResources(5 * time.Minute); err != nil {
+			Expect(err).NotTo(HaveOccurred())
+		}
+
 	})
 
 	AfterEach(func() {
