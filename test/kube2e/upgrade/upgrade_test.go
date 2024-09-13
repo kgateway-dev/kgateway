@@ -469,43 +469,39 @@ func preUpgradeDataSetup(testHelper *helper.SoloTestHelper) {
 	resDirPath := filepath.Join(util.MustGetThisDir(), "testdata", "petstore")
 	resourceFiles, err := os.ReadDir(resDirPath)
 	Expect(err).ToNot(HaveOccurred())
-
+	args := []string{"apply", "-f", "-"}
 	// Note that this is really unclean, its not ordered and not our current standard.
 	for _, toApplyFile := range resourceFiles {
 		toApplyF := filepath.Join(resDirPath, toApplyFile.Name())
 		raw, err := os.ReadFile(toApplyF)
-		if err != nil {
-			Expect(err).ToNot(HaveOccurred())
-		}
+		Expect(err).ToNot(HaveOccurred())
+
 		toApply := []byte(os.ExpandEnv(string(raw)))
-		args := []string{"apply", "-f", "-"}
 
 		runWithSTDandCleanCommand("kubectl", bytes.NewBuffer(toApply), args...)
 	}
 
 	checkGlooHealthy(testHelper)
 
+	resVSDirPath := filepath.Join(util.MustGetThisDir(), "testdata", "petstorevs", "vs_preupgrade.yaml")
+	resourceVSFile, err := os.ReadFile(resVSDirPath)
+	Expect(err).ToNot(HaveOccurred())
+
+	runWithSTDandCleanCommand("kubectl", bytes.NewBuffer(resourceVSFile), args...)
+
 	validatePetstoreTraffic(testHelper, "/all-pets")
 }
 
 func postUpgradeDataStep(testHelper *helper.SoloTestHelper) {
-	//hello world example
-	resDirPath := filepath.Join(util.MustGetThisDir(), "testdata", "petstoreupdated")
-	resourceFiles, err := os.ReadDir(resDirPath)
-	Expect(err).ToNot(HaveOccurred())
 
 	// Note that this is really unclean, its not ordered and not our current standard.
-	for _, toApplyFile := range resourceFiles {
-		toApplyF := filepath.Join(resDirPath, toApplyFile.Name())
-		raw, err := os.ReadFile(toApplyF)
-		if err != nil {
-			Expect(err).ToNot(HaveOccurred())
-		}
-		toApply := []byte(os.ExpandEnv(string(raw)))
-		args := []string{"apply", "-f", "-"}
+	resVSDirPath := filepath.Join(util.MustGetThisDir(), "testdata", "petstorevs", "vs_postupgrade.yaml")
+	resourceVSFile, err := os.ReadFile(resVSDirPath)
+	Expect(err).ToNot(HaveOccurred())
+	args := []string{"apply", "-f", "-"}
 
-		runWithSTDandCleanCommand("kubectl", bytes.NewBuffer(toApply), args...)
-	}
+	runWithSTDandCleanCommand("kubectl", bytes.NewBuffer(resourceVSFile), args...)
+
 	checkGlooHealthy(testHelper)
 	validatePetstoreTraffic(testHelper, "/some-pets")
 }
