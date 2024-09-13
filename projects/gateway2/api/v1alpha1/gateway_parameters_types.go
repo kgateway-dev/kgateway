@@ -577,6 +577,7 @@ type AiExtension struct {
 
 	// Additional stats config for AI Extension.
 	// This config can be useful for adding custom labels to the request metrics.
+	// +optional
 	// Example:
 	// ```yaml
 	// stats:
