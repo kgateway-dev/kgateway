@@ -7,6 +7,9 @@
 package route
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_type1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
@@ -18,8 +21,6 @@ import (
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (

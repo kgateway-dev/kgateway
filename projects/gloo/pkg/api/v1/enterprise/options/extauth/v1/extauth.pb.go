@@ -8,6 +8,9 @@ package v1
 
 import (
 	context "context"
+	reflect "reflect"
+	sync "sync"
+
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	v2 "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -21,8 +24,6 @@ import (
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (

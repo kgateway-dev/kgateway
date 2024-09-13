@@ -7,6 +7,9 @@
 package v1
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	aws "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
 	caching "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/caching"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
@@ -21,8 +24,6 @@ import (
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (

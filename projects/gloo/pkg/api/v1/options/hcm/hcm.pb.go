@@ -7,6 +7,9 @@
 package hcm
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	protocol "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol"
 	protocol_upgrade "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	tracing "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
@@ -16,8 +19,6 @@ import (
 	_ "google.golang.org/protobuf/types/known/anypb"
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
