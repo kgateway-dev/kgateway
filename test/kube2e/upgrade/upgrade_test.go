@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/pkg/utils/helmutils"
 	"github.com/solo-io/skv2/codegen/util"
 
@@ -440,7 +441,7 @@ func runWithSTDandCleanCommand(name string, stdin io.Reader, arg ...string) []by
 	if err != nil {
 		if v, ok := err.(*exec.ExitError); ok {
 			Expect(err).NotTo(HaveOccurred(), string(v.Stderr))
-			fmt.Println("ExitError: ", string(v.Stderr))
+
 		}
 	}
 	Expect(err).NotTo(HaveOccurred())
@@ -489,7 +490,12 @@ func preUpgradeDataSetup(testHelper *helper.SoloTestHelper) {
 
 	runWithSTDandCleanCommand("kubectl", bytes.NewBuffer(resourceVSFile), args...)
 
+	portFwd, err := cliutil.PortForward(context.Background(), testHelper.InstallNamespace, "deploy/"+gatewayProxyName, "8080", "8080", false)
+	Expect(err).NotTo(HaveOccurred())
 	validatePetstoreTraffic(testHelper, "/all-pets")
+	portFwd.Close()
+	portFwd.WaitForStop()
+
 }
 
 func postUpgradeDataStep(testHelper *helper.SoloTestHelper) {
@@ -503,5 +509,11 @@ func postUpgradeDataStep(testHelper *helper.SoloTestHelper) {
 	runWithSTDandCleanCommand("kubectl", bytes.NewBuffer(resourceVSFile), args...)
 
 	checkGlooHealthy(testHelper)
+
+	portFwd, err := cliutil.PortForward(context.Background(), testHelper.InstallNamespace, "deploy/"+gatewayProxyName, "8080", "8080", false)
+	Expect(err).NotTo(HaveOccurred())
 	validatePetstoreTraffic(testHelper, "/some-pets")
+	portFwd.Close()
+	portFwd.WaitForStop()
+
 }
