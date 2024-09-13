@@ -414,13 +414,9 @@ gatewayProxies:
       # the new fields on the Gateway CR during the helm upgrade, and that it will pass validation)
       customHttpGateway:
         options:
-          dlp:
-            dlpRules:
-            - actions:
-              - actionType: KEYVALUE
-                keyValueAction:
-                  keyToMask: test
-                  name: test
+			headerValidationSettings:
+				disableHttp1MethodValidation: {}
+
 `))
 	Expect(err).NotTo(HaveOccurred())
 
