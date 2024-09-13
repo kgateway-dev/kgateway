@@ -247,8 +247,6 @@ func updateValidationWebhookTests(ctx context.Context, crdDir string, kubeClient
 	Expect(err).NotTo(HaveOccurred())
 	Expect(webhookConfig.Webhooks[0].ClientConfig.CABundle).To(Equal(secret.Data[corev1.ServiceAccountRootCAKey]))
 
-	By("accepts and adopts valid configuration after upgrade")
-
 }
 
 // ===================================
@@ -414,8 +412,8 @@ gatewayProxies:
       # the new fields on the Gateway CR during the helm upgrade, and that it will pass validation)
       customHttpGateway:
         options:
-			buffer:
-				maxRequestBytes: 999999
+          buffer:
+          	maxRequestBytes: 999999
 `))
 	Expect(err).NotTo(HaveOccurred())
 
