@@ -246,6 +246,9 @@ spec:
                                 name:
                                   minLength: 1
                                   type: string
+                              required:
+                              - metadataKey
+                              - name
                               type: object
                             type: array
                         type: object

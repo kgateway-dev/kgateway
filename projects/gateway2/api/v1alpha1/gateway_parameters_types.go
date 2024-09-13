@@ -578,6 +578,7 @@ type AiExtension struct {
 	// Additional stats config for AI Extension.
 	// This config can be useful for adding custom labels to the request metrics.
 	// +optional
+	//
 	// Example:
 	// ```yaml
 	// stats:
@@ -589,8 +590,6 @@ type AiExtension struct {
 	//       metadataNamespace: "envoy.filters.http.jwt_authn"
 	//       metadataKey: "principal:iss"
 	// ```
-	//
-	// +kubebuilder:validation:Optional
 	Stats *AiExtensionStats `json:"stats,omitempty"`
 }
 
@@ -646,6 +645,7 @@ func (in *AiExtension) GetStats() *AiExtensionStats {
 type AiExtensionStats struct {
 	// Set of custom labels to be added to the request metrics.
 	// These will be added on each request which goes through the AI Extension.
+	// +optional
 	CustomLabels []*CustomLabels `json:"customLabels,omitempty"`
 }
 
@@ -660,13 +660,13 @@ type CustomLabels struct {
 	// Name of the label to use in the prometheus metrics
 	//
 	// +kubebuilder:validation:MinLength=1
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 
 	// The dynamic metadata namespace to get the data from. If not specified, the default namespace will be
 	// the envoy JWT filter namespace.
 	// This can also be used in combination with early_transformations to insert custom data.
+	// +optional
 	//
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Enum=envoy.filters.http.jwt_authn;io.solo.transformation
 	MetadataNamespace *string `json:"metadataNamespace,omitempty"`
 
@@ -676,14 +676,13 @@ type CustomLabels struct {
 	// Examples can be found here: https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage
 	//
 	// +kubebuilder:validation:MinLength=1
-	MetdataKey string `json:"metadataKey,omitempty"`
+	MetdataKey string `json:"metadataKey"`
 
 	// The key delimiter to use, by default this is set to `:`.
 	// This allows for keys with `.` in them to be used.
 	// For example, if you have keys in your path with `:` in them, (e.g. `key1:key2:value`)
 	// you can instead set this to `~` to be able to split those keys properly.
-	//
-	// +kubebuilder:validation:Optional
+	// +optional
 	KeyDelimiter *string `json:"keyDelimiter,omitempty"`
 }
 
