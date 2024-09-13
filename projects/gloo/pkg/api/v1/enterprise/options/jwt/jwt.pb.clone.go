@@ -125,6 +125,8 @@ func (m *VhostExtension) Clone() proto.Message {
 
 	target.AllowMissingOrFailedJwt = m.GetAllowMissingOrFailedJwt()
 
+	target.ValidationPolicy = m.GetValidationPolicy()
+
 	return target
 }
 

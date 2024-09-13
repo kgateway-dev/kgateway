@@ -15,6 +15,7 @@ listeners:
           - matchers:
             - exact: /a/1/2
             options: {}
+            name: route-1-infra-5-0
             routeAction:
               single:
                 kube:
@@ -25,6 +26,7 @@ listeners:
           - matchers:
             - exact: /x/1/2
             options: {}
+            name: route-2-infra-5-0
             routeAction:
               single:
                 kube:
@@ -35,6 +37,7 @@ listeners:
           - matchers:
             - exact: /a/1
             options: {}
+            name: route-1-infra-4-0
             routeAction:
               single:
                 kube:
@@ -45,6 +48,7 @@ listeners:
           - matchers:
             - exact: /x/1
             options: {}
+            name: route-2-infra-4-0
             routeAction:
               single:
                 kube:
@@ -55,6 +59,7 @@ listeners:
           - matchers:
             - regex: /a/.*
             options: {}
+            name: route-1-infra-2-0
             routeAction:
               single:
                 kube:
@@ -65,6 +70,7 @@ listeners:
           - matchers:
             - regex: /b/c/.*
             options: {}
+            name: route-1-infra-3-0
             routeAction:
               single:
                 kube:
@@ -75,6 +81,7 @@ listeners:
           - matchers:
             - regex: /x/.*
             options: {}
+            name: route-2-infra-2-0
             routeAction:
               single:
                 kube:
@@ -85,6 +92,7 @@ listeners:
           - matchers:
             - regex: /x/y/.*
             options: {}
+            name: route-2-infra-3-0
             routeAction:
               single:
                 kube:
@@ -95,6 +103,7 @@ listeners:
           - matchers:
             - prefix: /a/1
             options: {}
+            name: route-1-infra-1-0
             routeAction:
               single:
                 kube:
@@ -105,6 +114,7 @@ listeners:
           - matchers:
             - prefix: /x/1
             options: {}
+            name: route-2-infra-1-0
             routeAction:
               single:
                 kube:
@@ -115,6 +125,7 @@ listeners:
           - matchers:
             - prefix: /a
             options: {}
+            name: route-1-infra-0-0
             routeAction:
               single:
                 kube:
@@ -125,6 +136,7 @@ listeners:
           - matchers:
             - prefix: /x
             options: {}
+            name: route-2-infra-0-0
             routeAction:
               single:
                 kube:

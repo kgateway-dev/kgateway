@@ -725,7 +725,11 @@ type ComparisonFilter struct {
 
 	// Comparison operator.
 	Op ComparisonFilter_Op `protobuf:"varint,1,opt,name=op,proto3,enum=als.options.gloo.solo.io.ComparisonFilter_Op" json:"op,omitempty"`
-	// Value to compare against.
+	// Value to compare against. Note that the `defaultValue` field must be defined unless
+	// the `runtimeKey` matches a key that is defined in Envoy's [runtime configuration layer](https://www.envoyproxy.io/docs/envoy/v1.30.0/configuration/operations/runtime#config-runtime-bootstrap).
+	// Gloo Gateway does not include a key by default. To specify a key-value pair, use the
+	// [gatewayProxies.NAME.customStaticLayer]({{< versioned_link_path fromRoot="/reference/helm_chart_values/" >}})
+	// Helm value or set the key at runtime by using the gateway proxy admin interface.
 	Value *v3.RuntimeUInt32 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 }
 

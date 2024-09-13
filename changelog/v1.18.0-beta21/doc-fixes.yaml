@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >- 
+      Updates go-utils to v0.25.3 to include CLI doc template changes

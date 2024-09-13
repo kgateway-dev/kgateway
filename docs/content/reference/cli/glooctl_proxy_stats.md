@@ -1,5 +1,6 @@
 ---
 title: "glooctl proxy stats"
+description: "Reference for the 'glooctl proxy stats' command."
 weight: 5
 ---
 ## glooctl proxy stats

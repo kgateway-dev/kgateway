@@ -96,6 +96,23 @@ message UpstreamSpec {
     CustomHost custom_host = 2;
   }
 
+  // Settings for the Azure OpenAI API
+  message AzureOpenAI {
+    // Auth Token to use for the Azure OpenAI API
+    // This token will be placed into the `api-key` header
+    oneof auth_token_source {
+      // Auth Token to use for the OpenAI API
+      // This token will be placed into the `api-key` header
+      SingleAuthToken auth_token = 1;
+      // use AD or other workload identity mechanism
+    }
+
+    // (REQUIRED) The endpoint to use
+    // This should be the endpoint to the Azure OpenAI API, e.g. my-endpoint.openai.azure.com
+    // If the scheme is included it will be stripped.
+    string endpoint = 2;
+  }
+
   // Settings for the Mistral API
   message Mistral {
     // Auth Token to use for the Mistral API.
@@ -120,9 +137,14 @@ message UpstreamSpec {
   }
 
   oneof llm {
+    // OpenAI upstream
     OpenAI openai = 1;
+    // Mistral upstream
     Mistral mistral = 2;
+    // Anthropic upstream
     Anthropic anthropic = 3;
+    // Azure OpenAI upstream
+    AzureOpenAI azure_openai = 4;
   }
 }
 
@@ -292,8 +314,30 @@ message Embedding {
     }
   }
 
+  message AzureOpenAI {
+    oneof auth_token_source {
+      // Auth Token to use for the OpenAI API
+      // This token will be placed into the `api-key` header
+      SingleAuthToken auth_token = 1;
+      // re-use the token from the backend
+      // google.protobuf.Empty inherit_backend_token = 3;
+    }
+
+    // (REQUIRED) The version of the API to use
+    string api_version = 2;
+    // (REQUIRED) The endpoint to use
+    // This should be the endpoint to the Azure OpenAI API, e.g. https://my-endpoint.openai.azure.com
+    // If the scheme isn't included it will be added.
+    string endpoint = 3;
+    // (REQUIRED) The deployment/model name to use
+    string deployment_name = 4;
+  }
+
   oneof embedding {
+    // OpenAI embedding
     OpenAI openai = 1;
+    // Azure OpenAI embedding
+    AzureOpenAI azure_openai = 2;
   }
 }
 

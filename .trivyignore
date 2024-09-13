@@ -42,3 +42,7 @@ CVE-2019-14993
 CVE-2021-39155
 CVE-2021-39156
 CVE-2022-23635
+
+# Ignore go stdlib vulnerability. Go bump to 1.22.7 in N-1 branches cover this, but older versions we aren't concerned
+# about updating as it shouldn't affect us
+CVE-2024-34156

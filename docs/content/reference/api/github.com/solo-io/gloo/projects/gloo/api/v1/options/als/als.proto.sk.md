@@ -175,7 +175,7 @@ Filter on an integer comparison.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `op` | [.als.options.gloo.solo.io.ComparisonFilter.Op](../als.proto.sk/#op) | Comparison operator. |
-| `value` | [.solo.io.envoy.config.core.v3.RuntimeUInt32](../../../../external/envoy/config/core/v3/base.proto.sk/#runtimeuint32) | Value to compare against. |
+| `value` | [.solo.io.envoy.config.core.v3.RuntimeUInt32](../../../../external/envoy/config/core/v3/base.proto.sk/#runtimeuint32) | Value to compare against. Note that the `defaultValue` field must be defined unless the `runtimeKey` matches a key that is defined in Envoy's [runtime configuration layer](https://www.envoyproxy.io/docs/envoy/v1.30.0/configuration/operations/runtime#config-runtime-bootstrap). Gloo Gateway does not include a key by default. To specify a key-value pair, use the [gatewayProxies.NAME.customStaticLayer]({{< versioned_link_path fromRoot="/reference/helm_chart_values/" >}}) Helm value or set the key at runtime by using the gateway proxy admin interface. |
 
 
 

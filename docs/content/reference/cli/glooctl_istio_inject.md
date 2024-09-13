@@ -1,5 +1,6 @@
 ---
 title: "glooctl istio inject"
+description: "Reference for the 'glooctl istio inject' command."
 weight: 5
 ---
 ## glooctl istio inject

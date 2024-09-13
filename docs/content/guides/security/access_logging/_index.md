@@ -502,7 +502,6 @@ Note that the `runtimeKey` is enforced only if it matches a key that is defined 
      useProxyProto: false
    ```
 
-
 For more configuration options, see {{% protobuf name="als.options.gloo.solo.io.AccessLogFilter" display="AccessLogFilter"%}}.
 
 ### Using header filters on access logs with prefix matching

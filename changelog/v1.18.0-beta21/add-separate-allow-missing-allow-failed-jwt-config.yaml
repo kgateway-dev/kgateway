@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/8728
+    description: >-
+      Adds new `validationPolicy` option for JWT configuration to allow configuring `ALLOW_MISSING` if token is missing, 
+      request is still accepted. The existing API flag `allow_missing_or_failed` is not sufficient for this use case.
+    resolvesIssue: false
