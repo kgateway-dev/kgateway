@@ -41,9 +41,6 @@ apis:
   ai.options.gloo.solo.io.SingleAuthToken:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#SingleAuthToken
     package: ai.options.gloo.solo.io
-  ai.options.gloo.solo.io.Stats:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#Stats
-    package: ai.options.gloo.solo.io
   ai.options.gloo.solo.io.UpstreamSpec:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#UpstreamSpec
     package: ai.options.gloo.solo.io

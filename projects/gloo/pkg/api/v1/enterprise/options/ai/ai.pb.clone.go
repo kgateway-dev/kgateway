@@ -183,30 +183,6 @@ func (m *RouteSettings) Clone() proto.Message {
 }
 
 // Clone function
-func (m *Stats) Clone() proto.Message {
-	var target *Stats
-	if m == nil {
-		return target
-	}
-	target = &Stats{}
-
-	if m.GetCustomLabels() != nil {
-		target.CustomLabels = make([]*Stats_CustomLabel, len(m.GetCustomLabels()))
-		for idx, v := range m.GetCustomLabels() {
-
-			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.CustomLabels[idx] = h.Clone().(*Stats_CustomLabel)
-			} else {
-				target.CustomLabels[idx] = proto.Clone(v).(*Stats_CustomLabel)
-			}
-
-		}
-	}
-
-	return target
-}
-
-// Clone function
 func (m *FieldDefault) Clone() proto.Message {
 	var target *FieldDefault
 	if m == nil {
@@ -524,25 +500,6 @@ func (m *UpstreamSpec_Anthropic) Clone() proto.Message {
 	}
 
 	target.Version = m.GetVersion()
-
-	return target
-}
-
-// Clone function
-func (m *Stats_CustomLabel) Clone() proto.Message {
-	var target *Stats_CustomLabel
-	if m == nil {
-		return target
-	}
-	target = &Stats_CustomLabel{}
-
-	target.Name = m.GetName()
-
-	target.MetadataNamespace = m.GetMetadataNamespace()
-
-	target.MetadataKey = m.GetMetadataKey()
-
-	target.KeyDelimiter = m.GetKeyDelimiter()
 
 	return target
 }

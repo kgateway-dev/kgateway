@@ -667,7 +667,7 @@ type CustomLabels struct {
 	// This allows for keys with `.` in them to be used.
 	//
 	// +kubebuilder:validation:Optional
-	KeyDelimiter string `json:"keyDelimiter,omitempty"`
+	KeyDelimiter *string `json:"keyDelimiter,omitempty"`
 }
 
 func (in *CustomLabels) GetName() string {
@@ -691,9 +691,9 @@ func (in *CustomLabels) GetMetdataKey() string {
 	return in.MetdataKey
 }
 
-func (in *CustomLabels) GetKeyDelimiter() string {
+func (in *CustomLabels) GetKeyDelimiter() *string {
 	if in == nil {
-		return ""
+		return nil
 	}
 	return in.KeyDelimiter
 }
