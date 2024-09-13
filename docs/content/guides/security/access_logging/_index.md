@@ -417,7 +417,7 @@ You can apply access log filters to requests that match a specific HTTP status c
 
 Use the `defaultValue` option in the Gateway resource to specify the HTTP status code for which you want to apply the access log filter. Note that the `defaultValue` is set for a specific Gateway only. To apply the same HTTP status code to multiple Gateway resources, see `Option 2: Override the default value with a runtime key-value pair`. 
 
-1. Follow the steps in [File-based](#file-based-access-logging) or [gRPC](#grpc-access-loggin) access logging to enable access logging for your gateway.
+1. Follow the steps in [File-based](#file-based-access-logging) or [gRPC](#grpc-access-logging) access logging to enable access logging for your gateway.
 2. To apply additional filters to your access logs, you create or edit your gateway resource and add the access log filters to the `spec.options.accessLoggingService.accessLog` section. The following example uses file-based access logging and captures access logs only for requests with an HTTP response code that is greater than or equal to 400. 
    ```yaml
    apiVersion: gateway.solo.io/v1
