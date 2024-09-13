@@ -659,12 +659,16 @@ type CustomLabels struct {
 
 	// The key to use to get the data from the metadata namespace.
 	// If using a JWT data please see the following envoy docs: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/jwt_authn/v3/config.proto#envoy-v3-api-field-extensions-filters-http-jwt-authn-v3-jwtprovider-payload-in-metadata
+	// This key follows the same format as the envoy access logging for dynamic metadata.
+	// Examples can be found here: https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage
 	//
 	// +kubebuilder:validation:MinLength=1
 	MetdataKey string `json:"metadataKey,omitempty"`
 
 	// The key delimiter to use, by default this is set to `:`.
 	// This allows for keys with `.` in them to be used.
+	// For example, if you have keys in your path with `:` in them, (e.g. `key1:key2:value`)
+	// you can instead set this to `~` to be able to split those keys properly.
 	//
 	// +kubebuilder:validation:Optional
 	KeyDelimiter *string `json:"keyDelimiter,omitempty"`
