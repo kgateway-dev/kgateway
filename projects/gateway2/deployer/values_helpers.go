@@ -196,9 +196,14 @@ func getAIExtensionValues(config *v1alpha1.AiExtension) (*helmAIExtension, error
 		return nil, nil
 	}
 
-	byt, err := json.Marshal(config.GetStats())
-	if err != nil {
-		return nil, err
+	// If we don't do this check, a string "null" will be rendered
+	byt := []byte{}
+	if config.GetStats() != nil {
+		var err error
+		byt, err = json.Marshal(config.GetStats())
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &helmAIExtension{

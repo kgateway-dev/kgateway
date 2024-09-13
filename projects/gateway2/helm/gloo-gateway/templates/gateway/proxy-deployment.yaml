@@ -380,7 +380,7 @@ metadata:
 data:
   stats.json: {{ $gateway.aiExtension.stats }}
 {{- end}}
-{{- end }}
+{{- end}}
 ---
 apiVersion: v1
 kind: ConfigMap
