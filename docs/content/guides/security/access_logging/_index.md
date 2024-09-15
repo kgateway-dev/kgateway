@@ -409,7 +409,15 @@ spec:
 
 You can apply different filters on your access logs to reduce and optimize the number of logs that are stored. For example, you can filter access logs based on request headers, HTTP response codes, gRPC status codes, request duration, health check status, tracing parameters, response flags, and more. You can also combine multiple filters, and perform `AND` and `OR` operations on filter results. For more information, see {{% protobuf name="als.options.gloo.solo.io.AccessLogFilter" display="AccessLogFilter"%}}. 
 
-1. Follow the steps in [File-based](file-based-access-logging) or [gRPC](#grpc-access-loggin) access logging to enable access logging for your gateway.
+### Using status code filters
+
+You can apply access log filters to requests that match a specific HTTP status code by using the `defaultValue` or `runtimeKey` option. 
+
+**Option 1: Use `defaultValue`** </br>
+
+Use the `defaultValue` option in the Gateway resource to specify the HTTP status code for which you want to apply the access log filter. Note that the `defaultValue` is set for a specific Gateway only. To apply the same HTTP status code to multiple Gateway resources, see `Option 2: Override the default value with a runtime key-value pair`. 
+
+1. Follow the steps in [File-based](#file-based-access-logging) or [gRPC](#grpc-access-logging) access logging to enable access logging for your gateway.
 2. To apply additional filters to your access logs, you create or edit your gateway resource and add the access log filters to the `spec.options.accessLoggingService.accessLog` section. The following example uses file-based access logging and captures access logs only for requests with an HTTP response code that is greater than or equal to 400. 
    ```yaml
    apiVersion: gateway.solo.io/v1
@@ -436,7 +444,58 @@ You can apply different filters on your access logs to reduce and optimize the n
                comparison:
                  op: GE
                  value: 
-                   runtimeKey: "400"
+                   defaultValue: 400
+     proxyNames:
+     - gateway-proxy
+     ssl: false
+     useProxyProto: false
+   ```
+
+**Option 2: Override the default value with a runtime key-value pair**: </br>
+
+You can apply access log filters for requests that match an HTTP status code that you defined in the [Envoy runtime configuration layer](https://www.envoyproxy.io/docs/envoy/v1.30.0/configuration/operations/runtime#config-runtime-bootstrap). This setup is useful if you have multiple gateway proxies that all share the same runtime configuration.
+
+{{% notice note %}}
+Note that the `runtimeKey` is enforced only if it matches a key that is defined in Envoy’s runtime configuration layer. Gloo Gateway does not include a key by default. If the key cannot be found in the Envoy runtime configuration, the `defaultValue` option is used to determine the HTTP status code for which to enforce the access log filter. 
+{{% /notice %}}
+
+1. Set a runtime value in the Envoy configuration layer for the status code that you want to apply the access log filter for. The runtime value is a key-value pair, such as `access_log_status_filter: 400`. Choose between the following options to set the runtime value:
+   * Set the runtime value by using the `gatewayProxies.NAME.customStaticLayer` Helm value.
+   * Set the runtime value by using the gateway proxy admin interface.
+
+2. Follow the steps in [File-based](#file-based-access-logging) or [gRPC](#grpc-access-loggin) access logging to enable access logging for your gateway.
+3. Create or edit your gateway resource and add the access log filters to the `spec.options.accessLoggingService.accessLog` section. The following example uses file-based access logging and captures access logs only for requests with an HTTP response code that is greater than or equal to what is defined in the `access_log_status_filter` runtime value.
+
+   {{% notice note %}}
+   Note that the `runtimeKey` overrides any settings in `defaultValue`
+   {{% /notice %}}
+   
+   ```yaml
+   apiVersion: gateway.solo.io/v1
+   kind: Gateway
+   metadata:
+     labels:
+       app: gloo
+     name: gateway-proxy
+     namespace: gloo-system
+   spec:
+     bindAddress: '::'
+     bindPort: 8080
+     options:
+       accessLoggingService:
+         accessLog:
+         - fileSink:
+             jsonFormat:
+               duration: '%DURATION%'
+               origpath: '%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%'
+               protocol: '%PROTOCOL%'
+             path: /dev/stdout
+           filter:
+             statusCodeFilter:
+               comparison:
+                 op: GE
+                 value: 
+                   runtimeKey: "access_log_status_filter"
      proxyNames:
      - gateway-proxy
      ssl: false
