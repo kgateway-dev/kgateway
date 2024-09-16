@@ -59,7 +59,7 @@ jobs:
         # September 16, 2024:
         - cluster-name: 'cluster-two'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestValidationStrict$$|^TestValidationAlwaysAccept$$|^TestTransformationValidationDisabled$$|^TestK8sGatewayIstioRevision$$|^TestRevisionIstioRegression$$|^TestK8sGateway$$/^Deployer$$|^TestK8sGateway$$/^RouteOptions$$|^TestK8sGateway$$/^VirtualHostOptions$$|^TestK8sGateway$$/^Upstreams$$|^TestK8sGateway$$/^HeadlessSvc$$|^TestK8sGateway$$/^PortRouting$$|^TestK8sGatewayMinimalDefaultGatewayParameters$$'
+          go-test-run-regex: '^TestK8sGatewayIstioRevision$$|^TestRevisionIstioRegression$$|^TestK8sGateway$$/^Deployer$$|^TestK8sGateway$$/^RouteOptions$$|^TestK8sGateway$$/^VirtualHostOptions$$|^TestK8sGateway$$/^Upstreams$$|^TestK8sGateway$$/^HeadlessSvc$$|^TestK8sGateway$$/^PortRouting$$|^TestK8sGatewayMinimalDefaultGatewayParameters$$'
 
         # September 16, 2024:
         - cluster-name: 'cluster-three'
@@ -74,7 +74,7 @@ jobs:
         # September 16, 2024:
         - cluster-name: 'cluster-five'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestHelm$$'
+          go-test-run-regex: '^TestValidationStrict$$|^TestValidationAlwaysAccept$$|^TestTransformationValidationDisabled$$|^TestHelm$$'
 
         # In our PR tests, we run the suite of tests using the upper ends of versions that we claim to support
         # The versions should mirror: https://docs.solo.io/gloo-edge/latest/reference/support/
