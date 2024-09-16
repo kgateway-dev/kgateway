@@ -52,7 +52,8 @@ func isValidSslKeyPair(certChain, privateKey, rootCa []byte) error {
 	}
 	candidateCert, err := cert.ParseCertsPEM([]byte(certChain))
 	if err != nil {
-		// return err rather than overriding certchain to maintain ux with kubernetes gateway
+		// return err rather than sanitize. This is to maintain UX with older versions and to prevent a large refactor
+		// for gatewayv2 secret validation code.
 		return err
 	}
 	reencoded, err := cert.EncodeCertificates(candidateCert...)
