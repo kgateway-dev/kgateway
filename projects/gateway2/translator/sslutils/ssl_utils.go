@@ -50,6 +50,10 @@ func isValidSslKeyPair(certChain, privateKey, rootCa []byte) error {
 	if err != nil {
 		return err
 	}
+	// validate that the parsed piece is valid
+	// this is still faster than a call out to openssl despite this second parsing pass of the cert
+	// pem parsing in go is permissive while envoy is not
+	// this might not be needed once we have larger envoy validation
 	candidateCert, err := cert.ParseCertsPEM(certChain)
 	if err != nil {
 		// return err rather than sanitize. This is to maintain UX with older versions and to prevent a large refactor
