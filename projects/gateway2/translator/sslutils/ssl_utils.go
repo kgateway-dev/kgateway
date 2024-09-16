@@ -41,7 +41,7 @@ func validatedCertData(sslSecret *corev1.Secret) error {
 }
 
 // isValidSslKeyPair validates that the cert and key are a valid pair
-// It previously only chekced in go but now also checks that nothing is lost in cert encoding
+// It previously only checked in go but now also checks that nothing is lost in cert encoding
 // this keeps us in line with previous ux while also not making a mismatch in what is at rest and what is in envoy.
 func isValidSslKeyPair(certChain, privateKey, rootCa []byte) error {
 
