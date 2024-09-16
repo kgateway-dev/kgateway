@@ -46,11 +46,11 @@ func isValidSslKeyPair(certChain, privateKey, rootCa []byte) error {
 		return NoCertificateFoundError
 	}
 
-	_, err := tls.X509KeyPair([]byte(certChain), []byte(privateKey))
+	_, err := tls.X509KeyPair(certChain, privateKey)
 	if err != nil {
 		return err
 	}
-	candidateCert, err := cert.ParseCertsPEM([]byte(certChain))
+	candidateCert, err := cert.ParseCertsPEM(certChain)
 	if err != nil {
 		// return err rather than sanitize. This is to maintain UX with older versions and to prevent a large refactor
 		// for gatewayv2 secret validation code.
