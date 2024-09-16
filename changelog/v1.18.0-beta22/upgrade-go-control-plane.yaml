@@ -1,0 +1,21 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: envoyproxy
+    dependencyRepo: go-control-plane
+    dependencyTag: v0.13.0
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: golang
+    dependencyRepo: protobuf
+    dependencyTag: v1.5.4
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: envoyproxy
+    dependencyRepo: protoc-gen-validate
+    dependencyTag: v1.0.4
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: google.golang.com
+    dependencyRepo: grpc
+    dependencyTag: v1.65.0
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: google.golang.com
+    dependencyRepo: protobuf
+    dependencyTag: v1.34.1
