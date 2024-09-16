@@ -3,6 +3,9 @@ package controller
 import (
 	"context"
 
+	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/config"
+
 	"github.com/solo-io/gloo/pkg/schemes"
 
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -83,6 +86,13 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		HealthProbeBindAddress: ":9093",
 		Metrics: metricsserver.Options{
 			BindAddress: ":9092",
+		},
+		Controller: config.Controller{
+			// see https://github.com/kubernetes-sigs/controller-runtime/issues/2937
+			// in short, our tests reuse the same name (reasonably so) and the controller-runtime
+			// package does not reset the stack of controller names between tests, so we disable
+			// the name validation here.
+			SkipNameValidation: ptr.To(true),
 		},
 	}
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), mgrOpts)
