@@ -136,4 +136,5 @@ type helmAIExtension struct {
 	Resources       *corev1.ResourceRequirements `json:"resources,omitempty"`
 	Env             []*corev1.EnvVar             `json:"env,omitempty"`
 	Ports           []*corev1.ContainerPort      `json:"ports,omitempty"`
+	Stats           []byte                       `json:"stats,omitempty"`
 }

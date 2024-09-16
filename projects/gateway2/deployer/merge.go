@@ -570,6 +570,22 @@ func deepMergeAIExtension(dst, src *v1alpha1.AiExtension) *v1alpha1.AiExtension 
 	dst.Resources = deepMergeResourceRequirements(dst.GetResources(), src.GetResources())
 	dst.Env = deepMergeSlices(dst.GetEnv(), src.GetEnv())
 	dst.Ports = deepMergeSlices(dst.GetPorts(), src.GetPorts())
+	dst.Stats = deepMergeAIExtensionStats(dst.GetStats(), src.GetStats())
+
+	return dst
+}
+
+func deepMergeAIExtensionStats(dst, src *v1alpha1.AiExtensionStats) *v1alpha1.AiExtensionStats {
+	// nil src override means just use dst
+	if src == nil {
+		return dst
+	}
+
+	if dst == nil {
+		return src
+	}
+
+	dst.CustomLabels = deepMergeSlices(dst.GetCustomLabels(), src.GetCustomLabels())
 
 	return dst
 }
