@@ -3,9 +3,11 @@ package sslutils
 import (
 	"crypto/tls"
 	"fmt"
+	"strings"
 
 	"github.com/rotisserie/eris"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/util/cert"
 )
 
 var (
@@ -45,5 +47,19 @@ func isValidSslKeyPair(certChain, privateKey, rootCa []byte) error {
 	}
 
 	_, err := tls.X509KeyPair([]byte(certChain), []byte(privateKey))
+	if err != nil {
+		return err
+	}
+	candidateCert, err := cert.ParseCertsPEM([]byte(certChain))
+	if err != nil {
+		// return err rather than overriding certchain to maintain ux with kubernetes gateway
+		return err
+	}
+	reencoded, err := cert.EncodeCertificates(candidateCert...)
+	trimmedEncoded := strings.TrimSpace(string(reencoded))
+	if trimmedEncoded != strings.TrimSpace(string(certChain)) {
+		return fmt.Errorf("certificate chain does not match parsed certificate")
+	}
+
 	return err
 }

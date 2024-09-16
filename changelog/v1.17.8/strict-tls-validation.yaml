@@ -1,0 +1,9 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/6772
+    resolvesIssue: false
+    description: >-
+      Plugs a gap where go would check a secret for validity per spec but envoy is more aggressive.
+      For example a tls secret with a certchain that contains an invalid pem block will be rejected by envoy but not go.
+      Prior to this pr these types of secrets would be accepted by gloo and nacked by envoy.
+  
