@@ -3,6 +3,7 @@ package utils
 import (
 	"crypto/tls"
 	"fmt"
+	"strings"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoygrpccredential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
@@ -14,6 +15,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"k8s.io/client-go/util/cert"
 )
 
 //go:generate mockgen -destination mocks/mock_ssl.go github.com/solo-io/gloo/projects/gloo/pkg/utils SslConfigTranslator
@@ -443,7 +445,28 @@ func isValidSslKeyPair(certChain, privateKey, rootCa string) error {
 		return nil
 	}
 
+	// validate that the cert and key are a valid pair
 	_, err := tls.X509KeyPair([]byte(certChain), []byte(privateKey))
+	if err != nil {
+
+		return err
+	}
+
+	// validate that the parsed piece is valid
+	// this is still faster than a call out to openssl despite this second parsing pass of the cert
+	// pem parsing in go is permissive while envoy is not
+	// this might not be needed once we have larger envoy validation
+	candidateCert, err := cert.ParseCertsPEM([]byte(certChain))
+	if err != nil {
+		// return err rather than overriding certchain to maintain ux with kubernetes gateway
+		return err
+	}
+	reencoded, err := cert.EncodeCertificates(candidateCert...)
+	trimmedEncoded := strings.TrimSpace(string(reencoded))
+	if trimmedEncoded != strings.TrimSpace(certChain) {
+		return fmt.Errorf("certificate chain does not match parsed certificate")
+	}
+
 	return err
 }
 
