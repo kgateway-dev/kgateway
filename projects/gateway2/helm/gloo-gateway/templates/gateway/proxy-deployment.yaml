@@ -25,7 +25,7 @@ spec:
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"
       {{- end}}
-      {{- if $gateway.aiExtension.env }}
+      {{- if $gateway.aiExtension.enabled }}
       {{- if $gateway.aiExtension.stats }}
         solo.io/stats-config: {{ sha256sum $gateway.aiExtension.stats | trunc 64 }}
       {{- end }}
