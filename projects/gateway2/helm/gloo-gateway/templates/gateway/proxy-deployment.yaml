@@ -27,7 +27,7 @@ spec:
       {{- end}}
       {{- if (($gateway.aiExtension).enabled) }}
       {{- if $gateway.aiExtension.stats }}
-        solo.io/stats-config: {{ sha256sum $gateway.aiExtension.stats | trunc 64 }}
+        solo.io/ai-stats-config-hash: {{ sha256sum $gateway.aiExtension.stats | trunc 64 }}
       {{- end }}
       {{- end}}
       labels:
