@@ -186,7 +186,7 @@ MIID6TCCA1ICAQEwDQYJKoZIhvcNAQEFBQAwgYsxCzAJBgNVBAYTAlVTMRMwEQYD`
 				Expect(err).To(HaveOccurred())
 
 			},
-			FEntry("upstreamCfg", func() utils.CertSource { return upstreamCfg }),
+			Entry("upstreamCfg", func() utils.CertSource { return upstreamCfg }),
 			Entry("downstreamCfg", func() utils.CertSource { return downstreamCfg }),
 		)
 		DescribeTable("should not have validation context if no rootca",
