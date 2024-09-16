@@ -439,6 +439,9 @@ func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string,
 	return certChain, privateKey, rootCa, ocspStaple, nil
 }
 
+// isValidSslKeyPair validates that the cert and key are a valid pair
+// It previously only chekced in go but now also checks that nothing is lost in cert encoding
+// this keeps us in line with previous ux while also not making a mismatch in what is at rest and what is in envoy.
 func isValidSslKeyPair(certChain, privateKey, rootCa string) error {
 	// in the case where we _only_ provide a rootCa, we do not want to validate tls.key+tls.cert
 	if (certChain == "") && (privateKey == "") && (rootCa != "") {
@@ -448,7 +451,6 @@ func isValidSslKeyPair(certChain, privateKey, rootCa string) error {
 	// validate that the cert and key are a valid pair
 	_, err := tls.X509KeyPair([]byte(certChain), []byte(privateKey))
 	if err != nil {
-
 		return err
 	}
 
@@ -458,7 +460,6 @@ func isValidSslKeyPair(certChain, privateKey, rootCa string) error {
 	// this might not be needed once we have larger envoy validation
 	candidateCert, err := cert.ParseCertsPEM([]byte(certChain))
 	if err != nil {
-		// return err rather than sanitize. This is to maintain UX with older versions and to keep in line with gateway2 pkg.
 		return err
 	}
 	reencoded, err := cert.EncodeCertificates(candidateCert...)

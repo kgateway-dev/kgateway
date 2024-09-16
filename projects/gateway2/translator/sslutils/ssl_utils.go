@@ -40,6 +40,9 @@ func validatedCertData(sslSecret *corev1.Secret) error {
 	return nil
 }
 
+// isValidSslKeyPair validates that the cert and key are a valid pair
+// It previously only chekced in go but now also checks that nothing is lost in cert encoding
+// this keeps us in line with previous ux while also not making a mismatch in what is at rest and what is in envoy.
 func isValidSslKeyPair(certChain, privateKey, rootCa []byte) error {
 
 	if len(certChain) == 0 || len(privateKey) == 0 {
@@ -56,8 +59,6 @@ func isValidSslKeyPair(certChain, privateKey, rootCa []byte) error {
 	// this might not be needed once we have larger envoy validation
 	candidateCert, err := cert.ParseCertsPEM(certChain)
 	if err != nil {
-		// return err rather than sanitize. This is to maintain UX with older versions and to prevent a large refactor
-		// for gatewayv2 secret validation code.
 		return err
 	}
 	reencoded, err := cert.EncodeCertificates(candidateCert...)
