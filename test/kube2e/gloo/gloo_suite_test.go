@@ -73,7 +73,7 @@ var _ = BeforeSuite(func() {
 	}
 
 	// We rely on the "new" kubernetes/e2e setup code, since it incorporates controller-runtime logging setup
-	clusterContext := cluster.MustKindContext("gateway")
+	clusterContext := cluster.MustKindContext("gloo")
 
 	resourceClientset, err = kube2e.NewKubeResourceClientSet(ctx, clusterContext.RestConfig)
 	Expect(err).NotTo(HaveOccurred(), "can create kube resource client set")
