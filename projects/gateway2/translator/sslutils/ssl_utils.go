@@ -32,6 +32,10 @@ func validatedCertData(sslSecret *corev1.Secret) error {
 	privateKey := sslSecret.Data[corev1.TLSPrivateKeyKey]
 	rootCa := sslSecret.Data[corev1.ServiceAccountRootCAKey]
 
+	// we always return an error when the certChain and/or privateKey are invalid
+	// in theory we could propagate only the valid blocks of the certChain (ie the output of cert.ParseCertsPEM(certChain))º
+	// and this would be accepted by Envoy, however we choose to maintain consistency between the secret at rest and in
+	// Envoy, which also maintains consistency with existing UX
 	err := isValidSslKeyPair(certChain, privateKey, rootCa)
 	if err != nil {
 		return InvalidTlsSecretError(sslSecret, err)
@@ -42,7 +46,6 @@ func validatedCertData(sslSecret *corev1.Secret) error {
 
 // isValidSslKeyPair validates that the cert and key are a valid pair
 // It previously only checked in go but now also checks that nothing is lost in cert encoding
-// this keeps us in line with previous ux while also not making a mismatch in what is at rest and what is in envoy.
 func isValidSslKeyPair(certChain, privateKey, rootCa []byte) error {
 
 	if len(certChain) == 0 || len(privateKey) == 0 {

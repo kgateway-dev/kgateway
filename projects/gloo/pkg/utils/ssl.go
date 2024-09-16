@@ -431,6 +431,10 @@ func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string,
 	rootCa := sslSecret.Tls.GetRootCa()
 	ocspStaple := sslSecret.Tls.GetOcspStaple()
 
+	// we always return an error when the certChain and/or privateKey are invalid
+	// in theory we could propagate only the valid blocks of the certChain (ie the output of cert.ParseCertsPEM(certChain))º
+	// and this would be accepted by Envoy, however we choose to maintain consistency between the secret at rest and in
+	// Envoy, which also maintains consistency with existing UX
 	err = isValidSslKeyPair(certChain, privateKey, rootCa)
 	if err != nil {
 		return "", "", "", nil, InvalidTlsSecretError(secret.GetMetadata().Ref(), err)
@@ -441,7 +445,6 @@ func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string,
 
 // isValidSslKeyPair validates that the cert and key are a valid pair
 // It previously only checked in go but now also checks that nothing is lost in cert encoding
-// this keeps us in line with previous ux while also not making a mismatch in what is at rest and what is in envoy.
 func isValidSslKeyPair(certChain, privateKey, rootCa string) error {
 	// in the case where we _only_ provide a rootCa, we do not want to validate tls.key+tls.cert
 	if (certChain == "") && (privateKey == "") && (rootCa != "") {
