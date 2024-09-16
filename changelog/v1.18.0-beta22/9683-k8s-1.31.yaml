@@ -1,5 +1,5 @@
 changelog:
-  - type: DEPENDENCY_BUMP
+  - type: NON_USER_FACING
     description: Upgrade kubernetes to 1.31 and go to 1.23.1
     issueLink: https://github.com/solo-io/gloo/issues/9683
   - type: DEPENDENCY_BUMP
