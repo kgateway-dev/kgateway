@@ -57,6 +57,9 @@ func isValidSslKeyPair(certChain, privateKey, rootCa []byte) error {
 		return err
 	}
 	reencoded, err := cert.EncodeCertificates(candidateCert...)
+	if err != nil {
+		return err
+	}
 	trimmedEncoded := strings.TrimSpace(string(reencoded))
 	if trimmedEncoded != strings.TrimSpace(string(certChain)) {
 		return fmt.Errorf("certificate chain does not match parsed certificate")
