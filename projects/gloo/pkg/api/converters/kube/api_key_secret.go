@@ -2,10 +2,12 @@ package kubeconverters
 
 import (
 	"context"
+	"strings"
 
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
+	"golang.org/x/net/http/httpguts"
 	corev1 "k8s.io/api/core/v1"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -53,6 +55,20 @@ func (c *APIKeySecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecre
 			if key == APIKeyDataKey {
 				continue
 			}
+
+			if !httpguts.ValidHeaderFieldName(key) {
+				key = strings.TrimSpace(key)
+				if !httpguts.ValidHeaderFieldName(key) {
+					contextutils.LoggerFrom(ctx).Warnw("apikey had unresolvable header", zap.Any("header", key))
+					//continue
+				}
+			}
+			if !httpguts.ValidHeaderFieldValue(string(value)) {
+				// v could be sensitive, only log k
+				contextutils.LoggerFrom(ctx).Warnw("apikey had unresolvable headervalue", zap.Any("header", key), zap.String("value", string(value)))
+				//continue
+			}
+
 			apiKeySecret.GetMetadata()[key] = string(value)
 		}
 
