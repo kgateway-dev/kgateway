@@ -2,10 +2,12 @@ package kubeconverters
 
 import (
 	"context"
+	"strings"
 
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
+	"golang.org/x/net/http/httpguts"
 	corev1 "k8s.io/api/core/v1"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -29,7 +31,9 @@ func (c *APIKeySecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecre
 		return nil, nil
 	}
 
+	contextutils.LoggerFrom(ctx).Debugw("DO_NOT_SUBMIT: FromKubeSecret")
 	if secret.Type == APIKeySecretType {
+		contextutils.LoggerFrom(ctx).Debugw("DO_NOT_SUBMIT: converting API key secret")
 		apiKey, hasAPIKey := secret.Data[APIKeyDataKey]
 		if !hasAPIKey {
 			contextutils.LoggerFrom(ctx).Warnw("skipping API key secret with no api-key data field",
@@ -47,10 +51,25 @@ func (c *APIKeySecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecre
 
 		// Copy remaining secret data to gloo secret metadata
 		for key, value := range secret.Data {
+			contextutils.LoggerFrom(ctx).Debugw("DO_NOT_SUBMIT: copying secret data to gloo secret metadata", zap.String("key", key), zap.String("value", string(value)))
 			if key == APIKeyDataKey {
 				continue
 			}
 			apiKeySecret.GetMetadata()[key] = string(value)
+
+			if !httpguts.ValidHeaderFieldName(key) {
+				key = strings.TrimSpace(key)
+				if !httpguts.ValidHeaderFieldName(key) {
+					contextutils.LoggerFrom(ctx).Warnw("apikey had unresolvable header", zap.Any("header", key))
+					//continue
+				}
+			}
+			if !httpguts.ValidHeaderFieldValue(string(value)) {
+				// v could be sensitive, only log k
+				contextutils.LoggerFrom(ctx).Warnw("apikey had unresolvable headervalue", zap.Any("header", key), zap.String("value", string(value)))
+				//return nil, eris.New("apikey had unresolvable headervalue")
+				//continue
+			}
 		}
 
 		glooSecret := &v1.Secret{
