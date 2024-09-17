@@ -145,7 +145,7 @@ spec:
   configs:
   - apiKeyAuth:
       # This is the name of the header that is expected to contain the API key.
-      # This field is optional and defaults to `api-key` if not present.
+      # This field is optional and defaults to 'api-key' if not present.
       headerName: api-key
       labelSelector:
         team: infrastructure

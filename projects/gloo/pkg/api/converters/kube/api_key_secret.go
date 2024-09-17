@@ -60,14 +60,14 @@ func (c *APIKeySecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecre
 				key = strings.TrimSpace(key)
 				if !httpguts.ValidHeaderFieldName(key) {
 					contextutils.LoggerFrom(ctx).Warnw("apikey had unresolvable header", zap.Any("header", key))
-					continue
+					//continue
 				}
 			}
 			if !httpguts.ValidHeaderFieldValue(string(value)) {
 				// v could be sensitive, only log k
 				contextutils.LoggerFrom(ctx).Warnw("apikey had unresolvable headervalue", zap.Any("header", key), zap.String("value", string(value)))
 				//return nil, eris.New("apikey had unresolvable headervalue")
-				continue
+				//continue
 			}
 
 			apiKeySecret.GetMetadata()[key] = string(value)
