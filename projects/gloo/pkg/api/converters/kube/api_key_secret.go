@@ -29,7 +29,9 @@ func (c *APIKeySecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecre
 		return nil, nil
 	}
 
+	contextutils.LoggerFrom(ctx).Debugw("DO_NOT_SUBMIT: FromKubeSecret")
 	if secret.Type == APIKeySecretType {
+		contextutils.LoggerFrom(ctx).Debugw("DO_NOT_SUBMIT: converting API key secret")
 		apiKey, hasAPIKey := secret.Data[APIKeyDataKey]
 		if !hasAPIKey {
 			contextutils.LoggerFrom(ctx).Warnw("skipping API key secret with no api-key data field",
@@ -47,6 +49,7 @@ func (c *APIKeySecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecre
 
 		// Copy remaining secret data to gloo secret metadata
 		for key, value := range secret.Data {
+			contextutils.LoggerFrom(ctx).Debugw("DO_NOT_SUBMIT: copying secret data to gloo secret metadata", zap.String("key", key), zap.String("value", string(value)))
 			if key == APIKeyDataKey {
 				continue
 			}
