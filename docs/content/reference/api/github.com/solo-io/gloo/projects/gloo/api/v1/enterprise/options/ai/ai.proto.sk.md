@@ -427,18 +427,22 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 
 
 ```yaml
-"host": string
+"httpUrl": string
+"grpcUrl": string
 "httpPort": int
 "grpcPort": int
+"connectionSecure": bool
 "scoreThreshold": float
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `host` | `string` | Connection string to the Weaviate database. |
-| `httpPort` | `int` |  |
-| `grpcPort` | `int` |  |
+| `httpUrl` | `string` | Connection string to the Weaviate database, scheme should NOT be included. For example: weaviate.my-ns.svc.cluster.local NOT: http://weaviate.my-ns.svc.cluster.local. |
+| `grpcUrl` | `string` | Same as http_url but for GRPC connections. |
+| `httpPort` | `int` | HTTP port to use, if unset will default to 8080. |
+| `grpcPort` | `int` | GRPC port to use, if unset will default to 50051. |
+| `connectionSecure` | `bool` | Whether or not to use a secure connection This will default to true if `http_port` is set to 443. |
 | `scoreThreshold` | `float` | Similarity score threshold value between 0.0 and 1.0 that determines how similar two queries need to be in order to return a cached result. The lower the number, the more similar the queries need to be for a cache hit. +kubebuilder:validation:Minimum=0 +kubebuilder:validation:Maximum=1. |
 
 

@@ -1022,7 +1022,11 @@ func (m *SemanticCache_Weaviate) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetHost(), target.GetHost()) != 0 {
+	if strings.Compare(m.GetHttpUrl(), target.GetHttpUrl()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetGrpcUrl(), target.GetGrpcUrl()) != 0 {
 		return false
 	}
 
@@ -1031,6 +1035,10 @@ func (m *SemanticCache_Weaviate) Equal(that interface{}) bool {
 	}
 
 	if m.GetGrpcPort() != target.GetGrpcPort() {
+		return false
+	}
+
+	if m.GetConnectionSecure() != target.GetConnectionSecure() {
 		return false
 	}
 
