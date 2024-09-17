@@ -240,6 +240,10 @@ func (c *Client) GetSingleListenerFromDynamicListeners(
 	}
 
 	configs := cfgDump.GetConfigs()
+
+	// if no dynamic listeners name matching listenerNameRegex or
+	// before envoy is full configured, dynamic listeners will be missing
+	// and envoy will return an empty object json object `{}`
 	if len(configs) == 0 {
 		return nil, fmt.Errorf("could not get config: config is empty")
 	}
