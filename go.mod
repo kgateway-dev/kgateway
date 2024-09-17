@@ -13,8 +13,8 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.4.1
 	github.com/cncf/xds/go v0.0.0-20240423153145-555b57ec207b
 	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa
-	github.com/envoyproxy/go-control-plane v0.12.0
-	github.com/envoyproxy/protoc-gen-validate v1.1.0
+	github.com/envoyproxy/go-control-plane v0.13.0
+	github.com/envoyproxy/protoc-gen-validate v1.0.4
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
@@ -262,6 +262,7 @@ require (
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
+	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_golang v1.19.1 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
@@ -333,9 +334,6 @@ replace (
 	// to avoid error about it being used for two different module paths
 	github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v0.0.0-20210511163231-5b2d2b5f6c34
 	github.com/docker/docker => github.com/moby/moby v24.0.7+incompatible
-
-	// Remove once we get to envoy 1.30
-	github.com/envoyproxy/go-control-plane => github.com/solo-io/go-control-plane-fork-v2 v1.29.0-patch1
 
 	// Pin this to a version compatible with protoc-gen-openapi
 	github.com/getkin/kin-openapi => github.com/getkin/kin-openapi v0.107.0
