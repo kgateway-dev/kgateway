@@ -228,6 +228,30 @@ spec:
                                 type: string
                             type: object
                         type: object
+                      stats:
+                        properties:
+                          customLabels:
+                            items:
+                              properties:
+                                keyDelimiter:
+                                  type: string
+                                metadataKey:
+                                  minLength: 1
+                                  type: string
+                                metadataNamespace:
+                                  enum:
+                                  - envoy.filters.http.jwt_authn
+                                  - io.solo.transformation
+                                  type: string
+                                name:
+                                  minLength: 1
+                                  type: string
+                              required:
+                              - metadataKey
+                              - name
+                              type: object
+                            type: array
+                        type: object
                     type: object
                   deployment:
                     properties:
