@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/rotisserie/eris"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
@@ -66,7 +67,7 @@ func (c *APIKeySecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecre
 			if !httpguts.ValidHeaderFieldValue(string(value)) {
 				// v could be sensitive, only log k
 				contextutils.LoggerFrom(ctx).Warnw("apikey had unresolvable headervalue", zap.Any("header", key), zap.String("value", string(value)))
-				//continue
+				return nil, eris.New("apikey had unresolvable headervalue")
 			}
 
 			apiKeySecret.GetMetadata()[key] = string(value)
