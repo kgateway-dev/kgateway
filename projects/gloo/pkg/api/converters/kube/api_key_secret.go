@@ -4,7 +4,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/rotisserie/eris"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
@@ -61,13 +60,14 @@ func (c *APIKeySecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecre
 				key = strings.TrimSpace(key)
 				if !httpguts.ValidHeaderFieldName(key) {
 					contextutils.LoggerFrom(ctx).Warnw("apikey had unresolvable header", zap.Any("header", key))
-					//continue
+					continue
 				}
 			}
 			if !httpguts.ValidHeaderFieldValue(string(value)) {
 				// v could be sensitive, only log k
 				contextutils.LoggerFrom(ctx).Warnw("apikey had unresolvable headervalue", zap.Any("header", key), zap.String("value", string(value)))
-				return nil, eris.New("apikey had unresolvable headervalue")
+				//return nil, eris.New("apikey had unresolvable headervalue")
+				continue
 			}
 
 			apiKeySecret.GetMetadata()[key] = string(value)
@@ -87,6 +87,8 @@ func (c *APIKeySecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecre
 }
 
 func (c *APIKeySecretConverter) ToKubeSecret(_ context.Context, rc *kubesecret.ResourceClient, resource resources.Resource) (*corev1.Secret, error) {
+	contextutils.LoggerFrom(context.Background()).Debugw("DO_NOT_SUBMIT: ToKubeSecret")
+
 	glooSecret, ok := resource.(*v1.Secret)
 	if !ok {
 		return nil, nil
