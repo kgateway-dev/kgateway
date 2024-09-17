@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Increases timeout for retrieving proxy metrics in glooctl check to 60 seconds.

@@ -167,9 +167,9 @@ func requestProxiesFromControlPlane(opts *options.Options, request *debug.ProxyE
 		return err
 	},
 		retry.LastErrorOnly(true),
-		retry.Delay(100*time.Millisecond),
-		retry.DelayType(retry.BackOffDelay),
-		retry.Attempts(5),
+		retry.Delay(250*time.Millisecond),
+		retry.DelayType(retry.FixedDelay),
+		retry.Attempts(60), // 15s total timeout
 	)
 
 	if requestErr != nil {

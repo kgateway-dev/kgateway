@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >- 
+      Update regular expression used in allowOriginRegex in the CORS documentation.
+      skipCI-kube-tests: true

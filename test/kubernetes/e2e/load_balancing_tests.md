@@ -29,7 +29,7 @@ Re-balancing of tests is intentionally a very easy action, though it shouldn't n
 - All clusters are exhausted, and we need to introduce a new cluster into the rotation
 
 ### Steps to take
-1. Review the recent results from CI, and capture them in a document under `test/kubernetes/e2e/load_balances/`
+1. Review the recent results from CI, and identify which tests can be migrated
 2. Adjust the run functions that are invoked in our [GitHub action matrix](/.github/workflows/pr-kubernetes-tests.yaml)
 4. Document the **new** results, on the matrix that runs the tests
 4. Open a PR clearly documenting in the PR body the results before and after the change
