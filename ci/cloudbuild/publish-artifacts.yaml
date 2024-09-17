@@ -1,6 +1,6 @@
 steps:
 
-- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.9.3'
+- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:$CLOUD_BUILDERS_VERSION'
   id: 'prepare-workspace'
   args:
   - '--repo-name'
@@ -44,7 +44,7 @@ steps:
   - 'us-central1-a'
 
 # Run make targets to push docker images to quay.io
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.9.3'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:$CLOUD_BUILDERS_VERSION'
   id: 'publish-docker'
   args:
   - 'publish-docker'
@@ -65,7 +65,7 @@ steps:
   waitFor:
   - 'publish-docker'
 
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.9.3'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:$CLOUD_BUILDERS_VERSION'
   id: 'release-chart'
   dir: *dir
   args:
@@ -80,7 +80,7 @@ steps:
   - 'gcr-auth'
 
 # Run make targets to retag and push docker images to GCR
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.9.3'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:$CLOUD_BUILDERS_VERSION'
   id: 'docker-push-extended-gcr'
   dir: *dir
   args:
@@ -112,6 +112,7 @@ options:
   - 'DOCKER_CONFIG=/workspace/docker-config'
   - 'TAGGED_VERSION=$TAG_NAME'
   - 'TEST_ASSET_ID=$_PR_NUM'
+  - 'CLOUD_BUILDERS_VERSION=0.10.1'
   volumes:
   - name: 'gopath'
     path: '/go'
