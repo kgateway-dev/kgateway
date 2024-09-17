@@ -3,6 +3,7 @@ package utils
 import (
 	"crypto/tls"
 	"fmt"
+	"strings"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoygrpccredential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
@@ -14,6 +15,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"k8s.io/client-go/util/cert"
 )
 
 //go:generate mockgen -destination mocks/mock_ssl.go github.com/solo-io/gloo/projects/gloo/pkg/utils SslConfigTranslator
@@ -429,6 +431,10 @@ func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string,
 	rootCa := sslSecret.Tls.GetRootCa()
 	ocspStaple := sslSecret.Tls.GetOcspStaple()
 
+	// we always return an error when the certChain and/or privateKey are invalid
+	// in theory we could propagate only the valid blocks of the certChain (ie the output of cert.ParseCertsPEM(certChain))º
+	// and this would be accepted by Envoy, however we choose to maintain consistency between the secret at rest and in
+	// Envoy, which also maintains consistency with existing UX
 	err = isValidSslKeyPair(certChain, privateKey, rootCa)
 	if err != nil {
 		return "", "", "", nil, InvalidTlsSecretError(secret.GetMetadata().Ref(), err)
@@ -437,13 +443,37 @@ func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string,
 	return certChain, privateKey, rootCa, ocspStaple, nil
 }
 
+// isValidSslKeyPair validates that the cert and key are a valid pair
+// It previously only checked in go but now also checks that nothing is lost in cert encoding
 func isValidSslKeyPair(certChain, privateKey, rootCa string) error {
 	// in the case where we _only_ provide a rootCa, we do not want to validate tls.key+tls.cert
 	if (certChain == "") && (privateKey == "") && (rootCa != "") {
 		return nil
 	}
 
+	// validate that the cert and key are a valid pair
 	_, err := tls.X509KeyPair([]byte(certChain), []byte(privateKey))
+	if err != nil {
+		return err
+	}
+
+	// validate that the parsed piece is valid
+	// this is still faster than a call out to openssl despite this second parsing pass of the cert
+	// pem parsing in go is permissive while envoy is not
+	// this might not be needed once we have larger envoy validation
+	candidateCert, err := cert.ParseCertsPEM([]byte(certChain))
+	if err != nil {
+		return err
+	}
+	reencoded, err := cert.EncodeCertificates(candidateCert...)
+	if err != nil {
+		return err
+	}
+	trimmedEncoded := strings.TrimSpace(string(reencoded))
+	if trimmedEncoded != strings.TrimSpace(certChain) {
+		return fmt.Errorf("certificate chain does not match parsed certificate")
+	}
+
 	return err
 }
 
