@@ -25,6 +25,11 @@ spec:
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"
       {{- end}}
+      {{- if (($gateway.aiExtension).enabled) }}
+      {{- if $gateway.aiExtension.stats }}
+        solo.io/ai-stats-config-hash: {{ sha256sum $gateway.aiExtension.stats | trunc 64 }}
+      {{- end }}
+      {{- end}}
       labels:
         {{- include "gloo-gateway.gateway.selectorLabels" . | nindent 8 }}
         {{- with $gateway.extraPodLabels }}

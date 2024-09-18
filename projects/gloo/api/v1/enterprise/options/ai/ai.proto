@@ -354,10 +354,24 @@ message SemanticCache {
     // +kubebuilder:validation:Maximum=1
     float score_threshold = 2;
   }
+
+  message Weaviate {
+    // Connection string to the Weaviate database, scheme should NOT be included.
+    // For example: weaviate.my-ns.svc.cluster.local
+    // NOT: http://weaviate.my-ns.svc.cluster.local
+    string host = 1;
+    // HTTP port to use, if unset will default to 8080
+    uint32 http_port = 2;
+    // GRPC port to use, if unset will default to 50051
+    uint32 grpc_port = 3;
+    // Whether or not to use a secure connection, true by default
+    bool insecure = 4;
+  }
   // Data store from which to cache the request/response pairs
   message DataStore {
     oneof datastore {
       Redis redis = 1;
+      Weaviate weaviate = 2;
     }
   }
   enum Mode {
