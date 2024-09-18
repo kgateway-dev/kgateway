@@ -177,6 +177,18 @@ var _ = Describe("Ssl", func() {
 			Entry("upstreamCfg", func() utils.CertSource { return upstreamCfg }),
 			Entry("downstreamCfg", func() utils.CertSource { return downstreamCfg }),
 		)
+		DescribeTable("should fail if invalid for envoy cert is provided",
+			func(c func() utils.CertSource) {
+				// unterminated cert in chain is valid for go b ut not envoy
+				tlsSecret.CertChain += `-----BEGIN CERTIFICATE-----
+MIID6TCCA1ICAQEwDQYJKoZIhvcNAQEFBQAwgYsxCzAJBgNVBAYTAlVTMRMwEQYD`
+				_, err := resolveCommonSslConfig(c(), secrets)
+				Expect(err).To(HaveOccurred())
+
+			},
+			Entry("upstreamCfg", func() utils.CertSource { return upstreamCfg }),
+			Entry("downstreamCfg", func() utils.CertSource { return downstreamCfg }),
+		)
 		DescribeTable("should not have validation context if no rootca",
 			func(c func() utils.CertSource) {
 				tlsSecret.RootCa = ""

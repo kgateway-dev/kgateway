@@ -51,8 +51,10 @@ var (
 	//
 	// This is only required for backwards compatibility.
 	// Once users have upgraded to a version with new labels, we can delete this code and read/write the same labels.
+	// gloo-knative-translator removed in 1.17
+	// knative removed in 1.12
 	proxyLabelSelectorOptions = clients.ListOpts{
-		ExpressionSelector: glooutils.GetTranslatorSelectorExpression(glooutils.KnativeProxyValue, "knative"),
+		ExpressionSelector: glooutils.GetTranslatorSelectorExpression(glooutils.KnativeProxyValue, "gloo-knative-translator", "knative"),
 	}
 )
 
