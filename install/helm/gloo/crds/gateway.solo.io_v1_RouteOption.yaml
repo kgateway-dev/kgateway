@@ -160,6 +160,21 @@ spec:
                                   scoreThreshold:
                                     type: number
                                 type: object
+                              weaviate:
+                                properties:
+                                  grpcPort:
+                                    maximum: 4294967295
+                                    minimum: 0
+                                    type: integer
+                                  host:
+                                    type: string
+                                  httpPort:
+                                    maximum: 4294967295
+                                    minimum: 0
+                                    type: integer
+                                  insecure:
+                                    type: boolean
+                                type: object
                             type: object
                           embedding:
                             properties:
