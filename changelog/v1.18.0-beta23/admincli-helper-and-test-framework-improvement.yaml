@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/9656
+    resolvesIssue: false
+    description:
+      Updated admincli GetSingleListenerFromDynamicListeners() to prevent it from crashing if config dump is an empty array.
+      Made sure the envoy docker container is killed before finishing AfterEach() so the container will not be left behind when
+      the test process exists.
