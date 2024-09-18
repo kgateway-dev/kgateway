@@ -765,6 +765,29 @@ func (m *ClaimToHeader) Clone() proto.Message {
 }
 
 // Clone function
+func (m *Azure) Clone() proto.Message {
+	var target *Azure
+	if m == nil {
+		return target
+	}
+	target = &Azure{}
+
+	target.ClientId = m.GetClientId()
+
+	target.TenantId = m.GetTenantId()
+
+	target.ClientSecret = m.GetClientSecret()
+
+	if h, ok := interface{}(m.GetClaimsCachingOptions()).(clone.Cloner); ok {
+		target.ClaimsCachingOptions = h.Clone().(*RedisOptions)
+	} else {
+		target.ClaimsCachingOptions = proto.Clone(m.GetClaimsCachingOptions()).(*RedisOptions)
+	}
+
+	return target
+}
+
+// Clone function
 func (m *OidcAuthorizationCode) Clone() proto.Message {
 	var target *OidcAuthorizationCode
 	if m == nil {
@@ -1098,6 +1121,25 @@ func (m *AccessTokenValidation) Clone() proto.Message {
 			target.DynamicMetadataFromClaims[k] = v
 
 		}
+	}
+
+	if m.GetClaimsToHeaders() != nil {
+		target.ClaimsToHeaders = make([]*ClaimToHeader, len(m.GetClaimsToHeaders()))
+		for idx, v := range m.GetClaimsToHeaders() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ClaimsToHeaders[idx] = h.Clone().(*ClaimToHeader)
+			} else {
+				target.ClaimsToHeaders[idx] = proto.Clone(v).(*ClaimToHeader)
+			}
+
+		}
+	}
+
+	if h, ok := interface{}(m.GetAzure()).(clone.Cloner); ok {
+		target.Azure = h.Clone().(*Azure)
+	} else {
+		target.Azure = proto.Clone(m.GetAzure()).(*Azure)
 	}
 
 	switch m.ValidationType.(type) {
@@ -3208,15 +3250,15 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Clone() proto.Message {
 			}
 		}
 
-	case *ExtAuthConfig_OidcAuthorizationCodeConfig_Azure_:
+	case *ExtAuthConfig_OidcAuthorizationCodeConfig_Azure:
 
 		if h, ok := interface{}(m.GetAzure()).(clone.Cloner); ok {
-			target.Provider = &ExtAuthConfig_OidcAuthorizationCodeConfig_Azure_{
-				Azure: h.Clone().(*ExtAuthConfig_OidcAuthorizationCodeConfig_Azure),
+			target.Provider = &ExtAuthConfig_OidcAuthorizationCodeConfig_Azure{
+				Azure: h.Clone().(*Azure),
 			}
 		} else {
-			target.Provider = &ExtAuthConfig_OidcAuthorizationCodeConfig_Azure_{
-				Azure: proto.Clone(m.GetAzure()).(*ExtAuthConfig_OidcAuthorizationCodeConfig_Azure),
+			target.Provider = &ExtAuthConfig_OidcAuthorizationCodeConfig_Azure{
+				Azure: proto.Clone(m.GetAzure()).(*Azure),
 			}
 		}
 
@@ -4030,29 +4072,6 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_Default) Clone() proto.Messag
 		return target
 	}
 	target = &ExtAuthConfig_OidcAuthorizationCodeConfig_Default{}
-
-	return target
-}
-
-// Clone function
-func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_Azure) Clone() proto.Message {
-	var target *ExtAuthConfig_OidcAuthorizationCodeConfig_Azure
-	if m == nil {
-		return target
-	}
-	target = &ExtAuthConfig_OidcAuthorizationCodeConfig_Azure{}
-
-	target.ClientId = m.GetClientId()
-
-	target.TenantId = m.GetTenantId()
-
-	target.ClientSecret = m.GetClientSecret()
-
-	if h, ok := interface{}(m.GetClaimsCachingOptions()).(clone.Cloner); ok {
-		target.ClaimsCachingOptions = h.Clone().(*RedisOptions)
-	} else {
-		target.ClaimsCachingOptions = proto.Clone(m.GetClaimsCachingOptions()).(*RedisOptions)
-	}
 
 	return target
 }
