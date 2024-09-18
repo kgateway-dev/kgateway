@@ -137,6 +137,7 @@ spec:
       disableTransformationValidation: {{ .Values.gateway.validation.disableTransformationValidation }}
       warnRouteShortCircuiting: {{ .Values.gateway.validation.warnRouteShortCircuiting }}
       validationServerGrpcMaxSizeBytes: {{ .Values.gateway.validation.validationServerGrpcMaxSizeBytes }}
+      fullEnvoyValidation: {{ .Values.gateway.validation.fullEnvoyValidation }}
 {{- end }}
 
 {{- if .Values.discovery }}
