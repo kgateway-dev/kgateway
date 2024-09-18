@@ -17,6 +17,7 @@ import (
 )
 
 // TestK8sGatewayResourceLimits is the function which executes a series of tests against a given installation
+// This runs the same tests as TestK8sGateway, but with resource limits set in the helm manifest.
 func TestK8sGatewayResourceLimits(t *testing.T) {
 	ctx := context.Background()
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "k8s-gateway-resource-limits-test")
@@ -57,5 +58,5 @@ func TestK8sGatewayResourceLimits(t *testing.T) {
 		return testHelper.InstallGloo(ctx, 5*time.Minute, helper.WithExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
-	KubeGatewayResourceLimitsSuiteRunner().Run(ctx, t, testInstallation)
+	KubeGatewaySuiteRunner().Run(ctx, t, testInstallation)
 }

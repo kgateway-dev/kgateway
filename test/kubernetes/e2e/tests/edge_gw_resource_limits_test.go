@@ -18,6 +18,7 @@ import (
 
 // TestEdgeGatewayResourceLimits is the function which executes a series of tests against a given installation where
 // the k8s Gateway controller is disabled
+// This runs the same tests as TestGlooGatewayEdgeGateway, but with resource limits set in the helm manifest.
 func TestEdgeGatewayResourceLimits(t *testing.T) {
 	ctx := context.Background()
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "edge-gateway-resource-limits-test")
@@ -55,5 +56,5 @@ func TestEdgeGatewayResourceLimits(t *testing.T) {
 		return testHelper.InstallGloo(ctx, 5*time.Minute, helper.WithExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
 	})
 
-	EdgeGatewayResourceLimitsSuiteRunner().Run(ctx, t, testInstallation)
+	EdgeGwSuiteRunner().Run(ctx, t, testInstallation)
 }
