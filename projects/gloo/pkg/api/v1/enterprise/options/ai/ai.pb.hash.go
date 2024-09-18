@@ -1089,11 +1089,7 @@ func (m *SemanticCache_Weaviate) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetHttpUrl())); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte(m.GetGrpcUrl())); err != nil {
+	if _, err = hasher.Write([]byte(m.GetHost())); err != nil {
 		return 0, err
 	}
 
@@ -1107,12 +1103,7 @@ func (m *SemanticCache_Weaviate) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	err = binary.Write(hasher, binary.LittleEndian, m.GetConnectionSecure())
-	if err != nil {
-		return 0, err
-	}
-
-	err = binary.Write(hasher, binary.LittleEndian, m.GetScoreThreshold())
+	err = binary.Write(hasher, binary.LittleEndian, m.GetInsecure())
 	if err != nil {
 		return 0, err
 	}

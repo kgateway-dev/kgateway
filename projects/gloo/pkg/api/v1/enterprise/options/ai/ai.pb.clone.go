@@ -587,17 +587,13 @@ func (m *SemanticCache_Weaviate) Clone() proto.Message {
 	}
 	target = &SemanticCache_Weaviate{}
 
-	target.HttpUrl = m.GetHttpUrl()
-
-	target.GrpcUrl = m.GetGrpcUrl()
+	target.Host = m.GetHost()
 
 	target.HttpPort = m.GetHttpPort()
 
 	target.GrpcPort = m.GetGrpcPort()
 
-	target.ConnectionSecure = m.GetConnectionSecure()
-
-	target.ScoreThreshold = m.GetScoreThreshold()
+	target.Insecure = m.GetInsecure()
 
 	return target
 }

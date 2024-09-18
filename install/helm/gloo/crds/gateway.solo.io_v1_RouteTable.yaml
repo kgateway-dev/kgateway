@@ -272,22 +272,18 @@ spec:
                                       type: object
                                     weaviate:
                                       properties:
-                                        connectionSecure:
-                                          type: boolean
                                         grpcPort:
                                           maximum: 4294967295
                                           minimum: 0
                                           type: integer
-                                        grpcUrl:
+                                        host:
                                           type: string
                                         httpPort:
                                           maximum: 4294967295
                                           minimum: 0
                                           type: integer
-                                        httpUrl:
-                                          type: string
-                                        scoreThreshold:
-                                          type: number
+                                        insecure:
+                                          type: boolean
                                       type: object
                                   type: object
                                 embedding:
