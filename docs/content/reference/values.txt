@@ -556,6 +556,7 @@
 |gateway.validation.webhook.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gateway.validation.validationServerGrpcMaxSizeBytes|int|104857600|gRPC max message size in bytes for the gloo validation server|
 |gateway.validation.livenessProbeEnabled|bool||Set to true to enable a liveness probe for the gateway (default is false). You must also set the 'Probes' value to true.|
+|gateway.validation.fullEnvoyValidation|bool|false|enable feature which validates all final translated config against envoy Validate mode|
 |gateway.certGenJob.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |gateway.certGenJob.image.repository|string|certgen|The image repository (name) for the container.|
 |gateway.certGenJob.image.digest|string||The container image's hash digest (e.g. 'sha256:12345...'), consumed when variant=standard.|

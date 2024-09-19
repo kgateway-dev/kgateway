@@ -837,6 +837,13 @@ message GatewayOptions {
         // as a warning instead of an error. This will allow for eventually consistent workloads, but will also permit
         // the accidental deletion of secrets being referenced, which would cause disruption in traffic.
         google.protobuf.BoolValue warn_missing_tls_secret = 13;
+
+        // Configures the Gloo translation loop to send the final product of translation through Envoy 
+        // validation mode. This has an negative impact on the total translation throughput, but it 
+        // helps ensure the configuration will not be nacked when served to Envoy. 
+        //
+        // This feature is not yet implemented.
+        google.protobuf.BoolValue full_envoy_validation = 14;
     }
 
     // If provided, the Gateway will perform [Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
