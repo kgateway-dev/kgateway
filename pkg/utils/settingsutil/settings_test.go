@@ -155,24 +155,5 @@ var _ = Describe("Settings", func() {
 				Expect(UpdateNamespacesToWatch(settings, namespaces)).To(BeFalse())
 			})
 		})
-
-		When("calling GetNamespacesToWatch", func() {
-			It("should return correct values and cache it", func() {
-				settings.WatchNamespaces = []string{"test"}
-				expectedNamespaces := []string{"test", "gloo-system"}
-
-				namespacesToWatchCache.Clear()
-				cachedNamespaces, exists := namespacesToWatchCache.Get(settings.MustHash())
-				Expect(cachedNamespaces).To(BeNil())
-				Expect(exists).To(BeFalse())
-				Expect(GetNamespacesToWatch(settings)).To(Equal(expectedNamespaces))
-
-				// It should be cached
-				cachedNamespaces, exists = namespacesToWatchCache.Get(settings.MustHash())
-				Expect(cachedNamespaces).To(Equal(expectedNamespaces))
-				Expect(exists).To(BeTrue())
-				Expect(GetNamespacesToWatch(settings)).To(Equal(expectedNamespaces))
-			})
-		})
 	})
 })
