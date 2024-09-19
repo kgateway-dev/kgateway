@@ -451,6 +451,8 @@ func (wh *gatewayValidationWebhook) validateAdmissionRequest(
 				return nil, &multierror.Error{Errors: []error{errors.Errorf("failed to convert secret to core.Secret")}}
 			}
 
+			contextutils.LoggerFrom(ctx).Debugf("secret type: %s", secret.Type)
+			contextutils.LoggerFrom(ctx).Debugf("secret: %v", secret)
 			if secret.Type != kubeconverters.APIKeySecretType {
 				contextutils.LoggerFrom(ctx).Debugf("Found APIKeySecretType")
 				return &validation.Reports{}, nil
