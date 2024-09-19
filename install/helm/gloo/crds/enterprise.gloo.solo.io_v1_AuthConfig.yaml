@@ -130,6 +130,8 @@ spec:
                                 type: string
                             type: object
                           type: array
+                        enableDataPlaneMetadataValidation:
+                          type: boolean
                         headerName:
                           type: string
                         headersFromMetadata:

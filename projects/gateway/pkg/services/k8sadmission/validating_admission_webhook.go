@@ -18,8 +18,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
+	kubeconverters "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
 	"github.com/solo-io/gloo/pkg/utils"
 
@@ -37,6 +37,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+
+	// Added for secret validation
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/k8s-utils/installutils/kuberesource"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -430,6 +435,30 @@ func (wh *gatewayValidationWebhook) validateAdmissionRequest(
 	// Else, we expect to find the resource in our ApiGvkToHashableResource map - if the resource is supported.
 	if gvk.Group == kubernetesCoreApiGroup && gvk.Kind == "Secret" {
 		if !isDelete {
+			// The only type of Secrets we validate are those with type "extauth.solo.io/apikey"
+			// If the Secret is not of this type, we skip validation
+			// DO_NOT_SUBMIT: put this in a
+			secretUnstructured := &unstructured.Unstructured{}
+			if err := secretUnstructured.UnmarshalJSON(admissionRequest.Object.Raw); err != nil {
+				return nil, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
+			}
+			secretUncast, err := kuberesource.ConvertUnstructured(secretUnstructured)
+			if err != nil {
+				return nil, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
+			}
+			secret, ok := secretUncast.(*corev1.Secret)
+			if !ok {
+				return nil, &multierror.Error{Errors: []error{errors.Errorf("failed to convert secret to core.Secret")}}
+			}
+
+			contextutils.LoggerFrom(ctx).Debugf("secret type: %s", secret.Type)
+			contextutils.LoggerFrom(ctx).Debugf("secret: %v", secret)
+			if secret.Type == kubeconverters.APIKeySecretType {
+				contextutils.LoggerFrom(ctx).Debugf("Found APIKeySecretType")
+				err := kubeconverters.ValidateAPIKeySecret(ctx, secret)
+				return &validation.Reports{}, err
+			}
+
 			contextutils.LoggerFrom(ctx).Infof("unsupported operation validation [%s] for resource namespace [%s] name [%s] group [%s] kind [%s]", admissionRequest.Operation, ref.GetNamespace(), ref.GetName(), gvk.Group, gvk.Kind)
 			return &validation.Reports{}, nil
 		}

@@ -59,6 +59,10 @@ specific resources, we will manage the resources that the webhook receives via t
     apiVersions: ["v1"]
     resources: ["secrets"]
 {{- end }}
+  - apiGroups: ["extauth.solo.io"]
+    apiVersions: ["v1"]
+    operations: ["DELETE", "CREATE", "UPDATE"]
+    resources: ["secrets"]
   - operations: {{ include "gloo.webhookvalidation.operationsForResource" (list "ratelimitconfigs" .Values.gateway.validation.webhook.skipDeleteValidationResources) }}
     apiGroups: ["ratelimit.solo.io"]
     apiVersions: ["v1alpha1"]
