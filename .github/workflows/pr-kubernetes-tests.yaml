@@ -50,26 +50,35 @@ jobs:
         # Our goal is to load balance tests in a way that allows quick iteration on PRs
         # If tests are exceeding the 25-minute limit, please see:
         # /test/kubernetes/e2e/load_balancing_tests.md
+        #
+        # Above each test below, we document the latest date/time for the GitHub action step to run
+        # NOTE: We use the GitHub action step time (as opposed to the `go test` time), because it is easier to capture
+
         test:
-        # August 6, 2024: 23 minutes execution time (see load_balancing_tests.md)
+        # September 16, 2024: 22 minutes
         - cluster-name: 'cluster-one'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestGloomtlsGatewayEdgeGateway$$|^TestK8sGateway$$/^RouteDelegation$$|^TestK8sGateway$$/^Services$$|^TestGlooctlGlooGatewayEdgeGateway$$|^TestGlooctlK8sGateway$$|^TestHelm$$'
+          go-test-run-regex: '^TestK8sGateway$$/^RouteDelegation$$|^TestK8sGateway$$/^Services$$|^TestGlooctlGlooGatewayEdgeGateway$$|^TestGlooctlK8sGateway$$'
 
-        # August 6, 2024: 27 minutes execution time (see load_balancing_tests.md)
+        # September 16, 2024: 16 minutes
         - cluster-name: 'cluster-two'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestValidationStrict$$|^TestValidationAlwaysAccept$$|^TestTransformationValidationDisabled$$|^TestK8sGatewayIstioRevision$$|^TestRevisionIstioRegression$$|^TestK8sGateway$$/^Deployer$$|^TestK8sGateway$$/^RouteOptions$$|^TestK8sGateway$$/^VirtualHostOptions$$|^TestK8sGateway$$/^Upstreams$$|^TestK8sGateway$$/^HeadlessSvc$$|^TestK8sGateway$$/^PortRouting$$|^TestK8sGatewayMinimalDefaultGatewayParameters$$'
+          go-test-run-regex: '^TestK8sGatewayIstioRevision$$|^TestRevisionIstioRegression$$|^TestK8sGateway$$/^Deployer$$|^TestK8sGateway$$/^RouteOptions$$|^TestK8sGateway$$/^VirtualHostOptions$$|^TestK8sGateway$$/^Upstreams$$|^TestK8sGateway$$/^HeadlessSvc$$|^TestK8sGateway$$/^PortRouting$$|^TestK8sGatewayMinimalDefaultGatewayParameters$$'
 
-        # August 6, 2024: 26 minutes execution time (see load_balancing_tests.md)
+        # September 16, 2024: 21 minutes
         - cluster-name: 'cluster-three'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '(^TestK8sGatewayIstioAutoMtls$$|^TestAutomtlsIstioEdgeApisGateway$$|^TestIstioEdgeApiGateway$$|^TestIstioRegression$$)'
 
-        # August 6, 2024: 24 minutes execution time (see load_balancing_tests.md)
+        # September 16, 2024: 23 minutes
         - cluster-name: 'cluster-four'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '(^TestK8sGatewayIstio$$|^TestGlooGatewayEdgeGateway$$|^TestGlooctlIstioInjectEdgeApiGateway$$|^TestK8sGatewayNoValidation$$)'
+
+        # September 16, 2024: 17 minutes
+        - cluster-name: 'cluster-five'
+          go-test-args: '-v -timeout=25m'
+          go-test-run-regex: '^TestValidationStrict$$|^TestValidationAlwaysAccept$$|^TestTransformationValidationDisabled$$|^TestGloomtlsGatewayEdgeGateway$$|^TestHelm$$'
 
         # In our PR tests, we run the suite of tests using the upper ends of versions that we claim to support
         # The versions should mirror: https://docs.solo.io/gloo-edge/latest/reference/support/
