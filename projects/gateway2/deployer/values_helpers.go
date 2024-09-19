@@ -1,7 +1,6 @@
 package deployer
 
 import (
-	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -191,20 +190,9 @@ func ComponentLogLevelsToString(vals map[string]string) (string, error) {
 	return strings.Join(parts, ","), nil
 }
 
-func getAIExtensionValues(config *v1alpha1.AiExtension) (*helmAIExtension, error) {
+func getAIExtensionValues(config *v1alpha1.AiExtension) *helmAIExtension {
 	if config == nil {
-		return nil, nil
-	}
-
-	// If we don't do this check, a byte array containing the characters "null" will be rendered
-	// This will not be marshallable by the component so instead we render nothing.
-	var byt []byte
-	if config.GetStats() != nil {
-		var err error
-		byt, err = json.Marshal(config.GetStats())
-		if err != nil {
-			return nil, err
-		}
+		return nil
 	}
 
 	return &helmAIExtension{
@@ -214,6 +202,5 @@ func getAIExtensionValues(config *v1alpha1.AiExtension) (*helmAIExtension, error
 		Resources:       config.GetResources(),
 		Env:             config.GetEnv(),
 		Ports:           config.GetPorts(),
-		Stats:           byt,
-	}, nil
+	}
 }

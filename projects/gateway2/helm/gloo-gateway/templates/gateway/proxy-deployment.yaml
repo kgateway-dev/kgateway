@@ -25,11 +25,6 @@ spec:
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"
       {{- end}}
-      {{- if (($gateway.aiExtension).enabled) }}
-      {{- if $gateway.aiExtension.stats }}
-        solo.io/ai-stats-config-hash: {{ sha256sum $gateway.aiExtension.stats | trunc 64 }}
-      {{- end }}
-      {{- end}}
       labels:
         {{- include "gloo-gateway.gateway.selectorLabels" . | nindent 8 }}
         {{- with $gateway.extraPodLabels }}
@@ -285,9 +280,6 @@ spec:
         {{- end }}
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
-        volumeMounts:
-          - mountPath: /var/run/stats
-            name: ai-stats-config
 {{- end }} {{/* if (($gateway.aiExtension).enabled) */}}
       {{- with $gateway.nodeSelector }}
       nodeSelector:
@@ -305,11 +297,6 @@ spec:
       - configMap:
           name: {{ include "gloo-gateway.gateway.fullname" . }}
         name: envoy-config
-{{- if (($gateway.aiExtension).enabled) }}
-      - configMap:
-          name: {{ include "gloo-gateway.gateway.fullname" . }}-ai-stats-config
-        name: ai-stats-config
-{{- end }} {{/* if (($gateway.aiExtension).enabled) */}}
 {{- if $gateway.istio.enabled }}
       - emptyDir:
           medium: Memory
@@ -374,20 +361,6 @@ spec:
   {{- end }}
   selector:
     {{- include "gloo-gateway.gateway.selectorLabels" . | nindent 4 }}
----
-{{- if (($gateway.aiExtension).enabled) }}
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "gloo-gateway.gateway.fullname" . }}-ai-stats-config
-  labels:
-    {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
-    {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
-{{- if $gateway.aiExtension.stats }}
-data:
-  stats.json: {{ $gateway.aiExtension.stats }}
-{{- end}}
-{{- end}}
 ---
 apiVersion: v1
 kind: ConfigMap
