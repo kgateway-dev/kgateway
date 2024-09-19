@@ -7,3 +7,8 @@ changelog:
   issueLink: https://github.com/solo-io/gloo/issues/9274
   resolvesIssue: false
   description: Adds a new helm value `settings.watchNamespaceSelectors`. This allows users to specify namespaces to watch based on label selectors that can be specified via `settings.watchNamespaceSelectors.matchLabels` for an exact label match and `settings.watchNamespaceSelectors.matchExpressions` for more generic requirements.  The `settings.watchNamespaces` field will override this if specified.
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: solo-kit
+  dependencyTag: v0.35.4
+  issueLink: https://github.com/solo-io/gloo/issues/9274
