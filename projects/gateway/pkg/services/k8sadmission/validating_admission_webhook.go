@@ -453,9 +453,10 @@ func (wh *gatewayValidationWebhook) validateAdmissionRequest(
 
 			contextutils.LoggerFrom(ctx).Debugf("secret type: %s", secret.Type)
 			contextutils.LoggerFrom(ctx).Debugf("secret: %v", secret)
-			if secret.Type != kubeconverters.APIKeySecretType {
+			if secret.Type == kubeconverters.APIKeySecretType {
 				contextutils.LoggerFrom(ctx).Debugf("Found APIKeySecretType")
-				return &validation.Reports{}, nil
+				err := kubeconverters.ValidateAPIKeySecret(ctx, secret)
+				return &validation.Reports{}, err
 			}
 
 			contextutils.LoggerFrom(ctx).Infof("unsupported operation validation [%s] for resource namespace [%s] name [%s] group [%s] kind [%s]", admissionRequest.Operation, ref.GetNamespace(), ref.GetName(), gvk.Group, gvk.Kind)
