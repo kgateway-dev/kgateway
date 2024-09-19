@@ -69,7 +69,7 @@ jobs:
         # May 14th: ~ minutes execution time (see load_balancing_tests.md)
         - cluster-name: 'cluster-four'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '(^TestK8sGatewayIstio$$|^TestGlooGatewayEdgeGateway$$|^TestGlooctlIstioInjectEdgeApiGateway$$|^TestK8sGatewayNoValidation$$)'
+          go-test-run-regex: '(^TestK8sGatewayIstio$$|^TestGlooGatewayEdgeGateway$$|^TestGlooctlIstioInjectEdgeApiGateway$$|^TestK8sGatewayNoValidation$$|^TestWatchNamespaceSelector$$)'
 
         # In our PR tests, we run the suite of tests using the upper ends of versions that we claim to support
         # The versions should mirror: https://docs.solo.io/gloo-edge/latest/reference/support/
