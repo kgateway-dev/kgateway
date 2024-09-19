@@ -1,6 +1,7 @@
 package generate
 
 import (
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -234,6 +235,7 @@ type Settings struct {
 	DevMode       *bool         `json:"devMode,omitempty" desc:"Whether or not to enable dev mode. Defaults to false. Setting to true at install time will expose the gloo dev admin endpoint on port 10010. Not recommended for production. Warning: this value is deprecated as of 1.17 and will be removed in a future release."`
 	SecretOptions SecretOptions `json:"secretOptions,omitempty" desc:"Options for how Gloo Edge should handle secrets."`
 	*KubeResourceOverride
+	WatchNamespaceSelectors []*v1.LabelSelector `json:"watchNamespaceSelectors,omitempty" desc:"A list of Kubernetes selectors that specify the set of namespaces to restrict the namespaces that Gloo controllers take into consideration when watching for resources. Elements in the list are disjunctive (OR semantics), i.e. a namespace will be included if it matches any selector."`
 }
 
 type AwsSettings struct {

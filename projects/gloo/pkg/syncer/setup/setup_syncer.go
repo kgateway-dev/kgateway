@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/pkg/utils/statsutils/metrics"
 	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 
@@ -44,9 +45,9 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
-	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/utils/channelutils"
 	"github.com/solo-io/gloo/pkg/utils/envutils"
+	"github.com/solo-io/gloo/pkg/utils/namespaces"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 	gateway "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -67,6 +68,7 @@ import (
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	bootstrap_clients "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients/vault"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -259,16 +261,16 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	if writeNamespace == "" {
 		writeNamespace = defaults.GlooSystem
 	}
-	watchNamespaces := utils.ProcessWatchNamespaces(settings.GetWatchNamespaces(), writeNamespace)
+	watchNamespaces := namespaces.ProcessWatchNamespaces(settingsutil.GetNamespacesToWatch(settings), writeNamespace)
 
 	consulClient, err := bootstrap_clients.ConsulClientForSettings(ctx, settings)
 	if err != nil {
 		return err
 	}
 
-	getVaultInit := func(vaultSettings *v1.Settings_VaultSecrets) bootstrap_clients.VaultClientInitFunc {
+	getVaultInit := func(vaultSettings *v1.Settings_VaultSecrets) vault.VaultClientInitFunc {
 		return func(initCtx context.Context) *vaultapi.Client {
-			c, err := bootstrap_clients.VaultClientForSettings(initCtx, vaultSettings)
+			c, err := vault.VaultClientForSettings(initCtx, vaultSettings)
 			if err != nil {
 				// We log this error here, but we do not have a feasible way to raise
 				// it when this function is called in NewVaultSecretClientFactory.
@@ -280,7 +282,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 			return c
 		}
 	}
-	vaultInitMap := make(map[int]bootstrap_clients.VaultClientInitFunc)
+	vaultInitMap := make(map[int]vault.VaultClientInitFunc)
 	vaultSettings := settings.GetVaultSecretSource()
 	if vaultSettings != nil {
 		vaultInitMap[bootstrap_clients.SecretSourceAPIVaultClientInitIndex] = getVaultInit(vaultSettings)
@@ -986,7 +988,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		if gwOpts.Validation != nil {
 			// make sure non-empty WatchNamespaces contains the gloo instance's own namespace if
 			// ReadGatewaysFromAllNamespaces is false
-			if !gwOpts.ReadGatewaysFromAllNamespaces && !utils.AllNamespaces(opts.WatchNamespaces) {
+			if !gwOpts.ReadGatewaysFromAllNamespaces && !namespaces.AllNamespaces(opts.WatchNamespaces) {
 				foundSelf := false
 				for _, namespace := range opts.WatchNamespaces {
 					if gwOpts.GlooNamespace == namespace {
@@ -1120,7 +1122,7 @@ type constructOptsParams struct {
 	clientset          *kubernetes.Interface
 	kubeCache          kube.SharedCache
 	consulClient       *consulapi.Client
-	vaultClientInitMap map[int]bootstrap_clients.VaultClientInitFunc
+	vaultClientInitMap map[int]vault.VaultClientInitFunc
 	memCache           memory.InMemoryResourceCache
 	settings           *v1.Settings
 	writeNamespace     string

@@ -215,6 +215,19 @@ func (m *Settings) Clone() proto.Message {
 		target.ExtProc = proto.Clone(m.GetExtProc()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.Settings)
 	}
 
+	if m.GetWatchNamespaceSelectors() != nil {
+		target.WatchNamespaceSelectors = make([]*LabelSelector, len(m.GetWatchNamespaceSelectors()))
+		for idx, v := range m.GetWatchNamespaceSelectors() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.WatchNamespaceSelectors[idx] = h.Clone().(*LabelSelector)
+			} else {
+				target.WatchNamespaceSelectors[idx] = proto.Clone(v).(*LabelSelector)
+			}
+
+		}
+	}
+
 	switch m.ConfigSource.(type) {
 
 	case *Settings_KubernetesConfigSource:
@@ -333,6 +346,63 @@ func (m *Settings) Clone() proto.Message {
 			}
 		}
 
+	}
+
+	return target
+}
+
+// Clone function
+func (m *LabelSelector) Clone() proto.Message {
+	var target *LabelSelector
+	if m == nil {
+		return target
+	}
+	target = &LabelSelector{}
+
+	if m.GetMatchLabels() != nil {
+		target.MatchLabels = make(map[string]string, len(m.GetMatchLabels()))
+		for k, v := range m.GetMatchLabels() {
+
+			target.MatchLabels[k] = v
+
+		}
+	}
+
+	if m.GetMatchExpressions() != nil {
+		target.MatchExpressions = make([]*LabelSelectorRequirement, len(m.GetMatchExpressions()))
+		for idx, v := range m.GetMatchExpressions() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.MatchExpressions[idx] = h.Clone().(*LabelSelectorRequirement)
+			} else {
+				target.MatchExpressions[idx] = proto.Clone(v).(*LabelSelectorRequirement)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *LabelSelectorRequirement) Clone() proto.Message {
+	var target *LabelSelectorRequirement
+	if m == nil {
+		return target
+	}
+	target = &LabelSelectorRequirement{}
+
+	target.Key = m.GetKey()
+
+	target.Operator = m.GetOperator()
+
+	if m.GetValues() != nil {
+		target.Values = make([]string, len(m.GetValues()))
+		for idx, v := range m.GetValues() {
+
+			target.Values[idx] = v
+
+		}
 	}
 
 	return target
