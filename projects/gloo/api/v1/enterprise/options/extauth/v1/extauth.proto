@@ -2101,6 +2101,8 @@ message ExtAuthConfig {
             string username = 1;
             // The metadata present on the `ApiKey`.
             map<string, string> metadata = 2;
+            // Name of the apikey, useful for debugging and logging.
+            string name = 3;
         }
 
         // A mapping of valid API keys to their associated metadata.

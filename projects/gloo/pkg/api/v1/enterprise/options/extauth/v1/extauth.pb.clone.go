@@ -4205,5 +4205,7 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig_KeyMetadata) Clone() proto.Message {
 		}
 	}
 
+	target.Name = m.GetName()
+
 	return target
 }
