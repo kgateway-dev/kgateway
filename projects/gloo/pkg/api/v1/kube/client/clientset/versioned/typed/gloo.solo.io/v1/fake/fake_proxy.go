@@ -20,11 +20,13 @@ package fake
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 
-	gloosoloiov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+	gloosoloiov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client/applyconfiguration/gloo.solo.io/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -36,25 +38,25 @@ type FakeProxies struct {
 	ns   string
 }
 
-var proxiesResource = schema.GroupVersionResource{Group: "gloo.solo.io", Version: "v1", Resource: "proxies"}
+var proxiesResource = v1.SchemeGroupVersion.WithResource("proxies")
 
-var proxiesKind = schema.GroupVersionKind{Group: "gloo.solo.io", Version: "v1", Kind: "Proxy"}
+var proxiesKind = v1.SchemeGroupVersion.WithKind("Proxy")
 
 // Get takes name of the proxy, and returns the corresponding proxy object, and an error if there is any.
-func (c *FakeProxies) Get(ctx context.Context, name string, options v1.GetOptions) (result *gloosoloiov1.Proxy, err error) {
+func (c *FakeProxies) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.Proxy, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(proxiesResource, c.ns, name), &gloosoloiov1.Proxy{})
+		Invokes(testing.NewGetAction(proxiesResource, c.ns, name), &v1.Proxy{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*gloosoloiov1.Proxy), err
+	return obj.(*v1.Proxy), err
 }
 
 // List takes label and field selectors, and returns the list of Proxies that match those selectors.
-func (c *FakeProxies) List(ctx context.Context, opts v1.ListOptions) (result *gloosoloiov1.ProxyList, err error) {
+func (c *FakeProxies) List(ctx context.Context, opts metav1.ListOptions) (result *v1.ProxyList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(proxiesResource, proxiesKind, c.ns, opts), &gloosoloiov1.ProxyList{})
+		Invokes(testing.NewListAction(proxiesResource, proxiesKind, c.ns, opts), &v1.ProxyList{})
 
 	if obj == nil {
 		return nil, err
@@ -64,8 +66,8 @@ func (c *FakeProxies) List(ctx context.Context, opts v1.ListOptions) (result *gl
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &gloosoloiov1.ProxyList{ListMeta: obj.(*gloosoloiov1.ProxyList).ListMeta}
-	for _, item := range obj.(*gloosoloiov1.ProxyList).Items {
+	list := &v1.ProxyList{ListMeta: obj.(*v1.ProxyList).ListMeta}
+	for _, item := range obj.(*v1.ProxyList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -74,69 +76,114 @@ func (c *FakeProxies) List(ctx context.Context, opts v1.ListOptions) (result *gl
 }
 
 // Watch returns a watch.Interface that watches the requested proxies.
-func (c *FakeProxies) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeProxies) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(proxiesResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a proxy and creates it.  Returns the server's representation of the proxy, and an error, if there is any.
-func (c *FakeProxies) Create(ctx context.Context, proxy *gloosoloiov1.Proxy, opts v1.CreateOptions) (result *gloosoloiov1.Proxy, err error) {
+func (c *FakeProxies) Create(ctx context.Context, proxy *v1.Proxy, opts metav1.CreateOptions) (result *v1.Proxy, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(proxiesResource, c.ns, proxy), &gloosoloiov1.Proxy{})
+		Invokes(testing.NewCreateAction(proxiesResource, c.ns, proxy), &v1.Proxy{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*gloosoloiov1.Proxy), err
+	return obj.(*v1.Proxy), err
 }
 
 // Update takes the representation of a proxy and updates it. Returns the server's representation of the proxy, and an error, if there is any.
-func (c *FakeProxies) Update(ctx context.Context, proxy *gloosoloiov1.Proxy, opts v1.UpdateOptions) (result *gloosoloiov1.Proxy, err error) {
+func (c *FakeProxies) Update(ctx context.Context, proxy *v1.Proxy, opts metav1.UpdateOptions) (result *v1.Proxy, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(proxiesResource, c.ns, proxy), &gloosoloiov1.Proxy{})
+		Invokes(testing.NewUpdateAction(proxiesResource, c.ns, proxy), &v1.Proxy{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*gloosoloiov1.Proxy), err
+	return obj.(*v1.Proxy), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeProxies) UpdateStatus(ctx context.Context, proxy *gloosoloiov1.Proxy, opts v1.UpdateOptions) (*gloosoloiov1.Proxy, error) {
+func (c *FakeProxies) UpdateStatus(ctx context.Context, proxy *v1.Proxy, opts metav1.UpdateOptions) (*v1.Proxy, error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(proxiesResource, "status", c.ns, proxy), &gloosoloiov1.Proxy{})
+		Invokes(testing.NewUpdateSubresourceAction(proxiesResource, "status", c.ns, proxy), &v1.Proxy{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*gloosoloiov1.Proxy), err
+	return obj.(*v1.Proxy), err
 }
 
 // Delete takes name of the proxy and deletes it. Returns an error if one occurs.
-func (c *FakeProxies) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
+func (c *FakeProxies) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(proxiesResource, c.ns, name), &gloosoloiov1.Proxy{})
+		Invokes(testing.NewDeleteActionWithOptions(proxiesResource, c.ns, name, opts), &v1.Proxy{})
 
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeProxies) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+func (c *FakeProxies) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(proxiesResource, c.ns, listOpts)
 
-	_, err := c.Fake.Invokes(action, &gloosoloiov1.ProxyList{})
+	_, err := c.Fake.Invokes(action, &v1.ProxyList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched proxy.
-func (c *FakeProxies) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *gloosoloiov1.Proxy, err error) {
+func (c *FakeProxies) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Proxy, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(proxiesResource, c.ns, name, pt, data, subresources...), &gloosoloiov1.Proxy{})
+		Invokes(testing.NewPatchSubresourceAction(proxiesResource, c.ns, name, pt, data, subresources...), &v1.Proxy{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*gloosoloiov1.Proxy), err
+	return obj.(*v1.Proxy), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied proxy.
+func (c *FakeProxies) Apply(ctx context.Context, proxy *gloosoloiov1.ProxyApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Proxy, err error) {
+	if proxy == nil {
+		return nil, fmt.Errorf("proxy provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(proxy)
+	if err != nil {
+		return nil, err
+	}
+	name := proxy.Name
+	if name == nil {
+		return nil, fmt.Errorf("proxy.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(proxiesResource, c.ns, *name, types.ApplyPatchType, data), &v1.Proxy{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1.Proxy), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeProxies) ApplyStatus(ctx context.Context, proxy *gloosoloiov1.ProxyApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Proxy, err error) {
+	if proxy == nil {
+		return nil, fmt.Errorf("proxy provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(proxy)
+	if err != nil {
+		return nil, err
+	}
+	name := proxy.Name
+	if name == nil {
+		return nil, fmt.Errorf("proxy.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(proxiesResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1.Proxy{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1.Proxy), err
 }

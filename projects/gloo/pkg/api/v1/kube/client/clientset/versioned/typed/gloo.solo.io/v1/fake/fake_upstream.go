@@ -20,11 +20,13 @@ package fake
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 
-	gloosoloiov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+	gloosoloiov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client/applyconfiguration/gloo.solo.io/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -36,25 +38,25 @@ type FakeUpstreams struct {
 	ns   string
 }
 
-var upstreamsResource = schema.GroupVersionResource{Group: "gloo.solo.io", Version: "v1", Resource: "upstreams"}
+var upstreamsResource = v1.SchemeGroupVersion.WithResource("upstreams")
 
-var upstreamsKind = schema.GroupVersionKind{Group: "gloo.solo.io", Version: "v1", Kind: "Upstream"}
+var upstreamsKind = v1.SchemeGroupVersion.WithKind("Upstream")
 
 // Get takes name of the upstream, and returns the corresponding upstream object, and an error if there is any.
-func (c *FakeUpstreams) Get(ctx context.Context, name string, options v1.GetOptions) (result *gloosoloiov1.Upstream, err error) {
+func (c *FakeUpstreams) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.Upstream, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(upstreamsResource, c.ns, name), &gloosoloiov1.Upstream{})
+		Invokes(testing.NewGetAction(upstreamsResource, c.ns, name), &v1.Upstream{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*gloosoloiov1.Upstream), err
+	return obj.(*v1.Upstream), err
 }
 
 // List takes label and field selectors, and returns the list of Upstreams that match those selectors.
-func (c *FakeUpstreams) List(ctx context.Context, opts v1.ListOptions) (result *gloosoloiov1.UpstreamList, err error) {
+func (c *FakeUpstreams) List(ctx context.Context, opts metav1.ListOptions) (result *v1.UpstreamList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(upstreamsResource, upstreamsKind, c.ns, opts), &gloosoloiov1.UpstreamList{})
+		Invokes(testing.NewListAction(upstreamsResource, upstreamsKind, c.ns, opts), &v1.UpstreamList{})
 
 	if obj == nil {
 		return nil, err
@@ -64,8 +66,8 @@ func (c *FakeUpstreams) List(ctx context.Context, opts v1.ListOptions) (result *
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &gloosoloiov1.UpstreamList{ListMeta: obj.(*gloosoloiov1.UpstreamList).ListMeta}
-	for _, item := range obj.(*gloosoloiov1.UpstreamList).Items {
+	list := &v1.UpstreamList{ListMeta: obj.(*v1.UpstreamList).ListMeta}
+	for _, item := range obj.(*v1.UpstreamList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -74,69 +76,114 @@ func (c *FakeUpstreams) List(ctx context.Context, opts v1.ListOptions) (result *
 }
 
 // Watch returns a watch.Interface that watches the requested upstreams.
-func (c *FakeUpstreams) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeUpstreams) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(upstreamsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a upstream and creates it.  Returns the server's representation of the upstream, and an error, if there is any.
-func (c *FakeUpstreams) Create(ctx context.Context, upstream *gloosoloiov1.Upstream, opts v1.CreateOptions) (result *gloosoloiov1.Upstream, err error) {
+func (c *FakeUpstreams) Create(ctx context.Context, upstream *v1.Upstream, opts metav1.CreateOptions) (result *v1.Upstream, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(upstreamsResource, c.ns, upstream), &gloosoloiov1.Upstream{})
+		Invokes(testing.NewCreateAction(upstreamsResource, c.ns, upstream), &v1.Upstream{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*gloosoloiov1.Upstream), err
+	return obj.(*v1.Upstream), err
 }
 
 // Update takes the representation of a upstream and updates it. Returns the server's representation of the upstream, and an error, if there is any.
-func (c *FakeUpstreams) Update(ctx context.Context, upstream *gloosoloiov1.Upstream, opts v1.UpdateOptions) (result *gloosoloiov1.Upstream, err error) {
+func (c *FakeUpstreams) Update(ctx context.Context, upstream *v1.Upstream, opts metav1.UpdateOptions) (result *v1.Upstream, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(upstreamsResource, c.ns, upstream), &gloosoloiov1.Upstream{})
+		Invokes(testing.NewUpdateAction(upstreamsResource, c.ns, upstream), &v1.Upstream{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*gloosoloiov1.Upstream), err
+	return obj.(*v1.Upstream), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeUpstreams) UpdateStatus(ctx context.Context, upstream *gloosoloiov1.Upstream, opts v1.UpdateOptions) (*gloosoloiov1.Upstream, error) {
+func (c *FakeUpstreams) UpdateStatus(ctx context.Context, upstream *v1.Upstream, opts metav1.UpdateOptions) (*v1.Upstream, error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(upstreamsResource, "status", c.ns, upstream), &gloosoloiov1.Upstream{})
+		Invokes(testing.NewUpdateSubresourceAction(upstreamsResource, "status", c.ns, upstream), &v1.Upstream{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*gloosoloiov1.Upstream), err
+	return obj.(*v1.Upstream), err
 }
 
 // Delete takes name of the upstream and deletes it. Returns an error if one occurs.
-func (c *FakeUpstreams) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
+func (c *FakeUpstreams) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(upstreamsResource, c.ns, name), &gloosoloiov1.Upstream{})
+		Invokes(testing.NewDeleteActionWithOptions(upstreamsResource, c.ns, name, opts), &v1.Upstream{})
 
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeUpstreams) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+func (c *FakeUpstreams) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(upstreamsResource, c.ns, listOpts)
 
-	_, err := c.Fake.Invokes(action, &gloosoloiov1.UpstreamList{})
+	_, err := c.Fake.Invokes(action, &v1.UpstreamList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched upstream.
-func (c *FakeUpstreams) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *gloosoloiov1.Upstream, err error) {
+func (c *FakeUpstreams) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Upstream, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(upstreamsResource, c.ns, name, pt, data, subresources...), &gloosoloiov1.Upstream{})
+		Invokes(testing.NewPatchSubresourceAction(upstreamsResource, c.ns, name, pt, data, subresources...), &v1.Upstream{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*gloosoloiov1.Upstream), err
+	return obj.(*v1.Upstream), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied upstream.
+func (c *FakeUpstreams) Apply(ctx context.Context, upstream *gloosoloiov1.UpstreamApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Upstream, err error) {
+	if upstream == nil {
+		return nil, fmt.Errorf("upstream provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(upstream)
+	if err != nil {
+		return nil, err
+	}
+	name := upstream.Name
+	if name == nil {
+		return nil, fmt.Errorf("upstream.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(upstreamsResource, c.ns, *name, types.ApplyPatchType, data), &v1.Upstream{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1.Upstream), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeUpstreams) ApplyStatus(ctx context.Context, upstream *gloosoloiov1.UpstreamApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Upstream, err error) {
+	if upstream == nil {
+		return nil, fmt.Errorf("upstream provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(upstream)
+	if err != nil {
+		return nil, err
+	}
+	name := upstream.Name
+	if name == nil {
+		return nil, fmt.Errorf("upstream.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(upstreamsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1.Upstream{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1.Upstream), err
 }

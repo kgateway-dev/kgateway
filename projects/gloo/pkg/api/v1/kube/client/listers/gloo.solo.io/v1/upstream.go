@@ -26,8 +26,10 @@ import (
 )
 
 // UpstreamLister helps list Upstreams.
+// All objects returned here must be treated as read-only.
 type UpstreamLister interface {
 	// List lists all Upstreams in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Upstream, err error)
 	// Upstreams returns an object that can list and get Upstreams.
 	Upstreams(namespace string) UpstreamNamespaceLister
@@ -58,10 +60,13 @@ func (s *upstreamLister) Upstreams(namespace string) UpstreamNamespaceLister {
 }
 
 // UpstreamNamespaceLister helps list and get Upstreams.
+// All objects returned here must be treated as read-only.
 type UpstreamNamespaceLister interface {
 	// List lists all Upstreams in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Upstream, err error)
 	// Get retrieves the Upstream from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1.Upstream, error)
 	UpstreamNamespaceListerExpansion
 }

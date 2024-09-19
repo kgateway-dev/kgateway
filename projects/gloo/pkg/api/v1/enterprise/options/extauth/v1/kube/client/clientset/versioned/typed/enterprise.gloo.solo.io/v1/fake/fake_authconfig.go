@@ -20,11 +20,13 @@ package fake
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 
-	enterprisegloosoloiov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1/kube/apis/enterprise.gloo.solo.io/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1/kube/apis/enterprise.gloo.solo.io/v1"
+	enterprisegloosoloiov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1/kube/client/applyconfiguration/enterprise.gloo.solo.io/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -36,25 +38,25 @@ type FakeAuthConfigs struct {
 	ns   string
 }
 
-var authconfigsResource = schema.GroupVersionResource{Group: "enterprise.gloo.solo.io", Version: "v1", Resource: "authconfigs"}
+var authconfigsResource = v1.SchemeGroupVersion.WithResource("authconfigs")
 
-var authconfigsKind = schema.GroupVersionKind{Group: "enterprise.gloo.solo.io", Version: "v1", Kind: "AuthConfig"}
+var authconfigsKind = v1.SchemeGroupVersion.WithKind("AuthConfig")
 
 // Get takes name of the authConfig, and returns the corresponding authConfig object, and an error if there is any.
-func (c *FakeAuthConfigs) Get(ctx context.Context, name string, options v1.GetOptions) (result *enterprisegloosoloiov1.AuthConfig, err error) {
+func (c *FakeAuthConfigs) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.AuthConfig, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(authconfigsResource, c.ns, name), &enterprisegloosoloiov1.AuthConfig{})
+		Invokes(testing.NewGetAction(authconfigsResource, c.ns, name), &v1.AuthConfig{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*enterprisegloosoloiov1.AuthConfig), err
+	return obj.(*v1.AuthConfig), err
 }
 
 // List takes label and field selectors, and returns the list of AuthConfigs that match those selectors.
-func (c *FakeAuthConfigs) List(ctx context.Context, opts v1.ListOptions) (result *enterprisegloosoloiov1.AuthConfigList, err error) {
+func (c *FakeAuthConfigs) List(ctx context.Context, opts metav1.ListOptions) (result *v1.AuthConfigList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(authconfigsResource, authconfigsKind, c.ns, opts), &enterprisegloosoloiov1.AuthConfigList{})
+		Invokes(testing.NewListAction(authconfigsResource, authconfigsKind, c.ns, opts), &v1.AuthConfigList{})
 
 	if obj == nil {
 		return nil, err
@@ -64,8 +66,8 @@ func (c *FakeAuthConfigs) List(ctx context.Context, opts v1.ListOptions) (result
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &enterprisegloosoloiov1.AuthConfigList{ListMeta: obj.(*enterprisegloosoloiov1.AuthConfigList).ListMeta}
-	for _, item := range obj.(*enterprisegloosoloiov1.AuthConfigList).Items {
+	list := &v1.AuthConfigList{ListMeta: obj.(*v1.AuthConfigList).ListMeta}
+	for _, item := range obj.(*v1.AuthConfigList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -74,69 +76,114 @@ func (c *FakeAuthConfigs) List(ctx context.Context, opts v1.ListOptions) (result
 }
 
 // Watch returns a watch.Interface that watches the requested authConfigs.
-func (c *FakeAuthConfigs) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeAuthConfigs) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(authconfigsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a authConfig and creates it.  Returns the server's representation of the authConfig, and an error, if there is any.
-func (c *FakeAuthConfigs) Create(ctx context.Context, authConfig *enterprisegloosoloiov1.AuthConfig, opts v1.CreateOptions) (result *enterprisegloosoloiov1.AuthConfig, err error) {
+func (c *FakeAuthConfigs) Create(ctx context.Context, authConfig *v1.AuthConfig, opts metav1.CreateOptions) (result *v1.AuthConfig, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(authconfigsResource, c.ns, authConfig), &enterprisegloosoloiov1.AuthConfig{})
+		Invokes(testing.NewCreateAction(authconfigsResource, c.ns, authConfig), &v1.AuthConfig{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*enterprisegloosoloiov1.AuthConfig), err
+	return obj.(*v1.AuthConfig), err
 }
 
 // Update takes the representation of a authConfig and updates it. Returns the server's representation of the authConfig, and an error, if there is any.
-func (c *FakeAuthConfigs) Update(ctx context.Context, authConfig *enterprisegloosoloiov1.AuthConfig, opts v1.UpdateOptions) (result *enterprisegloosoloiov1.AuthConfig, err error) {
+func (c *FakeAuthConfigs) Update(ctx context.Context, authConfig *v1.AuthConfig, opts metav1.UpdateOptions) (result *v1.AuthConfig, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(authconfigsResource, c.ns, authConfig), &enterprisegloosoloiov1.AuthConfig{})
+		Invokes(testing.NewUpdateAction(authconfigsResource, c.ns, authConfig), &v1.AuthConfig{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*enterprisegloosoloiov1.AuthConfig), err
+	return obj.(*v1.AuthConfig), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeAuthConfigs) UpdateStatus(ctx context.Context, authConfig *enterprisegloosoloiov1.AuthConfig, opts v1.UpdateOptions) (*enterprisegloosoloiov1.AuthConfig, error) {
+func (c *FakeAuthConfigs) UpdateStatus(ctx context.Context, authConfig *v1.AuthConfig, opts metav1.UpdateOptions) (*v1.AuthConfig, error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(authconfigsResource, "status", c.ns, authConfig), &enterprisegloosoloiov1.AuthConfig{})
+		Invokes(testing.NewUpdateSubresourceAction(authconfigsResource, "status", c.ns, authConfig), &v1.AuthConfig{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*enterprisegloosoloiov1.AuthConfig), err
+	return obj.(*v1.AuthConfig), err
 }
 
 // Delete takes name of the authConfig and deletes it. Returns an error if one occurs.
-func (c *FakeAuthConfigs) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
+func (c *FakeAuthConfigs) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(authconfigsResource, c.ns, name), &enterprisegloosoloiov1.AuthConfig{})
+		Invokes(testing.NewDeleteActionWithOptions(authconfigsResource, c.ns, name, opts), &v1.AuthConfig{})
 
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeAuthConfigs) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+func (c *FakeAuthConfigs) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(authconfigsResource, c.ns, listOpts)
 
-	_, err := c.Fake.Invokes(action, &enterprisegloosoloiov1.AuthConfigList{})
+	_, err := c.Fake.Invokes(action, &v1.AuthConfigList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched authConfig.
-func (c *FakeAuthConfigs) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *enterprisegloosoloiov1.AuthConfig, err error) {
+func (c *FakeAuthConfigs) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.AuthConfig, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(authconfigsResource, c.ns, name, pt, data, subresources...), &enterprisegloosoloiov1.AuthConfig{})
+		Invokes(testing.NewPatchSubresourceAction(authconfigsResource, c.ns, name, pt, data, subresources...), &v1.AuthConfig{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*enterprisegloosoloiov1.AuthConfig), err
+	return obj.(*v1.AuthConfig), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied authConfig.
+func (c *FakeAuthConfigs) Apply(ctx context.Context, authConfig *enterprisegloosoloiov1.AuthConfigApplyConfiguration, opts metav1.ApplyOptions) (result *v1.AuthConfig, err error) {
+	if authConfig == nil {
+		return nil, fmt.Errorf("authConfig provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(authConfig)
+	if err != nil {
+		return nil, err
+	}
+	name := authConfig.Name
+	if name == nil {
+		return nil, fmt.Errorf("authConfig.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(authconfigsResource, c.ns, *name, types.ApplyPatchType, data), &v1.AuthConfig{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1.AuthConfig), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeAuthConfigs) ApplyStatus(ctx context.Context, authConfig *enterprisegloosoloiov1.AuthConfigApplyConfiguration, opts metav1.ApplyOptions) (result *v1.AuthConfig, err error) {
+	if authConfig == nil {
+		return nil, fmt.Errorf("authConfig provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(authConfig)
+	if err != nil {
+		return nil, err
+	}
+	name := authConfig.Name
+	if name == nil {
+		return nil, fmt.Errorf("authConfig.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(authconfigsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1.AuthConfig{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1.AuthConfig), err
 }

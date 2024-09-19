@@ -20,9 +20,12 @@ package v1
 
 import (
 	"context"
+	json "encoding/json"
+	"fmt"
 	"time"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+	gloosoloiov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client/applyconfiguration/gloo.solo.io/v1"
 	scheme "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -46,6 +49,7 @@ type SecretInterface interface {
 	List(ctx context.Context, opts metav1.ListOptions) (*v1.SecretList, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Secret, err error)
+	Apply(ctx context.Context, secret *gloosoloiov1.SecretApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Secret, err error)
 	SecretExpansion
 }
 
@@ -171,6 +175,32 @@ func (c *secrets) Patch(ctx context.Context, name string, pt types.PatchType, da
 		Name(name).
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied secret.
+func (c *secrets) Apply(ctx context.Context, secret *gloosoloiov1.SecretApplyConfiguration, opts metav1.ApplyOptions) (result *v1.Secret, err error) {
+	if secret == nil {
+		return nil, fmt.Errorf("secret provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(secret)
+	if err != nil {
+		return nil, err
+	}
+	name := secret.Name
+	if name == nil {
+		return nil, fmt.Errorf("secret.Name must be provided to Apply")
+	}
+	result = &v1.Secret{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("secrets").
+		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)

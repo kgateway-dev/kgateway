@@ -26,8 +26,10 @@ import (
 )
 
 // ArtifactLister helps list Artifacts.
+// All objects returned here must be treated as read-only.
 type ArtifactLister interface {
 	// List lists all Artifacts in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Artifact, err error)
 	// Artifacts returns an object that can list and get Artifacts.
 	Artifacts(namespace string) ArtifactNamespaceLister
@@ -58,10 +60,13 @@ func (s *artifactLister) Artifacts(namespace string) ArtifactNamespaceLister {
 }
 
 // ArtifactNamespaceLister helps list and get Artifacts.
+// All objects returned here must be treated as read-only.
 type ArtifactNamespaceLister interface {
 	// List lists all Artifacts in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Artifact, err error)
 	// Get retrieves the Artifact from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1.Artifact, error)
 	ArtifactNamespaceListerExpansion
 }
