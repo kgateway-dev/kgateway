@@ -54,6 +54,7 @@ Name|Version|License
 [go.uber.org/zap](https://go.uber.org/zap)|v1.26.0|MIT License
 [x/crypto](https://golang.org/x/crypto)|v0.18.0|BSD 3-clause "New" or "Revised" License
 [x/exp](https://golang.org/x/exp)|v0.0.0-20231006140011-7918f672742d|BSD 3-clause "New" or "Revised" License
+[x/net](https://golang.org/x/net)|v0.20.0|BSD 3-clause "New" or "Revised" License
 [x/sync](https://golang.org/x/sync)|v0.6.0|BSD 3-clause "New" or "Revised" License
 [x/tools](https://golang.org/x/tools)|v0.17.0|BSD 3-clause "New" or "Revised" License
 [googleapis/api](https://google.golang.org/genproto/googleapis/api)|v0.0.0-20230822172742-b8732ec3820d|Apache License 2.0

@@ -1166,6 +1166,9 @@ message ApiKeyAuth {
         // to the request.
         bool required = 2;
     }
+
+    // Flag to enable data plane metadata validation. If set to `true`, the data plane will validate the metadata.
+    bool enable_data_plane_metadata_validation = 8;
 }
 message K8sSecretApiKeyStorage {
     // Identify all valid API key secrets that match the provided label selector.<br/>
@@ -2118,6 +2121,9 @@ message ExtAuthConfig {
             K8sSecretApiKeyStorage k8s_secret_apikey_storage = 4;
             AerospikeApiKeyStorage aerospike_apikey_storage = 5;
         }
+
+        // Flag to enable data plane metadata validation. If set to `true`, the data plane will validate the metadata.
+        bool enable_data_plane_metadata_validation = 6;
     }
 
     message OpaAuthConfig {
