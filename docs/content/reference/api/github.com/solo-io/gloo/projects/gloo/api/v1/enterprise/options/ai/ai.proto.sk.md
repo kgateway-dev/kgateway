@@ -26,6 +26,7 @@ weight: 5
 - [AzureOpenAI](#azureopenai)
 - [SemanticCache](#semanticcache)
 - [Redis](#redis)
+- [Weaviate](#weaviate)
 - [DataStore](#datastore)
 - [Mode](#mode)
 - [RAG](#rag)
@@ -421,6 +422,29 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 
 
 ---
+### Weaviate
+
+
+
+```yaml
+"host": string
+"httpPort": int
+"grpcPort": int
+"insecure": bool
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `host` | `string` | Connection string to the Weaviate database, scheme should NOT be included. For example: weaviate.my-ns.svc.cluster.local NOT: http://weaviate.my-ns.svc.cluster.local. |
+| `httpPort` | `int` | HTTP port to use, if unset will default to 8080. |
+| `grpcPort` | `int` | GRPC port to use, if unset will default to 50051. |
+| `insecure` | `bool` | Whether or not to use a secure connection, true by default. |
+
+
+
+
+---
 ### DataStore
 
  
@@ -428,12 +452,14 @@ Data store from which to cache the request/response pairs
 
 ```yaml
 "redis": .ai.options.gloo.solo.io.SemanticCache.Redis
+"weaviate": .ai.options.gloo.solo.io.SemanticCache.Weaviate
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `redis` | [.ai.options.gloo.solo.io.SemanticCache.Redis](../ai.proto.sk/#redis) |  |
+| `redis` | [.ai.options.gloo.solo.io.SemanticCache.Redis](../ai.proto.sk/#redis) |  Only one of `redis` or `weaviate` can be set. |
+| `weaviate` | [.ai.options.gloo.solo.io.SemanticCache.Weaviate](../ai.proto.sk/#weaviate) |  Only one of `weaviate` or `redis` can be set. |
 
 
 
