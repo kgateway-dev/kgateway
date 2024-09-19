@@ -6,7 +6,9 @@ import (
 	"slices"
 	"sync"
 
+	"github.com/solo-io/gloo/pkg/utils/envutils"
 	utils_namespaces "github.com/solo-io/gloo/pkg/utils/namespaces"
+	"github.com/solo-io/gloo/projects/gloo/constants"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -188,6 +190,25 @@ func GetNamespacesToWatch(settings *v1.Settings) []string {
 		if ok {
 			return currentNamespacesToWatch
 		}
+	}
+
+	writeNamespace := generateDiscoveryNamespace(settings)
+
+	// Short-circuit to avoid creating a client
+	if len(settings.GetWatchNamespaces()) != 0 {
+		// Prevent an error where the controller can not read resources written by discovery
+		// if the install or discovery namespace is not watched
+		return utils_namespaces.ProcessWatchNamespaces(settings.GetWatchNamespaces(), writeNamespace)
+	}
+
+	// If neither `watchNamespaces` nor `watchNamespaceSelectors` is specified, return `watchNamespaces`
+	// for backward compatibility. This could either be nil or an empty list.
+	if len(settings.GetWatchNamespaceSelectors()) == 0 {
+		return settings.GetWatchNamespaces()
+	}
+
+	if envutils.IsEnvTruthy(constants.GlooGatewayEnableK8sGwControllerEnv) {
+		return utils_namespaces.ProcessWatchNamespaces(settings.GetWatchNamespaces(), writeNamespace)
 	}
 
 	// Fallback to fetching all namespaces and updating the cache if not found
