@@ -1,9 +1,10 @@
 package xdsinspection
 
 import (
+	"github.com/solo-io/gloo/projects/gloo/constants"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -13,13 +14,13 @@ func (xd *XdsDump) GetEc2InstancesForUpstream(upstream *core.ResourceRef) []stri
 		out = append(out, "use -o wide for instance details")
 		return out
 	}
-	clusterName := translator.UpstreamToClusterName(upstream)
+	clusterName := utils.UpstreamToClusterName(upstream)
 	endpointCount := 0
 	for _, clusterEndpoints := range xd.Endpoints {
 		if clusterEndpoints.GetClusterName() == clusterName {
 			for _, lEp := range clusterEndpoints.GetEndpoints() {
 				for _, ep := range lEp.GetLbEndpoints() {
-					if k, ok := ep.GetMetadata().GetFilterMetadata()[translator.SoloAnnotations]; ok {
+					if k, ok := ep.GetMetadata().GetFilterMetadata()[constants.SoloAnnotations]; ok {
 						v, ok := k.GetFields()[ec2.InstanceIdAnnotationKey]
 						if ok {
 							endpointCount++
