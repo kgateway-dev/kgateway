@@ -23,7 +23,7 @@ import (
 var _ = Describe("Static bootstrap generation", func() {
 	Context("From Filter", func() {
 		It("produces correct bootstrap", func() {
-			Skip("not ready")
+			Skip("TODO")
 			inTransformation := &envoytransformation.RouteTransformations{
 				ClearRouteCache: true,
 				Transformations: []*envoytransformation.RouteTransformations_RouteTransformation{
