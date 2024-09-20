@@ -64,6 +64,8 @@ message AuthConfig {
         }
     }
 
+    bool new_field = 15;
+
     // List of auth configs to be checked for requests on a route referencing this auth config,
     // By default, every config must be authorized for the entire request to be authorized. This
     // behavior can be changed by defining names for each config and defining `boolean_expr` below.
