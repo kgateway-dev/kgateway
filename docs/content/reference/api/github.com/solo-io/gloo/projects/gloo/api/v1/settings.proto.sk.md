@@ -675,6 +675,7 @@ Provides settings related to the observability pod's interactions with grafana
 A label selector requirement is a selector that contains values, a key, and an operator that
 relates the key and values.
 Copied from Kubernetes to avoid expensive dependency on Kubernetes libraries.
+Ref: https://github.com/kubernetes/apimachinery/blob/f7615f37d717297aca51101478406af712553c5b/pkg/apis/meta/v1/generated.proto#L442-L453
 
 ```yaml
 "matchLabels": map<string, string>
@@ -697,6 +698,7 @@ Copied from Kubernetes to avoid expensive dependency on Kubernetes libraries.
 A label selector requirement is a selector that contains values, a key, and an operator that
 relates the key and values.
 Copied from Kubernetes to avoid expensive dependency on Kubernetes libraries.
+Ref: https://github.com/kubernetes/apimachinery/blob/f7615f37d717297aca51101478406af712553c5b/pkg/apis/meta/v1/generated.proto#L455-L472
 
 ```yaml
 "key": string

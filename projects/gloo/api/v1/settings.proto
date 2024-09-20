@@ -608,6 +608,7 @@ message Settings {
 // A label selector requirement is a selector that contains values, a key, and an operator that
 // relates the key and values.
 // Copied from Kubernetes to avoid expensive dependency on Kubernetes libraries.
+// Ref: https://github.com/kubernetes/apimachinery/blob/f7615f37d717297aca51101478406af712553c5b/pkg/apis/meta/v1/generated.proto#L442-L453
 message LabelSelector {
     // matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
     // map is equivalent to an element of matchExpressions, whose key field is "key", the
@@ -623,6 +624,7 @@ message LabelSelector {
 // A label selector requirement is a selector that contains values, a key, and an operator that
 // relates the key and values.
 // Copied from Kubernetes to avoid expensive dependency on Kubernetes libraries.
+// Ref: https://github.com/kubernetes/apimachinery/blob/f7615f37d717297aca51101478406af712553c5b/pkg/apis/meta/v1/generated.proto#L455-L472
 message LabelSelectorRequirement {
     // key is the label key that the selector applies to.
     // +patchMergeKey=key
@@ -745,15 +747,15 @@ message GlooOptions {
     // set these options to fine-tune the way Gloo handles invalid user configuration
     InvalidConfigPolicy invalid_config_policy = 6;
 
-    // Enable or disable Gloo Gateway to scan Kubernetes services in the cluster and create in-memory Upstream resources 
-    // to represent them. These resources enable Gloo Gateway to route requests to a Kubernetes service. Note that if  
+    // Enable or disable Gloo Gateway to scan Kubernetes services in the cluster and create in-memory Upstream resources
+    // to represent them. These resources enable Gloo Gateway to route requests to a Kubernetes service. Note that if
     // you have a large number of services in your cluster and you do not restrict the namespaces that Gloo Gateway watches,
-    // the API snapshot increases which can have a negative impact on the Gloo Gateway translation time. In addition, load 
+    // the API snapshot increases which can have a negative impact on the Gloo Gateway translation time. In addition, load
     // balancing is done in `kube-proxy` which can have further performance impacts. Using Gloo Upstreams as a routing
-    // destination bypasses `kube-proxy` as the request is routed to the pod directly. Alternatively, you can use 
-    // [`Kubernetes`](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/kubernetes/kubernetes.proto.sk/) 
-    // Upstream resources as a routing destination to forward requests to the pod directly. 
-    // 
+    // destination bypasses `kube-proxy` as the request is routed to the pod directly. Alternatively, you can use
+    // [`Kubernetes`](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/kubernetes/kubernetes.proto.sk/)
+    // Upstream resources as a routing destination to forward requests to the pod directly.
+    //
     // For more information, see the [docs](https://docs.solo.io/gloo-edge/latest/guides/traffic_management/destination_types/kubernetes_services/).
     bool disable_kubernetes_destinations = 7;
 

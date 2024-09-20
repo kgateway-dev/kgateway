@@ -695,6 +695,7 @@ func (*Settings_ConsulKvArtifactSource) isSettings_ArtifactSource() {}
 // A label selector requirement is a selector that contains values, a key, and an operator that
 // relates the key and values.
 // Copied from Kubernetes to avoid expensive dependency on Kubernetes libraries.
+// Ref: https://github.com/kubernetes/apimachinery/blob/f7615f37d717297aca51101478406af712553c5b/pkg/apis/meta/v1/generated.proto#L442-L453
 type LabelSelector struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -759,6 +760,7 @@ func (x *LabelSelector) GetMatchExpressions() []*LabelSelectorRequirement {
 // A label selector requirement is a selector that contains values, a key, and an operator that
 // relates the key and values.
 // Copied from Kubernetes to avoid expensive dependency on Kubernetes libraries.
+// Ref: https://github.com/kubernetes/apimachinery/blob/f7615f37d717297aca51101478406af712553c5b/pkg/apis/meta/v1/generated.proto#L455-L472
 type LabelSelectorRequirement struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

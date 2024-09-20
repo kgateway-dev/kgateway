@@ -24,6 +24,8 @@ import (
 type settingsKeyStruct struct{}
 
 var (
+	// This mutex ensures that the namespaces to watch are generated and cached synchronously
+	// to prevent any issues when translation is running while the settings CR has been updated
 	mu sync.Mutex
 
 	// Setting a cache size of 2 should suffice for :
@@ -147,6 +149,8 @@ func setNamespacesToWatch(settings *v1.Settings, namespaces []string) {
 // UpdateNamespacesToWatch generates and updated the list of namespaces to watch and returns true if updated
 func UpdateNamespacesToWatch(settings *v1.Settings, namespaces kubernetes.KubeNamespaceList) (bool, error) {
 	// Run this method synchronously to prevent any issues with caching the namespaces to watch
+	// This can occur if the settings object has changed twice and the former settings' context has been cancelled
+	// but the methods that rely on the former context have not yet processed its cancellation
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -178,7 +182,7 @@ func getAllNamespaces() (kubernetes.KubeNamespaceList, error) {
 	namespaceClient, err := utils_namespaces.NewKubeNamespaceClient(ctx)
 	// If there is any error when creating a KubeNamespaceClient (RBAC issues) default to a fake client
 	if err != nil {
-		namespaceClient = &utils_namespaces.FakeKubeNamespaceWatcher{}
+		namespaceClient = &utils_namespaces.NoOpKubeNamespaceWatcher{}
 	}
 	return namespaceClient.List(clients.ListOpts{})
 }

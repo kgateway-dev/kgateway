@@ -22,7 +22,7 @@ import (
 var (
 	mSetupsRun = statsutils.MakeSumCounter("gloo.solo.io/setups_run", "The number of times the main setup loop has run")
 
-	mNamespacesWatched      = statsutils.MakeLastValueCounter("gloo.solo.io/namespaces_watched", "The number of namespaces watched by the gloo controller")
+	mNamespacesWatched      = statsutils.MakeGauge("gloo.solo.io/namespaces_watched", "The number of namespaces watched by the gloo controller")
 	namespacesWatchedKey, _ = tag.NewKey("namespaces_watched")
 )
 

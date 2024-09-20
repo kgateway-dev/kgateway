@@ -15,6 +15,8 @@ import (
 	k8s_kubernetes "k8s.io/client-go/kubernetes"
 )
 
+// AllNamespaces returns true if the list of namespaces watched is empty or contains only a blank string
+// This implies that all namespaces are to be watched
 func AllNamespaces(watchNamespaces []string) bool {
 	if len(watchNamespaces) == 0 {
 		return true
@@ -25,6 +27,7 @@ func AllNamespaces(watchNamespaces []string) bool {
 	return false
 }
 
+// ProcessWatchNamespaces appends the writeNamespace to the list of watchNamespaces passed if not already present and returns it
 func ProcessWatchNamespaces(watchNamespaces []string, writeNamespace string) []string {
 	if AllNamespaces(watchNamespaces) {
 		return watchNamespaces
@@ -44,6 +47,7 @@ func ProcessWatchNamespaces(watchNamespaces []string, writeNamespace string) []s
 	return watchNamespaces
 }
 
+// GetPodNamespace returns the value of the env var `POD_NAMESPACE` and defaults to `gloo-system` if unset
 func GetPodNamespace() string {
 	if podNamespace := os.Getenv("POD_NAMESPACE"); podNamespace != "" {
 		return podNamespace
@@ -52,6 +56,7 @@ func GetPodNamespace() string {
 }
 
 // NewKubeNamespaceClient creates and returns the `namespace.NewNamespaceClient` if it has permissions to list namespaces
+// This entails creating a kubeclient, kubecorecache and calling a SelfSubjectAccessReview to verify if it has the appropriate RBAC
 func NewKubeNamespaceClient(ctx context.Context) (kubernetes.KubeNamespaceClient, error) {
 	kubeClient, err := helpers.KubeClientWithKubecontext("")
 	if err != nil {

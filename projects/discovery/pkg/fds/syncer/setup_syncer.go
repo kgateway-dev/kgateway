@@ -80,7 +80,7 @@ func RunFDSWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	if opts.KubeClient != nil && opts.KubeCoreCache.NamespaceLister() != nil {
 		nsClient = namespace.NewNamespaceClient(opts.KubeClient, opts.KubeCoreCache)
 	} else {
-		nsClient = &namespaces.FakeKubeNamespaceWatcher{}
+		nsClient = &namespaces.NoOpKubeNamespaceWatcher{}
 	}
 
 	cache := v1.NewDiscoveryEmitter(upstreamClient, nsClient, secretClient)

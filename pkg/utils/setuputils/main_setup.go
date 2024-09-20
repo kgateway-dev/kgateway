@@ -90,12 +90,12 @@ func Main(opts SetupOpts) error {
 	var namespaceClient kubernetes.KubeNamespaceClient
 	// Running edge in KubeGateway mode ignores watchNamespaces so there's no need to create a client.
 	if envutils.IsEnvTruthy(constants.GlooGatewayEnableK8sGwControllerEnv) {
-		namespaceClient = &namespaces.FakeKubeNamespaceWatcher{}
+		namespaceClient = &namespaces.NoOpKubeNamespaceWatcher{}
 	} else {
 		namespaceClient, err = namespaces.NewKubeNamespaceClient(ctx)
 		// If there is any error when creating a KubeNamespaceClient (RBAC issues) default to a fake client
 		if err != nil {
-			namespaceClient = &namespaces.FakeKubeNamespaceWatcher{}
+			namespaceClient = &namespaces.NoOpKubeNamespaceWatcher{}
 		}
 	}
 
