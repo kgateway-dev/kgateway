@@ -30,4 +30,4 @@ With keep-alive configured, the Gloo Gateway proxy will send a TCP_KEEPALIVE pac
 
 ### Example Socket Options to Configure Keep-Alive
 
-Refer to [TCP Keepalive on Downstream Connections]({{% versioned_link_path fromRoot="/guides/traffic_management/tcp_keepalive/#TCP Keepalive on Downstream Connections" %}}).
+Refer to [TCP Keepalive on Downstream Connections]({{% versioned_link_path fromRoot="/guides/traffic_management/tcp_keepalive/#downstream" %}}).
