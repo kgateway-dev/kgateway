@@ -6,7 +6,7 @@ description: Enabling TCP Keepalive on Downstream and Upstream Connections
 
 TCP Keepalive serves two main purposes:
 
-1) the obvious one is to keep the connection alive by sending out probe after the connection has been idled for specific time
+1) the obvious one is to keep the connection alive by sending out probe after the connection has been idled for a specific time.
 2) the less obvious one is to detect stale connections when the probe fails and drop the connection.
 
 There are 3 settings in TCP keepalive:
@@ -17,11 +17,11 @@ There are 3 settings in TCP keepalive:
 
 The explanation can be found in the [Linux tcp manpage](https://man7.org/linux/man-pages/man7/tcp.7.html).
 
-Here are some considerations when determining the proper values for you environment:
+Some considerations when determining the proper values for you environment:
 
-1) On a slow or lossy network, if tcp_keepalive_intvl is set too low, it can inadvertently drop the connections more often
-then it should.
-2) Many application layer protocol like HTTP, GRPC(using HTTP2/2) has it's own keepalive mechanism that change what you
+1) On a slow or lossy network, if `tcp_keepalive_intvl` or `tcp_keepalive_probes` values are set too low, it can inadvertently
+drop the connections more often then it should.
+2) Many application layer protocols like HTTP, GRPC(using HTTP2/2) have their own keepalive mechanisms that change what you
 expected from TCP keepalive. For example, the application can still close the connection after it's keep-alive timeout even
 TCP keepalive is in place because TCP keepalive probe does not get up to the application layer.  
 
@@ -30,23 +30,25 @@ TCP keepalive is in place because TCP keepalive probe does not get up to the app
 ### Stale Connections
 
 Because tcp connection close is a 4-way handshake, it is possible to have stale connection where one side has been gone
-but the other side is not aware if the network is unstable. If the unaware side is just listening for events, it might think
-that there is just no event but in reality has been missing all the event.
+but the other side is not aware when the network is unstable. If the unaware side is just listening for events, it might think
+that there is just no event but in reality has been missing all the events.
 
-An example of this could be Gloo Gateway Control Plane has closed the connection but envoy is not aware and never get any xds
-configuration update. We have enabled tcp keepalive between envoy and Gloo Gateway control plane but if that needs to be
+An example of this could happen between Gloo Gateway Control Plane but the Gateway Proxy (envoy). Envoy might be listening to
+xds configuration update but never got any. Since envoy thinks the connection is still there, it never re-connect to the
+Control Plane. We have since enabled TCP keepalive between envoy and Gloo Gateway Control Plane but if that needs to be
 changed, see [TCP Keepalive on Static Clusters]({{<ref "#tcp-keepalive-on-static-clusters">}}) section below.
 
 ### Network Load Balancer connection tracking
 
 If the gateway proxy (envoy) is directly exposed to the public internet, the client would be the direct external end users.
-However, in a typical production setup, there is usually a form of load balancer between the end users and the gateway proxy.
+However, in a typical production setup, there is usually some form of load balancer between the end users and the gateway proxy.
 
-Some Network Load Balancer (NLB) use connection tracking to remember where a packet to get forwarded to once a connection is established.
-If the connection has been idling, The NLB might stop tracking the connection. In this scenario, both sides still think the connection
-is open but when the client send a packet through the NLB, the NLB now would not know where to send the packet and will send a RESET
-to the client. If the client does not automatically retry, this might show up as an error or you will see a lot of RESET from the tcp stats
-thinking it's a network issue. Enabling TCP keep alive will address this issue and help keep long-lived connection open and functional.
+Some Network Load Balancers (NLB) use Connection Tracking to remember where a packet to get forwarded to once a connection is established.
+If the connection has been idling, The NLB might remove the connection from it's  tracking table. In this scenario, both sides still think
+the connection is open but when the client send a packet through the NLB, the NLB now would not know where to forward the packet and will
+send a RESET to the client. If the client does not automatically retry, this might show up as an error or you will see a lot of RESET from
+the tcp stats thinking it's a network issue. Enabling TCP keepalive will address this issue and help keep long-lived connection open and
+functional. See [TCP Keepalive on Downstream Connections]({{<ref "#tcp-keepalive-on-downstream-connections">}}) section below.
 
 ## TCP Keepalive on Downstream Connections {#downstream}
 
@@ -68,7 +70,7 @@ in the [Gateway]({{< versioned_link_path fromRoot="/reference/api/github.com/sol
 or [Proxy]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/" >}})
 resources.
 
-The following example will enable TCP keepalive probe between the client and the gateway proxy and send out the first
+This example will enable TCP keepalive probe between the client and the gateway proxy and send out the first
 probe when the connection has been idled for 60 seconds (TCP_KEEPIDLE). Once triggered, each probe will be
 sent every 20 seconds (TCP_KEEPINTVL). If there is no response for 2 consecutive probes (TCP_KEEPCNT), the
 connection will be dropped.
@@ -132,14 +134,14 @@ spec:
 ## TCP Keepalive on Static Clusters
 
 {{% notice note %}}
-Available in Gloo Gateway Enterprise version only
+Configurable in Gloo Gateway Enterprise version only
 {{% /notice %}}
 
 For static upstream clusters setup through helm templates, the `gloo.gatewayProxies.NAME.tcpKeepaliveTimeSeconds`
 setting can be used to change the keepalive timeout value (default is 60s). See
-[Enterprise Gloo Gateway]({{ < versioned_link_path fromRoot="/reference/helm_chart_values/enterprise_helm_chart_values/" >}}) helm chare values for reference.
+[Enterprise Gloo Gateway]({{< versioned_link_path fromRoot="/reference/helm_chart_values/enterprise_helm_chart_values/" >}}) helm chare values for reference.
 
-The tcp_keepalive_intvl and tcp_keepalive_probes cannot be changed and the default value for your system will be used. To check the default values for your system:
+The `tcp_keepalive_intvl` and `tcp_keepalive_probes` cannot be changed and the default value for your system will be used. To check the default values for your system:
 
 ```bash
 # sysctl -a | grep keepalive
