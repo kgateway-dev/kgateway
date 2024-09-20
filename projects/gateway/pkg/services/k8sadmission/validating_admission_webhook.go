@@ -460,6 +460,7 @@ func (wh *gatewayValidationWebhook) validateAdmissionRequest(
 
 			contextutils.LoggerFrom(ctx).Debugf("Found APIKeySecretType")
 			//err := kubeconverters.ValidateAPIKeySecret(ctx, secret)
+			return &validation.Reports{}, nil
 		}
 	} else if _, hit := gloosnapshot.ApiGvkToHashableResource[gvk]; !hit {
 		contextutils.LoggerFrom(ctx).Infof("unsupported validation for resource namespace [%s] name [%s] group [%s] kind [%s]", ref.GetNamespace(), ref.GetName(), gvk.Group, gvk.Kind)
