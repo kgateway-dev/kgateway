@@ -237,7 +237,7 @@ message CustomAuth {
     // This allows the server to base the auth decision on metadata that you define on the source of the request.
     //
     // This attribute is analogous to Envoy's config.filter.http.ext_authz.v2.CheckSettings. See the official
-    // [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/ext_authz/v2/ext_authz.proto.html?highlight=ext_authz#config-filter-http-ext-authz-v2-checksettings)
+    // [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto#envoy-v3-api-msg-extensions-filters-http-ext-authz-v3-checksettings)
     // for more details.
     map<string, string> context_extensions = 1;
 
@@ -287,7 +287,7 @@ message BasicAuth {
 
     // The encryption/hashing algorithm to use to store the password
     message EncryptionType {
-        // Sha1 encryption type (https://datatracker.ietf.org/doc/html/rfc3174)
+        // Sha1 encryption type (https://tools.ietf.org/html/rfc3174)
         // Sha1 is considered insecure and is not recommended for production use
         message Sha1 {}
         // Apache specific iterated MD5 hashing: (https://httpd.apache.org/docs/2.4/misc/password_encryptions.html)
@@ -440,7 +440,7 @@ message UserSession {
         string key_prefix = 2;
         // Domain used to validate against requests in order to ensure that request host name matches target domain.
         // If the target domain is provided will prevent requests that do not match the target domain according to
-        // the domain matching specifications in RFC 6265. For more information, see https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.3
+        // the domain matching specifications in RFC 6265. For more information, see https://tools.ietf.org/html/rfc6265#section-5.1.3
         string target_domain = 3;
     }
     message RedisSession {
@@ -460,7 +460,7 @@ message UserSession {
         google.protobuf.Duration pre_expiry_buffer = 5;
         // Domain used to validate against requests in order to ensure that request host name matches target domain.
         // If the target domain is provided will prevent requests that do not match the target domain according to
-        // the domain matching specifications in RFC 6265. For more information, see https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.3
+        // the domain matching specifications in RFC 6265. For more information, see https://tools.ietf.org/html/rfc6265#section-5.1.3
         string target_domain = 6;
 
         // If set, the name of the header that will include the randomly generated session id
@@ -808,7 +808,7 @@ message OidcAuthorizationCode {
             //
             // +kubebuilder:validation:Required
             core.solo.io.ResourceRef signing_key_ref = 1;
-            // Amount of time for which the JWT is valid. No maximmum is enforced, but different IDPs may impose limits on how far in
+            // Amount of time for which the JWT is valid. No maximum is enforced, but different IDPs may impose limits on how far in
             // the future the expiration time is allowed to be. If omitted, default is 5s.
             google.protobuf.Duration valid_for = 2;
         }
@@ -836,7 +836,7 @@ message OidcAuthorizationCode {
     message Default {}
 
     // For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
-    // This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
+    // This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
     message Azure {
         // The client ID for the ExtAuthService app that is registered in MS Entra,
         // to access the Microsoft Graph API to retrieve distributed claims.
@@ -848,7 +848,7 @@ message OidcAuthorizationCode {
         // depending on how your Azure account is provisioned.
         string tenant_id = 2;
 
-        // The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API.
+        // The client secret of the ExtAuthService app that is registered with MS Entra to communicate with the MS Graph API.
         core.solo.io.ResourceRef client_secret = 3;
 
         // Redis connection details to cache MS Entera claims.
@@ -1441,7 +1441,7 @@ message BackoffStrategy {
 }
 
 
-// The message specifies the retry policy of the external gRPC service when unable to initally connect.
+// The message specifies the retry policy of the external gRPC service when unable to initially connect.
 message RetryPolicy {
 
     // Specifies the allowed number of retries. This parameter is optional and
@@ -1802,8 +1802,8 @@ message ExtAuthConfig {
         message PkJwtClientAuthenticationConfig{
             // Signing key for the JWT used for client authentication
             string signing_key = 1 [(extproto.sensitive) = true];
-            // Amount of time for which the JWT is valid. No maximmum is enforced, but different IDPs may impose limits on how far in
-            // the future the expiration time is allowed to be. Defaults in 5s in front end, but expected to be set explictly here
+            // Amount of time for which the JWT is valid. No maximum is enforced, but different IDPs may impose limits on how far in
+            // the future the expiration time is allowed to be. Defaults in 5s in front end, but expected to be set explicitly here
             google.protobuf.Duration valid_for = 2;
         }
 
@@ -1850,7 +1850,7 @@ message ExtAuthConfig {
         message Default {}
 
         // For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
-        // This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
+        // This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
         message Azure {
             // The client ID for the ExtAuthService app that is registered in MS Entra,
             // to access the Microsoft Graph API to retrieve distributed claims.
@@ -1862,7 +1862,7 @@ message ExtAuthConfig {
             // depending on how your Azure account is provisioned.
             string tenant_id = 2;
 
-            // The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API.
+            // The client secret of the ExtAuthService app that is registered with MS Entra to communicate with the MS Graph API.
             string client_secret = 3 [(extproto.sensitive) = true];
 
             // Redis connection details to cache MS Entera claims.
