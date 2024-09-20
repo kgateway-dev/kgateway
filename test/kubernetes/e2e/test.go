@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
@@ -40,20 +41,6 @@ func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper
 	installation.Metadata.HelmRepoIndexFileName = testHelper.HelmRepoIndexFileName
 	installation.Metadata.ChartUri = filepath.Join(testutils.GitRootDirectory(), installation.Metadata.TestAssetDir, installation.Metadata.HelmChartName+"-"+installation.Metadata.ChartVersion+".tgz")
 
-	// validate that the glooGatewayContext has a valid manifest
-	if installation.Metadata.ValuesManifestFile == "" {
-		panic("ValuesManifestFile must be provided in glooGatewayContext")
-	}
-
-	values, err := testutils.BuildHelmValues(testutils.HelmValues{ValuesFile: installation.Metadata.ValuesManifestFile})
-	if err != nil {
-		panic(fmt.Sprintf("failed to build helm values: %v", err))
-	}
-	err = testutils.ValidateHelmValues(values)
-	if err != nil {
-		panic(fmt.Sprintf("failed to validate helm values: %v", err))
-	}
-
 	return testHelper
 }
 
@@ -81,6 +68,11 @@ func CreateTestInstallationForCluster(
 	clusterContext *cluster.Context,
 	glooGatewayContext *gloogateway.Context,
 ) *TestInstallation {
+	if err := glooGatewayContext.Validate(); err != nil {
+		// We error loudly if the context is misconfigured
+		panic(err)
+	}
+
 	installation := &TestInstallation{
 		// RuntimeContext contains the set of properties that are defined at runtime by whoever is invoking tests
 		RuntimeContext: runtimeContext,
@@ -177,6 +169,21 @@ func (i *TestInstallation) UninstallIstio() error {
 
 func (i *TestInstallation) CreateIstioBugReport(ctx context.Context) {
 	cluster.CreateIstioBugReport(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext, i.GeneratedFiles.FailureDir)
+}
+
+// InstallGlooGatewayWithTestHelper is the common way to install Gloo Gateway, however it is not the recommended way
+// SoloTestHelper is an artifact of the legacy e2e tests
+func (i *TestInstallation) InstallGlooGatewayWithTestHelper(ctx context.Context, testHelper *helper.SoloTestHelper, timeout time.Duration) {
+	installFn := func(ctx context.Context) error {
+		return testHelper.InstallGloo(
+			ctx,
+			timeout,
+			helper.WithExtraArgs("--values", i.Metadata.ProfileValuesManifestFile), // profile is defined first...
+			helper.WithExtraArgs("--values", i.Metadata.ValuesManifestFile),        // so test can override values here.
+		)
+	}
+
+	i.InstallGlooGateway(ctx, installFn)
 }
 
 func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installFn func(ctx context.Context) error) {

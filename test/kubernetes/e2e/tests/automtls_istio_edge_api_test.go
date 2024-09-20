@@ -3,15 +3,11 @@ package tests_test
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/envutils"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
 	"github.com/solo-io/gloo/test/testutils"
-
-	"github.com/solo-io/skv2/codegen/util"
 
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	. "github.com/solo-io/gloo/test/kubernetes/e2e/tests"
@@ -26,8 +22,9 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   installNs,
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-automtls-edge-gateway-test-helm.yaml"),
+			InstallNamespace:          installNs,
+			ProfileValuesManifestFile: EmptyProfilePath,
+			ValuesManifestFile:        ManifestPath("istio-automtls-edge-gateway-test-helm.yaml"),
 		},
 	)
 
@@ -73,9 +70,7 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 	}
 
 	// Install Gloo Gateway with only Gloo Edge Gateway APIs enabled
-	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
-		return testHelper.InstallGloo(ctx, 5*time.Minute, helper.WithExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
-	})
+	testInstallation.InstallGlooGatewayWithTestHelper(ctx, testHelper, 5*time.Minute)
 
 	AutomtlsIstioEdgeApiSuiteRunner().Run(ctx, t, testInstallation)
 }
