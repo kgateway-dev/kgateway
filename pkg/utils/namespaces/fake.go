@@ -6,6 +6,9 @@ import (
 )
 
 // FakeKubeNamespaceWatcher to eliminate the need for this fake client for non kube environments
+// Currently the generated code (event loop, snapshots) expects the KubeNamespaceClient to not be nil
+// and the KubeNamespaceClient does not have checks to ensure it is handled properly if nil
+// so this is the workaround for now until we rewrite the generated code
 type FakeKubeNamespaceWatcher struct{}
 
 func (f *FakeKubeNamespaceWatcher) Watch(opts clients.WatchOpts) (<-chan skkube.KubeNamespaceList, <-chan error, error) {

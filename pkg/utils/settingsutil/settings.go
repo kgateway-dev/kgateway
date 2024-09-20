@@ -118,6 +118,7 @@ func GenerateNamespacesToWatch(settings *v1.Settings, namespaces kubernetes.Kube
 	// This also doubles as a way to ensure there is at least one namespace watched
 	selectedNamespaces.Insert(writeNamespace)
 
+	// This returns the contents as a sorted slice.
 	return selectedNamespaces.List(), nil
 }
 
