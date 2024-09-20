@@ -437,7 +437,7 @@ func (wh *gatewayValidationWebhook) validateAdmissionRequest(
 		if !isDelete {
 			// The only type of Secrets we validate are those with type "extauth.solo.io/apikey"
 			// If the Secret is not of this type, we skip validation
-			// DO_NOT_SUBMIT: put this in a
+			// DO_NOT_SUBMIT: put this in a function
 			secretUnstructured := &unstructured.Unstructured{}
 			if err := secretUnstructured.UnmarshalJSON(admissionRequest.Object.Raw); err != nil {
 				return nil, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
