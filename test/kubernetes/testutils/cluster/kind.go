@@ -18,11 +18,11 @@ import (
 
 // MustKindContext returns the Context for a KinD cluster with the given name
 func MustKindContext(clusterName string) *Context {
-	return MustKindContextWithScheme(clusterName, kubetestclients.MustClientScheme())
+	return mustKindContextWithScheme(clusterName, kubetestclients.MustClientScheme())
 }
 
-// MustKindContextWithScheme returns the Context for a KinD cluster with the given name and scheme
-func MustKindContextWithScheme(clusterName string, scheme *runtime.Scheme) *Context {
+// mustKindContextWithScheme returns the Context for a KinD cluster with the given name and scheme
+func mustKindContextWithScheme(clusterName string, scheme *runtime.Scheme) *Context {
 	if len(clusterName) == 0 {
 		// We fall back to the cluster named `kind` if no cluster name was provided
 		clusterName = "kind"
