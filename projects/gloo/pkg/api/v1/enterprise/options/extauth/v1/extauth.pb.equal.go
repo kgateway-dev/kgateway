@@ -7142,9 +7142,5 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig_KeyMetadata) Equal(that interface{}) boo
 
 	}
 
-	if strings.Compare(m.GetName(), target.GetName()) != 0 {
-		return false
-	}
-
 	return true
 }

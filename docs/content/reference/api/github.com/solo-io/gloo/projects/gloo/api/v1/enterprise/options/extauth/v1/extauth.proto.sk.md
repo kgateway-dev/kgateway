@@ -2724,7 +2724,6 @@ These values will be encoded in a basic auth header in order to authenticate the
 ```yaml
 "username": string
 "metadata": map<string, string>
-"name": string
 
 ```
 
@@ -2732,7 +2731,6 @@ These values will be encoded in a basic auth header in order to authenticate the
 | ----- | ---- | ----------- | 
 | `username` | `string` | The user is mapped as the name of `Secret` which contains the `ApiKey`. |
 | `metadata` | `map<string, string>` | The metadata present on the `ApiKey`. |
-| `name` | `string` | Name of the apikey, useful for debugging and logging. |
 
 
 
