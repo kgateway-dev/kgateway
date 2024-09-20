@@ -453,14 +453,13 @@ func (wh *gatewayValidationWebhook) validateAdmissionRequest(
 
 			contextutils.LoggerFrom(ctx).Debugf("secret type: %s", secret.Type)
 			contextutils.LoggerFrom(ctx).Debugf("secret: %v", secret)
-			if secret.Type == kubeconverters.APIKeySecretType {
-				contextutils.LoggerFrom(ctx).Debugf("Found APIKeySecretType")
-				err := kubeconverters.ValidateAPIKeySecret(ctx, secret)
-				return &validation.Reports{}, err
+			if secret.Type != kubeconverters.APIKeySecretType {
+				contextutils.LoggerFrom(ctx).Infof("unsupported operation validation [%s] for resource namespace [%s] name [%s] group [%s] kind [%s]", admissionRequest.Operation, ref.GetNamespace(), ref.GetName(), gvk.Group, gvk.Kind)
+				return &validation.Reports{}, nil
 			}
 
-			contextutils.LoggerFrom(ctx).Infof("unsupported operation validation [%s] for resource namespace [%s] name [%s] group [%s] kind [%s]", admissionRequest.Operation, ref.GetNamespace(), ref.GetName(), gvk.Group, gvk.Kind)
-			return &validation.Reports{}, nil
+			contextutils.LoggerFrom(ctx).Debugf("Found APIKeySecretType")
+			//err := kubeconverters.ValidateAPIKeySecret(ctx, secret)
 		}
 	} else if _, hit := gloosnapshot.ApiGvkToHashableResource[gvk]; !hit {
 		contextutils.LoggerFrom(ctx).Infof("unsupported validation for resource namespace [%s] name [%s] group [%s] kind [%s]", ref.GetNamespace(), ref.GetName(), gvk.Group, gvk.Kind)
