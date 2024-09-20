@@ -33,15 +33,14 @@ Because tcp connection close is a 4-way handshake, it is possible to have stale 
 but the other side is not aware when the network is unstable. If the unaware side is just listening for events, it might think
 that there is just no event but in reality has been missing all the events.
 
-An example of this could happen between Gloo Gateway Control Plane but the Gateway Proxy (envoy). Envoy might be listening to
+An example of this can occur between Gloo Gateway Control Plane and the Gateway Proxy (envoy). Envoy might be listening to
 xds configuration update but never got any. Since envoy thinks the connection is still there, it never re-connect to the
-Control Plane. We have since enabled TCP keepalive between envoy and Gloo Gateway Control Plane but if that needs to be
-changed, see [TCP Keepalive on Static Clusters]({{<ref "#tcp-keepalive-on-static-clusters">}}) section below.
+Control Plane. Out of the box there is a TCP keepalive  configured in Gloo gateway but you may find in your environment it needs to be to be changed, in order to change it, see [TCP Keepalive on Static Clusters]({{<ref "#tcp-keepalive-on-static-clusters">}}) section below.
 
 ### Network Load Balancer connection tracking
 
 If the gateway proxy (envoy) is directly exposed to the public internet, the client would be the direct external end users.
-However, in a typical production setup, there is usually some form of load balancer between the end users and the gateway proxy.
+In a many production setups, there can be some form of load balancer between the end users and the gateway proxy such as an [ALB](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html).
 
 Some Network Load Balancers (NLB) use Connection Tracking to remember where a packet to get forwarded to once a connection is established.
 If the connection has been idling, The NLB might remove the connection from it's  tracking table. In this scenario, both sides still think
@@ -52,14 +51,11 @@ functional. See [TCP Keepalive on Downstream Connections]({{<ref "#tcp-keepalive
 
 ## TCP Keepalive on Downstream Connections {#downstream}
 
-{{% notice note %}}
-Available in Gloo Gateway as of v1.7.0-beta11, v1.6.6 and v1.5.16.
-{{% /notice %}}
 
 {{% notice warning %}}
 Currently envoy does not directly support turning on TCP keepalive on downstream connections. It can only be done with generic socket options
 setting. Socket options can have considerable effects and may not be portable on all platforms. The configurations provided in this guide are
-not production proven, so please be careful! Because these options are applied to the Listener, they would affect all downstream connections
+not suitable for every production environment, so please be careful! Because these options are applied to the Listener, they affect all downstream connections
 if they are mis-configured.
 {{% /notice %}}
 
