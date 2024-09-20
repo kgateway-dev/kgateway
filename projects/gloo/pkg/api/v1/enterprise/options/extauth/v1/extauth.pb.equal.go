@@ -66,6 +66,10 @@ func (m *AuthConfig) Equal(that interface{}) bool {
 		}
 	}
 
+	if m.GetNewField() != target.GetNewField() {
+		return false
+	}
+
 	if len(m.GetConfigs()) != len(target.GetConfigs()) {
 		return false
 	}

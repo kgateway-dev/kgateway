@@ -58,6 +58,11 @@ func (m *AuthConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	err = binary.Write(hasher, binary.LittleEndian, m.GetNewField())
+	if err != nil {
+		return 0, err
+	}
+
 	for _, v := range m.GetConfigs() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {

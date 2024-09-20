@@ -55,6 +55,8 @@ func (m *AuthConfig) Clone() proto.Message {
 		target.Metadata = proto.Clone(m.GetMetadata()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.Metadata)
 	}
 
+	target.NewField = m.GetNewField()
+
 	if m.GetConfigs() != nil {
 		target.Configs = make([]*AuthConfig_Config, len(m.GetConfigs()))
 		for idx, v := range m.GetConfigs() {
