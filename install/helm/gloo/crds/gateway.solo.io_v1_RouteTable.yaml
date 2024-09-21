@@ -259,6 +259,9 @@ spec:
                                 promptTemplate:
                                   type: string
                               type: object
+                            routeType:
+                              type: string
+                              x-kubernetes-int-or-string: true
                             semanticCache:
                               properties:
                                 datastore:

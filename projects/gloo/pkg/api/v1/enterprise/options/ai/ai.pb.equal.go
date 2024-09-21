@@ -264,6 +264,10 @@ func (m *RouteSettings) Equal(that interface{}) bool {
 
 	}
 
+	if m.GetRouteType() != target.GetRouteType() {
+		return false
+	}
+
 	return true
 }
 

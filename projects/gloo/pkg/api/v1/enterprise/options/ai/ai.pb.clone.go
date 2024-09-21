@@ -179,6 +179,8 @@ func (m *RouteSettings) Clone() proto.Message {
 		}
 	}
 
+	target.RouteType = m.GetRouteType()
+
 	return target
 }
 

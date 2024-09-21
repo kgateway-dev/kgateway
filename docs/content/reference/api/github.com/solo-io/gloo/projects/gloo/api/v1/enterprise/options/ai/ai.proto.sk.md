@@ -19,6 +19,7 @@ weight: 5
 - [Mistral](#mistral)
 - [Anthropic](#anthropic)
 - [RouteSettings](#routesettings)
+- [RouteType](#routetype)
 - [FieldDefault](#fielddefault)
 - [Postgres](#postgres)
 - [Embedding](#embedding)
@@ -269,6 +270,7 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 "semanticCache": .ai.options.gloo.solo.io.SemanticCache
 "backupModels": []string
 "defaults": []ai.options.gloo.solo.io.FieldDefault
+"routeType": .ai.options.gloo.solo.io.RouteSettings.RouteType
 
 ```
 
@@ -280,6 +282,19 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 | `semanticCache` | [.ai.options.gloo.solo.io.SemanticCache](../ai.proto.sk/#semanticcache) | Semantic caching configuration Semantic caching allows you to cache previous model responses in order to provide faster responses to similar requests in the future. Results will vary depending on the embedding mechanism used, as well as the similarity threshold set. Example using Redis for storage and OpenAI for embedding: ``` semanticCache: datastore: redis: connectionString: redis://172.17.0.1:6379 embedding: openai: authToken: secretRef: name: openai-secret namespace: gloo-system ```. |
 | `backupModels` | `[]string` | Backup models to use in case of a failure with the primary model passed in the request. By default each model will be tried 2 times before moving on to the next model in the list. If all requests fail then the final response will be returned to the client. |
 | `defaults` | [[]ai.options.gloo.solo.io.FieldDefault](../ai.proto.sk/#fielddefault) | A list of defaults to be merged with the user input fields. These will NOT override the user input fields unless override is explicitly set to true. Some examples include setting the temperature, max_tokens, etc. Example overriding system field for Anthropic: ``` # Anthropic doesn't support a system chat type defaults: - field: "system" value: "answer all questions in french" ``` Example setting the temperature and max_tokens, overriding max_tokens: ``` defaults: - field: "temperature" value: 0.5 - field: "max_tokens" value: 100 ```. |
+| `routeType` | [.ai.options.gloo.solo.io.RouteSettings.RouteType](../ai.proto.sk/#routetype) | The type of route this is, either CHAT or COMPLETIONS. |
+
+
+
+
+---
+### RouteType
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `CHAT` |  |
 
 
 

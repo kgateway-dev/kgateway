@@ -288,6 +288,13 @@ message RouteSettings {
     ```
   */
   repeated FieldDefault defaults = 6;
+
+  enum RouteType {
+    CHAT = 0;
+  }
+
+  // The type of route this is, either CHAT or COMPLETIONS
+  RouteType route_type = 7;
 }
 
 message FieldDefault {
