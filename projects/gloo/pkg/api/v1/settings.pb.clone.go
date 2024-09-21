@@ -1292,6 +1292,12 @@ func (m *GatewayOptions_ValidationOptions) Clone() proto.Message {
 		target.WarnMissingTlsSecret = proto.Clone(m.GetWarnMissingTlsSecret()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
+	if h, ok := interface{}(m.GetFullEnvoyValidation()).(clone.Cloner); ok {
+		target.FullEnvoyValidation = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.FullEnvoyValidation = proto.Clone(m.GetFullEnvoyValidation()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	return target
 }
 

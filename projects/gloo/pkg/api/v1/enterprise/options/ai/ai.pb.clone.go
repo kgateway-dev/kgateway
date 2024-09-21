@@ -580,6 +580,25 @@ func (m *SemanticCache_Redis) Clone() proto.Message {
 }
 
 // Clone function
+func (m *SemanticCache_Weaviate) Clone() proto.Message {
+	var target *SemanticCache_Weaviate
+	if m == nil {
+		return target
+	}
+	target = &SemanticCache_Weaviate{}
+
+	target.Host = m.GetHost()
+
+	target.HttpPort = m.GetHttpPort()
+
+	target.GrpcPort = m.GetGrpcPort()
+
+	target.Insecure = m.GetInsecure()
+
+	return target
+}
+
+// Clone function
 func (m *SemanticCache_DataStore) Clone() proto.Message {
 	var target *SemanticCache_DataStore
 	if m == nil {
@@ -598,6 +617,18 @@ func (m *SemanticCache_DataStore) Clone() proto.Message {
 		} else {
 			target.Datastore = &SemanticCache_DataStore_Redis{
 				Redis: proto.Clone(m.GetRedis()).(*SemanticCache_Redis),
+			}
+		}
+
+	case *SemanticCache_DataStore_Weaviate:
+
+		if h, ok := interface{}(m.GetWeaviate()).(clone.Cloner); ok {
+			target.Datastore = &SemanticCache_DataStore_Weaviate{
+				Weaviate: h.Clone().(*SemanticCache_Weaviate),
+			}
+		} else {
+			target.Datastore = &SemanticCache_DataStore_Weaviate{
+				Weaviate: proto.Clone(m.GetWeaviate()).(*SemanticCache_Weaviate),
 			}
 		}
 

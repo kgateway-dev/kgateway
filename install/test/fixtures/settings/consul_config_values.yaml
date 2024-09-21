@@ -14,6 +14,7 @@ spec:
     isolateVirtualHostsBySslConfig: false
     enableGatewayController: true
     validation:
+      fullEnvoyValidation: false
       alwaysAccept: true
       allowWarnings: true
       warnMissingTlsSecret: true

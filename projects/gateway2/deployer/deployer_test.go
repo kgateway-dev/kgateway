@@ -658,8 +658,8 @@ var _ = Describe("Deployer", func() {
 		fullyDefinedValidationWithoutRunAsUser := func(objs clientObjects, inp *input) error {
 			expectedGwp := inp.defaultGwp.Spec.Kube
 			Expect(objs).NotTo(BeEmpty())
-			// Check we have Deployment, ConfigMap, ServiceAccount, Service
-			Expect(objs).To(HaveLen(4))
+			// Check we have Deployment, Envoy ConfigMap, ServiceAccount, Service, AI Stats ConfigMap
+			Expect(objs).To(HaveLen(5))
 			dep := objs.findDeployment(defaultNamespace, defaultDeploymentName)
 			Expect(dep).ToNot(BeNil())
 			Expect(dep.Spec.Replicas).ToNot(BeNil())

@@ -469,6 +469,7 @@ type GatewayValidation struct {
 	Webhook                          *Webhook `json:"webhook,omitempty" desc:"webhook specific configuration"`
 	ValidationServerGrpcMaxSizeBytes *int     `json:"validationServerGrpcMaxSizeBytes,omitempty" desc:"gRPC max message size in bytes for the gloo validation server"`
 	LivenessProbeEnabled             *bool    `json:"livenessProbeEnabled,omitempty" desc:"Set to true to enable a liveness probe for the gateway (default is false). You must also set the 'Probes' value to true."`
+	FullEnvoyValidation              *bool    `json:"fullEnvoyValidation,omitempty" desc:"enable feature which validates all final translated config against envoy Validate mode"`
 }
 
 type Webhook struct {
