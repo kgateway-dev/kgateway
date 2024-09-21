@@ -742,6 +742,14 @@ func (m *UpstreamSpec_AzureOpenAI) Equal(that interface{}) bool {
 		return false
 	}
 
+	if strings.Compare(m.GetDeploymentName(), target.GetDeploymentName()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetApiVersion(), target.GetApiVersion()) != 0 {
+		return false
+	}
+
 	switch m.AuthTokenSource.(type) {
 
 	case *UpstreamSpec_AzureOpenAI_AuthToken:

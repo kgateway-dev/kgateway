@@ -191,6 +191,8 @@ Settings for the Azure OpenAI API
 ```yaml
 "authToken": .ai.options.gloo.solo.io.SingleAuthToken
 "endpoint": string
+"deploymentName": string
+"apiVersion": string
 
 ```
 
@@ -198,6 +200,8 @@ Settings for the Azure OpenAI API
 | ----- | ---- | ----------- | 
 | `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the OpenAI API This token will be placed into the `api-key` header. |
 | `endpoint` | `string` | (REQUIRED) The endpoint to use This should be the endpoint to the Azure OpenAI API, e.g. my-endpoint.openai.azure.com If the scheme is included it will be stripped. |
+| `deploymentName` | `string` | (REQUIRED) The deployment/model name to use. |
+| `apiVersion` | `string` | (REQUIRED) The version of the API to use. |
 
 
 

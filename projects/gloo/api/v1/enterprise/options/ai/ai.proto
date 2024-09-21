@@ -111,6 +111,10 @@ message UpstreamSpec {
     // This should be the endpoint to the Azure OpenAI API, e.g. my-endpoint.openai.azure.com
     // If the scheme is included it will be stripped.
     string endpoint = 2;
+    // (REQUIRED) The deployment/model name to use
+    string deployment_name = 3;
+    // (REQUIRED) The version of the API to use
+    string api_version = 4;
   }
 
   // Settings for the Mistral API

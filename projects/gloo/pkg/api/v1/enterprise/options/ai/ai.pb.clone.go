@@ -437,6 +437,10 @@ func (m *UpstreamSpec_AzureOpenAI) Clone() proto.Message {
 
 	target.Endpoint = m.GetEndpoint()
 
+	target.DeploymentName = m.GetDeploymentName()
+
+	target.ApiVersion = m.GetApiVersion()
+
 	switch m.AuthTokenSource.(type) {
 
 	case *UpstreamSpec_AzureOpenAI_AuthToken:
