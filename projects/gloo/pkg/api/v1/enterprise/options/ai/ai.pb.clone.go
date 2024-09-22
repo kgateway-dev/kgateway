@@ -530,14 +530,14 @@ func (m *UpstreamSpec_Composite) Clone() proto.Message {
 	}
 	target = &UpstreamSpec_Composite{}
 
-	if m.GetPools() != nil {
-		target.Pools = make([]*UpstreamSpec_Composite_Pool, len(m.GetPools()))
-		for idx, v := range m.GetPools() {
+	if m.GetPool() != nil {
+		target.Pool = make([]*UpstreamSpec_Composite_Backend, len(m.GetPool()))
+		for idx, v := range m.GetPool() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Pools[idx] = h.Clone().(*UpstreamSpec_Composite_Pool)
+				target.Pool[idx] = h.Clone().(*UpstreamSpec_Composite_Backend)
 			} else {
-				target.Pools[idx] = proto.Clone(v).(*UpstreamSpec_Composite_Pool)
+				target.Pool[idx] = proto.Clone(v).(*UpstreamSpec_Composite_Backend)
 			}
 
 		}
@@ -606,30 +606,6 @@ func (m *UpstreamSpec_Composite_Backend) Clone() proto.Message {
 			}
 		}
 
-	}
-
-	return target
-}
-
-// Clone function
-func (m *UpstreamSpec_Composite_Pool) Clone() proto.Message {
-	var target *UpstreamSpec_Composite_Pool
-	if m == nil {
-		return target
-	}
-	target = &UpstreamSpec_Composite_Pool{}
-
-	if m.GetUpstreams() != nil {
-		target.Upstreams = make([]*UpstreamSpec_Composite_Backend, len(m.GetUpstreams()))
-		for idx, v := range m.GetUpstreams() {
-
-			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Upstreams[idx] = h.Clone().(*UpstreamSpec_Composite_Backend)
-			} else {
-				target.Upstreams[idx] = proto.Clone(v).(*UpstreamSpec_Composite_Backend)
-			}
-
-		}
 	}
 
 	return target

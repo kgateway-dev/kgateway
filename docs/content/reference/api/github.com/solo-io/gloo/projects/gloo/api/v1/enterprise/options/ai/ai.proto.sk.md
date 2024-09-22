@@ -20,7 +20,6 @@ weight: 5
 - [Anthropic](#anthropic)
 - [Composite](#composite)
 - [Backend](#backend)
-- [Pool](#pool)
 - [RouteSettings](#routesettings)
 - [RouteType](#routetype)
 - [FieldDefault](#fielddefault)
@@ -282,14 +281,14 @@ name: azure-secret
 namespace: gloo-system
 
 ```yaml
-"pools": []ai.options.gloo.solo.io.UpstreamSpec.Composite.Pool
+"pool": []ai.options.gloo.solo.io.UpstreamSpec.Composite.Backend
 "priority": int
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `pools` | [[]ai.options.gloo.solo.io.UpstreamSpec.Composite.Pool](../ai.proto.sk/#pool) |  |
+| `pool` | [[]ai.options.gloo.solo.io.UpstreamSpec.Composite.Backend](../ai.proto.sk/#backend) | List of upstreams to use repeated UpstreamSpec upstreams = 1;. |
 | `priority` | `int` |  |
 
 
@@ -314,25 +313,6 @@ namespace: gloo-system
 | `mistral` | [.ai.options.gloo.solo.io.UpstreamSpec.Mistral](../ai.proto.sk/#mistral) | Mistral upstream. Only one of `mistral`, `openai`, `anthropic`, or `azureOpenai` can be set. |
 | `anthropic` | [.ai.options.gloo.solo.io.UpstreamSpec.Anthropic](../ai.proto.sk/#anthropic) | Anthropic upstream. Only one of `anthropic`, `openai`, `mistral`, or `azureOpenai` can be set. |
 | `azureOpenai` | [.ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI upstream. Only one of `azureOpenai`, `openai`, `mistral`, or `anthropic` can be set. |
-
-
-
-
----
-### Pool
-
- 
-List of upstreams to use
-repeated UpstreamSpec upstreams = 1;
-
-```yaml
-"upstreams": []ai.options.gloo.solo.io.UpstreamSpec.Composite.Backend
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `upstreams` | [[]ai.options.gloo.solo.io.UpstreamSpec.Composite.Backend](../ai.proto.sk/#backend) |  |
 
 
 

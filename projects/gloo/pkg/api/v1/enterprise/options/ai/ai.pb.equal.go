@@ -909,17 +909,17 @@ func (m *UpstreamSpec_Composite) Equal(that interface{}) bool {
 		return false
 	}
 
-	if len(m.GetPools()) != len(target.GetPools()) {
+	if len(m.GetPool()) != len(target.GetPool()) {
 		return false
 	}
-	for idx, v := range m.GetPools() {
+	for idx, v := range m.GetPool() {
 
 		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetPools()[idx]) {
+			if !h.Equal(target.GetPool()[idx]) {
 				return false
 			}
 		} else {
-			if !proto.Equal(v, target.GetPools()[idx]) {
+			if !proto.Equal(v, target.GetPool()[idx]) {
 				return false
 			}
 		}
@@ -1021,47 +1021,6 @@ func (m *UpstreamSpec_Composite_Backend) Equal(that interface{}) bool {
 		if m.Llm != target.Llm {
 			return false
 		}
-	}
-
-	return true
-}
-
-// Equal function
-func (m *UpstreamSpec_Composite_Pool) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*UpstreamSpec_Composite_Pool)
-	if !ok {
-		that2, ok := that.(UpstreamSpec_Composite_Pool)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if len(m.GetUpstreams()) != len(target.GetUpstreams()) {
-		return false
-	}
-	for idx, v := range m.GetUpstreams() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetUpstreams()[idx]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetUpstreams()[idx]) {
-				return false
-			}
-		}
-
 	}
 
 	return true

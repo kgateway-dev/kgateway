@@ -187,10 +187,7 @@ message UpstreamSpec {
     }
     // List of upstreams to use
     // repeated UpstreamSpec upstreams = 1;
-    message Pool {
-      repeated Backend upstreams = 1;
-    }
-    repeated Pool pools = 1;
+    repeated Backend pool = 1;
     uint32 priority = 2;
   }
 
