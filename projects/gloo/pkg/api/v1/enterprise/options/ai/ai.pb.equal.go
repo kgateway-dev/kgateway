@@ -165,6 +165,21 @@ func (m *UpstreamSpec) Equal(that interface{}) bool {
 			}
 		}
 
+	case *UpstreamSpec_Pools:
+		if _, ok := target.Llm.(*UpstreamSpec_Pools); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetPools()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetPools()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetPools(), target.GetPools()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.Llm != target.Llm {
@@ -868,6 +883,185 @@ func (m *UpstreamSpec_Anthropic) Equal(that interface{}) bool {
 
 	if strings.Compare(m.GetVersion(), target.GetVersion()) != 0 {
 		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *UpstreamSpec_Composite) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*UpstreamSpec_Composite)
+	if !ok {
+		that2, ok := that.(UpstreamSpec_Composite)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetPools()) != len(target.GetPools()) {
+		return false
+	}
+	for idx, v := range m.GetPools() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetPools()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetPools()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	if m.GetPriority() != target.GetPriority() {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *UpstreamSpec_Composite_Backend) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*UpstreamSpec_Composite_Backend)
+	if !ok {
+		that2, ok := that.(UpstreamSpec_Composite_Backend)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.Llm.(type) {
+
+	case *UpstreamSpec_Composite_Backend_Openai:
+		if _, ok := target.Llm.(*UpstreamSpec_Composite_Backend_Openai); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetOpenai()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetOpenai()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetOpenai(), target.GetOpenai()) {
+				return false
+			}
+		}
+
+	case *UpstreamSpec_Composite_Backend_Mistral:
+		if _, ok := target.Llm.(*UpstreamSpec_Composite_Backend_Mistral); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetMistral()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetMistral()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetMistral(), target.GetMistral()) {
+				return false
+			}
+		}
+
+	case *UpstreamSpec_Composite_Backend_Anthropic:
+		if _, ok := target.Llm.(*UpstreamSpec_Composite_Backend_Anthropic); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAnthropic()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAnthropic()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAnthropic(), target.GetAnthropic()) {
+				return false
+			}
+		}
+
+	case *UpstreamSpec_Composite_Backend_AzureOpenai:
+		if _, ok := target.Llm.(*UpstreamSpec_Composite_Backend_AzureOpenai); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAzureOpenai()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAzureOpenai()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAzureOpenai(), target.GetAzureOpenai()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Llm != target.Llm {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *UpstreamSpec_Composite_Pool) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*UpstreamSpec_Composite_Pool)
+	if !ok {
+		that2, ok := that.(UpstreamSpec_Composite_Pool)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetUpstreams()) != len(target.GetUpstreams()) {
+		return false
+	}
+	for idx, v := range m.GetUpstreams() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetUpstreams()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetUpstreams()[idx]) {
+				return false
+			}
+		}
+
 	}
 
 	return true

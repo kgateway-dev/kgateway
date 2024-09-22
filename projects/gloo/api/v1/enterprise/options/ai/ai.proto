@@ -140,6 +140,61 @@ message UpstreamSpec {
     string version = 3;
   }
 
+
+  // Composite AI upstream allows you to create a single upstream that
+  // is composed of many upstreams. This is useful for creating a single
+  // logical endpoint made up of many backends. 
+  // The top level list defines the priority of the endpoints, the 2nd 
+  // level allows for defining either a list, or a single endpoint for that priority.
+  // Note: Only 2 levels of of nesting are allowed, Anything after that will be ignored.
+  /*
+    composite:
+    - openai:
+        authToken:
+          secretRef:
+            name: openai-secret
+            namespace: gloo-system
+    - composite:
+      -  azureOpenai:
+          deploymentName: gpt-4o-mini
+          apiVersion: 2024-02-15-preview
+          endpoint: ai-gateway.openai.azure.com
+          authToken:
+            secretRef:
+              name: azure-secret
+              namespace: gloo-system
+      -  azureOpenai:
+          deploymentName: gpt-4o-mini-2
+          apiVersion: 2024-02-15-preview
+          endpoint: ai-gateway.openai.azure.com
+          authToken:
+            secretRef:
+              name: azure-secret
+              namespace: gloo-system
+  */
+  message Composite {
+    message Backend {
+      oneof llm {
+        // OpenAI upstream
+        OpenAI openai = 1;
+        // Mistral upstream
+        Mistral mistral = 2;
+        // Anthropic upstream
+        Anthropic anthropic = 3;
+        // Azure OpenAI upstream
+        AzureOpenAI azure_openai = 4;
+      }
+    }
+    // List of upstreams to use
+    // repeated UpstreamSpec upstreams = 1;
+    message Pool {
+      repeated Backend upstreams = 1;
+    }
+    repeated Pool pools = 1;
+    uint32 priority = 2;
+  }
+
+  
   oneof llm {
     // OpenAI upstream
     OpenAI openai = 1;
@@ -149,6 +204,8 @@ message UpstreamSpec {
     Anthropic anthropic = 3;
     // Azure OpenAI upstream
     AzureOpenAI azure_openai = 4;
+    // Composite upstream
+    Composite pools = 5;
   }
 }
 

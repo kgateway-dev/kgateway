@@ -18,6 +18,9 @@ weight: 5
 - [AzureOpenAI](#azureopenai)
 - [Mistral](#mistral)
 - [Anthropic](#anthropic)
+- [Composite](#composite)
+- [Backend](#backend)
+- [Pool](#pool)
 - [RouteSettings](#routesettings)
 - [RouteType](#routetype)
 - [FieldDefault](#fielddefault)
@@ -131,15 +134,17 @@ port: 443 # Port is optional and will default to 443 for HTTPS
 "mistral": .ai.options.gloo.solo.io.UpstreamSpec.Mistral
 "anthropic": .ai.options.gloo.solo.io.UpstreamSpec.Anthropic
 "azureOpenai": .ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI
+"pools": .ai.options.gloo.solo.io.UpstreamSpec.Composite
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `openai` | [.ai.options.gloo.solo.io.UpstreamSpec.OpenAI](../ai.proto.sk/#openai) | OpenAI upstream. Only one of `openai`, `mistral`, `anthropic`, or `azureOpenai` can be set. |
-| `mistral` | [.ai.options.gloo.solo.io.UpstreamSpec.Mistral](../ai.proto.sk/#mistral) | Mistral upstream. Only one of `mistral`, `openai`, `anthropic`, or `azureOpenai` can be set. |
-| `anthropic` | [.ai.options.gloo.solo.io.UpstreamSpec.Anthropic](../ai.proto.sk/#anthropic) | Anthropic upstream. Only one of `anthropic`, `openai`, `mistral`, or `azureOpenai` can be set. |
-| `azureOpenai` | [.ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI upstream. Only one of `azureOpenai`, `openai`, `mistral`, or `anthropic` can be set. |
+| `openai` | [.ai.options.gloo.solo.io.UpstreamSpec.OpenAI](../ai.proto.sk/#openai) | OpenAI upstream. Only one of `openai`, `mistral`, `anthropic`, `azureOpenai`, or `pools` can be set. |
+| `mistral` | [.ai.options.gloo.solo.io.UpstreamSpec.Mistral](../ai.proto.sk/#mistral) | Mistral upstream. Only one of `mistral`, `openai`, `anthropic`, `azureOpenai`, or `pools` can be set. |
+| `anthropic` | [.ai.options.gloo.solo.io.UpstreamSpec.Anthropic](../ai.proto.sk/#anthropic) | Anthropic upstream. Only one of `anthropic`, `openai`, `mistral`, `azureOpenai`, or `pools` can be set. |
+| `azureOpenai` | [.ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI upstream. Only one of `azureOpenai`, `openai`, `mistral`, `anthropic`, or `pools` can be set. |
+| `pools` | [.ai.options.gloo.solo.io.UpstreamSpec.Composite](../ai.proto.sk/#composite) | Composite upstream. Only one of `pools`, `openai`, `mistral`, `anthropic`, or `azureOpenai` can be set. |
 
 
 
@@ -244,6 +249,90 @@ Settings for the Mistral API
 | `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the Anthropic API. This token will be placed into the `x-api-key` header when sending the request to the upstream. |
 | `customHost` | [.ai.options.gloo.solo.io.UpstreamSpec.CustomHost](../ai.proto.sk/#customhost) |  |
 | `version` | `string` | An optional version header to pass to the Anthropic API See: https://docs.anthropic.com/en/api/versioning for more details. |
+
+
+
+
+---
+### Composite
+
+ 
+composite:
+- openai:
+authToken:
+secretRef:
+name: openai-secret
+namespace: gloo-system
+- composite:
+-  azureOpenai:
+deploymentName: gpt-4o-mini
+apiVersion: 2024-02-15-preview
+endpoint: ai-gateway.openai.azure.com
+authToken:
+secretRef:
+name: azure-secret
+namespace: gloo-system
+-  azureOpenai:
+deploymentName: gpt-4o-mini-2
+apiVersion: 2024-02-15-preview
+endpoint: ai-gateway.openai.azure.com
+authToken:
+secretRef:
+name: azure-secret
+namespace: gloo-system
+
+```yaml
+"pools": []ai.options.gloo.solo.io.UpstreamSpec.Composite.Pool
+"priority": int
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `pools` | [[]ai.options.gloo.solo.io.UpstreamSpec.Composite.Pool](../ai.proto.sk/#pool) |  |
+| `priority` | `int` |  |
+
+
+
+
+---
+### Backend
+
+
+
+```yaml
+"openai": .ai.options.gloo.solo.io.UpstreamSpec.OpenAI
+"mistral": .ai.options.gloo.solo.io.UpstreamSpec.Mistral
+"anthropic": .ai.options.gloo.solo.io.UpstreamSpec.Anthropic
+"azureOpenai": .ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `openai` | [.ai.options.gloo.solo.io.UpstreamSpec.OpenAI](../ai.proto.sk/#openai) | OpenAI upstream. Only one of `openai`, `mistral`, `anthropic`, or `azureOpenai` can be set. |
+| `mistral` | [.ai.options.gloo.solo.io.UpstreamSpec.Mistral](../ai.proto.sk/#mistral) | Mistral upstream. Only one of `mistral`, `openai`, `anthropic`, or `azureOpenai` can be set. |
+| `anthropic` | [.ai.options.gloo.solo.io.UpstreamSpec.Anthropic](../ai.proto.sk/#anthropic) | Anthropic upstream. Only one of `anthropic`, `openai`, `mistral`, or `azureOpenai` can be set. |
+| `azureOpenai` | [.ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI upstream. Only one of `azureOpenai`, `openai`, `mistral`, or `anthropic` can be set. |
+
+
+
+
+---
+### Pool
+
+ 
+List of upstreams to use
+repeated UpstreamSpec upstreams = 1;
+
+```yaml
+"upstreams": []ai.options.gloo.solo.io.UpstreamSpec.Composite.Backend
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `upstreams` | [[]ai.options.gloo.solo.io.UpstreamSpec.Composite.Backend](../ai.proto.sk/#backend) |  |
 
 
 
