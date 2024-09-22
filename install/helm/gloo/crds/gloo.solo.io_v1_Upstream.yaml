@@ -156,8 +156,11 @@ spec:
                                     type: object
                                   azureOpenai:
                                     properties:
+<<<<<<< HEAD
                                       apiVersion:
                                         type: string
+=======
+>>>>>>> 87bee30db (as per Denis' spec)
                                       authToken:
                                         properties:
                                           inline:
@@ -170,8 +173,11 @@ spec:
                                                 type: string
                                             type: object
                                         type: object
+<<<<<<< HEAD
                                       deploymentName:
                                         type: string
+=======
+>>>>>>> 87bee30db (as per Denis' spec)
                                       endpoint:
                                         type: string
                                     type: object
