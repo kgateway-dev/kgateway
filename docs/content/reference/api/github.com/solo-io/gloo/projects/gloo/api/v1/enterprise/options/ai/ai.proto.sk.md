@@ -163,7 +163,7 @@ port: 443 # Port is optional and will default to 443 for HTTPS
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `host` | `string` | Custom host to send the traffic to. |
-| `port` | `int` | Custom host to send the traffic to. |
+| `port` | `int` | Custom port to send the traffic to. |
 
 
 
@@ -223,6 +223,7 @@ Settings for the Mistral API
 ```yaml
 "authToken": .ai.options.gloo.solo.io.SingleAuthToken
 "customHost": .ai.options.gloo.solo.io.UpstreamSpec.CustomHost
+"model": string
 
 ```
 
@@ -230,6 +231,7 @@ Settings for the Mistral API
 | ----- | ---- | ----------- | 
 | `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the Mistral API. This token will be placed into the `Authorization` header and prefixed with Bearer if not present when sending the request to the upstream. |
 | `customHost` | [.ai.options.gloo.solo.io.UpstreamSpec.CustomHost](../ai.proto.sk/#customhost) | Optional custom host to send the traffic to. |
+| `model` | `string` | Optional: override model name. If not set, the model name will be taken from the request This can be useful when trying model failover scenarios. |
 
 
 
@@ -243,6 +245,7 @@ Settings for the Mistral API
 "authToken": .ai.options.gloo.solo.io.SingleAuthToken
 "customHost": .ai.options.gloo.solo.io.UpstreamSpec.CustomHost
 "version": string
+"model": string
 
 ```
 
@@ -251,6 +254,7 @@ Settings for the Mistral API
 | `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the Anthropic API. This token will be placed into the `x-api-key` header when sending the request to the upstream. |
 | `customHost` | [.ai.options.gloo.solo.io.UpstreamSpec.CustomHost](../ai.proto.sk/#customhost) |  |
 | `version` | `string` | An optional version header to pass to the Anthropic API See: https://docs.anthropic.com/en/api/versioning for more details. |
+| `model` | `string` | Optional: override model name. If not set, the model name will be taken from the request This can be useful when trying model failover scenarios. |
 
 
 

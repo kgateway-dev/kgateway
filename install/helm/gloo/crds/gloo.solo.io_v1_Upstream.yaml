@@ -48,6 +48,8 @@ spec:
                             minimum: 0
                             type: integer
                         type: object
+                      model:
+                        type: string
                       version:
                         type: string
                     type: object
@@ -95,6 +97,8 @@ spec:
                             minimum: 0
                             type: integer
                         type: object
+                      model:
+                        type: string
                     type: object
                   multi:
                     properties:
@@ -127,6 +131,8 @@ spec:
                                             minimum: 0
                                             type: integer
                                         type: object
+                                      model:
+                                        type: string
                                       version:
                                         type: string
                                     type: object
@@ -174,6 +180,8 @@ spec:
                                             minimum: 0
                                             type: integer
                                         type: object
+                                      model:
+                                        type: string
                                     type: object
                                   openai:
                                     properties:

@@ -81,7 +81,7 @@ message UpstreamSpec {
   message CustomHost {
     // Custom host to send the traffic to
     string host = 1;
-    // Custom host to send the traffic to
+    // Custom port to send the traffic to
     uint32 port = 2;
   }
 
@@ -129,6 +129,9 @@ message UpstreamSpec {
     SingleAuthToken auth_token = 1;
     // Optional custom host to send the traffic to
     CustomHost custom_host = 2;
+    // Optional: override model name. If not set, the model name will be taken from the request
+    // This can be useful when trying model failover scenarios
+    string model = 3;
   }
 
   message Anthropic {
@@ -141,6 +144,9 @@ message UpstreamSpec {
     // An optional version header to pass to the Anthropic API
     // See: https://docs.anthropic.com/en/api/versioning for more details
     string version = 3;
+    // Optional: override model name. If not set, the model name will be taken from the request
+    // This can be useful when trying model failover scenarios
+    string model = 4;
   }
 
 

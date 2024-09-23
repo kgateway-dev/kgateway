@@ -487,6 +487,8 @@ func (m *UpstreamSpec_Mistral) Clone() proto.Message {
 		target.CustomHost = proto.Clone(m.GetCustomHost()).(*UpstreamSpec_CustomHost)
 	}
 
+	target.Model = m.GetModel()
+
 	return target
 }
 
@@ -511,6 +513,8 @@ func (m *UpstreamSpec_Anthropic) Clone() proto.Message {
 	}
 
 	target.Version = m.GetVersion()
+
+	target.Model = m.GetModel()
 
 	return target
 }

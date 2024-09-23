@@ -830,6 +830,10 @@ func (m *UpstreamSpec_Mistral) Equal(that interface{}) bool {
 		}
 	}
 
+	if strings.Compare(m.GetModel(), target.GetModel()) != 0 {
+		return false
+	}
+
 	return true
 }
 
@@ -875,6 +879,10 @@ func (m *UpstreamSpec_Anthropic) Equal(that interface{}) bool {
 	}
 
 	if strings.Compare(m.GetVersion(), target.GetVersion()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetModel(), target.GetModel()) != 0 {
 		return false
 	}
 
