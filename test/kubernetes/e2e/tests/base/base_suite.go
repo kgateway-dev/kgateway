@@ -49,7 +49,6 @@ type BaseTestingSuite struct {
 
 func NewBaseTestingSuite(ctx context.Context, testInst *e2e.TestInstallation, testHelper *helper.SoloTestHelper, setup SimpleTestCase, testCase map[string]*TestCase) *BaseTestingSuite {
 	namespace = testInst.Metadata.InstallNamespace
-	ctx = context.WithValue(ctx, "namespace", namespace)
 
 	return &BaseTestingSuite{
 		Ctx:              ctx,
