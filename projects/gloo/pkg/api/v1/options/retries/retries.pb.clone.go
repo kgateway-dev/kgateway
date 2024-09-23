@@ -76,6 +76,15 @@ func (m *RetryPolicy) Clone() proto.Message {
 		target.RetryBackOff = proto.Clone(m.GetRetryBackOff()).(*RetryBackOff)
 	}
 
+	if m.GetRetriableStatusCodes() != nil {
+		target.RetriableStatusCodes = make([]uint32, len(m.GetRetriableStatusCodes()))
+		for idx, v := range m.GetRetriableStatusCodes() {
+
+			target.RetriableStatusCodes[idx] = v
+
+		}
+	}
+
 	switch m.PriorityPredicate.(type) {
 
 	case *RetryPolicy_PreviousPriorities_:
