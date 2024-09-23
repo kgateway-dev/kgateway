@@ -5,3 +5,8 @@ settings:
       operator: In
       values:
         - this
+
+gateway:
+  validation:
+    webhook:
+      skipDeleteValidationResources: []
