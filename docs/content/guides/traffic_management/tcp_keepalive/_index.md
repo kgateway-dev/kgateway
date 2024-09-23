@@ -9,13 +9,13 @@ TCP Keepalive serves two main purposes:
 1) the obvious one is to keep the connection alive by sending out probe after the connection has been idled for a specific time.
 2) the less obvious one is to detect stale connections when the probe fails and drop the connection.
 
-There are 3 settings in TCP keepalive:
+There are three settings in TCP keepalive:
 
 - tcp_keepalive_intvl
 - tcp_keepalive_probes
 - tcp_keepalive_time
 
-The explanation can be found in the [Linux tcp manpage](https://man7.org/linux/man-pages/man7/tcp.7.html).
+The explanation can be found in the [Linux TCP man-page](https://man7.org/linux/man-pages/man7/tcp.7.html).
 
 Some considerations when determining the proper values for you environment:
 
@@ -29,7 +29,7 @@ TCP keepalive is in place because TCP keepalive probe does not get up to the app
 
 ### Stale Connections
 
-Because tcp connection close is a 4-way handshake, it is possible to have stale connection where one side has been gone
+Because TCP connection close is a 4-way handshake, it is possible to have stale connection where one side has been gone
 but the other side is not aware when the network is unstable. If the unaware side is just listening for events, it might think
 that there is just no event but in reality has been missing all the events.
 
@@ -46,7 +46,7 @@ Some Network Load Balancers (NLB) use Connection Tracking to remember where a pa
 If the connection has been idling, The NLB might remove the connection from it's  tracking table. In this scenario, both sides still think
 the connection is open but when the client send a packet through the NLB, the NLB now would not know where to forward the packet and will
 send a RESET to the client. If the client does not automatically retry, this might show up as an error or you will see a lot of RESET from
-the tcp stats thinking it's a network issue. Enabling TCP keepalive will address this issue and help keep long-lived connection open and
+the TCP stats thinking it's a network issue. Enabling TCP keepalive will address this issue and help keep long-lived connection open and
 functional. See [TCP Keepalive on Downstream Connections]({{<ref "#tcp-keepalive-on-downstream-connections">}}) section below.
 
 ## TCP Keepalive on Downstream Connections {#downstream}
@@ -54,7 +54,7 @@ functional. See [TCP Keepalive on Downstream Connections]({{<ref "#tcp-keepalive
 {{% notice warning %}}
 Currently envoy does not directly support turning on TCP keepalive on downstream connections. It can only be done with generic socket options
 setting. Socket options can have considerable effects and may not be portable on all platforms. The configurations provided in this guide are
-not suitable for every production environment, so please be careful! Because these options are applied to the Listener, they affect all downstream connections
+not suitable for every production environment, so please be careful. Because these options are applied to the Listener, they affect all downstream connections
 if they are mis-configured.
 {{% /notice %}}
 
