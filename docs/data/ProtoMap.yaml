@@ -872,6 +872,12 @@ apis:
   gloo.solo.io.KubernetesServiceDestination:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#KubernetesServiceDestination
     package: gloo.solo.io
+  gloo.solo.io.LabelSelector:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#LabelSelector
+    package: gloo.solo.io
+  gloo.solo.io.LabelSelectorRequirement:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#LabelSelectorRequirement
+    package: gloo.solo.io
   gloo.solo.io.LbEndpoint:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/failover.proto.sk/#LbEndpoint
     package: gloo.solo.io

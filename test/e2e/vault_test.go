@@ -4,6 +4,7 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	bootstrap "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients/vault"
 	"github.com/solo-io/gloo/test/e2e"
 	"github.com/solo-io/gloo/test/ginkgo/decorators"
 	"github.com/solo-io/gloo/test/services"
@@ -31,7 +32,7 @@ var _ = Describe("Vault Secret Store (Token Auth)", decorators.Vault, func() {
 					AuthMethod: &gloov1.Settings_VaultSecrets_AccessToken{
 						AccessToken: services.DefaultVaultToken,
 					},
-					PathPrefix: bootstrap.DefaultPathPrefix,
+					PathPrefix: vault.DefaultPathPrefix,
 					RootKey:    bootstrap.DefaultRootKey,
 				},
 			},

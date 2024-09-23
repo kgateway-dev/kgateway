@@ -35,6 +35,8 @@ weight: 5
 - [ObservabilityOptions](#observabilityoptions)
 - [GrafanaIntegration](#grafanaintegration)
 - [MetricLabels](#metriclabels)
+- [LabelSelector](#labelselector)
+- [LabelSelectorRequirement](#labelselectorrequirement)
 - [UpstreamOptions](#upstreamoptions)
 - [GlooOptions](#gloooptions)
 - [AWSOptions](#awsoptions)
@@ -100,13 +102,14 @@ Represents global settings for all the Gloo components.
 "consoleOptions": .gloo.solo.io.ConsoleOptions
 "graphqlOptions": .gloo.solo.io.GraphqlOptions
 "extProc": .extproc.options.gloo.solo.io.Settings
+"watchNamespaceSelectors": []gloo.solo.io.LabelSelector
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `discoveryNamespace` | `string` | This is the namespace to which Gloo controllers will write their own resources, e.g. discovered Upstreams or default Gateways. If empty, this will default to "gloo-system". |
-| `watchNamespaces` | `[]string` | Use this setting to restrict the namespaces that Gloo controllers take into consideration when watching for resources.In a usual production scenario, RBAC policies will limit the namespaces that Gloo has access to. If `watch_namespaces` contains namespaces outside of this whitelist, Gloo will fail to start. If not set, this defaults to all available namespaces. Please note that, the `discovery_namespace` will always be included in this list. |
+| `watchNamespaces` | `[]string` | Use this setting to restrict the namespaces that Gloo controllers take into consideration when watching for resources.In a usual production scenario, RBAC policies will limit the namespaces that Gloo has access to. If `watch_namespaces` contains namespaces outside of this whitelist, Gloo will fail to start. If not set, this defaults to all available namespaces. Please note that, the `discovery_namespace` will always be included in this list. If this is specified, it overwrites the `watch_namespace_selectors` specified. |
 | `kubernetesConfigSource` | [.gloo.solo.io.Settings.KubernetesCrds](../settings.proto.sk/#kubernetescrds) |  Only one of `kubernetesConfigSource`, `directoryConfigSource`, or `consulKvSource` can be set. |
 | `directoryConfigSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directoryConfigSource`, `kubernetesConfigSource`, or `consulKvSource` can be set. |
 | `consulKvSource` | [.gloo.solo.io.Settings.ConsulKv](../settings.proto.sk/#consulkv) |  Only one of `consulKvSource`, `kubernetesConfigSource`, or `directoryConfigSource` can be set. |
@@ -141,6 +144,7 @@ Represents global settings for all the Gloo components.
 | `consoleOptions` | [.gloo.solo.io.ConsoleOptions](../settings.proto.sk/#consoleoptions) | Enterprise-only: Settings for the Gloo Edge Enterprise Console (UI). |
 | `graphqlOptions` | [.gloo.solo.io.GraphqlOptions](../settings.proto.sk/#graphqloptions) | Enterprise-only: GraphQL settings. |
 | `extProc` | [.extproc.options.gloo.solo.io.Settings](../enterprise/options/extproc/extproc.proto.sk/#settings) | Enterprise-only: External Processing filter settings. These settings are used as defaults globally, and can be overridden by HttpListenerOptions, VirtualHostOptions, or RouteOptions. |
+| `watchNamespaceSelectors` | [[]gloo.solo.io.LabelSelector](../settings.proto.sk/#labelselector) | A list of Kubernetes selectors that specify the set of namespaces to restrict the namespaces that Gloo controllers take into consideration when watching for resources. Elements in the list are disjunctive (OR semantics), i.e. a namespace will be included if it matches any selector. The following example selects any namespace that matches either below: 1. The namespace has both of these labels: `env: prod` and `region: us-east1` 2. The namespace has label `app` equal to `cassandra` or `spark`. ```yaml watchNamespaceSelectors: - matchLabels: env: prod region: us-east1 - matchExpressions: - key: app operator: In values: - cassandra - spark ``` However, if the match conditions are part of the same same list item, the namespace must match all conditions. ```yaml watchNamespaceSelectors: - matchLabels: env: prod region: us-east1 matchExpressions: - key: app operator: In values: - cassandra - spark ``` Refer to the [Kubernetes selector docs](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors) for additional detail on selector semantics. |
 
 
 
@@ -660,6 +664,54 @@ Provides settings related to the observability pod's interactions with grafana
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `labelToPath` | `map<string, string>` | Each (key, value) pair in the map defines a label to be applied. Keys specify the name of the label (e.g. "namespace"). Values specify the jsonpath (https://kubernetes.io/docs/reference/kubectl/jsonpath/) string corresponding to the field of a resource to use as the label value (e.g. "{.metadata.namespace}"). For example, if labelToPath = {name: '{.metadata.name}', namespace: '{.metadata.namespace}'} for Upstream.v1.gateway.solo.io, the following metric would be produced: validation_gateway_solo_io_upstream_config_status{name="default-petstore-8080",namespace="gloo-system"} 0. |
+
+
+
+
+---
+### LabelSelector
+
+ 
+A label selector requirement is a selector that contains values, a key, and an operator that
+relates the key and values.
+Copied from Kubernetes to avoid expensive dependency on Kubernetes libraries.
+Ref: https://github.com/kubernetes/apimachinery/blob/f7615f37d717297aca51101478406af712553c5b/pkg/apis/meta/v1/generated.proto#L442-L453
+
+```yaml
+"matchLabels": map<string, string>
+"matchExpressions": []gloo.solo.io.LabelSelectorRequirement
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `matchLabels` | `map<string, string>` | matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed. +optional. |
+| `matchExpressions` | [[]gloo.solo.io.LabelSelectorRequirement](../settings.proto.sk/#labelselectorrequirement) | matchExpressions is a list of label selector requirements. The requirements are ANDed. +optional. |
+
+
+
+
+---
+### LabelSelectorRequirement
+
+ 
+A label selector requirement is a selector that contains values, a key, and an operator that
+relates the key and values.
+Copied from Kubernetes to avoid expensive dependency on Kubernetes libraries.
+Ref: https://github.com/kubernetes/apimachinery/blob/f7615f37d717297aca51101478406af712553c5b/pkg/apis/meta/v1/generated.proto#L455-L472
+
+```yaml
+"key": string
+"operator": string
+"values": []string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `key` | `string` | key is the label key that the selector applies to. +patchMergeKey=key +patchStrategy=merge. |
+| `operator` | `string` | operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist. |
+| `values` | `[]string` | values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch. +optional. |
 
 
 
