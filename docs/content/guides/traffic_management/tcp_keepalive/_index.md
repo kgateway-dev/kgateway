@@ -21,7 +21,7 @@ Some considerations when determining the proper values for you environment:
 
 1) On a slow or lossy network, if `tcp_keepalive_intvl` or `tcp_keepalive_probes` values are set too low, it can inadvertently
 drop the connections more often then it should.
-2) Many application layer protocols like HTTP, GRPC(using HTTP2/2) have their own keepalive mechanisms that change what you
+2) Many application layer protocols like HTTP, GRPC(using HTTP/2) have their own keepalive mechanisms that change what you
 expected from TCP keepalive. For example, the application can still close the connection after it's keep-alive timeout even
 TCP keepalive is in place because TCP keepalive probe does not get up to the application layer.  
 
