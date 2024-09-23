@@ -130,8 +130,6 @@ spec:
                                 type: string
                             type: object
                           type: array
-                        enableDataPlaneMetadataValidation:
-                          type: boolean
                         headerName:
                           type: string
                         headersFromMetadata:
@@ -171,6 +169,17 @@ spec:
                         labelSelector:
                           additionalProperties:
                             type: string
+                          type: object
+                        metadataValidation:
+                          properties:
+                            enableDataPlaneMetadataValidation:
+                              type: boolean
+                            invalidStatusReturnCode:
+                              properties:
+                                code:
+                                  type: string
+                                  x-kubernetes-int-or-string: true
+                              type: object
                           type: object
                       type: object
                     basicAuth:

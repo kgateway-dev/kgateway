@@ -2039,8 +2039,14 @@ func (m *ApiKeyAuth) Equal(that interface{}) bool {
 
 	}
 
-	if m.GetEnableDataPlaneMetadataValidation() != target.GetEnableDataPlaneMetadataValidation() {
-		return false
+	if h, ok := interface{}(m.GetMetadataValidation()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMetadataValidation()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMetadataValidation(), target.GetMetadataValidation()) {
+			return false
+		}
 	}
 
 	switch m.StorageBackend.(type) {
@@ -4663,6 +4669,44 @@ func (m *ApiKeyAuth_MetadataEntry) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *ApiKeyAuth_MetaDataValidation) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyAuth_MetaDataValidation)
+	if !ok {
+		that2, ok := that.(ApiKeyAuth_MetaDataValidation)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if m.GetEnableDataPlaneMetadataValidation() != target.GetEnableDataPlaneMetadataValidation() {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetInvalidStatusReturnCode()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetInvalidStatusReturnCode()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetInvalidStatusReturnCode(), target.GetInvalidStatusReturnCode()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
 func (m *AerospikeApiKeyStorageReadModeSc) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -5835,8 +5879,14 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig) Equal(that interface{}) bool {
 
 	}
 
-	if m.GetEnableDataPlaneMetadataValidation() != target.GetEnableDataPlaneMetadataValidation() {
-		return false
+	if h, ok := interface{}(m.GetMetadataValidation()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMetadataValidation()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMetadataValidation(), target.GetMetadataValidation()) {
+			return false
+		}
 	}
 
 	switch m.StorageBackend.(type) {
@@ -7140,6 +7190,44 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig_KeyMetadata) Equal(that interface{}) boo
 			return false
 		}
 
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ExtAuthConfig_ApiKeyAuthConfig_MetaDataValidation) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ExtAuthConfig_ApiKeyAuthConfig_MetaDataValidation)
+	if !ok {
+		that2, ok := that.(ExtAuthConfig_ApiKeyAuthConfig_MetaDataValidation)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if m.GetEnableDataPlaneMetadataValidation() != target.GetEnableDataPlaneMetadataValidation() {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetInvalidStatusReturnCode()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetInvalidStatusReturnCode()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetInvalidStatusReturnCode(), target.GetInvalidStatusReturnCode()) {
+			return false
+		}
 	}
 
 	return true
