@@ -50,4 +50,8 @@ CVE-2024-34156
 # This CVE affects the imroc/req dependency which is used in go-utils
 # go-utils exclusively uses this package to upload security scans to Github and as such the vulnerability does not
 # impact Gateway functionality
+# This dependency is removed in go-utils v0.27.0, so this entry can be removed once all LTS branches are on that version
+# or later
 CVE-2024-45258
+
+CVE
