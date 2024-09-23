@@ -176,20 +176,20 @@ func (m *UpstreamSpec) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *UpstreamSpec_Composite_:
+	case *UpstreamSpec_Multi_:
 
-		if h, ok := interface{}(m.GetComposite()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("Composite")); err != nil {
+		if h, ok := interface{}(m.GetMulti()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Multi")); err != nil {
 				return 0, err
 			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetComposite(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetMulti(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("Composite")); err != nil {
+				if _, err = hasher.Write([]byte("Multi")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
@@ -294,14 +294,6 @@ func (m *RouteSettings) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			}
 		}
-	}
-
-	for _, v := range m.GetBackupModels() {
-
-		if _, err = hasher.Write([]byte(v)); err != nil {
-			return 0, err
-		}
-
 	}
 
 	for _, v := range m.GetDefaults() {
@@ -995,7 +987,7 @@ func (m *UpstreamSpec_Anthropic) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
-func (m *UpstreamSpec_Composite) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *UpstreamSpec_Multi) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -1003,7 +995,7 @@ func (m *UpstreamSpec_Composite) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.UpstreamSpec_Composite")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.UpstreamSpec_Multi")); err != nil {
 		return 0, err
 	}
 
@@ -1035,7 +1027,7 @@ func (m *UpstreamSpec_Composite) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
-func (m *UpstreamSpec_Composite_Backend) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *UpstreamSpec_Multi_Backend) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -1043,13 +1035,13 @@ func (m *UpstreamSpec_Composite_Backend) Hash(hasher hash.Hash64) (uint64, error
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.UpstreamSpec_Composite_Backend")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.UpstreamSpec_Multi_Backend")); err != nil {
 		return 0, err
 	}
 
 	switch m.Llm.(type) {
 
-	case *UpstreamSpec_Composite_Backend_Openai:
+	case *UpstreamSpec_Multi_Backend_Openai:
 
 		if h, ok := interface{}(m.GetOpenai()).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("Openai")); err != nil {
@@ -1071,7 +1063,7 @@ func (m *UpstreamSpec_Composite_Backend) Hash(hasher hash.Hash64) (uint64, error
 			}
 		}
 
-	case *UpstreamSpec_Composite_Backend_Mistral:
+	case *UpstreamSpec_Multi_Backend_Mistral:
 
 		if h, ok := interface{}(m.GetMistral()).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("Mistral")); err != nil {
@@ -1093,7 +1085,7 @@ func (m *UpstreamSpec_Composite_Backend) Hash(hasher hash.Hash64) (uint64, error
 			}
 		}
 
-	case *UpstreamSpec_Composite_Backend_Anthropic:
+	case *UpstreamSpec_Multi_Backend_Anthropic:
 
 		if h, ok := interface{}(m.GetAnthropic()).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("Anthropic")); err != nil {
@@ -1115,7 +1107,7 @@ func (m *UpstreamSpec_Composite_Backend) Hash(hasher hash.Hash64) (uint64, error
 			}
 		}
 
-	case *UpstreamSpec_Composite_Backend_AzureOpenai:
+	case *UpstreamSpec_Multi_Backend_AzureOpenai:
 
 		if h, ok := interface{}(m.GetAzureOpenai()).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("AzureOpenai")); err != nil {
@@ -1143,7 +1135,7 @@ func (m *UpstreamSpec_Composite_Backend) Hash(hasher hash.Hash64) (uint64, error
 }
 
 // Hash function
-func (m *UpstreamSpec_Composite_Priority) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *UpstreamSpec_Multi_Priority) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -1151,7 +1143,7 @@ func (m *UpstreamSpec_Composite_Priority) Hash(hasher hash.Hash64) (uint64, erro
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.UpstreamSpec_Composite_Priority")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.UpstreamSpec_Multi_Priority")); err != nil {
 		return 0, err
 	}
 

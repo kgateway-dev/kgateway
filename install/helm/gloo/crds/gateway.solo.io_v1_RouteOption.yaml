@@ -35,10 +35,6 @@ spec:
                 properties:
                   ai:
                     properties:
-                      backupModels:
-                        items:
-                          type: string
-                        type: array
                       defaults:
                         items:
                           properties:

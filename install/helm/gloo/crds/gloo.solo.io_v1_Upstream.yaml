@@ -72,7 +72,31 @@ spec:
                       endpoint:
                         type: string
                     type: object
-                  composite:
+                  mistral:
+                    properties:
+                      authToken:
+                        properties:
+                          inline:
+                            type: string
+                          secretRef:
+                            properties:
+                              name:
+                                type: string
+                              namespace:
+                                type: string
+                            type: object
+                        type: object
+                      customHost:
+                        properties:
+                          host:
+                            type: string
+                          port:
+                            maximum: 4294967295
+                            minimum: 0
+                            type: integer
+                        type: object
+                    type: object
+                  multi:
                     properties:
                       pools:
                         items:
@@ -185,30 +209,6 @@ spec:
                               type: integer
                           type: object
                         type: array
-                    type: object
-                  mistral:
-                    properties:
-                      authToken:
-                        properties:
-                          inline:
-                            type: string
-                          secretRef:
-                            properties:
-                              name:
-                                type: string
-                              namespace:
-                                type: string
-                            type: object
-                        type: object
-                      customHost:
-                        properties:
-                          host:
-                            type: string
-                          port:
-                            maximum: 4294967295
-                            minimum: 0
-                            type: integer
-                        type: object
                     type: object
                   openai:
                     properties:

@@ -165,17 +165,17 @@ func (m *UpstreamSpec) Equal(that interface{}) bool {
 			}
 		}
 
-	case *UpstreamSpec_Composite_:
-		if _, ok := target.Llm.(*UpstreamSpec_Composite_); !ok {
+	case *UpstreamSpec_Multi_:
+		if _, ok := target.Llm.(*UpstreamSpec_Multi_); !ok {
 			return false
 		}
 
-		if h, ok := interface{}(m.GetComposite()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetComposite()) {
+		if h, ok := interface{}(m.GetMulti()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetMulti()) {
 				return false
 			}
 		} else {
-			if !proto.Equal(m.GetComposite(), target.GetComposite()) {
+			if !proto.Equal(m.GetMulti(), target.GetMulti()) {
 				return false
 			}
 		}
@@ -249,17 +249,6 @@ func (m *RouteSettings) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetSemanticCache(), target.GetSemanticCache()) {
 			return false
 		}
-	}
-
-	if len(m.GetBackupModels()) != len(target.GetBackupModels()) {
-		return false
-	}
-	for idx, v := range m.GetBackupModels() {
-
-		if strings.Compare(v, target.GetBackupModels()[idx]) != 0 {
-			return false
-		}
-
 	}
 
 	if len(m.GetDefaults()) != len(target.GetDefaults()) {
@@ -893,14 +882,14 @@ func (m *UpstreamSpec_Anthropic) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *UpstreamSpec_Composite) Equal(that interface{}) bool {
+func (m *UpstreamSpec_Multi) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*UpstreamSpec_Composite)
+	target, ok := that.(*UpstreamSpec_Multi)
 	if !ok {
-		that2, ok := that.(UpstreamSpec_Composite)
+		that2, ok := that.(UpstreamSpec_Multi)
 		if ok {
 			target = &that2
 		} else {
@@ -934,14 +923,14 @@ func (m *UpstreamSpec_Composite) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *UpstreamSpec_Composite_Backend) Equal(that interface{}) bool {
+func (m *UpstreamSpec_Multi_Backend) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*UpstreamSpec_Composite_Backend)
+	target, ok := that.(*UpstreamSpec_Multi_Backend)
 	if !ok {
-		that2, ok := that.(UpstreamSpec_Composite_Backend)
+		that2, ok := that.(UpstreamSpec_Multi_Backend)
 		if ok {
 			target = &that2
 		} else {
@@ -956,8 +945,8 @@ func (m *UpstreamSpec_Composite_Backend) Equal(that interface{}) bool {
 
 	switch m.Llm.(type) {
 
-	case *UpstreamSpec_Composite_Backend_Openai:
-		if _, ok := target.Llm.(*UpstreamSpec_Composite_Backend_Openai); !ok {
+	case *UpstreamSpec_Multi_Backend_Openai:
+		if _, ok := target.Llm.(*UpstreamSpec_Multi_Backend_Openai); !ok {
 			return false
 		}
 
@@ -971,8 +960,8 @@ func (m *UpstreamSpec_Composite_Backend) Equal(that interface{}) bool {
 			}
 		}
 
-	case *UpstreamSpec_Composite_Backend_Mistral:
-		if _, ok := target.Llm.(*UpstreamSpec_Composite_Backend_Mistral); !ok {
+	case *UpstreamSpec_Multi_Backend_Mistral:
+		if _, ok := target.Llm.(*UpstreamSpec_Multi_Backend_Mistral); !ok {
 			return false
 		}
 
@@ -986,8 +975,8 @@ func (m *UpstreamSpec_Composite_Backend) Equal(that interface{}) bool {
 			}
 		}
 
-	case *UpstreamSpec_Composite_Backend_Anthropic:
-		if _, ok := target.Llm.(*UpstreamSpec_Composite_Backend_Anthropic); !ok {
+	case *UpstreamSpec_Multi_Backend_Anthropic:
+		if _, ok := target.Llm.(*UpstreamSpec_Multi_Backend_Anthropic); !ok {
 			return false
 		}
 
@@ -1001,8 +990,8 @@ func (m *UpstreamSpec_Composite_Backend) Equal(that interface{}) bool {
 			}
 		}
 
-	case *UpstreamSpec_Composite_Backend_AzureOpenai:
-		if _, ok := target.Llm.(*UpstreamSpec_Composite_Backend_AzureOpenai); !ok {
+	case *UpstreamSpec_Multi_Backend_AzureOpenai:
+		if _, ok := target.Llm.(*UpstreamSpec_Multi_Backend_AzureOpenai); !ok {
 			return false
 		}
 
@@ -1027,14 +1016,14 @@ func (m *UpstreamSpec_Composite_Backend) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *UpstreamSpec_Composite_Priority) Equal(that interface{}) bool {
+func (m *UpstreamSpec_Multi_Priority) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*UpstreamSpec_Composite_Priority)
+	target, ok := that.(*UpstreamSpec_Multi_Priority)
 	if !ok {
-		that2, ok := that.(UpstreamSpec_Composite_Priority)
+		that2, ok := that.(UpstreamSpec_Multi_Priority)
 		if ok {
 			target = &that2
 		} else {

@@ -151,31 +151,35 @@ message UpstreamSpec {
   // level allows for defining either a list, or a single endpoint for that priority.
   // Note: Only 2 levels of of nesting are allowed, Anything after that will be ignored.
   /*
-    composite:
-    - openai:
-        authToken:
-          secretRef:
-            name: openai-secret
-            namespace: gloo-system
-    - composite:
-      -  azureOpenai:
-          deploymentName: gpt-4o-mini
-          apiVersion: 2024-02-15-preview
-          endpoint: ai-gateway.openai.azure.com
-          authToken:
-            secretRef:
-              name: azure-secret
-              namespace: gloo-system
-      -  azureOpenai:
-          deploymentName: gpt-4o-mini-2
-          apiVersion: 2024-02-15-preview
-          endpoint: ai-gateway.openai.azure.com
-          authToken:
-            secretRef:
-              name: azure-secret
-              namespace: gloo-system
+    multi:
+      pools:
+      - pool:
+        - openai:
+            authToken:
+              secretRef:
+                name: openai-secret
+                namespace: gloo-system
+        priority: 1
+      - pool:
+        - azureOpenai:
+            deploymentName: gpt-4o-mini
+            apiVersion: 2024-02-15-preview
+            endpoint: ai-gateway.openai.azure.com
+            authToken:
+              secretRef:
+                name: azure-secret
+                namespace: gloo-system
+        - azureOpenai:
+            deploymentName: gpt-4o-mini-2
+            apiVersion: 2024-02-15-preview
+            endpoint: ai-gateway.openai.azure.com
+            authToken:
+              secretRef:
+                name: azure-secret
+                namespace: gloo-system
+        priority: 2
   */
-  message Composite {
+  message Multi {
     message Backend {
       oneof llm {
         // OpenAI upstream
@@ -209,8 +213,8 @@ message UpstreamSpec {
     Anthropic anthropic = 3;
     // Azure OpenAI upstream
     AzureOpenAI azure_openai = 4;
-    // Composite upstream
-    Composite composite = 5;
+    // multi upstream
+    Multi multi = 5;
   }
 }
 
@@ -325,7 +329,7 @@ message RouteSettings {
   // passed in the request. By default each model will be tried 2 times
   // before moving on to the next model in the list. If all requests fail then
   // the final response will be returned to the client.
-  repeated string backup_models = 5;
+  // repeated string backup_models = 5;
 
   /*
     A list of defaults to be merged with the user input fields.

@@ -120,15 +120,15 @@ func (m *UpstreamSpec) Clone() proto.Message {
 			}
 		}
 
-	case *UpstreamSpec_Composite_:
+	case *UpstreamSpec_Multi_:
 
-		if h, ok := interface{}(m.GetComposite()).(clone.Cloner); ok {
-			target.Llm = &UpstreamSpec_Composite_{
-				Composite: h.Clone().(*UpstreamSpec_Composite),
+		if h, ok := interface{}(m.GetMulti()).(clone.Cloner); ok {
+			target.Llm = &UpstreamSpec_Multi_{
+				Multi: h.Clone().(*UpstreamSpec_Multi),
 			}
 		} else {
-			target.Llm = &UpstreamSpec_Composite_{
-				Composite: proto.Clone(m.GetComposite()).(*UpstreamSpec_Composite),
+			target.Llm = &UpstreamSpec_Multi_{
+				Multi: proto.Clone(m.GetMulti()).(*UpstreamSpec_Multi),
 			}
 		}
 
@@ -167,15 +167,6 @@ func (m *RouteSettings) Clone() proto.Message {
 		target.SemanticCache = h.Clone().(*SemanticCache)
 	} else {
 		target.SemanticCache = proto.Clone(m.GetSemanticCache()).(*SemanticCache)
-	}
-
-	if m.GetBackupModels() != nil {
-		target.BackupModels = make([]string, len(m.GetBackupModels()))
-		for idx, v := range m.GetBackupModels() {
-
-			target.BackupModels[idx] = v
-
-		}
 	}
 
 	if m.GetDefaults() != nil {
@@ -525,21 +516,21 @@ func (m *UpstreamSpec_Anthropic) Clone() proto.Message {
 }
 
 // Clone function
-func (m *UpstreamSpec_Composite) Clone() proto.Message {
-	var target *UpstreamSpec_Composite
+func (m *UpstreamSpec_Multi) Clone() proto.Message {
+	var target *UpstreamSpec_Multi
 	if m == nil {
 		return target
 	}
-	target = &UpstreamSpec_Composite{}
+	target = &UpstreamSpec_Multi{}
 
 	if m.GetPools() != nil {
-		target.Pools = make([]*UpstreamSpec_Composite_Priority, len(m.GetPools()))
+		target.Pools = make([]*UpstreamSpec_Multi_Priority, len(m.GetPools()))
 		for idx, v := range m.GetPools() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Pools[idx] = h.Clone().(*UpstreamSpec_Composite_Priority)
+				target.Pools[idx] = h.Clone().(*UpstreamSpec_Multi_Priority)
 			} else {
-				target.Pools[idx] = proto.Clone(v).(*UpstreamSpec_Composite_Priority)
+				target.Pools[idx] = proto.Clone(v).(*UpstreamSpec_Multi_Priority)
 			}
 
 		}
@@ -549,59 +540,59 @@ func (m *UpstreamSpec_Composite) Clone() proto.Message {
 }
 
 // Clone function
-func (m *UpstreamSpec_Composite_Backend) Clone() proto.Message {
-	var target *UpstreamSpec_Composite_Backend
+func (m *UpstreamSpec_Multi_Backend) Clone() proto.Message {
+	var target *UpstreamSpec_Multi_Backend
 	if m == nil {
 		return target
 	}
-	target = &UpstreamSpec_Composite_Backend{}
+	target = &UpstreamSpec_Multi_Backend{}
 
 	switch m.Llm.(type) {
 
-	case *UpstreamSpec_Composite_Backend_Openai:
+	case *UpstreamSpec_Multi_Backend_Openai:
 
 		if h, ok := interface{}(m.GetOpenai()).(clone.Cloner); ok {
-			target.Llm = &UpstreamSpec_Composite_Backend_Openai{
+			target.Llm = &UpstreamSpec_Multi_Backend_Openai{
 				Openai: h.Clone().(*UpstreamSpec_OpenAI),
 			}
 		} else {
-			target.Llm = &UpstreamSpec_Composite_Backend_Openai{
+			target.Llm = &UpstreamSpec_Multi_Backend_Openai{
 				Openai: proto.Clone(m.GetOpenai()).(*UpstreamSpec_OpenAI),
 			}
 		}
 
-	case *UpstreamSpec_Composite_Backend_Mistral:
+	case *UpstreamSpec_Multi_Backend_Mistral:
 
 		if h, ok := interface{}(m.GetMistral()).(clone.Cloner); ok {
-			target.Llm = &UpstreamSpec_Composite_Backend_Mistral{
+			target.Llm = &UpstreamSpec_Multi_Backend_Mistral{
 				Mistral: h.Clone().(*UpstreamSpec_Mistral),
 			}
 		} else {
-			target.Llm = &UpstreamSpec_Composite_Backend_Mistral{
+			target.Llm = &UpstreamSpec_Multi_Backend_Mistral{
 				Mistral: proto.Clone(m.GetMistral()).(*UpstreamSpec_Mistral),
 			}
 		}
 
-	case *UpstreamSpec_Composite_Backend_Anthropic:
+	case *UpstreamSpec_Multi_Backend_Anthropic:
 
 		if h, ok := interface{}(m.GetAnthropic()).(clone.Cloner); ok {
-			target.Llm = &UpstreamSpec_Composite_Backend_Anthropic{
+			target.Llm = &UpstreamSpec_Multi_Backend_Anthropic{
 				Anthropic: h.Clone().(*UpstreamSpec_Anthropic),
 			}
 		} else {
-			target.Llm = &UpstreamSpec_Composite_Backend_Anthropic{
+			target.Llm = &UpstreamSpec_Multi_Backend_Anthropic{
 				Anthropic: proto.Clone(m.GetAnthropic()).(*UpstreamSpec_Anthropic),
 			}
 		}
 
-	case *UpstreamSpec_Composite_Backend_AzureOpenai:
+	case *UpstreamSpec_Multi_Backend_AzureOpenai:
 
 		if h, ok := interface{}(m.GetAzureOpenai()).(clone.Cloner); ok {
-			target.Llm = &UpstreamSpec_Composite_Backend_AzureOpenai{
+			target.Llm = &UpstreamSpec_Multi_Backend_AzureOpenai{
 				AzureOpenai: h.Clone().(*UpstreamSpec_AzureOpenAI),
 			}
 		} else {
-			target.Llm = &UpstreamSpec_Composite_Backend_AzureOpenai{
+			target.Llm = &UpstreamSpec_Multi_Backend_AzureOpenai{
 				AzureOpenai: proto.Clone(m.GetAzureOpenai()).(*UpstreamSpec_AzureOpenAI),
 			}
 		}
@@ -612,21 +603,21 @@ func (m *UpstreamSpec_Composite_Backend) Clone() proto.Message {
 }
 
 // Clone function
-func (m *UpstreamSpec_Composite_Priority) Clone() proto.Message {
-	var target *UpstreamSpec_Composite_Priority
+func (m *UpstreamSpec_Multi_Priority) Clone() proto.Message {
+	var target *UpstreamSpec_Multi_Priority
 	if m == nil {
 		return target
 	}
-	target = &UpstreamSpec_Composite_Priority{}
+	target = &UpstreamSpec_Multi_Priority{}
 
 	if m.GetPool() != nil {
-		target.Pool = make([]*UpstreamSpec_Composite_Backend, len(m.GetPool()))
+		target.Pool = make([]*UpstreamSpec_Multi_Backend, len(m.GetPool()))
 		for idx, v := range m.GetPool() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Pool[idx] = h.Clone().(*UpstreamSpec_Composite_Backend)
+				target.Pool[idx] = h.Clone().(*UpstreamSpec_Multi_Backend)
 			} else {
-				target.Pool[idx] = proto.Clone(v).(*UpstreamSpec_Composite_Backend)
+				target.Pool[idx] = proto.Clone(v).(*UpstreamSpec_Multi_Backend)
 			}
 
 		}

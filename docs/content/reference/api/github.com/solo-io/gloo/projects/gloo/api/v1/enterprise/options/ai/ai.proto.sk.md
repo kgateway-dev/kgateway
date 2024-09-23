@@ -18,7 +18,7 @@ weight: 5
 - [AzureOpenAI](#azureopenai)
 - [Mistral](#mistral)
 - [Anthropic](#anthropic)
-- [Composite](#composite)
+- [Multi](#multi)
 - [Backend](#backend)
 - [Priority](#priority)
 - [RouteSettings](#routesettings)
@@ -134,17 +134,17 @@ port: 443 # Port is optional and will default to 443 for HTTPS
 "mistral": .ai.options.gloo.solo.io.UpstreamSpec.Mistral
 "anthropic": .ai.options.gloo.solo.io.UpstreamSpec.Anthropic
 "azureOpenai": .ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI
-"composite": .ai.options.gloo.solo.io.UpstreamSpec.Composite
+"multi": .ai.options.gloo.solo.io.UpstreamSpec.Multi
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `openai` | [.ai.options.gloo.solo.io.UpstreamSpec.OpenAI](../ai.proto.sk/#openai) | OpenAI upstream. Only one of `openai`, `mistral`, `anthropic`, `azureOpenai`, or `composite` can be set. |
-| `mistral` | [.ai.options.gloo.solo.io.UpstreamSpec.Mistral](../ai.proto.sk/#mistral) | Mistral upstream. Only one of `mistral`, `openai`, `anthropic`, `azureOpenai`, or `composite` can be set. |
-| `anthropic` | [.ai.options.gloo.solo.io.UpstreamSpec.Anthropic](../ai.proto.sk/#anthropic) | Anthropic upstream. Only one of `anthropic`, `openai`, `mistral`, `azureOpenai`, or `composite` can be set. |
-| `azureOpenai` | [.ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI upstream. Only one of `azureOpenai`, `openai`, `mistral`, `anthropic`, or `composite` can be set. |
-| `composite` | [.ai.options.gloo.solo.io.UpstreamSpec.Composite](../ai.proto.sk/#composite) | Composite upstream. Only one of `composite`, `openai`, `mistral`, `anthropic`, or `azureOpenai` can be set. |
+| `openai` | [.ai.options.gloo.solo.io.UpstreamSpec.OpenAI](../ai.proto.sk/#openai) | OpenAI upstream. Only one of `openai`, `mistral`, `anthropic`, `azureOpenai`, or `multi` can be set. |
+| `mistral` | [.ai.options.gloo.solo.io.UpstreamSpec.Mistral](../ai.proto.sk/#mistral) | Mistral upstream. Only one of `mistral`, `openai`, `anthropic`, `azureOpenai`, or `multi` can be set. |
+| `anthropic` | [.ai.options.gloo.solo.io.UpstreamSpec.Anthropic](../ai.proto.sk/#anthropic) | Anthropic upstream. Only one of `anthropic`, `openai`, `mistral`, `azureOpenai`, or `multi` can be set. |
+| `azureOpenai` | [.ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI upstream. Only one of `azureOpenai`, `openai`, `mistral`, `anthropic`, or `multi` can be set. |
+| `multi` | [.ai.options.gloo.solo.io.UpstreamSpec.Multi](../ai.proto.sk/#multi) | multi upstream. Only one of `multi`, `openai`, `mistral`, `anthropic`, or `azureOpenai` can be set. |
 
 
 
@@ -256,17 +256,20 @@ Settings for the Mistral API
 
 
 ---
-### Composite
+### Multi
 
  
-composite:
+multi:
+pools:
+- pool:
 - openai:
 authToken:
 secretRef:
 name: openai-secret
 namespace: gloo-system
-- composite:
--  azureOpenai:
+priority: 1
+- pool:
+- azureOpenai:
 deploymentName: gpt-4o-mini
 apiVersion: 2024-02-15-preview
 endpoint: ai-gateway.openai.azure.com
@@ -274,7 +277,7 @@ authToken:
 secretRef:
 name: azure-secret
 namespace: gloo-system
--  azureOpenai:
+- azureOpenai:
 deploymentName: gpt-4o-mini-2
 apiVersion: 2024-02-15-preview
 endpoint: ai-gateway.openai.azure.com
@@ -282,15 +285,16 @@ authToken:
 secretRef:
 name: azure-secret
 namespace: gloo-system
+priority: 2
 
 ```yaml
-"pools": []ai.options.gloo.solo.io.UpstreamSpec.Composite.Priority
+"pools": []ai.options.gloo.solo.io.UpstreamSpec.Multi.Priority
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `pools` | [[]ai.options.gloo.solo.io.UpstreamSpec.Composite.Priority](../ai.proto.sk/#priority) |  |
+| `pools` | [[]ai.options.gloo.solo.io.UpstreamSpec.Multi.Priority](../ai.proto.sk/#priority) |  |
 
 
 
@@ -324,14 +328,14 @@ namespace: gloo-system
 
 
 ```yaml
-"pool": []ai.options.gloo.solo.io.UpstreamSpec.Composite.Backend
+"pool": []ai.options.gloo.solo.io.UpstreamSpec.Multi.Backend
 "priority": int
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `pool` | [[]ai.options.gloo.solo.io.UpstreamSpec.Composite.Backend](../ai.proto.sk/#backend) | List of upstreams to use repeated UpstreamSpec upstreams = 1;. |
+| `pool` | [[]ai.options.gloo.solo.io.UpstreamSpec.Multi.Backend](../ai.proto.sk/#backend) | List of upstreams to use repeated UpstreamSpec upstreams = 1;. |
 | `priority` | `int` |  |
 
 
@@ -357,7 +361,6 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 "promptGuard": .ai.options.gloo.solo.io.AIPromptGaurd
 "rag": .ai.options.gloo.solo.io.RAG
 "semanticCache": .ai.options.gloo.solo.io.SemanticCache
-"backupModels": []string
 "defaults": []ai.options.gloo.solo.io.FieldDefault
 "routeType": .ai.options.gloo.solo.io.RouteSettings.RouteType
 
@@ -369,7 +372,6 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 | `promptGuard` | [.ai.options.gloo.solo.io.AIPromptGaurd](../ai.proto.sk/#aipromptgaurd) | Guards to apply to the LLM requests on this route. This can be used to reject requests based on the content of the prompt, as well as mask responses based on the content of the response. These guards can be also be used at the same time. Below is a simple example of a prompt guard that will reject any prompt that contains the string "credit card" and will mask any credit card numbers in the response. ``` promptGuard: request: customResponseMessage: "Rejected due to inappropriate content" matches: - "credit card" response: matches: # Mastercard - '(?:^|\D)(5[1-5][0-9]{2}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4})(?:\D|$)' ````. |
 | `rag` | [.ai.options.gloo.solo.io.RAG](../ai.proto.sk/#rag) | Retrieval Augmented Generation. https://research.ibm.com/blog/retrieval-augmented-generation-RAG Retrieval Augmented Generation is a process by which you "augment" the information a model has access to by providing it with a set of documents to use as context. This can be used to improve the quality of the generated text. Important Note: The same embedding mechanism must be used for the prompt which was used for the initial creation of the context documents. Example using postgres for storage and OpenAI for embedding: ``` rag: datastore: postgres: connectionString: postgresql+psycopg://gloo:gloo@172.17.0.1:6024/gloo collectionName: default embedding: openai: authToken: secretRef: name: openai-secret namespace: gloo-system ```. |
 | `semanticCache` | [.ai.options.gloo.solo.io.SemanticCache](../ai.proto.sk/#semanticcache) | Semantic caching configuration Semantic caching allows you to cache previous model responses in order to provide faster responses to similar requests in the future. Results will vary depending on the embedding mechanism used, as well as the similarity threshold set. Example using Redis for storage and OpenAI for embedding: ``` semanticCache: datastore: redis: connectionString: redis://172.17.0.1:6379 embedding: openai: authToken: secretRef: name: openai-secret namespace: gloo-system ```. |
-| `backupModels` | `[]string` | Backup models to use in case of a failure with the primary model passed in the request. By default each model will be tried 2 times before moving on to the next model in the list. If all requests fail then the final response will be returned to the client. |
 | `defaults` | [[]ai.options.gloo.solo.io.FieldDefault](../ai.proto.sk/#fielddefault) | A list of defaults to be merged with the user input fields. These will NOT override the user input fields unless override is explicitly set to true. Some examples include setting the temperature, max_tokens, etc. Example overriding system field for Anthropic: ``` # Anthropic doesn't support a system chat type defaults: - field: "system" value: "answer all questions in french" ``` Example setting the temperature and max_tokens, overriding max_tokens: ``` defaults: - field: "temperature" value: 0.5 - field: "max_tokens" value: 100 ```. |
 | `routeType` | [.ai.options.gloo.solo.io.RouteSettings.RouteType](../ai.proto.sk/#routetype) | The type of route this is, either CHAT or COMPLETIONS. |
 
