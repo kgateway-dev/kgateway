@@ -504,12 +504,12 @@ func (h *httpRouteConfigurationTranslator) setWeightedClusters(
 			MetadataMatch: getSubsetMatch(weightedDest.GetDestination()),
 		}
 
+		raParams := plugins.RouteActionParams{
+			RouteParams: params,
+			Route:       route,
+		}
 		// run the plugins for Weighted Destinations
 		for _, plugin := range h.pluginRegistry.GetWeightedDestinationPlugins() {
-			raParams := plugins.RouteActionParams{
-				RouteParams: params,
-				Route:       route,
-			}
 			if err := plugin.ProcessWeightedDestination(raParams, weightedDest, weightedCluster); err != nil {
 				reportWeightedDestinationPluginProcessingError(
 					params,
