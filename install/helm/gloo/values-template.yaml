@@ -142,7 +142,7 @@ gateway:
       enablePolicyApi: true
       # Skip validating namespace when it has been modified or deleted - namespace validation is an opt in feature in 1.17.x
       # https://github.com/solo-io/gloo/pull/10066#discussion_r1771830556
-      skipDeleteValidationResources: namespaces
+      skipDeleteValidationResources: ["namespaces"]
   certGenJob:
     enabled: true
     image:
