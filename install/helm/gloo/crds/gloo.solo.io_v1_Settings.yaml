@@ -530,9 +530,6 @@ spec:
                       disableTransformationValidation:
                         nullable: true
                         type: boolean
-                      fullEnvoyValidation:
-                        nullable: true
-                        type: boolean
                       ignoreGlooValidationFailure:
                         type: boolean
                       proxyValidationServerAddr:

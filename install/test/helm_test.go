@@ -4171,7 +4171,6 @@ spec:
 								"gateway.validation.disableTransformationValidation=true",
 								"gateway.validation.warnRouteShortCircuiting=true",
 								"gateway.validation.warnMissingTlsSecret=false",
-								"gateway.validation.fullEnvoyValidation=true",
 							},
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
@@ -4371,7 +4370,6 @@ spec:
     enableGatewayController: true
     isolateVirtualHostsBySslConfig: false
     validation:
-      fullEnvoyValidation: false
       proxyValidationServerAddr: gloo:9988
       alwaysAccept: true
       allowWarnings: true

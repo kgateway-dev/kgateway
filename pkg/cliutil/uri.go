@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	defaultTimeout = 60 * time.Second
+	defaultTimeout = 30 * time.Second
 )
 
 var (

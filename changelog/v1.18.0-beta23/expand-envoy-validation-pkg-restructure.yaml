@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/5720
-    resolvesIssue: false
-    description: >-
-      As a precursor to expanding the use of Envoy validate mode, we are restructuring some 
-      packages to make more clear the separation of concerns in the package structure.

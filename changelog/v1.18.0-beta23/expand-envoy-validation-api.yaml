@@ -1,8 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/5720
-    resolvesIssue: false
-    description: >-
-      Adds API for a new feature to utilize Envoy's validate mode to validate all config
-      during translation. This will be helpful in catching issues which Gloo translation
-      cannot or otherwise does not view as errors before the config gets served to Envoy.
