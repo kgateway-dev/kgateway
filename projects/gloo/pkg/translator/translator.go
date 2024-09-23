@@ -16,6 +16,7 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/golang/protobuf/proto"
 	errors "github.com/rotisserie/eris"
+	envoyvalidation "github.com/solo-io/gloo/pkg/utils/envoyutils/validation"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -126,6 +127,16 @@ func (t *translatorInstance) Translate(
 		for _, warning := range warnings {
 			reports.AddWarning(proxy, warning)
 		}
+	}
+
+	// If we're not validating the full proxy with envoy validate mode, we can
+	// return here.
+	if !t.settings.GetGateway().GetValidation().GetFullEnvoyValidation().GetValue() {
+		return xdsSnapshot, reports, proxyReport
+	}
+
+	if err := envoyvalidation.ValidateSnapshot(ctx, xdsSnapshot); err != nil {
+		reports.AddError(proxy, err)
 	}
 
 	return xdsSnapshot, reports, proxyReport
