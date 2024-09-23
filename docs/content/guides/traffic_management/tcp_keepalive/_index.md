@@ -51,7 +51,6 @@ functional. See [TCP Keepalive on Downstream Connections]({{<ref "#tcp-keepalive
 
 ## TCP Keepalive on Downstream Connections {#downstream}
 
-
 {{% notice warning %}}
 Currently envoy does not directly support turning on TCP keepalive on downstream connections. It can only be done with generic socket options
 setting. Socket options can have considerable effects and may not be portable on all platforms. The configurations provided in this guide are
@@ -120,6 +119,7 @@ apiVersion: gloo.solo.io/v1
 kind: Upstream
 metadata: # collapsed for brevity
 spec:
+# the destinations settings are omitted for brevity
   connectionConfig:
     tcpKeepalive:
       keepaliveInterval: 20
