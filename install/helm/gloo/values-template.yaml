@@ -22,11 +22,11 @@ kubeGateway:
               - ALL
             add:
               - NET_BIND_SERVICE
-      # If proxyDeployment or proxyDeployment.replicas are null, a default of 1 will be 
+      # If proxyDeployment or proxyDeployment.replicas are null, a default of 1 will be
       # imposed by the template.
       proxyDeployment:
         replicas: 1
-      # If service or service.type are null, a default of LoadBalancer will be 
+      # If service or service.type are null, a default of LoadBalancer will be
       # imposed by the template.
       service:
         type: LoadBalancer
@@ -124,8 +124,8 @@ gateway:
     secretName: gateway-validation-certs
     alwaysAcceptResources: true
     allowWarnings: true
-    # Explicitly defaulting this setting to false in order to emphasize the opt-in 
-    # nature of this behavior in this version. The default value for this field 
+    # Explicitly defaulting this setting to false in order to emphasize the opt-in
+    # nature of this behavior in this version. The default value for this field
     # is changed to true in 1.18, making the behavior opt-out.
     warnMissingTlsSecret: false
     serverEnabled: true
@@ -140,6 +140,9 @@ gateway:
       # https://github.com/solo-io/gloo/issues/9309
       # As a result, for our Policy API, we default it to on, and provide users the way to opt-out of it
       enablePolicyApi: true
+      # Skip validating namespace when it has been modified or deleted - namespace validation is an opt in feature in 1.17.x
+      # https://github.com/solo-io/gloo/pull/10066#discussion_r1771830556
+      skipDeleteValidationResources: namespaces
   certGenJob:
     enabled: true
     image:
