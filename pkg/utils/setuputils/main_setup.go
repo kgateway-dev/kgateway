@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/utils/envutils"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/namespaces"
 
@@ -16,13 +15,11 @@ import (
 	kube2 "github.com/solo-io/gloo/pkg/bootstrap/leaderelector/kube"
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
 	"github.com/solo-io/gloo/pkg/version"
-	"github.com/solo-io/gloo/projects/gloo/constants"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -87,16 +84,22 @@ func Main(opts SetupOpts) error {
 		return err
 	}
 
-	var namespaceClient kubernetes.KubeNamespaceClient
-	// Running edge in KubeGateway mode ignores watchNamespaces so there's no need to create a client.
-	if envutils.IsEnvTruthy(constants.GlooGatewayEnableK8sGwControllerEnv) {
+	// var namespaceClient kubernetes.KubeNamespaceClient
+	// // Running edge in KubeGateway mode ignores watchNamespaces so there's no need to create a client.
+	// if envutils.IsEnvTruthy(constants.GlooGatewayEnableK8sGwControllerEnv) {
+	// 	namespaceClient = &namespaces.NoOpKubeNamespaceWatcher{}
+	// } else {
+	// 	namespaceClient, err = namespaces.NewKubeNamespaceClient(ctx)
+	// 	// If there is any error when creating a KubeNamespaceClient (RBAC issues) default to a fake client
+	// 	if err != nil {
+	// 		namespaceClient = &namespaces.NoOpKubeNamespaceWatcher{}
+	// 	}
+	// }
+
+	namespaceClient, err := namespaces.NewKubeNamespaceClient(ctx)
+	// If there is any error when creating a KubeNamespaceClient (RBAC issues) default to a fake client
+	if err != nil {
 		namespaceClient = &namespaces.NoOpKubeNamespaceWatcher{}
-	} else {
-		namespaceClient, err = namespaces.NewKubeNamespaceClient(ctx)
-		// If there is any error when creating a KubeNamespaceClient (RBAC issues) default to a fake client
-		if err != nil {
-			namespaceClient = &namespaces.NoOpKubeNamespaceWatcher{}
-		}
 	}
 
 	// settings come from the ResourceClient in the settingsClient
