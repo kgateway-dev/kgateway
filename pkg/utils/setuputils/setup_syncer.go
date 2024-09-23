@@ -114,15 +114,21 @@ func (s *SetupSyncer) ShouldSync(ctx context.Context, oldSnapshot, newSnapshot *
 
 	// 1. Check whether the settings CR is changed
 	if s.currentSettingsHash != newSettings.MustHash() {
+		contextutils.LoggerFrom(ctx).Debugw("syncing since settings have been updated")
 		return true
 	}
 
 	// 2. Check if a namespace is added / deleted / modified
 	// If a namespace was modified, check if it changes the namespaces to watch
+	contextutils.LoggerFrom(ctx).Debugw("received updated list of namespaces", zap.Any("namespaces", newSnapshot.Kubenamespaces))
 	newNamespacesToWatch, err := settingsutil.GenerateNamespacesToWatch(newSettings, newSnapshot.Kubenamespaces)
 	if err != nil {
 		return true
 	}
-	namespacesChanged := !slices.Equal(newNamespacesToWatch, settingsutil.GetNamespacesToWatch(oldSettings))
+	oldNamespacesToWatch := settingsutil.GetNamespacesToWatch(oldSettings)
+	namespacesChanged := !slices.Equal(newNamespacesToWatch, oldNamespacesToWatch)
+
+	contextutils.LoggerFrom(ctx).Debugw("list of namespaces to watch", zap.Any("oldNamespacesToWatch", oldNamespacesToWatch), zap.Any("newNamespacesToWatch", newNamespacesToWatch), zap.Any("namespacesChanged", namespacesChanged))
+
 	return namespacesChanged
 }
