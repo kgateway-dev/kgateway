@@ -94,6 +94,9 @@ message UpstreamSpec {
     SingleAuthToken auth_token = 1;
     // Optional custom host to send the traffic to
     CustomHost custom_host = 2;
+    // Optional: override model name. If not set, the model name will be taken from the request
+    // This can be useful when trying model failover scenarios
+    string model = 3;
   }
 
   // Settings for the Azure OpenAI API
@@ -185,10 +188,15 @@ message UpstreamSpec {
         AzureOpenAI azure_openai = 4;
       }
     }
-    // List of upstreams to use
-    // repeated UpstreamSpec upstreams = 1;
-    repeated Backend pool = 1;
-    uint32 priority = 2;
+
+    message Priority {
+      // List of upstreams to use
+      // repeated UpstreamSpec upstreams = 1;
+      repeated Backend pool = 1;
+      uint32 priority = 2;
+    }
+
+    repeated Priority pools = 1;
   }
 
   
@@ -202,7 +210,7 @@ message UpstreamSpec {
     // Azure OpenAI upstream
     AzureOpenAI azure_openai = 4;
     // Composite upstream
-    Composite pools = 5;
+    Composite composite = 5;
   }
 }
 

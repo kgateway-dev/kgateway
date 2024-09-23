@@ -120,15 +120,15 @@ func (m *UpstreamSpec) Clone() proto.Message {
 			}
 		}
 
-	case *UpstreamSpec_Pools:
+	case *UpstreamSpec_Composite_:
 
-		if h, ok := interface{}(m.GetPools()).(clone.Cloner); ok {
-			target.Llm = &UpstreamSpec_Pools{
-				Pools: h.Clone().(*UpstreamSpec_Composite),
+		if h, ok := interface{}(m.GetComposite()).(clone.Cloner); ok {
+			target.Llm = &UpstreamSpec_Composite_{
+				Composite: h.Clone().(*UpstreamSpec_Composite),
 			}
 		} else {
-			target.Llm = &UpstreamSpec_Pools{
-				Pools: proto.Clone(m.GetPools()).(*UpstreamSpec_Composite),
+			target.Llm = &UpstreamSpec_Composite_{
+				Composite: proto.Clone(m.GetComposite()).(*UpstreamSpec_Composite),
 			}
 		}
 
@@ -438,6 +438,8 @@ func (m *UpstreamSpec_OpenAI) Clone() proto.Message {
 		target.CustomHost = proto.Clone(m.GetCustomHost()).(*UpstreamSpec_CustomHost)
 	}
 
+	target.Model = m.GetModel()
+
 	return target
 }
 
@@ -530,20 +532,18 @@ func (m *UpstreamSpec_Composite) Clone() proto.Message {
 	}
 	target = &UpstreamSpec_Composite{}
 
-	if m.GetPool() != nil {
-		target.Pool = make([]*UpstreamSpec_Composite_Backend, len(m.GetPool()))
-		for idx, v := range m.GetPool() {
+	if m.GetPools() != nil {
+		target.Pools = make([]*UpstreamSpec_Composite_Priority, len(m.GetPools()))
+		for idx, v := range m.GetPools() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Pool[idx] = h.Clone().(*UpstreamSpec_Composite_Backend)
+				target.Pools[idx] = h.Clone().(*UpstreamSpec_Composite_Priority)
 			} else {
-				target.Pool[idx] = proto.Clone(v).(*UpstreamSpec_Composite_Backend)
+				target.Pools[idx] = proto.Clone(v).(*UpstreamSpec_Composite_Priority)
 			}
 
 		}
 	}
-
-	target.Priority = m.GetPriority()
 
 	return target
 }
@@ -607,6 +607,32 @@ func (m *UpstreamSpec_Composite_Backend) Clone() proto.Message {
 		}
 
 	}
+
+	return target
+}
+
+// Clone function
+func (m *UpstreamSpec_Composite_Priority) Clone() proto.Message {
+	var target *UpstreamSpec_Composite_Priority
+	if m == nil {
+		return target
+	}
+	target = &UpstreamSpec_Composite_Priority{}
+
+	if m.GetPool() != nil {
+		target.Pool = make([]*UpstreamSpec_Composite_Backend, len(m.GetPool()))
+		for idx, v := range m.GetPool() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Pool[idx] = h.Clone().(*UpstreamSpec_Composite_Backend)
+			} else {
+				target.Pool[idx] = proto.Clone(v).(*UpstreamSpec_Composite_Backend)
+			}
+
+		}
+	}
+
+	target.Priority = m.GetPriority()
 
 	return target
 }

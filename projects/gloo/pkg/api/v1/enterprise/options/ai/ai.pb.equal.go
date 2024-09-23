@@ -165,17 +165,17 @@ func (m *UpstreamSpec) Equal(that interface{}) bool {
 			}
 		}
 
-	case *UpstreamSpec_Pools:
-		if _, ok := target.Llm.(*UpstreamSpec_Pools); !ok {
+	case *UpstreamSpec_Composite_:
+		if _, ok := target.Llm.(*UpstreamSpec_Composite_); !ok {
 			return false
 		}
 
-		if h, ok := interface{}(m.GetPools()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetPools()) {
+		if h, ok := interface{}(m.GetComposite()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetComposite()) {
 				return false
 			}
 		} else {
-			if !proto.Equal(m.GetPools(), target.GetPools()) {
+			if !proto.Equal(m.GetComposite(), target.GetComposite()) {
 				return false
 			}
 		}
@@ -733,6 +733,10 @@ func (m *UpstreamSpec_OpenAI) Equal(that interface{}) bool {
 		}
 	}
 
+	if strings.Compare(m.GetModel(), target.GetModel()) != 0 {
+		return false
+	}
+
 	return true
 }
 
@@ -909,25 +913,21 @@ func (m *UpstreamSpec_Composite) Equal(that interface{}) bool {
 		return false
 	}
 
-	if len(m.GetPool()) != len(target.GetPool()) {
+	if len(m.GetPools()) != len(target.GetPools()) {
 		return false
 	}
-	for idx, v := range m.GetPool() {
+	for idx, v := range m.GetPools() {
 
 		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetPool()[idx]) {
+			if !h.Equal(target.GetPools()[idx]) {
 				return false
 			}
 		} else {
-			if !proto.Equal(v, target.GetPool()[idx]) {
+			if !proto.Equal(v, target.GetPools()[idx]) {
 				return false
 			}
 		}
 
-	}
-
-	if m.GetPriority() != target.GetPriority() {
-		return false
 	}
 
 	return true
@@ -1021,6 +1021,51 @@ func (m *UpstreamSpec_Composite_Backend) Equal(that interface{}) bool {
 		if m.Llm != target.Llm {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *UpstreamSpec_Composite_Priority) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*UpstreamSpec_Composite_Priority)
+	if !ok {
+		that2, ok := that.(UpstreamSpec_Composite_Priority)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetPool()) != len(target.GetPool()) {
+		return false
+	}
+	for idx, v := range m.GetPool() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetPool()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetPool()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	if m.GetPriority() != target.GetPriority() {
+		return false
 	}
 
 	return true
