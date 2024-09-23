@@ -15,9 +15,6 @@ import (
 var (
 	installNamespaceVSManifest = filepath.Join(util.MustGetThisDir(), "testdata", "vs-install-ns.yaml")
 
-	matchLabelsSetup      = filepath.Join(util.MustGetThisDir(), "testdata", "match-labels.yaml")
-	matchExpressionsSetup = filepath.Join(util.MustGetThisDir(), "testdata", "match-expressions.yaml")
-
 	unlabeledRandomNamespaceManifest = filepath.Join(util.MustGetThisDir(), "testdata", "random-ns-unlabeled.yaml")
 	randomVSManifest                 = filepath.Join(util.MustGetThisDir(), "testdata", "vs-random.yaml")
 
@@ -38,27 +35,21 @@ var (
 	testCases = map[string]*base.TestCase{
 		"TestMatchLabels": {
 			SimpleTestCase: base.SimpleTestCase{
-				UpgradeValues: matchLabelsSetup,
-				Manifests:     []string{unlabeledRandomNamespaceManifest, randomVSManifest},
-				Resources:     []client.Object{randomNamespaceVS},
+				Manifests: []string{unlabeledRandomNamespaceManifest, randomVSManifest},
+				Resources: []client.Object{randomNamespaceVS},
 			},
 		},
 		"TestMatchExpressions": {
 			SimpleTestCase: base.SimpleTestCase{
-				UpgradeValues: matchExpressionsSetup,
-				Manifests:     []string{unlabeledRandomNamespaceManifest, randomVSManifest},
-				Resources:     []client.Object{randomNamespaceVS},
+				Manifests: []string{unlabeledRandomNamespaceManifest, randomVSManifest},
+				Resources: []client.Object{randomNamespaceVS},
 			},
 		},
 		"TestUnwatchedNamespaceValidation": {
-			SimpleTestCase: base.SimpleTestCase{
-				UpgradeValues: matchLabelsSetup,
-			},
+			SimpleTestCase: base.SimpleTestCase{},
 		},
 		"TestWatchedNamespaceValidation": {
-			SimpleTestCase: base.SimpleTestCase{
-				UpgradeValues: matchExpressionsSetup,
-			},
+			SimpleTestCase: base.SimpleTestCase{},
 		},
 	}
 )

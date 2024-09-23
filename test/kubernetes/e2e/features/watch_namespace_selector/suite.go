@@ -38,21 +38,21 @@ func (s *testingSuite) TearDownSuite() {
 }
 
 func (s *testingSuite) TestMatchLabels() {
-	s.testWatchNamespaceSelector()
+	s.testWatchNamespaceSelector("label", "match")
 }
 
 func (s *testingSuite) TestMatchExpressions() {
-	s.testWatchNamespaceSelector()
+	s.testWatchNamespaceSelector("expression", "match")
 }
 
-func (s *testingSuite) testWatchNamespaceSelector() {
+func (s *testingSuite) testWatchNamespaceSelector(key, value string) {
 	// Ensure the install namespace is watched even if not specified
 	s.TestInstallation.Assertions.CurlEventuallyRespondsWithStatus(s.Ctx, "install-ns/", http.StatusOK)
 
 	// Ensure CRs defined in non watched-namespaces are not translated
 	s.TestInstallation.Assertions.CurlConsistentlyRespondsWithStatus(s.Ctx, "random/", http.StatusNotFound)
 
-	s.labelSecondNamespaceAsWatched()
+	s.labelSecondNamespaceAsWatched(key, value)
 
 	// The VS defined in the random namespace should be translated
 	s.TestInstallation.Assertions.CurlEventuallyRespondsWithStatus(s.Ctx, "random/", http.StatusOK)
@@ -63,8 +63,8 @@ func (s *testingSuite) TestUnwatchedNamespaceValidation() {
 	s.applyFile(randomUpstreamManifest)
 
 	// It should successfully apply inconsequential labels to a ns without validation errors
-	s.addLabelToSecondNamespace()
-	s.removeLabelFromSecondNamespace()
+	s.addInconsequentialLabelToSecondNamespace()
+	s.removeInconsequentialLabelFromSecondNamespace()
 
 	// Deleting resources in the namespace and the namespace itself should not error out
 	s.deleteFile(randomUpstreamManifest)
@@ -75,11 +75,11 @@ func (s *testingSuite) TestWatchedNamespaceValidation() {
 	s.applyFile(unlabeledRandomNamespaceManifest)
 	s.applyFile(randomUpstreamManifest)
 
-	s.labelSecondNamespaceAsWatched()
+	s.labelSecondNamespaceAsWatched("label", "match")
 
 	// It should successfully apply inconsequential labels to a ns we watch without validation errors
-	s.addLabelToSecondNamespace()
-	s.removeLabelFromSecondNamespace()
+	s.addInconsequentialLabelToSecondNamespace()
+	s.removeInconsequentialLabelFromSecondNamespace()
 
 	s.Eventually(func() bool {
 		err := s.TestHelper.ApplyFile(s.Ctx, installNamespaceWithRandomUpstreamVSManifest, "-n", s.TestHelper.InstallNamespace)
@@ -90,7 +90,7 @@ func (s *testingSuite) TestWatchedNamespaceValidation() {
 	s.TestInstallation.Assertions.CurlEventuallyRespondsWithStatus(s.Ctx, "/get", http.StatusOK)
 
 	// Trying to unwatch the namespace that has an upstream referenced in another namespace leads to an error
-	_, errOut, err := s.TestHelper.Execute(s.Ctx, "label", "ns", "random", "watch-")
+	_, errOut, err := s.TestHelper.Execute(s.Ctx, "label", "ns", "random", "label-")
 
 	s.Contains(errOut, `admission webhook "gloo.namespace-selector.svc" denied the request: resource incompatible with current Gloo snapshot`)
 	s.Contains(errOut, `Route Warning: InvalidDestinationWarning. Reason: *v1.Upstream { random.postman-echo } not found`)
@@ -103,41 +103,41 @@ func (s *testingSuite) TestWatchedNamespaceValidation() {
 	s.Error(err)
 
 	// Ensure we didn't break the validation server while we're at it
-	s.addLabelToSecondNamespace()
-	s.removeLabelFromSecondNamespace()
+	s.addInconsequentialLabelToSecondNamespace()
+	s.removeInconsequentialLabelFromSecondNamespace()
 
 	s.deleteFile(installNamespaceWithRandomUpstreamVSManifest, "-n", s.TestHelper.InstallNamespace)
 
-	s.unwatchNamespace()
+	s.unwatchNamespace("label")
 
 	// The upstream defined in the random namespace should be translated and referenced
 	s.TestInstallation.Assertions.CurlEventuallyRespondsWithStatus(s.Ctx, "/get", http.StatusNotFound)
 
 	// Optimists invent airplanes; pessimists invent parachutes
-	s.addLabelToSecondNamespace()
-	s.removeLabelFromSecondNamespace()
+	s.addInconsequentialLabelToSecondNamespace()
+	s.removeInconsequentialLabelFromSecondNamespace()
 
 	s.deleteFile(randomUpstreamManifest)
 	s.deleteFile(unlabeledRandomNamespaceManifest)
 }
 
-func (s *testingSuite) labelSecondNamespaceAsWatched() {
+func (s *testingSuite) labelSecondNamespaceAsWatched(key, value string) {
 	// Label the `random` namespace with the watchNamespaceSelector labels
 	// kubectl label ns random watch=this
-	out, _, err := s.TestHelper.Execute(s.Ctx, "label", "ns", "random", "watch=this")
+	out, _, err := s.TestHelper.Execute(s.Ctx, "label", "ns", "random", key+"="+value)
 	s.Assertions.Contains(out, "namespace/random labeled")
 	s.NoError(err)
 }
 
-func (s *testingSuite) unwatchNamespace() {
+func (s *testingSuite) unwatchNamespace(key string) {
 	// Label the `random` namespace with the watchNamespaceSelector labels
 	// kubectl label ns random watch-
-	out, _, err := s.TestHelper.Execute(s.Ctx, "label", "ns", "random", "watch-")
+	out, _, err := s.TestHelper.Execute(s.Ctx, "label", "ns", "random", key+"-")
 	s.Assertions.Contains(out, "namespace/random unlabeled")
 	s.NoError(err)
 }
 
-func (s *testingSuite) addLabelToSecondNamespace() {
+func (s *testingSuite) addInconsequentialLabelToSecondNamespace() {
 	// label the `random` namespace
 	// kubectl label ns random inconsequential=label
 	out, _, err := s.TestHelper.Execute(s.Ctx, "label", "ns", "random", "inconsequential=label")
@@ -145,7 +145,7 @@ func (s *testingSuite) addLabelToSecondNamespace() {
 	s.NoError(err)
 }
 
-func (s *testingSuite) removeLabelFromSecondNamespace() {
+func (s *testingSuite) removeInconsequentialLabelFromSecondNamespace() {
 	// unlabel the `random` namespace
 	// kubectl label ns random inconsequential-
 	out, _, err := s.TestHelper.Execute(s.Ctx, "label", "ns", "random", "inconsequential-")

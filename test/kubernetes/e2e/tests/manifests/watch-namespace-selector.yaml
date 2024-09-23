@@ -7,6 +7,14 @@ global:
 
 settings:
   singleNamespace: false
+  watchNamespaceSelectors:
+  - matchLabels:
+      label: match
+  - matchExpressions:
+    - key: expression
+      operator: In
+      values:
+        - match
 
 gateway:
   validation:
@@ -14,3 +22,5 @@ gateway:
     failurePolicy: "Fail"
     alwaysAcceptResources: false
     allowWarnings: false
+    webhook:
+      skipDeleteValidationResources: []
