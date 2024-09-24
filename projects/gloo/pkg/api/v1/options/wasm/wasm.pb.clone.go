@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_any "github.com/golang/protobuf/ptypes/any"
+	google_golang_org_protobuf_types_known_anypb "google.golang.org/protobuf/types/known/anypb"
 )
 
 // ensure the imports are used
@@ -60,9 +60,9 @@ func (m *WasmFilter) Clone() proto.Message {
 	target = &WasmFilter{}
 
 	if h, ok := interface{}(m.GetConfig()).(clone.Cloner); ok {
-		target.Config = h.Clone().(*github_com_golang_protobuf_ptypes_any.Any)
+		target.Config = h.Clone().(*google_golang_org_protobuf_types_known_anypb.Any)
 	} else {
-		target.Config = proto.Clone(m.GetConfig()).(*github_com_golang_protobuf_ptypes_any.Any)
+		target.Config = proto.Clone(m.GetConfig()).(*google_golang_org_protobuf_types_known_anypb.Any)
 	}
 
 	if h, ok := interface{}(m.GetFilterStage()).(clone.Cloner); ok {
