@@ -2,14 +2,15 @@ package tests_test
 
 import (
 	"context"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/solo-io/gloo/pkg/utils/envutils"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	. "github.com/solo-io/gloo/test/kubernetes/e2e/tests"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/gloo/test/testutils"
-	"os"
-	"testing"
-	"time"
 )
 
 // TestK8sGatewayIstioAutoMtls is the function which executes a series of tests against a given installation
