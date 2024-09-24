@@ -96,6 +96,7 @@ message UpstreamSpec {
     CustomHost custom_host = 2;
     // Optional: override model name. If not set, the model name will be taken from the request
     // This can be useful when trying model failover scenarios
+    // e.g. "gpt-4o-mini"
     string model = 3;
   }
 
@@ -109,14 +110,18 @@ message UpstreamSpec {
       SingleAuthToken auth_token = 1;
       // use AD or other workload identity mechanism
     }
-
-    // (REQUIRED) The endpoint to use
+    
+    
+    // The endpoint to use
     // This should be the endpoint to the Azure OpenAI API, e.g. my-endpoint.openai.azure.com
     // If the scheme is included it will be stripped.
+    // This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}
     string endpoint = 2;
-    // (REQUIRED) The deployment/model name to use
+    // The deployment/model name to use
+    // This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}
     string deployment_name = 3;
-    // (REQUIRED) The version of the API to use
+    // The version of the API to use
+    // This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}
     string api_version = 4;
   }
 
@@ -206,7 +211,7 @@ message UpstreamSpec {
       uint32 priority = 2;
     }
 
-    repeated Priority pools = 1;
+    repeated Priority priorities = 1;
   }
 
   
@@ -331,12 +336,6 @@ message RouteSettings {
   */
   SemanticCache semantic_cache = 4;
 
-  // Backup models to use in case of a failure with the primary model
-  // passed in the request. By default each model will be tried 2 times
-  // before moving on to the next model in the list. If all requests fail then
-  // the final response will be returned to the client.
-  // repeated string backup_models = 5;
-
   /*
     A list of defaults to be merged with the user input fields.
     These will NOT override the user input fields unless override is explicitly set to true.
@@ -359,14 +358,14 @@ message RouteSettings {
       value: 100
     ```
   */
-  repeated FieldDefault defaults = 6;
+  repeated FieldDefault defaults = 5;
 
   enum RouteType {
     CHAT = 0;
   }
 
-  // The type of route this is, either CHAT or COMPLETIONS
-  RouteType route_type = 7;
+  // The type of route this is, currently only CHAT is supported
+  RouteType route_type = 6;
 }
 
 message FieldDefault {
@@ -406,13 +405,16 @@ message Embedding {
       // google.protobuf.Empty inherit_backend_token = 3;
     }
 
-    // (REQUIRED) The version of the API to use
+    // The version of the API to use
+    // This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}
     string api_version = 2;
-    // (REQUIRED) The endpoint to use
+    // The endpoint to use
     // This should be the endpoint to the Azure OpenAI API, e.g. https://my-endpoint.openai.azure.com
     // If the scheme isn't included it will be added.
+    // This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}
     string endpoint = 3;
-    // (REQUIRED) The deployment/model name to use
+    // The deployment/model name to use
+    // This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}
     string deployment_name = 4;
   }
 

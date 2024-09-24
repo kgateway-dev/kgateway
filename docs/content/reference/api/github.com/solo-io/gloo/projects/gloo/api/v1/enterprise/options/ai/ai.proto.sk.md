@@ -185,7 +185,7 @@ Settings for the OpenAI API
 | ----- | ---- | ----------- | 
 | `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the OpenAI API This token will be placed into the `Authorization` header and prefixed with Bearer if not present when sending the request to the upstream. |
 | `customHost` | [.ai.options.gloo.solo.io.UpstreamSpec.CustomHost](../ai.proto.sk/#customhost) | Optional custom host to send the traffic to. |
-| `model` | `string` | Optional: override model name. If not set, the model name will be taken from the request This can be useful when trying model failover scenarios. |
+| `model` | `string` | Optional: override model name. If not set, the model name will be taken from the request This can be useful when trying model failover scenarios e.g. "gpt-4o-mini". |
 
 
 
@@ -207,9 +207,9 @@ Settings for the Azure OpenAI API
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the OpenAI API This token will be placed into the `api-key` header. |
-| `endpoint` | `string` | (REQUIRED) The endpoint to use This should be the endpoint to the Azure OpenAI API, e.g. my-endpoint.openai.azure.com If the scheme is included it will be stripped. |
-| `deploymentName` | `string` | (REQUIRED) The deployment/model name to use. |
-| `apiVersion` | `string` | (REQUIRED) The version of the API to use. |
+| `endpoint` | `string` | The endpoint to use This should be the endpoint to the Azure OpenAI API, e.g. my-endpoint.openai.azure.com If the scheme is included it will be stripped. This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}. |
+| `deploymentName` | `string` | The deployment/model name to use This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}. |
+| `apiVersion` | `string` | The version of the API to use This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}. |
 
 
 
@@ -292,13 +292,13 @@ namespace: gloo-system
 priority: 2
 
 ```yaml
-"pools": []ai.options.gloo.solo.io.UpstreamSpec.Multi.Priority
+"priorities": []ai.options.gloo.solo.io.UpstreamSpec.Multi.Priority
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `pools` | [[]ai.options.gloo.solo.io.UpstreamSpec.Multi.Priority](../ai.proto.sk/#priority) |  |
+| `priorities` | [[]ai.options.gloo.solo.io.UpstreamSpec.Multi.Priority](../ai.proto.sk/#priority) |  |
 
 
 
@@ -377,7 +377,7 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 | `rag` | [.ai.options.gloo.solo.io.RAG](../ai.proto.sk/#rag) | Retrieval Augmented Generation. https://research.ibm.com/blog/retrieval-augmented-generation-RAG Retrieval Augmented Generation is a process by which you "augment" the information a model has access to by providing it with a set of documents to use as context. This can be used to improve the quality of the generated text. Important Note: The same embedding mechanism must be used for the prompt which was used for the initial creation of the context documents. Example using postgres for storage and OpenAI for embedding: ``` rag: datastore: postgres: connectionString: postgresql+psycopg://gloo:gloo@172.17.0.1:6024/gloo collectionName: default embedding: openai: authToken: secretRef: name: openai-secret namespace: gloo-system ```. |
 | `semanticCache` | [.ai.options.gloo.solo.io.SemanticCache](../ai.proto.sk/#semanticcache) | Semantic caching configuration Semantic caching allows you to cache previous model responses in order to provide faster responses to similar requests in the future. Results will vary depending on the embedding mechanism used, as well as the similarity threshold set. Example using Redis for storage and OpenAI for embedding: ``` semanticCache: datastore: redis: connectionString: redis://172.17.0.1:6379 embedding: openai: authToken: secretRef: name: openai-secret namespace: gloo-system ```. |
 | `defaults` | [[]ai.options.gloo.solo.io.FieldDefault](../ai.proto.sk/#fielddefault) | A list of defaults to be merged with the user input fields. These will NOT override the user input fields unless override is explicitly set to true. Some examples include setting the temperature, max_tokens, etc. Example overriding system field for Anthropic: ``` # Anthropic doesn't support a system chat type defaults: - field: "system" value: "answer all questions in french" ``` Example setting the temperature and max_tokens, overriding max_tokens: ``` defaults: - field: "temperature" value: 0.5 - field: "max_tokens" value: 100 ```. |
-| `routeType` | [.ai.options.gloo.solo.io.RouteSettings.RouteType](../ai.proto.sk/#routetype) | The type of route this is, either CHAT or COMPLETIONS. |
+| `routeType` | [.ai.options.gloo.solo.io.RouteSettings.RouteType](../ai.proto.sk/#routetype) | The type of route this is, currently only CHAT is supported. |
 
 
 
@@ -486,9 +486,9 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the OpenAI API This token will be placed into the `api-key` header. |
-| `apiVersion` | `string` | (REQUIRED) The version of the API to use. |
-| `endpoint` | `string` | (REQUIRED) The endpoint to use This should be the endpoint to the Azure OpenAI API, e.g. https://my-endpoint.openai.azure.com If the scheme isn't included it will be added. |
-| `deploymentName` | `string` | (REQUIRED) The deployment/model name to use. |
+| `apiVersion` | `string` | The version of the API to use This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}. |
+| `endpoint` | `string` | The endpoint to use This should be the endpoint to the Azure OpenAI API, e.g. https://my-endpoint.openai.azure.com If the scheme isn't included it will be added. This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}. |
+| `deploymentName` | `string` | The deployment/model name to use This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}. |
 
 
 

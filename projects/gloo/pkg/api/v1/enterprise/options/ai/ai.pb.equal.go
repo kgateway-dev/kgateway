@@ -910,17 +910,17 @@ func (m *UpstreamSpec_Multi) Equal(that interface{}) bool {
 		return false
 	}
 
-	if len(m.GetPools()) != len(target.GetPools()) {
+	if len(m.GetPriorities()) != len(target.GetPriorities()) {
 		return false
 	}
-	for idx, v := range m.GetPools() {
+	for idx, v := range m.GetPriorities() {
 
 		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetPools()[idx]) {
+			if !h.Equal(target.GetPriorities()[idx]) {
 				return false
 			}
 		} else {
-			if !proto.Equal(v, target.GetPools()[idx]) {
+			if !proto.Equal(v, target.GetPriorities()[idx]) {
 				return false
 			}
 		}

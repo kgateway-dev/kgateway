@@ -1007,7 +1007,7 @@ func (m *UpstreamSpec_Multi) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	for _, v := range m.GetPools() {
+	for _, v := range m.GetPriorities() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("")); err != nil {

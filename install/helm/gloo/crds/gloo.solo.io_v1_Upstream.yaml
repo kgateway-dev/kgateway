@@ -102,7 +102,7 @@ spec:
                     type: object
                   multi:
                     properties:
-                      pools:
+                      priorities:
                         items:
                           properties:
                             pool:

@@ -527,14 +527,14 @@ func (m *UpstreamSpec_Multi) Clone() proto.Message {
 	}
 	target = &UpstreamSpec_Multi{}
 
-	if m.GetPools() != nil {
-		target.Pools = make([]*UpstreamSpec_Multi_Priority, len(m.GetPools()))
-		for idx, v := range m.GetPools() {
+	if m.GetPriorities() != nil {
+		target.Priorities = make([]*UpstreamSpec_Multi_Priority, len(m.GetPriorities()))
+		for idx, v := range m.GetPriorities() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Pools[idx] = h.Clone().(*UpstreamSpec_Multi_Priority)
+				target.Priorities[idx] = h.Clone().(*UpstreamSpec_Multi_Priority)
 			} else {
-				target.Pools[idx] = proto.Clone(v).(*UpstreamSpec_Multi_Priority)
+				target.Priorities[idx] = proto.Clone(v).(*UpstreamSpec_Multi_Priority)
 			}
 
 		}
