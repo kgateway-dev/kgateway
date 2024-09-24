@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_struct "github.com/golang/protobuf/ptypes/struct"
+	google_golang_org_protobuf_types_known_structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
 // ensure the imports are used
@@ -36,13 +36,13 @@ func (m *Extensions) Clone() proto.Message {
 	target = &Extensions{}
 
 	if m.GetConfigs() != nil {
-		target.Configs = make(map[string]*github_com_golang_protobuf_ptypes_struct.Struct, len(m.GetConfigs()))
+		target.Configs = make(map[string]*google_golang_org_protobuf_types_known_structpb.Struct, len(m.GetConfigs()))
 		for k, v := range m.GetConfigs() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Configs[k] = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Struct)
+				target.Configs[k] = h.Clone().(*google_golang_org_protobuf_types_known_structpb.Struct)
 			} else {
-				target.Configs[k] = proto.Clone(v).(*github_com_golang_protobuf_ptypes_struct.Struct)
+				target.Configs[k] = proto.Clone(v).(*google_golang_org_protobuf_types_known_structpb.Struct)
 			}
 
 		}
@@ -60,9 +60,9 @@ func (m *Extension) Clone() proto.Message {
 	target = &Extension{}
 
 	if h, ok := interface{}(m.GetConfig()).(clone.Cloner); ok {
-		target.Config = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Struct)
+		target.Config = h.Clone().(*google_golang_org_protobuf_types_known_structpb.Struct)
 	} else {
-		target.Config = proto.Clone(m.GetConfig()).(*github_com_golang_protobuf_ptypes_struct.Struct)
+		target.Config = proto.Clone(m.GetConfig()).(*google_golang_org_protobuf_types_known_structpb.Struct)
 	}
 
 	return target

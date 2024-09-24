@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
+
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 
 	"github.com/avast/retry-go"
@@ -70,7 +72,10 @@ var _ = BeforeSuite(func() {
 		installGloo()
 	}
 
-	resourceClientset, err = kube2e.NewDefaultKubeResourceClientSet(ctx)
+	// We rely on the "new" kubernetes/e2e setup code, since it incorporates controller-runtime logging setup
+	clusterContext := cluster.MustKindContext("kind")
+
+	resourceClientset, err = kube2e.NewKubeResourceClientSet(ctx, clusterContext.RestConfig)
 	Expect(err).NotTo(HaveOccurred(), "can create kube resource client set")
 
 	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset).

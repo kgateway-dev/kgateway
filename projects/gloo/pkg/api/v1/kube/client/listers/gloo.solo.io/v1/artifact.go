@@ -20,14 +20,16 @@ package v1
 
 import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
 // ArtifactLister helps list Artifacts.
+// All objects returned here must be treated as read-only.
 type ArtifactLister interface {
 	// List lists all Artifacts in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Artifact, err error)
 	// Artifacts returns an object that can list and get Artifacts.
 	Artifacts(namespace string) ArtifactNamespaceLister
@@ -36,32 +38,27 @@ type ArtifactLister interface {
 
 // artifactLister implements the ArtifactLister interface.
 type artifactLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v1.Artifact]
 }
 
 // NewArtifactLister returns a new ArtifactLister.
 func NewArtifactLister(indexer cache.Indexer) ArtifactLister {
-	return &artifactLister{indexer: indexer}
-}
-
-// List lists all Artifacts in the indexer.
-func (s *artifactLister) List(selector labels.Selector) (ret []*v1.Artifact, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Artifact))
-	})
-	return ret, err
+	return &artifactLister{listers.New[*v1.Artifact](indexer, v1.Resource("artifact"))}
 }
 
 // Artifacts returns an object that can list and get Artifacts.
 func (s *artifactLister) Artifacts(namespace string) ArtifactNamespaceLister {
-	return artifactNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return artifactNamespaceLister{listers.NewNamespaced[*v1.Artifact](s.ResourceIndexer, namespace)}
 }
 
 // ArtifactNamespaceLister helps list and get Artifacts.
+// All objects returned here must be treated as read-only.
 type ArtifactNamespaceLister interface {
 	// List lists all Artifacts in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Artifact, err error)
 	// Get retrieves the Artifact from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1.Artifact, error)
 	ArtifactNamespaceListerExpansion
 }
@@ -69,26 +66,5 @@ type ArtifactNamespaceLister interface {
 // artifactNamespaceLister implements the ArtifactNamespaceLister
 // interface.
 type artifactNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all Artifacts in the indexer for a given namespace.
-func (s artifactNamespaceLister) List(selector labels.Selector) (ret []*v1.Artifact, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Artifact))
-	})
-	return ret, err
-}
-
-// Get retrieves the Artifact from the indexer for a given namespace and name.
-func (s artifactNamespaceLister) Get(name string) (*v1.Artifact, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("artifact"), name)
-	}
-	return obj.(*v1.Artifact), nil
+	listers.ResourceIndexer[*v1.Artifact]
 }
