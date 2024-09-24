@@ -171,8 +171,8 @@ func (i *TestInstallation) CreateIstioBugReport(ctx context.Context) {
 	cluster.CreateIstioBugReport(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext, i.GeneratedFiles.FailureDir)
 }
 
-// InstallGlooGatewayWithTestHelper is the common way to install Gloo Gateway, however it is not the recommended way
-// SoloTestHelper is an artifact of the legacy e2e tests
+// InstallGlooGatewayWithTestHelper is the common way to install Gloo Gateway.
+// However, it relies on a SoloTestHelper which is an artifact of the legacy e2e tests that we hope to deprecate
 func (i *TestInstallation) InstallGlooGatewayWithTestHelper(ctx context.Context, testHelper *helper.SoloTestHelper, timeout time.Duration) {
 	installFn := func(ctx context.Context) error {
 		return testHelper.InstallGloo(
@@ -198,6 +198,16 @@ func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installFn fun
 	clients, err := gloogateway.NewResourceClients(ctx, i.ClusterContext)
 	i.Assertions.Require.NoError(err)
 	i.ResourceClients = clients
+}
+
+// UninstallGlooGatewayWithTestHelper is the common way to uninstall Gloo Gateway.
+// However, it relies on a SoloTestHelper which is an artifact of the legacy e2e tests that we hope to deprecate
+func (i *TestInstallation) UninstallGlooGatewayWithTestHelper(ctx context.Context, testHelper *helper.SoloTestHelper) {
+	uninstallFn := func(ctx context.Context) error {
+		return testHelper.UninstallGlooAll()
+	}
+
+	i.UninstallGlooGateway(ctx, uninstallFn)
 }
 
 func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallFn func(ctx context.Context) error) {

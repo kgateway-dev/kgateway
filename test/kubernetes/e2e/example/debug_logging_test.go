@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/envutils"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
 	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/solo-io/skv2/codegen/util"
@@ -28,8 +27,9 @@ func TestInstallationWithDebugLogLevel(t *testing.T) {
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   installNs,
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "debug-example.yaml"),
+			InstallNamespace:          installNs,
+			ProfileValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "example-profile.yaml"),
+			ValuesManifestFile:        filepath.Join(util.MustGetThisDir(), "manifests", "debug-example.yaml"),
 		},
 	)
 
@@ -50,14 +50,10 @@ func TestInstallationWithDebugLogLevel(t *testing.T) {
 			testInstallation.PreFailHandler(ctx)
 		}
 
-		testInstallation.UninstallGlooGateway(ctx, func(ctx context.Context) error {
-			return testHelper.UninstallGlooAll()
-		})
+		testInstallation.UninstallGlooGatewayWithTestHelper(ctx, testHelper)
 	})
 
-	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
-		return testHelper.InstallGloo(ctx, 5*time.Minute, helper.WithExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
-	})
+	testInstallation.InstallGlooGatewayWithTestHelper(ctx, testHelper, 5*time.Minute)
 
 	// The name here is important for debuggability
 	// When tests are logged, they follow the shape TestSuiteName/SubtestName/TestName

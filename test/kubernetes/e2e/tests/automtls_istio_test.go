@@ -2,18 +2,16 @@ package tests_test
 
 import (
 	"context"
-	"os"
-	"path/filepath"
-	"testing"
-	"time"
-
 	"github.com/solo-io/gloo/pkg/utils/envutils"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	. "github.com/solo-io/gloo/test/kubernetes/e2e/tests"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/skv2/codegen/util"
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
 )
 
 // TestK8sGatewayIstioAutoMtls is the function which executes a series of tests against a given installation
@@ -23,8 +21,9 @@ func TestK8sGatewayIstioAutoMtls(t *testing.T) {
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   installNs,
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-automtls-k8s-gateway-test-helm.yaml"),
+			InstallNamespace:          installNs,
+			ProfileValuesManifestFile: EmptyProfilePath,
+			ValuesManifestFile:        filepath.Join(util.MustGetThisDir(), "manifests", "istio-automtls-k8s-gateway-test-helm.yaml"),
 		},
 	)
 
@@ -52,9 +51,7 @@ func TestK8sGatewayIstioAutoMtls(t *testing.T) {
 			testInstallation.CreateIstioBugReport(ctx)
 		}
 
-		testInstallation.UninstallGlooGateway(ctx, func(ctx context.Context) error {
-			return testHelper.UninstallGlooAll()
-		})
+		testInstallation.UninstallGlooGatewayWithTestHelper(ctx, testHelper)
 
 		// Uninstall Istio
 		err = testInstallation.UninstallIstio()
@@ -70,10 +67,8 @@ func TestK8sGatewayIstioAutoMtls(t *testing.T) {
 	}
 
 	// Install Gloo Gateway
-	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
-		// istio proxy and sds are added to gateway and take a little longer to start up
-		return testHelper.InstallGloo(ctx, 10*time.Minute, helper.WithExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
-	})
+	// istio proxy and sds are added to gateway and take a little longer to start up
+	testInstallation.InstallGlooGatewayWithTestHelper(ctx, testHelper, 10*time.Minute)
 
 	AutomtlsIstioSuiteRunner().Run(ctx, t, testInstallation)
 }

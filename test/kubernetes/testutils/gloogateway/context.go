@@ -47,7 +47,10 @@ type Context struct {
 	ChartUri string
 }
 
+// Validate returns an error if the defined Context is invalid for a test
 func (c *Context) Validate() error {
+	// We are intentionally restrictive, and expect a ProfileValuesManifestFile to be defined.
+	// This is because we want all existing and future tests to rely on this concept
 	if err := c.validateValuesManifest("ProfileValuesManifestFile", c.ProfileValuesManifestFile); err != nil {
 		return err
 	}

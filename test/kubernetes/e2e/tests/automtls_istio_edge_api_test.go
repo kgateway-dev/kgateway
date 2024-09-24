@@ -52,9 +52,7 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 			testInstallation.CreateIstioBugReport(ctx)
 		}
 
-		testInstallation.UninstallGlooGateway(ctx, func(ctx context.Context) error {
-			return testHelper.UninstallGlooAll()
-		})
+		testInstallation.UninstallGlooGatewayWithTestHelper(ctx, testHelper)
 
 		// Uninstall Istio
 		err = testInstallation.UninstallIstio()

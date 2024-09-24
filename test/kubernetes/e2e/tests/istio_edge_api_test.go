@@ -11,7 +11,6 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	. "github.com/solo-io/gloo/test/kubernetes/e2e/tests"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
 	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/solo-io/skv2/codegen/util"
@@ -25,8 +24,9 @@ func TestIstioEdgeApiGateway(t *testing.T) {
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   installNs,
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-edge-gateway-test-helm.yaml"),
+			InstallNamespace:          installNs,
+			ProfileValuesManifestFile: EmptyProfilePath,
+			ValuesManifestFile:        filepath.Join(util.MustGetThisDir(), "manifests", "istio-edge-gateway-test-helm.yaml"),
 		},
 	)
 
@@ -55,9 +55,7 @@ func TestIstioEdgeApiGateway(t *testing.T) {
 			testInstallation.CreateIstioBugReport(ctx)
 		}
 
-		testInstallation.UninstallGlooGateway(ctx, func(ctx context.Context) error {
-			return testHelper.UninstallGlooAll()
-		})
+		testInstallation.UninstallGlooGatewayWithTestHelper(ctx, testHelper)
 
 		// Uninstall Istio
 		err = testInstallation.UninstallIstio()
@@ -73,9 +71,7 @@ func TestIstioEdgeApiGateway(t *testing.T) {
 	}
 
 	// Install Gloo Gateway with only Edge APIs enabled
-	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
-		return testHelper.InstallGloo(ctx, 5*time.Minute, helper.WithExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
-	})
+	testInstallation.InstallGlooGatewayWithTestHelper(ctx, testHelper, 5*time.Minute)
 
 	IstioEdgeApiSuiteRunner().Run(ctx, t, testInstallation)
 }

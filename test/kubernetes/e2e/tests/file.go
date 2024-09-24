@@ -14,5 +14,9 @@ func ProfilePath(path string) string {
 }
 
 var (
+	// EmptyProfilePath relies on an "empty" profile.
+	// We should NOT merge with this code. The idea is to create a structure for using profiles, and then introduce them.
 	EmptyProfilePath = ProfilePath("empty.yaml")
+
+	EdgeGatewayProfilePath = ProfilePath("edge-gateway.yaml")
 )

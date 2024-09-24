@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/envutils"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/skv2/codegen/util"
 
@@ -54,9 +53,7 @@ func TestGlooctlIstioInjectEdgeApiGateway(t *testing.T) {
 			testInstallation.CreateIstioBugReport(ctx)
 		}
 
-		testInstallation.UninstallGlooGateway(ctx, func(ctx context.Context) error {
-			return testHelper.UninstallGlooAll()
-		})
+		testInstallation.UninstallGlooGatewayWithTestHelper(ctx, testHelper)
 
 		// Uninstall Istio
 		err = testInstallation.UninstallIstio()
@@ -72,9 +69,7 @@ func TestGlooctlIstioInjectEdgeApiGateway(t *testing.T) {
 	}
 
 	// Install Gloo Gateway with only Gloo Edge Gateway APIs enabled
-	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
-		return testHelper.InstallGloo(ctx, 5*time.Minute, helper.WithExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
-	})
+	testInstallation.InstallGlooGatewayWithTestHelper(ctx, testHelper, 5*time.Minute)
 
 	GlooctlIstioInjectSuiteRunner().Run(ctx, t, testInstallation)
 }
