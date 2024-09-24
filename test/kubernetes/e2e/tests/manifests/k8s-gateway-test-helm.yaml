@@ -33,6 +33,7 @@ gloo:
   deployment:
     replicas: 1
     livenessProbeEnabled: true
+    # Make sure tests can pass with resource requests and limits
     resources:
       requests:
         cpu: 500m
