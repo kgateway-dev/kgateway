@@ -13,13 +13,13 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
-
-	github_com_golang_protobuf_ptypes_struct "github.com/golang/protobuf/ptypes/struct"
-
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
-
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	google_golang_org_protobuf_types_known_durationpb "google.golang.org/protobuf/types/known/durationpb"
+
+	google_golang_org_protobuf_types_known_structpb "google.golang.org/protobuf/types/known/structpb"
+
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -60,9 +60,9 @@ func (m *RequestTemplate) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetBody()).(clone.Cloner); ok {
-		target.Body = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Value)
+		target.Body = h.Clone().(*google_golang_org_protobuf_types_known_structpb.Value)
 	} else {
-		target.Body = proto.Clone(m.GetBody()).(*github_com_golang_protobuf_ptypes_struct.Value)
+		target.Body = proto.Clone(m.GetBody()).(*google_golang_org_protobuf_types_known_structpb.Value)
 	}
 
 	return target
@@ -99,9 +99,9 @@ func (m *GrpcRequestTemplate) Clone() proto.Message {
 	target = &GrpcRequestTemplate{}
 
 	if h, ok := interface{}(m.GetOutgoingMessageJson()).(clone.Cloner); ok {
-		target.OutgoingMessageJson = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Value)
+		target.OutgoingMessageJson = h.Clone().(*google_golang_org_protobuf_types_known_structpb.Value)
 	} else {
-		target.OutgoingMessageJson = proto.Clone(m.GetOutgoingMessageJson()).(*github_com_golang_protobuf_ptypes_struct.Value)
+		target.OutgoingMessageJson = proto.Clone(m.GetOutgoingMessageJson()).(*google_golang_org_protobuf_types_known_structpb.Value)
 	}
 
 	target.ServiceName = m.GetServiceName()
@@ -149,9 +149,9 @@ func (m *RESTResolver) Clone() proto.Message {
 	target.SpanName = m.GetSpanName()
 
 	if h, ok := interface{}(m.GetTimeout()).(clone.Cloner); ok {
-		target.Timeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.Timeout = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.Timeout = proto.Clone(m.GetTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.Timeout = proto.Clone(m.GetTimeout()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	return target
@@ -227,9 +227,9 @@ func (m *GrpcResolver) Clone() proto.Message {
 	target.SpanName = m.GetSpanName()
 
 	if h, ok := interface{}(m.GetTimeout()).(clone.Cloner); ok {
-		target.Timeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.Timeout = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.Timeout = proto.Clone(m.GetTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.Timeout = proto.Clone(m.GetTimeout()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	return target
@@ -273,11 +273,11 @@ func (m *MockResolver) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetSyncResponse()).(clone.Cloner); ok {
 			target.Response = &MockResolver_SyncResponse{
-				SyncResponse: h.Clone().(*github_com_golang_protobuf_ptypes_struct.Value),
+				SyncResponse: h.Clone().(*google_golang_org_protobuf_types_known_structpb.Value),
 			}
 		} else {
 			target.Response = &MockResolver_SyncResponse{
-				SyncResponse: proto.Clone(m.GetSyncResponse()).(*github_com_golang_protobuf_ptypes_struct.Value),
+				SyncResponse: proto.Clone(m.GetSyncResponse()).(*google_golang_org_protobuf_types_known_structpb.Value),
 			}
 		}
 
@@ -313,9 +313,9 @@ func (m *Resolution) Clone() proto.Message {
 	target = &Resolution{}
 
 	if h, ok := interface{}(m.GetStatPrefix()).(clone.Cloner); ok {
-		target.StatPrefix = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.StatPrefix = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	} else {
-		target.StatPrefix = proto.Clone(m.GetStatPrefix()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.StatPrefix = proto.Clone(m.GetStatPrefix()).(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	}
 
 	switch m.Resolver.(type) {
@@ -382,9 +382,9 @@ func (m *GraphQLApi) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetStatPrefix()).(clone.Cloner); ok {
-		target.StatPrefix = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.StatPrefix = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	} else {
-		target.StatPrefix = proto.Clone(m.GetStatPrefix()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.StatPrefix = proto.Clone(m.GetStatPrefix()).(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	}
 
 	if h, ok := interface{}(m.GetPersistedQueryCacheConfig()).(clone.Cloner); ok {
@@ -601,15 +601,15 @@ func (m *MockResolver_AsyncResponse) Clone() proto.Message {
 	target = &MockResolver_AsyncResponse{}
 
 	if h, ok := interface{}(m.GetResponse()).(clone.Cloner); ok {
-		target.Response = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Value)
+		target.Response = h.Clone().(*google_golang_org_protobuf_types_known_structpb.Value)
 	} else {
-		target.Response = proto.Clone(m.GetResponse()).(*github_com_golang_protobuf_ptypes_struct.Value)
+		target.Response = proto.Clone(m.GetResponse()).(*google_golang_org_protobuf_types_known_structpb.Value)
 	}
 
 	if h, ok := interface{}(m.GetDelay()).(clone.Cloner); ok {
-		target.Delay = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.Delay = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.Delay = proto.Clone(m.GetDelay()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.Delay = proto.Clone(m.GetDelay()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	return target
@@ -706,9 +706,9 @@ func (m *Executor_Local_LocalExecutorOptions) Clone() proto.Message {
 	target = &Executor_Local_LocalExecutorOptions{}
 
 	if h, ok := interface{}(m.GetMaxDepth()).(clone.Cloner); ok {
-		target.MaxDepth = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxDepth = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.MaxDepth = proto.Clone(m.GetMaxDepth()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxDepth = proto.Clone(m.GetMaxDepth()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	return target
