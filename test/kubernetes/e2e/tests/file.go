@@ -10,7 +10,7 @@ func ManifestPath(path string) string {
 }
 
 func ProfilePath(path string) string {
-	return filepath.Join(util.MustGetThisDir(), "manifests", "profile", path)
+	return filepath.Join(util.MustGetThisDir(), "manifests", "profiles", path)
 }
 
 var (

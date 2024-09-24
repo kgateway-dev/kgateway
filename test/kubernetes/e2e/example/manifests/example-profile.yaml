@@ -1,4 +1,5 @@
 # See kubernetes/e2e/tests/manifests/profiles for an explanation of test profiles
+
 global:
   image:
     pullPolicy: IfNotPresent
@@ -15,6 +16,7 @@ kubeGateway:
   enabled: false
 
 gloo:
+  # We set the profile log level to debug, so that a test can override it
   logLevel: debug
 
 # This is an example profile, so we disable as many components as possible

@@ -20,16 +20,16 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )
 
-// TestInstallationWithDebugLogLevel is the function which executes a series of tests against a given installation
-func TestInstallationWithDebugLogLevel(t *testing.T) {
+// TestInstallationWithInfoLogLevel is the function which executes a series of tests against a given installation
+func TestInstallationWithInfoLogLevel(t *testing.T) {
 	ctx := context.Background()
-	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "automtls-istio-edge-api-test")
+	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "info-log-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
 			InstallNamespace:          installNs,
 			ProfileValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "example-profile.yaml"),
-			ValuesManifestFile:        filepath.Join(util.MustGetThisDir(), "manifests", "debug-example.yaml"),
+			ValuesManifestFile:        filepath.Join(util.MustGetThisDir(), "manifests", "info-example.yaml"),
 		},
 	)
 
