@@ -1459,7 +1459,7 @@ type OAuth2_OidcAuthorizationCode struct {
 type OAuth2_AccessTokenValidation struct {
 	// provide the access token on the request and let gloo handle authorization.
 	//
-	// according to https://tools.ietf.org/html/rfc6750 you can pass tokens through:
+	// according to https://datatracker.ietf.org/doc/html/rfc6750 you can pass tokens through:
 	// - form-encoded body parameter. recommended, more likely to appear. e.g.: Authorization: Bearer mytoken123
 	// - URI query parameter e.g. access_token=mytoken123
 	// - and (preferably) secure cookies
@@ -1890,7 +1890,7 @@ func (x *DiscoveryOverride) GetEndSessionEndpoint() string {
 	return ""
 }
 
-// The json web key set (JWKS) (https://tools.ietf.org/html/rfc7517) is discovered at an interval
+// The json web key set (JWKS) (https://datatracker.ietf.org/doc/html/rfc7517) is discovered at an interval
 // from a remote source. When keys rotate in the remote source, there may be a delay in the
 // local source picking up those new keys. Therefore, a user could execute a request with a token
 // that has been signed by a key in the remote JWKS, but the local cache doesn't have the key yet.
@@ -2750,12 +2750,12 @@ func (x *PlainOAuth2) GetDisableClientSecret() *wrappers.BoolValue {
 // Defines how JSON Web Token (JWT) access tokens are validated.
 //
 // Tokens are validated using a JSON Web Key Set (as defined in
-// [Section 5 of RFC7517](https://tools.ietf.org/html/rfc7517#section-5)),
+// [Section 5 of RFC7517](https://datatracker.ietf.org/doc/html/rfc7517#section-5)),
 // which can be either inlined in the configuration or fetched from a remote location via HTTP.
 // Any keys in the JWKS that are not intended for signature verification (i.e. whose
-// ["use" parameter](https://tools.ietf.org/html/rfc7517#section-4.2) is not "sig")
+// ["use" parameter](https://datatracker.ietf.org/doc/html/rfc7517#section-4.2) is not "sig")
 // will be ignored by the system, as will keys that do not specify a
-// ["kid" (Key ID) parameter](https://tools.ietf.org/html/rfc7517#section-4.2).
+// ["kid" (Key ID) parameter](https://datatracker.ietf.org/doc/html/rfc7517#section-4.2).
 //
 // The JWT to be validated must define non-empty "kid" and "alg" headers. The "kid" header
 // determines which key in the JWKS will be used to verify the signature of the token;
@@ -2859,7 +2859,7 @@ func (*JwtValidation_RemoteJwks_) isJwtValidation_JwksSourceSpecifier() {}
 func (*JwtValidation_LocalJwks_) isJwtValidation_JwksSourceSpecifier() {}
 
 // Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated
-// [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662)
+// [OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662)
 //
 // If the token introspection url requires client authentication, both the client_id and client_secret
 // are required. Unless disable_client_secret is set, when only one is provided, the config will be rejected.
@@ -2869,7 +2869,7 @@ type IntrospectionValidation struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint.
+	// The URL for the [OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662) endpoint.
 	// If provided, the (opaque) access token provided or received from the oauth authorization endpoint
 	// will be validated against this endpoint, or locally cached responses for this access token.
 	//
@@ -2882,7 +2882,7 @@ type IntrospectionValidation struct {
 	// Your client secret as registered with the issuer.
 	// Optional: Use if the token introspection url requires client authentication.
 	ClientSecretRef *core.ResourceRef `protobuf:"bytes,3,opt,name=client_secret_ref,json=clientSecretRef,proto3" json:"client_secret_ref,omitempty"`
-	// The name of the [introspection response](https://tools.ietf.org/html/rfc7662#section-2.2)
+	// The name of the [introspection response](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2)
 	// attribute that contains the ID of the resource owner (e.g. `sub`, `username`).
 	// If specified, the external auth server will use the value of the attribute as the identifier of the
 	// authenticated user and add it to the request headers and/or dynamic metadata (depending on how the
@@ -3102,7 +3102,7 @@ type isAccessTokenValidation_ValidationType interface {
 }
 
 type AccessTokenValidation_IntrospectionUrl struct {
-	// The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint.
+	// The URL for the [OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662) endpoint.
 	// If provided, the (opaque) access token provided or received from the oauth authorization endpoint
 	// will be validated against this endpoint, or locally cached responses for this access token.
 	// This field is deprecated as it does not support authenticated introspection requests
@@ -3121,7 +3121,7 @@ type AccessTokenValidation_Jwt struct {
 
 type AccessTokenValidation_Introspection struct {
 	// Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated
-	// [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) specification.
+	// [OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662) specification.
 	//
 	// +kubebuilder:validation:XValidation:rule="has(self.clientId) && size(self.clientId) > 0 ? has(self.clientSecretRef) || (has(self.disableClientSecret) && self.disableClientSecret) : !has(self.clientSecretRef)",message="If clientId is set, clientSecretRef must be set or disableClientSecret must be true. Otherwise, clientSecretRef must not be set."
 	Introspection *IntrospectionValidation `protobuf:"bytes,3,opt,name=introspection,proto3,oneof"`
@@ -3141,7 +3141,7 @@ type AccessTokenValidation_RequiredScopes struct {
 	// Require access token to have all of the scopes in the given list.
 	// This configuration applies to both opaque and JWT tokens. In the case of opaque tokens,
 	// this will check the scopes returned in the "scope" member of introspection response
-	// (as described in [Section 2.2 of RFC7662](https://tools.ietf.org/html/rfc7662#section-2.2).
+	// (as described in [Section 2.2 of RFC7662](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2).
 	// In case of JWTs the scopes to be validated are expected to be contained in the "scope" claim of the
 	// token in the form of a space-separated string.
 	// Omitting this field means that scope validation will be skipped.
@@ -5819,7 +5819,7 @@ func (x *BasicAuth_Apr_SaltedHashedPassword) GetHashedPassword() string {
 	return ""
 }
 
-// Sha1 encryption type (https://tools.ietf.org/html/rfc3174)
+// Sha1 encryption type (https://datatracker.ietf.org/doc/html/rfc3174)
 // Sha1 is considered insecure and is not recommended for production use
 type BasicAuth_EncryptionType_Sha1 struct {
 	state         protoimpl.MessageState
@@ -5912,7 +5912,7 @@ type UserSession_InternalSession struct {
 	KeyPrefix string `protobuf:"bytes,2,opt,name=key_prefix,json=keyPrefix,proto3" json:"key_prefix,omitempty"`
 	// Domain used to validate against requests in order to ensure that request host name matches target domain.
 	// If the target domain is provided will prevent requests that do not match the target domain according to
-	// the domain matching specifications in RFC 6265. For more information, see https://tools.ietf.org/html/rfc6265#section-5.1.3
+	// the domain matching specifications in RFC 6265. For more information, see https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.3
 	TargetDomain string `protobuf:"bytes,3,opt,name=target_domain,json=targetDomain,proto3" json:"target_domain,omitempty"`
 }
 
@@ -5990,7 +5990,7 @@ type UserSession_RedisSession struct {
 	PreExpiryBuffer *duration.Duration `protobuf:"bytes,5,opt,name=pre_expiry_buffer,json=preExpiryBuffer,proto3" json:"pre_expiry_buffer,omitempty"`
 	// Domain used to validate against requests in order to ensure that request host name matches target domain.
 	// If the target domain is provided will prevent requests that do not match the target domain according to
-	// the domain matching specifications in RFC 6265. For more information, see https://tools.ietf.org/html/rfc6265#section-5.1.3
+	// the domain matching specifications in RFC 6265. For more information, see https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.3
 	TargetDomain string `protobuf:"bytes,6,opt,name=target_domain,json=targetDomain,proto3" json:"target_domain,omitempty"`
 	// If set, the name of the header that will include the randomly generated session id
 	// This would be used as part of the code exchange with the Oauth2 token endpoint
@@ -8402,7 +8402,7 @@ type isExtAuthConfig_AccessTokenValidationConfig_ValidationType interface {
 }
 
 type ExtAuthConfig_AccessTokenValidationConfig_IntrospectionUrl struct {
-	// The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint.
+	// The URL for the [OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662) endpoint.
 	// If provided, the (opaque) access token provided or received from the oauth authorization endpoint
 	// will be validated against this endpoint, or locally cached responses for this access token.
 	// This field is deprecated as it does not support authenticated introspection requests
@@ -8419,7 +8419,7 @@ type ExtAuthConfig_AccessTokenValidationConfig_Jwt struct {
 
 type ExtAuthConfig_AccessTokenValidationConfig_Introspection struct {
 	// Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated
-	// [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) specification.
+	// [OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662) specification.
 	Introspection *ExtAuthConfig_AccessTokenValidationConfig_IntrospectionValidation `protobuf:"bytes,3,opt,name=introspection,proto3,oneof"`
 }
 
@@ -8440,7 +8440,7 @@ type ExtAuthConfig_AccessTokenValidationConfig_RequiredScopes struct {
 	// Require access token to have all of the scopes in the given list.
 	// This configuration applies to both opaque and JWT tokens. In the case of opaque tokens,
 	// this will check the scopes returned in the "scope" member of introspection response
-	// (as described in [Section 2.2 of RFC7662](https://tools.ietf.org/html/rfc7662#section-2.2).
+	// (as described in [Section 2.2 of RFC7662](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2).
 	// In case of JWTs the scopes to be validated are expected to be contained in the "scope" claim of the
 	// token in the form of a space-separated string.
 	// Omitting this field means that scope validation will be skipped.
@@ -8715,7 +8715,7 @@ type ExtAuthConfig_OAuth2Config_OidcAuthorizationCode struct {
 type ExtAuthConfig_OAuth2Config_AccessTokenValidationConfig struct {
 	// provide the access token on the request and let gloo handle authorization.
 	//
-	// according to https://tools.ietf.org/html/rfc6750 you can pass tokens through:
+	// according to https://datatracker.ietf.org/doc/html/rfc6750 you can pass tokens through:
 	// - form-encoded body parameter. recommended, more likely to appear. e.g.: Authorization: Bearer mytoken123
 	// - URI query parameter e.g. access_token=mytoken123
 	// - and (preferably) secure cookies
@@ -10291,12 +10291,12 @@ func (x *ExtAuthConfig_OidcAuthorizationCodeConfig_FrontChannelLogout) GetPath()
 // Defines how JSON Web Token (JWT) access tokens are validated.
 //
 // Tokens are validated using a JSON Web Key Set (as defined in
-// [Section 5 of RFC7517](https://tools.ietf.org/html/rfc7517#section-5)),
+// [Section 5 of RFC7517](https://datatracker.ietf.org/doc/html/rfc7517#section-5)),
 // which can be either inlined in the configuration or fetched from a remote location via HTTP.
 // Any keys in the JWKS that are not intended for signature verification (i.e. whose
-// ["use" parameter](https://tools.ietf.org/html/rfc7517#section-4.2) is not "sig")
+// ["use" parameter](https://datatracker.ietf.org/doc/html/rfc7517#section-4.2) is not "sig")
 // will be ignored by the system, as will keys that do not specify a
-// ["kid" (Key ID) parameter](https://tools.ietf.org/html/rfc7517#section-4.2).
+// ["kid" (Key ID) parameter](https://datatracker.ietf.org/doc/html/rfc7517#section-4.2).
 //
 // The JWT to be validated must define non-empty "kid" and "alg" headers. The "kid" header
 // determines which key in the JWKS will be used to verify the signature of the token;
@@ -10402,7 +10402,7 @@ func (*ExtAuthConfig_AccessTokenValidationConfig_JwtValidation_LocalJwks_) isExt
 }
 
 // Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated
-// [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662)
+// [OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662)
 //
 // If the token introspection url requires client authentication, both the client_id and client_secret
 // are required. If only one is provided, the config will be rejected.
@@ -10412,7 +10412,7 @@ type ExtAuthConfig_AccessTokenValidationConfig_IntrospectionValidation struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint.
+	// The URL for the [OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662) endpoint.
 	// If provided, the (opaque) access token provided or received from the oauth authorization endpoint
 	// will be validated against this endpoint, or locally cached responses for this access token.
 	IntrospectionUrl string `protobuf:"bytes,1,opt,name=introspection_url,json=introspectionUrl,proto3" json:"introspection_url,omitempty"`
@@ -10422,7 +10422,7 @@ type ExtAuthConfig_AccessTokenValidationConfig_IntrospectionValidation struct {
 	// Your client secret as registered with the issuer.
 	// Optional: Use if the token introspection url requires client authentication.
 	ClientSecret string `protobuf:"bytes,3,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
-	// The name of the [introspection response](https://tools.ietf.org/html/rfc7662#section-2.2)
+	// The name of the [introspection response](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2)
 	// attribute that contains the ID of the resource owner (e.g. `sub`, `username`).
 	// If specified, the external auth server will use the value of the attribute as the identifier of the
 	// authenticated user and add it to the request headers and/or dynamic metadata (depending on how the
