@@ -19,7 +19,7 @@ type testingSuite struct {
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
 	return &testingSuite{
-		base.NewBaseTestingSuite(ctx, testInst, e2e.MustTestHelper(ctx, testInst), setupSuite, testCases),
+		base.NewBaseTestingSuite(ctx, testInst, setupSuite, testCases),
 	}
 }
 
@@ -27,12 +27,12 @@ func (s *testingSuite) SetupSuite() {
 	s.BaseTestingSuite.SetupSuite()
 
 	// Apply a VS in the install namespace
-	s.applyFile(installNamespaceVSManifest, "-n", s.TestHelper.InstallNamespace)
+	s.applyFile(installNamespaceVSManifest, "-n", s.TestInstallation.Metadata.InstallNamespace)
 }
 
 func (s *testingSuite) TearDownSuite() {
 	// Delete VS in the install namespace
-	s.deleteFile(installNamespaceVSManifest, "-n", s.TestHelper.InstallNamespace)
+	s.deleteFile(installNamespaceVSManifest, "-n", s.TestInstallation.Metadata.InstallNamespace)
 
 	s.BaseTestingSuite.TearDownSuite()
 }
@@ -82,7 +82,7 @@ func (s *testingSuite) TestWatchedNamespaceValidation() {
 	s.removeInconsequentialLabelFromSecondNamespace()
 
 	s.Eventually(func() bool {
-		err := s.TestHelper.ApplyFile(s.Ctx, installNamespaceWithRandomUpstreamVSManifest, "-n", s.TestHelper.InstallNamespace)
+		err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, installNamespaceWithRandomUpstreamVSManifest, "-n", s.TestInstallation.Metadata.InstallNamespace)
 		return err == nil
 	}, time.Minute*2, time.Second*10)
 
@@ -90,14 +90,14 @@ func (s *testingSuite) TestWatchedNamespaceValidation() {
 	s.TestInstallation.Assertions.CurlEventuallyRespondsWithStatus(s.Ctx, "/get", http.StatusOK)
 
 	// Trying to unwatch the namespace that has an upstream referenced in another namespace leads to an error
-	_, errOut, err := s.TestHelper.Execute(s.Ctx, "label", "ns", "random", "label-")
+	_, errOut, err := s.TestInstallation.Actions.Kubectl().Execute(s.Ctx, "label", "ns", "random", "label-")
 
 	s.Contains(errOut, `admission webhook "gloo.namespace-selector.svc" denied the request: resource incompatible with current Gloo snapshot`)
 	s.Contains(errOut, `Route Warning: InvalidDestinationWarning. Reason: *v1.Upstream { random.postman-echo } not found`)
 	s.Error(err)
 
 	// Trying to delete the namespace also errors out
-	_, errOut, err = s.TestHelper.Execute(s.Ctx, "delete", "ns", "random")
+	_, errOut, err = s.TestInstallation.Actions.Kubectl().Execute(s.Ctx, "delete", "ns", "random")
 	s.Contains(errOut, `admission webhook "gloo.namespace-selector.svc" denied the request: resource incompatible with current Gloo snapshot`)
 	s.Contains(errOut, `Route Warning: InvalidDestinationWarning. Reason: *v1.Upstream { random.postman-echo } not found`)
 	s.Error(err)
@@ -106,7 +106,7 @@ func (s *testingSuite) TestWatchedNamespaceValidation() {
 	s.addInconsequentialLabelToSecondNamespace()
 	s.removeInconsequentialLabelFromSecondNamespace()
 
-	s.deleteFile(installNamespaceWithRandomUpstreamVSManifest, "-n", s.TestHelper.InstallNamespace)
+	s.deleteFile(installNamespaceWithRandomUpstreamVSManifest, "-n", s.TestInstallation.Metadata.InstallNamespace)
 
 	s.unwatchNamespace("label")
 
@@ -124,7 +124,7 @@ func (s *testingSuite) TestWatchedNamespaceValidation() {
 func (s *testingSuite) labelSecondNamespaceAsWatched(key, value string) {
 	// Label the `random` namespace with the watchNamespaceSelector labels
 	// kubectl label ns random watch=this
-	out, _, err := s.TestHelper.Execute(s.Ctx, "label", "ns", "random", key+"="+value)
+	out, _, err := s.TestInstallation.Actions.Kubectl().Execute(s.Ctx, "label", "ns", "random", key+"="+value)
 	s.Assertions.Contains(out, "namespace/random labeled")
 	s.NoError(err)
 }
@@ -132,7 +132,7 @@ func (s *testingSuite) labelSecondNamespaceAsWatched(key, value string) {
 func (s *testingSuite) unwatchNamespace(key string) {
 	// Label the `random` namespace with the watchNamespaceSelector labels
 	// kubectl label ns random watch-
-	out, _, err := s.TestHelper.Execute(s.Ctx, "label", "ns", "random", key+"-")
+	out, _, err := s.TestInstallation.Actions.Kubectl().Execute(s.Ctx, "label", "ns", "random", key+"-")
 	s.Assertions.Contains(out, "namespace/random unlabeled")
 	s.NoError(err)
 }
@@ -140,7 +140,7 @@ func (s *testingSuite) unwatchNamespace(key string) {
 func (s *testingSuite) addInconsequentialLabelToSecondNamespace() {
 	// label the `random` namespace
 	// kubectl label ns random inconsequential=label
-	out, _, err := s.TestHelper.Execute(s.Ctx, "label", "ns", "random", "inconsequential=label")
+	out, _, err := s.TestInstallation.Actions.Kubectl().Execute(s.Ctx, "label", "ns", "random", "inconsequential=label")
 	s.Assertions.Contains(out, "namespace/random labeled")
 	s.NoError(err)
 }
@@ -148,17 +148,17 @@ func (s *testingSuite) addInconsequentialLabelToSecondNamespace() {
 func (s *testingSuite) removeInconsequentialLabelFromSecondNamespace() {
 	// unlabel the `random` namespace
 	// kubectl label ns random inconsequential-
-	out, _, err := s.TestHelper.Execute(s.Ctx, "label", "ns", "random", "inconsequential-")
+	out, _, err := s.TestInstallation.Actions.Kubectl().Execute(s.Ctx, "label", "ns", "random", "inconsequential-")
 	s.Assertions.Contains(out, "namespace/random unlabeled")
 	s.NoError(err)
 }
 
 func (s *testingSuite) applyFile(filename string, extraArgs ...string) {
-	err := s.TestHelper.ApplyFile(s.Ctx, filename, extraArgs...)
+	err := s.TestInstallation.Actions.Kubectl().ApplyFile(s.Ctx, filename, extraArgs...)
 	s.NoError(err)
 }
 
 func (s *testingSuite) deleteFile(filename string, extraArgs ...string) {
-	err := s.TestHelper.DeleteFile(s.Ctx, filename, extraArgs...)
+	err := s.TestInstallation.Actions.Kubectl().DeleteFile(s.Ctx, filename, extraArgs...)
 	s.NoError(err)
 }
