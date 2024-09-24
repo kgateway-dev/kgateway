@@ -43,7 +43,7 @@ var _ = Describe("Plugin", func() {
 	})
 	It("converts the header manipulation config for weighted destinations", func() {
 		out := &envoy_config_route_v3.WeightedCluster_ClusterWeight{}
-		err := p.ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
+		err := p.ProcessWeightedDestination(plugins.RouteActionParams{}, &v1.WeightedDestination{
 			Options: &v1.WeightedDestinationOptions{
 				HeaderManipulation: testHeaderManip,
 			},
@@ -182,7 +182,9 @@ var _ = Describe("Plugin", func() {
 			weightedDestinationGoodUs = &v1.Destination{DestinationType: &v1.Destination_Upstream{Upstream: &coreV1.ResourceRef{Name: "some-us", Namespace: "bar"}}}
 		})
 		It("Errors with a WeightedDestination where the upstream namespace doesn't match the secret", func() {
-			routeParamsWithSecret := plugins.RouteParams{VirtualHostParams: plugins.VirtualHostParams{Params: paramsWithSecret}}
+			routeParamsWithSecret := plugins.RouteActionParams{
+				RouteParams: plugins.RouteParams{VirtualHostParams: plugins.VirtualHostParams{Params: paramsWithSecret}},
+			}
 			out := &envoy_config_route_v3.WeightedCluster_ClusterWeight{}
 			in := &v1.WeightedDestination{
 				Options:     &v1.WeightedDestinationOptions{HeaderManipulation: testHeaderManipWithSecrets},
@@ -193,7 +195,9 @@ var _ = Describe("Plugin", func() {
 			Expect(err).To(MatchError("list did not find secret bar.foo"))
 		})
 		It("Does not error with a good WeightedDestination", func() {
-			routeParamsWithSecret := plugins.RouteParams{VirtualHostParams: plugins.VirtualHostParams{Params: paramsWithSecret}}
+			routeParamsWithSecret := plugins.RouteActionParams{
+				RouteParams: plugins.RouteParams{VirtualHostParams: plugins.VirtualHostParams{Params: paramsWithSecret}},
+			}
 			out := &envoy_config_route_v3.WeightedCluster_ClusterWeight{}
 			in := &v1.WeightedDestination{
 				Options:     &v1.WeightedDestinationOptions{HeaderManipulation: testHeaderManipWithSecrets},
