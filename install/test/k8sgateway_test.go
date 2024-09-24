@@ -46,7 +46,11 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 				// make sure the env variable that enables the controller is set
 				deployment := getDeployment(testManifest, namespace, kubeutils.GlooDeploymentName)
 				Expect(deployment.Spec.Template.Spec.Containers).To(HaveLen(1), "should have exactly 1 container")
-				expectEnvVarExists(deployment.Spec.Template.Spec.Containers[0], constants.GlooGatewayEnableK8sGwControllerEnv, "true")
+				expectEnvVarExists(deployment.Spec.Template.Spec.Containers[0],
+					corev1.EnvVar{
+						Name:  constants.GlooGatewayEnableK8sGwControllerEnv,
+						Value: "true",
+					})
 
 				// make sure the GatewayClass and RBAC resources exist (note, since they are all cluster-scoped, they do not have a namespace)
 				testManifest.ExpectUnstructured("GatewayClass", "", "gloo-gateway").NotTo(BeNil())
