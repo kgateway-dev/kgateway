@@ -13,9 +13,9 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
+	google_golang_org_protobuf_types_known_durationpb "google.golang.org/protobuf/types/known/durationpb"
 
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -38,15 +38,15 @@ func (m *ConnectionLimit) Clone() proto.Message {
 	target = &ConnectionLimit{}
 
 	if h, ok := interface{}(m.GetMaxActiveConnections()).(clone.Cloner); ok {
-		target.MaxActiveConnections = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxActiveConnections = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.MaxActiveConnections = proto.Clone(m.GetMaxActiveConnections()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxActiveConnections = proto.Clone(m.GetMaxActiveConnections()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	if h, ok := interface{}(m.GetDelayBeforeClose()).(clone.Cloner); ok {
-		target.DelayBeforeClose = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.DelayBeforeClose = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.DelayBeforeClose = proto.Clone(m.GetDelayBeforeClose()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.DelayBeforeClose = proto.Clone(m.GetDelayBeforeClose()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	return target

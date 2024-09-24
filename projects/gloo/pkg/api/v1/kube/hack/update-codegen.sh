@@ -10,10 +10,9 @@ ROOT_PKG=github.com/solo-io/gloo/projects/gloo/pkg/api/v1
 CLIENT_PKG=${ROOT_PKG}/kube/client
 APIS_PKG=${ROOT_PKG}/kube/apis
 
-# Below code is copied from https://github.com/weaveworks/flagger/blob/master/hack/update-codegen.sh
+# Grab code-generator version from go.sum.
 CODEGEN_PKG=$(go list -f '{{ .Dir }}' -m k8s.io/code-generator)
-# With k8s.io/code-generator v0.28.x the boilerplate file has been removed. So we get it from k8s.io/gengo instead
-GENGO_PKG=$(go list -f '{{ .Dir }}' -m k8s.io/gengo)
+GENGO_PKG=$(go list -f '{{ .Dir }}' -m k8s.io/gengo/v2)
 
 echo ">> Using ${CODEGEN_PKG}"
 
@@ -30,16 +29,22 @@ trap "cleanup" EXIT SIGINT
 
 echo ">> Temporary output directory ${TEMP_DIR}"
 
-# TODO: generate-groups.sh has been deprecated. Move to kube_codegen.sh once https://github.com/kubernetes/code-generator/issues/165 is resolved
-# Ensure we can execute.
-chmod +x ${CODEGEN_PKG}/generate-groups.sh
-chmod +x ${CODEGEN_PKG}/generate-internal-groups.sh
+mkdir -p "${TEMP_DIR}/${ROOT_PKG}/pkg/client/informers" \
+         "${TEMP_DIR}/${ROOT_PKG}/pkg/client/listers" \
+         "${TEMP_DIR}/${ROOT_PKG}/pkg/client/clientset"
 
-${CODEGEN_PKG}/generate-groups.sh all \
-    ${CLIENT_PKG} \
-    ${APIS_PKG} \
-    gloo.solo.io:v1 \
-    --output-base "${TEMP_DIR}" --go-header-file "${GENGO_PKG}/boilerplate/boilerplate.go.txt"
+# Ensure we can execute.
+chmod +x ${CODEGEN_PKG}/kube_codegen.sh
+
+source ${CODEGEN_PKG}/kube_codegen.sh kube::codegen::gen_client \
+    --output-dir "${TEMP_DIR}" \
+    --output-pkg "${CLIENT_PKG}" \
+    --with-watch \
+    --boilerplate "${GENGO_PKG}/boilerplate/boilerplate.go.txt" \
+    ${APIS_PKG}
+
+ls -lha $TEMP_DIR
+
 # Copy everything back.
-cp -a "${TEMP_DIR}/${ROOT_PKG}/." "${SCRIPT_ROOT}/.."
+cp -r "${TEMP_DIR}/${ROOT_PKG}/." "${SCRIPT_ROOT}/"
 

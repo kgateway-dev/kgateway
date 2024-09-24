@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -36,9 +36,9 @@ func (m *Matcher) Clone() proto.Message {
 	target = &Matcher{}
 
 	if h, ok := interface{}(m.GetCaseSensitive()).(clone.Cloner); ok {
-		target.CaseSensitive = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.CaseSensitive = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.CaseSensitive = proto.Clone(m.GetCaseSensitive()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.CaseSensitive = proto.Clone(m.GetCaseSensitive()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if m.GetHeaders() != nil {
