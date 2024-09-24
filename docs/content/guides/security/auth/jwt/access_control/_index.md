@@ -447,7 +447,7 @@ jq '.+{alg:"RS256"}|.+{use:"sig"}' jwks.json | tee tmp.json && mv tmp.json jwks.
 {{< /highlight >}}
 
 {{% notice note %}}
-For details about the above JWT fields, see <b>[this section](https://tools.ietf.org/html/rfc7517#section-4)</b> of the JWT specification. 
+For details about the above JWT fields, see <b>[this section](https://datatracker.ietf.org/doc/html/rfc7517#section-4)</b> of the JWT specification. 
 {{% /notice %}}
 
 Finally, let's turn the single key into a key set:

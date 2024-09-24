@@ -674,7 +674,7 @@ type GrpcService_GoogleGrpc_CallCredentials_FromPlugin struct {
 
 type GrpcService_GoogleGrpc_CallCredentials_StsService_ struct {
 	// Custom security token service which implements OAuth 2.0 token exchange.
-	// https://tools.ietf.org/html/draft-ietf-oauth-token-exchange-16
+	// https://datatracker.ietf.org/doc/html/draft-ietf-oauth-token-exchange-16
 	// See https://github.com/grpc/grpc/pull/19587.
 	StsService *GrpcService_GoogleGrpc_CallCredentials_StsService `protobuf:"bytes,7,opt,name=sts_service,json=stsService,proto3,oneof"`
 }
@@ -937,7 +937,7 @@ func (*GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_Type
 
 // Security token service configuration that allows Google gRPC to
 // fetch security token from an OAuth 2.0 authorization server.
-// See https://tools.ietf.org/html/draft-ietf-oauth-token-exchange-16 and
+// See https://datatracker.ietf.org/doc/html/draft-ietf-oauth-token-exchange-16 and
 // https://github.com/grpc/grpc/pull/19587.
 // [#next-free-field: 10]
 type GrpcService_GoogleGrpc_CallCredentials_StsService struct {

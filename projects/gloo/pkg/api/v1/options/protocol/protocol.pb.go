@@ -328,7 +328,7 @@ type Http2ProtocolOptions struct {
 	// This overrides any HCM :ref:`stream_error_on_invalid_http_messaging
 	// <envoy_v3_api_field_extensions.filters.network.http_connection_manager.v3.HttpConnectionManager.stream_error_on_invalid_http_message>`
 	//
-	// See `RFC7540, sec. 8.1 <https://tools.ietf.org/html/rfc7540#section-8.1>`_ for details.
+	// See `RFC7540, sec. 8.1 <https://datatracker.ietf.org/doc/html/rfc7540#section-8.1>`_ for details.
 	OverrideStreamErrorOnInvalidHttpMessage *wrappers.BoolValue `protobuf:"bytes,14,opt,name=override_stream_error_on_invalid_http_message,json=overrideStreamErrorOnInvalidHttpMessage,proto3" json:"override_stream_error_on_invalid_http_message,omitempty"`
 }
 

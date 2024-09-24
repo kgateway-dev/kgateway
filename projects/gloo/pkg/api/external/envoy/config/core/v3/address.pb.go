@@ -162,7 +162,7 @@ type SocketAddress struct {
 	// *STRICT_DNS* or *LOGICAL_DNS* will generate an error at runtime.
 	ResolverName string `protobuf:"bytes,5,opt,name=resolver_name,json=resolverName,proto3" json:"resolver_name,omitempty"`
 	// When binding to an IPv6 address above, this enables `IPv4 compatibility
-	// <https://tools.ietf.org/html/rfc3493#page-11>`_. Binding to “::“ will
+	// <https://datatracker.ietf.org/doc/html/rfc3493#page-11>`_. Binding to “::“ will
 	// allow both IPv4 and IPv6 connections, with peer IPv4 addresses mapped into
 	// IPv6 space as “::FFFF:<IPv4-address>“.
 	Ipv4Compat bool `protobuf:"varint,6,opt,name=ipv4_compat,json=ipv4Compat,proto3" json:"ipv4_compat,omitempty"`
@@ -497,7 +497,7 @@ func (*Address_SocketAddress) isAddress_Address() {}
 func (*Address_Pipe) isAddress_Address() {}
 
 // CidrRange specifies an IP Address and a prefix length to construct
-// the subnet mask for a `CIDR <https://tools.ietf.org/html/rfc4632>`_ range.
+// the subnet mask for a `CIDR <https://datatracker.ietf.org/doc/html/rfc4632>`_ range.
 type CidrRange struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
