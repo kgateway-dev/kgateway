@@ -28,6 +28,14 @@ gloo:
   deployment:
     replicas: 1
     livenessProbeEnabled: true
+    # Make sure tests can pass with resource requests and limits
+    resources:
+      requests:
+        cpu: 500m
+        memory: 5Gi
+      limits:
+        cpu: 1000m
+        memory: 10Gi
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0

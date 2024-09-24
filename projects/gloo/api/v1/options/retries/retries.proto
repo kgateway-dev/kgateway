@@ -57,6 +57,6 @@ message RetryPolicy {
     }
 
 
-    // HTTP status codes that should trigger a retry in addition to those specified by retry_on.
+    // Optional: HTTP status codes that should trigger a retry in addition to those specified by retry_on.
     repeated uint32 retriable_status_codes = 6;
 }
