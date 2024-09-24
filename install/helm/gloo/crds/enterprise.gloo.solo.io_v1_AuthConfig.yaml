@@ -170,17 +170,8 @@ spec:
                           additionalProperties:
                             type: string
                           type: object
-                        metadataValidation:
-                          properties:
-                            enableDataPlaneMetadataValidation:
-                              type: boolean
-                            invalidStatusReturnCode:
-                              properties:
-                                code:
-                                  type: string
-                                  x-kubernetes-int-or-string: true
-                              type: object
-                          type: object
+                        skipMetadataValidation:
+                          type: boolean
                       type: object
                     basicAuth:
                       properties:

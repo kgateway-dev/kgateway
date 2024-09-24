@@ -1169,15 +1169,8 @@ message ApiKeyAuth {
         bool required = 2;
     }
 
-    message MetaDataValidation {
-        // Flag to enable data plane metadata validation. If set to `true`, the data plane will validate the metadata.
-        bool enable_data_plane_metadata_validation = 1;
-        // Value to return to end user when metadata validation fails.
-        .solo.io.envoy.type.v3.HttpStatus invalid_status_return_code = 2;
-    }
-
-    // Metadata validation configuration.
-    MetaDataValidation metadata_validation = 8;
+        // Skip dataplane validation of header values.
+        bool skip_metadata_validation = 8;
 }
 message K8sSecretApiKeyStorage {
     // Identify all valid API key secrets that match the provided label selector.<br/>
@@ -2130,16 +2123,9 @@ message ExtAuthConfig {
             K8sSecretApiKeyStorage k8s_secret_apikey_storage = 4;
             AerospikeApiKeyStorage aerospike_apikey_storage = 5;
         }
-
-        message MetaDataValidation {
-            // Flag to enable data plane metadata validation. If set to `true`, the data plane will validate the metadata.
-            bool enable_data_plane_metadata_validation = 1;
-            // Value to return to end user when metadata validation fails.
-            .solo.io.envoy.type.v3.HttpStatus invalid_status_return_code = 2;
-        }
     
-        // Metadata validation configuration.
-        MetaDataValidation metadata_validation = 6;
+        // Skip dataplane validation of header values.
+        bool skip_metadata_validation = 6;
     }
 
     message OpaAuthConfig {
