@@ -49,6 +49,9 @@ func (s *testingSuite) testWatchNamespaceSelector(key, value string) {
 	// Ensure the install namespace is watched even if not specified
 	s.TestInstallation.Assertions.CurlEventuallyRespondsWithStatus(s.Ctx, "install-ns/", http.StatusOK)
 
+	// Ensure the namespace is not watched
+	s.TestInstallation.Actions.Kubectl().Execute(s.Ctx, "label", "ns", "random", key+"-")
+
 	// Ensure CRs defined in non watched-namespaces are not translated
 	s.TestInstallation.Assertions.CurlConsistentlyRespondsWithStatus(s.Ctx, "random/", http.StatusNotFound)
 
