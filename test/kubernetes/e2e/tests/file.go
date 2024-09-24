@@ -19,4 +19,8 @@ var (
 	EmptyProfilePath = ProfilePath("empty.yaml")
 
 	EdgeGatewayProfilePath = ProfilePath("edge-gateway.yaml")
+
+	KubernetesGatewayProfilePath = ProfilePath("kubernetes-gateway.yaml")
+
+	FullGatewayProfilePath = ProfilePath("full-gateway.yaml")
 )

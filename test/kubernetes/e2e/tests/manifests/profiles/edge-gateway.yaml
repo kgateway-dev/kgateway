@@ -1,0 +1,65 @@
+# This file defines the profile for a user who wants to run Gloo Gateway with:
+# - Edge Gateway API enabled
+# - Kubernetes Gateway API disabled
+
+# Configuration that is Global to Gloo Gateway
+global:
+  image:
+    pullPolicy: IfNotPresent
+
+# Configuration for the Settings CR
+settings:
+  create: true
+  invalidConfigPolicy:
+    replaceInvalidRoutes: true
+    invalidRouteResponseCode: 404
+    invalidRouteResponseBody: Gloo Gateway has invalid configuration.
+
+# Configuration for the Edge Gateway integration in Gloo Gateway
+gateway:
+  persistProxySpec: false
+  isolateVirtualHostsBySslConfig: true
+  readGatewaysFromAllNamespaces: true
+  validation:
+    allowWarnings: true
+    alwaysAcceptResources: false
+    warnMissingTlsSecret: true
+    serverEnabled: true
+    disableTransformationValidation: false
+    warnRouteShortCircuiting: true
+    webhook:
+      # skipping delete validation due to flakes per https://github.com/solo-io/solo-projects/issues/6272
+      skipDeleteValidationResources:
+        - upstreams
+
+# Configuration for the Kubernetes Gateway integration in Gloo Gateway
+kubeGateway:
+  enabled: false
+
+# Configuration for the Gloo pod
+gloo:
+  logLevel: info
+  disableLeaderElection: false
+  deployment:
+    replicas: 1
+    livenessProbeEnabled: true
+    # Resource requests and limits should be identified by users directly
+    # We define them here to ensure that tests can pass with resources defined
+    resources:
+      requests:
+        cpu: 500m
+        memory: 5Gi
+      limits:
+        cpu: 1000m
+        memory: 10Gi
+
+# Configuration for the statically deployed gateway-proxy that ships by default with Gloo Gateway
+gatewayProxies:
+  gatewayProxy:
+    healthyPanicThreshold: 0
+
+# Configuration for the Discovery pod
+discovery:
+  # Discovery is not recommended for production, so we disable it
+  # NOTE TO TEST AUTHORS: Upstreams must be statically defined in the manifests
+  enabled: false

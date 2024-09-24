@@ -1,0 +1,6 @@
+# This file defines the profile for a user who wants to run Gloo Gateway with:
+# - Edge Gateway API enabled
+# - Kubernetes Gateway API enabled
+#
+# NOTE TO MAINTAINERS:
+# This file must stay in sync with edge-gateway.yaml and kubernetes-gateway.yaml

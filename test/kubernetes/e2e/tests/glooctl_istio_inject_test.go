@@ -21,8 +21,9 @@ func TestGlooctlIstioInjectEdgeApiGateway(t *testing.T) {
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   installNs,
-			ValuesManifestFile: ManifestPath("edge-gateway-test-helm.yaml"),
+			InstallNamespace:          installNs,
+			ProfileValuesManifestFile: EmptyProfilePath,
+			ValuesManifestFile:        ManifestPath("edge-gateway-test-helm.yaml"),
 		},
 	)
 

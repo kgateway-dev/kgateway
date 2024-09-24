@@ -21,7 +21,7 @@ func TestK8sGateway(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: EmptyProfilePath,
+			ProfileValuesManifestFile: KubernetesGatewayProfilePath,
 			ValuesManifestFile:        ManifestPath("k8s-gateway-test-helm.yaml"),
 			ValidationAlwaysAccept:    false,
 			K8sGatewayEnabled:         true,

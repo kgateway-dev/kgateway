@@ -22,7 +22,7 @@ func TestTransformationValidationDisabled(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: EmptyProfilePath,
+			ProfileValuesManifestFile: EdgeGatewayProfilePath,
 			ValuesManifestFile:        ManifestPath("disable-transformation-validation-helm.yaml"),
 		},
 	)

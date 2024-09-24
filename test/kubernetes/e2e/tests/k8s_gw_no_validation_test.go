@@ -21,7 +21,7 @@ func TestK8sGatewayNoValidation(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: EmptyProfilePath,
+			ProfileValuesManifestFile: KubernetesGatewayProfilePath,
 			ValuesManifestFile:        ManifestPath("k8s-gateway-no-webhook-validation-test-helm.yaml"),
 			ValidationAlwaysAccept:    true,
 			K8sGatewayEnabled:         true,

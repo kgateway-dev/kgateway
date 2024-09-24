@@ -22,7 +22,7 @@ func TestGlooGatewayEdgeGateway(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: EmptyProfilePath,
+			ProfileValuesManifestFile: EdgeGatewayProfilePath,
 			ValuesManifestFile:        ManifestPath("edge-gateway-test-helm.yaml"),
 		},
 	)
