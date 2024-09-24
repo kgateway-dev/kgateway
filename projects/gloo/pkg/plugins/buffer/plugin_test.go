@@ -138,7 +138,7 @@ var _ = Describe("Plugin", func() {
 	It("allows weighted destination specific disabling of buffer", func() {
 		p := NewPlugin()
 		out := &envoy_config_route_v3.WeightedCluster_ClusterWeight{}
-		err := p.ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
+		err := p.ProcessWeightedDestination(plugins.RouteActionParams{}, &v1.WeightedDestination{
 			Options: &v1.WeightedDestinationOptions{
 				BufferPerRoute: &v3.BufferPerRoute{
 					Override: &v3.BufferPerRoute_Disabled{
@@ -158,7 +158,7 @@ var _ = Describe("Plugin", func() {
 	It("allows weighted destination specific buffer config", func() {
 		p := NewPlugin()
 		out := &envoy_config_route_v3.WeightedCluster_ClusterWeight{}
-		err := p.ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
+		err := p.ProcessWeightedDestination(plugins.RouteActionParams{}, &v1.WeightedDestination{
 			Options: &v1.WeightedDestinationOptions{
 				BufferPerRoute: &v3.BufferPerRoute{
 					Override: &v3.BufferPerRoute_Buffer{
