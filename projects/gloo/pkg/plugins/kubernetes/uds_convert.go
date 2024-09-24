@@ -94,6 +94,7 @@ func skip(svc *corev1.Service, opts discovery.Opts) bool {
 }
 
 func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
+	fmt.Printf("In kubernetesplugin.UpdateUpstream\n")
 	return UpdateUpstream(original, desired)
 }
 
@@ -112,6 +113,9 @@ func UpdateUpstream(original, desired *v1.Upstream) (didChange bool, err error) 
 	desiredSpec.Kube.Selector = originalSpec.Kube.GetSelector()
 
 	utils.UpdateUpstream(original, desired)
+
+	fmt.Printf("propagating resource version from original to desired: %s\n\n", original.Metadata.ResourceVersion)
+	desired.Metadata.ResourceVersion = original.Metadata.ResourceVersion
 
 	return !upstreamsEqual(original, desired), nil
 }

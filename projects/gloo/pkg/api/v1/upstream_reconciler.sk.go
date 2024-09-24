@@ -3,6 +3,7 @@
 package v1
 
 import (
+	"fmt"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/reconcile"
@@ -35,6 +36,7 @@ type upstreamReconciler struct {
 }
 
 func (r *upstreamReconciler) Reconcile(namespace string, desiredResources UpstreamList, transition TransitionUpstreamFunc, opts clients.ListOpts) error {
+	fmt.Printf("\nIn upstreamReconciler.Reconcile()\ndesiredResources: %+v\ntransition: %+T\nopts: %+v\n\n", desiredResources, transition, opts)
 	opts = opts.WithDefaults()
 	opts.Ctx = contextutils.WithLogger(opts.Ctx, "upstream_reconciler")
 	var transitionResources reconcile.TransitionResourcesFunc
