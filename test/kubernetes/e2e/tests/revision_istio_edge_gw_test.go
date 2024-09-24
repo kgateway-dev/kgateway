@@ -3,7 +3,6 @@ package tests_test
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -12,8 +11,6 @@ import (
 	. "github.com/solo-io/gloo/test/kubernetes/e2e/tests"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/gloo/test/testutils"
-
-	"github.com/solo-io/skv2/codegen/util"
 )
 
 // TestRevisionIstioRegression is the function which executes a series of tests against a given installation where
@@ -25,7 +22,7 @@ func TestRevisionIstioRegression(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:   installNs,
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-revision-helm.yaml"),
+			ValuesManifestFile: ManifestPath("istio-revision-helm.yaml"),
 		},
 	)
 

@@ -3,11 +3,8 @@ package tests_test
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
-
-	"github.com/solo-io/skv2/codegen/util"
 
 	"github.com/solo-io/gloo/pkg/utils/envutils"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
@@ -25,7 +22,7 @@ func TestK8sGatewayNoValidation(t *testing.T) {
 		&gloogateway.Context{
 			InstallNamespace:          installNs,
 			ProfileValuesManifestFile: EmptyProfilePath,
-			ValuesManifestFile:        filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-no-webhook-validation-test-helm.yaml"),
+			ValuesManifestFile:        ManifestPath("k8s-gateway-no-webhook-validation-test-helm.yaml"),
 			ValidationAlwaysAccept:    true,
 			K8sGatewayEnabled:         true,
 		},

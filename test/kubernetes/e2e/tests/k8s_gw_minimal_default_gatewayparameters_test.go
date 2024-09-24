@@ -3,7 +3,6 @@ package tests_test
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -12,7 +11,6 @@ import (
 	. "github.com/solo-io/gloo/test/kubernetes/e2e/tests"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/gloo/test/testutils"
-	"github.com/solo-io/skv2/codegen/util"
 )
 
 // TestK8sGatewayMinimalDefaultGatewayParameters is the function which executes a series of tests against a given installation
@@ -25,7 +23,7 @@ func TestK8sGatewayMinimalDefaultGatewayParameters(t *testing.T) {
 		&gloogateway.Context{
 			InstallNamespace:          installNs,
 			ProfileValuesManifestFile: EmptyProfilePath,
-			ValuesManifestFile:        filepath.Join(util.MustGetThisDir(), "manifests", "k8s-gateway-minimal-default-gatewayparameters-test-helm.yaml"),
+			ValuesManifestFile:        ManifestPath("k8s-gateway-minimal-default-gatewayparameters-test-helm.yaml"),
 			ValidationAlwaysAccept:    false,
 			K8sGatewayEnabled:         true,
 		},

@@ -3,17 +3,14 @@ package tests_test
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/envutils"
-	"github.com/solo-io/gloo/test/testutils"
-	"github.com/solo-io/skv2/codegen/util"
-
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	. "github.com/solo-io/gloo/test/kubernetes/e2e/tests"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
+	"github.com/solo-io/gloo/test/testutils"
 )
 
 // TestGlooctlIstioInjectEdgeApiGateway is the function which executes a series of tests against a given installation where
@@ -25,7 +22,7 @@ func TestGlooctlIstioInjectEdgeApiGateway(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:   installNs,
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "edge-gateway-test-helm.yaml"),
+			ValuesManifestFile: ManifestPath("edge-gateway-test-helm.yaml"),
 		},
 	)
 

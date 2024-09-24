@@ -3,7 +3,6 @@ package tests_test
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -12,7 +11,6 @@ import (
 	. "github.com/solo-io/gloo/test/kubernetes/e2e/tests"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 	"github.com/solo-io/gloo/test/testutils"
-	"github.com/solo-io/skv2/codegen/util"
 )
 
 // TestGlooctlGlooGatewayEdgeGateway is the function which executes a series of glooctl tests against a given
@@ -25,7 +23,7 @@ func TestGlooctlGlooGatewayEdgeGateway(t *testing.T) {
 		&gloogateway.Context{
 			InstallNamespace:          installNs,
 			ProfileValuesManifestFile: EmptyProfilePath,
-			ValuesManifestFile:        filepath.Join(util.MustGetThisDir(), "manifests", "glooctl-edge-gateway-test-helm.yaml"),
+			ValuesManifestFile:        ManifestPath("glooctl-edge-gateway-test-helm.yaml"),
 		},
 	)
 
