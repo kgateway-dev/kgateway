@@ -123,11 +123,11 @@ spec:
 {{< readfile file="static/content/enterprise_only_feature_disclaimer" markdown="true">}}
 {{% /notice %}}
 
-For static upstream clusters that you set up through Helm templates, use the `gloo.gatewayProxies.NAME.tcpKeepaliveTimeSeconds`
+If you used the `gloo.gatewayProxies.NAME.envoyStaticClusters[].NAME` Helm value to set up a static upstream cluster, you can change the TCP keepalive timeout value (default is 60s) with the `gloo.gatewayProxies.NAME.tcpKeepaliveTimeSeconds` Helm setting. 
 setting to change the keepalive timeout value (default is 60s). For an overview of available Helm values, see the
 [Enterprise Gloo Gateway]({{< versioned_link_path fromRoot="/reference/helm_chart_values/enterprise_helm_chart_values/" >}}) reference docs.
 
-Note that you cannot change the `tcp_keepalive_intvl` and `tcp_keepalive_probes` values. The default values are used instead. 
+Note that you cannot change the `tcp_keepalive_intvl` and `tcp_keepalive_probes` values. The default system values are used instead. 
 
 To check the default values for your system:
 
