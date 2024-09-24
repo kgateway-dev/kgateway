@@ -258,7 +258,7 @@ func (h *SoloTestHelper) UpgradeGloo(ctx context.Context, timeout time.Duration,
 	}
 
 	if h.Verbose {
-		helmCommand = append(helmCommand, "-v")
+		helmCommand = append(helmCommand, "--debug")
 	}
 
 	opts := &Options{
@@ -311,7 +311,7 @@ func (h *SoloTestHelper) RevertGlooUpgrade(ctx context.Context, timeout time.Dur
 	}
 
 	if h.Verbose {
-		helmCommand = append(helmCommand, "-v")
+		helmCommand = append(helmCommand, "--debug")
 	}
 
 	opts := &Options{

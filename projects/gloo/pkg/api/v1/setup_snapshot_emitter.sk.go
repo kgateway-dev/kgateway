@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
+
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
@@ -81,26 +83,32 @@ type SetupEmitter interface {
 	SetupSnapshotEmitter
 	Register() error
 	Settings() SettingsClient
+	KubeNamespace() github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceClient
 }
 
-func NewSetupEmitter(settingsClient SettingsClient) SetupEmitter {
-	return NewSetupEmitterWithEmit(settingsClient, make(chan struct{}))
+func NewSetupEmitter(settingsClient SettingsClient, kubeNamespaceClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceClient) SetupEmitter {
+	return NewSetupEmitterWithEmit(settingsClient, kubeNamespaceClient, make(chan struct{}))
 }
 
-func NewSetupEmitterWithEmit(settingsClient SettingsClient, emit <-chan struct{}) SetupEmitter {
+func NewSetupEmitterWithEmit(settingsClient SettingsClient, kubeNamespaceClient github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceClient, emit <-chan struct{}) SetupEmitter {
 	return &setupEmitter{
-		settings:  settingsClient,
-		forceEmit: emit,
+		settings:      settingsClient,
+		kubeNamespace: kubeNamespaceClient,
+		forceEmit:     emit,
 	}
 }
 
 type setupEmitter struct {
-	forceEmit <-chan struct{}
-	settings  SettingsClient
+	forceEmit     <-chan struct{}
+	settings      SettingsClient
+	kubeNamespace github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceClient
 }
 
 func (c *setupEmitter) Register() error {
 	if err := c.settings.Register(); err != nil {
+		return err
+	}
+	if err := c.kubeNamespace.Register(); err != nil {
 		return err
 	}
 	return nil
@@ -108,6 +116,10 @@ func (c *setupEmitter) Register() error {
 
 func (c *setupEmitter) Settings() SettingsClient {
 	return c.settings
+}
+
+func (c *setupEmitter) KubeNamespace() github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceClient {
+	return c.kubeNamespace
 }
 
 func (c *setupEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *SetupSnapshot, <-chan error, error) {
@@ -134,6 +146,7 @@ func (c *setupEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpt
 	settingsChan := make(chan settingsListWithNamespace)
 
 	var initialSettingsList SettingsList
+	/* Create channel for KubeNamespace */
 
 	currentSnapshot := SetupSnapshot{}
 	settingsByNamespace := make(map[string]SettingsList)
@@ -180,6 +193,21 @@ func (c *setupEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpt
 	}
 	/* Initialize snapshot for Settings */
 	currentSnapshot.Settings = initialSettingsList.Sort()
+	/* Setup cluster-wide watch for KubeNamespace */
+	var err error
+	currentSnapshot.Kubenamespaces, err = c.kubeNamespace.List(clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "initial KubeNamespace list")
+	}
+	kubeNamespaceChan, kubeNamespaceErrs, err := c.kubeNamespace.Watch(opts)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "starting KubeNamespace watch")
+	}
+	done.Add(1)
+	go func() {
+		defer done.Done()
+		errutils.AggregateErrs(ctx, errs, kubeNamespaceErrs, "kubenamespaces")
+	}()
 
 	snapshots := make(chan *SetupSnapshot)
 	go func() {
@@ -252,6 +280,20 @@ func (c *setupEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpt
 					settingsList = append(settingsList, settings...)
 				}
 				currentSnapshot.Settings = settingsList.Sort()
+			case kubeNamespaceList, ok := <-kubeNamespaceChan:
+				if !ok {
+					return
+				}
+				record()
+
+				skstats.IncrementResourceCount(
+					ctx,
+					"<all>",
+					"kube_namespace",
+					mSetupResourcesIn,
+				)
+
+				currentSnapshot.Kubenamespaces = kubeNamespaceList
 			}
 		}
 	}()

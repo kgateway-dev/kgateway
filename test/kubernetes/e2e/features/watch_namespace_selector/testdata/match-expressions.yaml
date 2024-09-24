@@ -1,0 +1,12 @@
+settings:
+  watchNamespaceSelectors:
+  - matchExpressions:
+    - key: watch
+      operator: In
+      values:
+        - this
+
+gateway:
+  validation:
+    webhook:
+      skipDeleteValidationResources: []

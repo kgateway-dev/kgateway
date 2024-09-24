@@ -4,17 +4,24 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/gomega/transforms"
 	"github.com/solo-io/gloo/test/kube2e/helper"
+	e2edefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
+)
+
+const (
+	GatewayProxyName = "gateway-proxy"
 )
 
 func (p *Provider) AssertEventualCurlReturnResponse(
@@ -188,4 +195,118 @@ func (p *Provider) AssertEventualCurlError(
 		WithPolling(pollInterval).
 		WithContext(ctx).
 		Should(Succeed(), testMessage)
+}
+
+func (p *Provider) generateCurlOpts(host string) []curl.Option {
+	var curlOpts = []curl.Option{
+		curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{Name: GatewayProxyName, Namespace: p.glooGatewayContext.InstallNamespace})),
+		curl.WithPort(80),
+		curl.Silent(),
+	}
+
+	path := ""
+	parts := strings.SplitN(host, "/", 2)
+	host = parts[0]
+	if len(parts) > 1 {
+		path = parts[1] + path
+	}
+
+	parts = strings.SplitN(host, "@", 2)
+	if len(parts) > 1 {
+		host = parts[1]
+		auth := strings.Split(parts[0], ":")
+		curlOpts = append(curlOpts, curl.WithBasicAuth(auth[0], auth[1]))
+	}
+
+	if host != "" {
+		curlOpts = append(curlOpts,
+			curl.WithHostHeader(host),
+		)
+	}
+
+	if path != "" {
+		curlOpts = append(curlOpts,
+			curl.WithPath(path),
+		)
+	}
+
+	return curlOpts
+}
+
+func (p *Provider) generateCurlOptsWithHeaders(host string, headers map[string]string) []curl.Option {
+	curlOpts := p.generateCurlOpts(host)
+	for k, v := range headers {
+		curlOpts = append(curlOpts, curl.WithHeader(k, v))
+	}
+	return curlOpts
+}
+
+func (p *Provider) CurlConsistentlyRespondsWithStatus(ctx context.Context, host string, status int) {
+	curlOptsHeader := p.generateCurlOpts(host)
+
+	p.AssertEventuallyConsistentCurlResponse(
+		ctx,
+		e2edefaults.CurlPodExecOpt,
+		curlOptsHeader,
+		&matchers.HttpResponse{StatusCode: status},
+		10*time.Second,
+		100*time.Millisecond,
+	)
+}
+
+func (p *Provider) CurlEventuallyRespondsWithStatus(ctx context.Context, host string, status int) {
+	curlOptsHeader := p.generateCurlOpts(host)
+
+	p.AssertEventualCurlResponse(
+		ctx,
+		e2edefaults.CurlPodExecOpt,
+		curlOptsHeader,
+		&matchers.HttpResponse{StatusCode: status},
+	)
+}
+
+func (p *Provider) CurlRespondsWithStatus(ctx context.Context, host string, status int) {
+	curlOptsHeader := p.generateCurlOpts(host)
+
+	p.AssertCurlResponse(
+		ctx,
+		e2edefaults.CurlPodExecOpt,
+		curlOptsHeader,
+		&matchers.HttpResponse{StatusCode: status},
+	)
+}
+
+func (p *Provider) CurlWithHeadersConsistentlyRespondsWithStatus(ctx context.Context, host string, headers map[string]string, status int) {
+	curlOptsHeader := p.generateCurlOptsWithHeaders(host, headers)
+
+	p.AssertEventuallyConsistentCurlResponse(
+		ctx,
+		e2edefaults.CurlPodExecOpt,
+		curlOptsHeader,
+		&matchers.HttpResponse{StatusCode: status},
+		10*time.Second,
+		100*time.Millisecond,
+	)
+}
+
+func (p *Provider) CurlWithHeadersEventuallyRespondsWithStatus(ctx context.Context, host string, headers map[string]string, status int) {
+	curlOptsHeader := p.generateCurlOptsWithHeaders(host, headers)
+
+	p.AssertEventualCurlResponse(
+		ctx,
+		e2edefaults.CurlPodExecOpt,
+		curlOptsHeader,
+		&matchers.HttpResponse{StatusCode: status},
+	)
+}
+
+func (p *Provider) CurlWithHeadersRespondsWithStatus(ctx context.Context, host string, headers map[string]string, status int) {
+	curlOptsHeader := p.generateCurlOptsWithHeaders(host, headers)
+
+	p.AssertCurlResponse(
+		ctx,
+		e2edefaults.CurlPodExecOpt,
+		curlOptsHeader,
+		&matchers.HttpResponse{StatusCode: status},
+	)
 }

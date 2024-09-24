@@ -1,0 +1,9 @@
+settings:
+  watchNamespaceSelectors:
+  - matchLabels:
+      watch: this
+
+gateway:
+  validation:
+    webhook:
+      skipDeleteValidationResources: []
