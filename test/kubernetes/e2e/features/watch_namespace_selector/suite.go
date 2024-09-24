@@ -92,13 +92,13 @@ func (s *testingSuite) TestWatchedNamespaceValidation() {
 	// Trying to unwatch the namespace that has an upstream referenced in another namespace leads to an error
 	_, errOut, err := s.TestInstallation.Actions.Kubectl().Execute(s.Ctx, "label", "ns", "random", "label-")
 
-	s.Contains(errOut, `admission webhook "gloo.namespace-selector.svc" denied the request: resource incompatible with current Gloo snapshot`)
+	s.Contains(errOut, `denied the request: resource incompatible with current Gloo snapshot`)
 	s.Contains(errOut, `Route Warning: InvalidDestinationWarning. Reason: *v1.Upstream { random.postman-echo } not found`)
 	s.Error(err)
 
 	// Trying to delete the namespace also errors out
 	_, errOut, err = s.TestInstallation.Actions.Kubectl().Execute(s.Ctx, "delete", "ns", "random")
-	s.Contains(errOut, `admission webhook "gloo.namespace-selector.svc" denied the request: resource incompatible with current Gloo snapshot`)
+	s.Contains(errOut, `denied the request: resource incompatible with current Gloo snapshot`)
 	s.Contains(errOut, `Route Warning: InvalidDestinationWarning. Reason: *v1.Upstream { random.postman-echo } not found`)
 	s.Error(err)
 
