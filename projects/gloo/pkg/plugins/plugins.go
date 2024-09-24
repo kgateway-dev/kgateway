@@ -120,7 +120,7 @@ type RouteActionPlugin interface {
 type WeightedDestinationPlugin interface {
 	Plugin
 	ProcessWeightedDestination(
-		params RouteParams,
+		params RouteActionParams,
 		in *v1.WeightedDestination,
 		out *envoy_config_route_v3.WeightedCluster_ClusterWeight,
 	) error
