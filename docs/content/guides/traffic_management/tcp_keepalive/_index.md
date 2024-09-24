@@ -1,74 +1,73 @@
 ---
 title: TCP Keepalive
 weight: 105
-description: Enabling TCP Keepalive on Downstream and Upstream Connections
+description: Enable TCP keepalive on downstream and upstream connections
 ---
 
-TCP Keepalive serves two main purposes:
+You can enable TCP keepalive on downstream and upstream connections, including static clusters.
 
-1) the obvious one is to keep the connection alive by sending out probe after the connection has been idled for a specific time.
-2) the less obvious one is to detect stale connections when the probe fails and drop the connection.
+## About TCP keepalive {#about}
 
-There are three settings in TCP keepalive:
+TCP keepalive helps you provide stable connections in two main ways:
 
-- tcp_keepalive_intvl
-- tcp_keepalive_probes
-- tcp_keepalive_time
+1) Keep the connection alive by sending out probes after the connection has been idle for a specific amount of time. This way, the connection does not have to be reestablished repeatedly, which could otherwise lead to latency spikes.
+2) Detect and close stale connections when the probe fails, such as due to firewall or other network security settings. This way, you can avoid longer timeouts and retries on broken connections.
 
-The explanation can be found in the [Linux TCP man-page](https://man7.org/linux/man-pages/man7/tcp.7.html).
+### Settings to configure TCP keepalive {#settings}
 
-Some considerations when determining the proper values for you environment:
+To configure TCP keepalive, you can use three settings. For more information, see the [Linux TCP manual page](https://man7.org/linux/man-pages/man7/tcp.7.html).
 
-1) On a slow or lossy network, if `tcp_keepalive_intvl` or `tcp_keepalive_probes` values are set too low, it can inadvertently
-drop the connections more often then it should.
-2) Many application layer protocols like HTTP, GRPC(using HTTP/2) have their own keepalive mechanisms that change what you
-expected from TCP keepalive. For example, the application can still close the connection after it's keep-alive timeout even
-TCP keepalive is in place because TCP keepalive probe does not get up to the application layer.  
+| Setting | Default value | Description |
+| --- | --- | --- |
+| tcp_keepalive_intvl | 75 | The number of seconds between probes. |
+| tcp_keepalive_probes | 9 | The number of probes to send before closing the connection. |
+| tcp_keepalive_time | 7200 | The number of seconds that a connection stays idle before probes are sent. |
 
-## Potential issues that can be mitigated by turning on TCP keepalive {#potential_issues}
+### Guidance for settings {#guidance}
 
-### Stale Connections
+To help determine the right settings for your network environment, consider your app traffic patterns and the desired user experience. You might also find the following guidelines helpful.
 
-Because TCP connection close is a 4-way handshake, it is possible to have stale connection where one side has been gone
-but the other side is not aware when the network is unstable. If the unaware side is just listening for events, it might think
-that there is just no event but in reality has been missing all the events.
+* On a slow or lossy network, if `tcp_keepalive_intvl` or `tcp_keepalive_probes` values are set too low, you might generate unnecessary traffic or inadvertently drop the connections more often than needed.
+* If you set the probe intervals or keepalive time durations too high, you might not detect broken connections soon enough.
+* Many application layer protocols like HTTP and gRPC (using HTTP/2) have their own keepalive mechanisms that can change what you otherwise expect from the TCP keepalive. For example, the application might still close the connection after the keep-alive timeout, even if TCP keepalive is in place. This unexpected closure happens because the TCP keep-alive probe does not get up to the application layer.  
 
-An example of this can occur between Gloo Gateway Control Plane and the Gateway Proxy (envoy). Envoy might be listening to
-xds configuration update but never got any. Since envoy thinks the connection is still there, it never re-connect to the
-Control Plane. Out of the box there is a TCP keepalive  configured in Gloo gateway but you may find in your environment it needs to be to be changed, in order to change it, see [TCP Keepalive on Static Clusters]({{<ref "#tcp-keepalive-on-static-clusters">}}) section below.
+### Use cases for TCP keepalive {#use-cases}
 
-### Network Load Balancer connection tracking
+**Stale connections**
 
-If the gateway proxy (envoy) is directly exposed to the public internet, the client would be the direct external end users.
-In a many production setups, there can be some form of load balancer between the end users and the gateway proxy such as an [ALB](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html).
+Because closing a TCP connection involves a four-way handshake, you might notice stale connections arise in an unstable network, where one side has been responding but the other side has not detected a response yet. Both sides might listen for events and consider the other nonresponsive, even though one side just missed the events.
 
-Some Network Load Balancers (NLB) use Connection Tracking to remember where a packet to get forwarded to once a connection is established.
-If the connection has been idling, The NLB might remove the connection from it's  tracking table. In this scenario, both sides still think
-the connection is open but when the client send a packet through the NLB, the NLB now would not know where to forward the packet and will
-send a RESET to the client. If the client does not automatically retry, this might show up as an error or you will see a lot of RESET from
-the TCP stats thinking it's a network issue. Enabling TCP keepalive will address this issue and help keep long-lived connection open and
-functional. See [TCP Keepalive on Downstream Connections]({{<ref "#tcp-keepalive-on-downstream-connections">}}) section below.
+An example of this situation can occur between the Gloo Gateway control plane and the Envoy gateway proxy. Envoy might listen for xDS configuration updates but not receive any. Because Envoy thinks that the connection is still alive, it does not try to reconnect to the Gloo Gateway control plane. Even though Gloo Gateway has a default TCP keepalive set, you might find that you need to update the values. For an example, see [TCP keepalive on static clusters]({{<ref "#tcp-keepalive-on-static-clusters">}}).
 
-## TCP Keepalive on Downstream Connections {#downstream}
+**Load balancer connection tracking**
+
+Similar to the previous example with the Gloo Gateway control plane, the Envoy gateway proxy might miss connections with an external client. This situation happens when the Envoy gateway proxy is directly exposed on the public internet so that external end users can access your services.
+
+In many production setups, you set up a load balancer between the end users and the gateway proxy, such as an [AWS application load balancer (ALB)](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html).
+
+Some network load balancers (NLBs) use connection tracking to remember where to forward a packet to after the connection is established. If the connection is idle, the NLB might remove the connection from its connection tracking table. In this scenario, both sides still think that the connection is open. When the client sends a packet through the NLB, the NLB no longer knows where to forward the packet to and sends a `RESET` response to the client.
+
+If the client does not automatically retry, this might show up as an error. You might see many `RESET` messages in the TCP stats and think that you have a network issue. By enabling TCP keepalive or adjusting its settings, you can help keep long-lived connections open and functional. For an example, see [TCP keepalive on downstream connections]({{<ref "#tcp-keepalive-on-downstream-connections">}}).
+
+## TCP keepalive on downstream connections {#downstream}
 
 {{% notice warning %}}
-Currently envoy does not directly support turning on TCP keepalive on downstream connections. It can only be done with generic socket options
-setting. Socket options can have considerable effects and may not be portable on all platforms. The configurations provided in this guide are
-not suitable for every production environment, so please be careful. Because these options are applied to the Listener, they affect all downstream connections
-if they are mis-configured.
+Currently Envoy does not support turning on TCP keepalive settings directly on downstream connections. Instead, you can use the generic socket options settings. Socket options can have considerable effects on performance, and might not be portable across platforms. As such, the configuration example in this guide is
+not suitable for every production environment. Also note that because these options are applied to the Listener, they affect all downstream connections. Be careful and adjust the settings for your specific environment.
 {{% /notice %}}
 
-The client for the downstream connections can vary depending on your setup. It can be the actual end user or a Load Balancer (layer 4 or layer 7)
+Downstream connections are between the Envoy gateway proxy and the client that sends the request to your services. The client varies depending on your setup:
 
-To enable TCP keepalive on downstream connections, the following settings can be set on the listener options
-in the [Gateway]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/" >}})
+* The end user that sends a request.
+* The Layer 4 or Layer 7 load balancer that forwards the request from the end user to the gateway proxy.
+
+To enable TCP keepalive on downstream connections, configure the following settings in the listener options
+on the [Gateway]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/" >}})
 or [Proxy]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/" >}})
 resources.
 
-This example will enable TCP keepalive probe between the client and the gateway proxy and send out the first
-probe when the connection has been idled for 60 seconds (TCP_KEEPIDLE). Once triggered, each probe will be
-sent every 20 seconds (TCP_KEEPINTVL). If there is no response for 2 consecutive probes (TCP_KEEPCNT), the
-connection will be dropped.
+The following example enables TCP keep-alive probes between the client and the gateway proxy. The first probe is sent when the connection has been idle for 60 seconds (`TCP_KEEPIDLE`). After, each probe is sent every 20 seconds (`TCP_KEEPINTVL`). After no response for 2 consecutive probes (`TCP_KEEPCNT`), the
+connection is dropped.
 
 ```yaml
 apiVersion: gateway.solo.io/v1
@@ -82,62 +81,60 @@ spec:
       - description: "enable keep-alive" # socket level options
         level: 1 # means socket level options (SOL_SOCKET)
         name: 9 # means the keep-alive parameter (SO_KEEPALIVE)
-        intValue: 1 # a nonzero value means "yes"
+        intValue: 1 # a nonzero value means "yes" to enable
         state: STATE_PREBIND
       - description: "idle time before first keep-alive probe is sent" # TCP protocol
         level: 6 # IPPROTO_TCP
-        name: 4 # TCP_KEEPIDLE parameter - The time (in seconds) the connection needs to remain idle before TCP starts sending keepalive probes
+        name: 4 # TCP_KEEPIDLE parameter - The time in seconds that the connection is idle before TCP starts sending keep-alive probes.
         intValue: 60 # seconds
         state: STATE_PREBIND
       - description: "keep-alive interval" # TCP protocol
         level: 6 # IPPROTO_TCP
-        name: 5 # the TCP_KEEPINTVL parameter - The time (in seconds) between individual keepalive probes.
+        name: 5 # the TCP_KEEPINTVL parameter - The time in seconds between individual keep-alive probes.
         intValue: 20 # seconds
         state: STATE_PREBIND
       - description: "keep-alive probes count" # TCP protocol
         level: 6 # IPPROTO_TCP
-        name: 6 # the TCP_KEEPCNT parameter - The maximum number of keepalive probes TCP should send before dropping the connection
+        name: 6 # the TCP_KEEPCNT parameter - The maximum number of keep-alive probes that TCP sends before dropping the connection.
         intValue: 2 # number of failed probes
         state: STATE_PREBIND
 ```
 
-## TCP Keepalive on Upstream Connections {#upstream}
+## TCP keepalive on upstream connections {#upstream}
 
-Upstream connections are the connections between the gateway proxy (envoy) and the destination or backend services which can be other K8s
-service within or outside the cluster, OTEL collectors, tap servers or other cloud services and endpoints.
+Upstream connections are between the Envoy gateway proxy and your services, such as Gloo upstreams, Kuberentes services, external services, OTel collectors, TAP servers, cloud functions, or other destinations.
 
-You can set upstream TCP keepalive with the
-[ConnectionConfig]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/connection.proto.sk/" >}})
-settings in the
+To enable TCP keepalive on upstream connections, configure the following [ConnectionConfig]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/connection.proto.sk/" >}}) settings in the
 [Upstream]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk/" >}}) resource.
 
-The following example will enable TCP keepalive probe between the gateway proxy and the upstream connection and send out the first probe when the connection has been idled for 60 seconds (keepaliveTime). Once triggered,
-a TCP keepalive probe will be sent out every 20 seconds (keepaliveInterval). If there is no response for 2 consecutive probes (keepaliveProbes), the connection will be dropped.
+The following example enables TCP keep-alive probes between the gateway proxy and the upstream connection. The first probe is sent when the connection has been idle for 60 seconds (`keepaliveTime`). After, a TCP keep-alive probe is sent every 20 seconds (`keepaliveInterval`). After no response for 2 consecutive probes (`keepaliveProbes`), the connection is dropped.
 
 ```yaml
 apiVersion: gloo.solo.io/v1
 kind: Upstream
 metadata: # collapsed for brevity
 spec:
-# the destinations settings are omitted for brevity
+# the destination settings are omitted for brevity
   connectionConfig:
     tcpKeepalive:
-      keepaliveInterval: 20
-      keepaliveProbes: 2
-      keepaliveTime: 60
+      keepaliveInterval: 20 # seconds
+      keepaliveProbes: 2 # number of probes
+      keepaliveTime: 60 # seconds
 ```
 
-## TCP Keepalive on Static Clusters
+## TCP keepalive on static clusters {#static-clusters}
 
 {{% notice note %}}
-Configurable in Gloo Gateway Enterprise version only
+{{< readfile file="static/content/enterprise_only_feature_disclaimer" markdown="true">}}
 {{% /notice %}}
 
-For static upstream clusters setup through helm templates, the `gloo.gatewayProxies.NAME.tcpKeepaliveTimeSeconds`
-setting can be used to change the keepalive timeout value (default is 60s). See
-[Enterprise Gloo Gateway]({{< versioned_link_path fromRoot="/reference/helm_chart_values/enterprise_helm_chart_values/" >}}) helm chare values for reference.
+For static upstream clusters that you set up through Helm templates, use the `gloo.gatewayProxies.NAME.tcpKeepaliveTimeSeconds`
+setting to change the keep-alive timeout value (default is 60s). For Helm chart values, see the
+[Enterprise Gloo Gateway]({{< versioned_link_path fromRoot="/reference/helm_chart_values/enterprise_helm_chart_values/" >}}) reference docs.
 
-The `tcp_keepalive_intvl` and `tcp_keepalive_probes` cannot be changed and the default value for your system will be used. To check the default values for your system:
+You cannot change the `tcp_keepalive_intvl` and `tcp_keepalive_probes` values. The default values are used instead. 
+
+To check the default values for your system:
 
 ```bash
 # sysctl -a | grep keepalive
