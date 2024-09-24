@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Change the params for the WeightedDestinationPlugin to accept a RouteActionParams
+      instead of a RouteParams. This allows the plugin to access the route object in
+      addition to the data it was already able to access.
