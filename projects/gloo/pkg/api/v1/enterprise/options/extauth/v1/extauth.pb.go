@@ -816,7 +816,7 @@ type CustomAuth struct {
 	// This allows the server to base the auth decision on metadata that you define on the source of the request.
 	//
 	// This attribute is analogous to Envoy's config.filter.http.ext_authz.v2.CheckSettings. See the official
-	// [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/ext_authz/v2/ext_authz.proto.html?highlight=ext_authz#config-filter-http-ext-authz-v2-checksettings)
+	// [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto#envoy-v3-api-msg-extensions-filters-http-ext-authz-v3-checksettings)
 	// for more details.
 	ContextExtensions map[string]string `protobuf:"bytes,1,rep,name=context_extensions,json=contextExtensions,proto3" json:"context_extensions,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// [Enterprise-only]
@@ -4364,7 +4364,7 @@ func (x *BackoffStrategy) GetMaxInterval() *duration.Duration {
 	return nil
 }
 
-// The message specifies the retry policy of the external gRPC service when unable to initally connect.
+// The message specifies the retry policy of the external gRPC service when unable to initially connect.
 type RetryPolicy struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -5819,7 +5819,7 @@ func (x *BasicAuth_Apr_SaltedHashedPassword) GetHashedPassword() string {
 	return ""
 }
 
-// Sha1 encryption type (https://datatracker.ietf.org/doc/html/rfc3174)
+// Sha1 encryption type (https://tools.ietf.org/html/rfc3174)
 // Sha1 is considered insecure and is not recommended for production use
 type BasicAuth_EncryptionType_Sha1 struct {
 	state         protoimpl.MessageState
@@ -5912,7 +5912,7 @@ type UserSession_InternalSession struct {
 	KeyPrefix string `protobuf:"bytes,2,opt,name=key_prefix,json=keyPrefix,proto3" json:"key_prefix,omitempty"`
 	// Domain used to validate against requests in order to ensure that request host name matches target domain.
 	// If the target domain is provided will prevent requests that do not match the target domain according to
-	// the domain matching specifications in RFC 6265. For more information, see https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.3
+	// the domain matching specifications in RFC 6265. For more information, see https://tools.ietf.org/html/rfc6265#section-5.1.3
 	TargetDomain string `protobuf:"bytes,3,opt,name=target_domain,json=targetDomain,proto3" json:"target_domain,omitempty"`
 }
 
@@ -5990,7 +5990,7 @@ type UserSession_RedisSession struct {
 	PreExpiryBuffer *duration.Duration `protobuf:"bytes,5,opt,name=pre_expiry_buffer,json=preExpiryBuffer,proto3" json:"pre_expiry_buffer,omitempty"`
 	// Domain used to validate against requests in order to ensure that request host name matches target domain.
 	// If the target domain is provided will prevent requests that do not match the target domain according to
-	// the domain matching specifications in RFC 6265. For more information, see https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.3
+	// the domain matching specifications in RFC 6265. For more information, see https://tools.ietf.org/html/rfc6265#section-5.1.3
 	TargetDomain string `protobuf:"bytes,6,opt,name=target_domain,json=targetDomain,proto3" json:"target_domain,omitempty"`
 	// If set, the name of the header that will include the randomly generated session id
 	// This would be used as part of the code exchange with the Oauth2 token endpoint
@@ -6478,7 +6478,7 @@ func (*OidcAuthorizationCode_Default) Descriptor() ([]byte, []int) {
 }
 
 // For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
-// This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
+// This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
 type OidcAuthorizationCode_Azure struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -6492,7 +6492,7 @@ type OidcAuthorizationCode_Azure struct {
 	// This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`,
 	// depending on how your Azure account is provisioned.
 	TenantId string `protobuf:"bytes,2,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
-	// The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API.
+	// The client secret of the ExtAuthService app that is registered with MS Entra to communicate with the MS Graph API.
 	ClientSecret *core.ResourceRef `protobuf:"bytes,3,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
 	// Redis connection details to cache MS Entera claims.
 	// This way, you avoid performance issues of accessing the Microsoft Graph API too many times.
@@ -6681,7 +6681,7 @@ type OidcAuthorizationCode_ClientAuthentication_PrivateKeyJwt struct {
 	//
 	// +kubebuilder:validation:Required
 	SigningKeyRef *core.ResourceRef `protobuf:"bytes,1,opt,name=signing_key_ref,json=signingKeyRef,proto3" json:"signing_key_ref,omitempty"`
-	// Amount of time for which the JWT is valid. No maximmum is enforced, but different IDPs may impose limits on how far in
+	// Amount of time for which the JWT is valid. No maximum is enforced, but different IDPs may impose limits on how far in
 	// the future the expiration time is allowed to be. If omitted, default is 5s.
 	ValidFor *duration.Duration `protobuf:"bytes,2,opt,name=valid_for,json=validFor,proto3" json:"valid_for,omitempty"`
 }
@@ -9900,8 +9900,8 @@ type ExtAuthConfig_OidcAuthorizationCodeConfig_PkJwtClientAuthenticationConfig s
 
 	// Signing key for the JWT used for client authentication
 	SigningKey string `protobuf:"bytes,1,opt,name=signing_key,json=signingKey,proto3" json:"signing_key,omitempty"`
-	// Amount of time for which the JWT is valid. No maximmum is enforced, but different IDPs may impose limits on how far in
-	// the future the expiration time is allowed to be. Defaults in 5s in front end, but expected to be set explictly here
+	// Amount of time for which the JWT is valid. No maximum is enforced, but different IDPs may impose limits on how far in
+	// the future the expiration time is allowed to be. Defaults in 5s in front end, but expected to be set explicitly here
 	ValidFor *duration.Duration `protobuf:"bytes,2,opt,name=valid_for,json=validFor,proto3" json:"valid_for,omitempty"`
 }
 
@@ -10156,7 +10156,7 @@ func (*ExtAuthConfig_OidcAuthorizationCodeConfig_Default) Descriptor() ([]byte, 
 }
 
 // For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
-// This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
+// This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
 type ExtAuthConfig_OidcAuthorizationCodeConfig_Azure struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -10170,7 +10170,7 @@ type ExtAuthConfig_OidcAuthorizationCodeConfig_Azure struct {
 	// This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`,
 	// depending on how your Azure account is provisioned.
 	TenantId string `protobuf:"bytes,2,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
-	// The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API.
+	// The client secret of the ExtAuthService app that is registered with MS Entra to communicate with the MS Graph API.
 	ClientSecret string `protobuf:"bytes,3,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
 	// Redis connection details to cache MS Entera claims.
 	// This way, you avoid performance issues of accessing the Microsoft Graph API too many times.

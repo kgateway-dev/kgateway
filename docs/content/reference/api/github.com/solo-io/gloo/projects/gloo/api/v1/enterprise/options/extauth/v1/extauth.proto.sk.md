@@ -402,7 +402,7 @@ This is used with custom auth servers.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `contextExtensions` | `map<string, string>` | When a request matches the virtual host, route, or weighted destination on which this configuration is defined, Gloo will add the given context_extensions to the request that is sent to the external authorization server. This allows the server to base the auth decision on metadata that you define on the source of the request. This attribute is analogous to Envoy's config.filter.http.ext_authz.v2.CheckSettings. See the official [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/ext_authz/v2/ext_authz.proto.html?highlight=ext_authz#config-filter-http-ext-authz-v2-checksettings) for more details. |
+| `contextExtensions` | `map<string, string>` | When a request matches the virtual host, route, or weighted destination on which this configuration is defined, Gloo will add the given context_extensions to the request that is sent to the external authorization server. This allows the server to base the auth decision on metadata that you define on the source of the request. This attribute is analogous to Envoy's config.filter.http.ext_authz.v2.CheckSettings. See the official [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto#envoy-v3-api-msg-extensions-filters-http-ext-authz-v3-checksettings) for more details. |
 | `name` | `string` | [Enterprise-only] Only required in the case where multiple auth servers are configured in Settings This name must match a key in the named_extauth Settings. |
 
 
@@ -521,7 +521,7 @@ The encryption/hashing algorithm to use to store the password
 ### Sha1
 
  
-Sha1 encryption type (https://datatracker.ietf.org/doc/html/rfc3174)
+Sha1 encryption type (https://tools.ietf.org/html/rfc3174)
 Sha1 is considered insecure and is not recommended for production use
 
 ```yaml
@@ -773,7 +773,7 @@ redis socket types
 | ----- | ---- | ----------- | 
 | `allowRefreshing` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Refresh expired id-tokens using the refresh-token. The tokens refreshes when the client issues a call. Defaults to false. To enable refreshing, set to true. |
 | `keyPrefix` | `string` | Prefix to append to cookie keys, such as for separate domain and subdomain prefixes. Cookie keys are stored in the form `<key_prefix>_<cookie_name>`. For more information, see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#attributes. |
-| `targetDomain` | `string` | Domain used to validate against requests in order to ensure that request host name matches target domain. If the target domain is provided will prevent requests that do not match the target domain according to the domain matching specifications in RFC 6265. For more information, see https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.3. |
+| `targetDomain` | `string` | Domain used to validate against requests in order to ensure that request host name matches target domain. If the target domain is provided will prevent requests that do not match the target domain according to the domain matching specifications in RFC 6265. For more information, see https://tools.ietf.org/html/rfc6265#section-5.1.3. |
 
 
 
@@ -801,7 +801,7 @@ redis socket types
 | `cookieName` | `string` | Cookie name to set and store the session id. If empty the default "__session" is used. |
 | `allowRefreshing` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Refresh expired id-tokens using the refresh-token. The tokens refreshes when the client issues a call. Defaults to true. To disable refreshing, set to false. |
 | `preExpiryBuffer` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Specifies a time buffer in which an id-token will be refreshed prior to its actual expiration. Defaults to 2 seconds. A duration of 0 will only refresh tokens after they have already expired. To refresh tokens, you must also set 'allowRefreshing' to 'true'; otherwise, this field is ignored. |
-| `targetDomain` | `string` | Domain used to validate against requests in order to ensure that request host name matches target domain. If the target domain is provided will prevent requests that do not match the target domain according to the domain matching specifications in RFC 6265. For more information, see https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.3. |
+| `targetDomain` | `string` | Domain used to validate against requests in order to ensure that request host name matches target domain. If the target domain is provided will prevent requests that do not match the target domain according to the domain matching specifications in RFC 6265. For more information, see https://tools.ietf.org/html/rfc6265#section-5.1.3. |
 | `headerName` | `string` | If set, the name of the header that will include the randomly generated session id This would be used as part of the code exchange with the Oauth2 token endpoint. |
 
 
@@ -1191,7 +1191,7 @@ Private Key JWT Authentication requires a signing key for the JWT and an duratio
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `signingKeyRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Signing key for the JWT used to authenticate the client +kubebuilder:validation:Required. |
-| `validFor` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Amount of time for which the JWT is valid. No maximmum is enforced, but different IDPs may impose limits on how far in the future the expiration time is allowed to be. If omitted, default is 5s. |
+| `validFor` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Amount of time for which the JWT is valid. No maximum is enforced, but different IDPs may impose limits on how far in the future the expiration time is allowed to be. If omitted, default is 5s. |
 
 
 
@@ -1217,7 +1217,7 @@ No-op, represents default OIDC behavior
 
  
 For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
-This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
+This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
 
 ```yaml
 "clientId": string
@@ -1231,7 +1231,7 @@ This way, you can enable distibuted claims and caching for when users are member
 | ----- | ---- | ----------- | 
 | `clientId` | `string` | The client ID for the ExtAuthService app that is registered in MS Entra, to access the Microsoft Graph API to retrieve distributed claims. This app is NOT the app that you want to configure external auth for. |
 | `tenantId` | `string` | The tenant ID represents the MS Entra organization ID where the ExtAuthService app is registered. This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`, depending on how your Azure account is provisioned. |
-| `clientSecret` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API. |
+| `clientSecret` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The client secret of the ExtAuthService app that is registered with MS Entra to communicate with the MS Graph API. |
 | `claimsCachingOptions` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) | Redis connection details to cache MS Entera claims. This way, you avoid performance issues of accessing the Microsoft Graph API too many times. Note that this setting does NOT turn on Redis caching for the user session. To turn on Redis user session caching, use the `userSessionConfig` field. |
 
 
@@ -1912,7 +1912,7 @@ Configuration defining an exponential back off strategy.
 ### RetryPolicy
 
  
-The message specifies the retry policy of the external gRPC service when unable to initally connect.
+The message specifies the retry policy of the external gRPC service when unable to initially connect.
 
 ```yaml
 "numRetries": .google.protobuf.UInt32Value
@@ -2350,7 +2350,7 @@ Fields for private key JWT Client Authentication.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `signingKey` | `string` | Signing key for the JWT used for client authentication. |
-| `validFor` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Amount of time for which the JWT is valid. No maximmum is enforced, but different IDPs may impose limits on how far in the future the expiration time is allowed to be. Defaults in 5s in front end, but expected to be set explictly here. |
+| `validFor` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Amount of time for which the JWT is valid. No maximum is enforced, but different IDPs may impose limits on how far in the future the expiration time is allowed to be. Defaults in 5s in front end, but expected to be set explicitly here. |
 
 
 
@@ -2434,7 +2434,7 @@ No-op, represents default OIDC behavior
 
  
 For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
-This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
+This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
 
 ```yaml
 "clientId": string
@@ -2448,7 +2448,7 @@ This way, you can enable distibuted claims and caching for when users are member
 | ----- | ---- | ----------- | 
 | `clientId` | `string` | The client ID for the ExtAuthService app that is registered in MS Entra, to access the Microsoft Graph API to retrieve distributed claims. This app is NOT the app that you want to configure external auth for. |
 | `tenantId` | `string` | The tenant ID represents the MS Entra organization ID where the ExtAuthService app is registered. This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`, depending on how your Azure account is provisioned. |
-| `clientSecret` | `string` | The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API. |
+| `clientSecret` | `string` | The client secret of the ExtAuthService app that is registered with MS Entra to communicate with the MS Graph API. |
 | `claimsCachingOptions` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) | Redis connection details to cache MS Entera claims. This way, you avoid performance issues of accessing the Microsoft Graph API too many times. Note that this setting does NOT turn on Redis caching for the user session. To turn on Redis user session caching, use the `userSessionConfig` field. |
 
 
