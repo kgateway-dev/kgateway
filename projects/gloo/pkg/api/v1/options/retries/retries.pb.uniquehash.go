@@ -157,6 +157,14 @@ func (m *RetryPolicy) HashUnique(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if _, err = hasher.Write([]byte("RetriableStatusCodes")); err != nil {
+		return 0, err
+	}
+	err = binary.Write(hasher, binary.LittleEndian, m.GetRetriableStatusCodes())
+	if err != nil {
+		return 0, err
+	}
+
 	switch m.PriorityPredicate.(type) {
 
 	case *RetryPolicy_PreviousPriorities_:
