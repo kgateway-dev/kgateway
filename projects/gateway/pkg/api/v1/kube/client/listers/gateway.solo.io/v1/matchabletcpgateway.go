@@ -20,8 +20,8 @@ package v1
 
 import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -38,25 +38,17 @@ type MatchableTcpGatewayLister interface {
 
 // matchableTcpGatewayLister implements the MatchableTcpGatewayLister interface.
 type matchableTcpGatewayLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v1.MatchableTcpGateway]
 }
 
 // NewMatchableTcpGatewayLister returns a new MatchableTcpGatewayLister.
 func NewMatchableTcpGatewayLister(indexer cache.Indexer) MatchableTcpGatewayLister {
-	return &matchableTcpGatewayLister{indexer: indexer}
-}
-
-// List lists all MatchableTcpGateways in the indexer.
-func (s *matchableTcpGatewayLister) List(selector labels.Selector) (ret []*v1.MatchableTcpGateway, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.MatchableTcpGateway))
-	})
-	return ret, err
+	return &matchableTcpGatewayLister{listers.New[*v1.MatchableTcpGateway](indexer, v1.Resource("matchabletcpgateway"))}
 }
 
 // MatchableTcpGateways returns an object that can list and get MatchableTcpGateways.
 func (s *matchableTcpGatewayLister) MatchableTcpGateways(namespace string) MatchableTcpGatewayNamespaceLister {
-	return matchableTcpGatewayNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return matchableTcpGatewayNamespaceLister{listers.NewNamespaced[*v1.MatchableTcpGateway](s.ResourceIndexer, namespace)}
 }
 
 // MatchableTcpGatewayNamespaceLister helps list and get MatchableTcpGateways.
@@ -74,26 +66,5 @@ type MatchableTcpGatewayNamespaceLister interface {
 // matchableTcpGatewayNamespaceLister implements the MatchableTcpGatewayNamespaceLister
 // interface.
 type matchableTcpGatewayNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all MatchableTcpGateways in the indexer for a given namespace.
-func (s matchableTcpGatewayNamespaceLister) List(selector labels.Selector) (ret []*v1.MatchableTcpGateway, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.MatchableTcpGateway))
-	})
-	return ret, err
-}
-
-// Get retrieves the MatchableTcpGateway from the indexer for a given namespace and name.
-func (s matchableTcpGatewayNamespaceLister) Get(name string) (*v1.MatchableTcpGateway, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("matchabletcpgateway"), name)
-	}
-	return obj.(*v1.MatchableTcpGateway), nil
+	listers.ResourceIndexer[*v1.MatchableTcpGateway]
 }

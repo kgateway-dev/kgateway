@@ -13,11 +13,11 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_struct "github.com/golang/protobuf/ptypes/struct"
-
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
-
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+
+	google_golang_org_protobuf_types_known_structpb "google.golang.org/protobuf/types/known/structpb"
+
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -53,9 +53,9 @@ func (m *UpstreamSpec) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetUseTls()).(clone.Cloner); ok {
-		target.UseTls = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.UseTls = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.UseTls = proto.Clone(m.GetUseTls()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.UseTls = proto.Clone(m.GetUseTls()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetServiceSpec()).(clone.Cloner); ok {
@@ -65,9 +65,9 @@ func (m *UpstreamSpec) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetAutoSniRewrite()).(clone.Cloner); ok {
-		target.AutoSniRewrite = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.AutoSniRewrite = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.AutoSniRewrite = proto.Clone(m.GetAutoSniRewrite()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.AutoSniRewrite = proto.Clone(m.GetAutoSniRewrite()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	return target
@@ -88,9 +88,9 @@ func (m *Host) Clone() proto.Message {
 	target.SniAddr = m.GetSniAddr()
 
 	if h, ok := interface{}(m.GetLoadBalancingWeight()).(clone.Cloner); ok {
-		target.LoadBalancingWeight = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.LoadBalancingWeight = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.LoadBalancingWeight = proto.Clone(m.GetLoadBalancingWeight()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.LoadBalancingWeight = proto.Clone(m.GetLoadBalancingWeight()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	if h, ok := interface{}(m.GetHealthCheckConfig()).(clone.Cloner); ok {
@@ -100,13 +100,13 @@ func (m *Host) Clone() proto.Message {
 	}
 
 	if m.GetMetadata() != nil {
-		target.Metadata = make(map[string]*github_com_golang_protobuf_ptypes_struct.Struct, len(m.GetMetadata()))
+		target.Metadata = make(map[string]*google_golang_org_protobuf_types_known_structpb.Struct, len(m.GetMetadata()))
 		for k, v := range m.GetMetadata() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Metadata[k] = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Struct)
+				target.Metadata[k] = h.Clone().(*google_golang_org_protobuf_types_known_structpb.Struct)
 			} else {
-				target.Metadata[k] = proto.Clone(v).(*github_com_golang_protobuf_ptypes_struct.Struct)
+				target.Metadata[k] = proto.Clone(v).(*google_golang_org_protobuf_types_known_structpb.Struct)
 			}
 
 		}

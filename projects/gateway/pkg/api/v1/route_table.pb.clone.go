@@ -13,9 +13,9 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
-
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -51,9 +51,9 @@ func (m *RouteTable) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetWeight()).(clone.Cloner); ok {
-		target.Weight = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.Int32Value)
+		target.Weight = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.Int32Value)
 	} else {
-		target.Weight = proto.Clone(m.GetWeight()).(*github_com_golang_protobuf_ptypes_wrappers.Int32Value)
+		target.Weight = proto.Clone(m.GetWeight()).(*google_golang_org_protobuf_types_known_wrapperspb.Int32Value)
 	}
 
 	if h, ok := interface{}(m.GetNamespacedStatuses()).(clone.Cloner); ok {
