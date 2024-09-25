@@ -13,9 +13,9 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
-
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -38,9 +38,9 @@ func (m *DatadogConfig) Clone() proto.Message {
 	target = &DatadogConfig{}
 
 	if h, ok := interface{}(m.GetServiceName()).(clone.Cloner); ok {
-		target.ServiceName = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.ServiceName = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	} else {
-		target.ServiceName = proto.Clone(m.GetServiceName()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.ServiceName = proto.Clone(m.GetServiceName()).(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	}
 
 	switch m.CollectorCluster.(type) {
