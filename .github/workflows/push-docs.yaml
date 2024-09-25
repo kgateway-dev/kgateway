@@ -25,10 +25,10 @@ jobs:
       run: |
         version=""
         if [[ "${{ github.event_name }}" == "release" ]]; then
-          version="${{ github.event.release.tag_name }}"
+          version=$(echo ${${{ github.event.release.tag_name }}%.*}.x)
         # PUSH IS FOR TESTING ONLY
         elif [[ "${{ github.event_name }}" == "push" ]]; then
-          version="v1.18.a"
+          version="v1.18.x"
         else
           version=${{ inputs.branch }}
         fi
@@ -38,10 +38,10 @@ jobs:
       run: |
         minor=""
         directory=""
-        if [[ "${{ steps.lts-version.outputs.lts }}" =~ "v1.18." ]]; then
+        if [[ "${{ steps.lts-version.outputs.lts }}" == "v1.18.x" ]]; then
           minor="1.18"
           directory="main"
-        elif [[ "${{ steps.lts-version.outputs.lts }}" =~ "v1.17." ]]; then
+        elif [[ "${{ steps.lts-version.outputs.lts }}" == "v1.17.x" ]]; then
           minor="1.17"
           directory="latest"
         else
