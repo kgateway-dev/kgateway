@@ -10,11 +10,11 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	_ "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	_ "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	_ "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (

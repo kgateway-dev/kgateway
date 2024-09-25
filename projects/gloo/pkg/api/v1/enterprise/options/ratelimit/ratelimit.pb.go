@@ -10,14 +10,14 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	duration "github.com/golang/protobuf/ptypes/duration"
-	_ "github.com/golang/protobuf/ptypes/wrappers"
 	local_ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/local_ratelimit"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	v1alpha1 "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	_ "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -88,9 +88,9 @@ type Settings struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	RatelimitServerRef *core.ResourceRef  `protobuf:"bytes,1,opt,name=ratelimit_server_ref,json=ratelimitServerRef,proto3" json:"ratelimit_server_ref,omitempty"`
-	RequestTimeout     *duration.Duration `protobuf:"bytes,2,opt,name=request_timeout,json=requestTimeout,proto3" json:"request_timeout,omitempty"`
-	DenyOnFail         bool               `protobuf:"varint,3,opt,name=deny_on_fail,json=denyOnFail,proto3" json:"deny_on_fail,omitempty"`
+	RatelimitServerRef *core.ResourceRef    `protobuf:"bytes,1,opt,name=ratelimit_server_ref,json=ratelimitServerRef,proto3" json:"ratelimit_server_ref,omitempty"`
+	RequestTimeout     *durationpb.Duration `protobuf:"bytes,2,opt,name=request_timeout,json=requestTimeout,proto3" json:"request_timeout,omitempty"`
+	DenyOnFail         bool                 `protobuf:"varint,3,opt,name=deny_on_fail,json=denyOnFail,proto3" json:"deny_on_fail,omitempty"`
 	// Set this to true to return Envoy's X-RateLimit headers to the downstream.
 	// reference docs here: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ratelimit/v3/rate_limit.proto.html#envoy-v3-api-field-extensions-filters-http-ratelimit-v3-ratelimit-enable-x-ratelimit-headers
 	EnableXRatelimitHeaders bool `protobuf:"varint,4,opt,name=enable_x_ratelimit_headers,json=enableXRatelimitHeaders,proto3" json:"enable_x_ratelimit_headers,omitempty"`
@@ -142,7 +142,7 @@ func (x *Settings) GetRatelimitServerRef() *core.ResourceRef {
 	return nil
 }
 
-func (x *Settings) GetRequestTimeout() *duration.Duration {
+func (x *Settings) GetRequestTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.RequestTimeout
 	}
@@ -708,7 +708,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ratelim
 	(*RateLimitRouteExtension)(nil),     // 7: ratelimit.options.gloo.solo.io.RateLimitRouteExtension
 	(*v1alpha1.RateLimit)(nil),          // 8: ratelimit.api.solo.io.RateLimit
 	(*core.ResourceRef)(nil),            // 9: core.solo.io.ResourceRef
-	(*duration.Duration)(nil),           // 10: google.protobuf.Duration
+	(*durationpb.Duration)(nil),         // 10: google.protobuf.Duration
 	(*v1alpha1.Descriptor)(nil),         // 11: ratelimit.api.solo.io.Descriptor
 	(*v1alpha1.SetDescriptor)(nil),      // 12: ratelimit.api.solo.io.SetDescriptor
 	(*v1alpha1.RateLimitActions)(nil),   // 13: ratelimit.api.solo.io.RateLimitActions

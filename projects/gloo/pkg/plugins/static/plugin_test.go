@@ -8,6 +8,7 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/solo-io/solo-kit/test/matchers"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -63,7 +64,8 @@ var _ = Describe("Plugin", func() {
 	Context("h2", func() {
 
 		It("should not http 2 by default", func() {
-			p.ProcessUpstream(params, upstream, out)
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(out.Http2ProtocolOptions).To(BeNil())
 		})
 	})
@@ -71,7 +73,8 @@ var _ = Describe("Plugin", func() {
 	Context("cluster type", func() {
 
 		It("use strict dns", func() {
-			p.ProcessUpstream(params, upstream, out)
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(out.GetType()).To(Equal(envoy_config_cluster_v3.Cluster_STRICT_DNS))
 		})
 
@@ -104,7 +107,8 @@ var _ = Describe("Plugin", func() {
 				Port: 1234,
 			}}
 			upstreamSpec.AutoSniRewrite = &wrappers.BoolValue{Value: false}
-			p.ProcessUpstream(params, upstream, out)
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(out.GetType()).To(Equal(envoy_config_cluster_v3.Cluster_STATIC))
 			expected := []*envoy_config_endpoint_v3.LocalityLbEndpoints{
 				{
@@ -166,7 +170,8 @@ var _ = Describe("Plugin", func() {
 				Port: 1234,
 			}}
 
-			p.ProcessUpstream(params, upstream, out)
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(out.GetType()).To(Equal(envoy_config_cluster_v3.Cluster_STRICT_DNS))
 		})
 	})
@@ -176,7 +181,8 @@ var _ = Describe("Plugin", func() {
 			upstreamSpec.Hosts[0].HealthCheckConfig = &v1static.Host_HealthCheckConfig{
 				Path: "/foo",
 			}
-			p.ProcessUpstream(params, upstream, out)
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(out.LoadAssignment.Endpoints[0].LbEndpoints[0].Metadata.FilterMetadata[AdvancedHttpCheckerName].Fields[PathFieldName].GetStringValue()).To(Equal("/foo"))
 			Expect(out.LoadAssignment.Endpoints[0].LbEndpoints[0].GetEndpoint().GetHealthCheckConfig().GetHostname()).To(Equal(upstreamSpec.Hosts[0].GetAddr()))
 		})
@@ -189,7 +195,8 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 			}}
-			p.ProcessUpstream(params, upstream, out)
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(out.LoadAssignment.Endpoints[0].LbEndpoints[0].GetEndpoint().GetHealthCheckConfig().GetHostname()).To(Equal("test.host.path"))
 		})
 	})
@@ -197,7 +204,8 @@ var _ = Describe("Plugin", func() {
 	Context("load balancing weight config", func() {
 		It("load balancing weight config gets propagated", func() {
 			upstreamSpec.Hosts[0].LoadBalancingWeight = &wrappers.UInt32Value{Value: 3}
-			p.ProcessUpstream(params, upstream, out)
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(out.LoadAssignment.Endpoints[0].LbEndpoints[0].LoadBalancingWeight.Value).To(Equal(uint32(3)))
 		})
 
@@ -210,26 +218,30 @@ var _ = Describe("Plugin", func() {
 			return utils.MustAnyToMessage(out.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
 		}
 		It("doesn't have ssl by default", func() {
-			p.ProcessUpstream(params, upstream, out)
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(tlsContext()).To(BeNil())
 		})
 
 		It("should autodetect ssl", func() {
 			upstreamSpec.Hosts[0].Port = 443
-			p.ProcessUpstream(params, upstream, out)
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(tlsContext()).ToNot(BeNil())
 		})
 
 		It("should not autoset ssl if usetls is false", func() {
 			upstreamSpec.UseTls = wrapperspb.Bool(false)
 			upstreamSpec.Hosts[0].Port = 443
-			p.ProcessUpstream(params, upstream, out)
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(tlsContext()).To(BeNil())
 		})
 
 		It("should allow configuring ssl", func() {
 			upstreamSpec.UseTls = wrapperspb.Bool(true)
-			p.ProcessUpstream(params, upstream, out)
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(tlsContext()).ToNot(BeNil())
 		})
 
@@ -311,12 +323,12 @@ var _ = Describe("Plugin", func() {
 				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
 			}
 			upstreamSpec.UseTls = wrapperspb.Bool(true)
-			p.ProcessUpstream(params, upstream, out)
-			Expect(tlsContext()).To(Equal(existing))
+			err = p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(tlsContext()).To(matchers.MatchProto(existing))
 		})
 
 		It("should not override existing tls config even with proxy protocol", func() {
-
 			existing := &envoyauth.UpstreamTlsContext{}
 			typedConfig, err := utils.MessageToAny(existing)
 			Expect(err).ToNot(HaveOccurred())
@@ -326,8 +338,9 @@ var _ = Describe("Plugin", func() {
 			}
 			upstreamSpec.UseTls = wrapperspb.Bool(true)
 			upstream.ProxyProtocolVersion = &wrapperspb.StringValue{Value: "V1"}
-			p.ProcessUpstream(params, upstream, out)
-			Expect(tlsContext()).To(Equal(existing))
+			err = p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(tlsContext()).To(matchers.MatchProto(existing))
 		})
 
 		It("should set proxy protocol", func() {
@@ -389,7 +402,8 @@ var _ = Describe("Plugin", func() {
 				Port: 1234,
 			})
 
-			p.ProcessUpstream(params, upstream, out)
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(tlsContext()).ToNot(BeNil())
 
 			Expect(out.TransportSocketMatches).To(HaveLen(2))
@@ -410,7 +424,8 @@ var _ = Describe("Plugin", func() {
 				Port: 1234,
 			})
 
-			p.ProcessUpstream(params, upstream, out)
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(tlsContext()).ToNot(BeNil())
 
 			Expect(out.TransportSocketMatches).To(HaveLen(2))

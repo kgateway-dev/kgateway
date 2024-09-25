@@ -18,7 +18,7 @@ weight: 5
 - [AzureOpenAI](#azureopenai)
 - [Mistral](#mistral)
 - [Anthropic](#anthropic)
-- [Multi](#multi)
+- [MultiPool](#multipool)
 - [Backend](#backend)
 - [Priority](#priority)
 - [RouteSettings](#routesettings)
@@ -134,7 +134,7 @@ port: 443 # Port is optional and will default to 443 for HTTPS
 "mistral": .ai.options.gloo.solo.io.UpstreamSpec.Mistral
 "anthropic": .ai.options.gloo.solo.io.UpstreamSpec.Anthropic
 "azureOpenai": .ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI
-"multi": .ai.options.gloo.solo.io.UpstreamSpec.Multi
+"multi": .ai.options.gloo.solo.io.UpstreamSpec.MultiPool
 
 ```
 
@@ -144,7 +144,7 @@ port: 443 # Port is optional and will default to 443 for HTTPS
 | `mistral` | [.ai.options.gloo.solo.io.UpstreamSpec.Mistral](../ai.proto.sk/#mistral) | Mistral upstream. Only one of `mistral`, `openai`, `anthropic`, `azureOpenai`, or `multi` can be set. |
 | `anthropic` | [.ai.options.gloo.solo.io.UpstreamSpec.Anthropic](../ai.proto.sk/#anthropic) | Anthropic upstream. Only one of `anthropic`, `openai`, `mistral`, `azureOpenai`, or `multi` can be set. |
 | `azureOpenai` | [.ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI upstream. Only one of `azureOpenai`, `openai`, `mistral`, `anthropic`, or `multi` can be set. |
-| `multi` | [.ai.options.gloo.solo.io.UpstreamSpec.Multi](../ai.proto.sk/#multi) | multi upstream. Only one of `multi`, `openai`, `mistral`, `anthropic`, or `azureOpenai` can be set. |
+| `multi` | [.ai.options.gloo.solo.io.UpstreamSpec.MultiPool](../ai.proto.sk/#multipool) | multi upstream. Only one of `multi`, `openai`, `mistral`, `anthropic`, or `azureOpenai` can be set. |
 
 
 
@@ -260,7 +260,7 @@ Settings for the Mistral API
 
 
 ---
-### Multi
+### MultiPool
 
  
 multi:
@@ -292,13 +292,13 @@ namespace: gloo-system
 priority: 2
 
 ```yaml
-"priorities": []ai.options.gloo.solo.io.UpstreamSpec.Multi.Priority
+"priorities": []ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Priority
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `priorities` | [[]ai.options.gloo.solo.io.UpstreamSpec.Multi.Priority](../ai.proto.sk/#priority) |  |
+| `priorities` | [[]ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Priority](../ai.proto.sk/#priority) | List of prioritized backend pools. |
 
 
 
@@ -332,15 +332,15 @@ priority: 2
 
 
 ```yaml
-"pool": []ai.options.gloo.solo.io.UpstreamSpec.Multi.Backend
+"pool": []ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend
 "priority": int
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `pool` | [[]ai.options.gloo.solo.io.UpstreamSpec.Multi.Backend](../ai.proto.sk/#backend) | List of upstreams to use repeated UpstreamSpec upstreams = 1;. |
-| `priority` | `int` |  |
+| `pool` | [[]ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend](../ai.proto.sk/#backend) | List of upstreams to use repeated UpstreamSpec upstreams = 1;. |
+| `priority` | `int` | Priority of the pool If unset will default to the index in the list. |
 
 
 
@@ -354,9 +354,9 @@ This allows users to configure things like:
 - Prompt Enrichment
 - Retrieval Augmented Generation
 - Semantic Caching
-- Backup Models
 - Defaults to merge with the user input fields
 - Guardrails
+- Route Type
 
 NOTE: These settings may only be applied to a route which uses an LLMProvider backend!
 

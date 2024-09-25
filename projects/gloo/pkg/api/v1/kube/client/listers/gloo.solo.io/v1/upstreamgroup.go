@@ -20,14 +20,16 @@ package v1
 
 import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
 // UpstreamGroupLister helps list UpstreamGroups.
+// All objects returned here must be treated as read-only.
 type UpstreamGroupLister interface {
 	// List lists all UpstreamGroups in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.UpstreamGroup, err error)
 	// UpstreamGroups returns an object that can list and get UpstreamGroups.
 	UpstreamGroups(namespace string) UpstreamGroupNamespaceLister
@@ -36,32 +38,27 @@ type UpstreamGroupLister interface {
 
 // upstreamGroupLister implements the UpstreamGroupLister interface.
 type upstreamGroupLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v1.UpstreamGroup]
 }
 
 // NewUpstreamGroupLister returns a new UpstreamGroupLister.
 func NewUpstreamGroupLister(indexer cache.Indexer) UpstreamGroupLister {
-	return &upstreamGroupLister{indexer: indexer}
-}
-
-// List lists all UpstreamGroups in the indexer.
-func (s *upstreamGroupLister) List(selector labels.Selector) (ret []*v1.UpstreamGroup, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.UpstreamGroup))
-	})
-	return ret, err
+	return &upstreamGroupLister{listers.New[*v1.UpstreamGroup](indexer, v1.Resource("upstreamgroup"))}
 }
 
 // UpstreamGroups returns an object that can list and get UpstreamGroups.
 func (s *upstreamGroupLister) UpstreamGroups(namespace string) UpstreamGroupNamespaceLister {
-	return upstreamGroupNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return upstreamGroupNamespaceLister{listers.NewNamespaced[*v1.UpstreamGroup](s.ResourceIndexer, namespace)}
 }
 
 // UpstreamGroupNamespaceLister helps list and get UpstreamGroups.
+// All objects returned here must be treated as read-only.
 type UpstreamGroupNamespaceLister interface {
 	// List lists all UpstreamGroups in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.UpstreamGroup, err error)
 	// Get retrieves the UpstreamGroup from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1.UpstreamGroup, error)
 	UpstreamGroupNamespaceListerExpansion
 }
@@ -69,26 +66,5 @@ type UpstreamGroupNamespaceLister interface {
 // upstreamGroupNamespaceLister implements the UpstreamGroupNamespaceLister
 // interface.
 type upstreamGroupNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all UpstreamGroups in the indexer for a given namespace.
-func (s upstreamGroupNamespaceLister) List(selector labels.Selector) (ret []*v1.UpstreamGroup, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.UpstreamGroup))
-	})
-	return ret, err
-}
-
-// Get retrieves the UpstreamGroup from the indexer for a given namespace and name.
-func (s upstreamGroupNamespaceLister) Get(name string) (*v1.UpstreamGroup, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("upstreamgroup"), name)
-	}
-	return obj.(*v1.UpstreamGroup), nil
+	listers.ResourceIndexer[*v1.UpstreamGroup]
 }

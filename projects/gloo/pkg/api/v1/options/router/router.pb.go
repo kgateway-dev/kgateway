@@ -10,9 +10,9 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -30,13 +30,13 @@ type Router struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Do not add any additional x-envoy- headers to requests or responses. This only affects the router filter generated x-envoy- headers, other Envoy filters and the HTTP connection manager may continue to set x-envoy- headers.
-	SuppressEnvoyHeaders *wrappers.BoolValue `protobuf:"bytes,1,opt,name=suppress_envoy_headers,json=suppressEnvoyHeaders,proto3" json:"suppress_envoy_headers,omitempty"`
+	SuppressEnvoyHeaders *wrapperspb.BoolValue `protobuf:"bytes,1,opt,name=suppress_envoy_headers,json=suppressEnvoyHeaders,proto3" json:"suppress_envoy_headers,omitempty"`
 	// Whether dynamic stats should be enabled or disabled. If not set, or if
 	// set to true, dynamic stats will be enabled. Otherwise, if set to false,
 	// dynamic stats will be disabled. It is strongly recommended to leave this
 	// in the default state in production - it should only be set to false in
 	// very specific benchmarking or profiling scenarios.
-	DynamicStats *wrappers.BoolValue `protobuf:"bytes,2,opt,name=dynamic_stats,json=dynamicStats,proto3" json:"dynamic_stats,omitempty"`
+	DynamicStats *wrapperspb.BoolValue `protobuf:"bytes,2,opt,name=dynamic_stats,json=dynamicStats,proto3" json:"dynamic_stats,omitempty"`
 }
 
 func (x *Router) Reset() {
@@ -71,14 +71,14 @@ func (*Router) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_options_router_router_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Router) GetSuppressEnvoyHeaders() *wrappers.BoolValue {
+func (x *Router) GetSuppressEnvoyHeaders() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.SuppressEnvoyHeaders
 	}
 	return nil
 }
 
-func (x *Router) GetDynamicStats() *wrappers.BoolValue {
+func (x *Router) GetDynamicStats() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.DynamicStats
 	}
@@ -127,8 +127,8 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_options_router_router_pro
 
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_router_router_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_router_router_proto_goTypes = []interface{}{
-	(*Router)(nil),             // 0: gloo.solo.io.Router
-	(*wrappers.BoolValue)(nil), // 1: google.protobuf.BoolValue
+	(*Router)(nil),               // 0: gloo.solo.io.Router
+	(*wrapperspb.BoolValue)(nil), // 1: google.protobuf.BoolValue
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_router_router_proto_depIdxs = []int32{
 	1, // 0: gloo.solo.io.Router.suppress_envoy_headers:type_name -> google.protobuf.BoolValue

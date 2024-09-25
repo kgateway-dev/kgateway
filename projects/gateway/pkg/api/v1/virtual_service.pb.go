@@ -10,7 +10,6 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	matchers "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	ssl "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
@@ -18,6 +17,7 @@ import (
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -430,10 +430,10 @@ type Route struct {
 	Matchers []*matchers.Matcher `protobuf:"bytes,1,rep,name=matchers,proto3" json:"matchers,omitempty"`
 	// Whether this route as a child should inherit headers, methods, and query parameter matchers from the parent.
 	// Defaults to value of parent; for virtual services (no parent) defaults to false.
-	InheritableMatchers *wrappers.BoolValue `protobuf:"bytes,8,opt,name=inheritable_matchers,json=inheritableMatchers,proto3" json:"inheritable_matchers,omitempty"`
+	InheritableMatchers *wrapperspb.BoolValue `protobuf:"bytes,8,opt,name=inheritable_matchers,json=inheritableMatchers,proto3" json:"inheritable_matchers,omitempty"`
 	// Whether this route as a child should inherit path matchers (i.e., path itself, case-sensitive setting) from
 	// the parent. Defaults to value of parent; for virtual services (no parent) defaults to false.
-	InheritablePathMatchers *wrappers.BoolValue `protobuf:"bytes,9,opt,name=inheritable_path_matchers,json=inheritablePathMatchers,proto3" json:"inheritable_path_matchers,omitempty"`
+	InheritablePathMatchers *wrapperspb.BoolValue `protobuf:"bytes,9,opt,name=inheritable_path_matchers,json=inheritablePathMatchers,proto3" json:"inheritable_path_matchers,omitempty"`
 	// The Route Action Defines what action the proxy should take when a request matches the route.
 	//
 	// Types that are assignable to Action:
@@ -495,14 +495,14 @@ func (x *Route) GetMatchers() []*matchers.Matcher {
 	return nil
 }
 
-func (x *Route) GetInheritableMatchers() *wrappers.BoolValue {
+func (x *Route) GetInheritableMatchers() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.InheritableMatchers
 	}
 	return nil
 }
 
-func (x *Route) GetInheritablePathMatchers() *wrappers.BoolValue {
+func (x *Route) GetInheritablePathMatchers() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.InheritablePathMatchers
 	}
@@ -1156,7 +1156,7 @@ var file_github_com_solo_io_gloo_projects_gateway_api_v1_virtual_service_proto_g
 	(*core.Metadata)(nil),                       // 11: core.solo.io.Metadata
 	(*v1.VirtualHostOptions)(nil),               // 12: gloo.solo.io.VirtualHostOptions
 	(*matchers.Matcher)(nil),                    // 13: matchers.core.gloo.solo.io.Matcher
-	(*wrappers.BoolValue)(nil),                  // 14: google.protobuf.BoolValue
+	(*wrapperspb.BoolValue)(nil),                // 14: google.protobuf.BoolValue
 	(*v1.RouteAction)(nil),                      // 15: gloo.solo.io.RouteAction
 	(*v1.RedirectAction)(nil),                   // 16: gloo.solo.io.RedirectAction
 	(*v1.DirectResponseAction)(nil),             // 17: gloo.solo.io.DirectResponseAction

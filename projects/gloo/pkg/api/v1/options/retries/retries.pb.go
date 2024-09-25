@@ -11,11 +11,11 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	duration "github.com/golang/protobuf/ptypes/duration"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -32,9 +32,9 @@ type RetryBackOff struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Specifies the base interval for a retry
-	BaseInterval *duration.Duration `protobuf:"bytes,1,opt,name=base_interval,json=baseInterval,proto3" json:"base_interval,omitempty"`
+	BaseInterval *durationpb.Duration `protobuf:"bytes,1,opt,name=base_interval,json=baseInterval,proto3" json:"base_interval,omitempty"`
 	// Specifies the max interval for a retry
-	MaxInterval *duration.Duration `protobuf:"bytes,2,opt,name=max_interval,json=maxInterval,proto3" json:"max_interval,omitempty"`
+	MaxInterval *durationpb.Duration `protobuf:"bytes,2,opt,name=max_interval,json=maxInterval,proto3" json:"max_interval,omitempty"`
 }
 
 func (x *RetryBackOff) Reset() {
@@ -69,14 +69,14 @@ func (*RetryBackOff) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_options_retries_retries_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *RetryBackOff) GetBaseInterval() *duration.Duration {
+func (x *RetryBackOff) GetBaseInterval() *durationpb.Duration {
 	if x != nil {
 		return x.BaseInterval
 	}
 	return nil
 }
 
-func (x *RetryBackOff) GetMaxInterval() *duration.Duration {
+func (x *RetryBackOff) GetMaxInterval() *durationpb.Duration {
 	if x != nil {
 		return x.MaxInterval
 	}
@@ -96,14 +96,14 @@ type RetryPolicy struct {
 	// defaults to 1. These are the same conditions [documented for Envoy](https://www.envoyproxy.io/docs/envoy/v1.14.1/configuration/http/http_filters/router_filter#config-http-filters-router-x-envoy-retry-on)
 	NumRetries uint32 `protobuf:"varint,2,opt,name=num_retries,json=numRetries,proto3" json:"num_retries,omitempty"`
 	// Specifies a non-zero upstream timeout per retry attempt. This parameter is optional.
-	PerTryTimeout *duration.Duration `protobuf:"bytes,3,opt,name=per_try_timeout,json=perTryTimeout,proto3" json:"per_try_timeout,omitempty"`
+	PerTryTimeout *durationpb.Duration `protobuf:"bytes,3,opt,name=per_try_timeout,json=perTryTimeout,proto3" json:"per_try_timeout,omitempty"`
 	// Specifies the retry policy interval
 	RetryBackOff *RetryBackOff `protobuf:"bytes,4,opt,name=retry_back_off,json=retryBackOff,proto3" json:"retry_back_off,omitempty"`
 	// Types that are assignable to PriorityPredicate:
 	//
 	//	*RetryPolicy_PreviousPriorities_
 	PriorityPredicate isRetryPolicy_PriorityPredicate `protobuf_oneof:"priority_predicate"`
-	// HTTP status codes that should trigger a retry in addition to those specified by retry_on.
+	// Optional: HTTP status codes that should trigger a retry in addition to those specified by retry_on.
 	RetriableStatusCodes []uint32 `protobuf:"varint,6,rep,packed,name=retriable_status_codes,json=retriableStatusCodes,proto3" json:"retriable_status_codes,omitempty"`
 }
 
@@ -153,7 +153,7 @@ func (x *RetryPolicy) GetNumRetries() uint32 {
 	return 0
 }
 
-func (x *RetryPolicy) GetPerTryTimeout() *duration.Duration {
+func (x *RetryPolicy) GetPerTryTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.PerTryTimeout
 	}
@@ -207,7 +207,7 @@ type RetryPolicy_PreviousPriorities struct {
 
 	// Specify the update frequency for the previous priorities. For more information about previous priorities, see the [Envoy docs](https://www.envoyproxy.io/docs/envoy/v1.30.1/api-v3/extensions/retry/priority/previous_priorities/v3/previous_priorities_config.proto#envoy-v3-api-file-envoy-extensions-retry-priority-previous-priorities-v3-previous-priorities-config-proto).
 	// This option only works in combination with an Upstream failover policy that enables priorities.
-	UpdateFrequency *wrappers.UInt32Value `protobuf:"bytes,1,opt,name=update_frequency,json=updateFrequency,proto3" json:"update_frequency,omitempty"`
+	UpdateFrequency *wrapperspb.UInt32Value `protobuf:"bytes,1,opt,name=update_frequency,json=updateFrequency,proto3" json:"update_frequency,omitempty"`
 }
 
 func (x *RetryPolicy_PreviousPriorities) Reset() {
@@ -242,7 +242,7 @@ func (*RetryPolicy_PreviousPriorities) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_options_retries_retries_proto_rawDescGZIP(), []int{1, 0}
 }
 
-func (x *RetryPolicy_PreviousPriorities) GetUpdateFrequency() *wrappers.UInt32Value {
+func (x *RetryPolicy_PreviousPriorities) GetUpdateFrequency() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.UpdateFrequency
 	}
@@ -333,8 +333,8 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_retries_retries_pr
 	(*RetryBackOff)(nil),                   // 0: retries.options.gloo.solo.io.RetryBackOff
 	(*RetryPolicy)(nil),                    // 1: retries.options.gloo.solo.io.RetryPolicy
 	(*RetryPolicy_PreviousPriorities)(nil), // 2: retries.options.gloo.solo.io.RetryPolicy.PreviousPriorities
-	(*duration.Duration)(nil),              // 3: google.protobuf.Duration
-	(*wrappers.UInt32Value)(nil),           // 4: google.protobuf.UInt32Value
+	(*durationpb.Duration)(nil),            // 3: google.protobuf.Duration
+	(*wrapperspb.UInt32Value)(nil),         // 4: google.protobuf.UInt32Value
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_retries_retries_proto_depIdxs = []int32{
 	3, // 0: retries.options.gloo.solo.io.RetryBackOff.base_interval:type_name -> google.protobuf.Duration

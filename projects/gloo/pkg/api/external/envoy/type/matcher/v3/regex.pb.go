@@ -11,11 +11,11 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/udpa/annotations"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -205,7 +205,7 @@ type RegexMatcher_GoogleRE2 struct {
 	// instead of being done by each individual client.
 	//
 	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/regex.proto.
-	MaxProgramSize *wrappers.UInt32Value `protobuf:"bytes,1,opt,name=max_program_size,json=maxProgramSize,proto3" json:"max_program_size,omitempty"`
+	MaxProgramSize *wrapperspb.UInt32Value `protobuf:"bytes,1,opt,name=max_program_size,json=maxProgramSize,proto3" json:"max_program_size,omitempty"`
 }
 
 func (x *RegexMatcher_GoogleRE2) Reset() {
@@ -241,7 +241,7 @@ func (*RegexMatcher_GoogleRE2) Descriptor() ([]byte, []int) {
 }
 
 // Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/regex.proto.
-func (x *RegexMatcher_GoogleRE2) GetMaxProgramSize() *wrappers.UInt32Value {
+func (x *RegexMatcher_GoogleRE2) GetMaxProgramSize() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.MaxProgramSize
 	}
@@ -331,7 +331,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_type_matcher_v
 	(*RegexMatcher)(nil),            // 0: solo.io.envoy.type.matcher.v3.RegexMatcher
 	(*RegexMatchAndSubstitute)(nil), // 1: solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute
 	(*RegexMatcher_GoogleRE2)(nil),  // 2: solo.io.envoy.type.matcher.v3.RegexMatcher.GoogleRE2
-	(*wrappers.UInt32Value)(nil),    // 3: google.protobuf.UInt32Value
+	(*wrapperspb.UInt32Value)(nil),  // 3: google.protobuf.UInt32Value
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_type_matcher_v3_regex_proto_depIdxs = []int32{
 	2, // 0: solo.io.envoy.type.matcher.v3.RegexMatcher.google_re2:type_name -> solo.io.envoy.type.matcher.v3.RegexMatcher.GoogleRE2

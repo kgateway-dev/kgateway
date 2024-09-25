@@ -10,13 +10,13 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	_ "github.com/golang/protobuf/ptypes/any"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	_ "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	_ "google.golang.org/protobuf/types/known/anypb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -35,9 +35,9 @@ type ListenerTracingSettings struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Optional. If specified, Envoy will include the headers and header values for any matching request headers.
-	RequestHeadersForTags []*wrappers.StringValue `protobuf:"bytes,1,rep,name=request_headers_for_tags,json=requestHeadersForTags,proto3" json:"request_headers_for_tags,omitempty"`
+	RequestHeadersForTags []*wrapperspb.StringValue `protobuf:"bytes,1,rep,name=request_headers_for_tags,json=requestHeadersForTags,proto3" json:"request_headers_for_tags,omitempty"`
 	// Optional. If true, Envoy will include logs for streaming events. Default: false.
-	Verbose *wrappers.BoolValue `protobuf:"bytes,2,opt,name=verbose,proto3" json:"verbose,omitempty"`
+	Verbose *wrapperspb.BoolValue `protobuf:"bytes,2,opt,name=verbose,proto3" json:"verbose,omitempty"`
 	// Requests can produce traces by random sampling or when the `x-client-trace-id` header is provided.
 	// TracePercentages defines the limits for random, forced, and overall tracing percentages.
 	TracePercentages *TracePercentages `protobuf:"bytes,3,opt,name=trace_percentages,json=tracePercentages,proto3" json:"trace_percentages,omitempty"`
@@ -89,14 +89,14 @@ func (*ListenerTracingSettings) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ListenerTracingSettings) GetRequestHeadersForTags() []*wrappers.StringValue {
+func (x *ListenerTracingSettings) GetRequestHeadersForTags() []*wrapperspb.StringValue {
 	if x != nil {
 		return x.RequestHeadersForTags
 	}
 	return nil
 }
 
-func (x *ListenerTracingSettings) GetVerbose() *wrappers.BoolValue {
+func (x *ListenerTracingSettings) GetVerbose() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.Verbose
 	}
@@ -203,7 +203,7 @@ type RouteTracingSettings struct {
 	// TracePercentages defines the limits for random, forced, and overall tracing percentages.
 	TracePercentages *TracePercentages `protobuf:"bytes,2,opt,name=trace_percentages,json=tracePercentages,proto3" json:"trace_percentages,omitempty"`
 	// Optional. Default is true, If set to false, the tracing headers will not propagate to the upstream.
-	Propagate *wrappers.BoolValue `protobuf:"bytes,3,opt,name=propagate,proto3" json:"propagate,omitempty"`
+	Propagate *wrapperspb.BoolValue `protobuf:"bytes,3,opt,name=propagate,proto3" json:"propagate,omitempty"`
 }
 
 func (x *RouteTracingSettings) Reset() {
@@ -252,7 +252,7 @@ func (x *RouteTracingSettings) GetTracePercentages() *TracePercentages {
 	return nil
 }
 
-func (x *RouteTracingSettings) GetPropagate() *wrappers.BoolValue {
+func (x *RouteTracingSettings) GetPropagate() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.Propagate
 	}
@@ -269,15 +269,15 @@ type TracePercentages struct {
 	// Percentage of requests that should produce traces when the `x-client-trace-id` header is provided.
 	// optional, defaults to 100.0
 	// This should be a value between 0.0 and 100.0, with up to 6 significant digits.
-	ClientSamplePercentage *wrappers.FloatValue `protobuf:"bytes,1,opt,name=client_sample_percentage,json=clientSamplePercentage,proto3" json:"client_sample_percentage,omitempty"`
+	ClientSamplePercentage *wrapperspb.FloatValue `protobuf:"bytes,1,opt,name=client_sample_percentage,json=clientSamplePercentage,proto3" json:"client_sample_percentage,omitempty"`
 	// Percentage of requests that should produce traces by random sampling.
 	// optional, defaults to 100.0
 	// This should be a value between 0.0 and 100.0, with up to 6 significant digits.
-	RandomSamplePercentage *wrappers.FloatValue `protobuf:"bytes,2,opt,name=random_sample_percentage,json=randomSamplePercentage,proto3" json:"random_sample_percentage,omitempty"`
+	RandomSamplePercentage *wrapperspb.FloatValue `protobuf:"bytes,2,opt,name=random_sample_percentage,json=randomSamplePercentage,proto3" json:"random_sample_percentage,omitempty"`
 	// Overall percentage of requests that should produce traces.
 	// optional, defaults to 100.0
 	// This should be a value between 0.0 and 100.0, with up to 6 significant digits.
-	OverallSamplePercentage *wrappers.FloatValue `protobuf:"bytes,3,opt,name=overall_sample_percentage,json=overallSamplePercentage,proto3" json:"overall_sample_percentage,omitempty"`
+	OverallSamplePercentage *wrapperspb.FloatValue `protobuf:"bytes,3,opt,name=overall_sample_percentage,json=overallSamplePercentage,proto3" json:"overall_sample_percentage,omitempty"`
 }
 
 func (x *TracePercentages) Reset() {
@@ -312,21 +312,21 @@ func (*TracePercentages) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *TracePercentages) GetClientSamplePercentage() *wrappers.FloatValue {
+func (x *TracePercentages) GetClientSamplePercentage() *wrapperspb.FloatValue {
 	if x != nil {
 		return x.ClientSamplePercentage
 	}
 	return nil
 }
 
-func (x *TracePercentages) GetRandomSamplePercentage() *wrappers.FloatValue {
+func (x *TracePercentages) GetRandomSamplePercentage() *wrapperspb.FloatValue {
 	if x != nil {
 		return x.RandomSamplePercentage
 	}
 	return nil
 }
 
-func (x *TracePercentages) GetOverallSamplePercentage() *wrappers.FloatValue {
+func (x *TracePercentages) GetOverallSamplePercentage() *wrapperspb.FloatValue {
 	if x != nil {
 		return x.OverallSamplePercentage
 	}
@@ -341,12 +341,12 @@ type TracingTagEnvironmentVariable struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Used to populate the tag name.
-	Tag *wrappers.StringValue `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
+	Tag *wrapperspb.StringValue `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
 	// Environment variable name to obtain the value to populate the tag value.
-	Name *wrappers.StringValue `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Name *wrapperspb.StringValue `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	// When the environment variable is not found, the tag value will be populated with this default value if specified,
 	// otherwise no tag will be populated.
-	DefaultValue *wrappers.StringValue `protobuf:"bytes,3,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`
+	DefaultValue *wrapperspb.StringValue `protobuf:"bytes,3,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`
 }
 
 func (x *TracingTagEnvironmentVariable) Reset() {
@@ -381,21 +381,21 @@ func (*TracingTagEnvironmentVariable) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *TracingTagEnvironmentVariable) GetTag() *wrappers.StringValue {
+func (x *TracingTagEnvironmentVariable) GetTag() *wrapperspb.StringValue {
 	if x != nil {
 		return x.Tag
 	}
 	return nil
 }
 
-func (x *TracingTagEnvironmentVariable) GetName() *wrappers.StringValue {
+func (x *TracingTagEnvironmentVariable) GetName() *wrapperspb.StringValue {
 	if x != nil {
 		return x.Name
 	}
 	return nil
 }
 
-func (x *TracingTagEnvironmentVariable) GetDefaultValue() *wrappers.StringValue {
+func (x *TracingTagEnvironmentVariable) GetDefaultValue() *wrapperspb.StringValue {
 	if x != nil {
 		return x.DefaultValue
 	}
@@ -410,9 +410,9 @@ type TracingTagLiteral struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Used to populate the tag name.
-	Tag *wrappers.StringValue `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
+	Tag *wrapperspb.StringValue `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
 	// Static literal value to populate the tag value.
-	Value *wrappers.StringValue `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	Value *wrapperspb.StringValue `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 }
 
 func (x *TracingTagLiteral) Reset() {
@@ -447,14 +447,14 @@ func (*TracingTagLiteral) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *TracingTagLiteral) GetTag() *wrappers.StringValue {
+func (x *TracingTagLiteral) GetTag() *wrapperspb.StringValue {
 	if x != nil {
 		return x.Tag
 	}
 	return nil
 }
 
-func (x *TracingTagLiteral) GetValue() *wrappers.StringValue {
+func (x *TracingTagLiteral) GetValue() *wrapperspb.StringValue {
 	if x != nil {
 		return x.Value
 	}
@@ -634,13 +634,13 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_pr
 	(*TracePercentages)(nil),              // 2: tracing.options.gloo.solo.io.TracePercentages
 	(*TracingTagEnvironmentVariable)(nil), // 3: tracing.options.gloo.solo.io.TracingTagEnvironmentVariable
 	(*TracingTagLiteral)(nil),             // 4: tracing.options.gloo.solo.io.TracingTagLiteral
-	(*wrappers.StringValue)(nil),          // 5: google.protobuf.StringValue
-	(*wrappers.BoolValue)(nil),            // 6: google.protobuf.BoolValue
+	(*wrapperspb.StringValue)(nil),        // 5: google.protobuf.StringValue
+	(*wrapperspb.BoolValue)(nil),          // 6: google.protobuf.BoolValue
 	(*v3.ZipkinConfig)(nil),               // 7: solo.io.envoy.config.trace.v3.ZipkinConfig
 	(*v3.DatadogConfig)(nil),              // 8: solo.io.envoy.config.trace.v3.DatadogConfig
 	(*v3.OpenTelemetryConfig)(nil),        // 9: solo.io.envoy.config.trace.v3.OpenTelemetryConfig
 	(*v3.OpenCensusConfig)(nil),           // 10: solo.io.envoy.config.trace.v3.OpenCensusConfig
-	(*wrappers.FloatValue)(nil),           // 11: google.protobuf.FloatValue
+	(*wrapperspb.FloatValue)(nil),         // 11: google.protobuf.FloatValue
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_proto_depIdxs = []int32{
 	5,  // 0: tracing.options.gloo.solo.io.ListenerTracingSettings.request_headers_for_tags:type_name -> google.protobuf.StringValue

@@ -11,15 +11,15 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	any1 "github.com/golang/protobuf/ptypes/any"
-	_ "github.com/golang/protobuf/ptypes/duration"
-	_struct "github.com/golang/protobuf/ptypes/struct"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/udpa/annotations"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	anypb "google.golang.org/protobuf/types/known/anypb"
+	_ "google.golang.org/protobuf/types/known/durationpb"
+	structpb "google.golang.org/protobuf/types/known/structpb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -293,7 +293,7 @@ type BuildVersion struct {
 	Version *v3.SemanticVersion `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
 	// Free-form build information.
 	// Envoy defines several well known keys in the source/common/common/version.h file
-	Metadata *_struct.Struct `protobuf:"bytes,2,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	Metadata *structpb.Struct `protobuf:"bytes,2,opt,name=metadata,proto3" json:"metadata,omitempty"`
 }
 
 func (x *BuildVersion) Reset() {
@@ -335,7 +335,7 @@ func (x *BuildVersion) GetVersion() *v3.SemanticVersion {
 	return nil
 }
 
-func (x *BuildVersion) GetMetadata() *_struct.Struct {
+func (x *BuildVersion) GetMetadata() *structpb.Struct {
 	if x != nil {
 		return x.Metadata
 	}
@@ -468,7 +468,7 @@ type Node struct {
 	Cluster string `protobuf:"bytes,2,opt,name=cluster,proto3" json:"cluster,omitempty"`
 	// Opaque metadata extending the node identifier. Envoy will pass this
 	// directly to the management server.
-	Metadata *_struct.Struct `protobuf:"bytes,3,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	Metadata *structpb.Struct `protobuf:"bytes,3,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	// Locality specifying where the Envoy instance is running.
 	Locality *Locality `protobuf:"bytes,4,opt,name=locality,proto3" json:"locality,omitempty"`
 	// Free-form string that identifies the entity requesting config.
@@ -540,7 +540,7 @@ func (x *Node) GetCluster() string {
 	return ""
 }
 
-func (x *Node) GetMetadata() *_struct.Struct {
+func (x *Node) GetMetadata() *structpb.Struct {
 	if x != nil {
 		return x.Metadata
 	}
@@ -652,7 +652,7 @@ type Metadata struct {
 
 	// Key is the reverse DNS filter name, e.g. com.acme.widget. The envoy.*
 	// namespace is reserved for Envoy's built-in filters.
-	FilterMetadata map[string]*_struct.Struct `protobuf:"bytes,1,rep,name=filter_metadata,json=filterMetadata,proto3" json:"filter_metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	FilterMetadata map[string]*structpb.Struct `protobuf:"bytes,1,rep,name=filter_metadata,json=filterMetadata,proto3" json:"filter_metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (x *Metadata) Reset() {
@@ -687,7 +687,7 @@ func (*Metadata) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_core_v3_base_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *Metadata) GetFilterMetadata() map[string]*_struct.Struct {
+func (x *Metadata) GetFilterMetadata() map[string]*structpb.Struct {
 	if x != nil {
 		return x.FilterMetadata
 	}
@@ -817,7 +817,7 @@ type RuntimeFeatureFlag struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Default value if runtime value is not available.
-	DefaultValue *wrappers.BoolValue `protobuf:"bytes,1,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`
+	DefaultValue *wrapperspb.BoolValue `protobuf:"bytes,1,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`
 	// Runtime key to get value for comparison. This value is used if defined. The boolean value must
 	// be represented via its
 	// `canonical JSON encoding <https://developers.google.com/protocol-buffers/docs/proto3#json>`_.
@@ -856,7 +856,7 @@ func (*RuntimeFeatureFlag) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_core_v3_base_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *RuntimeFeatureFlag) GetDefaultValue() *wrappers.BoolValue {
+func (x *RuntimeFeatureFlag) GetDefaultValue() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.DefaultValue
 	}
@@ -942,7 +942,7 @@ type HeaderValueOption struct {
 	Header *HeaderValue `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	// Should the value be appended? If true (default), the value is appended to
 	// existing values.
-	Append *wrappers.BoolValue `protobuf:"bytes,2,opt,name=append,proto3" json:"append,omitempty"`
+	Append *wrapperspb.BoolValue `protobuf:"bytes,2,opt,name=append,proto3" json:"append,omitempty"`
 }
 
 func (x *HeaderValueOption) Reset() {
@@ -984,7 +984,7 @@ func (x *HeaderValueOption) GetHeader() *HeaderValue {
 	return nil
 }
 
-func (x *HeaderValueOption) GetAppend() *wrappers.BoolValue {
+func (x *HeaderValueOption) GetAppend() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.Append
 	}
@@ -1150,7 +1150,7 @@ type RetryPolicy struct {
 	RetryBackOff *BackoffStrategy `protobuf:"bytes,1,opt,name=retry_back_off,json=retryBackOff,proto3" json:"retry_back_off,omitempty"`
 	// Specifies the allowed number of retries. This parameter is optional and
 	// defaults to 1.
-	NumRetries *wrappers.UInt32Value `protobuf:"bytes,2,opt,name=num_retries,json=numRetries,proto3" json:"num_retries,omitempty"`
+	NumRetries *wrapperspb.UInt32Value `protobuf:"bytes,2,opt,name=num_retries,json=numRetries,proto3" json:"num_retries,omitempty"`
 }
 
 func (x *RetryPolicy) Reset() {
@@ -1192,7 +1192,7 @@ func (x *RetryPolicy) GetRetryBackOff() *BackoffStrategy {
 	return nil
 }
 
-func (x *RetryPolicy) GetNumRetries() *wrappers.UInt32Value {
+func (x *RetryPolicy) GetNumRetries() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.NumRetries
 	}
@@ -1417,7 +1417,7 @@ func (m *TransportSocket) GetConfigType() isTransportSocket_ConfigType {
 	return nil
 }
 
-func (x *TransportSocket) GetTypedConfig() *any1.Any {
+func (x *TransportSocket) GetTypedConfig() *anypb.Any {
 	if x, ok := x.GetConfigType().(*TransportSocket_TypedConfig); ok {
 		return x.TypedConfig
 	}
@@ -1429,7 +1429,7 @@ type isTransportSocket_ConfigType interface {
 }
 
 type TransportSocket_TypedConfig struct {
-	TypedConfig *any1.Any `protobuf:"bytes,3,opt,name=typed_config,json=typedConfig,proto3,oneof"`
+	TypedConfig *anypb.Any `protobuf:"bytes,3,opt,name=typed_config,json=typedConfig,proto3,oneof"`
 }
 
 func (*TransportSocket_TypedConfig) isTransportSocket_ConfigType() {}
@@ -1913,13 +1913,13 @@ var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_core_v3
 	(*ControlPlane)(nil),             // 20: solo.io.envoy.config.core.v3.ControlPlane
 	nil,                              // 21: solo.io.envoy.config.core.v3.Metadata.FilterMetadataEntry
 	(*v3.SemanticVersion)(nil),       // 22: solo.io.envoy.type.v3.SemanticVersion
-	(*_struct.Struct)(nil),           // 23: google.protobuf.Struct
+	(*structpb.Struct)(nil),          // 23: google.protobuf.Struct
 	(*Address)(nil),                  // 24: solo.io.envoy.config.core.v3.Address
-	(*wrappers.BoolValue)(nil),       // 25: google.protobuf.BoolValue
+	(*wrapperspb.BoolValue)(nil),     // 25: google.protobuf.BoolValue
 	(*BackoffStrategy)(nil),          // 26: solo.io.envoy.config.core.v3.BackoffStrategy
-	(*wrappers.UInt32Value)(nil),     // 27: google.protobuf.UInt32Value
+	(*wrapperspb.UInt32Value)(nil),   // 27: google.protobuf.UInt32Value
 	(*HttpUri)(nil),                  // 28: solo.io.envoy.config.core.v3.HttpUri
-	(*any1.Any)(nil),                 // 29: google.protobuf.Any
+	(*anypb.Any)(nil),                // 29: google.protobuf.Any
 	(*v3.FractionalPercent)(nil),     // 30: solo.io.envoy.type.v3.FractionalPercent
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_core_v3_base_proto_depIdxs = []int32{

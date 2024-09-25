@@ -165,8 +165,8 @@ func (m *UpstreamSpec) Equal(that interface{}) bool {
 			}
 		}
 
-	case *UpstreamSpec_Multi_:
-		if _, ok := target.Llm.(*UpstreamSpec_Multi_); !ok {
+	case *UpstreamSpec_Multi:
+		if _, ok := target.Llm.(*UpstreamSpec_Multi); !ok {
 			return false
 		}
 
@@ -890,14 +890,14 @@ func (m *UpstreamSpec_Anthropic) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *UpstreamSpec_Multi) Equal(that interface{}) bool {
+func (m *UpstreamSpec_MultiPool) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*UpstreamSpec_Multi)
+	target, ok := that.(*UpstreamSpec_MultiPool)
 	if !ok {
-		that2, ok := that.(UpstreamSpec_Multi)
+		that2, ok := that.(UpstreamSpec_MultiPool)
 		if ok {
 			target = &that2
 		} else {
@@ -931,14 +931,14 @@ func (m *UpstreamSpec_Multi) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *UpstreamSpec_Multi_Backend) Equal(that interface{}) bool {
+func (m *UpstreamSpec_MultiPool_Backend) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*UpstreamSpec_Multi_Backend)
+	target, ok := that.(*UpstreamSpec_MultiPool_Backend)
 	if !ok {
-		that2, ok := that.(UpstreamSpec_Multi_Backend)
+		that2, ok := that.(UpstreamSpec_MultiPool_Backend)
 		if ok {
 			target = &that2
 		} else {
@@ -953,8 +953,8 @@ func (m *UpstreamSpec_Multi_Backend) Equal(that interface{}) bool {
 
 	switch m.Llm.(type) {
 
-	case *UpstreamSpec_Multi_Backend_Openai:
-		if _, ok := target.Llm.(*UpstreamSpec_Multi_Backend_Openai); !ok {
+	case *UpstreamSpec_MultiPool_Backend_Openai:
+		if _, ok := target.Llm.(*UpstreamSpec_MultiPool_Backend_Openai); !ok {
 			return false
 		}
 
@@ -968,8 +968,8 @@ func (m *UpstreamSpec_Multi_Backend) Equal(that interface{}) bool {
 			}
 		}
 
-	case *UpstreamSpec_Multi_Backend_Mistral:
-		if _, ok := target.Llm.(*UpstreamSpec_Multi_Backend_Mistral); !ok {
+	case *UpstreamSpec_MultiPool_Backend_Mistral:
+		if _, ok := target.Llm.(*UpstreamSpec_MultiPool_Backend_Mistral); !ok {
 			return false
 		}
 
@@ -983,8 +983,8 @@ func (m *UpstreamSpec_Multi_Backend) Equal(that interface{}) bool {
 			}
 		}
 
-	case *UpstreamSpec_Multi_Backend_Anthropic:
-		if _, ok := target.Llm.(*UpstreamSpec_Multi_Backend_Anthropic); !ok {
+	case *UpstreamSpec_MultiPool_Backend_Anthropic:
+		if _, ok := target.Llm.(*UpstreamSpec_MultiPool_Backend_Anthropic); !ok {
 			return false
 		}
 
@@ -998,8 +998,8 @@ func (m *UpstreamSpec_Multi_Backend) Equal(that interface{}) bool {
 			}
 		}
 
-	case *UpstreamSpec_Multi_Backend_AzureOpenai:
-		if _, ok := target.Llm.(*UpstreamSpec_Multi_Backend_AzureOpenai); !ok {
+	case *UpstreamSpec_MultiPool_Backend_AzureOpenai:
+		if _, ok := target.Llm.(*UpstreamSpec_MultiPool_Backend_AzureOpenai); !ok {
 			return false
 		}
 
@@ -1024,14 +1024,14 @@ func (m *UpstreamSpec_Multi_Backend) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *UpstreamSpec_Multi_Priority) Equal(that interface{}) bool {
+func (m *UpstreamSpec_MultiPool_Priority) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*UpstreamSpec_Multi_Priority)
+	target, ok := that.(*UpstreamSpec_MultiPool_Priority)
 	if !ok {
-		that2, ok := that.(UpstreamSpec_Multi_Priority)
+		that2, ok := that.(UpstreamSpec_MultiPool_Priority)
 		if ok {
 			target = &that2
 		} else {

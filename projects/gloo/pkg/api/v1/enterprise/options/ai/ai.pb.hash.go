@@ -176,7 +176,7 @@ func (m *UpstreamSpec) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *UpstreamSpec_Multi_:
+	case *UpstreamSpec_Multi:
 
 		if h, ok := interface{}(m.GetMulti()).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("Multi")); err != nil {
@@ -995,7 +995,7 @@ func (m *UpstreamSpec_Anthropic) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
-func (m *UpstreamSpec_Multi) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *UpstreamSpec_MultiPool) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -1003,7 +1003,7 @@ func (m *UpstreamSpec_Multi) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.UpstreamSpec_Multi")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.UpstreamSpec_MultiPool")); err != nil {
 		return 0, err
 	}
 
@@ -1035,7 +1035,7 @@ func (m *UpstreamSpec_Multi) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
-func (m *UpstreamSpec_Multi_Backend) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *UpstreamSpec_MultiPool_Backend) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -1043,13 +1043,13 @@ func (m *UpstreamSpec_Multi_Backend) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.UpstreamSpec_Multi_Backend")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.UpstreamSpec_MultiPool_Backend")); err != nil {
 		return 0, err
 	}
 
 	switch m.Llm.(type) {
 
-	case *UpstreamSpec_Multi_Backend_Openai:
+	case *UpstreamSpec_MultiPool_Backend_Openai:
 
 		if h, ok := interface{}(m.GetOpenai()).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("Openai")); err != nil {
@@ -1071,7 +1071,7 @@ func (m *UpstreamSpec_Multi_Backend) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *UpstreamSpec_Multi_Backend_Mistral:
+	case *UpstreamSpec_MultiPool_Backend_Mistral:
 
 		if h, ok := interface{}(m.GetMistral()).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("Mistral")); err != nil {
@@ -1093,7 +1093,7 @@ func (m *UpstreamSpec_Multi_Backend) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *UpstreamSpec_Multi_Backend_Anthropic:
+	case *UpstreamSpec_MultiPool_Backend_Anthropic:
 
 		if h, ok := interface{}(m.GetAnthropic()).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("Anthropic")); err != nil {
@@ -1115,7 +1115,7 @@ func (m *UpstreamSpec_Multi_Backend) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *UpstreamSpec_Multi_Backend_AzureOpenai:
+	case *UpstreamSpec_MultiPool_Backend_AzureOpenai:
 
 		if h, ok := interface{}(m.GetAzureOpenai()).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("AzureOpenai")); err != nil {
@@ -1143,7 +1143,7 @@ func (m *UpstreamSpec_Multi_Backend) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
-func (m *UpstreamSpec_Multi_Priority) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *UpstreamSpec_MultiPool_Priority) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -1151,7 +1151,7 @@ func (m *UpstreamSpec_Multi_Priority) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.UpstreamSpec_Multi_Priority")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.UpstreamSpec_MultiPool_Priority")); err != nil {
 		return 0, err
 	}
 

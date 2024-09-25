@@ -13,12 +13,12 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	duration "github.com/golang/protobuf/ptypes/duration"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -43,7 +43,7 @@ type AWSLambdaPerRoute struct {
 	Async bool `protobuf:"varint,3,opt,name=async,proto3" json:"async,omitempty"`
 	// Optional default body if the body is empty. By default on default
 	// body is used if the body empty, and an empty body will be sent upstream.
-	EmptyBodyOverride *wrappers.StringValue `protobuf:"bytes,4,opt,name=empty_body_override,json=emptyBodyOverride,proto3" json:"empty_body_override,omitempty"`
+	EmptyBodyOverride *wrapperspb.StringValue `protobuf:"bytes,4,opt,name=empty_body_override,json=emptyBodyOverride,proto3" json:"empty_body_override,omitempty"`
 	// Deprecated. Use transformer_config to specify an AWS Lambda response transformer instead.
 	// Unwrap responses as AWS ALB does.
 	// Expects json lambda responses to construct response.
@@ -116,7 +116,7 @@ func (x *AWSLambdaPerRoute) GetAsync() bool {
 	return false
 }
 
-func (x *AWSLambdaPerRoute) GetEmptyBodyOverride() *wrappers.StringValue {
+func (x *AWSLambdaPerRoute) GetEmptyBodyOverride() *wrapperspb.StringValue {
 	if x != nil {
 		return x.EmptyBodyOverride
 	}
@@ -265,7 +265,7 @@ type AWSLambdaConfig struct {
 	// Does nothing if Service account is not set.
 	// Does not affect the default filewatch for service account only augments it.
 	// Defaults to not refreshing on time period. Suggested is 15 minutes.
-	CredentialRefreshDelay *duration.Duration `protobuf:"bytes,4,opt,name=credential_refresh_delay,json=credentialRefreshDelay,proto3" json:"credential_refresh_delay,omitempty"`
+	CredentialRefreshDelay *durationpb.Duration `protobuf:"bytes,4,opt,name=credential_refresh_delay,json=credentialRefreshDelay,proto3" json:"credential_refresh_delay,omitempty"`
 }
 
 func (x *AWSLambdaConfig) Reset() {
@@ -307,7 +307,7 @@ func (m *AWSLambdaConfig) GetCredentialsFetcher() isAWSLambdaConfig_CredentialsF
 	return nil
 }
 
-func (x *AWSLambdaConfig) GetUseDefaultCredentials() *wrappers.BoolValue {
+func (x *AWSLambdaConfig) GetUseDefaultCredentials() *wrapperspb.BoolValue {
 	if x, ok := x.GetCredentialsFetcher().(*AWSLambdaConfig_UseDefaultCredentials); ok {
 		return x.UseDefaultCredentials
 	}
@@ -328,7 +328,7 @@ func (x *AWSLambdaConfig) GetPropagateOriginalRouting() bool {
 	return false
 }
 
-func (x *AWSLambdaConfig) GetCredentialRefreshDelay() *duration.Duration {
+func (x *AWSLambdaConfig) GetCredentialRefreshDelay() *durationpb.Duration {
 	if x != nil {
 		return x.CredentialRefreshDelay
 	}
@@ -347,7 +347,7 @@ type AWSLambdaConfig_UseDefaultCredentials struct {
 	// If credentials are provided on the cluster (using the
 	// AWSLambdaProtocolExtension), it will override these credentials. This
 	// defaults to false, but may change in the future to true.
-	UseDefaultCredentials *wrappers.BoolValue `protobuf:"bytes,1,opt,name=use_default_credentials,json=useDefaultCredentials,proto3,oneof"`
+	UseDefaultCredentials *wrapperspb.BoolValue `protobuf:"bytes,1,opt,name=use_default_credentials,json=useDefaultCredentials,proto3,oneof"`
 }
 
 type AWSLambdaConfig_ServiceAccountCredentials_ struct {
@@ -424,7 +424,7 @@ type AWSLambdaConfig_ServiceAccountCredentials struct {
 	// The full uri of the aws sts endpoint
 	Uri string `protobuf:"bytes,2,opt,name=uri,proto3" json:"uri,omitempty"`
 	// timeout for the request
-	Timeout *duration.Duration `protobuf:"bytes,3,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	Timeout *durationpb.Duration `protobuf:"bytes,3,opt,name=timeout,proto3" json:"timeout,omitempty"`
 	// Region for the sts endpoint. Defaults to us-east-1
 	Region string `protobuf:"bytes,4,opt,name=region,proto3" json:"region,omitempty"`
 }
@@ -475,7 +475,7 @@ func (x *AWSLambdaConfig_ServiceAccountCredentials) GetUri() string {
 	return ""
 }
 
-func (x *AWSLambdaConfig_ServiceAccountCredentials) GetTimeout() *duration.Duration {
+func (x *AWSLambdaConfig_ServiceAccountCredentials) GetTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.Timeout
 	}
@@ -627,10 +627,10 @@ var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_extensions_aws
 	(*AWSLambdaConfig)(nil),                           // 2: envoy.config.filter.http.aws_lambda.v2.AWSLambdaConfig
 	(*ApiGatewayTransformation)(nil),                  // 3: envoy.config.filter.http.aws_lambda.v2.ApiGatewayTransformation
 	(*AWSLambdaConfig_ServiceAccountCredentials)(nil), // 4: envoy.config.filter.http.aws_lambda.v2.AWSLambdaConfig.ServiceAccountCredentials
-	(*wrappers.StringValue)(nil),                      // 5: google.protobuf.StringValue
+	(*wrapperspb.StringValue)(nil),                    // 5: google.protobuf.StringValue
 	(*v3.TypedExtensionConfig)(nil),                   // 6: solo.io.envoy.config.core.v3.TypedExtensionConfig
-	(*wrappers.BoolValue)(nil),                        // 7: google.protobuf.BoolValue
-	(*duration.Duration)(nil),                         // 8: google.protobuf.Duration
+	(*wrapperspb.BoolValue)(nil),                      // 7: google.protobuf.BoolValue
+	(*durationpb.Duration)(nil),                       // 8: google.protobuf.Duration
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_extensions_aws_filter_proto_depIdxs = []int32{
 	5, // 0: envoy.config.filter.http.aws_lambda.v2.AWSLambdaPerRoute.empty_body_override:type_name -> google.protobuf.StringValue

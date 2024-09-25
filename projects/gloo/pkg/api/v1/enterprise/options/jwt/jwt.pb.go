@@ -10,13 +10,13 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	duration "github.com/golang/protobuf/ptypes/duration"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/jwt_authn/v3"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -398,7 +398,7 @@ type Provider struct {
 	// What claims should be copied to upstream headers.
 	ClaimsToHeaders []*ClaimToHeader `protobuf:"bytes,6,rep,name=claims_to_headers,json=claimsToHeaders,proto3" json:"claims_to_headers,omitempty"`
 	// Optional: ClockSkewSeconds is used to verify time constraints, such as `exp` and `npf`. Default is 60s
-	ClockSkewSeconds *wrappers.UInt32Value `protobuf:"bytes,8,opt,name=clock_skew_seconds,json=clockSkewSeconds,proto3" json:"clock_skew_seconds,omitempty"`
+	ClockSkewSeconds *wrapperspb.UInt32Value `protobuf:"bytes,8,opt,name=clock_skew_seconds,json=clockSkewSeconds,proto3" json:"clock_skew_seconds,omitempty"`
 }
 
 func (x *Provider) Reset() {
@@ -475,7 +475,7 @@ func (x *Provider) GetClaimsToHeaders() []*ClaimToHeader {
 	return nil
 }
 
-func (x *Provider) GetClockSkewSeconds() *wrappers.UInt32Value {
+func (x *Provider) GetClockSkewSeconds() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.ClockSkewSeconds
 	}
@@ -577,7 +577,7 @@ type RemoteJwks struct {
 	UpstreamRef *core.ResourceRef `protobuf:"bytes,2,opt,name=upstream_ref,json=upstreamRef,proto3" json:"upstream_ref,omitempty"`
 	// Duration after which the cached JWKS should be expired.
 	// If not specified, default cache duration is 5 minutes.
-	CacheDuration *duration.Duration `protobuf:"bytes,4,opt,name=cache_duration,json=cacheDuration,proto3" json:"cache_duration,omitempty"`
+	CacheDuration *durationpb.Duration `protobuf:"bytes,4,opt,name=cache_duration,json=cacheDuration,proto3" json:"cache_duration,omitempty"`
 	// Fetch Jwks asynchronously in the main thread before the listener is activated.
 	// Fetched Jwks can be used by all worker threads.
 	//
@@ -641,7 +641,7 @@ func (x *RemoteJwks) GetUpstreamRef() *core.ResourceRef {
 	return nil
 }
 
-func (x *RemoteJwks) GetCacheDuration() *duration.Duration {
+func (x *RemoteJwks) GetCacheDuration() *durationpb.Duration {
 	if x != nil {
 		return x.CacheDuration
 	}
@@ -1084,9 +1084,9 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt
 	(*ClaimToHeader)(nil),                    // 11: jwt.options.gloo.solo.io.ClaimToHeader
 	nil,                                      // 12: jwt.options.gloo.solo.io.VhostExtension.ProvidersEntry
 	(*TokenSource_HeaderSource)(nil),         // 13: jwt.options.gloo.solo.io.TokenSource.HeaderSource
-	(*wrappers.UInt32Value)(nil),             // 14: google.protobuf.UInt32Value
+	(*wrapperspb.UInt32Value)(nil),           // 14: google.protobuf.UInt32Value
 	(*core.ResourceRef)(nil),                 // 15: core.solo.io.ResourceRef
-	(*duration.Duration)(nil),                // 16: google.protobuf.Duration
+	(*durationpb.Duration)(nil),              // 16: google.protobuf.Duration
 	(*v3.JwksAsyncFetch)(nil),                // 17: solo.io.envoy.extensions.filters.http.jwt_authn.v3.JwksAsyncFetch
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_depIdxs = []int32{

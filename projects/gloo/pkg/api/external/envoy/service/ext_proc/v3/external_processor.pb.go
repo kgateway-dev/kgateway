@@ -12,8 +12,6 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	duration "github.com/golang/protobuf/ptypes/duration"
-	_struct "github.com/golang/protobuf/ptypes/struct"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/annotations"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/ext_proc/v3"
@@ -25,6 +23,8 @@ import (
 	status "google.golang.org/grpc/status"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
 const (
@@ -122,7 +122,7 @@ type ProcessingRequest struct {
 	// or “response_attributes“ list in the configuration. Each entry
 	// in the list is populated from the standard
 	// :ref:`attributes <arch_overview_attributes>` supported across Envoy.
-	Attributes map[string]*_struct.Struct `protobuf:"bytes,9,rep,name=attributes,proto3" json:"attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Attributes map[string]*structpb.Struct `protobuf:"bytes,9,rep,name=attributes,proto3" json:"attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Specify whether the filter that sent this request is running in :ref:`observability_mode
 	// <envoy_v3_api_field_extensions.filters.http.ext_proc.v3.ExternalProcessor.observability_mode>`
 	// and defaults to false.
@@ -224,7 +224,7 @@ func (x *ProcessingRequest) GetMetadataContext() *v3.Metadata {
 	return nil
 }
 
-func (x *ProcessingRequest) GetAttributes() map[string]*_struct.Struct {
+func (x *ProcessingRequest) GetAttributes() map[string]*structpb.Struct {
 	if x != nil {
 		return x.Attributes
 	}
@@ -319,7 +319,7 @@ type ProcessingResponse struct {
 	// Optional metadata that will be emitted as dynamic metadata to be consumed by
 	// following filters. This metadata will be placed in the namespace(s) specified by the top-level
 	// field name(s) of the struct.
-	DynamicMetadata *_struct.Struct `protobuf:"bytes,8,opt,name=dynamic_metadata,json=dynamicMetadata,proto3" json:"dynamic_metadata,omitempty"`
+	DynamicMetadata *structpb.Struct `protobuf:"bytes,8,opt,name=dynamic_metadata,json=dynamicMetadata,proto3" json:"dynamic_metadata,omitempty"`
 	// Override how parts of the HTTP request and response are processed
 	// for the duration of this particular request/response only. Servers
 	// may use this to intelligently control how requests are processed
@@ -344,7 +344,7 @@ type ProcessingResponse struct {
 	// :ref:`max_message_timeout <envoy_v3_api_field_extensions.filters.http.ext_proc.v3.ExternalProcessor.max_message_timeout>`
 	// Such message can be sent at most once in a particular Envoy ext_proc filter processing state.
 	// To enable this API, one has to set “max_message_timeout“ to a number >= 1ms.
-	OverrideMessageTimeout *duration.Duration `protobuf:"bytes,10,opt,name=override_message_timeout,json=overrideMessageTimeout,proto3" json:"override_message_timeout,omitempty"`
+	OverrideMessageTimeout *durationpb.Duration `protobuf:"bytes,10,opt,name=override_message_timeout,json=overrideMessageTimeout,proto3" json:"override_message_timeout,omitempty"`
 }
 
 func (x *ProcessingResponse) Reset() {
@@ -435,7 +435,7 @@ func (x *ProcessingResponse) GetImmediateResponse() *ImmediateResponse {
 	return nil
 }
 
-func (x *ProcessingResponse) GetDynamicMetadata() *_struct.Struct {
+func (x *ProcessingResponse) GetDynamicMetadata() *structpb.Struct {
 	if x != nil {
 		return x.DynamicMetadata
 	}
@@ -449,7 +449,7 @@ func (x *ProcessingResponse) GetModeOverride() *v31.ProcessingMode {
 	return nil
 }
 
-func (x *ProcessingResponse) GetOverrideMessageTimeout() *duration.Duration {
+func (x *ProcessingResponse) GetOverrideMessageTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.OverrideMessageTimeout
 	}
@@ -543,7 +543,7 @@ type HttpHeaders struct {
 	// field.
 	//
 	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.
-	Attributes map[string]*_struct.Struct `protobuf:"bytes,2,rep,name=attributes,proto3" json:"attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Attributes map[string]*structpb.Struct `protobuf:"bytes,2,rep,name=attributes,proto3" json:"attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// If true, then there is no message body associated with this
 	// request or response.
 	EndOfStream bool `protobuf:"varint,3,opt,name=end_of_stream,json=endOfStream,proto3" json:"end_of_stream,omitempty"`
@@ -589,7 +589,7 @@ func (x *HttpHeaders) GetHeaders() *v3.HeaderMap {
 }
 
 // Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/gloo/api/external/envoy/service/ext_proc/v3/external_processor.proto.
-func (x *HttpHeaders) GetAttributes() map[string]*_struct.Struct {
+func (x *HttpHeaders) GetAttributes() map[string]*structpb.Struct {
 	if x != nil {
 		return x.Attributes
 	}
@@ -1586,9 +1586,9 @@ var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_service_ext_pr
 	nil,                                // 14: solo.io.envoy.service.ext_proc.v3.ProcessingRequest.AttributesEntry
 	nil,                                // 15: solo.io.envoy.service.ext_proc.v3.HttpHeaders.AttributesEntry
 	(*v3.Metadata)(nil),                // 16: solo.io.envoy.config.core.v3.Metadata
-	(*_struct.Struct)(nil),             // 17: google.protobuf.Struct
+	(*structpb.Struct)(nil),            // 17: google.protobuf.Struct
 	(*v31.ProcessingMode)(nil),         // 18: solo.io.envoy.extensions.filters.http.ext_proc.v3.ProcessingMode
-	(*duration.Duration)(nil),          // 19: google.protobuf.Duration
+	(*durationpb.Duration)(nil),        // 19: google.protobuf.Duration
 	(*v3.HeaderMap)(nil),               // 20: solo.io.envoy.config.core.v3.HeaderMap
 	(*v32.HttpStatus)(nil),             // 21: solo.io.envoy.type.v3.HttpStatus
 	(*v3.HeaderValueOption)(nil),       // 22: solo.io.envoy.config.core.v3.HeaderValueOption

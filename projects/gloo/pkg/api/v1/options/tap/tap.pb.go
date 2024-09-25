@@ -11,11 +11,11 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	duration "github.com/golang/protobuf/ptypes/duration"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -40,17 +40,17 @@ type Tap struct {
 	// For buffered tapping, the maximum amount of received body that will be buffered
 	// prior to truncation. If truncation occurs, the truncated field will be set.
 	// If not specified, the default is 1KiB.
-	MaxBufferedRxBytes *wrappers.UInt32Value `protobuf:"bytes,2,opt,name=max_buffered_rx_bytes,json=maxBufferedRxBytes,proto3" json:"max_buffered_rx_bytes,omitempty"`
+	MaxBufferedRxBytes *wrapperspb.UInt32Value `protobuf:"bytes,2,opt,name=max_buffered_rx_bytes,json=maxBufferedRxBytes,proto3" json:"max_buffered_rx_bytes,omitempty"`
 	// For buffered tapping, the maximum amount of transmitted body that will be buffered
 	// prior to truncation. If truncation occurs, the truncated field will be set.
 	// If not specified, the default is 1KiB.
-	MaxBufferedTxBytes *wrappers.UInt32Value `protobuf:"bytes,3,opt,name=max_buffered_tx_bytes,json=maxBufferedTxBytes,proto3" json:"max_buffered_tx_bytes,omitempty"`
+	MaxBufferedTxBytes *wrapperspb.UInt32Value `protobuf:"bytes,3,opt,name=max_buffered_tx_bytes,json=maxBufferedTxBytes,proto3" json:"max_buffered_tx_bytes,omitempty"`
 	// Indicates whether tap filter records the time stamp for request/response headers.
 	// Request headers time stamp is stored after receiving request headers.
 	// Response headers time stamp is stored after receiving response headers.
-	RecordHeadersReceivedTime *wrappers.BoolValue `protobuf:"bytes,4,opt,name=record_headers_received_time,json=recordHeadersReceivedTime,proto3" json:"record_headers_received_time,omitempty"`
+	RecordHeadersReceivedTime *wrapperspb.BoolValue `protobuf:"bytes,4,opt,name=record_headers_received_time,json=recordHeadersReceivedTime,proto3" json:"record_headers_received_time,omitempty"`
 	// Indicates whether report downstream connection info
-	RecordDownstreamConnection *wrappers.BoolValue `protobuf:"bytes,5,opt,name=record_downstream_connection,json=recordDownstreamConnection,proto3" json:"record_downstream_connection,omitempty"`
+	RecordDownstreamConnection *wrapperspb.BoolValue `protobuf:"bytes,5,opt,name=record_downstream_connection,json=recordDownstreamConnection,proto3" json:"record_downstream_connection,omitempty"`
 }
 
 func (x *Tap) Reset() {
@@ -92,28 +92,28 @@ func (x *Tap) GetSinks() []*Sink {
 	return nil
 }
 
-func (x *Tap) GetMaxBufferedRxBytes() *wrappers.UInt32Value {
+func (x *Tap) GetMaxBufferedRxBytes() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.MaxBufferedRxBytes
 	}
 	return nil
 }
 
-func (x *Tap) GetMaxBufferedTxBytes() *wrappers.UInt32Value {
+func (x *Tap) GetMaxBufferedTxBytes() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.MaxBufferedTxBytes
 	}
 	return nil
 }
 
-func (x *Tap) GetRecordHeadersReceivedTime() *wrappers.BoolValue {
+func (x *Tap) GetRecordHeadersReceivedTime() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.RecordHeadersReceivedTime
 	}
 	return nil
 }
 
-func (x *Tap) GetRecordDownstreamConnection() *wrappers.BoolValue {
+func (x *Tap) GetRecordDownstreamConnection() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.RecordDownstreamConnection
 	}
@@ -263,7 +263,7 @@ type HttpService struct {
 	// Upstream reference to the tap server
 	TapServer *core.ResourceRef `protobuf:"bytes,1,opt,name=tap_server,json=tapServer,proto3" json:"tap_server,omitempty"`
 	// Connection timeout
-	Timeout *duration.Duration `protobuf:"bytes,2,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	Timeout *durationpb.Duration `protobuf:"bytes,2,opt,name=timeout,proto3" json:"timeout,omitempty"`
 }
 
 func (x *HttpService) Reset() {
@@ -305,7 +305,7 @@ func (x *HttpService) GetTapServer() *core.ResourceRef {
 	return nil
 }
 
-func (x *HttpService) GetTimeout() *duration.Duration {
+func (x *HttpService) GetTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.Timeout
 	}
@@ -403,14 +403,14 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_tap_ta
 
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_tap_tap_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_tap_tap_proto_goTypes = []interface{}{
-	(*Tap)(nil),                  // 0: tap.options.gloo.solo.io.Tap
-	(*Sink)(nil),                 // 1: tap.options.gloo.solo.io.Sink
-	(*GrpcService)(nil),          // 2: tap.options.gloo.solo.io.GrpcService
-	(*HttpService)(nil),          // 3: tap.options.gloo.solo.io.HttpService
-	(*wrappers.UInt32Value)(nil), // 4: google.protobuf.UInt32Value
-	(*wrappers.BoolValue)(nil),   // 5: google.protobuf.BoolValue
-	(*core.ResourceRef)(nil),     // 6: core.solo.io.ResourceRef
-	(*duration.Duration)(nil),    // 7: google.protobuf.Duration
+	(*Tap)(nil),                    // 0: tap.options.gloo.solo.io.Tap
+	(*Sink)(nil),                   // 1: tap.options.gloo.solo.io.Sink
+	(*GrpcService)(nil),            // 2: tap.options.gloo.solo.io.GrpcService
+	(*HttpService)(nil),            // 3: tap.options.gloo.solo.io.HttpService
+	(*wrapperspb.UInt32Value)(nil), // 4: google.protobuf.UInt32Value
+	(*wrapperspb.BoolValue)(nil),   // 5: google.protobuf.BoolValue
+	(*core.ResourceRef)(nil),       // 6: core.solo.io.ResourceRef
+	(*durationpb.Duration)(nil),    // 7: google.protobuf.Duration
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_tap_tap_proto_depIdxs = []int32{
 	1,  // 0: tap.options.gloo.solo.io.Tap.sinks:type_name -> tap.options.gloo.solo.io.Sink

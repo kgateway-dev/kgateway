@@ -13,9 +13,9 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_struct "github.com/golang/protobuf/ptypes/struct"
-
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	google_golang_org_protobuf_types_known_structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
 // ensure the imports are used
@@ -120,15 +120,15 @@ func (m *UpstreamSpec) Clone() proto.Message {
 			}
 		}
 
-	case *UpstreamSpec_Multi_:
+	case *UpstreamSpec_Multi:
 
 		if h, ok := interface{}(m.GetMulti()).(clone.Cloner); ok {
-			target.Llm = &UpstreamSpec_Multi_{
-				Multi: h.Clone().(*UpstreamSpec_Multi),
+			target.Llm = &UpstreamSpec_Multi{
+				Multi: h.Clone().(*UpstreamSpec_MultiPool),
 			}
 		} else {
-			target.Llm = &UpstreamSpec_Multi_{
-				Multi: proto.Clone(m.GetMulti()).(*UpstreamSpec_Multi),
+			target.Llm = &UpstreamSpec_Multi{
+				Multi: proto.Clone(m.GetMulti()).(*UpstreamSpec_MultiPool),
 			}
 		}
 
@@ -198,9 +198,9 @@ func (m *FieldDefault) Clone() proto.Message {
 	target.Field = m.GetField()
 
 	if h, ok := interface{}(m.GetValue()).(clone.Cloner); ok {
-		target.Value = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Value)
+		target.Value = h.Clone().(*google_golang_org_protobuf_types_known_structpb.Value)
 	} else {
-		target.Value = proto.Clone(m.GetValue()).(*github_com_golang_protobuf_ptypes_struct.Value)
+		target.Value = proto.Clone(m.GetValue()).(*google_golang_org_protobuf_types_known_structpb.Value)
 	}
 
 	target.Override = m.GetOverride()
@@ -520,21 +520,21 @@ func (m *UpstreamSpec_Anthropic) Clone() proto.Message {
 }
 
 // Clone function
-func (m *UpstreamSpec_Multi) Clone() proto.Message {
-	var target *UpstreamSpec_Multi
+func (m *UpstreamSpec_MultiPool) Clone() proto.Message {
+	var target *UpstreamSpec_MultiPool
 	if m == nil {
 		return target
 	}
-	target = &UpstreamSpec_Multi{}
+	target = &UpstreamSpec_MultiPool{}
 
 	if m.GetPriorities() != nil {
-		target.Priorities = make([]*UpstreamSpec_Multi_Priority, len(m.GetPriorities()))
+		target.Priorities = make([]*UpstreamSpec_MultiPool_Priority, len(m.GetPriorities()))
 		for idx, v := range m.GetPriorities() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Priorities[idx] = h.Clone().(*UpstreamSpec_Multi_Priority)
+				target.Priorities[idx] = h.Clone().(*UpstreamSpec_MultiPool_Priority)
 			} else {
-				target.Priorities[idx] = proto.Clone(v).(*UpstreamSpec_Multi_Priority)
+				target.Priorities[idx] = proto.Clone(v).(*UpstreamSpec_MultiPool_Priority)
 			}
 
 		}
@@ -544,59 +544,59 @@ func (m *UpstreamSpec_Multi) Clone() proto.Message {
 }
 
 // Clone function
-func (m *UpstreamSpec_Multi_Backend) Clone() proto.Message {
-	var target *UpstreamSpec_Multi_Backend
+func (m *UpstreamSpec_MultiPool_Backend) Clone() proto.Message {
+	var target *UpstreamSpec_MultiPool_Backend
 	if m == nil {
 		return target
 	}
-	target = &UpstreamSpec_Multi_Backend{}
+	target = &UpstreamSpec_MultiPool_Backend{}
 
 	switch m.Llm.(type) {
 
-	case *UpstreamSpec_Multi_Backend_Openai:
+	case *UpstreamSpec_MultiPool_Backend_Openai:
 
 		if h, ok := interface{}(m.GetOpenai()).(clone.Cloner); ok {
-			target.Llm = &UpstreamSpec_Multi_Backend_Openai{
+			target.Llm = &UpstreamSpec_MultiPool_Backend_Openai{
 				Openai: h.Clone().(*UpstreamSpec_OpenAI),
 			}
 		} else {
-			target.Llm = &UpstreamSpec_Multi_Backend_Openai{
+			target.Llm = &UpstreamSpec_MultiPool_Backend_Openai{
 				Openai: proto.Clone(m.GetOpenai()).(*UpstreamSpec_OpenAI),
 			}
 		}
 
-	case *UpstreamSpec_Multi_Backend_Mistral:
+	case *UpstreamSpec_MultiPool_Backend_Mistral:
 
 		if h, ok := interface{}(m.GetMistral()).(clone.Cloner); ok {
-			target.Llm = &UpstreamSpec_Multi_Backend_Mistral{
+			target.Llm = &UpstreamSpec_MultiPool_Backend_Mistral{
 				Mistral: h.Clone().(*UpstreamSpec_Mistral),
 			}
 		} else {
-			target.Llm = &UpstreamSpec_Multi_Backend_Mistral{
+			target.Llm = &UpstreamSpec_MultiPool_Backend_Mistral{
 				Mistral: proto.Clone(m.GetMistral()).(*UpstreamSpec_Mistral),
 			}
 		}
 
-	case *UpstreamSpec_Multi_Backend_Anthropic:
+	case *UpstreamSpec_MultiPool_Backend_Anthropic:
 
 		if h, ok := interface{}(m.GetAnthropic()).(clone.Cloner); ok {
-			target.Llm = &UpstreamSpec_Multi_Backend_Anthropic{
+			target.Llm = &UpstreamSpec_MultiPool_Backend_Anthropic{
 				Anthropic: h.Clone().(*UpstreamSpec_Anthropic),
 			}
 		} else {
-			target.Llm = &UpstreamSpec_Multi_Backend_Anthropic{
+			target.Llm = &UpstreamSpec_MultiPool_Backend_Anthropic{
 				Anthropic: proto.Clone(m.GetAnthropic()).(*UpstreamSpec_Anthropic),
 			}
 		}
 
-	case *UpstreamSpec_Multi_Backend_AzureOpenai:
+	case *UpstreamSpec_MultiPool_Backend_AzureOpenai:
 
 		if h, ok := interface{}(m.GetAzureOpenai()).(clone.Cloner); ok {
-			target.Llm = &UpstreamSpec_Multi_Backend_AzureOpenai{
+			target.Llm = &UpstreamSpec_MultiPool_Backend_AzureOpenai{
 				AzureOpenai: h.Clone().(*UpstreamSpec_AzureOpenAI),
 			}
 		} else {
-			target.Llm = &UpstreamSpec_Multi_Backend_AzureOpenai{
+			target.Llm = &UpstreamSpec_MultiPool_Backend_AzureOpenai{
 				AzureOpenai: proto.Clone(m.GetAzureOpenai()).(*UpstreamSpec_AzureOpenAI),
 			}
 		}
@@ -607,21 +607,21 @@ func (m *UpstreamSpec_Multi_Backend) Clone() proto.Message {
 }
 
 // Clone function
-func (m *UpstreamSpec_Multi_Priority) Clone() proto.Message {
-	var target *UpstreamSpec_Multi_Priority
+func (m *UpstreamSpec_MultiPool_Priority) Clone() proto.Message {
+	var target *UpstreamSpec_MultiPool_Priority
 	if m == nil {
 		return target
 	}
-	target = &UpstreamSpec_Multi_Priority{}
+	target = &UpstreamSpec_MultiPool_Priority{}
 
 	if m.GetPool() != nil {
-		target.Pool = make([]*UpstreamSpec_Multi_Backend, len(m.GetPool()))
+		target.Pool = make([]*UpstreamSpec_MultiPool_Backend, len(m.GetPool()))
 		for idx, v := range m.GetPool() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Pool[idx] = h.Clone().(*UpstreamSpec_Multi_Backend)
+				target.Pool[idx] = h.Clone().(*UpstreamSpec_MultiPool_Backend)
 			} else {
-				target.Pool[idx] = proto.Clone(v).(*UpstreamSpec_Multi_Backend)
+				target.Pool[idx] = proto.Clone(v).(*UpstreamSpec_MultiPool_Backend)
 			}
 
 		}

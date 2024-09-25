@@ -190,7 +190,7 @@ message UpstreamSpec {
                 namespace: gloo-system
         priority: 2
   */
-  message Multi {
+  message MultiPool {
     message Backend {
       oneof llm {
         // OpenAI upstream
@@ -208,9 +208,12 @@ message UpstreamSpec {
       // List of upstreams to use
       // repeated UpstreamSpec upstreams = 1;
       repeated Backend pool = 1;
+      // Priority of the pool
+      // If unset will default to the index in the list
       uint32 priority = 2;
     }
 
+    // List of prioritized backend pools
     repeated Priority priorities = 1;
   }
 
@@ -225,7 +228,7 @@ message UpstreamSpec {
     // Azure OpenAI upstream
     AzureOpenAI azure_openai = 4;
     // multi upstream
-    Multi multi = 5;
+    MultiPool multi = 5;
   }
 }
 
@@ -235,9 +238,9 @@ message UpstreamSpec {
   - Prompt Enrichment
   - Retrieval Augmented Generation
   - Semantic Caching
-  - Backup Models
   - Defaults to merge with the user input fields
   - Guardrails
+  - Route Type
 
   NOTE: These settings may only be applied to a route which uses an LLMProvider backend!
 */

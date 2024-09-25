@@ -10,12 +10,12 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	duration "github.com/golang/protobuf/ptypes/duration"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -166,13 +166,13 @@ type SslConfig struct {
 	// If the SSL config has the ca.crt (root CA) provided, Gloo uses it to perform mTLS by default.
 	// Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if Gloo has the root CA.
 	// If unset, defaults to false.
-	OneWayTls *wrappers.BoolValue `protobuf:"bytes,8,opt,name=one_way_tls,json=oneWayTls,proto3" json:"one_way_tls,omitempty"`
+	OneWayTls *wrapperspb.BoolValue `protobuf:"bytes,8,opt,name=one_way_tls,json=oneWayTls,proto3" json:"one_way_tls,omitempty"`
 	// If set to true, the TLS session resumption will be deactivated, note that it deactivates only the tickets based tls session resumption (not the cache).
-	DisableTlsSessionResumption *wrappers.BoolValue `protobuf:"bytes,9,opt,name=disable_tls_session_resumption,json=disableTlsSessionResumption,proto3" json:"disable_tls_session_resumption,omitempty"`
+	DisableTlsSessionResumption *wrapperspb.BoolValue `protobuf:"bytes,9,opt,name=disable_tls_session_resumption,json=disableTlsSessionResumption,proto3" json:"disable_tls_session_resumption,omitempty"`
 	// If present and nonzero, the amount of time to allow incoming connections to complete any
 	// transport socket negotiations. If this expires before the transport reports connection
 	// establishment, the connection is summarily closed.
-	TransportSocketConnectTimeout *duration.Duration `protobuf:"bytes,10,opt,name=transport_socket_connect_timeout,json=transportSocketConnectTimeout,proto3" json:"transport_socket_connect_timeout,omitempty"`
+	TransportSocketConnectTimeout *durationpb.Duration `protobuf:"bytes,10,opt,name=transport_socket_connect_timeout,json=transportSocketConnectTimeout,proto3" json:"transport_socket_connect_timeout,omitempty"`
 	// The OCSP staple policy to use for this listener.
 	// Defaults to `LENIENT_STAPLING`.
 	// https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#enum-extensions-transport-sockets-tls-v3-downstreamtlscontext-ocspstaplepolicy
@@ -267,21 +267,21 @@ func (x *SslConfig) GetAlpnProtocols() []string {
 	return nil
 }
 
-func (x *SslConfig) GetOneWayTls() *wrappers.BoolValue {
+func (x *SslConfig) GetOneWayTls() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.OneWayTls
 	}
 	return nil
 }
 
-func (x *SslConfig) GetDisableTlsSessionResumption() *wrappers.BoolValue {
+func (x *SslConfig) GetDisableTlsSessionResumption() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.DisableTlsSessionResumption
 	}
 	return nil
 }
 
-func (x *SslConfig) GetTransportSocketConnectTimeout() *duration.Duration {
+func (x *SslConfig) GetTransportSocketConnectTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.TransportSocketConnectTimeout
 	}
@@ -419,12 +419,12 @@ type UpstreamSslConfig struct {
 	AlpnProtocols []string `protobuf:"bytes,8,rep,name=alpn_protocols,json=alpnProtocols,proto3" json:"alpn_protocols,omitempty"`
 	// Allow Tls renegotiation, the default value is false.
 	// TLS renegotiation is considered insecure and shouldn’t be used unless absolutely necessary.
-	AllowRenegotiation *wrappers.BoolValue `protobuf:"bytes,10,opt,name=allow_renegotiation,json=allowRenegotiation,proto3" json:"allow_renegotiation,omitempty"`
+	AllowRenegotiation *wrapperspb.BoolValue `protobuf:"bytes,10,opt,name=allow_renegotiation,json=allowRenegotiation,proto3" json:"allow_renegotiation,omitempty"`
 	// If the SSL config has the ca.crt (root CA) provided, Gloo uses it to perform mTLS by default.
 	// Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if Gloo has the root CA.
 	// This flag does nothing if SDS is configured.
 	// If unset, defaults to false.
-	OneWayTls *wrappers.BoolValue `protobuf:"bytes,11,opt,name=one_way_tls,json=oneWayTls,proto3" json:"one_way_tls,omitempty"`
+	OneWayTls *wrapperspb.BoolValue `protobuf:"bytes,11,opt,name=one_way_tls,json=oneWayTls,proto3" json:"one_way_tls,omitempty"`
 }
 
 func (x *UpstreamSslConfig) Reset() {
@@ -515,14 +515,14 @@ func (x *UpstreamSslConfig) GetAlpnProtocols() []string {
 	return nil
 }
 
-func (x *UpstreamSslConfig) GetAllowRenegotiation() *wrappers.BoolValue {
+func (x *UpstreamSslConfig) GetAllowRenegotiation() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.AllowRenegotiation
 	}
 	return nil
 }
 
-func (x *UpstreamSslConfig) GetOneWayTls() *wrappers.BoolValue {
+func (x *UpstreamSslConfig) GetOneWayTls() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.OneWayTls
 	}
@@ -1035,8 +1035,8 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_ssl_ssl_proto_goTypes = []
 	(*SslParameters)(nil),                        // 7: gloo.solo.io.SslParameters
 	(*CallCredentials_FileCredentialSource)(nil), // 8: gloo.solo.io.CallCredentials.FileCredentialSource
 	(*core.ResourceRef)(nil),                     // 9: core.solo.io.ResourceRef
-	(*wrappers.BoolValue)(nil),                   // 10: google.protobuf.BoolValue
-	(*duration.Duration)(nil),                    // 11: google.protobuf.Duration
+	(*wrapperspb.BoolValue)(nil),                 // 10: google.protobuf.BoolValue
+	(*durationpb.Duration)(nil),                  // 11: google.protobuf.Duration
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_ssl_ssl_proto_depIdxs = []int32{
 	9,  // 0: gloo.solo.io.SslConfig.secret_ref:type_name -> core.solo.io.ResourceRef

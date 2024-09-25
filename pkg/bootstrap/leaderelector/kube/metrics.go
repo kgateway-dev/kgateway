@@ -20,7 +20,7 @@ func init() {
 
 type prometheusMetricsProvider struct{}
 
-func (prometheusMetricsProvider) NewLeaderMetric() k8sleaderelection.SwitchMetric {
+func (prometheusMetricsProvider) NewLeaderMetric() k8sleaderelection.LeaderMetric {
 	return &switchAdapter{gauge: leaderGauge}
 }
 
@@ -34,4 +34,8 @@ func (s *switchAdapter) On(name string) {
 
 func (s *switchAdapter) Off(name string) {
 	s.gauge.WithLabelValues(name).Set(0.0)
+}
+
+func (s *switchAdapter) SlowpathExercised(name string) {
+	// noop
 }
