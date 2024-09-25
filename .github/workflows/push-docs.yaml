@@ -29,6 +29,7 @@ jobs:
             version="main"
           else
             version=$(echo ${${{ github.event.release.tag_name }}%.*}.x)
+          fi
         # PUSH IS FOR TESTING ONLY
         elif [[ "${{ github.event_name }}" == "push" ]]; then
           version="main"
