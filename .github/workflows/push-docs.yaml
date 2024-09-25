@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'LTS branch to execute the workflow for, such as v1.17.x. Supported ONLY for 1.17.x and later.'
+        description: 'LTS branch to execute the workflow for, such as v1.17.x. Supported ONLY for 1.17.x and later (1.16.x and earlier are not in the new docs repo).'
         required: true
 
 jobs:
@@ -25,11 +25,7 @@ jobs:
       run: |
         version=""
         if [[ "${{ github.event_name }}" == "release" ]]; then
-          if [[ "$${{ github.event.release.tag_name }}" =~ "v1.18." ]]; then
-            version="main"
-          else
-            version=$(echo ${${{ github.event.release.tag_name }}%.*}.x)
-          fi
+          version=${{ github.event.release.target_commitish }}
         # PUSH IS FOR TESTING ONLY
         elif [[ "${{ github.event_name }}" == "push" ]]; then
           version="main"
@@ -79,7 +75,7 @@ jobs:
         pushd docs || exit 1
         git checkout main
         git pull
-        branch="post-${{ steps.lts-version.outputs.lts }}-release-docs-copy"
+        branch="post-${{ steps.version-variables.outputs.minor }}-release-docs-copy"
         git checkout -b ${branch}
         echo "branch=${branch}" >> $GITHUB_OUTPUT
         popd || exit 1
@@ -143,12 +139,12 @@ jobs:
       run: |
         pushd docs || exit 1
         git add .
-        git commit -m "Copy auto-generated docs from the gloo repo, post-release of ${{ steps.lts-version.outputs.lts }}"
+        git commit -m "Copy auto-generated docs from the gloo repo, post-release of ${{ steps.version-variables.outputs.minor }}"
         git push --set-upstream origin ${{ steps.create-branch.outputs.branch }}
 
         gh pr create \
-          --title "[Automated] Post-release docsgen for ${{ steps.lts-version.outputs.lts }}" \
-          --body "Copy auto-generated docs from the gloo repo, post-release of ${{ steps.lts-version.outputs.lts }}" \
+          --title "[Automated] Post-release docsgen for ${{ steps.version-variables.outputs.minor }}" \
+          --body "Copy auto-generated docs from the gloo repo, post-release of ${{ steps.version-variables.outputs.minor }}" \
           --base main \
           --head ${{ steps.create-branch.outputs.branch }} \
           --reviewer solo-io/solo-docs
