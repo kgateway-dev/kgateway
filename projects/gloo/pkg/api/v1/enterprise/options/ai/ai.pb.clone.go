@@ -627,8 +627,6 @@ func (m *UpstreamSpec_MultiPool_Priority) Clone() proto.Message {
 		}
 	}
 
-	target.Priority = m.GetPriority()
-
 	return target
 }
 

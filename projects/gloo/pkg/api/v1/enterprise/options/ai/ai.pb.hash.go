@@ -1255,11 +1255,6 @@ func (m *UpstreamSpec_MultiPool_Priority) Hash(hasher hash.Hash64) (uint64, erro
 
 	}
 
-	err = binary.Write(hasher, binary.LittleEndian, m.GetPriority())
-	if err != nil {
-		return 0, err
-	}
-
 	return hasher.Sum64(), nil
 }
 

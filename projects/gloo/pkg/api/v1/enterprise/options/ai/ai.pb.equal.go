@@ -1061,10 +1061,6 @@ func (m *UpstreamSpec_MultiPool_Priority) Equal(that interface{}) bool {
 
 	}
 
-	if m.GetPriority() != target.GetPriority() {
-		return false
-	}
-
 	return true
 }
 

@@ -205,12 +205,7 @@ message UpstreamSpec {
     }
 
     message Priority {
-      // List of upstreams to use
-      // repeated UpstreamSpec upstreams = 1;
       repeated Backend pool = 1;
-      // Priority of the pool
-      // If unset will default to the index in the list
-      uint32 priority = 2;
     }
 
     // List of prioritized backend pools

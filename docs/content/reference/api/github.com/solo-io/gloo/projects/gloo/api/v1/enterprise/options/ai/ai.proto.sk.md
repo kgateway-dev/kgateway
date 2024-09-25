@@ -333,14 +333,12 @@ priority: 2
 
 ```yaml
 "pool": []ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend
-"priority": int
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `pool` | [[]ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend](../ai.proto.sk/#backend) | List of upstreams to use repeated UpstreamSpec upstreams = 1;. |
-| `priority` | `int` | Priority of the pool If unset will default to the index in the list. |
+| `pool` | [[]ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend](../ai.proto.sk/#backend) |  |
 
 
 

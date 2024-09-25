@@ -104,6 +104,8 @@ type RetryPolicy struct {
 	//	*RetryPolicy_PreviousPriorities_
 	PriorityPredicate isRetryPolicy_PriorityPredicate `protobuf_oneof:"priority_predicate"`
 	// Optional: HTTP status codes that should trigger a retry in addition to those specified by retry_on.
+	// This can be useful if you want to retry on a status code that is not in the retry_on list.
+	// Specifically those in the 4xx range.
 	RetriableStatusCodes []uint32 `protobuf:"varint,6,rep,packed,name=retriable_status_codes,json=retriableStatusCodes,proto3" json:"retriable_status_codes,omitempty"`
 }
 

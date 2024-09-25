@@ -211,10 +211,6 @@ spec:
                                     type: object
                                 type: object
                               type: array
-                            priority:
-                              maximum: 4294967295
-                              minimum: 0
-                              type: integer
                           type: object
                         type: array
                     type: object
