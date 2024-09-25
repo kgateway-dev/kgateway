@@ -2,7 +2,6 @@ package ec2
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
@@ -69,7 +68,6 @@ func (p *plugin) Init(params plugins.InitParams) {
 
 // we do not need to update any fields, just check that the input is valid
 func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
-	fmt.Printf("In ec2plugin.UpdateUpstream\noriginal: %+v\ndesired: %+v\n\n", original, desired)
 	originalSpec, ok := original.GetUpstreamType().(*v1.Upstream_AwsEc2)
 	if !ok {
 		return false, WrongUpstreamTypeError(original)

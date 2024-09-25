@@ -48,7 +48,7 @@ func (uc *KubeUpstreamConverter) CreateUpstream(ctx context.Context, svc *corev1
 	coremeta.ResourceVersion = ""
 	coremeta.Name = UpstreamName(meta.Namespace, meta.Name, port.Port)
 	labels := coremeta.GetLabels()
-	//coremeta.Labels = make(map[string]string)
+	coremeta.Labels = make(map[string]string)
 
 	us := &v1.Upstream{
 		Metadata: coremeta,
@@ -112,9 +112,6 @@ func UpdateUpstream(original, desired *v1.Upstream) (didChange bool, err error) 
 	desiredSpec.Kube.Selector = originalSpec.Kube.GetSelector()
 
 	utils.UpdateUpstream(original, desired)
-
-	fmt.Printf("propagating resource version from original to desired: %s\n\n", original.Metadata.ResourceVersion)
-	desired.Metadata.ResourceVersion = original.Metadata.ResourceVersion
 
 	return !upstreamsEqual(original, desired), nil
 }
