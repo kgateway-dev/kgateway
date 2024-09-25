@@ -2,12 +2,6 @@
 name: push-docs
 
 on:
-  # PUSH IS FOR TESTING ONLY
-  push:
-    paths:
-      - test.md
-    branches:
-      - 'docs-workflow'
   release:
     types: [created]
   workflow_dispatch:
@@ -26,9 +20,6 @@ jobs:
         version=""
         if [[ "${{ github.event_name }}" == "release" ]]; then
           version=${{ github.event.release.target_commitish }}
-        # PUSH IS FOR TESTING ONLY
-        elif [[ "${{ github.event_name }}" == "push" ]]; then
-          version="main"
         else
           version=${{ inputs.branch }}
         fi
