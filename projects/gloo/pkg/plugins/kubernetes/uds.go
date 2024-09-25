@@ -2,7 +2,6 @@ package kubernetes
 
 import (
 	"context"
-	"fmt"
 	"github.com/solo-io/go-utils/stringutils"
 	corev1 "k8s.io/api/core/v1"
 
@@ -23,9 +22,6 @@ const (
 )
 
 func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace string, opts clients.WatchOpts, discOpts discovery.Opts) (chan v1.UpstreamList, chan error, error) {
-
-	fmt.Printf("In plugin.DiscoverUpstreams();\nwatchNamespaces: %+v\nwriteNamespace: %s\n, opts: %+v\ndiscOpts: %+v\n\n", watchNamespaces, writeNamespace, opts, discOpts)
-
 	if len(watchNamespaces) == 0 {
 		watchNamespaces = []string{metav1.NamespaceAll}
 	}
@@ -85,7 +81,6 @@ func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace stri
 }
 
 func (p *plugin) ConvertServices(ctx context.Context, watchNamespaces []string, services []*corev1.Service, opts discovery.Opts, writeNamespace string) v1.UpstreamList {
-	fmt.Printf("In ConvertServices:\nwatchNamespaces: %+v\nwriteNamespace: %s\nservices: %+v\nopts: %+v\n\n", watchNamespaces, writeNamespace, services, opts)
 	var upstreams v1.UpstreamList
 	for _, svc := range services {
 		if skip(svc, opts) {
@@ -105,6 +100,5 @@ func (p *plugin) ConvertServices(ctx context.Context, watchNamespaces []string, 
 
 		upstreams = append(upstreams, upstreamsToCreate...)
 	}
-	fmt.Printf("Returning upstreams:%+v\n\n", upstreams)
 	return upstreams
 }

@@ -3,13 +3,10 @@
 package v1
 
 import (
-	"fmt"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/reconcile"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"reflect"
-	"runtime"
 )
 
 // Option to copy anything from the original to the desired before writing. Return value of false means don't update
@@ -38,15 +35,11 @@ type upstreamReconciler struct {
 }
 
 func (r *upstreamReconciler) Reconcile(namespace string, desiredResources UpstreamList, transition TransitionUpstreamFunc, opts clients.ListOpts) error {
-	transitionName := runtime.FuncForPC(reflect.ValueOf(transition).Pointer()).Name()
-	fmt.Printf("\nIn upstreamReconciler.Reconcile()\ndesiredResources: %+v\ntransition: %s\nopts: %+v\n\n", desiredResources, transitionName, opts)
 	opts = opts.WithDefaults()
 	opts.Ctx = contextutils.WithLogger(opts.Ctx, "upstream_reconciler")
 	var transitionResources reconcile.TransitionResourcesFunc
 	if transition != nil {
-		fmt.Printf("transition != nil\n\n")
 		transitionResources = func(original, desired resources.Resource) (bool, error) {
-			fmt.Printf("In transitionResources\noriginal: %+v\ndesired: %+v\n\n", original, desired)
 			return transition(original.(*Upstream), desired.(*Upstream))
 		}
 	}

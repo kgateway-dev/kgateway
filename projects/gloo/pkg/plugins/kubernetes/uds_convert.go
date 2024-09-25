@@ -94,7 +94,6 @@ func skip(svc *corev1.Service, opts discovery.Opts) bool {
 }
 
 func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
-	fmt.Printf("In kubernetesplugin.UpdateUpstream\noriginal: %+v\ndesired: %+v\n\n", original, desired)
 	return UpdateUpstream(original, desired)
 }
 

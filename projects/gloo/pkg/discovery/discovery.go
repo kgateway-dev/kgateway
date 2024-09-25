@@ -2,7 +2,6 @@ package discovery
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"sort"
 	"strings"
@@ -140,11 +139,8 @@ func (d *UpstreamDiscovery) Resync(ctx context.Context) error {
 		selector := map[string]string{
 			"discovered_by": udsName,
 		}
-		for k, v := range d.extraSelectorLabels {
-			selector[k] = v
-		}
+
 		logger.Debugw("reconciling upstream details", zap.Any("upstreams", desiredUpstreams))
-		fmt.Printf("about to reconcile with uds: %T, selector: %+v\n", uds, selector)
 		if err := d.upstreamReconciler.Reconcile(d.writeNamespace, desiredUpstreams, uds.UpdateUpstream, clients.ListOpts{
 			Ctx:      ctx,
 			Selector: selector,
