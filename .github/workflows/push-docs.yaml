@@ -20,15 +20,18 @@ jobs:
   copy-docs:
     runs-on: ubuntu-latest
     steps:
-    - name: Get LTS version
+    - name: Get LTS branch version
       id: lts-version
       run: |
         version=""
         if [[ "${{ github.event_name }}" == "release" ]]; then
-          version=$(echo ${${{ github.event.release.tag_name }}%.*}.x)
+          if [[ "$${{ github.event.release.tag_name }}" =~ "v1.18." ]]; then
+            version="main"
+          else
+            version=$(echo ${${{ github.event.release.tag_name }}%.*}.x)
         # PUSH IS FOR TESTING ONLY
         elif [[ "${{ github.event_name }}" == "push" ]]; then
-          version="v1.18.x"
+          version="main"
         else
           version=${{ inputs.branch }}
         fi
@@ -38,7 +41,7 @@ jobs:
       run: |
         minor=""
         directory=""
-        if [[ "${{ steps.lts-version.outputs.lts }}" == "v1.18.x" ]]; then
+        if [[ "${{ steps.lts-version.outputs.lts }}" == "main" ]]; then
           minor="1.18"
           directory="main"
         elif [[ "${{ steps.lts-version.outputs.lts }}" == "v1.17.x" ]]; then
