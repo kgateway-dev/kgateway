@@ -4599,7 +4599,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_rawDescGZI
 
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes = make([]protoimpl.MessageInfo, 42)
-var file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_goTypes = []interface{}{
+var file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_goTypes = []any{
 	(Settings_DiscoveryOptions_FdsMode)(0),                           // 0: gloo.solo.io.Settings.DiscoveryOptions.FdsMode
 	(GraphqlOptions_SchemaChangeValidationOptions_ProcessingRule)(0), // 1: gloo.solo.io.GraphqlOptions.SchemaChangeValidationOptions.ProcessingRule
 	(*Settings)(nil),                                      // 2: gloo.solo.io.Settings
@@ -4644,7 +4644,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_goTypes = [
 	(*GlooOptions_IstioOptions)(nil),         // 41: gloo.solo.io.GlooOptions.IstioOptions
 	(*GatewayOptions_ValidationOptions)(nil), // 42: gloo.solo.io.GatewayOptions.ValidationOptions
 	(*GraphqlOptions_SchemaChangeValidationOptions)(nil),  // 43: gloo.solo.io.GraphqlOptions.SchemaChangeValidationOptions
-	(*duration.Duration)(nil),                             // 44: google.protobuf.Duration
+	(*durationpb.Duration)(nil),                           // 44: google.protobuf.Duration
 	(*Extensions)(nil),                                    // 45: gloo.solo.io.Extensions
 	(*ratelimit.ServiceSettings)(nil),                     // 46: ratelimit.options.gloo.solo.io.ServiceSettings
 	(*ratelimit.Settings)(nil),                            // 47: ratelimit.options.gloo.solo.io.Settings
@@ -4656,13 +4656,13 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_goTypes = [
 	(*extproc.Settings)(nil),                              // 53: extproc.options.gloo.solo.io.Settings
 	(*ssl.SslParameters)(nil),                             // 54: gloo.solo.io.SslParameters
 	(*CircuitBreakerConfig)(nil),                          // 55: gloo.solo.io.CircuitBreakerConfig
-	(*wrappers.BoolValue)(nil),                            // 56: google.protobuf.BoolValue
-	(*wrappers.UInt32Value)(nil),                          // 57: google.protobuf.UInt32Value
+	(*wrapperspb.BoolValue)(nil),                          // 56: google.protobuf.BoolValue
+	(*wrapperspb.UInt32Value)(nil),                        // 57: google.protobuf.UInt32Value
 	(*core.ResourceRef)(nil),                              // 58: core.solo.io.ResourceRef
 	(consul.ConsulConsistencyModes)(0),                    // 59: consul.options.gloo.solo.io.ConsulConsistencyModes
 	(*consul.QueryOptions)(nil),                           // 60: consul.options.gloo.solo.io.QueryOptions
 	(*aws.AWSLambdaConfig_ServiceAccountCredentials)(nil), // 61: envoy.config.filter.http.aws_lambda.v2.AWSLambdaConfig.ServiceAccountCredentials
-	(*wrappers.Int32Value)(nil),                           // 62: google.protobuf.Int32Value
+	(*wrapperspb.Int32Value)(nil),                         // 62: google.protobuf.Int32Value
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_depIdxs = []int32{
 	12,  // 0: gloo.solo.io.Settings.kubernetes_config_source:type_name -> gloo.solo.io.Settings.KubernetesCrds
@@ -4798,7 +4798,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[1].Exporter = func(v any, i int) any {
 			switch v := v.(*LabelSelector); i {
 			case 0:
 				return &v.state
@@ -4810,7 +4810,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[2].Exporter = func(v any, i int) any {
 			switch v := v.(*LabelSelectorRequirement); i {
 			case 0:
 				return &v.state
@@ -4822,7 +4822,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[3].Exporter = func(v any, i int) any {
 			switch v := v.(*UpstreamOptions); i {
 			case 0:
 				return &v.state
@@ -4834,7 +4834,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[4].Exporter = func(v any, i int) any {
 			switch v := v.(*GlooOptions); i {
 			case 0:
 				return &v.state
@@ -4846,7 +4846,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[5].Exporter = func(v any, i int) any {
 			switch v := v.(*VirtualServiceOptions); i {
 			case 0:
 				return &v.state
@@ -4858,7 +4858,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[6].Exporter = func(v any, i int) any {
 			switch v := v.(*GatewayOptions); i {
 			case 0:
 				return &v.state
@@ -4870,7 +4870,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[7].Exporter = func(v any, i int) any {
 			switch v := v.(*ConsoleOptions); i {
 			case 0:
 				return &v.state
@@ -4882,7 +4882,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[8].Exporter = func(v any, i int) any {
 			switch v := v.(*GraphqlOptions); i {
 			case 0:
 				return &v.state
@@ -4894,7 +4894,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[9].Exporter = func(v any, i int) any {
 			switch v := v.(*Settings_SecretOptions); i {
 			case 0:
 				return &v.state
@@ -4906,7 +4906,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[10].Exporter = func(v any, i int) any {
 			switch v := v.(*Settings_KubernetesCrds); i {
 			case 0:
 				return &v.state
@@ -4918,7 +4918,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[11].Exporter = func(v any, i int) any {
 			switch v := v.(*Settings_KubernetesSecrets); i {
 			case 0:
 				return &v.state
@@ -4930,7 +4930,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[12].Exporter = func(v any, i int) any {
 			switch v := v.(*Settings_VaultSecrets); i {
 			case 0:
 				return &v.state
@@ -4942,7 +4942,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[13].Exporter = func(v any, i int) any {
 			switch v := v.(*Settings_VaultAwsAuth); i {
 			case 0:
 				return &v.state
@@ -4954,7 +4954,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[14].Exporter = func(v any, i int) any {
 			switch v := v.(*Settings_VaultTlsConfig); i {
 			case 0:
 				return &v.state
@@ -4966,7 +4966,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[15].Exporter = func(v any, i int) any {
 			switch v := v.(*Settings_ConsulKv); i {
 			case 0:
 				return &v.state
@@ -4978,7 +4978,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[16].Exporter = func(v any, i int) any {
 			switch v := v.(*Settings_KubernetesConfigmaps); i {
 			case 0:
 				return &v.state
@@ -4990,7 +4990,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[17].Exporter = func(v any, i int) any {
 			switch v := v.(*Settings_Directory); i {
 			case 0:
 				return &v.state
@@ -5002,7 +5002,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[18].Exporter = func(v any, i int) any {
 			switch v := v.(*Settings_KnativeOptions); i {
 			case 0:
 				return &v.state
@@ -5014,7 +5014,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[19].Exporter = func(v any, i int) any {
 			switch v := v.(*Settings_DiscoveryOptions); i {
 			case 0:
 				return &v.state
@@ -5026,7 +5026,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[20].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[20].Exporter = func(v any, i int) any {
 			switch v := v.(*Settings_ConsulConfiguration); i {
 			case 0:
 				return &v.state
@@ -5038,7 +5038,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[21].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[21].Exporter = func(v any, i int) any {
 			switch v := v.(*Settings_ConsulUpstreamDiscoveryConfiguration); i {
 			case 0:
 				return &v.state
@@ -5050,7 +5050,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[22].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[22].Exporter = func(v any, i int) any {
 			switch v := v.(*Settings_KubernetesConfiguration); i {
 			case 0:
 				return &v.state
@@ -5062,7 +5062,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[24].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[24].Exporter = func(v any, i int) any {
 			switch v := v.(*Settings_ObservabilityOptions); i {
 			case 0:
 				return &v.state
@@ -5074,7 +5074,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[25].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[25].Exporter = func(v any, i int) any {
 			switch v := v.(*Settings_SecretOptions_Source); i {
 			case 0:
 				return &v.state
@@ -5086,7 +5086,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[26].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[26].Exporter = func(v any, i int) any {
 			switch v := v.(*Settings_DiscoveryOptions_UdsOptions); i {
 			case 0:
 				return &v.state
@@ -5098,7 +5098,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[27].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[27].Exporter = func(v any, i int) any {
 			switch v := v.(*Settings_DiscoveryOptions_FdsOptions); i {
 			case 0:
 				return &v.state
@@ -5110,7 +5110,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[29].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[29].Exporter = func(v any, i int) any {
 			switch v := v.(*Settings_ConsulConfiguration_ServiceDiscoveryOptions); i {
 			case 0:
 				return &v.state
@@ -5122,7 +5122,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[30].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[30].Exporter = func(v any, i int) any {
 			switch v := v.(*Settings_KubernetesConfiguration_RateLimits); i {
 			case 0:
 				return &v.state
@@ -5134,7 +5134,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[31].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[31].Exporter = func(v any, i int) any {
 			switch v := v.(*Settings_ObservabilityOptions_GrafanaIntegration); i {
 			case 0:
 				return &v.state
@@ -5146,7 +5146,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[32].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[32].Exporter = func(v any, i int) any {
 			switch v := v.(*Settings_ObservabilityOptions_MetricLabels); i {
 			case 0:
 				return &v.state
@@ -5158,7 +5158,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[37].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[37].Exporter = func(v any, i int) any {
 			switch v := v.(*GlooOptions_AWSOptions); i {
 			case 0:
 				return &v.state
@@ -5170,7 +5170,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[38].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[38].Exporter = func(v any, i int) any {
 			switch v := v.(*GlooOptions_InvalidConfigPolicy); i {
 			case 0:
 				return &v.state
@@ -5182,7 +5182,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[39].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[39].Exporter = func(v any, i int) any {
 			switch v := v.(*GlooOptions_IstioOptions); i {
 			case 0:
 				return &v.state
@@ -5194,7 +5194,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[40].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[40].Exporter = func(v any, i int) any {
 			switch v := v.(*GatewayOptions_ValidationOptions); i {
 			case 0:
 				return &v.state
@@ -5206,7 +5206,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[41].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[41].Exporter = func(v any, i int) any {
 			switch v := v.(*GraphqlOptions_SchemaChangeValidationOptions); i {
 			case 0:
 				return &v.state
@@ -5230,16 +5230,16 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_init() {
 		(*Settings_DirectoryArtifactSource)(nil),
 		(*Settings_ConsulKvArtifactSource)(nil),
 	}
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[12].OneofWrappers = []interface{}{
+	file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[12].OneofWrappers = []any{
 		(*Settings_VaultSecrets_AccessToken)(nil),
 		(*Settings_VaultSecrets_Aws)(nil),
 	}
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[25].OneofWrappers = []interface{}{
+	file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[25].OneofWrappers = []any{
 		(*Settings_SecretOptions_Source_Kubernetes)(nil),
 		(*Settings_SecretOptions_Source_Vault)(nil),
 		(*Settings_SecretOptions_Source_Directory)(nil),
 	}
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[37].OneofWrappers = []interface{}{
+	file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_msgTypes[37].OneofWrappers = []any{
 		(*GlooOptions_AWSOptions_EnableCredentialsDiscovey)(nil),
 		(*GlooOptions_AWSOptions_ServiceAccountCredentials)(nil),
 	}
