@@ -38,6 +38,7 @@ type plugin struct {
 }
 
 func NewPlugin(kube kubernetes.Interface, kubeCoreCache corecache.KubeCoreCache) plugins.Plugin {
+	fmt.Printf("In kubernetes.NewPlugin()\n\n")
 	return &plugin{
 		kube:              kube,
 		UpstreamConverter: DefaultUpstreamConverter(),
@@ -63,7 +64,7 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
-	fmt.Printf("In kubernetesplugin.ProcessUpstream\n")
+	fmt.Printf("In kubernetesplugin.ProcessUpstream() for %+v\n\n", in)
 	// not ours
 	kube, ok := in.GetUpstreamType().(*v1.Upstream_Kube)
 	if !ok {

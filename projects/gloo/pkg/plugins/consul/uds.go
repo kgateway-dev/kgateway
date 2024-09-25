@@ -1,6 +1,7 @@
 package consul
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/rotisserie/eris"
@@ -63,6 +64,7 @@ func setRealName(list v1.UpstreamList, writeNamespace string) v1.UpstreamList {
 	return list
 }
 func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
+	fmt.Printf("In consulplugin.UpdateUpstream\noriginal: %+v\ndesired: %+v\n\n", original, desired)
 	originalSpec, ok := original.GetUpstreamType().(*v1.Upstream_Consul)
 	if !ok {
 		return false, InvalidSpecTypeError(original, "original")

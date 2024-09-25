@@ -24,7 +24,7 @@ const (
 
 func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace string, opts clients.WatchOpts, discOpts discovery.Opts) (chan v1.UpstreamList, chan error, error) {
 
-	fmt.Printf("In DiscoverUpstreams;\nwatchNamespaces: %+v\nwriteNamespace: %s\n, opts: %+v\ndiscOpts: %+v\n\n", watchNamespaces, writeNamespace, opts, discOpts)
+	fmt.Printf("In plugin.DiscoverUpstreams();\nwatchNamespaces: %+v\nwriteNamespace: %s\n, opts: %+v\ndiscOpts: %+v\n\n", watchNamespaces, writeNamespace, opts, discOpts)
 
 	if len(watchNamespaces) == 0 {
 		watchNamespaces = []string{metav1.NamespaceAll}

@@ -144,7 +144,7 @@ func (d *UpstreamDiscovery) Resync(ctx context.Context) error {
 			selector[k] = v
 		}
 		logger.Debugw("reconciling upstream details", zap.Any("upstreams", desiredUpstreams))
-		fmt.Printf("about to reconcile with uds: %s, selector: %+v\n", udsName, selector)
+		fmt.Printf("about to reconcile with uds: %T, selector: %+v\n", uds, selector)
 		if err := d.upstreamReconciler.Reconcile(d.writeNamespace, desiredUpstreams, uds.UpdateUpstream, clients.ListOpts{
 			Ctx:      ctx,
 			Selector: selector,

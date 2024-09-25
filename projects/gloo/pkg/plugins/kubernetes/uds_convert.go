@@ -48,7 +48,7 @@ func (uc *KubeUpstreamConverter) CreateUpstream(ctx context.Context, svc *corev1
 	coremeta.ResourceVersion = ""
 	coremeta.Name = UpstreamName(meta.Namespace, meta.Name, port.Port)
 	labels := coremeta.GetLabels()
-	coremeta.Labels = make(map[string]string)
+	//coremeta.Labels = make(map[string]string)
 
 	us := &v1.Upstream{
 		Metadata: coremeta,
@@ -94,7 +94,7 @@ func skip(svc *corev1.Service, opts discovery.Opts) bool {
 }
 
 func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
-	fmt.Printf("In kubernetesplugin.UpdateUpstream\n")
+	fmt.Printf("In kubernetesplugin.UpdateUpstream\noriginal: %+v\ndesired: %+v\n\n", original, desired)
 	return UpdateUpstream(original, desired)
 }
 
