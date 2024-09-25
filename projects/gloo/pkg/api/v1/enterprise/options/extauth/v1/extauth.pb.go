@@ -9901,7 +9901,7 @@ type ExtAuthConfig_OidcAuthorizationCodeConfig_PkJwtClientAuthenticationConfig s
 	// Signing key for the JWT used for client authentication
 	SigningKey string `protobuf:"bytes,1,opt,name=signing_key,json=signingKey,proto3" json:"signing_key,omitempty"`
 	// Amount of time for which the JWT is valid. No maximum is enforced, but different IDPs may impose limits on how far in
-	// the future the expiration time is allowed to be. Defaults in 5s in front end, but expected to be set explictly here
+	// the future the expiration time is allowed to be. Defaults in 5s in front end, but expected to be set explicitly here
 	ValidFor *durationpb.Duration `protobuf:"bytes,2,opt,name=valid_for,json=validFor,proto3" json:"valid_for,omitempty"`
 }
 
