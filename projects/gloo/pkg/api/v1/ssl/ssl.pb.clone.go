@@ -13,11 +13,11 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
-
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
-
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	google_golang_org_protobuf_types_known_durationpb "google.golang.org/protobuf/types/known/durationpb"
+
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -73,21 +73,21 @@ func (m *SslConfig) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetOneWayTls()).(clone.Cloner); ok {
-		target.OneWayTls = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.OneWayTls = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.OneWayTls = proto.Clone(m.GetOneWayTls()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.OneWayTls = proto.Clone(m.GetOneWayTls()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetDisableTlsSessionResumption()).(clone.Cloner); ok {
-		target.DisableTlsSessionResumption = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.DisableTlsSessionResumption = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.DisableTlsSessionResumption = proto.Clone(m.GetDisableTlsSessionResumption()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.DisableTlsSessionResumption = proto.Clone(m.GetDisableTlsSessionResumption()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetTransportSocketConnectTimeout()).(clone.Cloner); ok {
-		target.TransportSocketConnectTimeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.TransportSocketConnectTimeout = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.TransportSocketConnectTimeout = proto.Clone(m.GetTransportSocketConnectTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.TransportSocketConnectTimeout = proto.Clone(m.GetTransportSocketConnectTimeout()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	target.OcspStaplePolicy = m.GetOcspStaplePolicy()
@@ -189,15 +189,15 @@ func (m *UpstreamSslConfig) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetAllowRenegotiation()).(clone.Cloner); ok {
-		target.AllowRenegotiation = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.AllowRenegotiation = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.AllowRenegotiation = proto.Clone(m.GetAllowRenegotiation()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.AllowRenegotiation = proto.Clone(m.GetAllowRenegotiation()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetOneWayTls()).(clone.Cloner); ok {
-		target.OneWayTls = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.OneWayTls = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.OneWayTls = proto.Clone(m.GetOneWayTls()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.OneWayTls = proto.Clone(m.GetOneWayTls()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	switch m.SslSecrets.(type) {

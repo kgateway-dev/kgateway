@@ -79,5 +79,7 @@
         "package": "graphql.gloo.solo.io"
       }
     ]
-  }
+  },
+  "gen_kube_types": false,
+  "gen_kube_validation_schemas": false
 }

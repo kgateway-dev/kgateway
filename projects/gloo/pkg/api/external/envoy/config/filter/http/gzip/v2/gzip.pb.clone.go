@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -36,15 +36,15 @@ func (m *Gzip) Clone() proto.Message {
 	target = &Gzip{}
 
 	if h, ok := interface{}(m.GetMemoryLevel()).(clone.Cloner); ok {
-		target.MemoryLevel = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MemoryLevel = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.MemoryLevel = proto.Clone(m.GetMemoryLevel()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MemoryLevel = proto.Clone(m.GetMemoryLevel()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	if h, ok := interface{}(m.GetContentLength()).(clone.Cloner); ok {
-		target.ContentLength = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.ContentLength = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.ContentLength = proto.Clone(m.GetContentLength()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.ContentLength = proto.Clone(m.GetContentLength()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	target.CompressionLevel = m.GetCompressionLevel()
@@ -65,9 +65,9 @@ func (m *Gzip) Clone() proto.Message {
 	target.RemoveAcceptEncodingHeader = m.GetRemoveAcceptEncodingHeader()
 
 	if h, ok := interface{}(m.GetWindowBits()).(clone.Cloner); ok {
-		target.WindowBits = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.WindowBits = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.WindowBits = proto.Clone(m.GetWindowBits()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.WindowBits = proto.Clone(m.GetWindowBits()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	return target

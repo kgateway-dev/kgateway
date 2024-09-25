@@ -10,10 +10,10 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -111,7 +111,7 @@ type ProtocolUpgradeConfig_ProtocolUpgradeSpec struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Whether the upgrade should be enabled. If left unset, Envoy will enable the protocol upgrade.
-	Enabled *wrappers.BoolValue `protobuf:"bytes,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	Enabled *wrapperspb.BoolValue `protobuf:"bytes,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
 }
 
 func (x *ProtocolUpgradeConfig_ProtocolUpgradeSpec) Reset() {
@@ -146,7 +146,7 @@ func (*ProtocolUpgradeConfig_ProtocolUpgradeSpec) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_options_protocol_upgrade_protocol_upgrade_proto_rawDescGZIP(), []int{0, 0}
 }
 
-func (x *ProtocolUpgradeConfig_ProtocolUpgradeSpec) GetEnabled() *wrappers.BoolValue {
+func (x *ProtocolUpgradeConfig_ProtocolUpgradeSpec) GetEnabled() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.Enabled
 	}
@@ -214,7 +214,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_protocol_upgrade_p
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_protocol_upgrade_protocol_upgrade_proto_goTypes = []any{
 	(*ProtocolUpgradeConfig)(nil),                     // 0: protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig
 	(*ProtocolUpgradeConfig_ProtocolUpgradeSpec)(nil), // 1: protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig.ProtocolUpgradeSpec
-	(*wrappers.BoolValue)(nil),                        // 2: google.protobuf.BoolValue
+	(*wrapperspb.BoolValue)(nil),                      // 2: google.protobuf.BoolValue
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_protocol_upgrade_protocol_upgrade_proto_depIdxs = []int32{
 	1, // 0: protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig.websocket:type_name -> protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig.ProtocolUpgradeSpec

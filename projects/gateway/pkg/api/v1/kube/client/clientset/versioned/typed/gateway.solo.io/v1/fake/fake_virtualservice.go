@@ -20,11 +20,8 @@ package fake
 
 import (
 	"context"
-	json "encoding/json"
-	"fmt"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	gatewaysoloiov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/applyconfiguration/gateway.solo.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	types "k8s.io/apimachinery/pkg/types"
@@ -44,22 +41,24 @@ var virtualservicesKind = v1.SchemeGroupVersion.WithKind("VirtualService")
 
 // Get takes name of the virtualService, and returns the corresponding virtualService object, and an error if there is any.
 func (c *FakeVirtualServices) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.VirtualService, err error) {
+	emptyResult := &v1.VirtualService{}
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(virtualservicesResource, c.ns, name), &v1.VirtualService{})
+		Invokes(testing.NewGetActionWithOptions(virtualservicesResource, c.ns, name, options), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.VirtualService), err
 }
 
 // List takes label and field selectors, and returns the list of VirtualServices that match those selectors.
 func (c *FakeVirtualServices) List(ctx context.Context, opts metav1.ListOptions) (result *v1.VirtualServiceList, err error) {
+	emptyResult := &v1.VirtualServiceList{}
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(virtualservicesResource, virtualservicesKind, c.ns, opts), &v1.VirtualServiceList{})
+		Invokes(testing.NewListActionWithOptions(virtualservicesResource, virtualservicesKind, c.ns, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 
 	label, _, _ := testing.ExtractFromListOptions(opts)
@@ -78,40 +77,43 @@ func (c *FakeVirtualServices) List(ctx context.Context, opts metav1.ListOptions)
 // Watch returns a watch.Interface that watches the requested virtualServices.
 func (c *FakeVirtualServices) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(virtualservicesResource, c.ns, opts))
+		InvokesWatch(testing.NewWatchActionWithOptions(virtualservicesResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a virtualService and creates it.  Returns the server's representation of the virtualService, and an error, if there is any.
 func (c *FakeVirtualServices) Create(ctx context.Context, virtualService *v1.VirtualService, opts metav1.CreateOptions) (result *v1.VirtualService, err error) {
+	emptyResult := &v1.VirtualService{}
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(virtualservicesResource, c.ns, virtualService), &v1.VirtualService{})
+		Invokes(testing.NewCreateActionWithOptions(virtualservicesResource, c.ns, virtualService, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.VirtualService), err
 }
 
 // Update takes the representation of a virtualService and updates it. Returns the server's representation of the virtualService, and an error, if there is any.
 func (c *FakeVirtualServices) Update(ctx context.Context, virtualService *v1.VirtualService, opts metav1.UpdateOptions) (result *v1.VirtualService, err error) {
+	emptyResult := &v1.VirtualService{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(virtualservicesResource, c.ns, virtualService), &v1.VirtualService{})
+		Invokes(testing.NewUpdateActionWithOptions(virtualservicesResource, c.ns, virtualService, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.VirtualService), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeVirtualServices) UpdateStatus(ctx context.Context, virtualService *v1.VirtualService, opts metav1.UpdateOptions) (*v1.VirtualService, error) {
+func (c *FakeVirtualServices) UpdateStatus(ctx context.Context, virtualService *v1.VirtualService, opts metav1.UpdateOptions) (result *v1.VirtualService, err error) {
+	emptyResult := &v1.VirtualService{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(virtualservicesResource, "status", c.ns, virtualService), &v1.VirtualService{})
+		Invokes(testing.NewUpdateSubresourceActionWithOptions(virtualservicesResource, "status", c.ns, virtualService, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.VirtualService), err
 }
@@ -126,7 +128,7 @@ func (c *FakeVirtualServices) Delete(ctx context.Context, name string, opts meta
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakeVirtualServices) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(virtualservicesResource, c.ns, listOpts)
+	action := testing.NewDeleteCollectionActionWithOptions(virtualservicesResource, c.ns, opts, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1.VirtualServiceList{})
 	return err
@@ -134,56 +136,12 @@ func (c *FakeVirtualServices) DeleteCollection(ctx context.Context, opts metav1.
 
 // Patch applies the patch and returns the patched virtualService.
 func (c *FakeVirtualServices) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.VirtualService, err error) {
+	emptyResult := &v1.VirtualService{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(virtualservicesResource, c.ns, name, pt, data, subresources...), &v1.VirtualService{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(virtualservicesResource, c.ns, name, pt, data, opts, subresources...), emptyResult)
 
 	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1.VirtualService), err
-}
-
-// Apply takes the given apply declarative configuration, applies it and returns the applied virtualService.
-func (c *FakeVirtualServices) Apply(ctx context.Context, virtualService *gatewaysoloiov1.VirtualServiceApplyConfiguration, opts metav1.ApplyOptions) (result *v1.VirtualService, err error) {
-	if virtualService == nil {
-		return nil, fmt.Errorf("virtualService provided to Apply must not be nil")
-	}
-	data, err := json.Marshal(virtualService)
-	if err != nil {
-		return nil, err
-	}
-	name := virtualService.Name
-	if name == nil {
-		return nil, fmt.Errorf("virtualService.Name must be provided to Apply")
-	}
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(virtualservicesResource, c.ns, *name, types.ApplyPatchType, data), &v1.VirtualService{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1.VirtualService), err
-}
-
-// ApplyStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
-func (c *FakeVirtualServices) ApplyStatus(ctx context.Context, virtualService *gatewaysoloiov1.VirtualServiceApplyConfiguration, opts metav1.ApplyOptions) (result *v1.VirtualService, err error) {
-	if virtualService == nil {
-		return nil, fmt.Errorf("virtualService provided to Apply must not be nil")
-	}
-	data, err := json.Marshal(virtualService)
-	if err != nil {
-		return nil, err
-	}
-	name := virtualService.Name
-	if name == nil {
-		return nil, fmt.Errorf("virtualService.Name must be provided to Apply")
-	}
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(virtualservicesResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1.VirtualService{})
-
-	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.VirtualService), err
 }

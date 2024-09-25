@@ -11,9 +11,9 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	duration "github.com/golang/protobuf/ptypes/duration"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
 )
 
 const (
@@ -226,7 +226,7 @@ type CookieBasedSessionState_Cookie struct {
 	// Path of cookie. This will be used to set the path of a new cookie when it is generated. If no path is specified here, no path will be set for the cookie.
 	Path string `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
 	// Duration of cookie. This will be used to set the expiry time of a new cookie when it is generated. Set this to 0s to use a session cookie and disable cookie expiration.
-	Ttl *duration.Duration `protobuf:"bytes,3,opt,name=ttl,proto3" json:"ttl,omitempty"`
+	Ttl *durationpb.Duration `protobuf:"bytes,3,opt,name=ttl,proto3" json:"ttl,omitempty"`
 }
 
 func (x *CookieBasedSessionState_Cookie) Reset() {
@@ -275,7 +275,7 @@ func (x *CookieBasedSessionState_Cookie) GetPath() string {
 	return ""
 }
 
-func (x *CookieBasedSessionState_Cookie) GetTtl() *duration.Duration {
+func (x *CookieBasedSessionState_Cookie) GetTtl() *durationpb.Duration {
 	if x != nil {
 		return x.Ttl
 	}
@@ -361,7 +361,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_statefu
 	(*CookieBasedSessionState)(nil),        // 1: stateful_session.options.gloo.solo.io.CookieBasedSessionState
 	(*HeaderBasedSessionState)(nil),        // 2: stateful_session.options.gloo.solo.io.HeaderBasedSessionState
 	(*CookieBasedSessionState_Cookie)(nil), // 3: stateful_session.options.gloo.solo.io.CookieBasedSessionState.Cookie
-	(*duration.Duration)(nil),              // 4: google.protobuf.Duration
+	(*durationpb.Duration)(nil),            // 4: google.protobuf.Duration
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_stateful_session_stateful_session_proto_depIdxs = []int32{
 	1, // 0: stateful_session.options.gloo.solo.io.StatefulSession.cookie_based:type_name -> stateful_session.options.gloo.solo.io.CookieBasedSessionState

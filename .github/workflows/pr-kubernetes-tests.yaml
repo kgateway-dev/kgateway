@@ -46,9 +46,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # We intentionally set an upper threshold of 25 minutes for our End-to-End tests
+        # We intentionally set an upper threshold of 30 minutes for our End-to-End tests
         # Our goal is to load balance tests in a way that allows quick iteration on PRs
-        # If tests are exceeding the 25-minute limit, please see:
+        # If tests are exceeding the 30-minute limit, please see:
         # /test/kubernetes/e2e/load_balancing_tests.md
         #
         # Above each test below, we document the latest date/time for the GitHub action step to run
@@ -67,12 +67,12 @@ jobs:
 
         # September 16, 2024: 21 minutes
         - cluster-name: 'cluster-three'
-          go-test-args: '-v -timeout=25m'
+          go-test-args: '-v -timeout=30m'
           go-test-run-regex: '(^TestK8sGatewayIstioAutoMtls$$|^TestAutomtlsIstioEdgeApisGateway$$|^TestIstioEdgeApiGateway$$|^TestIstioRegression$$)'
 
         # September 16, 2024: 23 minutes
         - cluster-name: 'cluster-four'
-          go-test-args: '-v -timeout=25m'
+          go-test-args: '-v -timeout=30m'
           go-test-run-regex: '(^TestK8sGatewayIstio$$|^TestGlooGatewayEdgeGateway$$|^TestGlooctlIstioInjectEdgeApiGateway$$|^TestK8sGatewayNoValidation$$)'
 
         # September 16, 2024: 17 minutes

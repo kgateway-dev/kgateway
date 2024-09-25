@@ -13,11 +13,11 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
-
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
-
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+
+	google_golang_org_protobuf_types_known_durationpb "google.golang.org/protobuf/types/known/durationpb"
+
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -46,9 +46,9 @@ func (m *AWSLambdaPerRoute) Clone() proto.Message {
 	target.Async = m.GetAsync()
 
 	if h, ok := interface{}(m.GetEmptyBodyOverride()).(clone.Cloner); ok {
-		target.EmptyBodyOverride = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.EmptyBodyOverride = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	} else {
-		target.EmptyBodyOverride = proto.Clone(m.GetEmptyBodyOverride()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.EmptyBodyOverride = proto.Clone(m.GetEmptyBodyOverride()).(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	}
 
 	target.UnwrapAsAlb = m.GetUnwrapAsAlb()
@@ -104,9 +104,9 @@ func (m *AWSLambdaConfig) Clone() proto.Message {
 	target.PropagateOriginalRouting = m.GetPropagateOriginalRouting()
 
 	if h, ok := interface{}(m.GetCredentialRefreshDelay()).(clone.Cloner); ok {
-		target.CredentialRefreshDelay = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.CredentialRefreshDelay = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.CredentialRefreshDelay = proto.Clone(m.GetCredentialRefreshDelay()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.CredentialRefreshDelay = proto.Clone(m.GetCredentialRefreshDelay()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	switch m.CredentialsFetcher.(type) {
@@ -115,11 +115,11 @@ func (m *AWSLambdaConfig) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetUseDefaultCredentials()).(clone.Cloner); ok {
 			target.CredentialsFetcher = &AWSLambdaConfig_UseDefaultCredentials{
-				UseDefaultCredentials: h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue),
+				UseDefaultCredentials: h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue),
 			}
 		} else {
 			target.CredentialsFetcher = &AWSLambdaConfig_UseDefaultCredentials{
-				UseDefaultCredentials: proto.Clone(m.GetUseDefaultCredentials()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue),
+				UseDefaultCredentials: proto.Clone(m.GetUseDefaultCredentials()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue),
 			}
 		}
 
@@ -164,9 +164,9 @@ func (m *AWSLambdaConfig_ServiceAccountCredentials) Clone() proto.Message {
 	target.Uri = m.GetUri()
 
 	if h, ok := interface{}(m.GetTimeout()).(clone.Cloner); ok {
-		target.Timeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.Timeout = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.Timeout = proto.Clone(m.GetTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.Timeout = proto.Clone(m.GetTimeout()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	target.Region = m.GetRegion()

@@ -10,10 +10,10 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -46,7 +46,7 @@ type Parameters struct {
 	//	extensions:
 	//	  parameters:
 	//	      path: /users/{ userId }
-	Path *wrappers.StringValue `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
+	Path *wrapperspb.StringValue `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
 }
 
 func (x *Parameters) Reset() {
@@ -88,7 +88,7 @@ func (x *Parameters) GetHeaders() map[string]string {
 	return nil
 }
 
-func (x *Parameters) GetPath() *wrappers.StringValue {
+func (x *Parameters) GetPath() *wrapperspb.StringValue {
 	if x != nil {
 		return x.Path
 	}
@@ -145,9 +145,9 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_options_transformation_pa
 
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_transformation_parameters_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_transformation_parameters_proto_goTypes = []any{
-	(*Parameters)(nil),           // 0: transformation.options.gloo.solo.io.Parameters
-	nil,                          // 1: transformation.options.gloo.solo.io.Parameters.HeadersEntry
-	(*wrappers.StringValue)(nil), // 2: google.protobuf.StringValue
+	(*Parameters)(nil),             // 0: transformation.options.gloo.solo.io.Parameters
+	nil,                            // 1: transformation.options.gloo.solo.io.Parameters.HeadersEntry
+	(*wrapperspb.StringValue)(nil), // 2: google.protobuf.StringValue
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_transformation_parameters_proto_depIdxs = []int32{
 	1, // 0: transformation.options.gloo.solo.io.Parameters.headers:type_name -> transformation.options.gloo.solo.io.Parameters.HeadersEntry

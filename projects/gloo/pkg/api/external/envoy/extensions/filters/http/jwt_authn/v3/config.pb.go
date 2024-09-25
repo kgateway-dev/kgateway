@@ -11,13 +11,13 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	duration "github.com/golang/protobuf/ptypes/duration"
-	empty "github.com/golang/protobuf/ptypes/empty"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/udpa/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 const (
@@ -344,7 +344,7 @@ type RemoteJwks struct {
 	HttpUri *v3.HttpUri `protobuf:"bytes,1,opt,name=http_uri,json=httpUri,proto3" json:"http_uri,omitempty"`
 	// Duration after which the cached JWKS should be expired. If not specified, default cache
 	// duration is 5 minutes.
-	CacheDuration *duration.Duration `protobuf:"bytes,2,opt,name=cache_duration,json=cacheDuration,proto3" json:"cache_duration,omitempty"`
+	CacheDuration *durationpb.Duration `protobuf:"bytes,2,opt,name=cache_duration,json=cacheDuration,proto3" json:"cache_duration,omitempty"`
 	// Fetch Jwks asynchronously in the main thread before the listener is activated.
 	// Fetched Jwks can be used by all worker threads.
 	//
@@ -401,7 +401,7 @@ func (x *RemoteJwks) GetHttpUri() *v3.HttpUri {
 	return nil
 }
 
-func (x *RemoteJwks) GetCacheDuration() *duration.Duration {
+func (x *RemoteJwks) GetCacheDuration() *durationpb.Duration {
 	if x != nil {
 		return x.CacheDuration
 	}
@@ -728,14 +728,14 @@ func (x *JwtRequirement) GetRequiresAll() *JwtRequirementAndList {
 	return nil
 }
 
-func (x *JwtRequirement) GetAllowMissingOrFailed() *empty.Empty {
+func (x *JwtRequirement) GetAllowMissingOrFailed() *emptypb.Empty {
 	if x, ok := x.GetRequiresType().(*JwtRequirement_AllowMissingOrFailed); ok {
 		return x.AllowMissingOrFailed
 	}
 	return nil
 }
 
-func (x *JwtRequirement) GetAllowMissing() *empty.Empty {
+func (x *JwtRequirement) GetAllowMissing() *emptypb.Empty {
 	if x, ok := x.GetRequiresType().(*JwtRequirement_AllowMissing); ok {
 		return x.AllowMissing
 	}
@@ -773,7 +773,7 @@ type JwtRequirement_AllowMissingOrFailed struct {
 	// verification fails. A typical usage is: this filter is used to only verify
 	// JWTs and pass the verified JWT payloads to another filter, the other filter
 	// will make decision. In this mode, all JWT tokens will be verified.
-	AllowMissingOrFailed *empty.Empty `protobuf:"bytes,5,opt,name=allow_missing_or_failed,json=allowMissingOrFailed,proto3,oneof"`
+	AllowMissingOrFailed *emptypb.Empty `protobuf:"bytes,5,opt,name=allow_missing_or_failed,json=allowMissingOrFailed,proto3,oneof"`
 }
 
 type JwtRequirement_AllowMissing struct {
@@ -781,7 +781,7 @@ type JwtRequirement_AllowMissing struct {
 	// presented but invalid. Similar to allow_missing_or_failed, this is used
 	// to only verify JWTs and pass the verified payload to another filter. The
 	// different is this mode will reject requests with invalid tokens.
-	AllowMissing *empty.Empty `protobuf:"bytes,6,opt,name=allow_missing,json=allowMissing,proto3,oneof"`
+	AllowMissing *emptypb.Empty `protobuf:"bytes,6,opt,name=allow_missing,json=allowMissing,proto3,oneof"`
 }
 
 func (*JwtRequirement_ProviderName) isJwtRequirement_RequiresType() {}
@@ -1706,8 +1706,8 @@ var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_extensions_fil
 	nil,                           // 14: solo.io.envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication.RequirementMapEntry
 	(*v3.DataSource)(nil),         // 15: solo.io.envoy.config.core.v3.DataSource
 	(*v3.HttpUri)(nil),            // 16: solo.io.envoy.config.core.v3.HttpUri
-	(*duration.Duration)(nil),     // 17: google.protobuf.Duration
-	(*empty.Empty)(nil),           // 18: google.protobuf.Empty
+	(*durationpb.Duration)(nil),   // 17: google.protobuf.Duration
+	(*emptypb.Empty)(nil),         // 18: google.protobuf.Empty
 	(*v31.RouteMatch)(nil),        // 19: solo.io.envoy.config.route.v3.RouteMatch
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_extensions_filters_http_jwt_authn_v3_config_proto_depIdxs = []int32{

@@ -11,10 +11,10 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	duration "github.com/golang/protobuf/ptypes/duration"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
 )
 
 const (
@@ -91,7 +91,7 @@ type RouteDelay struct {
 	// This should be a value between 0.0 and 100.0, with up to 6 significant digits.
 	Percentage float32 `protobuf:"fixed32,1,opt,name=percentage,proto3" json:"percentage,omitempty"`
 	// Fixed delay, defaulting to 0. Will be rejected by the control plane if the delay is specified and less than 1 second.
-	FixedDelay *duration.Duration `protobuf:"bytes,2,opt,name=fixed_delay,json=fixedDelay,proto3" json:"fixed_delay,omitempty"`
+	FixedDelay *durationpb.Duration `protobuf:"bytes,2,opt,name=fixed_delay,json=fixedDelay,proto3" json:"fixed_delay,omitempty"`
 }
 
 func (x *RouteDelay) Reset() {
@@ -133,7 +133,7 @@ func (x *RouteDelay) GetPercentage() float32 {
 	return 0
 }
 
-func (x *RouteDelay) GetFixedDelay() *duration.Duration {
+func (x *RouteDelay) GetFixedDelay() *durationpb.Duration {
 	if x != nil {
 		return x.FixedDelay
 	}
@@ -254,10 +254,10 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_options_faultinjection_fa
 
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_faultinjection_fault_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_faultinjection_fault_proto_goTypes = []any{
-	(*RouteAbort)(nil),        // 0: fault.options.gloo.solo.io.RouteAbort
-	(*RouteDelay)(nil),        // 1: fault.options.gloo.solo.io.RouteDelay
-	(*RouteFaults)(nil),       // 2: fault.options.gloo.solo.io.RouteFaults
-	(*duration.Duration)(nil), // 3: google.protobuf.Duration
+	(*RouteAbort)(nil),          // 0: fault.options.gloo.solo.io.RouteAbort
+	(*RouteDelay)(nil),          // 1: fault.options.gloo.solo.io.RouteDelay
+	(*RouteFaults)(nil),         // 2: fault.options.gloo.solo.io.RouteFaults
+	(*durationpb.Duration)(nil), // 3: google.protobuf.Duration
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_faultinjection_fault_proto_depIdxs = []int32{
 	3, // 0: fault.options.gloo.solo.io.RouteDelay.fixed_delay:type_name -> google.protobuf.Duration

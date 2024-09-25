@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
+	"github.com/solo-io/solo-kit/test/matchers"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -65,7 +66,7 @@ var _ = Describe("RetryOnUnavailableClientConstructor", func() {
 		// sanity check
 		resp, err := client.Validate(rootCtx, &validation.GlooValidationServiceRequest{})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(resp).To(Equal(res))
+		Expect(resp).To(matchers.MatchProto(res))
 
 		// shut down the server
 		cancel()
@@ -93,7 +94,7 @@ var _ = Describe("RetryOnUnavailableClientConstructor", func() {
 		resp, err = client.Validate(rootCtx, &validation.GlooValidationServiceRequest{})
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(resp).To(Equal(res))
+		Expect(resp).To(matchers.MatchProto(res))
 
 	})
 

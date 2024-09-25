@@ -10,14 +10,14 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	_ "github.com/golang/protobuf/ptypes/duration"
-	_ "github.com/golang/protobuf/ptypes/empty"
-	_struct "github.com/golang/protobuf/ptypes/struct"
-	_ "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	_ "google.golang.org/protobuf/types/known/durationpb"
+	_ "google.golang.org/protobuf/types/known/emptypb"
+	structpb "google.golang.org/protobuf/types/known/structpb"
+	_ "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -587,7 +587,7 @@ type FieldDefault struct {
 	// Field name
 	Field string `protobuf:"bytes,1,opt,name=field,proto3" json:"field,omitempty"`
 	// Field Value, this can be any valid JSON value
-	Value *_struct.Value `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	Value *structpb.Value `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	// Whether or not to override the field if it already exists
 	Override bool `protobuf:"varint,3,opt,name=override,proto3" json:"override,omitempty"`
 }
@@ -631,7 +631,7 @@ func (x *FieldDefault) GetField() string {
 	return ""
 }
 
-func (x *FieldDefault) GetValue() *_struct.Value {
+func (x *FieldDefault) GetValue() *structpb.Value {
 	if x != nil {
 		return x.Value
 	}
@@ -2376,7 +2376,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_p
 	(*AIPromptGaurd_Request)(nil),       // 25: ai.options.gloo.solo.io.AIPromptGaurd.Request
 	(*AIPromptGaurd_Response)(nil),      // 26: ai.options.gloo.solo.io.AIPromptGaurd.Response
 	(*core.ResourceRef)(nil),            // 27: core.solo.io.ResourceRef
-	(*_struct.Value)(nil),               // 28: google.protobuf.Value
+	(*structpb.Value)(nil),              // 28: google.protobuf.Value
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_depIdxs = []int32{
 	27, // 0: ai.options.gloo.solo.io.SingleAuthToken.secret_ref:type_name -> core.solo.io.ResourceRef
