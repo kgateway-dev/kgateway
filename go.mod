@@ -48,7 +48,7 @@ require (
 	github.com/saiskee/gettercheck v0.0.0-20210820204958-38443d06ebe0
 	github.com/sergi/go-diff v1.2.0
 	github.com/solo-io/go-list-licenses v0.1.4
-	github.com/solo-io/go-utils v0.26.0
+	github.com/solo-io/go-utils v0.27.0
 	github.com/solo-io/k8s-utils v0.8.0
 	github.com/solo-io/protoc-gen-ext v0.0.25
 	github.com/solo-io/protoc-gen-openapi v0.2.5
@@ -213,7 +213,6 @@ require (
 	github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
-	github.com/imroc/req v0.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/invopop/yaml v0.3.1 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
