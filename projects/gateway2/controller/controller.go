@@ -420,6 +420,7 @@ func (r *controllerReconciler) ReconcileGatewayClasses(ctx context.Context, req 
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	log.Info("do not merge")
 	log.Info("reconciling gateway class")
 
 	// mark it as accepted:
