@@ -136,6 +136,10 @@ func (d *UpstreamDiscovery) Resync(ctx context.Context) error {
 	for uds, desiredUpstreams := range d.latestDesiredUpstreams {
 		udsName := strings.Replace(reflect.TypeOf(uds).String(), "*", "", -1)
 		udsName = strings.Replace(udsName, ".", "", -1)
+
+		// selecting on the discovery plugin label will get all Upstreams created by Discovery
+		// there is no need to select on watchLabels as these are not present on Upstream metadata, nor are they
+		// necessary to identify Upstreams that may need to be resynced
 		selector := map[string]string{
 			"discovered_by": udsName,
 		}

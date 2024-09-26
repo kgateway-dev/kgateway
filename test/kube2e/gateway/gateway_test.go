@@ -1196,18 +1196,25 @@ var _ = Describe("Kube2e: gateway", func() {
 		})
 
 		It("Modifies discovered Upstream when Service is modified", func() {
+			// This tests the fix for a bug whereby Discovery would fail to update discovered Upstreams on Service
+			// updates when watchLabels were enabled
+
 			watchedKey, watchedValue := "watchKey", "watchValue"
 			bonusKey, bonusValue, modifiedBonusValue := "foo", "bar", "baz"
+
+			// set watchLabels for Discovery to select on
 			labels := map[string]string{
 				watchedKey: watchedValue,
 			}
 			setWatchLabels(labels)
+
+			// add an additional label which we'll modify later
 			labels[bonusKey] = bonusValue
 
 			svcName := "uds-test-service"
 			createServiceWithWatchedLabels(svcName, labels)
-			Expect(createdServices).To(HaveLen(1))
 
+			// confirm the Upstream has the Service's labels in its DiscoveryMetadata
 			Eventually(func() (map[string]string, error) {
 				us, err := getUpstream(svcName)
 				if err != nil {
@@ -1222,13 +1229,15 @@ var _ = Describe("Kube2e: gateway", func() {
 				},
 			))
 
-			svc, err := resourceClientset.KubeClients().CoreV1().Services(namespace).Get(ctx, createdServices[0], metav1.GetOptions{})
+			// get the service, modify its bonus label, and update it
+			svc, err := resourceClientset.KubeClients().CoreV1().Services(namespace).Get(ctx, svcName, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			svc.Labels[bonusKey] = modifiedBonusValue
 
 			_, err = resourceClientset.KubeClients().CoreV1().Services(namespace).Update(ctx, svc, metav1.UpdateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
+			// expect the discovered Upstream's DiscoveryMetadata to eventually reflect the updated label
 			Eventually(func() (map[string]string, error) {
 				us, err := getUpstream(svcName)
 				if err != nil {
