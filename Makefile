@@ -1204,6 +1204,7 @@ build-test-chart: ## Build the Helm chart and place it in the _test directory
 # Pull the conformance test suite from the k8s gateway api repo and copy it into the test dir.
 $(TEST_ASSET_DIR)/conformance/conformance_test.go:
 	mkdir -p $(TEST_ASSET_DIR)/conformance
+	echo "//go:build conformance" > $@
 	cat $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/conformance_test.go >> $@
 	go fmt $@
 
@@ -1215,12 +1216,12 @@ CONFORMANCE_ARGS := -gateway-class=gloo-gateway $(CONFORMANCE_SKIP_TESTS) $(CONF
 
 .PHONY: conformance ## Run the conformance test suite
 conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go
-	go test -ldflags=$(LDFLAGS) -run TestConformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS)
+	go test -mod=mod -ldflags=$(LDFLAGS) -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS)
 
 # Run only the specified conformance test. The name must correspond to the ShortName of one of the k8s gateway api
 # conformance tests.
 conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
-	go test -ldflags=$(LDFLAGS) -run TestConformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS) \
+	go test -mod=mod -ldflags=$(LDFLAGS) -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS) \
 	-run-test=$*
 
 #----------------------------------------------------------------------------------
