@@ -15,6 +15,8 @@ func ProfilePath(path string) string {
 }
 
 var (
+	CommonRecommendationManifest = ManifestPath("common-recommendations.yaml")
+
 	// EmptyProfilePath relies on an "empty" profile.
 	// We should NOT merge with this code. The idea is to create a structure for using profiles, and then introduce them.
 	EmptyProfilePath = ProfilePath("empty.yaml")

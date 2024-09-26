@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/test/kubernetes/e2e/tests"
+
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
@@ -178,8 +180,14 @@ func (i *TestInstallation) InstallGlooGatewayWithTestHelper(ctx context.Context,
 		return testHelper.InstallGloo(
 			ctx,
 			timeout,
-			helper.WithExtraArgs("--values", i.Metadata.ProfileValuesManifestFile), // profile is defined first...
-			helper.WithExtraArgs("--values", i.Metadata.ValuesManifestFile),        // so test can override values here.
+			// We layer the values that are provided to a given TestInstallation, as a way to reduce the complexity that developers
+			// have to concern themselves with.
+			//	1. First, we define the common recommendations. These are values which we want all tests to inherit by default.
+			//	2. Next, we define a "profile", which is a standard collection of values for a type of installation
+			//	3. Finally, we define test specific values, so that a test can have the final say over which values to define.
+			helper.WithExtraArgs("--values", tests.CommonRecommendationManifest),
+			helper.WithExtraArgs("--values", i.Metadata.ProfileValuesManifestFile),
+			helper.WithExtraArgs("--values", i.Metadata.ValuesManifestFile),
 		)
 	}
 

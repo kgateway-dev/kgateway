@@ -1,0 +1,81 @@
+# This file defines the common recommendations for a user who wants to run Gloo Gateway.
+# ...etc add more details
+#
+
+namespace:
+  # We recommend installing Gloo Gateway in a standalone namespace, that is not shared with other applications
+  # As a result, we assume the namespace does not exist at install time
+  create: true
+
+# Configuration for the Settings CR
+settings:
+  invalidConfigPolicy:
+    # See https://docs.solo.io/gloo-edge/latest/guides/traffic_management/configuration_validation/invalid_route_replacement/ for more details
+    replaceInvalidRoutes: true
+
+# Configuration for the Edge Gateway integration in Gloo Gateway
+gateway:
+  # In earlier versions of Gloo Gateway (when it was named Gloo Edge) there were separate 'gloo' and 'gateway'
+  # pods, and the Proxy CR was persisted in etcD to allow that resource to be shared between the two pods.
+  # Those pods have since been combined, and persisting the resource in memory is unnecessary and costs
+  # unnecessary CPU to read/write and marshal/unmarshal
+  persistProxySpec: false
+  isolateVirtualHostsBySslConfig: true
+  validation:
+    # See https://github.com/solo-io/gloo/issues/9309 for more context around the default validation options,
+    # and some of the problems associated with it.
+    # Below, we define an appropriate set of defaults, so that our tests can rely on the preferred configuration
+    failurePolicy: Fail
+    alwaysAcceptResources: false
+    warnRouteShortCircuiting: true
+    webhook:
+      # skipping delete validation due to flakes per https://github.com/solo-io/solo-projects/issues/6272
+      skipDeleteValidationResources:
+        - upstreams
+
+# Configuration for the Gloo pod
+gloo:
+  deployment:
+    livenessProbeEnabled: true
+    # Resource requests and limits should be identified by users directly
+    # We define them here to ensure that tests can pass with resources defined
+    resources:
+      requests:
+        cpu: 500m
+        memory: 5Gi
+      limits:
+        cpu: 1000m
+        memory: 10Gi
+
+# Configuration for the statically deployed gateway-proxy that ships by default with Gloo Gateway
+gatewayProxies:
+  gatewayProxy:
+    # Panic mode allows Envoy load balancing to disregard host's health status.
+    # With panic mode enabled, it's possible that breaking changes to our health status configuration will still pass CI.
+    # As a result, we disable panic mode in our tests. This is not necessarily a recommendation for users running Gloo Gateway,
+    # but is a way of ensuring that our tests are validating health status configuration properly
+    # See https://github.com/solo-io/gloo/pull/3891 for more context
+    healthyPanicThreshold: 0
+    podTemplate:
+      # Enable a readiness probe
+      probes: true
+      # Enable a liveness probe
+      livenessProbeEnabled: true
+      # Graceful shutdown allows Envoy to begin failing healthchecks (that have been configured via the health check filter)
+      # and then sleep for a certain, customized amount of time.
+      # This is particularly when Gloo Gateway is running behind some external load-balancer, and we need to signal
+      # to that load balancer that the proxies should stop receiving traffic, without affecting the current traffic on the pods
+      # See https://github.com/solo-io/gloo/pull/3435 for more context
+      gracefulShutdown:
+        enabled: true
+        # This functionality isn't relied upon in our tests, but it's a good practice to define it,
+        # so we configure it here as an example
+        sleepTimeSeconds: 1
+
+# Configuration for the Discovery pod
+discovery:
+  # Discovery is not recommended for production, so we disable it
+  # NOTE TO TEST AUTHORS: Upstreams must be statically defined in the manifests
+  enabled: false
+
+
