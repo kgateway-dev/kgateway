@@ -22,7 +22,7 @@ func TestValidationAlwaysAccept(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: e2e.EmptyProfilePath,
+			ProfileValuesManifestFile: e2e.FullGatewayProfilePath,
 			ValuesManifestFile:        e2e.ManifestPath("validation-always-accept-helm.yaml"),
 		},
 	)

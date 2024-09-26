@@ -22,7 +22,7 @@ func TestIstioRegression(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: e2e.EmptyProfilePath,
+			ProfileValuesManifestFile: e2e.EdgeGatewayProfilePath,
 			ValuesManifestFile:        e2e.ManifestPath("istio-regression-helm.yaml"),
 		},
 	)

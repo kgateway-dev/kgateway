@@ -1,9 +1,3 @@
-# Gloo Edge Gateway helm setup where k8s Gateway controller is disabled.
-# An additional gateway "publicGw" is defined in gatewayProxies.
-global:
-  podSecurityStandards:
-    container:
-      enableRestrictedContainerDefaults: true
 gateway:
   # The tests rely on querying the Proxy CR from etcD
   persistProxySpec: true

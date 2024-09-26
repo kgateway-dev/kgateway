@@ -21,8 +21,9 @@ func TestRevisionIstioRegression(t *testing.T) {
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   installNs,
-			ValuesManifestFile: e2e.ManifestPath("istio-revision-helm.yaml"),
+			InstallNamespace:          installNs,
+			ProfileValuesManifestFile: e2e.EdgeGatewayProfilePath,
+			ValuesManifestFile:        e2e.ManifestPath("istio-revision-helm.yaml"),
 		},
 	)
 

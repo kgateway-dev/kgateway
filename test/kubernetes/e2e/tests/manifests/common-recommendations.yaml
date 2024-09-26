@@ -2,6 +2,12 @@
 # ...etc add more details
 #
 
+# Configuration that is global to Gloo Gateway
+global:
+  podSecurityStandards:
+    container:
+      enableRestrictedContainerDefaults: true
+
 # Configuration for the Settings CR
 settings:
   invalidConfigPolicy:
@@ -32,6 +38,15 @@ gateway:
 gloo:
   deployment:
     livenessProbeEnabled: true
+    customEnv:
+      # We scale the Gloo component frequently in tests, and need leadership to be established quickly
+      # Therefore, we set values to lower thresholds than the defaults
+      - name: LEADER_ELECTION_LEASE_DURATION
+        value: 4s
+      - name: LEADER_ELECTION_RENEW_PERIOD
+        value: 3s
+      - name: LEADER_ELECTION_RETRY_PERIOD
+        value: 1s
     # Resource requests and limits should be identified by users directly
     # We define them here to ensure that tests can pass with resources defined
     resources:

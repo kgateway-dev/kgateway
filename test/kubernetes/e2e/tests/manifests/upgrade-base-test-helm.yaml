@@ -1,12 +1,5 @@
-global:
-  image:
-    pullPolicy: IfNotPresent
-settings:
-  create: true
-  invalidConfigPolicy:
-    replaceInvalidRoutes: true
-    invalidRouteResponseCode: 404
-    invalidRouteResponseBody: Gloo Gateway has invalid configuration.
+
+
 gateway:
   enabled: true
   persistProxySpec: false

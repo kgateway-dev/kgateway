@@ -26,7 +26,7 @@ func TestUpgradeFromLastPatchPreviousMinor(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:          "upgrade-from-last-patch-previous-minor",
-			ProfileValuesManifestFile: e2e.EmptyProfilePath,
+			ProfileValuesManifestFile: e2e.FullGatewayProfilePath,
 			ValuesManifestFile:        e2e.ManifestPath("upgrade-base-test-helm.yaml"),
 			ValidationAlwaysAccept:    false,
 			ReleasedVersion:           lastPatchPreviousMinorVersion.String(),
@@ -53,7 +53,7 @@ func TestUpgradeFromCurrentPatchLatestMinor(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:          "upgrade-from-current-patch-latest-minor",
-			ProfileValuesManifestFile: e2e.EmptyProfilePath,
+			ProfileValuesManifestFile: e2e.FullGatewayProfilePath,
 			ValuesManifestFile:        e2e.ManifestPath("upgrade-base-test-helm.yaml"),
 			ValidationAlwaysAccept:    false,
 			ReleasedVersion:           currentPatchMostRecentMinorVersion.String(),
