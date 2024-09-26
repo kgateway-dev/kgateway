@@ -62,5 +62,7 @@ runs:
     if: ${{ success() }}
     uses: actions/upload-artifact@v4
     with:
-      name: conformance-gloo-gateway-report-${{ matrix.kube-version.node }}
-      path: _test/conformance/report.yaml
+      # Name of the path to upload. The VERSION variable refers to the Makefile
+      # VERSION variable.
+      name: conformance-gloo-gateway-report
+      path: _test/conformance/${{ env.VERSION }}-report.yaml
