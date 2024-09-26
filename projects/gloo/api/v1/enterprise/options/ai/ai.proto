@@ -81,7 +81,7 @@ message UpstreamSpec {
   message CustomHost {
     // Custom host to send the traffic to
     string host = 1;
-    // Custom host to send the traffic to
+    // Custom port to send the traffic to
     uint32 port = 2;
   }
 
@@ -94,6 +94,10 @@ message UpstreamSpec {
     SingleAuthToken auth_token = 1;
     // Optional custom host to send the traffic to
     CustomHost custom_host = 2;
+    // Optional: override model name. If not set, the model name will be taken from the request
+    // This can be useful when trying model failover scenarios
+    // e.g. "gpt-4o-mini"
+    string model = 3;
   }
 
   // Settings for the Azure OpenAI API
@@ -106,11 +110,19 @@ message UpstreamSpec {
       SingleAuthToken auth_token = 1;
       // use AD or other workload identity mechanism
     }
-
-    // (REQUIRED) The endpoint to use
+    
+    
+    // The endpoint to use
     // This should be the endpoint to the Azure OpenAI API, e.g. my-endpoint.openai.azure.com
     // If the scheme is included it will be stripped.
+    // This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}
     string endpoint = 2;
+    // The deployment/model name to use
+    // This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}
+    string deployment_name = 3;
+    // The version of the API to use
+    // This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}
+    string api_version = 4;
   }
 
   // Settings for the Mistral API
@@ -122,6 +134,9 @@ message UpstreamSpec {
     SingleAuthToken auth_token = 1;
     // Optional custom host to send the traffic to
     CustomHost custom_host = 2;
+    // Optional: override model name. If not set, the model name will be taken from the request
+    // This can be useful when trying model failover scenarios
+    string model = 3;
   }
 
   message Anthropic {
@@ -134,8 +149,70 @@ message UpstreamSpec {
     // An optional version header to pass to the Anthropic API
     // See: https://docs.anthropic.com/en/api/versioning for more details
     string version = 3;
+    // Optional: override model name. If not set, the model name will be taken from the request
+    // This can be useful when trying model failover scenarios
+    string model = 4;
   }
 
+
+  // Composite AI upstream allows you to create a single upstream that
+  // is composed of many upstreams. This is useful for creating a single
+  // logical endpoint made up of many backends. 
+  // The top level list defines the priority of the endpoints, the 2nd 
+  // level allows for defining either a list, or a single endpoint for that priority.
+  // Note: Only 2 levels of of nesting are allowed, Anything after that will be ignored.
+  /*
+    multi:
+      pools:
+      - pool:
+        - openai:
+            authToken:
+              secretRef:
+                name: openai-secret
+                namespace: gloo-system
+        priority: 1
+      - pool:
+        - azureOpenai:
+            deploymentName: gpt-4o-mini
+            apiVersion: 2024-02-15-preview
+            endpoint: ai-gateway.openai.azure.com
+            authToken:
+              secretRef:
+                name: azure-secret
+                namespace: gloo-system
+        - azureOpenai:
+            deploymentName: gpt-4o-mini-2
+            apiVersion: 2024-02-15-preview
+            endpoint: ai-gateway.openai.azure.com
+            authToken:
+              secretRef:
+                name: azure-secret
+                namespace: gloo-system
+        priority: 2
+  */
+  message MultiPool {
+    message Backend {
+      oneof llm {
+        // OpenAI upstream
+        OpenAI openai = 1;
+        // Mistral upstream
+        Mistral mistral = 2;
+        // Anthropic upstream
+        Anthropic anthropic = 3;
+        // Azure OpenAI upstream
+        AzureOpenAI azure_openai = 4;
+      }
+    }
+
+    message Priority {
+      repeated Backend pool = 1;
+    }
+
+    // List of prioritized backend pools
+    repeated Priority priorities = 1;
+  }
+
+  
   oneof llm {
     // OpenAI upstream
     OpenAI openai = 1;
@@ -145,6 +222,8 @@ message UpstreamSpec {
     Anthropic anthropic = 3;
     // Azure OpenAI upstream
     AzureOpenAI azure_openai = 4;
+    // multi upstream
+    MultiPool multi = 5;
   }
 }
 
@@ -154,9 +233,9 @@ message UpstreamSpec {
   - Prompt Enrichment
   - Retrieval Augmented Generation
   - Semantic Caching
-  - Backup Models
   - Defaults to merge with the user input fields
   - Guardrails
+  - Route Type
 
   NOTE: These settings may only be applied to a route which uses an LLMProvider backend!
 */
@@ -255,12 +334,6 @@ message RouteSettings {
   */
   SemanticCache semantic_cache = 4;
 
-  // Backup models to use in case of a failure with the primary model
-  // passed in the request. By default each model will be tried 2 times
-  // before moving on to the next model in the list. If all requests fail then
-  // the final response will be returned to the client.
-  repeated string backup_models = 5;
-
   /*
     A list of defaults to be merged with the user input fields.
     These will NOT override the user input fields unless override is explicitly set to true.
@@ -283,7 +356,14 @@ message RouteSettings {
       value: 100
     ```
   */
-  repeated FieldDefault defaults = 6;
+  repeated FieldDefault defaults = 5;
+
+  enum RouteType {
+    CHAT = 0;
+  }
+
+  // The type of route this is, currently only CHAT is supported
+  RouteType route_type = 6;
 }
 
 message FieldDefault {
@@ -323,13 +403,16 @@ message Embedding {
       // google.protobuf.Empty inherit_backend_token = 3;
     }
 
-    // (REQUIRED) The version of the API to use
+    // The version of the API to use
+    // This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}
     string api_version = 2;
-    // (REQUIRED) The endpoint to use
+    // The endpoint to use
     // This should be the endpoint to the Azure OpenAI API, e.g. https://my-endpoint.openai.azure.com
     // If the scheme isn't included it will be added.
+    // This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}
     string endpoint = 3;
-    // (REQUIRED) The deployment/model name to use
+    // The deployment/model name to use
+    // This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}
     string deployment_name = 4;
   }
 
