@@ -17,6 +17,11 @@ JUST_KIND="${JUST_KIND:-false}"
 IMAGE_VARIANT="${IMAGE_VARIANT:-standard}"
 # If true, run extra steps to set up k8s gateway api conformance test environment
 CONFORMANCE="${CONFORMANCE:-false}"
+# The version of the k8s gateway api conformance tests to run. Requires CONFORMANCE=true
+CONFORMANCE_VERSION="${CONFORMANCE_VERSION:-v1.1.0}"
+# The channel of the k8s gateway api conformance tests to run. Requires CONFORMANCE=true
+CONFORMANCE_CHANNEL="${CONFORMANCE_CHANNEL:-"experimental"}"
+# The version of Cilium to install.
 CILIUM_VERSION="${CILIUM_VERSION:-1.15.5}"
 
 function create_kind_cluster_or_skip() {
@@ -75,7 +80,7 @@ fi
 make -s build-cli-local
 
 # 5. Apply the Kubernetes Gateway API CRDs
-kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml
+kubectl apply -k "https://github.com/kubernetes-sigs/gateway-api/config/crd/$CONFORMANCE_CHANNEL?ref=$CONFORMANCE_VERSION"
 
 # 6. Conformance test setup
 if [[ $CONFORMANCE == "true" ]]; then
