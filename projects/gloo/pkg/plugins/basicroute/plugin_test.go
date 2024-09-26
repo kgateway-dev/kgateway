@@ -329,16 +329,18 @@ var _ = Describe("retries empty backoff", func() {
 	BeforeEach(func() {
 		t := prototime.DurationToProto(time.Minute)
 		retryPolicy = &retries.RetryPolicy{
-			RetryOn:       "if at first you don't succeed",
-			NumRetries:    5,
-			PerTryTimeout: t,
+			RetryOn:              "if at first you don't succeed",
+			NumRetries:           5,
+			PerTryTimeout:        t,
+			RetriableStatusCodes: []uint32{404, 429},
 		}
 		expectedRetryPolicy = &envoy_config_route_v3.RetryPolicy{
 			RetryOn: "if at first you don't succeed",
 			NumRetries: &wrappers.UInt32Value{
 				Value: 5,
 			},
-			PerTryTimeout: t,
+			PerTryTimeout:        t,
+			RetriableStatusCodes: []uint32{404, 429},
 		}
 	})
 
