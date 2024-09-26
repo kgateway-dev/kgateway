@@ -3,7 +3,6 @@ package utils
 import (
 	"crypto/tls"
 	"fmt"
-	"strings"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoygrpccredential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
@@ -320,6 +319,7 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 		certChain, privateKey, rootCa = sslFiles.GetTlsCert(), sslFiles.GetTlsKey(), sslFiles.GetRootCa()
 		// Since ocspStaple is []byte, but we want the file path, we're storing it in a separate string variable
 		ocspStapleFile = sslFiles.GetOcspStaple()
+
 		err := isValidSslKeyPair(certChain, privateKey, rootCa)
 		if err != nil {
 			return nil, InvalidTlsSecretError(nil, err)
@@ -421,7 +421,7 @@ func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string,
 	rootCa := sslSecret.Tls.GetRootCa()
 	ocspStaple := sslSecret.Tls.GetOcspStaple()
 
-	err = isValidSslKeyPair(certChain, privateKey, rootCa)
+	certChain, err = cleanedSslKeyPair(certChain, privateKey, rootCa)
 	if err != nil {
 		return "", "", "", nil, InvalidTlsSecretError(secret.GetMetadata().Ref(), err)
 	}
@@ -430,16 +430,22 @@ func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string,
 }
 
 func isValidSslKeyPair(certChain, privateKey, rootCa string) error {
+	_, err := cleanedSslKeyPair(certChain, privateKey, rootCa)
+	return err
+}
+
+func cleanedSslKeyPair(certChain, privateKey, rootCa string) (cleanedChain string, err error) {
+
 	// in the case where we _only_ provide a rootCa, we do not want to validate tls.key+tls.cert
 	if (certChain == "") && (privateKey == "") && (rootCa != "") {
-		return nil
+		return
 	}
 
 	// validate that the cert and key are a valid pair
-	_, err := tls.X509KeyPair([]byte(certChain), []byte(privateKey))
+	_, err = tls.X509KeyPair([]byte(certChain), []byte(privateKey))
 	if err != nil {
 
-		return err
+		return
 	}
 
 	// validate that the parsed piece is valid
@@ -449,18 +455,12 @@ func isValidSslKeyPair(certChain, privateKey, rootCa string) error {
 	candidateCert, err := cert.ParseCertsPEM([]byte(certChain))
 	if err != nil {
 		// return err rather than sanitize. This is to maintain UX with older versions and to keep in line with gateway2 pkg.
-		return err
+		return
 	}
-	reencoded, err := cert.EncodeCertificates(candidateCert...)
-	if err != nil {
-		return err
-	}
-	trimmedEncoded := strings.TrimSpace(string(reencoded))
-	if trimmedEncoded != strings.TrimSpace(certChain) {
-		return fmt.Errorf("certificate chain does not match parsed certificate")
-	}
+	cleanedChainBytes, err := cert.EncodeCertificates(candidateCert...)
+	cleanedChain = string(cleanedChainBytes)
 
-	return err
+	return
 }
 
 func (s *sslConfigTranslator) ResolveSslParamsConfig(params *ssl.SslParameters) (*envoyauth.TlsParameters, error) {
