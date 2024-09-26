@@ -26,7 +26,6 @@ gateway:
     # See https://github.com/solo-io/gloo/issues/9309 for more context around the default validation options,
     # and some of the problems associated with it.
     # Below, we define an appropriate set of defaults, so that our tests can rely on the preferred configuration
-    failurePolicy: Fail
     alwaysAcceptResources: false
     warnRouteShortCircuiting: true
     webhook:
@@ -51,8 +50,10 @@ gloo:
     # We define them here to ensure that tests can pass with resources defined
     resources:
       requests:
-        cpu: 500m
-        memory: 5Gi
+        #  We have limited GitHub action resources which can cause containers to not create
+        # therefore we lessen the cpu resource requests values from the default (500m) to 100m.
+        cpu: 100m
+        memory: 256Mi
       limits:
         cpu: 1000m
         memory: 10Gi
@@ -81,6 +82,12 @@ gatewayProxies:
         # This functionality isn't relied upon in our tests, but it's a good practice to define it,
         # so we configure it here as an example
         sleepTimeSeconds: 1
+      resources:
+        requests:
+          #  We have limited GitHub action resources which can cause containers to not create
+          # therefore we lessen the cpu resource requests values from the default (500m) to 100m.
+          cpu: 100m
+          memory: 256Mi
 
 # Configuration for the Discovery pod
 discovery:

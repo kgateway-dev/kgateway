@@ -24,7 +24,7 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 		&gloogateway.Context{
 			InstallNamespace:          installNs,
 			ProfileValuesManifestFile: e2e.EdgeGatewayProfilePath,
-			ValuesManifestFile:        e2e.ManifestPath("istio-automtls-edge-gateway-test-helm.yaml"),
+			ValuesManifestFile:        e2e.ManifestPath("istio-automtls-enabled-helm.yaml"),
 		},
 	)
 

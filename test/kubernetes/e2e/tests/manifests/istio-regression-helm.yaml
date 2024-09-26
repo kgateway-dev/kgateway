@@ -12,20 +12,3 @@ global:
         registry: docker.io/istio
         tag: 1.22.0 # This tag has to match the version of Istio being used in the test
 
-gloo:
-  deployment:
-    #  We have limited GitHub action resources which can cause containers to not create
-    # therefore we lessen the cpu resource requests values from the default (500m) to 100m.
-    resources:
-      requests:
-        cpu: 100m
-        memory: 256Mi
-
-gatewayProxies:
-  gatewayProxy:
-    podTemplate:
-      resources:
-        requests:
-          cpu: 100m
-          memory: 256Mi
-

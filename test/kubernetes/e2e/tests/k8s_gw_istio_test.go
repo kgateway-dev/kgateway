@@ -22,7 +22,7 @@ func TestK8sGatewayIstio(t *testing.T) {
 		&gloogateway.Context{
 			InstallNamespace:          installNs,
 			ProfileValuesManifestFile: e2e.KubernetesGatewayProfilePath,
-			ValuesManifestFile:        e2e.ManifestPath("istio-k8s-gateway-test-helm.yaml"),
+			ValuesManifestFile:        e2e.ManifestPath("istio-automtls-disabled-helm.yaml"),
 			K8sGatewayEnabled:         true,
 		},
 	)
