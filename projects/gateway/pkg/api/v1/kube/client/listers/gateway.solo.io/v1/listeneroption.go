@@ -20,8 +20,8 @@ package v1
 
 import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -38,25 +38,17 @@ type ListenerOptionLister interface {
 
 // listenerOptionLister implements the ListenerOptionLister interface.
 type listenerOptionLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v1.ListenerOption]
 }
 
 // NewListenerOptionLister returns a new ListenerOptionLister.
 func NewListenerOptionLister(indexer cache.Indexer) ListenerOptionLister {
-	return &listenerOptionLister{indexer: indexer}
-}
-
-// List lists all ListenerOptions in the indexer.
-func (s *listenerOptionLister) List(selector labels.Selector) (ret []*v1.ListenerOption, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.ListenerOption))
-	})
-	return ret, err
+	return &listenerOptionLister{listers.New[*v1.ListenerOption](indexer, v1.Resource("listeneroption"))}
 }
 
 // ListenerOptions returns an object that can list and get ListenerOptions.
 func (s *listenerOptionLister) ListenerOptions(namespace string) ListenerOptionNamespaceLister {
-	return listenerOptionNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return listenerOptionNamespaceLister{listers.NewNamespaced[*v1.ListenerOption](s.ResourceIndexer, namespace)}
 }
 
 // ListenerOptionNamespaceLister helps list and get ListenerOptions.
@@ -74,26 +66,5 @@ type ListenerOptionNamespaceLister interface {
 // listenerOptionNamespaceLister implements the ListenerOptionNamespaceLister
 // interface.
 type listenerOptionNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all ListenerOptions in the indexer for a given namespace.
-func (s listenerOptionNamespaceLister) List(selector labels.Selector) (ret []*v1.ListenerOption, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.ListenerOption))
-	})
-	return ret, err
-}
-
-// Get retrieves the ListenerOption from the indexer for a given namespace and name.
-func (s listenerOptionNamespaceLister) Get(name string) (*v1.ListenerOption, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("listeneroption"), name)
-	}
-	return obj.(*v1.ListenerOption), nil
+	listers.ResourceIndexer[*v1.ListenerOption]
 }

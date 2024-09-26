@@ -13,9 +13,9 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
+	google_golang_org_protobuf_types_known_durationpb "google.golang.org/protobuf/types/known/durationpb"
 
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -38,15 +38,15 @@ func (m *RetryBackOff) Clone() proto.Message {
 	target = &RetryBackOff{}
 
 	if h, ok := interface{}(m.GetBaseInterval()).(clone.Cloner); ok {
-		target.BaseInterval = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.BaseInterval = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.BaseInterval = proto.Clone(m.GetBaseInterval()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.BaseInterval = proto.Clone(m.GetBaseInterval()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	if h, ok := interface{}(m.GetMaxInterval()).(clone.Cloner); ok {
-		target.MaxInterval = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.MaxInterval = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.MaxInterval = proto.Clone(m.GetMaxInterval()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.MaxInterval = proto.Clone(m.GetMaxInterval()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	return target
@@ -65,15 +65,24 @@ func (m *RetryPolicy) Clone() proto.Message {
 	target.NumRetries = m.GetNumRetries()
 
 	if h, ok := interface{}(m.GetPerTryTimeout()).(clone.Cloner); ok {
-		target.PerTryTimeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.PerTryTimeout = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.PerTryTimeout = proto.Clone(m.GetPerTryTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.PerTryTimeout = proto.Clone(m.GetPerTryTimeout()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	if h, ok := interface{}(m.GetRetryBackOff()).(clone.Cloner); ok {
 		target.RetryBackOff = h.Clone().(*RetryBackOff)
 	} else {
 		target.RetryBackOff = proto.Clone(m.GetRetryBackOff()).(*RetryBackOff)
+	}
+
+	if m.GetRetriableStatusCodes() != nil {
+		target.RetriableStatusCodes = make([]uint32, len(m.GetRetriableStatusCodes()))
+		for idx, v := range m.GetRetriableStatusCodes() {
+
+			target.RetriableStatusCodes[idx] = v
+
+		}
 	}
 
 	switch m.PriorityPredicate.(type) {
@@ -104,9 +113,9 @@ func (m *RetryPolicy_PreviousPriorities) Clone() proto.Message {
 	target = &RetryPolicy_PreviousPriorities{}
 
 	if h, ok := interface{}(m.GetUpdateFrequency()).(clone.Cloner); ok {
-		target.UpdateFrequency = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.UpdateFrequency = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.UpdateFrequency = proto.Clone(m.GetUpdateFrequency()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.UpdateFrequency = proto.Clone(m.GetUpdateFrequency()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	return target

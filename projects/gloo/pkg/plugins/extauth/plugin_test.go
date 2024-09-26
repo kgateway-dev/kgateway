@@ -91,7 +91,7 @@ var _ = Describe("Process Custom Extauth configuration", func() {
 				pluginContext := getPluginContext(globalSettings, Undefined, Undefined, input)
 
 				var out envoy_config_route_v3.WeightedCluster_ClusterWeight
-				err := pluginContext.PluginInstance.(plugins.WeightedDestinationPlugin).ProcessWeightedDestination(pluginContext.RouteParams, pluginContext.WeightedDestination, &out)
+				err := pluginContext.PluginInstance.(plugins.WeightedDestinationPlugin).ProcessWeightedDestination(plugins.RouteActionParams{RouteParams: pluginContext.RouteParams}, pluginContext.WeightedDestination, &out)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(validationFuncForConfigValue[expected](&out)).To(BeTrue())
 			},

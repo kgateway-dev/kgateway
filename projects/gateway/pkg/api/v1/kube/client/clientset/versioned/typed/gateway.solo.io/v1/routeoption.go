@@ -20,17 +20,13 @@ package v1
 
 import (
 	"context"
-	json "encoding/json"
-	"fmt"
-	"time"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	gatewaysoloiov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/applyconfiguration/gateway.solo.io/v1"
 	scheme "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
-	rest "k8s.io/client-go/rest"
+	gentype "k8s.io/client-go/gentype"
 )
 
 // RouteOptionsGetter has a method to return a RouteOptionInterface.
@@ -43,6 +39,7 @@ type RouteOptionsGetter interface {
 type RouteOptionInterface interface {
 	Create(ctx context.Context, routeOption *v1.RouteOption, opts metav1.CreateOptions) (*v1.RouteOption, error)
 	Update(ctx context.Context, routeOption *v1.RouteOption, opts metav1.UpdateOptions) (*v1.RouteOption, error)
+	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
 	UpdateStatus(ctx context.Context, routeOption *v1.RouteOption, opts metav1.UpdateOptions) (*v1.RouteOption, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error
@@ -50,207 +47,23 @@ type RouteOptionInterface interface {
 	List(ctx context.Context, opts metav1.ListOptions) (*v1.RouteOptionList, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.RouteOption, err error)
-	Apply(ctx context.Context, routeOption *gatewaysoloiov1.RouteOptionApplyConfiguration, opts metav1.ApplyOptions) (result *v1.RouteOption, err error)
-	ApplyStatus(ctx context.Context, routeOption *gatewaysoloiov1.RouteOptionApplyConfiguration, opts metav1.ApplyOptions) (result *v1.RouteOption, err error)
 	RouteOptionExpansion
 }
 
 // routeOptions implements RouteOptionInterface
 type routeOptions struct {
-	client rest.Interface
-	ns     string
+	*gentype.ClientWithList[*v1.RouteOption, *v1.RouteOptionList]
 }
 
 // newRouteOptions returns a RouteOptions
 func newRouteOptions(c *GatewayV1Client, namespace string) *routeOptions {
 	return &routeOptions{
-		client: c.RESTClient(),
-		ns:     namespace,
+		gentype.NewClientWithList[*v1.RouteOption, *v1.RouteOptionList](
+			"routeoptions",
+			c.RESTClient(),
+			scheme.ParameterCodec,
+			namespace,
+			func() *v1.RouteOption { return &v1.RouteOption{} },
+			func() *v1.RouteOptionList { return &v1.RouteOptionList{} }),
 	}
-}
-
-// Get takes name of the routeOption, and returns the corresponding routeOption object, and an error if there is any.
-func (c *routeOptions) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.RouteOption, err error) {
-	result = &v1.RouteOption{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("routeoptions").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of RouteOptions that match those selectors.
-func (c *routeOptions) List(ctx context.Context, opts metav1.ListOptions) (result *v1.RouteOptionList, err error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	result = &v1.RouteOptionList{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("routeoptions").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested routeOptions.
-func (c *routeOptions) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	opts.Watch = true
-	return c.client.Get().
-		Namespace(c.ns).
-		Resource("routeoptions").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Watch(ctx)
-}
-
-// Create takes the representation of a routeOption and creates it.  Returns the server's representation of the routeOption, and an error, if there is any.
-func (c *routeOptions) Create(ctx context.Context, routeOption *v1.RouteOption, opts metav1.CreateOptions) (result *v1.RouteOption, err error) {
-	result = &v1.RouteOption{}
-	err = c.client.Post().
-		Namespace(c.ns).
-		Resource("routeoptions").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(routeOption).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Update takes the representation of a routeOption and updates it. Returns the server's representation of the routeOption, and an error, if there is any.
-func (c *routeOptions) Update(ctx context.Context, routeOption *v1.RouteOption, opts metav1.UpdateOptions) (result *v1.RouteOption, err error) {
-	result = &v1.RouteOption{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("routeoptions").
-		Name(routeOption.Name).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(routeOption).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *routeOptions) UpdateStatus(ctx context.Context, routeOption *v1.RouteOption, opts metav1.UpdateOptions) (result *v1.RouteOption, err error) {
-	result = &v1.RouteOption{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("routeoptions").
-		Name(routeOption.Name).
-		SubResource("status").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(routeOption).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Delete takes name of the routeOption and deletes it. Returns an error if one occurs.
-func (c *routeOptions) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("routeoptions").
-		Name(name).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *routeOptions) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
-	var timeout time.Duration
-	if listOpts.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
-	}
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("routeoptions").
-		VersionedParams(&listOpts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// Patch applies the patch and returns the patched routeOption.
-func (c *routeOptions) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.RouteOption, err error) {
-	result = &v1.RouteOption{}
-	err = c.client.Patch(pt).
-		Namespace(c.ns).
-		Resource("routeoptions").
-		Name(name).
-		SubResource(subresources...).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Apply takes the given apply declarative configuration, applies it and returns the applied routeOption.
-func (c *routeOptions) Apply(ctx context.Context, routeOption *gatewaysoloiov1.RouteOptionApplyConfiguration, opts metav1.ApplyOptions) (result *v1.RouteOption, err error) {
-	if routeOption == nil {
-		return nil, fmt.Errorf("routeOption provided to Apply must not be nil")
-	}
-	patchOpts := opts.ToPatchOptions()
-	data, err := json.Marshal(routeOption)
-	if err != nil {
-		return nil, err
-	}
-	name := routeOption.Name
-	if name == nil {
-		return nil, fmt.Errorf("routeOption.Name must be provided to Apply")
-	}
-	result = &v1.RouteOption{}
-	err = c.client.Patch(types.ApplyPatchType).
-		Namespace(c.ns).
-		Resource("routeoptions").
-		Name(*name).
-		VersionedParams(&patchOpts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// ApplyStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
-func (c *routeOptions) ApplyStatus(ctx context.Context, routeOption *gatewaysoloiov1.RouteOptionApplyConfiguration, opts metav1.ApplyOptions) (result *v1.RouteOption, err error) {
-	if routeOption == nil {
-		return nil, fmt.Errorf("routeOption provided to Apply must not be nil")
-	}
-	patchOpts := opts.ToPatchOptions()
-	data, err := json.Marshal(routeOption)
-	if err != nil {
-		return nil, err
-	}
-
-	name := routeOption.Name
-	if name == nil {
-		return nil, fmt.Errorf("routeOption.Name must be provided to Apply")
-	}
-
-	result = &v1.RouteOption{}
-	err = c.client.Patch(types.ApplyPatchType).
-		Namespace(c.ns).
-		Resource("routeoptions").
-		Name(*name).
-		SubResource("status").
-		VersionedParams(&patchOpts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
 }
