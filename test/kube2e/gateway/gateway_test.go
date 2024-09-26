@@ -1195,6 +1195,55 @@ var _ = Describe("Kube2e: gateway", func() {
 			}, "15s", "0.5s").ShouldNot(BeNil())
 		})
 
+		It("Modifies discovered Upstream when Service is modified", func() {
+			watchedKey, watchedValue := "watchKey", "watchValue"
+			bonusKey, bonusValue, modifiedBonusValue := "foo", "bar", "baz"
+			labels := map[string]string{
+				watchedKey: watchedValue,
+			}
+			setWatchLabels(labels)
+			labels[bonusKey] = bonusValue
+
+			svcName := "uds-test-service"
+			createServiceWithWatchedLabels(svcName, labels)
+			Expect(createdServices).To(HaveLen(1))
+
+			Eventually(func() (map[string]string, error) {
+				us, err := getUpstream(svcName)
+				if err != nil {
+					return nil, err
+				}
+				return us.DiscoveryMetadata.GetLabels(), nil
+			}, "15s", "0.5s").Should(BeEquivalentTo(
+				map[string]string{
+					"gloo":     svcName,
+					watchedKey: watchedValue,
+					bonusKey:   bonusValue,
+				},
+			))
+
+			svc, err := resourceClientset.KubeClients().CoreV1().Services(namespace).Get(ctx, createdServices[0], metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			svc.Labels[bonusKey] = modifiedBonusValue
+
+			_, err = resourceClientset.KubeClients().CoreV1().Services(namespace).Update(ctx, svc, metav1.UpdateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(func() (map[string]string, error) {
+				us, err := getUpstream(svcName)
+				if err != nil {
+					return nil, err
+				}
+				return us.DiscoveryMetadata.GetLabels(), nil
+			}, "15s", "0.5s").Should(BeEquivalentTo(
+				map[string]string{
+					"gloo":     svcName,
+					watchedKey: watchedValue,
+					bonusKey:   modifiedBonusValue,
+				},
+			))
+		})
+
 		It("Does not discover upstream with no label when watched labels are set", func() {
 			watchedKey := "A"
 			watchedValue := "B"
