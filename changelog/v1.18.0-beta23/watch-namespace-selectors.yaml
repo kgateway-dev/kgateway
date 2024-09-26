@@ -10,5 +10,5 @@ changelog:
 - type: DEPENDENCY_BUMP
   dependencyOwner: solo-io
   dependencyRepo: solo-kit
-  dependencyTag: v0.35.4
+  dependencyTag: v0.36.1
   issueLink: https://github.com/solo-io/gloo/issues/9274
