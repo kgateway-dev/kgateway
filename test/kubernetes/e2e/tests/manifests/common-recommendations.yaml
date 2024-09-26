@@ -19,6 +19,11 @@ global:
 
 # Configuration for the Settings CR
 settings:
+  # Gloo Gateway requires access to namespaces outside of the install namespace to watch and create Gateway resources
+  # singleNamespace=false must be set for namespace watch to work correctly. See: https://github.com/solo-io/solo-projects/issues/6058
+  # This is actually the default value, but we opted to include this because there is an issue with context around
+  # why this is the case
+  singleNamespace: false
   invalidConfigPolicy:
     # See https://docs.solo.io/gloo-edge/latest/guides/traffic_management/configuration_validation/invalid_route_replacement/ for more details
     replaceInvalidRoutes: true
