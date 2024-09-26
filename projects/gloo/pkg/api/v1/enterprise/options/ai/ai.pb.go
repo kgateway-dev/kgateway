@@ -118,6 +118,54 @@ func (SemanticCache_Mode) EnumDescriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_rawDescGZIP(), []int{6, 0}
 }
 
+type AIPromptGaurd_Request_PIIDetection_Action int32
+
+const (
+	// Mask the detected PII
+	AIPromptGaurd_Request_PIIDetection_MASK AIPromptGaurd_Request_PIIDetection_Action = 0
+	// Reject the request
+	AIPromptGaurd_Request_PIIDetection_REJECT AIPromptGaurd_Request_PIIDetection_Action = 1
+)
+
+// Enum value maps for AIPromptGaurd_Request_PIIDetection_Action.
+var (
+	AIPromptGaurd_Request_PIIDetection_Action_name = map[int32]string{
+		0: "MASK",
+		1: "REJECT",
+	}
+	AIPromptGaurd_Request_PIIDetection_Action_value = map[string]int32{
+		"MASK":   0,
+		"REJECT": 1,
+	}
+)
+
+func (x AIPromptGaurd_Request_PIIDetection_Action) Enum() *AIPromptGaurd_Request_PIIDetection_Action {
+	p := new(AIPromptGaurd_Request_PIIDetection_Action)
+	*p = x
+	return p
+}
+
+func (x AIPromptGaurd_Request_PIIDetection_Action) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AIPromptGaurd_Request_PIIDetection_Action) Descriptor() protoreflect.EnumDescriptor {
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_enumTypes[2].Descriptor()
+}
+
+func (AIPromptGaurd_Request_PIIDetection_Action) Type() protoreflect.EnumType {
+	return &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_enumTypes[2]
+}
+
+func (x AIPromptGaurd_Request_PIIDetection_Action) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AIPromptGaurd_Request_PIIDetection_Action.Descriptor instead.
+func (AIPromptGaurd_Request_PIIDetection_Action) EnumDescriptor() ([]byte, []int) {
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_rawDescGZIP(), []int{10, 0, 0, 0}
+}
+
 type AIPromptGaurd_Response_BuiltIn int32
 
 const (
@@ -158,11 +206,11 @@ func (x AIPromptGaurd_Response_BuiltIn) String() string {
 }
 
 func (AIPromptGaurd_Response_BuiltIn) Descriptor() protoreflect.EnumDescriptor {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_enumTypes[2].Descriptor()
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_enumTypes[3].Descriptor()
 }
 
 func (AIPromptGaurd_Response_BuiltIn) Type() protoreflect.EnumType {
-	return &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_enumTypes[2]
+	return &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_enumTypes[3]
 }
 
 func (x AIPromptGaurd_Response_BuiltIn) Number() protoreflect.EnumNumber {
@@ -2288,7 +2336,8 @@ type AIPromptGaurd_Request struct {
 	// Custom response message to send back to the client.
 	// If not specified, the following default message will be used:
 	// "The request was rejected due to inappropriate content"
-	CustomResponseMessage string `protobuf:"bytes,2,opt,name=custom_response_message,json=customResponseMessage,proto3" json:"custom_response_message,omitempty"`
+	CustomResponseMessage string                              `protobuf:"bytes,2,opt,name=custom_response_message,json=customResponseMessage,proto3" json:"custom_response_message,omitempty"`
+	PiiDetection          *AIPromptGaurd_Request_PIIDetection `protobuf:"bytes,3,opt,name=pii_detection,json=piiDetection,proto3" json:"pii_detection,omitempty"`
 }
 
 func (x *AIPromptGaurd_Request) Reset() {
@@ -2335,6 +2384,13 @@ func (x *AIPromptGaurd_Request) GetCustomResponseMessage() string {
 		return x.CustomResponseMessage
 	}
 	return ""
+}
+
+func (x *AIPromptGaurd_Request) GetPiiDetection() *AIPromptGaurd_Request_PIIDetection {
+	if x != nil {
+		return x.PiiDetection
+	}
+	return nil
 }
 
 type AIPromptGaurd_Response struct {
@@ -2395,6 +2451,53 @@ func (x *AIPromptGaurd_Response) GetBuiltins() []AIPromptGaurd_Response_BuiltIn 
 		return x.Builtins
 	}
 	return nil
+}
+
+type AIPromptGaurd_Request_PIIDetection struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Action AIPromptGaurd_Request_PIIDetection_Action `protobuf:"varint,1,opt,name=action,proto3,enum=ai.options.gloo.solo.io.AIPromptGaurd_Request_PIIDetection_Action" json:"action,omitempty"`
+}
+
+func (x *AIPromptGaurd_Request_PIIDetection) Reset() {
+	*x = AIPromptGaurd_Request_PIIDetection{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[28]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AIPromptGaurd_Request_PIIDetection) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AIPromptGaurd_Request_PIIDetection) ProtoMessage() {}
+
+func (x *AIPromptGaurd_Request_PIIDetection) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[28]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AIPromptGaurd_Request_PIIDetection.ProtoReflect.Descriptor instead.
+func (*AIPromptGaurd_Request_PIIDetection) Descriptor() ([]byte, []int) {
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_rawDescGZIP(), []int{10, 0, 0}
+}
+
+func (x *AIPromptGaurd_Request_PIIDetection) GetAction() AIPromptGaurd_Request_PIIDetection_Action {
+	if x != nil {
+		return x.Action
+	}
+	return AIPromptGaurd_Request_PIIDetection_MASK
 }
 
 var File_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto protoreflect.FileDescriptor
@@ -2691,7 +2794,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_p
 	0x37, 0x0a, 0x07, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x72, 0x6f,
 	0x6c, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x72, 0x6f, 0x6c, 0x65, 0x12, 0x18,
 	0x0a, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x22, 0xc1, 0x03, 0x0a, 0x0d, 0x41, 0x49, 0x50,
+	0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x22, 0xb1, 0x05, 0x0a, 0x0d, 0x41, 0x49, 0x50,
 	0x72, 0x6f, 0x6d, 0x70, 0x74, 0x47, 0x61, 0x75, 0x72, 0x64, 0x12, 0x48, 0x0a, 0x07, 0x72, 0x65,
 	0x71, 0x75, 0x65, 0x73, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x2e, 0x2e, 0x61, 0x69,
 	0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f,
@@ -2702,12 +2805,27 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_p
 	0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f,
 	0x2e, 0x41, 0x49, 0x50, 0x72, 0x6f, 0x6d, 0x70, 0x74, 0x47, 0x61, 0x75, 0x72, 0x64, 0x2e, 0x52,
 	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x52, 0x08, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x1a, 0x5b, 0x0a, 0x07, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x18, 0x0a, 0x07,
-	0x6d, 0x61, 0x74, 0x63, 0x68, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09, 0x52, 0x07, 0x6d,
-	0x61, 0x74, 0x63, 0x68, 0x65, 0x73, 0x12, 0x36, 0x0a, 0x17, 0x63, 0x75, 0x73, 0x74, 0x6f, 0x6d,
-	0x5f, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x5f, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67,
-	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x15, 0x63, 0x75, 0x73, 0x74, 0x6f, 0x6d, 0x52,
-	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x1a, 0xbb,
+	0x65, 0x1a, 0xca, 0x02, 0x0a, 0x07, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x18, 0x0a,
+	0x07, 0x6d, 0x61, 0x74, 0x63, 0x68, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09, 0x52, 0x07,
+	0x6d, 0x61, 0x74, 0x63, 0x68, 0x65, 0x73, 0x12, 0x36, 0x0a, 0x17, 0x63, 0x75, 0x73, 0x74, 0x6f,
+	0x6d, 0x5f, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x5f, 0x6d, 0x65, 0x73, 0x73, 0x61,
+	0x67, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x15, 0x63, 0x75, 0x73, 0x74, 0x6f, 0x6d,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12,
+	0x60, 0x0a, 0x0d, 0x70, 0x69, 0x69, 0x5f, 0x64, 0x65, 0x74, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e,
+	0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x3b, 0x2e, 0x61, 0x69, 0x2e, 0x6f, 0x70, 0x74, 0x69,
+	0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f,
+	0x2e, 0x41, 0x49, 0x50, 0x72, 0x6f, 0x6d, 0x70, 0x74, 0x47, 0x61, 0x75, 0x72, 0x64, 0x2e, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x2e, 0x50, 0x49, 0x49, 0x44, 0x65, 0x74, 0x65, 0x63, 0x74,
+	0x69, 0x6f, 0x6e, 0x52, 0x0c, 0x70, 0x69, 0x69, 0x44, 0x65, 0x74, 0x65, 0x63, 0x74, 0x69, 0x6f,
+	0x6e, 0x1a, 0x8a, 0x01, 0x0a, 0x0c, 0x50, 0x49, 0x49, 0x44, 0x65, 0x74, 0x65, 0x63, 0x74, 0x69,
+	0x6f, 0x6e, 0x12, 0x5a, 0x0a, 0x06, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x0e, 0x32, 0x42, 0x2e, 0x61, 0x69, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e,
+	0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x41, 0x49, 0x50,
+	0x72, 0x6f, 0x6d, 0x70, 0x74, 0x47, 0x61, 0x75, 0x72, 0x64, 0x2e, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x2e, 0x50, 0x49, 0x49, 0x44, 0x65, 0x74, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2e,
+	0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x06, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x1e,
+	0x0a, 0x06, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x08, 0x0a, 0x04, 0x4d, 0x41, 0x53, 0x4b,
+	0x10, 0x00, 0x12, 0x0a, 0x0a, 0x06, 0x52, 0x45, 0x4a, 0x45, 0x43, 0x54, 0x10, 0x01, 0x1a, 0xbb,
 	0x01, 0x0a, 0x08, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x6d,
 	0x61, 0x74, 0x63, 0x68, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09, 0x52, 0x07, 0x6d, 0x61,
 	0x74, 0x63, 0x68, 0x65, 0x73, 0x12, 0x53, 0x0a, 0x08, 0x62, 0x75, 0x69, 0x6c, 0x74, 0x69, 0x6e,
@@ -2740,92 +2858,96 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_rawDescData
 }
 
-var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
+var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_goTypes = []any{
-	(RouteSettings_RouteType)(0),            // 0: ai.options.gloo.solo.io.RouteSettings.RouteType
-	(SemanticCache_Mode)(0),                 // 1: ai.options.gloo.solo.io.SemanticCache.Mode
-	(AIPromptGaurd_Response_BuiltIn)(0),     // 2: ai.options.gloo.solo.io.AIPromptGaurd.Response.BuiltIn
-	(*SingleAuthToken)(nil),                 // 3: ai.options.gloo.solo.io.SingleAuthToken
-	(*UpstreamSpec)(nil),                    // 4: ai.options.gloo.solo.io.UpstreamSpec
-	(*RouteSettings)(nil),                   // 5: ai.options.gloo.solo.io.RouteSettings
-	(*FieldDefault)(nil),                    // 6: ai.options.gloo.solo.io.FieldDefault
-	(*Postgres)(nil),                        // 7: ai.options.gloo.solo.io.Postgres
-	(*Embedding)(nil),                       // 8: ai.options.gloo.solo.io.Embedding
-	(*SemanticCache)(nil),                   // 9: ai.options.gloo.solo.io.SemanticCache
-	(*RAG)(nil),                             // 10: ai.options.gloo.solo.io.RAG
-	(*RateLimiting)(nil),                    // 11: ai.options.gloo.solo.io.RateLimiting
-	(*AIPromptEnrichment)(nil),              // 12: ai.options.gloo.solo.io.AIPromptEnrichment
-	(*AIPromptGaurd)(nil),                   // 13: ai.options.gloo.solo.io.AIPromptGaurd
-	(*UpstreamSpec_CustomHost)(nil),         // 14: ai.options.gloo.solo.io.UpstreamSpec.CustomHost
-	(*UpstreamSpec_OpenAI)(nil),             // 15: ai.options.gloo.solo.io.UpstreamSpec.OpenAI
-	(*UpstreamSpec_AzureOpenAI)(nil),        // 16: ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI
-	(*UpstreamSpec_Mistral)(nil),            // 17: ai.options.gloo.solo.io.UpstreamSpec.Mistral
-	(*UpstreamSpec_Anthropic)(nil),          // 18: ai.options.gloo.solo.io.UpstreamSpec.Anthropic
-	(*UpstreamSpec_MultiPool)(nil),          // 19: ai.options.gloo.solo.io.UpstreamSpec.MultiPool
-	(*UpstreamSpec_MultiPool_Backend)(nil),  // 20: ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend
-	(*UpstreamSpec_MultiPool_Priority)(nil), // 21: ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Priority
-	(*Embedding_OpenAI)(nil),                // 22: ai.options.gloo.solo.io.Embedding.OpenAI
-	(*Embedding_AzureOpenAI)(nil),           // 23: ai.options.gloo.solo.io.Embedding.AzureOpenAI
-	(*SemanticCache_Redis)(nil),             // 24: ai.options.gloo.solo.io.SemanticCache.Redis
-	(*SemanticCache_Weaviate)(nil),          // 25: ai.options.gloo.solo.io.SemanticCache.Weaviate
-	(*SemanticCache_DataStore)(nil),         // 26: ai.options.gloo.solo.io.SemanticCache.DataStore
-	(*RAG_DataStore)(nil),                   // 27: ai.options.gloo.solo.io.RAG.DataStore
-	(*AIPromptEnrichment_Message)(nil),      // 28: ai.options.gloo.solo.io.AIPromptEnrichment.Message
-	(*AIPromptGaurd_Request)(nil),           // 29: ai.options.gloo.solo.io.AIPromptGaurd.Request
-	(*AIPromptGaurd_Response)(nil),          // 30: ai.options.gloo.solo.io.AIPromptGaurd.Response
-	(*core.ResourceRef)(nil),                // 31: core.solo.io.ResourceRef
-	(*structpb.Value)(nil),                  // 32: google.protobuf.Value
+	(RouteSettings_RouteType)(0),                   // 0: ai.options.gloo.solo.io.RouteSettings.RouteType
+	(SemanticCache_Mode)(0),                        // 1: ai.options.gloo.solo.io.SemanticCache.Mode
+	(AIPromptGaurd_Request_PIIDetection_Action)(0), // 2: ai.options.gloo.solo.io.AIPromptGaurd.Request.PIIDetection.Action
+	(AIPromptGaurd_Response_BuiltIn)(0),            // 3: ai.options.gloo.solo.io.AIPromptGaurd.Response.BuiltIn
+	(*SingleAuthToken)(nil),                        // 4: ai.options.gloo.solo.io.SingleAuthToken
+	(*UpstreamSpec)(nil),                           // 5: ai.options.gloo.solo.io.UpstreamSpec
+	(*RouteSettings)(nil),                          // 6: ai.options.gloo.solo.io.RouteSettings
+	(*FieldDefault)(nil),                           // 7: ai.options.gloo.solo.io.FieldDefault
+	(*Postgres)(nil),                               // 8: ai.options.gloo.solo.io.Postgres
+	(*Embedding)(nil),                              // 9: ai.options.gloo.solo.io.Embedding
+	(*SemanticCache)(nil),                          // 10: ai.options.gloo.solo.io.SemanticCache
+	(*RAG)(nil),                                    // 11: ai.options.gloo.solo.io.RAG
+	(*RateLimiting)(nil),                           // 12: ai.options.gloo.solo.io.RateLimiting
+	(*AIPromptEnrichment)(nil),                     // 13: ai.options.gloo.solo.io.AIPromptEnrichment
+	(*AIPromptGaurd)(nil),                          // 14: ai.options.gloo.solo.io.AIPromptGaurd
+	(*UpstreamSpec_CustomHost)(nil),                // 15: ai.options.gloo.solo.io.UpstreamSpec.CustomHost
+	(*UpstreamSpec_OpenAI)(nil),                    // 16: ai.options.gloo.solo.io.UpstreamSpec.OpenAI
+	(*UpstreamSpec_AzureOpenAI)(nil),               // 17: ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI
+	(*UpstreamSpec_Mistral)(nil),                   // 18: ai.options.gloo.solo.io.UpstreamSpec.Mistral
+	(*UpstreamSpec_Anthropic)(nil),                 // 19: ai.options.gloo.solo.io.UpstreamSpec.Anthropic
+	(*UpstreamSpec_MultiPool)(nil),                 // 20: ai.options.gloo.solo.io.UpstreamSpec.MultiPool
+	(*UpstreamSpec_MultiPool_Backend)(nil),         // 21: ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend
+	(*UpstreamSpec_MultiPool_Priority)(nil),        // 22: ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Priority
+	(*Embedding_OpenAI)(nil),                       // 23: ai.options.gloo.solo.io.Embedding.OpenAI
+	(*Embedding_AzureOpenAI)(nil),                  // 24: ai.options.gloo.solo.io.Embedding.AzureOpenAI
+	(*SemanticCache_Redis)(nil),                    // 25: ai.options.gloo.solo.io.SemanticCache.Redis
+	(*SemanticCache_Weaviate)(nil),                 // 26: ai.options.gloo.solo.io.SemanticCache.Weaviate
+	(*SemanticCache_DataStore)(nil),                // 27: ai.options.gloo.solo.io.SemanticCache.DataStore
+	(*RAG_DataStore)(nil),                          // 28: ai.options.gloo.solo.io.RAG.DataStore
+	(*AIPromptEnrichment_Message)(nil),             // 29: ai.options.gloo.solo.io.AIPromptEnrichment.Message
+	(*AIPromptGaurd_Request)(nil),                  // 30: ai.options.gloo.solo.io.AIPromptGaurd.Request
+	(*AIPromptGaurd_Response)(nil),                 // 31: ai.options.gloo.solo.io.AIPromptGaurd.Response
+	(*AIPromptGaurd_Request_PIIDetection)(nil),     // 32: ai.options.gloo.solo.io.AIPromptGaurd.Request.PIIDetection
+	(*core.ResourceRef)(nil),                       // 33: core.solo.io.ResourceRef
+	(*structpb.Value)(nil),                         // 34: google.protobuf.Value
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_depIdxs = []int32{
-	31, // 0: ai.options.gloo.solo.io.SingleAuthToken.secret_ref:type_name -> core.solo.io.ResourceRef
-	15, // 1: ai.options.gloo.solo.io.UpstreamSpec.openai:type_name -> ai.options.gloo.solo.io.UpstreamSpec.OpenAI
-	17, // 2: ai.options.gloo.solo.io.UpstreamSpec.mistral:type_name -> ai.options.gloo.solo.io.UpstreamSpec.Mistral
-	18, // 3: ai.options.gloo.solo.io.UpstreamSpec.anthropic:type_name -> ai.options.gloo.solo.io.UpstreamSpec.Anthropic
-	16, // 4: ai.options.gloo.solo.io.UpstreamSpec.azure_openai:type_name -> ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI
-	19, // 5: ai.options.gloo.solo.io.UpstreamSpec.multi:type_name -> ai.options.gloo.solo.io.UpstreamSpec.MultiPool
-	12, // 6: ai.options.gloo.solo.io.RouteSettings.prompt_enrichment:type_name -> ai.options.gloo.solo.io.AIPromptEnrichment
-	13, // 7: ai.options.gloo.solo.io.RouteSettings.prompt_guard:type_name -> ai.options.gloo.solo.io.AIPromptGaurd
-	10, // 8: ai.options.gloo.solo.io.RouteSettings.rag:type_name -> ai.options.gloo.solo.io.RAG
-	9,  // 9: ai.options.gloo.solo.io.RouteSettings.semantic_cache:type_name -> ai.options.gloo.solo.io.SemanticCache
-	6,  // 10: ai.options.gloo.solo.io.RouteSettings.defaults:type_name -> ai.options.gloo.solo.io.FieldDefault
+	33, // 0: ai.options.gloo.solo.io.SingleAuthToken.secret_ref:type_name -> core.solo.io.ResourceRef
+	16, // 1: ai.options.gloo.solo.io.UpstreamSpec.openai:type_name -> ai.options.gloo.solo.io.UpstreamSpec.OpenAI
+	18, // 2: ai.options.gloo.solo.io.UpstreamSpec.mistral:type_name -> ai.options.gloo.solo.io.UpstreamSpec.Mistral
+	19, // 3: ai.options.gloo.solo.io.UpstreamSpec.anthropic:type_name -> ai.options.gloo.solo.io.UpstreamSpec.Anthropic
+	17, // 4: ai.options.gloo.solo.io.UpstreamSpec.azure_openai:type_name -> ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI
+	20, // 5: ai.options.gloo.solo.io.UpstreamSpec.multi:type_name -> ai.options.gloo.solo.io.UpstreamSpec.MultiPool
+	13, // 6: ai.options.gloo.solo.io.RouteSettings.prompt_enrichment:type_name -> ai.options.gloo.solo.io.AIPromptEnrichment
+	14, // 7: ai.options.gloo.solo.io.RouteSettings.prompt_guard:type_name -> ai.options.gloo.solo.io.AIPromptGaurd
+	11, // 8: ai.options.gloo.solo.io.RouteSettings.rag:type_name -> ai.options.gloo.solo.io.RAG
+	10, // 9: ai.options.gloo.solo.io.RouteSettings.semantic_cache:type_name -> ai.options.gloo.solo.io.SemanticCache
+	7,  // 10: ai.options.gloo.solo.io.RouteSettings.defaults:type_name -> ai.options.gloo.solo.io.FieldDefault
 	0,  // 11: ai.options.gloo.solo.io.RouteSettings.route_type:type_name -> ai.options.gloo.solo.io.RouteSettings.RouteType
-	32, // 12: ai.options.gloo.solo.io.FieldDefault.value:type_name -> google.protobuf.Value
-	22, // 13: ai.options.gloo.solo.io.Embedding.openai:type_name -> ai.options.gloo.solo.io.Embedding.OpenAI
-	23, // 14: ai.options.gloo.solo.io.Embedding.azure_openai:type_name -> ai.options.gloo.solo.io.Embedding.AzureOpenAI
-	26, // 15: ai.options.gloo.solo.io.SemanticCache.datastore:type_name -> ai.options.gloo.solo.io.SemanticCache.DataStore
-	8,  // 16: ai.options.gloo.solo.io.SemanticCache.embedding:type_name -> ai.options.gloo.solo.io.Embedding
+	34, // 12: ai.options.gloo.solo.io.FieldDefault.value:type_name -> google.protobuf.Value
+	23, // 13: ai.options.gloo.solo.io.Embedding.openai:type_name -> ai.options.gloo.solo.io.Embedding.OpenAI
+	24, // 14: ai.options.gloo.solo.io.Embedding.azure_openai:type_name -> ai.options.gloo.solo.io.Embedding.AzureOpenAI
+	27, // 15: ai.options.gloo.solo.io.SemanticCache.datastore:type_name -> ai.options.gloo.solo.io.SemanticCache.DataStore
+	9,  // 16: ai.options.gloo.solo.io.SemanticCache.embedding:type_name -> ai.options.gloo.solo.io.Embedding
 	1,  // 17: ai.options.gloo.solo.io.SemanticCache.mode:type_name -> ai.options.gloo.solo.io.SemanticCache.Mode
-	27, // 18: ai.options.gloo.solo.io.RAG.datastore:type_name -> ai.options.gloo.solo.io.RAG.DataStore
-	8,  // 19: ai.options.gloo.solo.io.RAG.embedding:type_name -> ai.options.gloo.solo.io.Embedding
-	28, // 20: ai.options.gloo.solo.io.AIPromptEnrichment.prepend:type_name -> ai.options.gloo.solo.io.AIPromptEnrichment.Message
-	28, // 21: ai.options.gloo.solo.io.AIPromptEnrichment.append:type_name -> ai.options.gloo.solo.io.AIPromptEnrichment.Message
-	29, // 22: ai.options.gloo.solo.io.AIPromptGaurd.request:type_name -> ai.options.gloo.solo.io.AIPromptGaurd.Request
-	30, // 23: ai.options.gloo.solo.io.AIPromptGaurd.response:type_name -> ai.options.gloo.solo.io.AIPromptGaurd.Response
-	3,  // 24: ai.options.gloo.solo.io.UpstreamSpec.OpenAI.auth_token:type_name -> ai.options.gloo.solo.io.SingleAuthToken
-	14, // 25: ai.options.gloo.solo.io.UpstreamSpec.OpenAI.custom_host:type_name -> ai.options.gloo.solo.io.UpstreamSpec.CustomHost
-	3,  // 26: ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI.auth_token:type_name -> ai.options.gloo.solo.io.SingleAuthToken
-	3,  // 27: ai.options.gloo.solo.io.UpstreamSpec.Mistral.auth_token:type_name -> ai.options.gloo.solo.io.SingleAuthToken
-	14, // 28: ai.options.gloo.solo.io.UpstreamSpec.Mistral.custom_host:type_name -> ai.options.gloo.solo.io.UpstreamSpec.CustomHost
-	3,  // 29: ai.options.gloo.solo.io.UpstreamSpec.Anthropic.auth_token:type_name -> ai.options.gloo.solo.io.SingleAuthToken
-	14, // 30: ai.options.gloo.solo.io.UpstreamSpec.Anthropic.custom_host:type_name -> ai.options.gloo.solo.io.UpstreamSpec.CustomHost
-	21, // 31: ai.options.gloo.solo.io.UpstreamSpec.MultiPool.priorities:type_name -> ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Priority
-	15, // 32: ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend.openai:type_name -> ai.options.gloo.solo.io.UpstreamSpec.OpenAI
-	17, // 33: ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend.mistral:type_name -> ai.options.gloo.solo.io.UpstreamSpec.Mistral
-	18, // 34: ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend.anthropic:type_name -> ai.options.gloo.solo.io.UpstreamSpec.Anthropic
-	16, // 35: ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend.azure_openai:type_name -> ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI
-	20, // 36: ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Priority.pool:type_name -> ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend
-	3,  // 37: ai.options.gloo.solo.io.Embedding.OpenAI.auth_token:type_name -> ai.options.gloo.solo.io.SingleAuthToken
-	3,  // 38: ai.options.gloo.solo.io.Embedding.AzureOpenAI.auth_token:type_name -> ai.options.gloo.solo.io.SingleAuthToken
-	24, // 39: ai.options.gloo.solo.io.SemanticCache.DataStore.redis:type_name -> ai.options.gloo.solo.io.SemanticCache.Redis
-	25, // 40: ai.options.gloo.solo.io.SemanticCache.DataStore.weaviate:type_name -> ai.options.gloo.solo.io.SemanticCache.Weaviate
-	7,  // 41: ai.options.gloo.solo.io.RAG.DataStore.postgres:type_name -> ai.options.gloo.solo.io.Postgres
-	2,  // 42: ai.options.gloo.solo.io.AIPromptGaurd.Response.builtins:type_name -> ai.options.gloo.solo.io.AIPromptGaurd.Response.BuiltIn
-	43, // [43:43] is the sub-list for method output_type
-	43, // [43:43] is the sub-list for method input_type
-	43, // [43:43] is the sub-list for extension type_name
-	43, // [43:43] is the sub-list for extension extendee
-	0,  // [0:43] is the sub-list for field type_name
+	28, // 18: ai.options.gloo.solo.io.RAG.datastore:type_name -> ai.options.gloo.solo.io.RAG.DataStore
+	9,  // 19: ai.options.gloo.solo.io.RAG.embedding:type_name -> ai.options.gloo.solo.io.Embedding
+	29, // 20: ai.options.gloo.solo.io.AIPromptEnrichment.prepend:type_name -> ai.options.gloo.solo.io.AIPromptEnrichment.Message
+	29, // 21: ai.options.gloo.solo.io.AIPromptEnrichment.append:type_name -> ai.options.gloo.solo.io.AIPromptEnrichment.Message
+	30, // 22: ai.options.gloo.solo.io.AIPromptGaurd.request:type_name -> ai.options.gloo.solo.io.AIPromptGaurd.Request
+	31, // 23: ai.options.gloo.solo.io.AIPromptGaurd.response:type_name -> ai.options.gloo.solo.io.AIPromptGaurd.Response
+	4,  // 24: ai.options.gloo.solo.io.UpstreamSpec.OpenAI.auth_token:type_name -> ai.options.gloo.solo.io.SingleAuthToken
+	15, // 25: ai.options.gloo.solo.io.UpstreamSpec.OpenAI.custom_host:type_name -> ai.options.gloo.solo.io.UpstreamSpec.CustomHost
+	4,  // 26: ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI.auth_token:type_name -> ai.options.gloo.solo.io.SingleAuthToken
+	4,  // 27: ai.options.gloo.solo.io.UpstreamSpec.Mistral.auth_token:type_name -> ai.options.gloo.solo.io.SingleAuthToken
+	15, // 28: ai.options.gloo.solo.io.UpstreamSpec.Mistral.custom_host:type_name -> ai.options.gloo.solo.io.UpstreamSpec.CustomHost
+	4,  // 29: ai.options.gloo.solo.io.UpstreamSpec.Anthropic.auth_token:type_name -> ai.options.gloo.solo.io.SingleAuthToken
+	15, // 30: ai.options.gloo.solo.io.UpstreamSpec.Anthropic.custom_host:type_name -> ai.options.gloo.solo.io.UpstreamSpec.CustomHost
+	22, // 31: ai.options.gloo.solo.io.UpstreamSpec.MultiPool.priorities:type_name -> ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Priority
+	16, // 32: ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend.openai:type_name -> ai.options.gloo.solo.io.UpstreamSpec.OpenAI
+	18, // 33: ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend.mistral:type_name -> ai.options.gloo.solo.io.UpstreamSpec.Mistral
+	19, // 34: ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend.anthropic:type_name -> ai.options.gloo.solo.io.UpstreamSpec.Anthropic
+	17, // 35: ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend.azure_openai:type_name -> ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI
+	21, // 36: ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Priority.pool:type_name -> ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend
+	4,  // 37: ai.options.gloo.solo.io.Embedding.OpenAI.auth_token:type_name -> ai.options.gloo.solo.io.SingleAuthToken
+	4,  // 38: ai.options.gloo.solo.io.Embedding.AzureOpenAI.auth_token:type_name -> ai.options.gloo.solo.io.SingleAuthToken
+	25, // 39: ai.options.gloo.solo.io.SemanticCache.DataStore.redis:type_name -> ai.options.gloo.solo.io.SemanticCache.Redis
+	26, // 40: ai.options.gloo.solo.io.SemanticCache.DataStore.weaviate:type_name -> ai.options.gloo.solo.io.SemanticCache.Weaviate
+	8,  // 41: ai.options.gloo.solo.io.RAG.DataStore.postgres:type_name -> ai.options.gloo.solo.io.Postgres
+	32, // 42: ai.options.gloo.solo.io.AIPromptGaurd.Request.pii_detection:type_name -> ai.options.gloo.solo.io.AIPromptGaurd.Request.PIIDetection
+	3,  // 43: ai.options.gloo.solo.io.AIPromptGaurd.Response.builtins:type_name -> ai.options.gloo.solo.io.AIPromptGaurd.Response.BuiltIn
+	2,  // 44: ai.options.gloo.solo.io.AIPromptGaurd.Request.PIIDetection.action:type_name -> ai.options.gloo.solo.io.AIPromptGaurd.Request.PIIDetection.Action
+	45, // [45:45] is the sub-list for method output_type
+	45, // [45:45] is the sub-list for method input_type
+	45, // [45:45] is the sub-list for extension type_name
+	45, // [45:45] is the sub-list for extension extendee
+	0,  // [0:45] is the sub-list for field type_name
 }
 
 func init() { file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_init() }
@@ -3170,6 +3292,18 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_
 				return nil
 			}
 		}
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[28].Exporter = func(v any, i int) any {
+			switch v := v.(*AIPromptGaurd_Request_PIIDetection); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[0].OneofWrappers = []any{
 		(*SingleAuthToken_Inline)(nil),
@@ -3213,8 +3347,8 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_rawDesc,
-			NumEnums:      3,
-			NumMessages:   28,
+			NumEnums:      4,
+			NumMessages:   29,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

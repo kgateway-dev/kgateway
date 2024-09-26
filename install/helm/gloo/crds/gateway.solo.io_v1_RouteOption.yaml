@@ -77,6 +77,12 @@ spec:
                                 items:
                                   type: string
                                 type: array
+                              piiDetection:
+                                properties:
+                                  action:
+                                    type: string
+                                    x-kubernetes-int-or-string: true
+                                type: object
                             type: object
                           response:
                             properties:

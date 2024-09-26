@@ -518,6 +518,18 @@ message AIPromptGaurd {
     // If not specified, the following default message will be used:
     // "The request was rejected due to inappropriate content"
     string custom_response_message = 2;
+
+    message PIIDetection {
+      enum Action {
+        // Mask the detected PII
+        MASK = 0;
+        // Reject the request
+        REJECT = 1;
+      }
+      Action action = 1;
+    }
+
+    PIIDetection pii_detection = 3;
   }
 
   message Response {

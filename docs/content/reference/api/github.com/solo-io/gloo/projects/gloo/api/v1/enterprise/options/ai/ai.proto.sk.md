@@ -40,6 +40,8 @@ weight: 5
 - [Message](#message)
 - [AIPromptGaurd](#aipromptgaurd)
 - [Request](#request)
+- [PIIDetection](#piidetection)
+- [Action](#action)
 - [Response](#response)
 - [BuiltIn](#builtin)
   
@@ -709,6 +711,7 @@ Data store from which to cache the request/response pairs
 ```yaml
 "matches": []string
 "customResponseMessage": string
+"piiDetection": .ai.options.gloo.solo.io.AIPromptGaurd.Request.PIIDetection
 
 ```
 
@@ -716,6 +719,37 @@ Data store from which to cache the request/response pairs
 | ----- | ---- | ----------- | 
 | `matches` | `[]string` | A list of Regex patterns to match against the prompt. Each one will be checked against the prompt and if any match the request will be rejected. |
 | `customResponseMessage` | `string` | Custom response message to send back to the client. If not specified, the following default message will be used: "The request was rejected due to inappropriate content". |
+| `piiDetection` | [.ai.options.gloo.solo.io.AIPromptGaurd.Request.PIIDetection](../ai.proto.sk/#piidetection) |  |
+
+
+
+
+---
+### PIIDetection
+
+
+
+```yaml
+"action": .ai.options.gloo.solo.io.AIPromptGaurd.Request.PIIDetection.Action
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `action` | [.ai.options.gloo.solo.io.AIPromptGaurd.Request.PIIDetection.Action](../ai.proto.sk/#action) |  |
+
+
+
+
+---
+### Action
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `MASK` | Mask the detected PII |
+| `REJECT` | Reject the request |
 
 
 

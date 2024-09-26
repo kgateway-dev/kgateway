@@ -1423,6 +1423,16 @@ func (m *AIPromptGaurd_Request) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetPiiDetection()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPiiDetection()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPiiDetection(), target.GetPiiDetection()) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -1467,6 +1477,34 @@ func (m *AIPromptGaurd_Response) Equal(that interface{}) bool {
 			return false
 		}
 
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AIPromptGaurd_Request_PIIDetection) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AIPromptGaurd_Request_PIIDetection)
+	if !ok {
+		that2, ok := that.(AIPromptGaurd_Request_PIIDetection)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if m.GetAction() != target.GetAction() {
+		return false
 	}
 
 	return true

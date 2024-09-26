@@ -824,6 +824,12 @@ func (m *AIPromptGaurd_Request) Clone() proto.Message {
 
 	target.CustomResponseMessage = m.GetCustomResponseMessage()
 
+	if h, ok := interface{}(m.GetPiiDetection()).(clone.Cloner); ok {
+		target.PiiDetection = h.Clone().(*AIPromptGaurd_Request_PIIDetection)
+	} else {
+		target.PiiDetection = proto.Clone(m.GetPiiDetection()).(*AIPromptGaurd_Request_PIIDetection)
+	}
+
 	return target
 }
 
@@ -852,6 +858,19 @@ func (m *AIPromptGaurd_Response) Clone() proto.Message {
 
 		}
 	}
+
+	return target
+}
+
+// Clone function
+func (m *AIPromptGaurd_Request_PIIDetection) Clone() proto.Message {
+	var target *AIPromptGaurd_Request_PIIDetection
+	if m == nil {
+		return target
+	}
+	target = &AIPromptGaurd_Request_PIIDetection{}
+
+	target.Action = m.GetAction()
 
 	return target
 }
