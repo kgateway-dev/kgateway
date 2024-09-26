@@ -491,7 +491,7 @@ func translateSslConfig(
 		if err != nil {
 			return nil, err
 		}
-		if err := sslutils.ValidateTlsSecret(secret.(*corev1.Secret)); err != nil {
+		if _, err := sslutils.ValidateTlsSecret(secret.(*corev1.Secret)); err != nil {
 			return nil, err
 		}
 
