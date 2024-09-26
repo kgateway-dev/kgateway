@@ -22,7 +22,7 @@ func TestRevisionIstioRegression(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:   installNs,
-			ValuesManifestFile: ManifestPath("istio-revision-helm.yaml"),
+			ValuesManifestFile: e2e.ManifestPath("istio-revision-helm.yaml"),
 		},
 	)
 

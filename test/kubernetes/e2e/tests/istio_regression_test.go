@@ -22,8 +22,8 @@ func TestIstioRegression(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: EmptyProfilePath,
-			ValuesManifestFile:        ManifestPath("istio-regression-helm.yaml"),
+			ProfileValuesManifestFile: e2e.EmptyProfilePath,
+			ValuesManifestFile:        e2e.ManifestPath("istio-regression-helm.yaml"),
 		},
 	)
 

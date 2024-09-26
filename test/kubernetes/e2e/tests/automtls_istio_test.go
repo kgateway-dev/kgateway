@@ -21,8 +21,8 @@ func TestK8sGatewayIstioAutoMtls(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: EmptyProfilePath,
-			ValuesManifestFile:        ManifestPath("istio-automtls-k8s-gateway-test-helm.yaml"),
+			ProfileValuesManifestFile: e2e.EmptyProfilePath,
+			ValuesManifestFile:        e2e.ManifestPath("istio-automtls-k8s-gateway-test-helm.yaml"),
 		},
 	)
 

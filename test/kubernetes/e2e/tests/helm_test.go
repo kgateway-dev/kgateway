@@ -21,8 +21,8 @@ func TestHelm(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: EmptyProfilePath,
-			ValuesManifestFile:        ManifestPath("test-helm.yaml"),
+			ProfileValuesManifestFile: e2e.EmptyProfilePath,
+			ValuesManifestFile:        e2e.ManifestPath("test-helm.yaml"),
 		},
 	)
 

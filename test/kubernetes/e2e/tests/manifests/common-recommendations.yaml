@@ -2,11 +2,6 @@
 # ...etc add more details
 #
 
-namespace:
-  # We recommend installing Gloo Gateway in a standalone namespace, that is not shared with other applications
-  # As a result, we assume the namespace does not exist at install time
-  create: true
-
 # Configuration for the Settings CR
 settings:
   invalidConfigPolicy:

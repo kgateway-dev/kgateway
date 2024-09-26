@@ -22,8 +22,8 @@ func TestIstioEdgeApiGateway(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: EmptyProfilePath,
-			ValuesManifestFile:        ManifestPath("istio-edge-gateway-test-helm.yaml"),
+			ProfileValuesManifestFile: e2e.EmptyProfilePath,
+			ValuesManifestFile:        e2e.ManifestPath("istio-edge-gateway-test-helm.yaml"),
 		},
 	)
 

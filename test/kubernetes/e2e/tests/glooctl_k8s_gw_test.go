@@ -22,8 +22,8 @@ func TestGlooctlK8sGateway(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: EmptyProfilePath,
-			ValuesManifestFile:        ManifestPath("glooctl-k8s-gateway-test-helm.yaml"),
+			ProfileValuesManifestFile: e2e.EmptyProfilePath,
+			ValuesManifestFile:        e2e.ManifestPath("glooctl-k8s-gateway-test-helm.yaml"),
 			ValidationAlwaysAccept:    false,
 			K8sGatewayEnabled:         true,
 		},

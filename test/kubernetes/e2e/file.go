@@ -1,4 +1,4 @@
-package tests
+package e2e
 
 import (
 	"path/filepath"
@@ -6,12 +6,17 @@ import (
 	"github.com/solo-io/skv2/codegen/util"
 )
 
-func ManifestPath(path string) string {
-	return filepath.Join(util.MustGetThisDir(), "manifests", path)
+func ManifestPath(pathParts ...string) string {
+	manifestPathParts := append([]string{
+		util.MustGetThisDir(),
+		"tests",
+		"manifests",
+	}, pathParts...)
+	return filepath.Join(manifestPathParts...)
 }
 
 func ProfilePath(path string) string {
-	return filepath.Join(util.MustGetThisDir(), "manifests", "profiles", path)
+	return ManifestPath("profiles", path)
 }
 
 var (

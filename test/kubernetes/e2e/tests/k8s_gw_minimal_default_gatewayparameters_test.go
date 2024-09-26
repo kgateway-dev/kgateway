@@ -22,8 +22,8 @@ func TestK8sGatewayMinimalDefaultGatewayParameters(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: KubernetesGatewayProfilePath,
-			ValuesManifestFile:        ManifestPath("k8s-gateway-minimal-default-gatewayparameters-test-helm.yaml"),
+			ProfileValuesManifestFile: e2e.KubernetesGatewayProfilePath,
+			ValuesManifestFile:        e2e.ManifestPath("k8s-gateway-minimal-default-gatewayparameters-test-helm.yaml"),
 			ValidationAlwaysAccept:    false,
 			K8sGatewayEnabled:         true,
 		},

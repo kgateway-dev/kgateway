@@ -22,8 +22,8 @@ func TestK8sGatewayIstioRevision(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: EmptyProfilePath,
-			ValuesManifestFile:        ManifestPath("istio-revision-k8s-gateway-helm.yaml"),
+			ProfileValuesManifestFile: e2e.EmptyProfilePath,
+			ValuesManifestFile:        e2e.ManifestPath("istio-revision-k8s-gateway-helm.yaml"),
 		},
 	)
 
