@@ -18,7 +18,11 @@ weight: 5
 - [AzureOpenAI](#azureopenai)
 - [Mistral](#mistral)
 - [Anthropic](#anthropic)
+- [MultiPool](#multipool)
+- [Backend](#backend)
+- [Priority](#priority)
 - [RouteSettings](#routesettings)
+- [RouteType](#routetype)
 - [FieldDefault](#fielddefault)
 - [Postgres](#postgres)
 - [Embedding](#embedding)
@@ -130,15 +134,17 @@ port: 443 # Port is optional and will default to 443 for HTTPS
 "mistral": .ai.options.gloo.solo.io.UpstreamSpec.Mistral
 "anthropic": .ai.options.gloo.solo.io.UpstreamSpec.Anthropic
 "azureOpenai": .ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI
+"multi": .ai.options.gloo.solo.io.UpstreamSpec.MultiPool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `openai` | [.ai.options.gloo.solo.io.UpstreamSpec.OpenAI](../ai.proto.sk/#openai) | OpenAI upstream. Only one of `openai`, `mistral`, `anthropic`, or `azureOpenai` can be set. |
-| `mistral` | [.ai.options.gloo.solo.io.UpstreamSpec.Mistral](../ai.proto.sk/#mistral) | Mistral upstream. Only one of `mistral`, `openai`, `anthropic`, or `azureOpenai` can be set. |
-| `anthropic` | [.ai.options.gloo.solo.io.UpstreamSpec.Anthropic](../ai.proto.sk/#anthropic) | Anthropic upstream. Only one of `anthropic`, `openai`, `mistral`, or `azureOpenai` can be set. |
-| `azureOpenai` | [.ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI upstream. Only one of `azureOpenai`, `openai`, `mistral`, or `anthropic` can be set. |
+| `openai` | [.ai.options.gloo.solo.io.UpstreamSpec.OpenAI](../ai.proto.sk/#openai) | OpenAI upstream. Only one of `openai`, `mistral`, `anthropic`, `azureOpenai`, or `multi` can be set. |
+| `mistral` | [.ai.options.gloo.solo.io.UpstreamSpec.Mistral](../ai.proto.sk/#mistral) | Mistral upstream. Only one of `mistral`, `openai`, `anthropic`, `azureOpenai`, or `multi` can be set. |
+| `anthropic` | [.ai.options.gloo.solo.io.UpstreamSpec.Anthropic](../ai.proto.sk/#anthropic) | Anthropic upstream. Only one of `anthropic`, `openai`, `mistral`, `azureOpenai`, or `multi` can be set. |
+| `azureOpenai` | [.ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI upstream. Only one of `azureOpenai`, `openai`, `mistral`, `anthropic`, or `multi` can be set. |
+| `multi` | [.ai.options.gloo.solo.io.UpstreamSpec.MultiPool](../ai.proto.sk/#multipool) | multi upstream. Only one of `multi`, `openai`, `mistral`, `anthropic`, or `azureOpenai` can be set. |
 
 
 
@@ -157,7 +163,7 @@ port: 443 # Port is optional and will default to 443 for HTTPS
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `host` | `string` | Custom host to send the traffic to. |
-| `port` | `int` | Custom host to send the traffic to. |
+| `port` | `int` | Custom port to send the traffic to. |
 
 
 
@@ -171,6 +177,7 @@ Settings for the OpenAI API
 ```yaml
 "authToken": .ai.options.gloo.solo.io.SingleAuthToken
 "customHost": .ai.options.gloo.solo.io.UpstreamSpec.CustomHost
+"model": string
 
 ```
 
@@ -178,6 +185,7 @@ Settings for the OpenAI API
 | ----- | ---- | ----------- | 
 | `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the OpenAI API This token will be placed into the `Authorization` header and prefixed with Bearer if not present when sending the request to the upstream. |
 | `customHost` | [.ai.options.gloo.solo.io.UpstreamSpec.CustomHost](../ai.proto.sk/#customhost) | Optional custom host to send the traffic to. |
+| `model` | `string` | Optional: override model name. If not set, the model name will be taken from the request This can be useful when trying model failover scenarios e.g. "gpt-4o-mini". |
 
 
 
@@ -191,13 +199,17 @@ Settings for the Azure OpenAI API
 ```yaml
 "authToken": .ai.options.gloo.solo.io.SingleAuthToken
 "endpoint": string
+"deploymentName": string
+"apiVersion": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the OpenAI API This token will be placed into the `api-key` header. |
-| `endpoint` | `string` | (REQUIRED) The endpoint to use This should be the endpoint to the Azure OpenAI API, e.g. my-endpoint.openai.azure.com If the scheme is included it will be stripped. |
+| `endpoint` | `string` | The endpoint to use This should be the endpoint to the Azure OpenAI API, e.g. my-endpoint.openai.azure.com If the scheme is included it will be stripped. This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}. |
+| `deploymentName` | `string` | The deployment/model name to use This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}. |
+| `apiVersion` | `string` | The version of the API to use This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}. |
 
 
 
@@ -211,6 +223,7 @@ Settings for the Mistral API
 ```yaml
 "authToken": .ai.options.gloo.solo.io.SingleAuthToken
 "customHost": .ai.options.gloo.solo.io.UpstreamSpec.CustomHost
+"model": string
 
 ```
 
@@ -218,6 +231,7 @@ Settings for the Mistral API
 | ----- | ---- | ----------- | 
 | `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the Mistral API. This token will be placed into the `Authorization` header and prefixed with Bearer if not present when sending the request to the upstream. |
 | `customHost` | [.ai.options.gloo.solo.io.UpstreamSpec.CustomHost](../ai.proto.sk/#customhost) | Optional custom host to send the traffic to. |
+| `model` | `string` | Optional: override model name. If not set, the model name will be taken from the request This can be useful when trying model failover scenarios. |
 
 
 
@@ -231,6 +245,7 @@ Settings for the Mistral API
 "authToken": .ai.options.gloo.solo.io.SingleAuthToken
 "customHost": .ai.options.gloo.solo.io.UpstreamSpec.CustomHost
 "version": string
+"model": string
 
 ```
 
@@ -239,6 +254,91 @@ Settings for the Mistral API
 | `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the Anthropic API. This token will be placed into the `x-api-key` header when sending the request to the upstream. |
 | `customHost` | [.ai.options.gloo.solo.io.UpstreamSpec.CustomHost](../ai.proto.sk/#customhost) |  |
 | `version` | `string` | An optional version header to pass to the Anthropic API See: https://docs.anthropic.com/en/api/versioning for more details. |
+| `model` | `string` | Optional: override model name. If not set, the model name will be taken from the request This can be useful when trying model failover scenarios. |
+
+
+
+
+---
+### MultiPool
+
+ 
+multi:
+pools:
+- pool:
+- openai:
+authToken:
+secretRef:
+name: openai-secret
+namespace: gloo-system
+priority: 1
+- pool:
+- azureOpenai:
+deploymentName: gpt-4o-mini
+apiVersion: 2024-02-15-preview
+endpoint: ai-gateway.openai.azure.com
+authToken:
+secretRef:
+name: azure-secret
+namespace: gloo-system
+- azureOpenai:
+deploymentName: gpt-4o-mini-2
+apiVersion: 2024-02-15-preview
+endpoint: ai-gateway.openai.azure.com
+authToken:
+secretRef:
+name: azure-secret
+namespace: gloo-system
+priority: 2
+
+```yaml
+"priorities": []ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Priority
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `priorities` | [[]ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Priority](../ai.proto.sk/#priority) | List of prioritized backend pools. |
+
+
+
+
+---
+### Backend
+
+
+
+```yaml
+"openai": .ai.options.gloo.solo.io.UpstreamSpec.OpenAI
+"mistral": .ai.options.gloo.solo.io.UpstreamSpec.Mistral
+"anthropic": .ai.options.gloo.solo.io.UpstreamSpec.Anthropic
+"azureOpenai": .ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `openai` | [.ai.options.gloo.solo.io.UpstreamSpec.OpenAI](../ai.proto.sk/#openai) | OpenAI upstream. Only one of `openai`, `mistral`, `anthropic`, or `azureOpenai` can be set. |
+| `mistral` | [.ai.options.gloo.solo.io.UpstreamSpec.Mistral](../ai.proto.sk/#mistral) | Mistral upstream. Only one of `mistral`, `openai`, `anthropic`, or `azureOpenai` can be set. |
+| `anthropic` | [.ai.options.gloo.solo.io.UpstreamSpec.Anthropic](../ai.proto.sk/#anthropic) | Anthropic upstream. Only one of `anthropic`, `openai`, `mistral`, or `azureOpenai` can be set. |
+| `azureOpenai` | [.ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI upstream. Only one of `azureOpenai`, `openai`, `mistral`, or `anthropic` can be set. |
+
+
+
+
+---
+### Priority
+
+
+
+```yaml
+"pool": []ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `pool` | [[]ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend](../ai.proto.sk/#backend) |  |
 
 
 
@@ -252,9 +352,9 @@ This allows users to configure things like:
 - Prompt Enrichment
 - Retrieval Augmented Generation
 - Semantic Caching
-- Backup Models
 - Defaults to merge with the user input fields
 - Guardrails
+- Route Type
 
 NOTE: These settings may only be applied to a route which uses an LLMProvider backend!
 
@@ -263,8 +363,8 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 "promptGuard": .ai.options.gloo.solo.io.AIPromptGaurd
 "rag": .ai.options.gloo.solo.io.RAG
 "semanticCache": .ai.options.gloo.solo.io.SemanticCache
-"backupModels": []string
 "defaults": []ai.options.gloo.solo.io.FieldDefault
+"routeType": .ai.options.gloo.solo.io.RouteSettings.RouteType
 
 ```
 
@@ -274,8 +374,20 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 | `promptGuard` | [.ai.options.gloo.solo.io.AIPromptGaurd](../ai.proto.sk/#aipromptgaurd) | Guards to apply to the LLM requests on this route. This can be used to reject requests based on the content of the prompt, as well as mask responses based on the content of the response. These guards can be also be used at the same time. Below is a simple example of a prompt guard that will reject any prompt that contains the string "credit card" and will mask any credit card numbers in the response. ``` promptGuard: request: customResponseMessage: "Rejected due to inappropriate content" matches: - "credit card" response: matches: # Mastercard - '(?:^|\D)(5[1-5][0-9]{2}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4})(?:\D|$)' ````. |
 | `rag` | [.ai.options.gloo.solo.io.RAG](../ai.proto.sk/#rag) | Retrieval Augmented Generation. https://research.ibm.com/blog/retrieval-augmented-generation-RAG Retrieval Augmented Generation is a process by which you "augment" the information a model has access to by providing it with a set of documents to use as context. This can be used to improve the quality of the generated text. Important Note: The same embedding mechanism must be used for the prompt which was used for the initial creation of the context documents. Example using postgres for storage and OpenAI for embedding: ``` rag: datastore: postgres: connectionString: postgresql+psycopg://gloo:gloo@172.17.0.1:6024/gloo collectionName: default embedding: openai: authToken: secretRef: name: openai-secret namespace: gloo-system ```. |
 | `semanticCache` | [.ai.options.gloo.solo.io.SemanticCache](../ai.proto.sk/#semanticcache) | Semantic caching configuration Semantic caching allows you to cache previous model responses in order to provide faster responses to similar requests in the future. Results will vary depending on the embedding mechanism used, as well as the similarity threshold set. Example using Redis for storage and OpenAI for embedding: ``` semanticCache: datastore: redis: connectionString: redis://172.17.0.1:6379 embedding: openai: authToken: secretRef: name: openai-secret namespace: gloo-system ```. |
-| `backupModels` | `[]string` | Backup models to use in case of a failure with the primary model passed in the request. By default each model will be tried 2 times before moving on to the next model in the list. If all requests fail then the final response will be returned to the client. |
 | `defaults` | [[]ai.options.gloo.solo.io.FieldDefault](../ai.proto.sk/#fielddefault) | A list of defaults to be merged with the user input fields. These will NOT override the user input fields unless override is explicitly set to true. Some examples include setting the temperature, max_tokens, etc. Example overriding system field for Anthropic: ``` # Anthropic doesn't support a system chat type defaults: - field: "system" value: "answer all questions in french" ``` Example setting the temperature and max_tokens, overriding max_tokens: ``` defaults: - field: "temperature" value: 0.5 - field: "max_tokens" value: 100 ```. |
+| `routeType` | [.ai.options.gloo.solo.io.RouteSettings.RouteType](../ai.proto.sk/#routetype) | The type of route this is, currently only CHAT is supported. |
+
+
+
+
+---
+### RouteType
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `CHAT` |  |
 
 
 
@@ -372,9 +484,9 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the OpenAI API This token will be placed into the `api-key` header. |
-| `apiVersion` | `string` | (REQUIRED) The version of the API to use. |
-| `endpoint` | `string` | (REQUIRED) The endpoint to use This should be the endpoint to the Azure OpenAI API, e.g. https://my-endpoint.openai.azure.com If the scheme isn't included it will be added. |
-| `deploymentName` | `string` | (REQUIRED) The deployment/model name to use. |
+| `apiVersion` | `string` | The version of the API to use This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}. |
+| `endpoint` | `string` | The endpoint to use This should be the endpoint to the Azure OpenAI API, e.g. https://my-endpoint.openai.azure.com If the scheme isn't included it will be added. This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}. |
+| `deploymentName` | `string` | The deployment/model name to use This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}. |
 
 
 
