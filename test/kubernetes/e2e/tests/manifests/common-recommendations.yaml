@@ -1,6 +1,15 @@
 # This file defines the common recommendations for a user who wants to run Gloo Gateway.
-# ...etc add more details
+# As we call out in the [profiles README](./profiles/README.md), these should be reviewed and tested
+# before being adopted.
 #
+# NOTE TO MAINTAINERS:
+# Our Helm API has a set of default values. In most cases, we chose to not default _new_ APIs as a way
+# of maintaining backwards compatibility. However, a side effect of that is that ideal configuration
+# is not the default. That is where this file comes in.
+# In this file we define any values which are not the default, but are the recommended pattern of installing,
+# and thus testing, Gloo Gateway. Any values in this file should ideally be converted into
+# defaults in our values-template.yaml overtime. That way, users of the product can have the easiest experience,
+# and gain the best value, without custom configuration.
 
 # Configuration that is global to Gloo Gateway
 global:

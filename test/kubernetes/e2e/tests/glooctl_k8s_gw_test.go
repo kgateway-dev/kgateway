@@ -22,7 +22,7 @@ func TestGlooctlK8sGateway(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: e2e.KubernetesGatewayProfilePath,
+			ProfileValuesManifestFile: e2e.FullGatewayProfilePath,
 			ValuesManifestFile:        e2e.ManifestPath("glooctl-full-gateway-test-helm.yaml"),
 			ValidationAlwaysAccept:    false,
 			K8sGatewayEnabled:         true,
