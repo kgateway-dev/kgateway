@@ -525,7 +525,10 @@ message AIPromptGaurd {
         MASK = 0;
         // Reject the request
         REJECT = 1;
+        // This option will mask the detected PII and also demask it in the response
+        MASK_AND_DEMASK = 2;
       }
+      
       Action action = 1;
     }
 

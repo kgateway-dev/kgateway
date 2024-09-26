@@ -750,6 +750,7 @@ Data store from which to cache the request/response pairs
 | ----- | ----------- | 
 | `MASK` | Mask the detected PII |
 | `REJECT` | Reject the request |
+| `MASK_AND_DEMASK` | This option will mask the detected PII and also demask it in the response |
 
 
 
