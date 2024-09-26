@@ -44,7 +44,6 @@ type UpstreamDiscovery struct {
 	discoveryPlugins       []DiscoveryPlugin
 	lock                   sync.Mutex
 	latestDesiredUpstreams map[DiscoveryPlugin]v1.UpstreamList
-	extraSelectorLabels    map[string]string
 }
 
 type EndpointDiscovery struct {
@@ -95,7 +94,7 @@ func NewUpstreamDiscovery(
 // launch a goroutine for all the UDS plugins
 func (d *UpstreamDiscovery) StartUds(opts clients.WatchOpts, discOpts Opts) (chan error, error) {
 	aggregatedErrs := make(chan error)
-	d.extraSelectorLabels = opts.Selector
+
 	for _, uds := range d.discoveryPlugins {
 		upstreams, errs, err := uds.DiscoverUpstreams(d.watchNamespaces, d.writeNamespace, opts, discOpts)
 		if err != nil {

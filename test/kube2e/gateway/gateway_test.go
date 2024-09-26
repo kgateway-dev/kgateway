@@ -1200,7 +1200,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			// updates when watchLabels were enabled
 
 			watchedKey, watchedValue := "watchKey", "watchValue"
-			bonusKey, bonusValue, modifiedBonusValue := "foo", "bar", "baz"
+			bonusKey, bonusValue, modifiedBonusValue := "foo", "bar", "modified-bar"
 
 			// set watchLabels for Discovery to select on
 			labels := map[string]string{
