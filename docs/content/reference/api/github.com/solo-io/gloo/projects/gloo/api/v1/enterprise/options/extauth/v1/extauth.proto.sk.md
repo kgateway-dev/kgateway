@@ -402,7 +402,7 @@ This is used with custom auth servers.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `contextExtensions` | `map<string, string>` | When a request matches the virtual host, route, or weighted destination on which this configuration is defined, Gloo will add the given context_extensions to the request that is sent to the external authorization server. This allows the server to base the auth decision on metadata that you define on the source of the request. This attribute is analogous to Envoy's config.filter.http.ext_authz.v2.CheckSettings. See the official [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/ext_authz/v2/ext_authz.proto.html?highlight=ext_authz#config-filter-http-ext-authz-v2-checksettings) for more details. |
+| `contextExtensions` | `map<string, string>` | When a request matches the virtual host, route, or weighted destination on which this configuration is defined, Gloo will add the given context_extensions to the request that is sent to the external authorization server. This allows the server to base the auth decision on metadata that you define on the source of the request. This attribute is analogous to Envoy's config.filter.http.ext_authz.v2.CheckSettings. See the official [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto#envoy-v3-api-msg-extensions-filters-http-ext-authz-v3-checksettings) for more details. |
 | `name` | `string` | [Enterprise-only] Only required in the case where multiple auth servers are configured in Settings This name must match a key in the named_extauth Settings. |
 
 
@@ -687,7 +687,7 @@ Deprecated: Prefer OAuth2
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `oidcAuthorizationCode` | [.enterprise.gloo.solo.io.OidcAuthorizationCode](../extauth.proto.sk/#oidcauthorizationcode) | provide issuer location and let gloo handle OIDC flow for you. requests authorized by validating the contents of ID token. can also authorize the access token if configured. +kubebuilder:validation:XValidation:rule="has(self.clientAuthentication) ? !has(self.clientSecretRef) && !has(self.disableClientSecret) : has(self.clientSecretRef) || (has(self.disableClientSecret) && self.disableClientSecret)",message="If clientAuthentication is set, neither clientSecretRef nor disableClientSecret may be set. Otherwise, clientSecretRef must be set or disableClientSecret must be true.". Only one of `oidcAuthorizationCode`, `accessTokenValidation`, or `oauth2` can be set. |
-| `accessTokenValidation` | [.enterprise.gloo.solo.io.AccessTokenValidation](../extauth.proto.sk/#accesstokenvalidation) | provide the access token on the request and let gloo handle authorization. according to https://tools.ietf.org/html/rfc6750 you can pass tokens through: - form-encoded body parameter. recommended, more likely to appear. e.g.: Authorization: Bearer mytoken123 - URI query parameter e.g. access_token=mytoken123 - and (preferably) secure cookies. Only one of `accessTokenValidation`, `oidcAuthorizationCode`, or `oauth2` can be set. |
+| `accessTokenValidation` | [.enterprise.gloo.solo.io.AccessTokenValidation](../extauth.proto.sk/#accesstokenvalidation) | provide the access token on the request and let gloo handle authorization. according to https://datatracker.ietf.org/doc/html/rfc6750 you can pass tokens through: - form-encoded body parameter. recommended, more likely to appear. e.g.: Authorization: Bearer mytoken123 - URI query parameter e.g. access_token=mytoken123 - and (preferably) secure cookies. Only one of `accessTokenValidation`, `oidcAuthorizationCode`, or `oauth2` can be set. |
 | `oauth2` | [.enterprise.gloo.solo.io.PlainOAuth2](../extauth.proto.sk/#plainoauth2) | Enterprise-Only: THIS FEATURE IS IN TECH PREVIEW. APIs are versioned as alpha and subject to change. provide issuer location and let Gloo handle Oauth2 flow for you. requests authorized by validating the contents of access token. Prefer to use OIDC for better security. +kubebuilder:validation:XValidation:rule="has(self.clientSecretRef) || (has(self.disableClientSecret) && self.disableClientSecret)",message="Either clientSecretRef must be set or disableClientSecret must be true". Only one of `oauth2`, `oidcAuthorizationCode`, or `accessTokenValidation` can be set. |
 
 
@@ -933,7 +933,7 @@ https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
 ### JwksOnDemandCacheRefreshPolicy
 
  
-The json web key set (JWKS) (https://tools.ietf.org/html/rfc7517) is discovered at an interval
+The json web key set (JWKS) (https://datatracker.ietf.org/doc/html/rfc7517) is discovered at an interval
 from a remote source. When keys rotate in the remote source, there may be a delay in the
 local source picking up those new keys. Therefore, a user could execute a request with a token
 that has been signed by a key in the remote JWKS, but the local cache doesn't have the key yet.
@@ -1191,7 +1191,7 @@ Private Key JWT Authentication requires a signing key for the JWT and an duratio
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `signingKeyRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Signing key for the JWT used to authenticate the client +kubebuilder:validation:Required. |
-| `validFor` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Amount of time for which the JWT is valid. No maximmum is enforced, but different IDPs may impose limits on how far in the future the expiration time is allowed to be. If omitted, default is 5s. |
+| `validFor` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Amount of time for which the JWT is valid. No maximum is enforced, but different IDPs may impose limits on how far in the future the expiration time is allowed to be. If omitted, default is 5s. |
 
 
 
@@ -1217,7 +1217,7 @@ No-op, represents default OIDC behavior
 
  
 For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
-This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
+This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
 
 ```yaml
 "clientId": string
@@ -1231,7 +1231,7 @@ This way, you can enable distibuted claims and caching for when users are member
 | ----- | ---- | ----------- | 
 | `clientId` | `string` | The client ID for the ExtAuthService app that is registered in MS Entra, to access the Microsoft Graph API to retrieve distributed claims. This app is NOT the app that you want to configure external auth for. |
 | `tenantId` | `string` | The tenant ID represents the MS Entra organization ID where the ExtAuthService app is registered. This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`, depending on how your Azure account is provisioned. |
-| `clientSecret` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API. |
+| `clientSecret` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The client secret of the ExtAuthService app that is registered with MS Entra to communicate with the MS Graph API. |
 | `claimsCachingOptions` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) | Redis connection details to cache MS Entera claims. This way, you avoid performance issues of accessing the Microsoft Graph API too many times. Note that this setting does NOT turn on Redis caching for the user session. To turn on Redis user session caching, use the `userSessionConfig` field. |
 
 
@@ -1305,12 +1305,12 @@ For the moment this is just path, but we may want to configure things like iss/s
 Defines how JSON Web Token (JWT) access tokens are validated.
 
 Tokens are validated using a JSON Web Key Set (as defined in
-[Section 5 of RFC7517](https://tools.ietf.org/html/rfc7517#section-5)),
+[Section 5 of RFC7517](https://datatracker.ietf.org/doc/html/rfc7517#section-5)),
 which can be either inlined in the configuration or fetched from a remote location via HTTP.
 Any keys in the JWKS that are not intended for signature verification (i.e. whose
-["use" parameter](https://tools.ietf.org/html/rfc7517#section-4.2) is not "sig")
+["use" parameter](https://datatracker.ietf.org/doc/html/rfc7517#section-4.2) is not "sig")
 will be ignored by the system, as will keys that do not specify a
-["kid" (Key ID) parameter](https://tools.ietf.org/html/rfc7517#section-4.2).
+["kid" (Key ID) parameter](https://datatracker.ietf.org/doc/html/rfc7517#section-4.2).
 
 The JWT to be validated must define non-empty "kid" and "alg" headers. The "kid" header
 determines which key in the JWKS will be used to verify the signature of the token;
@@ -1380,7 +1380,7 @@ Represents a locally available JWKS.
 
  
 Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated
-[OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662)
+[OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662)
 
 If the token introspection url requires client authentication, both the client_id and client_secret
 are required. Unless disable_client_secret is set, when only one is provided, the config will be rejected.
@@ -1397,10 +1397,10 @@ These values will be encoded in a basic auth header in order to authenticate the
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `introspectionUrl` | `string` | The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint. If provided, the (opaque) access token provided or received from the oauth authorization endpoint will be validated against this endpoint, or locally cached responses for this access token. +kubebuilder:validation:Required +kubebuilder:validation:MinLength=1. |
+| `introspectionUrl` | `string` | The URL for the [OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662) endpoint. If provided, the (opaque) access token provided or received from the oauth authorization endpoint will be validated against this endpoint, or locally cached responses for this access token. +kubebuilder:validation:Required +kubebuilder:validation:MinLength=1. |
 | `clientId` | `string` | Your client id as registered with the issuer. Optional: Use if the token introspection url requires client authentication. |
 | `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Your client secret as registered with the issuer. Optional: Use if the token introspection url requires client authentication. |
-| `userIdAttributeName` | `string` | The name of the [introspection response](https://tools.ietf.org/html/rfc7662#section-2.2) attribute that contains the ID of the resource owner (e.g. `sub`, `username`). If specified, the external auth server will use the value of the attribute as the identifier of the authenticated user and add it to the request headers and/or dynamic metadata (depending on how the server is configured); if the field is set and the attribute cannot be found, the request will be denied. This field is optional and by default the server will not try to derive the user ID. |
+| `userIdAttributeName` | `string` | The name of the [introspection response](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2) attribute that contains the ID of the resource owner (e.g. `sub`, `username`). If specified, the external auth server will use the value of the attribute as the identifier of the authenticated user and add it to the request headers and/or dynamic metadata (depending on how the server is configured); if the field is set and the attribute cannot be found, the request will be denied. This field is optional and by default the server will not try to derive the user ID. |
 | `disableClientSecret` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Allows setting a client id but not a client secret. |
 
 
@@ -1424,12 +1424,12 @@ These values will be encoded in a basic auth header in order to authenticate the
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `introspectionUrl` | `string` | The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint. If provided, the (opaque) access token provided or received from the oauth authorization endpoint will be validated against this endpoint, or locally cached responses for this access token. This field is deprecated as it does not support authenticated introspection requests +kubebuilder:validation:MinLength=1. Only one of `introspectionUrl`, `jwt`, or `introspection` can be set. |
+| `introspectionUrl` | `string` | The URL for the [OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662) endpoint. If provided, the (opaque) access token provided or received from the oauth authorization endpoint will be validated against this endpoint, or locally cached responses for this access token. This field is deprecated as it does not support authenticated introspection requests +kubebuilder:validation:MinLength=1. Only one of `introspectionUrl`, `jwt`, or `introspection` can be set. |
 | `jwt` | [.enterprise.gloo.solo.io.JwtValidation](../extauth.proto.sk/#jwtvalidation) | Validate access tokens that conform to the [JSON Web Token (JWT)](https://datatracker.ietf.org/doc/rfc7662/) specification. Only one of `jwt`, `introspectionUrl`, or `introspection` can be set. |
-| `introspection` | [.enterprise.gloo.solo.io.IntrospectionValidation](../extauth.proto.sk/#introspectionvalidation) | Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) specification. +kubebuilder:validation:XValidation:rule="has(self.clientId) && size(self.clientId) > 0 ? has(self.clientSecretRef) || (has(self.disableClientSecret) && self.disableClientSecret) : !has(self.clientSecretRef)",message="If clientId is set, clientSecretRef must be set or disableClientSecret must be true. Otherwise, clientSecretRef must not be set.". Only one of `introspection`, `introspectionUrl`, or `jwt` can be set. |
+| `introspection` | [.enterprise.gloo.solo.io.IntrospectionValidation](../extauth.proto.sk/#introspectionvalidation) | Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated [OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662) specification. +kubebuilder:validation:XValidation:rule="has(self.clientId) && size(self.clientId) > 0 ? has(self.clientSecretRef) || (has(self.disableClientSecret) && self.disableClientSecret) : !has(self.clientSecretRef)",message="If clientId is set, clientSecretRef must be set or disableClientSecret must be true. Otherwise, clientSecretRef must not be set.". Only one of `introspection`, `introspectionUrl`, or `jwt` can be set. |
 | `userinfoUrl` | `string` | The URL for the OIDC userinfo endpoint. If provided, the (opaque) access token provided or received from the oauth endpoint will be queried and the userinfo response (or cached response) will be added to the `AuthorizationRequest` state under the "introspection" key. This can be useful to leverage the userinfo response in, for example, an external auth server plugin. |
 | `cacheTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | How long the token introspection and userinfo endpoint response for a specific access token should be kept in the in-memory cache. The result will be invalidated at this timeout, or at "exp" time from the introspection result, whichever comes sooner. If omitted, defaults to 10 minutes. If zero, then no caching will be done. |
-| `requiredScopes` | [.enterprise.gloo.solo.io.AccessTokenValidation.ScopeList](../extauth.proto.sk/#scopelist) | Require access token to have all of the scopes in the given list. This configuration applies to both opaque and JWT tokens. In the case of opaque tokens, this will check the scopes returned in the "scope" member of introspection response (as described in [Section 2.2 of RFC7662](https://tools.ietf.org/html/rfc7662#section-2.2). In case of JWTs the scopes to be validated are expected to be contained in the "scope" claim of the token in the form of a space-separated string. Omitting this field means that scope validation will be skipped. |
+| `requiredScopes` | [.enterprise.gloo.solo.io.AccessTokenValidation.ScopeList](../extauth.proto.sk/#scopelist) | Require access token to have all of the scopes in the given list. This configuration applies to both opaque and JWT tokens. In the case of opaque tokens, this will check the scopes returned in the "scope" member of introspection response (as described in [Section 2.2 of RFC7662](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2). In case of JWTs the scopes to be validated are expected to be contained in the "scope" claim of the token in the form of a space-separated string. Omitting this field means that scope validation will be skipped. |
 | `dynamicMetadataFromClaims` | `map<string, string>` | Map of metadata key to claim. Ie: dynamic_metadata_from_claims: issuer: iss email: email When specified, the matching claims from the access token will be emitted as dynamic metadata. Note that metadata keys must be unique, and the claim names must be alphanumeric and use `-` or `_` as separators. Works when the access token is a JWT or when the access token is opaque, in which case the claims will refer to field in the response from the token introspection endpoint. The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`), and the structure of the claim value will be preserved in the metadata struct. |
 
 
@@ -1912,7 +1912,7 @@ Configuration defining an exponential back off strategy.
 ### RetryPolicy
 
  
-The message specifies the retry policy of the external gRPC service when unable to initally connect.
+The message specifies the retry policy of the external gRPC service when unable to initially connect.
 
 ```yaml
 "numRetries": .google.protobuf.UInt32Value
@@ -2350,7 +2350,7 @@ Fields for private key JWT Client Authentication.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `signingKey` | `string` | Signing key for the JWT used for client authentication. |
-| `validFor` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Amount of time for which the JWT is valid. No maximmum is enforced, but different IDPs may impose limits on how far in the future the expiration time is allowed to be. Defaults in 5s in front end, but expected to be set explictly here. |
+| `validFor` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Amount of time for which the JWT is valid. No maximum is enforced, but different IDPs may impose limits on how far in the future the expiration time is allowed to be. Defaults in 5s in front end, but expected to be set explicitly here. |
 
 
 
@@ -2434,7 +2434,7 @@ No-op, represents default OIDC behavior
 
  
 For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
-This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
+This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
 
 ```yaml
 "clientId": string
@@ -2448,7 +2448,7 @@ This way, you can enable distibuted claims and caching for when users are member
 | ----- | ---- | ----------- | 
 | `clientId` | `string` | The client ID for the ExtAuthService app that is registered in MS Entra, to access the Microsoft Graph API to retrieve distributed claims. This app is NOT the app that you want to configure external auth for. |
 | `tenantId` | `string` | The tenant ID represents the MS Entra organization ID where the ExtAuthService app is registered. This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`, depending on how your Azure account is provisioned. |
-| `clientSecret` | `string` | The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API. |
+| `clientSecret` | `string` | The client secret of the ExtAuthService app that is registered with MS Entra to communicate with the MS Graph API. |
 | `claimsCachingOptions` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) | Redis connection details to cache MS Entera claims. This way, you avoid performance issues of accessing the Microsoft Graph API too many times. Note that this setting does NOT turn on Redis caching for the user session. To turn on Redis user session caching, use the `userSessionConfig` field. |
 
 
@@ -2489,12 +2489,12 @@ For the moment this is just path, but we may want to configure things like iss/s
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `introspectionUrl` | `string` | The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint. If provided, the (opaque) access token provided or received from the oauth authorization endpoint will be validated against this endpoint, or locally cached responses for this access token. This field is deprecated as it does not support authenticated introspection requests. Only one of `introspectionUrl`, `jwt`, or `introspection` can be set. |
+| `introspectionUrl` | `string` | The URL for the [OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662) endpoint. If provided, the (opaque) access token provided or received from the oauth authorization endpoint will be validated against this endpoint, or locally cached responses for this access token. This field is deprecated as it does not support authenticated introspection requests. Only one of `introspectionUrl`, `jwt`, or `introspection` can be set. |
 | `jwt` | [.enterprise.gloo.solo.io.ExtAuthConfig.AccessTokenValidationConfig.JwtValidation](../extauth.proto.sk/#jwtvalidation) | Validate access tokens that conform to the [JSON Web Token (JWT)](https://datatracker.ietf.org/doc/rfc7662/) specification. Only one of `jwt`, `introspectionUrl`, or `introspection` can be set. |
-| `introspection` | [.enterprise.gloo.solo.io.ExtAuthConfig.AccessTokenValidationConfig.IntrospectionValidation](../extauth.proto.sk/#introspectionvalidation) | Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) specification. Only one of `introspection`, `introspectionUrl`, or `jwt` can be set. |
+| `introspection` | [.enterprise.gloo.solo.io.ExtAuthConfig.AccessTokenValidationConfig.IntrospectionValidation](../extauth.proto.sk/#introspectionvalidation) | Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated [OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662) specification. Only one of `introspection`, `introspectionUrl`, or `jwt` can be set. |
 | `userinfoUrl` | `string` | The URL for the OIDC userinfo endpoint. If provided, the (opaque) access token provided or received from the oauth endpoint will be queried and the userinfo response (or cached response) will be added to the `AuthorizationRequest` state under the "introspection" key. This can be useful to leverage the userinfo response in, for example, an external auth server plugin. |
 | `cacheTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | How long the token introspection and userinfo endpoint response for a specific access token should be kept in the in-memory cache. The result will be invalidated at this timeout, or at "exp" time from the introspection result, whichever comes sooner. If omitted, defaults to 10 minutes. If zero, then no caching will be done. |
-| `requiredScopes` | [.enterprise.gloo.solo.io.ExtAuthConfig.AccessTokenValidationConfig.ScopeList](../extauth.proto.sk/#scopelist) | Require access token to have all of the scopes in the given list. This configuration applies to both opaque and JWT tokens. In the case of opaque tokens, this will check the scopes returned in the "scope" member of introspection response (as described in [Section 2.2 of RFC7662](https://tools.ietf.org/html/rfc7662#section-2.2). In case of JWTs the scopes to be validated are expected to be contained in the "scope" claim of the token in the form of a space-separated string. Omitting this field means that scope validation will be skipped. |
+| `requiredScopes` | [.enterprise.gloo.solo.io.ExtAuthConfig.AccessTokenValidationConfig.ScopeList](../extauth.proto.sk/#scopelist) | Require access token to have all of the scopes in the given list. This configuration applies to both opaque and JWT tokens. In the case of opaque tokens, this will check the scopes returned in the "scope" member of introspection response (as described in [Section 2.2 of RFC7662](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2). In case of JWTs the scopes to be validated are expected to be contained in the "scope" claim of the token in the form of a space-separated string. Omitting this field means that scope validation will be skipped. |
 
 
 
@@ -2506,12 +2506,12 @@ For the moment this is just path, but we may want to configure things like iss/s
 Defines how JSON Web Token (JWT) access tokens are validated.
 
 Tokens are validated using a JSON Web Key Set (as defined in
-[Section 5 of RFC7517](https://tools.ietf.org/html/rfc7517#section-5)),
+[Section 5 of RFC7517](https://datatracker.ietf.org/doc/html/rfc7517#section-5)),
 which can be either inlined in the configuration or fetched from a remote location via HTTP.
 Any keys in the JWKS that are not intended for signature verification (i.e. whose
-["use" parameter](https://tools.ietf.org/html/rfc7517#section-4.2) is not "sig")
+["use" parameter](https://datatracker.ietf.org/doc/html/rfc7517#section-4.2) is not "sig")
 will be ignored by the system, as will keys that do not specify a
-["kid" (Key ID) parameter](https://tools.ietf.org/html/rfc7517#section-4.2).
+["kid" (Key ID) parameter](https://datatracker.ietf.org/doc/html/rfc7517#section-4.2).
 
 The JWT to be validated must define non-empty "kid" and "alg" headers. The "kid" header
 determines which key in the JWKS will be used to verify the signature of the token;
@@ -2581,7 +2581,7 @@ Represents a locally available JWKS.
 
  
 Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated
-[OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662)
+[OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662)
 
 If the token introspection url requires client authentication, both the client_id and client_secret
 are required. If only one is provided, the config will be rejected.
@@ -2597,10 +2597,10 @@ These values will be encoded in a basic auth header in order to authenticate the
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `introspectionUrl` | `string` | The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint. If provided, the (opaque) access token provided or received from the oauth authorization endpoint will be validated against this endpoint, or locally cached responses for this access token. |
+| `introspectionUrl` | `string` | The URL for the [OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662) endpoint. If provided, the (opaque) access token provided or received from the oauth authorization endpoint will be validated against this endpoint, or locally cached responses for this access token. |
 | `clientId` | `string` | Your client id as registered with the issuer. Optional: Use if the token introspection url requires client authentication. |
 | `clientSecret` | `string` | Your client secret as registered with the issuer. Optional: Use if the token introspection url requires client authentication. |
-| `userIdAttributeName` | `string` | The name of the [introspection response](https://tools.ietf.org/html/rfc7662#section-2.2) attribute that contains the ID of the resource owner (e.g. `sub`, `username`). If specified, the external auth server will use the value of the attribute as the identifier of the authenticated user and add it to the request headers and/or dynamic metadata (depending on how the server is configured); if the field is set and the attribute cannot be found, the request will be denied. This field is optional and by default the server will not try to derive the user ID. |
+| `userIdAttributeName` | `string` | The name of the [introspection response](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2) attribute that contains the ID of the resource owner (e.g. `sub`, `username`). If specified, the external auth server will use the value of the attribute as the identifier of the authenticated user and add it to the request headers and/or dynamic metadata (depending on how the server is configured); if the field is set and the attribute cannot be found, the request will be denied. This field is optional and by default the server will not try to derive the user ID. |
 
 
 
@@ -2680,7 +2680,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `oidcAuthorizationCode` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig](../extauth.proto.sk/#oidcauthorizationcodeconfig) | provide issuer location and let gloo handle OIDC flow for you. requests authorized by validating the contents of ID token. can also authorize the access token if configured. Only one of `oidcAuthorizationCode`, `accessTokenValidationConfig`, or `oauth2Config` can be set. |
-| `accessTokenValidationConfig` | [.enterprise.gloo.solo.io.ExtAuthConfig.AccessTokenValidationConfig](../extauth.proto.sk/#accesstokenvalidationconfig) | provide the access token on the request and let gloo handle authorization. according to https://tools.ietf.org/html/rfc6750 you can pass tokens through: - form-encoded body parameter. recommended, more likely to appear. e.g.: Authorization: Bearer mytoken123 - URI query parameter e.g. access_token=mytoken123 - and (preferably) secure cookies. Only one of `accessTokenValidationConfig`, `oidcAuthorizationCode`, or `oauth2Config` can be set. |
+| `accessTokenValidationConfig` | [.enterprise.gloo.solo.io.ExtAuthConfig.AccessTokenValidationConfig](../extauth.proto.sk/#accesstokenvalidationconfig) | provide the access token on the request and let gloo handle authorization. according to https://datatracker.ietf.org/doc/html/rfc6750 you can pass tokens through: - form-encoded body parameter. recommended, more likely to appear. e.g.: Authorization: Bearer mytoken123 - URI query parameter e.g. access_token=mytoken123 - and (preferably) secure cookies. Only one of `accessTokenValidationConfig`, `oidcAuthorizationCode`, or `oauth2Config` can be set. |
 | `oauth2Config` | [.enterprise.gloo.solo.io.ExtAuthConfig.PlainOAuth2Config](../extauth.proto.sk/#plainoauth2config) | Enterprise-Only: THIS FEATURE IS IN TECH PREVIEW. APIs are versioned as alpha and subject to change. provide issuer location and let Gloo handle Oauth2 flow for you. requests authorized by validating the contents of access token. Prefer to use OIDC for better security. Only one of `oauth2Config`, `oidcAuthorizationCode`, or `accessTokenValidationConfig` can be set. |
 
 
