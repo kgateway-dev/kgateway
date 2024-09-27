@@ -43,6 +43,7 @@ func (s *testingSuite) TearDownSuite() {
 
 func (s *testingSuite) BeforeTest(suiteName, testName string) {
 	err := s.TestHelper.InstallGloo(s.Ctx, 600*time.Second, helper.WithExtraArgs([]string{
+		"--values", s.TestInstallation.Metadata.ProfileValuesManifestFile,
 		"--values", s.TestInstallation.Metadata.ValuesManifestFile,
 	}...),
 		helper.WithCRDs(filepath.Join(s.TestHelper.RootDir, "install", "helm", "gloo", "crds")))
