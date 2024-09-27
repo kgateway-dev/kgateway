@@ -733,8 +733,6 @@ Data store from which to cache the request/response pairs
 | ----- | ----------- | 
 | `SSN` | Default REGEX for Social Security Numbers |
 | `CREDIT_CARD` | Default REGEX for Credit Card Numbers |
-| `EMAIL` | Default REGEX for Email Addresses |
-| `PHONE_NUMBER` | Default REGEX for Phone Numbers |
 
 
 

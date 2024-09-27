@@ -516,10 +516,6 @@ message AIPromptGaurd {
       SSN = 0;
       // Default REGEX for Credit Card Numbers
       CREDIT_CARD = 1;
-      // Default REGEX for Email Addresses
-      EMAIL = 2;
-      // Default REGEX for Phone Numbers
-      PHONE_NUMBER = 3;
     }
     // A list of Regex patterns to match against the response.
     // All matches will be masked before being sent back to the client.
