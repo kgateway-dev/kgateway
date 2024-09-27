@@ -82,6 +82,11 @@ type KubernetesProxyConfig struct {
 	// +kubebuilder:validation:Optional
 	Service *Service `json:"service,omitempty"`
 
+	// Configuration for the Kubernetes ServiceAccount used by the Envoy pod.
+	//
+	// +kubebuilder:validation:Optional
+	ServiceAccount *ServiceAccount `json:"serviceAccount,omitempty"`
+
 	// Configuration for the Istio integration.
 	//
 	// +kubebuilder:validation:Optional
@@ -134,6 +139,13 @@ func (in *KubernetesProxyConfig) GetService() *Service {
 		return nil
 	}
 	return in.Service
+}
+
+func (in *KubernetesProxyConfig) GetServiceAccount() *ServiceAccount {
+	if in == nil {
+		return nil
+	}
+	return in.ServiceAccount
 }
 
 func (in *KubernetesProxyConfig) GetIstio() *IstioIntegration {

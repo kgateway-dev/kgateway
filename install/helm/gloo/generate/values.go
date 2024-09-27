@@ -327,6 +327,7 @@ type GatewayParameters struct {
 	EnvoyContainer  *EnvoyContainer            `json:"envoyContainer,omitempty" desc:"Config for the Envoy container of the proxy deployment."`
 	ProxyDeployment *ProvisionedDeployment     `json:"proxyDeployment,omitempty" desc:"Options specific to the deployment of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedDeployment\" for which are configurable via helm."`
 	Service         *ProvisionedService        `json:"service,omitempty" desc:"Options specific to the service of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedService\" for which are configurable via helm."`
+	ServiceAccount  *ProvisionedServiceAccount `json:"serviceAccount,omitempty" desc:"Options specific to the ServiceAccount of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedServiceAccount\" for which are configurable via helm."`
 	SdsContainer    *GatewayParamsSdsContainer `json:"sdsContainer,omitempty" desc:"Config used to manage the Gloo Gateway SDS container."`
 	Istio           *Istio                     `json:"istio,omitempty" desc:"Configs used to manage Istio integration."`
 	Stats           *GatewayParamsStatsConfig  `json:"stats,omitempty" desc:"Config used to manage the stats endpoints exposed on the deployed proxies"`
@@ -353,6 +354,11 @@ type ProvisionedDeployment struct {
 
 type ProvisionedService struct {
 	Type *string `json:"type,omitempty" desc:"K8s service type. If set to null, a default of LoadBalancer will be imposed."`
+}
+
+type ProvisionedServiceAccount struct {
+	ExtraLabels      map[string]string `json:"extraLabels,omitempty" desc:"Extra labels to add to the service account."`
+	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty" desc:"Extra annotations to add to the service account."`
 }
 
 type SecurityOpts struct {
