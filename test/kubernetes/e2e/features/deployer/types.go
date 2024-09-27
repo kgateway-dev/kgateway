@@ -23,8 +23,9 @@ var (
 		Name:      "gloo-proxy-gw",
 		Namespace: "default",
 	}
-	proxyDeployment = &appsv1.Deployment{ObjectMeta: glooProxyObjectMeta}
-	proxyService    = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
+	proxyDeployment     = &appsv1.Deployment{ObjectMeta: glooProxyObjectMeta}
+	proxyService        = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
+	proxyServiceAccount = &corev1.ServiceAccount{ObjectMeta: glooProxyObjectMeta}
 
 	gwParams = &v1alpha1.GatewayParameters{
 		ObjectMeta: metav1.ObjectMeta{

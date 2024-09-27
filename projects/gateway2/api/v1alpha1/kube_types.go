@@ -126,6 +126,32 @@ func (in *Service) GetExtraAnnotations() map[string]string {
 	return in.ExtraAnnotations
 }
 
+type ServiceAccount struct {
+	// Additional labels to add to the ServiceAccount object metadata.
+	//
+	// +kubebuilder:validation:Optional
+	ExtraLabels map[string]string `json:"extraLabels,omitempty"`
+
+	// Additional annotations to add to the ServiceAccount object metadata.
+	//
+	// +kubebuilder:validation:Optional
+	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
+}
+
+func (in *ServiceAccount) GetExtraLabels() map[string]string {
+	if in == nil {
+		return nil
+	}
+	return in.ExtraLabels
+}
+
+func (in *ServiceAccount) GetExtraAnnotations() map[string]string {
+	if in == nil {
+		return nil
+	}
+	return in.ExtraAnnotations
+}
+
 // Configuration for a Kubernetes Pod template.
 type Pod struct {
 	// Additional labels to add to the Pod object metadata.
