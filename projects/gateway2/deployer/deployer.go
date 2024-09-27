@@ -280,6 +280,7 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	podConfig := kubeProxyConfig.GetPodTemplate()
 	envoyContainerConfig := kubeProxyConfig.GetEnvoyContainer()
 	svcConfig := kubeProxyConfig.GetService()
+	svcAccountConfig := kubeProxyConfig.GetServiceAccount()
 	istioConfig := kubeProxyConfig.GetIstio()
 
 	sdsContainerConfig := kubeProxyConfig.GetSdsContainer()
@@ -303,6 +304,8 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 
 	// service values
 	gateway.Service = getServiceValues(svcConfig)
+	// serviceaccount values
+	gateway.ServiceAccount = getServiceAccountValues(svcAccountConfig)
 	// pod template values
 	gateway.ExtraPodAnnotations = podConfig.GetExtraAnnotations()
 	gateway.ExtraPodLabels = podConfig.GetExtraLabels()

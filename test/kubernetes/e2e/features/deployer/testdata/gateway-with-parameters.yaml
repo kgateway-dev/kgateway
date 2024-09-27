@@ -27,6 +27,11 @@ spec:
         pod-label-key: pod-label-val
       extraAnnotations:
         pod-anno-key: pod-anno-val
+    serviceAccount:
+      extraLabels:
+        sa-label-key: sa-label-val
+      extraAnnotations:
+        sa-anno-key: sa-anno-val
     envoyContainer:
       bootstrap:
         logLevel: debug
