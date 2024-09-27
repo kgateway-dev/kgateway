@@ -1388,63 +1388,14 @@ func (m *AIPromptEnrichment_Message) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *AIPromptGaurd_Request) Equal(that interface{}) bool {
+func (m *AIPromptGaurd_Regex) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*AIPromptGaurd_Request)
+	target, ok := that.(*AIPromptGaurd_Regex)
 	if !ok {
-		that2, ok := that.(AIPromptGaurd_Request)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if len(m.GetMatches()) != len(target.GetMatches()) {
-		return false
-	}
-	for idx, v := range m.GetMatches() {
-
-		if strings.Compare(v, target.GetMatches()[idx]) != 0 {
-			return false
-		}
-
-	}
-
-	if strings.Compare(m.GetCustomResponseMessage(), target.GetCustomResponseMessage()) != 0 {
-		return false
-	}
-
-	if h, ok := interface{}(m.GetPiiDetection()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetPiiDetection()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetPiiDetection(), target.GetPiiDetection()) {
-			return false
-		}
-	}
-
-	return true
-}
-
-// Equal function
-func (m *AIPromptGaurd_Response) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*AIPromptGaurd_Response)
-	if !ok {
-		that2, ok := that.(AIPromptGaurd_Response)
+		that2, ok := that.(AIPromptGaurd_Regex)
 		if ok {
 			target = &that2
 		} else {
@@ -1483,6 +1434,98 @@ func (m *AIPromptGaurd_Response) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *AIPromptGaurd_Request) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AIPromptGaurd_Request)
+	if !ok {
+		that2, ok := that.(AIPromptGaurd_Request)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetRegex()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetRegex()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetRegex(), target.GetRegex()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetPiiDetection()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPiiDetection()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPiiDetection(), target.GetPiiDetection()) {
+			return false
+		}
+	}
+
+	if strings.Compare(m.GetCustomResponseMessage(), target.GetCustomResponseMessage()) != 0 {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AIPromptGaurd_Response) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AIPromptGaurd_Response)
+	if !ok {
+		that2, ok := that.(AIPromptGaurd_Response)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetRegex()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetRegex()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetRegex(), target.GetRegex()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetPiiDetection()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPiiDetection()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPiiDetection(), target.GetPiiDetection()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
 func (m *AIPromptGaurd_Request_PIIDetection) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -1504,6 +1547,30 @@ func (m *AIPromptGaurd_Request_PIIDetection) Equal(that interface{}) bool {
 	}
 
 	if m.GetAction() != target.GetAction() {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AIPromptGaurd_Response_PIIDetection) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AIPromptGaurd_Response_PIIDetection)
+	if !ok {
+		that2, ok := that.(AIPromptGaurd_Response_PIIDetection)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
 		return false
 	}
 

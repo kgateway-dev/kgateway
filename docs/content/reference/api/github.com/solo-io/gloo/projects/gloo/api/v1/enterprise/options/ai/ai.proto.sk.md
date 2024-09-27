@@ -39,11 +39,13 @@ weight: 5
 - [AIPromptEnrichment](#aipromptenrichment)
 - [Message](#message)
 - [AIPromptGaurd](#aipromptgaurd)
+- [Regex](#regex)
+- [BuiltIn](#builtin)
 - [Request](#request)
 - [PIIDetection](#piidetection)
 - [Action](#action)
 - [Response](#response)
-- [BuiltIn](#builtin)
+- [PIIDetection](#piidetection)
   
 
 
@@ -704,22 +706,56 @@ Data store from which to cache the request/response pairs
 
 
 ---
-### Request
+### Regex
 
 
 
 ```yaml
 "matches": []string
-"customResponseMessage": string
-"piiDetection": .ai.options.gloo.solo.io.AIPromptGaurd.Request.PIIDetection
+"builtins": []ai.options.gloo.solo.io.AIPromptGaurd.Regex.BuiltIn
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `matches` | `[]string` | A list of Regex patterns to match against the prompt. Each one will be checked against the prompt and if any match the request will be rejected. |
-| `customResponseMessage` | `string` | Custom response message to send back to the client. If not specified, the following default message will be used: "The request was rejected due to inappropriate content". |
+| `matches` | `[]string` | A list of Regex patterns to match against the response. All matches will be masked before being sent back to the client. matches and builtins are additive. |
+| `builtins` | [[]ai.options.gloo.solo.io.AIPromptGaurd.Regex.BuiltIn](../ai.proto.sk/#builtin) | A list of built-in regexes to mask in the response. matches and builtins are additive. |
+
+
+
+
+---
+### BuiltIn
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `SSN` | Default REGEX for Social Security Numbers |
+| `CREDIT_CARD` | Default REGEX for Credit Card Numbers |
+| `EMAIL` | Default REGEX for Email Addresses |
+| `PHONE_NUMBER` | Default REGEX for Phone Numbers |
+
+
+
+
+---
+### Request
+
+
+
+```yaml
+"regex": .ai.options.gloo.solo.io.AIPromptGaurd.Regex
+"piiDetection": .ai.options.gloo.solo.io.AIPromptGaurd.Request.PIIDetection
+"customResponseMessage": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `regex` | [.ai.options.gloo.solo.io.AIPromptGaurd.Regex](../ai.proto.sk/#regex) |  |
 | `piiDetection` | [.ai.options.gloo.solo.io.AIPromptGaurd.Request.PIIDetection](../ai.proto.sk/#piidetection) |  |
+| `customResponseMessage` | `string` | Custom response message to send back to the client. If not specified, the following default message will be used: "The request was rejected due to inappropriate content". |
 
 
 
@@ -761,30 +797,30 @@ Data store from which to cache the request/response pairs
 
 
 ```yaml
-"matches": []string
-"builtins": []ai.options.gloo.solo.io.AIPromptGaurd.Response.BuiltIn
+"regex": .ai.options.gloo.solo.io.AIPromptGaurd.Regex
+"piiDetection": .ai.options.gloo.solo.io.AIPromptGaurd.Response.PIIDetection
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `matches` | `[]string` | A list of Regex patterns to match against the response. All matches will be masked before being sent back to the client. matches and builtins are additive. |
-| `builtins` | [[]ai.options.gloo.solo.io.AIPromptGaurd.Response.BuiltIn](../ai.proto.sk/#builtin) | A list of built-in regexes to mask in the response. matches and builtins are additive. |
+| `regex` | [.ai.options.gloo.solo.io.AIPromptGaurd.Regex](../ai.proto.sk/#regex) |  |
+| `piiDetection` | [.ai.options.gloo.solo.io.AIPromptGaurd.Response.PIIDetection](../ai.proto.sk/#piidetection) |  |
 
 
 
 
 ---
-### BuiltIn
+### PIIDetection
 
 
 
-| Name | Description |
-| ----- | ----------- | 
-| `SSN` | Default REGEX for Social Security Numbers |
-| `CREDIT_CARD` | Default REGEX for Credit Card Numbers |
-| `EMAIL` | Default REGEX for Email Addresses |
-| `PHONE_NUMBER` | Default REGEX for Phone Numbers |
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
 
 
 

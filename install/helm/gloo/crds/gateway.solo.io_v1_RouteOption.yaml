@@ -73,28 +73,41 @@ spec:
                             properties:
                               customResponseMessage:
                                 type: string
-                              matches:
-                                items:
-                                  type: string
-                                type: array
                               piiDetection:
                                 properties:
                                   action:
                                     type: string
                                     x-kubernetes-int-or-string: true
                                 type: object
+                              regex:
+                                properties:
+                                  builtins:
+                                    items:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    type: array
+                                  matches:
+                                    items:
+                                      type: string
+                                    type: array
+                                type: object
                             type: object
                           response:
                             properties:
-                              builtins:
-                                items:
-                                  type: string
-                                  x-kubernetes-int-or-string: true
-                                type: array
-                              matches:
-                                items:
-                                  type: string
-                                type: array
+                              piiDetection:
+                                type: object
+                              regex:
+                                properties:
+                                  builtins:
+                                    items:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    type: array
+                                  matches:
+                                    items:
+                                      type: string
+                                    type: array
+                                type: object
                             type: object
                         type: object
                       rag:

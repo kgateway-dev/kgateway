@@ -509,15 +509,30 @@ message AIPromptEnrichment {
 }
 
 message AIPromptGaurd {
-  message Request {
-    // A list of Regex patterns to match against the prompt.
-    // Each one will be checked against the prompt and if any match
-    // the request will be rejected.
+
+  message Regex {
+    enum BuiltIn {
+      // Default REGEX for Social Security Numbers
+      SSN = 0;
+      // Default REGEX for Credit Card Numbers
+      CREDIT_CARD = 1;
+      // Default REGEX for Email Addresses
+      EMAIL = 2;
+      // Default REGEX for Phone Numbers
+      PHONE_NUMBER = 3;
+    }
+    // A list of Regex patterns to match against the response.
+    // All matches will be masked before being sent back to the client.
+    // matches and builtins are additive.
     repeated string matches = 1;
-    // Custom response message to send back to the client.
-    // If not specified, the following default message will be used:
-    // "The request was rejected due to inappropriate content"
-    string custom_response_message = 2;
+    // A list of built-in regexes to mask in the response.
+    // matches and builtins are additive.
+    repeated BuiltIn builtins = 2;
+  }
+
+
+  message Request {
+    Regex regex = 1;
 
     message PIIDetection {
       enum Action {
@@ -532,30 +547,22 @@ message AIPromptGaurd {
       Action action = 1;
     }
 
-    PIIDetection pii_detection = 3;
+    PIIDetection pii_detection = 2;
+    // Custom response message to send back to the client.
+    // If not specified, the following default message will be used:
+    // "The request was rejected due to inappropriate content"
+    string custom_response_message = 3;
   }
 
   message Response {
-      enum BuiltIn {
-        // Default REGEX for Social Security Numbers
-        SSN = 0;
-        // Default REGEX for Credit Card Numbers
-        CREDIT_CARD = 1;
-        // Default REGEX for Email Addresses
-        EMAIL = 2;
-        // Default REGEX for Phone Numbers
-        PHONE_NUMBER = 3;
-      }
-      // A list of Regex patterns to match against the response.
-      // All matches will be masked before being sent back to the client.
-      // matches and builtins are additive.
-      repeated string matches = 1;
-      // A list of built-in regexes to mask in the response.
-      // matches and builtins are additive.
-      repeated BuiltIn builtins = 2;
+    Regex regex = 1;
+
+    message PIIDetection {}
+
+    PIIDetection pii_detection = 2;
   }
   // Guards for the prompt request
-  Request request = 2;
+  Request request = 1;
   // Guards for the LLM response
-  Response response = 3;
+  Response response = 2;
 }

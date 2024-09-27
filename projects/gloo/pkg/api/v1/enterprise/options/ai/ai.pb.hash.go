@@ -1577,6 +1577,43 @@ func (m *AIPromptEnrichment_Message) Hash(hasher hash.Hash64) (uint64, error) {
 // Deprecated: due to hashing implemention only using field values. The omission
 // of the field name in the hash calculation can lead to hash collisions.
 // Prefer the HashUnique function instead.
+func (m *AIPromptGaurd_Regex) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.AIPromptGaurd_Regex")); err != nil {
+		return 0, err
+	}
+
+	for _, v := range m.GetMatches() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
+	}
+
+	for _, v := range m.GetBuiltins() {
+
+		err = binary.Write(hasher, binary.LittleEndian, v)
+		if err != nil {
+			return 0, err
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+//
+// Deprecated: due to hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
+// Prefer the HashUnique function instead.
 func (m *AIPromptGaurd_Request) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -1589,16 +1626,88 @@ func (m *AIPromptGaurd_Request) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	for _, v := range m.GetMatches() {
-
-		if _, err = hasher.Write([]byte(v)); err != nil {
+	if h, ok := interface{}(m.GetRegex()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Regex")); err != nil {
 			return 0, err
 		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetRegex(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Regex")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
 
+	if h, ok := interface{}(m.GetPiiDetection()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("PiiDetection")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetPiiDetection(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("PiiDetection")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	if _, err = hasher.Write([]byte(m.GetCustomResponseMessage())); err != nil {
 		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+//
+// Deprecated: due to hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
+// Prefer the HashUnique function instead.
+func (m *AIPromptGaurd_Response) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.AIPromptGaurd_Response")); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetRegex()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Regex")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetRegex(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Regex")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	if h, ok := interface{}(m.GetPiiDetection()).(safe_hasher.SafeHasher); ok {
@@ -1629,43 +1738,6 @@ func (m *AIPromptGaurd_Request) Hash(hasher hash.Hash64) (uint64, error) {
 // Deprecated: due to hashing implemention only using field values. The omission
 // of the field name in the hash calculation can lead to hash collisions.
 // Prefer the HashUnique function instead.
-func (m *AIPromptGaurd_Response) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.AIPromptGaurd_Response")); err != nil {
-		return 0, err
-	}
-
-	for _, v := range m.GetMatches() {
-
-		if _, err = hasher.Write([]byte(v)); err != nil {
-			return 0, err
-		}
-
-	}
-
-	for _, v := range m.GetBuiltins() {
-
-		err = binary.Write(hasher, binary.LittleEndian, v)
-		if err != nil {
-			return 0, err
-		}
-
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// Hash function
-//
-// Deprecated: due to hashing implemention only using field values. The omission
-// of the field name in the hash calculation can lead to hash collisions.
-// Prefer the HashUnique function instead.
 func (m *AIPromptGaurd_Request_PIIDetection) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -1680,6 +1752,26 @@ func (m *AIPromptGaurd_Request_PIIDetection) Hash(hasher hash.Hash64) (uint64, e
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetAction())
 	if err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+//
+// Deprecated: due to hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
+// Prefer the HashUnique function instead.
+func (m *AIPromptGaurd_Response_PIIDetection) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.AIPromptGaurd_Response_PIIDetection")); err != nil {
 		return 0, err
 	}
 

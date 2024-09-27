@@ -118,6 +118,62 @@ func (SemanticCache_Mode) EnumDescriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_rawDescGZIP(), []int{6, 0}
 }
 
+type AIPromptGaurd_Regex_BuiltIn int32
+
+const (
+	// Default REGEX for Social Security Numbers
+	AIPromptGaurd_Regex_SSN AIPromptGaurd_Regex_BuiltIn = 0
+	// Default REGEX for Credit Card Numbers
+	AIPromptGaurd_Regex_CREDIT_CARD AIPromptGaurd_Regex_BuiltIn = 1
+	// Default REGEX for Email Addresses
+	AIPromptGaurd_Regex_EMAIL AIPromptGaurd_Regex_BuiltIn = 2
+	// Default REGEX for Phone Numbers
+	AIPromptGaurd_Regex_PHONE_NUMBER AIPromptGaurd_Regex_BuiltIn = 3
+)
+
+// Enum value maps for AIPromptGaurd_Regex_BuiltIn.
+var (
+	AIPromptGaurd_Regex_BuiltIn_name = map[int32]string{
+		0: "SSN",
+		1: "CREDIT_CARD",
+		2: "EMAIL",
+		3: "PHONE_NUMBER",
+	}
+	AIPromptGaurd_Regex_BuiltIn_value = map[string]int32{
+		"SSN":          0,
+		"CREDIT_CARD":  1,
+		"EMAIL":        2,
+		"PHONE_NUMBER": 3,
+	}
+)
+
+func (x AIPromptGaurd_Regex_BuiltIn) Enum() *AIPromptGaurd_Regex_BuiltIn {
+	p := new(AIPromptGaurd_Regex_BuiltIn)
+	*p = x
+	return p
+}
+
+func (x AIPromptGaurd_Regex_BuiltIn) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AIPromptGaurd_Regex_BuiltIn) Descriptor() protoreflect.EnumDescriptor {
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_enumTypes[2].Descriptor()
+}
+
+func (AIPromptGaurd_Regex_BuiltIn) Type() protoreflect.EnumType {
+	return &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_enumTypes[2]
+}
+
+func (x AIPromptGaurd_Regex_BuiltIn) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AIPromptGaurd_Regex_BuiltIn.Descriptor instead.
+func (AIPromptGaurd_Regex_BuiltIn) EnumDescriptor() ([]byte, []int) {
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_rawDescGZIP(), []int{10, 0, 0}
+}
+
 type AIPromptGaurd_Request_PIIDetection_Action int32
 
 const (
@@ -154,11 +210,11 @@ func (x AIPromptGaurd_Request_PIIDetection_Action) String() string {
 }
 
 func (AIPromptGaurd_Request_PIIDetection_Action) Descriptor() protoreflect.EnumDescriptor {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_enumTypes[2].Descriptor()
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_enumTypes[3].Descriptor()
 }
 
 func (AIPromptGaurd_Request_PIIDetection_Action) Type() protoreflect.EnumType {
-	return &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_enumTypes[2]
+	return &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_enumTypes[3]
 }
 
 func (x AIPromptGaurd_Request_PIIDetection_Action) Number() protoreflect.EnumNumber {
@@ -167,63 +223,7 @@ func (x AIPromptGaurd_Request_PIIDetection_Action) Number() protoreflect.EnumNum
 
 // Deprecated: Use AIPromptGaurd_Request_PIIDetection_Action.Descriptor instead.
 func (AIPromptGaurd_Request_PIIDetection_Action) EnumDescriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_rawDescGZIP(), []int{10, 0, 0, 0}
-}
-
-type AIPromptGaurd_Response_BuiltIn int32
-
-const (
-	// Default REGEX for Social Security Numbers
-	AIPromptGaurd_Response_SSN AIPromptGaurd_Response_BuiltIn = 0
-	// Default REGEX for Credit Card Numbers
-	AIPromptGaurd_Response_CREDIT_CARD AIPromptGaurd_Response_BuiltIn = 1
-	// Default REGEX for Email Addresses
-	AIPromptGaurd_Response_EMAIL AIPromptGaurd_Response_BuiltIn = 2
-	// Default REGEX for Phone Numbers
-	AIPromptGaurd_Response_PHONE_NUMBER AIPromptGaurd_Response_BuiltIn = 3
-)
-
-// Enum value maps for AIPromptGaurd_Response_BuiltIn.
-var (
-	AIPromptGaurd_Response_BuiltIn_name = map[int32]string{
-		0: "SSN",
-		1: "CREDIT_CARD",
-		2: "EMAIL",
-		3: "PHONE_NUMBER",
-	}
-	AIPromptGaurd_Response_BuiltIn_value = map[string]int32{
-		"SSN":          0,
-		"CREDIT_CARD":  1,
-		"EMAIL":        2,
-		"PHONE_NUMBER": 3,
-	}
-)
-
-func (x AIPromptGaurd_Response_BuiltIn) Enum() *AIPromptGaurd_Response_BuiltIn {
-	p := new(AIPromptGaurd_Response_BuiltIn)
-	*p = x
-	return p
-}
-
-func (x AIPromptGaurd_Response_BuiltIn) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (AIPromptGaurd_Response_BuiltIn) Descriptor() protoreflect.EnumDescriptor {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_enumTypes[3].Descriptor()
-}
-
-func (AIPromptGaurd_Response_BuiltIn) Type() protoreflect.EnumType {
-	return &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_enumTypes[3]
-}
-
-func (x AIPromptGaurd_Response_BuiltIn) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use AIPromptGaurd_Response_BuiltIn.Descriptor instead.
-func (AIPromptGaurd_Response_BuiltIn) EnumDescriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_rawDescGZIP(), []int{10, 1, 0}
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_rawDescGZIP(), []int{10, 1, 0, 0}
 }
 
 type SingleAuthToken struct {
@@ -1144,9 +1144,9 @@ type AIPromptGaurd struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Guards for the prompt request
-	Request *AIPromptGaurd_Request `protobuf:"bytes,2,opt,name=request,proto3" json:"request,omitempty"`
+	Request *AIPromptGaurd_Request `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
 	// Guards for the LLM response
-	Response *AIPromptGaurd_Response `protobuf:"bytes,3,opt,name=response,proto3" json:"response,omitempty"`
+	Response *AIPromptGaurd_Response `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"`
 }
 
 func (x *AIPromptGaurd) Reset() {
@@ -2328,26 +2328,83 @@ func (x *AIPromptEnrichment_Message) GetContent() string {
 	return ""
 }
 
+type AIPromptGaurd_Regex struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// A list of Regex patterns to match against the response.
+	// All matches will be masked before being sent back to the client.
+	// matches and builtins are additive.
+	Matches []string `protobuf:"bytes,1,rep,name=matches,proto3" json:"matches,omitempty"`
+	// A list of built-in regexes to mask in the response.
+	// matches and builtins are additive.
+	Builtins []AIPromptGaurd_Regex_BuiltIn `protobuf:"varint,2,rep,packed,name=builtins,proto3,enum=ai.options.gloo.solo.io.AIPromptGaurd_Regex_BuiltIn" json:"builtins,omitempty"`
+}
+
+func (x *AIPromptGaurd_Regex) Reset() {
+	*x = AIPromptGaurd_Regex{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[26]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AIPromptGaurd_Regex) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AIPromptGaurd_Regex) ProtoMessage() {}
+
+func (x *AIPromptGaurd_Regex) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[26]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AIPromptGaurd_Regex.ProtoReflect.Descriptor instead.
+func (*AIPromptGaurd_Regex) Descriptor() ([]byte, []int) {
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_rawDescGZIP(), []int{10, 0}
+}
+
+func (x *AIPromptGaurd_Regex) GetMatches() []string {
+	if x != nil {
+		return x.Matches
+	}
+	return nil
+}
+
+func (x *AIPromptGaurd_Regex) GetBuiltins() []AIPromptGaurd_Regex_BuiltIn {
+	if x != nil {
+		return x.Builtins
+	}
+	return nil
+}
+
 type AIPromptGaurd_Request struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// A list of Regex patterns to match against the prompt.
-	// Each one will be checked against the prompt and if any match
-	// the request will be rejected.
-	Matches []string `protobuf:"bytes,1,rep,name=matches,proto3" json:"matches,omitempty"`
+	Regex        *AIPromptGaurd_Regex                `protobuf:"bytes,1,opt,name=regex,proto3" json:"regex,omitempty"`
+	PiiDetection *AIPromptGaurd_Request_PIIDetection `protobuf:"bytes,2,opt,name=pii_detection,json=piiDetection,proto3" json:"pii_detection,omitempty"`
 	// Custom response message to send back to the client.
 	// If not specified, the following default message will be used:
 	// "The request was rejected due to inappropriate content"
-	CustomResponseMessage string                              `protobuf:"bytes,2,opt,name=custom_response_message,json=customResponseMessage,proto3" json:"custom_response_message,omitempty"`
-	PiiDetection          *AIPromptGaurd_Request_PIIDetection `protobuf:"bytes,3,opt,name=pii_detection,json=piiDetection,proto3" json:"pii_detection,omitempty"`
+	CustomResponseMessage string `protobuf:"bytes,3,opt,name=custom_response_message,json=customResponseMessage,proto3" json:"custom_response_message,omitempty"`
 }
 
 func (x *AIPromptGaurd_Request) Reset() {
 	*x = AIPromptGaurd_Request{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[26]
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[27]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2360,7 +2417,7 @@ func (x *AIPromptGaurd_Request) String() string {
 func (*AIPromptGaurd_Request) ProtoMessage() {}
 
 func (x *AIPromptGaurd_Request) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[26]
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[27]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2373,12 +2430,19 @@ func (x *AIPromptGaurd_Request) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AIPromptGaurd_Request.ProtoReflect.Descriptor instead.
 func (*AIPromptGaurd_Request) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_rawDescGZIP(), []int{10, 0}
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_rawDescGZIP(), []int{10, 1}
 }
 
-func (x *AIPromptGaurd_Request) GetMatches() []string {
+func (x *AIPromptGaurd_Request) GetRegex() *AIPromptGaurd_Regex {
 	if x != nil {
-		return x.Matches
+		return x.Regex
+	}
+	return nil
+}
+
+func (x *AIPromptGaurd_Request) GetPiiDetection() *AIPromptGaurd_Request_PIIDetection {
+	if x != nil {
+		return x.PiiDetection
 	}
 	return nil
 }
@@ -2390,31 +2454,19 @@ func (x *AIPromptGaurd_Request) GetCustomResponseMessage() string {
 	return ""
 }
 
-func (x *AIPromptGaurd_Request) GetPiiDetection() *AIPromptGaurd_Request_PIIDetection {
-	if x != nil {
-		return x.PiiDetection
-	}
-	return nil
-}
-
 type AIPromptGaurd_Response struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// A list of Regex patterns to match against the response.
-	// All matches will be masked before being sent back to the client.
-	// matches and builtins are additive.
-	Matches []string `protobuf:"bytes,1,rep,name=matches,proto3" json:"matches,omitempty"`
-	// A list of built-in regexes to mask in the response.
-	// matches and builtins are additive.
-	Builtins []AIPromptGaurd_Response_BuiltIn `protobuf:"varint,2,rep,packed,name=builtins,proto3,enum=ai.options.gloo.solo.io.AIPromptGaurd_Response_BuiltIn" json:"builtins,omitempty"`
+	Regex        *AIPromptGaurd_Regex                 `protobuf:"bytes,1,opt,name=regex,proto3" json:"regex,omitempty"`
+	PiiDetection *AIPromptGaurd_Response_PIIDetection `protobuf:"bytes,2,opt,name=pii_detection,json=piiDetection,proto3" json:"pii_detection,omitempty"`
 }
 
 func (x *AIPromptGaurd_Response) Reset() {
 	*x = AIPromptGaurd_Response{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[27]
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[28]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2427,7 +2479,7 @@ func (x *AIPromptGaurd_Response) String() string {
 func (*AIPromptGaurd_Response) ProtoMessage() {}
 
 func (x *AIPromptGaurd_Response) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[27]
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[28]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2440,19 +2492,19 @@ func (x *AIPromptGaurd_Response) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AIPromptGaurd_Response.ProtoReflect.Descriptor instead.
 func (*AIPromptGaurd_Response) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_rawDescGZIP(), []int{10, 1}
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_rawDescGZIP(), []int{10, 2}
 }
 
-func (x *AIPromptGaurd_Response) GetMatches() []string {
+func (x *AIPromptGaurd_Response) GetRegex() *AIPromptGaurd_Regex {
 	if x != nil {
-		return x.Matches
+		return x.Regex
 	}
 	return nil
 }
 
-func (x *AIPromptGaurd_Response) GetBuiltins() []AIPromptGaurd_Response_BuiltIn {
+func (x *AIPromptGaurd_Response) GetPiiDetection() *AIPromptGaurd_Response_PIIDetection {
 	if x != nil {
-		return x.Builtins
+		return x.PiiDetection
 	}
 	return nil
 }
@@ -2468,7 +2520,7 @@ type AIPromptGaurd_Request_PIIDetection struct {
 func (x *AIPromptGaurd_Request_PIIDetection) Reset() {
 	*x = AIPromptGaurd_Request_PIIDetection{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[28]
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[29]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2481,7 +2533,7 @@ func (x *AIPromptGaurd_Request_PIIDetection) String() string {
 func (*AIPromptGaurd_Request_PIIDetection) ProtoMessage() {}
 
 func (x *AIPromptGaurd_Request_PIIDetection) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[28]
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[29]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2494,7 +2546,7 @@ func (x *AIPromptGaurd_Request_PIIDetection) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use AIPromptGaurd_Request_PIIDetection.ProtoReflect.Descriptor instead.
 func (*AIPromptGaurd_Request_PIIDetection) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_rawDescGZIP(), []int{10, 0, 0}
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_rawDescGZIP(), []int{10, 1, 0}
 }
 
 func (x *AIPromptGaurd_Request_PIIDetection) GetAction() AIPromptGaurd_Request_PIIDetection_Action {
@@ -2502,6 +2554,44 @@ func (x *AIPromptGaurd_Request_PIIDetection) GetAction() AIPromptGaurd_Request_P
 		return x.Action
 	}
 	return AIPromptGaurd_Request_PIIDetection_MASK
+}
+
+type AIPromptGaurd_Response_PIIDetection struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *AIPromptGaurd_Response_PIIDetection) Reset() {
+	*x = AIPromptGaurd_Response_PIIDetection{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[30]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AIPromptGaurd_Response_PIIDetection) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AIPromptGaurd_Response_PIIDetection) ProtoMessage() {}
+
+func (x *AIPromptGaurd_Response_PIIDetection) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[30]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AIPromptGaurd_Response_PIIDetection.ProtoReflect.Descriptor instead.
+func (*AIPromptGaurd_Response_PIIDetection) Descriptor() ([]byte, []int) {
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_rawDescGZIP(), []int{10, 2, 0}
 }
 
 var File_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto protoreflect.FileDescriptor
@@ -2798,57 +2888,72 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_p
 	0x37, 0x0a, 0x07, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x72, 0x6f,
 	0x6c, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x72, 0x6f, 0x6c, 0x65, 0x12, 0x18,
 	0x0a, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x22, 0xc6, 0x05, 0x0a, 0x0d, 0x41, 0x49, 0x50,
+	0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x22, 0xae, 0x07, 0x0a, 0x0d, 0x41, 0x49, 0x50,
 	0x72, 0x6f, 0x6d, 0x70, 0x74, 0x47, 0x61, 0x75, 0x72, 0x64, 0x12, 0x48, 0x0a, 0x07, 0x72, 0x65,
-	0x71, 0x75, 0x65, 0x73, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x2e, 0x2e, 0x61, 0x69,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x2e, 0x2e, 0x61, 0x69,
 	0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f,
 	0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x41, 0x49, 0x50, 0x72, 0x6f, 0x6d, 0x70, 0x74, 0x47, 0x61,
 	0x75, 0x72, 0x64, 0x2e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x52, 0x07, 0x72, 0x65, 0x71,
 	0x75, 0x65, 0x73, 0x74, 0x12, 0x4b, 0x0a, 0x08, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
-	0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x2f, 0x2e, 0x61, 0x69, 0x2e, 0x6f, 0x70, 0x74, 0x69,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x2f, 0x2e, 0x61, 0x69, 0x2e, 0x6f, 0x70, 0x74, 0x69,
 	0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f,
 	0x2e, 0x41, 0x49, 0x50, 0x72, 0x6f, 0x6d, 0x70, 0x74, 0x47, 0x61, 0x75, 0x72, 0x64, 0x2e, 0x52,
 	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x52, 0x08, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x1a, 0xdf, 0x02, 0x0a, 0x07, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x18, 0x0a,
-	0x07, 0x6d, 0x61, 0x74, 0x63, 0x68, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09, 0x52, 0x07,
-	0x6d, 0x61, 0x74, 0x63, 0x68, 0x65, 0x73, 0x12, 0x36, 0x0a, 0x17, 0x63, 0x75, 0x73, 0x74, 0x6f,
-	0x6d, 0x5f, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x5f, 0x6d, 0x65, 0x73, 0x73, 0x61,
-	0x67, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x15, 0x63, 0x75, 0x73, 0x74, 0x6f, 0x6d,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12,
-	0x60, 0x0a, 0x0d, 0x70, 0x69, 0x69, 0x5f, 0x64, 0x65, 0x74, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e,
-	0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x3b, 0x2e, 0x61, 0x69, 0x2e, 0x6f, 0x70, 0x74, 0x69,
-	0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f,
-	0x2e, 0x41, 0x49, 0x50, 0x72, 0x6f, 0x6d, 0x70, 0x74, 0x47, 0x61, 0x75, 0x72, 0x64, 0x2e, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x2e, 0x50, 0x49, 0x49, 0x44, 0x65, 0x74, 0x65, 0x63, 0x74,
-	0x69, 0x6f, 0x6e, 0x52, 0x0c, 0x70, 0x69, 0x69, 0x44, 0x65, 0x74, 0x65, 0x63, 0x74, 0x69, 0x6f,
-	0x6e, 0x1a, 0x9f, 0x01, 0x0a, 0x0c, 0x50, 0x49, 0x49, 0x44, 0x65, 0x74, 0x65, 0x63, 0x74, 0x69,
-	0x6f, 0x6e, 0x12, 0x5a, 0x0a, 0x06, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x0e, 0x32, 0x42, 0x2e, 0x61, 0x69, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e,
-	0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x41, 0x49, 0x50,
-	0x72, 0x6f, 0x6d, 0x70, 0x74, 0x47, 0x61, 0x75, 0x72, 0x64, 0x2e, 0x52, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x2e, 0x50, 0x49, 0x49, 0x44, 0x65, 0x74, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2e,
-	0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x06, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x33,
-	0x0a, 0x06, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x08, 0x0a, 0x04, 0x4d, 0x41, 0x53, 0x4b,
-	0x10, 0x00, 0x12, 0x0a, 0x0a, 0x06, 0x52, 0x45, 0x4a, 0x45, 0x43, 0x54, 0x10, 0x01, 0x12, 0x13,
-	0x0a, 0x0f, 0x4d, 0x41, 0x53, 0x4b, 0x5f, 0x41, 0x4e, 0x44, 0x5f, 0x44, 0x45, 0x4d, 0x41, 0x53,
-	0x4b, 0x10, 0x02, 0x1a, 0xbb, 0x01, 0x0a, 0x08, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
-	0x12, 0x18, 0x0a, 0x07, 0x6d, 0x61, 0x74, 0x63, 0x68, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28,
-	0x09, 0x52, 0x07, 0x6d, 0x61, 0x74, 0x63, 0x68, 0x65, 0x73, 0x12, 0x53, 0x0a, 0x08, 0x62, 0x75,
-	0x69, 0x6c, 0x74, 0x69, 0x6e, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0e, 0x32, 0x37, 0x2e, 0x61,
-	0x69, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73,
-	0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x41, 0x49, 0x50, 0x72, 0x6f, 0x6d, 0x70, 0x74, 0x47,
-	0x61, 0x75, 0x72, 0x64, 0x2e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x2e, 0x42, 0x75,
-	0x69, 0x6c, 0x74, 0x49, 0x6e, 0x52, 0x08, 0x62, 0x75, 0x69, 0x6c, 0x74, 0x69, 0x6e, 0x73, 0x22,
-	0x40, 0x0a, 0x07, 0x42, 0x75, 0x69, 0x6c, 0x74, 0x49, 0x6e, 0x12, 0x07, 0x0a, 0x03, 0x53, 0x53,
-	0x4e, 0x10, 0x00, 0x12, 0x0f, 0x0a, 0x0b, 0x43, 0x52, 0x45, 0x44, 0x49, 0x54, 0x5f, 0x43, 0x41,
-	0x52, 0x44, 0x10, 0x01, 0x12, 0x09, 0x0a, 0x05, 0x45, 0x4d, 0x41, 0x49, 0x4c, 0x10, 0x02, 0x12,
-	0x10, 0x0a, 0x0c, 0x50, 0x48, 0x4f, 0x4e, 0x45, 0x5f, 0x4e, 0x55, 0x4d, 0x42, 0x45, 0x52, 0x10,
-	0x03, 0x42, 0x54, 0xb8, 0xf5, 0x04, 0x01, 0xc0, 0xf5, 0x04, 0x01, 0xd0, 0xf5, 0x04, 0x01, 0x5a,
-	0x46, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f,
-	0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74,
-	0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76,
-	0x31, 0x2f, 0x65, 0x6e, 0x74, 0x65, 0x72, 0x70, 0x72, 0x69, 0x73, 0x65, 0x2f, 0x6f, 0x70, 0x74,
-	0x69, 0x6f, 0x6e, 0x73, 0x2f, 0x61, 0x69, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x65, 0x1a, 0xb5, 0x01, 0x0a, 0x05, 0x52, 0x65, 0x67, 0x65, 0x78, 0x12, 0x18, 0x0a, 0x07, 0x6d,
+	0x61, 0x74, 0x63, 0x68, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09, 0x52, 0x07, 0x6d, 0x61,
+	0x74, 0x63, 0x68, 0x65, 0x73, 0x12, 0x50, 0x0a, 0x08, 0x62, 0x75, 0x69, 0x6c, 0x74, 0x69, 0x6e,
+	0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0e, 0x32, 0x34, 0x2e, 0x61, 0x69, 0x2e, 0x6f, 0x70, 0x74,
+	0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69,
+	0x6f, 0x2e, 0x41, 0x49, 0x50, 0x72, 0x6f, 0x6d, 0x70, 0x74, 0x47, 0x61, 0x75, 0x72, 0x64, 0x2e,
+	0x52, 0x65, 0x67, 0x65, 0x78, 0x2e, 0x42, 0x75, 0x69, 0x6c, 0x74, 0x49, 0x6e, 0x52, 0x08, 0x62,
+	0x75, 0x69, 0x6c, 0x74, 0x69, 0x6e, 0x73, 0x22, 0x40, 0x0a, 0x07, 0x42, 0x75, 0x69, 0x6c, 0x74,
+	0x49, 0x6e, 0x12, 0x07, 0x0a, 0x03, 0x53, 0x53, 0x4e, 0x10, 0x00, 0x12, 0x0f, 0x0a, 0x0b, 0x43,
+	0x52, 0x45, 0x44, 0x49, 0x54, 0x5f, 0x43, 0x41, 0x52, 0x44, 0x10, 0x01, 0x12, 0x09, 0x0a, 0x05,
+	0x45, 0x4d, 0x41, 0x49, 0x4c, 0x10, 0x02, 0x12, 0x10, 0x0a, 0x0c, 0x50, 0x48, 0x4f, 0x4e, 0x45,
+	0x5f, 0x4e, 0x55, 0x4d, 0x42, 0x45, 0x52, 0x10, 0x03, 0x1a, 0x89, 0x03, 0x0a, 0x07, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x42, 0x0a, 0x05, 0x72, 0x65, 0x67, 0x65, 0x78, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x2c, 0x2e, 0x61, 0x69, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e,
+	0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x41,
+	0x49, 0x50, 0x72, 0x6f, 0x6d, 0x70, 0x74, 0x47, 0x61, 0x75, 0x72, 0x64, 0x2e, 0x52, 0x65, 0x67,
+	0x65, 0x78, 0x52, 0x05, 0x72, 0x65, 0x67, 0x65, 0x78, 0x12, 0x60, 0x0a, 0x0d, 0x70, 0x69, 0x69,
+	0x5f, 0x64, 0x65, 0x74, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x3b, 0x2e, 0x61, 0x69, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c,
+	0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x41, 0x49, 0x50, 0x72, 0x6f,
+	0x6d, 0x70, 0x74, 0x47, 0x61, 0x75, 0x72, 0x64, 0x2e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x2e, 0x50, 0x49, 0x49, 0x44, 0x65, 0x74, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x0c, 0x70,
+	0x69, 0x69, 0x44, 0x65, 0x74, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x36, 0x0a, 0x17, 0x63,
+	0x75, 0x73, 0x74, 0x6f, 0x6d, 0x5f, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x5f, 0x6d,
+	0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x15, 0x63, 0x75,
+	0x73, 0x74, 0x6f, 0x6d, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x4d, 0x65, 0x73, 0x73,
+	0x61, 0x67, 0x65, 0x1a, 0x9f, 0x01, 0x0a, 0x0c, 0x50, 0x49, 0x49, 0x44, 0x65, 0x74, 0x65, 0x63,
+	0x74, 0x69, 0x6f, 0x6e, 0x12, 0x5a, 0x0a, 0x06, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x0e, 0x32, 0x42, 0x2e, 0x61, 0x69, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e,
+	0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x41,
+	0x49, 0x50, 0x72, 0x6f, 0x6d, 0x70, 0x74, 0x47, 0x61, 0x75, 0x72, 0x64, 0x2e, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x2e, 0x50, 0x49, 0x49, 0x44, 0x65, 0x74, 0x65, 0x63, 0x74, 0x69, 0x6f,
+	0x6e, 0x2e, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x06, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e,
+	0x22, 0x33, 0x0a, 0x06, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x08, 0x0a, 0x04, 0x4d, 0x41,
+	0x53, 0x4b, 0x10, 0x00, 0x12, 0x0a, 0x0a, 0x06, 0x52, 0x45, 0x4a, 0x45, 0x43, 0x54, 0x10, 0x01,
+	0x12, 0x13, 0x0a, 0x0f, 0x4d, 0x41, 0x53, 0x4b, 0x5f, 0x41, 0x4e, 0x44, 0x5f, 0x44, 0x45, 0x4d,
+	0x41, 0x53, 0x4b, 0x10, 0x02, 0x1a, 0xc1, 0x01, 0x0a, 0x08, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x12, 0x42, 0x0a, 0x05, 0x72, 0x65, 0x67, 0x65, 0x78, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x0b, 0x32, 0x2c, 0x2e, 0x61, 0x69, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67,
+	0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x41, 0x49, 0x50, 0x72,
+	0x6f, 0x6d, 0x70, 0x74, 0x47, 0x61, 0x75, 0x72, 0x64, 0x2e, 0x52, 0x65, 0x67, 0x65, 0x78, 0x52,
+	0x05, 0x72, 0x65, 0x67, 0x65, 0x78, 0x12, 0x61, 0x0a, 0x0d, 0x70, 0x69, 0x69, 0x5f, 0x64, 0x65,
+	0x74, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x3c, 0x2e,
+	0x61, 0x69, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e,
+	0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x41, 0x49, 0x50, 0x72, 0x6f, 0x6d, 0x70, 0x74,
+	0x47, 0x61, 0x75, 0x72, 0x64, 0x2e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x2e, 0x50,
+	0x49, 0x49, 0x44, 0x65, 0x74, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x0c, 0x70, 0x69, 0x69,
+	0x44, 0x65, 0x74, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x1a, 0x0e, 0x0a, 0x0c, 0x50, 0x49, 0x49,
+	0x44, 0x65, 0x74, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x42, 0x54, 0xb8, 0xf5, 0x04, 0x01, 0xc0,
+	0xf5, 0x04, 0x01, 0xd0, 0xf5, 0x04, 0x01, 0x5a, 0x46, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e,
+	0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f,
+	0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70,
+	0x6b, 0x67, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x65, 0x6e, 0x74, 0x65, 0x72, 0x70,
+	0x72, 0x69, 0x73, 0x65, 0x2f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2f, 0x61, 0x69, 0x62,
+	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -2864,12 +2969,12 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_
 }
 
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
+var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_goTypes = []any{
 	(RouteSettings_RouteType)(0),                   // 0: ai.options.gloo.solo.io.RouteSettings.RouteType
 	(SemanticCache_Mode)(0),                        // 1: ai.options.gloo.solo.io.SemanticCache.Mode
-	(AIPromptGaurd_Request_PIIDetection_Action)(0), // 2: ai.options.gloo.solo.io.AIPromptGaurd.Request.PIIDetection.Action
-	(AIPromptGaurd_Response_BuiltIn)(0),            // 3: ai.options.gloo.solo.io.AIPromptGaurd.Response.BuiltIn
+	(AIPromptGaurd_Regex_BuiltIn)(0),               // 2: ai.options.gloo.solo.io.AIPromptGaurd.Regex.BuiltIn
+	(AIPromptGaurd_Request_PIIDetection_Action)(0), // 3: ai.options.gloo.solo.io.AIPromptGaurd.Request.PIIDetection.Action
 	(*SingleAuthToken)(nil),                        // 4: ai.options.gloo.solo.io.SingleAuthToken
 	(*UpstreamSpec)(nil),                           // 5: ai.options.gloo.solo.io.UpstreamSpec
 	(*RouteSettings)(nil),                          // 6: ai.options.gloo.solo.io.RouteSettings
@@ -2896,14 +3001,16 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_p
 	(*SemanticCache_DataStore)(nil),                // 27: ai.options.gloo.solo.io.SemanticCache.DataStore
 	(*RAG_DataStore)(nil),                          // 28: ai.options.gloo.solo.io.RAG.DataStore
 	(*AIPromptEnrichment_Message)(nil),             // 29: ai.options.gloo.solo.io.AIPromptEnrichment.Message
-	(*AIPromptGaurd_Request)(nil),                  // 30: ai.options.gloo.solo.io.AIPromptGaurd.Request
-	(*AIPromptGaurd_Response)(nil),                 // 31: ai.options.gloo.solo.io.AIPromptGaurd.Response
-	(*AIPromptGaurd_Request_PIIDetection)(nil),     // 32: ai.options.gloo.solo.io.AIPromptGaurd.Request.PIIDetection
-	(*core.ResourceRef)(nil),                       // 33: core.solo.io.ResourceRef
-	(*structpb.Value)(nil),                         // 34: google.protobuf.Value
+	(*AIPromptGaurd_Regex)(nil),                    // 30: ai.options.gloo.solo.io.AIPromptGaurd.Regex
+	(*AIPromptGaurd_Request)(nil),                  // 31: ai.options.gloo.solo.io.AIPromptGaurd.Request
+	(*AIPromptGaurd_Response)(nil),                 // 32: ai.options.gloo.solo.io.AIPromptGaurd.Response
+	(*AIPromptGaurd_Request_PIIDetection)(nil),     // 33: ai.options.gloo.solo.io.AIPromptGaurd.Request.PIIDetection
+	(*AIPromptGaurd_Response_PIIDetection)(nil),    // 34: ai.options.gloo.solo.io.AIPromptGaurd.Response.PIIDetection
+	(*core.ResourceRef)(nil),                       // 35: core.solo.io.ResourceRef
+	(*structpb.Value)(nil),                         // 36: google.protobuf.Value
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_depIdxs = []int32{
-	33, // 0: ai.options.gloo.solo.io.SingleAuthToken.secret_ref:type_name -> core.solo.io.ResourceRef
+	35, // 0: ai.options.gloo.solo.io.SingleAuthToken.secret_ref:type_name -> core.solo.io.ResourceRef
 	16, // 1: ai.options.gloo.solo.io.UpstreamSpec.openai:type_name -> ai.options.gloo.solo.io.UpstreamSpec.OpenAI
 	18, // 2: ai.options.gloo.solo.io.UpstreamSpec.mistral:type_name -> ai.options.gloo.solo.io.UpstreamSpec.Mistral
 	19, // 3: ai.options.gloo.solo.io.UpstreamSpec.anthropic:type_name -> ai.options.gloo.solo.io.UpstreamSpec.Anthropic
@@ -2915,7 +3022,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_p
 	10, // 9: ai.options.gloo.solo.io.RouteSettings.semantic_cache:type_name -> ai.options.gloo.solo.io.SemanticCache
 	7,  // 10: ai.options.gloo.solo.io.RouteSettings.defaults:type_name -> ai.options.gloo.solo.io.FieldDefault
 	0,  // 11: ai.options.gloo.solo.io.RouteSettings.route_type:type_name -> ai.options.gloo.solo.io.RouteSettings.RouteType
-	34, // 12: ai.options.gloo.solo.io.FieldDefault.value:type_name -> google.protobuf.Value
+	36, // 12: ai.options.gloo.solo.io.FieldDefault.value:type_name -> google.protobuf.Value
 	23, // 13: ai.options.gloo.solo.io.Embedding.openai:type_name -> ai.options.gloo.solo.io.Embedding.OpenAI
 	24, // 14: ai.options.gloo.solo.io.Embedding.azure_openai:type_name -> ai.options.gloo.solo.io.Embedding.AzureOpenAI
 	27, // 15: ai.options.gloo.solo.io.SemanticCache.datastore:type_name -> ai.options.gloo.solo.io.SemanticCache.DataStore
@@ -2925,8 +3032,8 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_p
 	9,  // 19: ai.options.gloo.solo.io.RAG.embedding:type_name -> ai.options.gloo.solo.io.Embedding
 	29, // 20: ai.options.gloo.solo.io.AIPromptEnrichment.prepend:type_name -> ai.options.gloo.solo.io.AIPromptEnrichment.Message
 	29, // 21: ai.options.gloo.solo.io.AIPromptEnrichment.append:type_name -> ai.options.gloo.solo.io.AIPromptEnrichment.Message
-	30, // 22: ai.options.gloo.solo.io.AIPromptGaurd.request:type_name -> ai.options.gloo.solo.io.AIPromptGaurd.Request
-	31, // 23: ai.options.gloo.solo.io.AIPromptGaurd.response:type_name -> ai.options.gloo.solo.io.AIPromptGaurd.Response
+	31, // 22: ai.options.gloo.solo.io.AIPromptGaurd.request:type_name -> ai.options.gloo.solo.io.AIPromptGaurd.Request
+	32, // 23: ai.options.gloo.solo.io.AIPromptGaurd.response:type_name -> ai.options.gloo.solo.io.AIPromptGaurd.Response
 	4,  // 24: ai.options.gloo.solo.io.UpstreamSpec.OpenAI.auth_token:type_name -> ai.options.gloo.solo.io.SingleAuthToken
 	15, // 25: ai.options.gloo.solo.io.UpstreamSpec.OpenAI.custom_host:type_name -> ai.options.gloo.solo.io.UpstreamSpec.CustomHost
 	4,  // 26: ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI.auth_token:type_name -> ai.options.gloo.solo.io.SingleAuthToken
@@ -2945,14 +3052,17 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_p
 	25, // 39: ai.options.gloo.solo.io.SemanticCache.DataStore.redis:type_name -> ai.options.gloo.solo.io.SemanticCache.Redis
 	26, // 40: ai.options.gloo.solo.io.SemanticCache.DataStore.weaviate:type_name -> ai.options.gloo.solo.io.SemanticCache.Weaviate
 	8,  // 41: ai.options.gloo.solo.io.RAG.DataStore.postgres:type_name -> ai.options.gloo.solo.io.Postgres
-	32, // 42: ai.options.gloo.solo.io.AIPromptGaurd.Request.pii_detection:type_name -> ai.options.gloo.solo.io.AIPromptGaurd.Request.PIIDetection
-	3,  // 43: ai.options.gloo.solo.io.AIPromptGaurd.Response.builtins:type_name -> ai.options.gloo.solo.io.AIPromptGaurd.Response.BuiltIn
-	2,  // 44: ai.options.gloo.solo.io.AIPromptGaurd.Request.PIIDetection.action:type_name -> ai.options.gloo.solo.io.AIPromptGaurd.Request.PIIDetection.Action
-	45, // [45:45] is the sub-list for method output_type
-	45, // [45:45] is the sub-list for method input_type
-	45, // [45:45] is the sub-list for extension type_name
-	45, // [45:45] is the sub-list for extension extendee
-	0,  // [0:45] is the sub-list for field type_name
+	2,  // 42: ai.options.gloo.solo.io.AIPromptGaurd.Regex.builtins:type_name -> ai.options.gloo.solo.io.AIPromptGaurd.Regex.BuiltIn
+	30, // 43: ai.options.gloo.solo.io.AIPromptGaurd.Request.regex:type_name -> ai.options.gloo.solo.io.AIPromptGaurd.Regex
+	33, // 44: ai.options.gloo.solo.io.AIPromptGaurd.Request.pii_detection:type_name -> ai.options.gloo.solo.io.AIPromptGaurd.Request.PIIDetection
+	30, // 45: ai.options.gloo.solo.io.AIPromptGaurd.Response.regex:type_name -> ai.options.gloo.solo.io.AIPromptGaurd.Regex
+	34, // 46: ai.options.gloo.solo.io.AIPromptGaurd.Response.pii_detection:type_name -> ai.options.gloo.solo.io.AIPromptGaurd.Response.PIIDetection
+	3,  // 47: ai.options.gloo.solo.io.AIPromptGaurd.Request.PIIDetection.action:type_name -> ai.options.gloo.solo.io.AIPromptGaurd.Request.PIIDetection.Action
+	48, // [48:48] is the sub-list for method output_type
+	48, // [48:48] is the sub-list for method input_type
+	48, // [48:48] is the sub-list for extension type_name
+	48, // [48:48] is the sub-list for extension extendee
+	0,  // [0:48] is the sub-list for field type_name
 }
 
 func init() { file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_init() }
@@ -3274,7 +3384,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_
 			}
 		}
 		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[26].Exporter = func(v any, i int) any {
-			switch v := v.(*AIPromptGaurd_Request); i {
+			switch v := v.(*AIPromptGaurd_Regex); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3286,7 +3396,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_
 			}
 		}
 		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[27].Exporter = func(v any, i int) any {
-			switch v := v.(*AIPromptGaurd_Response); i {
+			switch v := v.(*AIPromptGaurd_Request); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3298,7 +3408,31 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_
 			}
 		}
 		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[28].Exporter = func(v any, i int) any {
+			switch v := v.(*AIPromptGaurd_Response); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[29].Exporter = func(v any, i int) any {
 			switch v := v.(*AIPromptGaurd_Request_PIIDetection); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[30].Exporter = func(v any, i int) any {
+			switch v := v.(*AIPromptGaurd_Response_PIIDetection); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3353,7 +3487,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_rawDesc,
 			NumEnums:      4,
-			NumMessages:   29,
+			NumMessages:   31,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

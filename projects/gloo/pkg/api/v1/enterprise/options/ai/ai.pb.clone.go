@@ -806,12 +806,12 @@ func (m *AIPromptEnrichment_Message) Clone() proto.Message {
 }
 
 // Clone function
-func (m *AIPromptGaurd_Request) Clone() proto.Message {
-	var target *AIPromptGaurd_Request
+func (m *AIPromptGaurd_Regex) Clone() proto.Message {
+	var target *AIPromptGaurd_Regex
 	if m == nil {
 		return target
 	}
-	target = &AIPromptGaurd_Request{}
+	target = &AIPromptGaurd_Regex{}
 
 	if m.GetMatches() != nil {
 		target.Matches = make([]string, len(m.GetMatches()))
@@ -822,13 +822,39 @@ func (m *AIPromptGaurd_Request) Clone() proto.Message {
 		}
 	}
 
-	target.CustomResponseMessage = m.GetCustomResponseMessage()
+	if m.GetBuiltins() != nil {
+		target.Builtins = make([]AIPromptGaurd_Regex_BuiltIn, len(m.GetBuiltins()))
+		for idx, v := range m.GetBuiltins() {
+
+			target.Builtins[idx] = v
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *AIPromptGaurd_Request) Clone() proto.Message {
+	var target *AIPromptGaurd_Request
+	if m == nil {
+		return target
+	}
+	target = &AIPromptGaurd_Request{}
+
+	if h, ok := interface{}(m.GetRegex()).(clone.Cloner); ok {
+		target.Regex = h.Clone().(*AIPromptGaurd_Regex)
+	} else {
+		target.Regex = proto.Clone(m.GetRegex()).(*AIPromptGaurd_Regex)
+	}
 
 	if h, ok := interface{}(m.GetPiiDetection()).(clone.Cloner); ok {
 		target.PiiDetection = h.Clone().(*AIPromptGaurd_Request_PIIDetection)
 	} else {
 		target.PiiDetection = proto.Clone(m.GetPiiDetection()).(*AIPromptGaurd_Request_PIIDetection)
 	}
+
+	target.CustomResponseMessage = m.GetCustomResponseMessage()
 
 	return target
 }
@@ -841,22 +867,16 @@ func (m *AIPromptGaurd_Response) Clone() proto.Message {
 	}
 	target = &AIPromptGaurd_Response{}
 
-	if m.GetMatches() != nil {
-		target.Matches = make([]string, len(m.GetMatches()))
-		for idx, v := range m.GetMatches() {
-
-			target.Matches[idx] = v
-
-		}
+	if h, ok := interface{}(m.GetRegex()).(clone.Cloner); ok {
+		target.Regex = h.Clone().(*AIPromptGaurd_Regex)
+	} else {
+		target.Regex = proto.Clone(m.GetRegex()).(*AIPromptGaurd_Regex)
 	}
 
-	if m.GetBuiltins() != nil {
-		target.Builtins = make([]AIPromptGaurd_Response_BuiltIn, len(m.GetBuiltins()))
-		for idx, v := range m.GetBuiltins() {
-
-			target.Builtins[idx] = v
-
-		}
+	if h, ok := interface{}(m.GetPiiDetection()).(clone.Cloner); ok {
+		target.PiiDetection = h.Clone().(*AIPromptGaurd_Response_PIIDetection)
+	} else {
+		target.PiiDetection = proto.Clone(m.GetPiiDetection()).(*AIPromptGaurd_Response_PIIDetection)
 	}
 
 	return target
@@ -871,6 +891,17 @@ func (m *AIPromptGaurd_Request_PIIDetection) Clone() proto.Message {
 	target = &AIPromptGaurd_Request_PIIDetection{}
 
 	target.Action = m.GetAction()
+
+	return target
+}
+
+// Clone function
+func (m *AIPromptGaurd_Response_PIIDetection) Clone() proto.Message {
+	var target *AIPromptGaurd_Response_PIIDetection
+	if m == nil {
+		return target
+	}
+	target = &AIPromptGaurd_Response_PIIDetection{}
 
 	return target
 }
