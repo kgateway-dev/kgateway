@@ -53,21 +53,16 @@ runs:
       fi
   - name: Run the kubernetes gateway API conformance tests
     shell: bash
-    run: |
-      # Default to the standard profile if none is provided. Otherwise,
-      # assume the profile is experimental.
-      if [[ -z ${{ matrix.profile }} ]]; then
-        make conformance
-      else
-        make conformance-experimental
-      fi
+    run: make conformance
   - name: Capture debug information when tests fail
     if: ${{ failure() }}
     shell: bash
     run: kubectl -n gloo-system  get events --sort-by='{.lastTimestamp}'
-  - name: Upload conformace reports if profile is experimental
-    if: "${{ matrix.profile == 'experimental' }}"
+  - name: Upload reports
+    if: ${{ success() }}
     uses: actions/upload-artifact@v4
     with:
+      # Name of the path to upload. The VERSION variable refers to the Makefile
+      # VERSION variable.
       name: conformance-gloo-gateway-report
-      path: _test/conformance/report.yaml
+      path: _test/conformance/${{ env.VERSION }}-report.yaml
