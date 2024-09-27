@@ -72,7 +72,7 @@ func (s *discoveryWatchlabelsSuite) TestDiscoverUpstreamMatchingWatchLabels() {
 	s.Assert().Equal(map[string]string{
 		"watchedKey": "watchedValue",
 		"bonusKey":   "bonusValue",
-	}, us.DiscoveryMetadata.Labels)
+	}, us.GetDiscoveryMetadata().GetLabels())
 
 	// no Upstream should be created for the Service that does not have the watchLabels
 	noLabelsUsName := fmt.Sprintf("%s-%s-%d", s.testInstallation.Metadata.InstallNamespace, "example-svc-no-labels", 8000)
@@ -98,5 +98,5 @@ func (s *discoveryWatchlabelsSuite) TestDiscoverUpstreamMatchingWatchLabels() {
 	s.Assert().Equal(map[string]string{
 		"watchedKey": "watchedValue",
 		"bonusKey":   "bonusValue-modified",
-	}, us.DiscoveryMetadata.Labels)
+	}, us.GetDiscoveryMetadata().GetLabels())
 }
