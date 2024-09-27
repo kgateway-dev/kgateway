@@ -90,7 +90,7 @@ Multiple directives are comma-separated, so the reserved characters that
 require percent encoding in a directive value are [',', '#', '[', ']',
 '%']. These are the RFC3986 fragment reserved characters with the addition
 of the xDS scheme specific ','. See
-https://tools.ietf.org/html/rfc3986#page-49 for further details on URI ABNF
+https://datatracker.ietf.org/doc/html/rfc3986#page-49 for further details on URI ABNF
 and reserved characters.
 
 ```yaml

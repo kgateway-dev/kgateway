@@ -73,7 +73,7 @@ message SocketAddress {
   string resolver_name = 5;
 
   // When binding to an IPv6 address above, this enables `IPv4 compatibility
-  // <https://tools.ietf.org/html/rfc3493#page-11>`_. Binding to ``::`` will
+  // <https://datatracker.ietf.org/doc/html/rfc3493#page-11>`_. Binding to ``::`` will
   // allow both IPv4 and IPv6 connections, with peer IPv4 addresses mapped into
   // IPv6 space as ``::FFFF:<IPv4-address>``.
   bool ipv4_compat = 6;
@@ -133,7 +133,7 @@ message Address {
 }
 
 // CidrRange specifies an IP Address and a prefix length to construct
-// the subnet mask for a `CIDR <https://tools.ietf.org/html/rfc4632>`_ range.
+// the subnet mask for a `CIDR <https://datatracker.ietf.org/doc/html/rfc4632>`_ range.
 message CidrRange {
   option (solo.io.udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.core.CidrRange";
 
