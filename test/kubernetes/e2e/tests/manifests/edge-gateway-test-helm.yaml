@@ -39,6 +39,6 @@ gloo:
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0
-# Disable discovery, not recommended for production. NOTE: Upstreams must be statically defined in the manfiests.
+# Disable discovery, not recommended for production. NOTE: Upstreams must be statically defined in the manifests.
 discovery:
   enabled: false

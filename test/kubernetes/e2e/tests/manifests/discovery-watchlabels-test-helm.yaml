@@ -1,0 +1,4 @@
+discovery:
+  udsOptions:
+    watchLabels:
+      watchedKey: watchedValue
