@@ -35,10 +35,6 @@ spec:
                 properties:
                   ai:
                     properties:
-                      backupModels:
-                        items:
-                          type: string
-                        type: array
                       defaults:
                         items:
                           properties:
@@ -149,6 +145,9 @@ spec:
                           promptTemplate:
                             type: string
                         type: object
+                      routeType:
+                        type: string
+                        x-kubernetes-int-or-string: true
                       semanticCache:
                         properties:
                           datastore:
@@ -1573,6 +1572,12 @@ spec:
                             nullable: true
                             type: integer
                         type: object
+                      retriableStatusCodes:
+                        items:
+                          maximum: 4294967295
+                          minimum: 0
+                          type: integer
+                        type: array
                       retryBackOff:
                         properties:
                           baseInterval:
