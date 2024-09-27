@@ -11,13 +11,6 @@ on:
         options:
           - standard
           - distroless
-      profile:
-        description: "The conformance profile to run."
-        required: true
-        type: choice
-        options:
-          - standard
-          - experimental
       version:
         description: "Optional: Specify an existing Gloo Gateway release tag to deploy and test (e.g., 1.17.3). Leave empty to use the default branch."
         required: false
@@ -38,8 +31,6 @@ jobs:
           helm: 'v3.14.4'
         image-variant:
           - ${{ inputs.image-variant }}
-        profile:
-          - ${{ inputs.profile }}
         version:
           - ${{ inputs.version }}
     steps:
