@@ -58,7 +58,7 @@ runs:
     if: ${{ failure() }}
     shell: bash
     run: kubectl -n gloo-system  get events --sort-by='{.lastTimestamp}'
-  - name: Upload conformace reports if profile is experimental
+  - name: Upload reports
     if: ${{ success() }}
     uses: actions/upload-artifact@v4
     with:

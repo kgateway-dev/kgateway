@@ -80,7 +80,12 @@ fi
 make -s build-cli-local
 
 # 5. Apply the Kubernetes Gateway API CRDs
-kubectl apply -k "https://github.com/kubernetes-sigs/gateway-api/config/crd/$CONFORMANCE_CHANNEL?ref=$CONFORMANCE_VERSION"
+# Note, we're using kustomize to apply the CRDs from the k8s gateway api repo as
+# kustomize supports remote GH URLs and provides more flexibility compared to
+# alternatives like running a series of `kubectl apply -f <url>` commands. This
+# approach is largely necessary since upstream hasn't adopted a helm chart for
+# the CRDs yet, or won't be for the foreseeable future.
+kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$CONFORMANCE_CHANNEL?ref=$CONFORMANCE_VERSION"
 
 # 6. Conformance test setup
 if [[ $CONFORMANCE == "true" ]]; then
