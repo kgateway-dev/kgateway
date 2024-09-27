@@ -2,18 +2,16 @@ package tests_test
 
 import (
 	"context"
-	"os"
-	"path/filepath"
-	"testing"
-	"time"
-
 	"github.com/solo-io/gloo/pkg/utils/envutils"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	. "github.com/solo-io/gloo/test/kubernetes/e2e/tests"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/skv2/codegen/util"
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
 )
 
 // TestDiscoveryWatchlabels is the function which executes a series of tests against a given installation where
@@ -51,9 +49,7 @@ func TestDiscoveryWatchlabels(t *testing.T) {
 	})
 
 	// Install Gloo Gateway with only Gloo Edge Gateway APIs enabled
-	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
-		return testHelper.InstallGloo(ctx, 5*time.Minute, helper.WithExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
-	})
+	testInstallation.InstallGlooGatewayWithTestHelper(ctx, testHelper, 5*time.Minute)
 
 	DiscoveryWatchlabelsSuiteRunner().Run(ctx, t, testInstallation)
 }
