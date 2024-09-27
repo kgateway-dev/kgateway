@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/ext-auth-service/issues/762
-    resolvesIssue: false
-    description: >-
-      Updating extauth APIKey config to add 'skipMetadataValidation', which will allow EE users to turn off data plane valdiation
-      of headers returned by the APIKey service.
