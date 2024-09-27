@@ -1915,6 +1915,17 @@ spec:
                       type:
                         type: string
                     type: object
+                  serviceAccount:
+                    properties:
+                      extraAnnotations:
+                        additionalProperties:
+                          type: string
+                        type: object
+                      extraLabels:
+                        additionalProperties:
+                          type: string
+                        type: object
+                    type: object
                   stats:
                     properties:
                       enableStatsRoute:
