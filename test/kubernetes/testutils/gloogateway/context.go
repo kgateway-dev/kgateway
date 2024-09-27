@@ -1,9 +1,21 @@
 package gloogateway
 
+import (
+	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/test/testutils"
+)
+
 // Context contains the set of properties for a given installation of Gloo Gateway
 type Context struct {
 	InstallNamespace string
 
+	// ProfileValuesManifestFile points to the file that contains the set of Helm values for a given profile
+	// This is intended to represent a set of "production recommendations" and is defined as a standalone
+	// file, to guarantee that tests specify a file that contains these values
+	// For a test to define Helm values that are unique to the test, use ValuesManifestFile
+	ProfileValuesManifestFile string
+
+	// ValuesManifestFile points to the file that contains the set of Helm values that are unique to this test
 	ValuesManifestFile string
 
 	// whether or not the K8s Gateway controller is enabled
@@ -33,4 +45,35 @@ type Context struct {
 
 	// The path to the local helm chart used for testing. Based on the TestAssertDir and relative to RootDir.
 	ChartUri string
+}
+
+// Validate returns an error if the defined Context is invalid for a test
+func (c *Context) Validate() error {
+	// We are intentionally restrictive, and expect a ProfileValuesManifestFile to be defined.
+	// This is because we want all existing and future tests to rely on this concept
+	if err := c.validateValuesManifest("ProfileValuesManifestFile", c.ProfileValuesManifestFile); err != nil {
+		return err
+	}
+
+	if err := c.validateValuesManifest("ValuesManifestFile", c.ValuesManifestFile); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Context) validateValuesManifest(name string, file string) error {
+	if file == "" {
+		return eris.Errorf("%s must be provided in glooGateway.Context", name)
+	}
+
+	values, err := testutils.BuildHelmValues(testutils.HelmValues{ValuesFile: file})
+	if err != nil {
+		return eris.Wrapf(err, "failed to build helm values for %s", name)
+	}
+	err = testutils.ValidateHelmValues(values)
+	if err != nil {
+		return eris.Wrapf(err, "failed to validate helm values for %s", name)
+	}
+	return nil
 }

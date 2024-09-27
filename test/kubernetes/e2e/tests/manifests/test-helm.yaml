@@ -1,0 +1,13 @@
+global:
+  glooRbac:
+    namespaced: true
+    nameSuffix: e2e-test-rbac-suffix
+
+settings:
+  singleNamespace: true
+
+gloo:
+  deployment:
+    # We want to run a subset of our tests against a multi-replica control plane to ensure that
+    # it behaves the same way
+    replicas: 2
