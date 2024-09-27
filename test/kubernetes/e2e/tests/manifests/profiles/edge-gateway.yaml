@@ -1,0 +1,6 @@
+# This file defines the profile for a user who wants to run Gloo Gateway with:
+# - Edge Gateway API enabled
+# - Kubernetes Gateway API disabled
+#
+# Since Gloo Gateway was built with the Edge Gateway API initially, there are no custom values
+# required to opt-into the Edge Gateway API, and thus this file is empty
