@@ -7,6 +7,7 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -45,14 +46,14 @@ func (s *testingSuite) TestProvisionDeploymentAndService() {
 		s.NoError(err, "can delete deployer provision manifest")
 		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, basicGatewayManifestFile)
 		s.NoError(err, "can delete basic gateway manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
+		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyServiceAccount, proxyDeployment)
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, deployerProvisionManifestFile)
 	s.Require().NoError(err, "can apply deployer provision manifest")
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, basicGatewayManifestFile)
 	s.Require().NoError(err, "can apply basic gateway manifest")
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyServiceAccount, proxyDeployment)
 }
 
 func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
@@ -63,7 +64,7 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 
 		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, deployerProvisionManifestFile)
 		s.NoError(err, "can delete manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
+		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyServiceAccount, proxyDeployment)
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, deployerProvisionManifestFile)
@@ -71,9 +72,20 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, gwParametersManifestFile)
 	s.Require().NoError(err, "can apply manifest")
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyServiceAccount, proxyDeployment)
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, gwParams)
 	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
+
+	// check that the labels and annotations got passed through from GatewayParameters to the ServiceAccount
+	sa := &corev1.ServiceAccount{}
+	err = s.testInstallation.ClusterContext.Client.Get(s.ctx,
+		types.NamespacedName{Name: glooProxyObjectMeta.Name, Namespace: glooProxyObjectMeta.Namespace},
+		sa)
+	s.Require().NoError(err)
+	s.testInstallation.Assertions.Gomega.Expect(sa.GetLabels()).To(
+		gomega.HaveKeyWithValue("sa-label-key", "sa-label-val"))
+	s.testInstallation.Assertions.Gomega.Expect(sa.GetAnnotations()).To(
+		gomega.HaveKeyWithValue("sa-anno-key", "sa-anno-val"))
 
 	// We assert that we can port-forward requests to the proxy deployment, and then execute requests against the server
 	if s.testInstallation.RuntimeContext.RunSource == runtime.LocalDevelopment {
@@ -114,7 +126,7 @@ func (s *testingSuite) TestSelfManagedGateway() {
 		assert.True(c, accepted, "gateway status not accepted")
 	}, 10*time.Second, 1*time.Second)
 
-	s.testInstallation.Assertions.ConsistentlyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
+	s.testInstallation.Assertions.ConsistentlyObjectsNotExist(s.ctx, proxyService, proxyServiceAccount, proxyDeployment)
 }
 
 func serverInfoLogLevelAssertion(testInstallation *e2e.TestInstallation, expectedLogLevel, expectedComponentLogLevel string) func(ctx context.Context, adminClient *admincli.Client) {
