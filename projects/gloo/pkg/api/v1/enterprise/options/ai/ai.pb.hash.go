@@ -720,7 +720,7 @@ func (m *AIPromptEnrichment) Hash(hasher hash.Hash64) (uint64, error) {
 // Deprecated: due to hashing implemention only using field values. The omission
 // of the field name in the hash calculation can lead to hash collisions.
 // Prefer the HashUnique function instead.
-func (m *AIPromptGaurd) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *AIPromptGuard) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -728,7 +728,7 @@ func (m *AIPromptGaurd) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.AIPromptGaurd")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.AIPromptGuard")); err != nil {
 		return 0, err
 	}
 
@@ -1577,7 +1577,7 @@ func (m *AIPromptEnrichment_Message) Hash(hasher hash.Hash64) (uint64, error) {
 // Deprecated: due to hashing implemention only using field values. The omission
 // of the field name in the hash calculation can lead to hash collisions.
 // Prefer the HashUnique function instead.
-func (m *AIPromptGaurd_Regex) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *AIPromptGuard_Regex) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -1585,7 +1585,7 @@ func (m *AIPromptGaurd_Regex) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.AIPromptGaurd_Regex")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Regex")); err != nil {
 		return 0, err
 	}
 
@@ -1614,7 +1614,7 @@ func (m *AIPromptGaurd_Regex) Hash(hasher hash.Hash64) (uint64, error) {
 // Deprecated: due to hashing implemention only using field values. The omission
 // of the field name in the hash calculation can lead to hash collisions.
 // Prefer the HashUnique function instead.
-func (m *AIPromptGaurd_Request) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *AIPromptGuard_Webhook) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -1622,7 +1622,36 @@ func (m *AIPromptGaurd_Request) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.AIPromptGaurd_Request")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Webhook")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetHost())); err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetPort())
+	if err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+//
+// Deprecated: due to hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
+// Prefer the HashUnique function instead.
+func (m *AIPromptGuard_Request) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Request")); err != nil {
 		return 0, err
 	}
 
@@ -1658,6 +1687,26 @@ func (m *AIPromptGaurd_Request) Hash(hasher hash.Hash64) (uint64, error) {
 			return 0, err
 		} else {
 			if _, err = hasher.Write([]byte("PiiDetection")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetWebhook()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Webhook")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetWebhook(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Webhook")); err != nil {
 				return 0, err
 			}
 			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
@@ -1678,7 +1727,7 @@ func (m *AIPromptGaurd_Request) Hash(hasher hash.Hash64) (uint64, error) {
 // Deprecated: due to hashing implemention only using field values. The omission
 // of the field name in the hash calculation can lead to hash collisions.
 // Prefer the HashUnique function instead.
-func (m *AIPromptGaurd_Response) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *AIPromptGuard_Response) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -1686,7 +1735,7 @@ func (m *AIPromptGaurd_Response) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.AIPromptGaurd_Response")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Response")); err != nil {
 		return 0, err
 	}
 
@@ -1730,6 +1779,26 @@ func (m *AIPromptGaurd_Response) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if h, ok := interface{}(m.GetWebhook()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Webhook")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetWebhook(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Webhook")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	return hasher.Sum64(), nil
 }
 
@@ -1738,7 +1807,7 @@ func (m *AIPromptGaurd_Response) Hash(hasher hash.Hash64) (uint64, error) {
 // Deprecated: due to hashing implemention only using field values. The omission
 // of the field name in the hash calculation can lead to hash collisions.
 // Prefer the HashUnique function instead.
-func (m *AIPromptGaurd_Request_PIIDetection) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *AIPromptGuard_Request_PIIDetection) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -1746,7 +1815,7 @@ func (m *AIPromptGaurd_Request_PIIDetection) Hash(hasher hash.Hash64) (uint64, e
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.AIPromptGaurd_Request_PIIDetection")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Request_PIIDetection")); err != nil {
 		return 0, err
 	}
 
@@ -1763,7 +1832,7 @@ func (m *AIPromptGaurd_Request_PIIDetection) Hash(hasher hash.Hash64) (uint64, e
 // Deprecated: due to hashing implemention only using field values. The omission
 // of the field name in the hash calculation can lead to hash collisions.
 // Prefer the HashUnique function instead.
-func (m *AIPromptGaurd_Response_PIIDetection) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *AIPromptGuard_Response_PIIDetection) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -1771,7 +1840,7 @@ func (m *AIPromptGaurd_Response_PIIDetection) Hash(hasher hash.Hash64) (uint64, 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.AIPromptGaurd_Response_PIIDetection")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Response_PIIDetection")); err != nil {
 		return 0, err
 	}
 

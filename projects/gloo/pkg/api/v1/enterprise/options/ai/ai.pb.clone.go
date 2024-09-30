@@ -152,9 +152,9 @@ func (m *RouteSettings) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetPromptGuard()).(clone.Cloner); ok {
-		target.PromptGuard = h.Clone().(*AIPromptGaurd)
+		target.PromptGuard = h.Clone().(*AIPromptGuard)
 	} else {
-		target.PromptGuard = proto.Clone(m.GetPromptGuard()).(*AIPromptGaurd)
+		target.PromptGuard = proto.Clone(m.GetPromptGuard()).(*AIPromptGuard)
 	}
 
 	if h, ok := interface{}(m.GetRag()).(clone.Cloner); ok {
@@ -372,23 +372,23 @@ func (m *AIPromptEnrichment) Clone() proto.Message {
 }
 
 // Clone function
-func (m *AIPromptGaurd) Clone() proto.Message {
-	var target *AIPromptGaurd
+func (m *AIPromptGuard) Clone() proto.Message {
+	var target *AIPromptGuard
 	if m == nil {
 		return target
 	}
-	target = &AIPromptGaurd{}
+	target = &AIPromptGuard{}
 
 	if h, ok := interface{}(m.GetRequest()).(clone.Cloner); ok {
-		target.Request = h.Clone().(*AIPromptGaurd_Request)
+		target.Request = h.Clone().(*AIPromptGuard_Request)
 	} else {
-		target.Request = proto.Clone(m.GetRequest()).(*AIPromptGaurd_Request)
+		target.Request = proto.Clone(m.GetRequest()).(*AIPromptGuard_Request)
 	}
 
 	if h, ok := interface{}(m.GetResponse()).(clone.Cloner); ok {
-		target.Response = h.Clone().(*AIPromptGaurd_Response)
+		target.Response = h.Clone().(*AIPromptGuard_Response)
 	} else {
-		target.Response = proto.Clone(m.GetResponse()).(*AIPromptGaurd_Response)
+		target.Response = proto.Clone(m.GetResponse()).(*AIPromptGuard_Response)
 	}
 
 	return target
@@ -806,12 +806,12 @@ func (m *AIPromptEnrichment_Message) Clone() proto.Message {
 }
 
 // Clone function
-func (m *AIPromptGaurd_Regex) Clone() proto.Message {
-	var target *AIPromptGaurd_Regex
+func (m *AIPromptGuard_Regex) Clone() proto.Message {
+	var target *AIPromptGuard_Regex
 	if m == nil {
 		return target
 	}
-	target = &AIPromptGaurd_Regex{}
+	target = &AIPromptGuard_Regex{}
 
 	if m.GetMatches() != nil {
 		target.Matches = make([]string, len(m.GetMatches()))
@@ -823,7 +823,7 @@ func (m *AIPromptGaurd_Regex) Clone() proto.Message {
 	}
 
 	if m.GetBuiltins() != nil {
-		target.Builtins = make([]AIPromptGaurd_Regex_BuiltIn, len(m.GetBuiltins()))
+		target.Builtins = make([]AIPromptGuard_Regex_BuiltIn, len(m.GetBuiltins()))
 		for idx, v := range m.GetBuiltins() {
 
 			target.Builtins[idx] = v
@@ -835,23 +835,44 @@ func (m *AIPromptGaurd_Regex) Clone() proto.Message {
 }
 
 // Clone function
-func (m *AIPromptGaurd_Request) Clone() proto.Message {
-	var target *AIPromptGaurd_Request
+func (m *AIPromptGuard_Webhook) Clone() proto.Message {
+	var target *AIPromptGuard_Webhook
 	if m == nil {
 		return target
 	}
-	target = &AIPromptGaurd_Request{}
+	target = &AIPromptGuard_Webhook{}
+
+	target.Host = m.GetHost()
+
+	target.Port = m.GetPort()
+
+	return target
+}
+
+// Clone function
+func (m *AIPromptGuard_Request) Clone() proto.Message {
+	var target *AIPromptGuard_Request
+	if m == nil {
+		return target
+	}
+	target = &AIPromptGuard_Request{}
 
 	if h, ok := interface{}(m.GetRegex()).(clone.Cloner); ok {
-		target.Regex = h.Clone().(*AIPromptGaurd_Regex)
+		target.Regex = h.Clone().(*AIPromptGuard_Regex)
 	} else {
-		target.Regex = proto.Clone(m.GetRegex()).(*AIPromptGaurd_Regex)
+		target.Regex = proto.Clone(m.GetRegex()).(*AIPromptGuard_Regex)
 	}
 
 	if h, ok := interface{}(m.GetPiiDetection()).(clone.Cloner); ok {
-		target.PiiDetection = h.Clone().(*AIPromptGaurd_Request_PIIDetection)
+		target.PiiDetection = h.Clone().(*AIPromptGuard_Request_PIIDetection)
 	} else {
-		target.PiiDetection = proto.Clone(m.GetPiiDetection()).(*AIPromptGaurd_Request_PIIDetection)
+		target.PiiDetection = proto.Clone(m.GetPiiDetection()).(*AIPromptGuard_Request_PIIDetection)
+	}
+
+	if h, ok := interface{}(m.GetWebhook()).(clone.Cloner); ok {
+		target.Webhook = h.Clone().(*AIPromptGuard_Webhook)
+	} else {
+		target.Webhook = proto.Clone(m.GetWebhook()).(*AIPromptGuard_Webhook)
 	}
 
 	target.CustomResponseMessage = m.GetCustomResponseMessage()
@@ -860,35 +881,41 @@ func (m *AIPromptGaurd_Request) Clone() proto.Message {
 }
 
 // Clone function
-func (m *AIPromptGaurd_Response) Clone() proto.Message {
-	var target *AIPromptGaurd_Response
+func (m *AIPromptGuard_Response) Clone() proto.Message {
+	var target *AIPromptGuard_Response
 	if m == nil {
 		return target
 	}
-	target = &AIPromptGaurd_Response{}
+	target = &AIPromptGuard_Response{}
 
 	if h, ok := interface{}(m.GetRegex()).(clone.Cloner); ok {
-		target.Regex = h.Clone().(*AIPromptGaurd_Regex)
+		target.Regex = h.Clone().(*AIPromptGuard_Regex)
 	} else {
-		target.Regex = proto.Clone(m.GetRegex()).(*AIPromptGaurd_Regex)
+		target.Regex = proto.Clone(m.GetRegex()).(*AIPromptGuard_Regex)
 	}
 
 	if h, ok := interface{}(m.GetPiiDetection()).(clone.Cloner); ok {
-		target.PiiDetection = h.Clone().(*AIPromptGaurd_Response_PIIDetection)
+		target.PiiDetection = h.Clone().(*AIPromptGuard_Response_PIIDetection)
 	} else {
-		target.PiiDetection = proto.Clone(m.GetPiiDetection()).(*AIPromptGaurd_Response_PIIDetection)
+		target.PiiDetection = proto.Clone(m.GetPiiDetection()).(*AIPromptGuard_Response_PIIDetection)
+	}
+
+	if h, ok := interface{}(m.GetWebhook()).(clone.Cloner); ok {
+		target.Webhook = h.Clone().(*AIPromptGuard_Webhook)
+	} else {
+		target.Webhook = proto.Clone(m.GetWebhook()).(*AIPromptGuard_Webhook)
 	}
 
 	return target
 }
 
 // Clone function
-func (m *AIPromptGaurd_Request_PIIDetection) Clone() proto.Message {
-	var target *AIPromptGaurd_Request_PIIDetection
+func (m *AIPromptGuard_Request_PIIDetection) Clone() proto.Message {
+	var target *AIPromptGuard_Request_PIIDetection
 	if m == nil {
 		return target
 	}
-	target = &AIPromptGaurd_Request_PIIDetection{}
+	target = &AIPromptGuard_Request_PIIDetection{}
 
 	target.Action = m.GetAction()
 
@@ -896,12 +923,12 @@ func (m *AIPromptGaurd_Request_PIIDetection) Clone() proto.Message {
 }
 
 // Clone function
-func (m *AIPromptGaurd_Response_PIIDetection) Clone() proto.Message {
-	var target *AIPromptGaurd_Response_PIIDetection
+func (m *AIPromptGuard_Response_PIIDetection) Clone() proto.Message {
+	var target *AIPromptGuard_Response_PIIDetection
 	if m == nil {
 		return target
 	}
-	target = &AIPromptGaurd_Response_PIIDetection{}
+	target = &AIPromptGuard_Response_PIIDetection{}
 
 	return target
 }

@@ -3220,6 +3220,15 @@ spec:
                                                 type: string
                                               type: array
                                           type: object
+                                        webhook:
+                                          properties:
+                                            host:
+                                              type: string
+                                            port:
+                                              maximum: 4294967295
+                                              minimum: 0
+                                              type: integer
+                                          type: object
                                       type: object
                                     response:
                                       properties:
@@ -3236,6 +3245,15 @@ spec:
                                               items:
                                                 type: string
                                               type: array
+                                          type: object
+                                        webhook:
+                                          properties:
+                                            host:
+                                              type: string
+                                            port:
+                                              maximum: 4294967295
+                                              minimum: 0
+                                              type: integer
                                           type: object
                                       type: object
                                   type: object

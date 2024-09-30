@@ -277,15 +277,17 @@ message RouteSettings {
     promptGuard:
       request:
         customResponseMessage: "Rejected due to inappropriate content"
-        matches:
-        - "credit card"
+        regex:
+          matches:
+          - "credit card"
       response:
-        matches:
-        # Mastercard
-        - '(?:^|\D)(5[1-5][0-9]{2}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4})(?:\D|$)'
+        regex:
+          matches:
+          # Mastercard
+          - '(?:^|\D)(5[1-5][0-9]{2}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4})(?:\D|$)'
     ````
   */
-  AIPromptGaurd prompt_guard = 2;
+  AIPromptGuard prompt_guard = 2;
 
   /*
     Retrieval Augmented Generation. https://research.ibm.com/blog/retrieval-augmented-generation-RAG
@@ -311,6 +313,7 @@ message RouteSettings {
     ```
   */
   RAG rag = 3;
+
   /*
     Semantic caching configuration
     Semantic caching allows you to cache previous model responses in order to provide
@@ -508,7 +511,7 @@ message AIPromptEnrichment {
 
 }
 
-message AIPromptGaurd {
+message AIPromptGuard {
 
   message Regex {
     enum BuiltIn {
@@ -524,6 +527,13 @@ message AIPromptGaurd {
     // A list of built-in regexes to mask in the response.
     // matches and builtins are additive.
     repeated BuiltIn builtins = 2;
+  }
+
+  message Webhook {
+    // Host to send the traffic to.
+    string host = 1;
+    // Port to send the traffic to
+    uint32 port = 2;
   }
 
 
@@ -544,10 +554,12 @@ message AIPromptGaurd {
     }
 
     PIIDetection pii_detection = 2;
+
+    Webhook webhook = 3;
     // Custom response message to send back to the client.
     // If not specified, the following default message will be used:
     // "The request was rejected due to inappropriate content"
-    string custom_response_message = 3;
+    string custom_response_message = 4;
   }
 
   message Response {
@@ -556,6 +568,8 @@ message AIPromptGaurd {
     message PIIDetection {}
 
     PIIDetection pii_detection = 2;
+
+    Webhook webhook = 3;
   }
   // Guards for the prompt request
   Request request = 1;

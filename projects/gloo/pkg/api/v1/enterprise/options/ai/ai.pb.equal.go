@@ -606,14 +606,14 @@ func (m *AIPromptEnrichment) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *AIPromptGaurd) Equal(that interface{}) bool {
+func (m *AIPromptGuard) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*AIPromptGaurd)
+	target, ok := that.(*AIPromptGuard)
 	if !ok {
-		that2, ok := that.(AIPromptGaurd)
+		that2, ok := that.(AIPromptGuard)
 		if ok {
 			target = &that2
 		} else {
@@ -1388,14 +1388,14 @@ func (m *AIPromptEnrichment_Message) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *AIPromptGaurd_Regex) Equal(that interface{}) bool {
+func (m *AIPromptGuard_Regex) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*AIPromptGaurd_Regex)
+	target, ok := that.(*AIPromptGuard_Regex)
 	if !ok {
-		that2, ok := that.(AIPromptGaurd_Regex)
+		that2, ok := that.(AIPromptGuard_Regex)
 		if ok {
 			target = &that2
 		} else {
@@ -1434,14 +1434,46 @@ func (m *AIPromptGaurd_Regex) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *AIPromptGaurd_Request) Equal(that interface{}) bool {
+func (m *AIPromptGuard_Webhook) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*AIPromptGaurd_Request)
+	target, ok := that.(*AIPromptGuard_Webhook)
 	if !ok {
-		that2, ok := that.(AIPromptGaurd_Request)
+		that2, ok := that.(AIPromptGuard_Webhook)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetHost(), target.GetHost()) != 0 {
+		return false
+	}
+
+	if m.GetPort() != target.GetPort() {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AIPromptGuard_Request) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AIPromptGuard_Request)
+	if !ok {
+		that2, ok := that.(AIPromptGuard_Request)
 		if ok {
 			target = &that2
 		} else {
@@ -1470,6 +1502,16 @@ func (m *AIPromptGaurd_Request) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetPiiDetection(), target.GetPiiDetection()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetWebhook()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetWebhook()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetWebhook(), target.GetWebhook()) {
 			return false
 		}
 	}
@@ -1482,14 +1524,14 @@ func (m *AIPromptGaurd_Request) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *AIPromptGaurd_Response) Equal(that interface{}) bool {
+func (m *AIPromptGuard_Response) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*AIPromptGaurd_Response)
+	target, ok := that.(*AIPromptGuard_Response)
 	if !ok {
-		that2, ok := that.(AIPromptGaurd_Response)
+		that2, ok := that.(AIPromptGuard_Response)
 		if ok {
 			target = &that2
 		} else {
@@ -1522,18 +1564,28 @@ func (m *AIPromptGaurd_Response) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetWebhook()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetWebhook()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetWebhook(), target.GetWebhook()) {
+			return false
+		}
+	}
+
 	return true
 }
 
 // Equal function
-func (m *AIPromptGaurd_Request_PIIDetection) Equal(that interface{}) bool {
+func (m *AIPromptGuard_Request_PIIDetection) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*AIPromptGaurd_Request_PIIDetection)
+	target, ok := that.(*AIPromptGuard_Request_PIIDetection)
 	if !ok {
-		that2, ok := that.(AIPromptGaurd_Request_PIIDetection)
+		that2, ok := that.(AIPromptGuard_Request_PIIDetection)
 		if ok {
 			target = &that2
 		} else {
@@ -1554,14 +1606,14 @@ func (m *AIPromptGaurd_Request_PIIDetection) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *AIPromptGaurd_Response_PIIDetection) Equal(that interface{}) bool {
+func (m *AIPromptGuard_Response_PIIDetection) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*AIPromptGaurd_Response_PIIDetection)
+	target, ok := that.(*AIPromptGuard_Response_PIIDetection)
 	if !ok {
-		that2, ok := that.(AIPromptGaurd_Response_PIIDetection)
+		that2, ok := that.(AIPromptGuard_Response_PIIDetection)
 		if ok {
 			target = &that2
 		} else {
