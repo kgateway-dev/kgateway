@@ -2,11 +2,13 @@ package discovery_watchlabels
 
 import (
 	"context"
+	"time"
+
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
@@ -106,6 +108,53 @@ func (s *discoveryWatchlabelsSuite) TestDiscoverUpstreamMatchingWatchLabels() {
 	s.Assert().NoError(err, "can re-apply service")
 
 	// expect the Upstream's DiscoveryMeta to eventually match the modified labels from the parent Service
+	s.EventuallyWithT(func(t *assert.CollectT) {
+		us, err = s.testInstallation.ResourceClients.UpstreamClient().Read(s.testInstallation.Metadata.InstallNamespace, labeledUsName, clients.ReadOpts{Ctx: s.ctx})
+		assert.NoError(t, err, "can read upstream")
+
+		assert.Equal(t, map[string]string{
+			"watchedKey": "watchedValue",
+			"bonusKey":   "bonusValue-modified",
+		}, us.GetDiscoveryMetadata().GetLabels())
+	}, 10*time.Second, time.Second)
+}
+
+func (s *discoveryWatchlabelsSuite) TestDiscoverySpecPreserved() {
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, serviceWithLabelsManifest, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assertions.NoError(err, "can delete service")
+	})
+
+	// add one service with labels matching our watchLabels
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, serviceWithLabelsManifest, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err, "can apply service")
+
+	// eventually an Upstream should be created for the Service with matching labels
+	labeledUsName := kubernetes.UpstreamName(s.testInstallation.Metadata.InstallNamespace, "example-svc", 8000)
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		func() (resources.InputResource, error) {
+			return s.testInstallation.ResourceClients.UpstreamClient().Read(s.testInstallation.Metadata.InstallNamespace, labeledUsName, clients.ReadOpts{Ctx: s.ctx})
+		},
+		core.Status_Accepted,
+		defaults.GlooReporter,
+	)
+
+	// the Upstream should have DiscoveryMetadata labels matching the parent Service
+	us, err := s.testInstallation.ResourceClients.UpstreamClient().Read(s.testInstallation.Metadata.InstallNamespace, labeledUsName, clients.ReadOpts{Ctx: s.ctx})
+	s.Assert().NoError(err, "can read upstream")
+
+	s.Assert().NotNil(us.GetKube())
+	s.Assert().Nil(us.GetKube().ServiceSpec)
+
+	// modify the Upstream to have a ServiceSpec
+	us.GetKube().ServiceSpec = &options.ServiceSpec{
+		PluginType: &options.ServiceSpec_GrpcJsonTranscoder{},
+	}
+	updatedUs, err := s.testInstallation.ResourceClients.UpstreamClient().Write(us, clients.WriteOpts{Ctx: s.ctx})
+	s.Assert().NoError(err, "can update upstream")
+	s.Assert().Equal(us.GetKube().ServiceSpec, updatedUs.GetKube().ServiceSpec)
+
+	// expect the Upstream to consistently have the modified Spec
 	s.EventuallyWithT(func(t *assert.CollectT) {
 		us, err = s.testInstallation.ResourceClients.UpstreamClient().Read(s.testInstallation.Metadata.InstallNamespace, labeledUsName, clients.ReadOpts{Ctx: s.ctx})
 		assert.NoError(t, err, "can read upstream")

@@ -1,8 +1,9 @@
 package discovery_watchlabels
 
 import (
-	"github.com/solo-io/skv2/codegen/util"
 	"path/filepath"
+
+	"github.com/solo-io/skv2/codegen/util"
 )
 
 var (
