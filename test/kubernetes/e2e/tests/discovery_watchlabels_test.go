@@ -22,8 +22,9 @@ func TestDiscoveryWatchlabels(t *testing.T) {
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   installNs,
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "discovery-watchlabels-test-helm.yaml"),
+			InstallNamespace:          installNs,
+			ProfileValuesManifestFile: e2e.KubernetesGatewayProfilePath,
+			ValuesManifestFile:        filepath.Join(util.MustGetThisDir(), "manifests", "discovery-watchlabels-test-helm.yaml"),
 		},
 	)
 

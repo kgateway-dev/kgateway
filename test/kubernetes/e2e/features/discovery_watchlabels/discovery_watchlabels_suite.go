@@ -43,6 +43,9 @@ func (s *discoveryWatchlabelsSuite) TestDiscoverUpstreamMatchingWatchLabels() {
 
 		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, serviceWithoutLabelsManifest, "-n", s.testInstallation.Metadata.InstallNamespace)
 		s.Assertions.NoError(err, "can delete service")
+
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, serviceWithNoMatchingLabelsManifest, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assertions.NoError(err, "can delete service")
 	})
 
 	// add one service with labels matching our watchLabels
@@ -53,7 +56,11 @@ func (s *discoveryWatchlabelsSuite) TestDiscoverUpstreamMatchingWatchLabels() {
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, serviceWithoutLabelsManifest, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().NoError(err, "can apply service")
 
-	// eventually an Upstream should be created for the Service with labels
+	// add one service with a label matching our watchLabels but with an unwatched value
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, serviceWithNoMatchingLabelsManifest, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err, "can apply service")
+
+	// eventually an Upstream should be created for the Service with matching labels
 	labeledUsName := kubernetes.UpstreamName(s.testInstallation.Metadata.InstallNamespace, "example-svc", 8000)
 	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
 		func() (resources.InputResource, error) {
@@ -78,6 +85,17 @@ func (s *discoveryWatchlabelsSuite) TestDiscoverUpstreamMatchingWatchLabels() {
 		s.ctx, &v1.Upstream{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      noLabelsUsName,
+				Namespace: s.testInstallation.Metadata.InstallNamespace,
+			},
+		},
+	)
+
+	// no Upstream should be created for the Service that has a watched label without a watched value
+	noMatchingLabelsUsName := kubernetes.UpstreamName(s.testInstallation.Metadata.InstallNamespace, "example-svc-no-matching-labels", 8000)
+	s.testInstallation.Assertions.ConsistentlyObjectsNotExist(
+		s.ctx, &v1.Upstream{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      noMatchingLabelsUsName,
 				Namespace: s.testInstallation.Metadata.InstallNamespace,
 			},
 		},
