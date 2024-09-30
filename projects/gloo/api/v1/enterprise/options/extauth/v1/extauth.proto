@@ -1166,6 +1166,11 @@ message ApiKeyAuth {
         // to the request.
         bool required = 2;
     }
+
+    // API key metadata may contain data is is invalid for a header, such as a newline. By default, this data will be validated
+    // in the data plane and mitigated in a way that provides a consistent experience for the user and visibility for the operator.
+    // This validation comes with a performance cost, and can be disabled by setting this field to `true`.
+    bool skip_metadata_validation = 8;
 }
 message K8sSecretApiKeyStorage {
     // Identify all valid API key secrets that match the provided label selector.<br/>
@@ -2118,6 +2123,11 @@ message ExtAuthConfig {
             K8sSecretApiKeyStorage k8s_secret_apikey_storage = 4;
             AerospikeApiKeyStorage aerospike_apikey_storage = 5;
         }
+
+    // API key metadata may contain data is is invalid for a header, such as a newline. By default, this data will be validated
+    // in the data plane and mitigated in a way that provides a consistent experience for the user and visibility for the operator.
+    // This validation comes with a performance cost, and can be disabled by setting this field to `true`.
+        bool skip_metadata_validation = 6;
     }
 
     message OpaAuthConfig {
