@@ -3245,8 +3245,11 @@ type ApiKeyAuth struct {
 	//
 	//	*ApiKeyAuth_K8SSecretApikeyStorage
 	//	*ApiKeyAuth_AerospikeApikeyStorage
-	StorageBackend         isApiKeyAuth_StorageBackend `protobuf_oneof:"storage_backend"`
-	SkipMetadataValidation bool                        `protobuf:"varint,8,opt,name=skip_metadata_validation,json=skipMetadataValidation,proto3" json:"skip_metadata_validation,omitempty"`
+	StorageBackend isApiKeyAuth_StorageBackend `protobuf_oneof:"storage_backend"`
+	// API key metadata may contain data is is invalid for a header, such as a newline. By default, this data will be validated
+	// in the data plane and mitigated in a way that provides a consistent experience for the user and visibility for the operator.
+	// This validation comes with a performance cost, and can be disabled by setting this field to `true`.
+	SkipMetadataValidation bool `protobuf:"varint,8,opt,name=skip_metadata_validation,json=skipMetadataValidation,proto3" json:"skip_metadata_validation,omitempty"`
 }
 
 func (x *ApiKeyAuth) Reset() {
@@ -8766,8 +8769,11 @@ type ExtAuthConfig_ApiKeyAuthConfig struct {
 	//
 	//	*ExtAuthConfig_ApiKeyAuthConfig_K8SSecretApikeyStorage
 	//	*ExtAuthConfig_ApiKeyAuthConfig_AerospikeApikeyStorage
-	StorageBackend         isExtAuthConfig_ApiKeyAuthConfig_StorageBackend `protobuf_oneof:"storage_backend"`
-	SkipMetadataValidation bool                                            `protobuf:"varint,6,opt,name=skip_metadata_validation,json=skipMetadataValidation,proto3" json:"skip_metadata_validation,omitempty"`
+	StorageBackend isExtAuthConfig_ApiKeyAuthConfig_StorageBackend `protobuf_oneof:"storage_backend"`
+	// API key metadata may contain data is is invalid for a header, such as a newline. By default, this data will be validated
+	// in the data plane and mitigated in a way that provides a consistent experience for the user and visibility for the operator.
+	// This validation comes with a performance cost, and can be disabled by setting this field to `true`.
+	SkipMetadataValidation bool `protobuf:"varint,6,opt,name=skip_metadata_validation,json=skipMetadataValidation,proto3" json:"skip_metadata_validation,omitempty"`
 }
 
 func (x *ExtAuthConfig_ApiKeyAuthConfig) Reset() {
