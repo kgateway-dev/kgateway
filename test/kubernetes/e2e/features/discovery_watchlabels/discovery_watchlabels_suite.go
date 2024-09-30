@@ -2,14 +2,11 @@ package discovery_watchlabels
 
 import (
 	"context"
-	"time"
-
 	"github.com/onsi/gomega"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
-	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -110,15 +107,13 @@ func (s *discoveryWatchlabelsSuite) TestDiscoverUpstreamMatchingWatchLabels() {
 	s.Assert().NoError(err, "can re-apply service")
 
 	// expect the Upstream's DiscoveryMeta to eventually match the modified labels from the parent Service
-	s.EventuallyWithT(func(t *assert.CollectT) {
+	s.testInstallation.Assertions.Gomega.Eventually(func() (map[string]string, error) {
 		us, err = s.testInstallation.ResourceClients.UpstreamClient().Read(s.testInstallation.Metadata.InstallNamespace, labeledUsName, clients.ReadOpts{Ctx: s.ctx})
-		assert.NoError(t, err, "can read upstream")
-
-		assert.Equal(t, map[string]string{
-			"watchedKey": "watchedValue",
-			"bonusKey":   "bonusValue-modified",
-		}, us.GetDiscoveryMetadata().GetLabels())
-	}, 10*time.Second, time.Second)
+		return us.GetDiscoveryMetadata().GetLabels(), err
+	}).Should(gomega.Equal(map[string]string{
+		"watchedKey": "watchedValue",
+		"bonusKey":   "bonusValue-modified",
+	}))
 }
 
 func (s *discoveryWatchlabelsSuite) TestDiscoverySpecPreserved() {
@@ -146,7 +141,7 @@ func (s *discoveryWatchlabelsSuite) TestDiscoverySpecPreserved() {
 	s.Assert().NoError(err, "can read upstream")
 
 	s.Assert().NotNil(us.GetKube())
-	s.Assert().Nil(us.GetKube().ServiceSpec)
+	s.Assert().Nil(us.GetKube().GetServiceSpec())
 
 	// modify the Upstream to have a ServiceSpec
 	us.GetKube().ServiceSpec = &options.ServiceSpec{
@@ -154,11 +149,11 @@ func (s *discoveryWatchlabelsSuite) TestDiscoverySpecPreserved() {
 	}
 	updatedUs, err := s.testInstallation.ResourceClients.UpstreamClient().Write(us, clients.WriteOpts{Ctx: s.ctx, OverwriteExisting: true})
 	s.Assert().NoError(err, "can update upstream")
-	s.Assert().NotNil(updatedUs.GetKube().ServiceSpec)
+	s.Assert().NotNil(updatedUs.GetKube().GetServiceSpec())
 
 	// expect the Upstream to consistently have the modified Spec
 	s.testInstallation.Assertions.Gomega.Consistently(func() (*options.ServiceSpec, error) {
-		us, err := s.testInstallation.ResourceClients.UpstreamClient().Read(us.Metadata.GetNamespace(), us.Metadata.GetName(), clients.ReadOpts{Ctx: s.ctx})
-		return us.GetKube().ServiceSpec, err
+		us, err := s.testInstallation.ResourceClients.UpstreamClient().Read(us.GetMetadata().GetNamespace(), us.GetMetadata().GetName(), clients.ReadOpts{Ctx: s.ctx})
+		return us.GetKube().GetServiceSpec(), err
 	}).Should(gomega.Not(gomega.BeNil()))
 }
