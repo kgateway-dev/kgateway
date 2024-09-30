@@ -12,3 +12,10 @@ settings:
       operator: In
       values:
         - match
+
+gateway:
+  validation:
+    failurePolicy: Fail
+    allowWarnings: false
+    webhook:
+      skipDeleteValidationResources: []
