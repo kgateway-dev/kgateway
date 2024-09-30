@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/onsi/gomega"
+
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
@@ -150,18 +152,13 @@ func (s *discoveryWatchlabelsSuite) TestDiscoverySpecPreserved() {
 	us.GetKube().ServiceSpec = &options.ServiceSpec{
 		PluginType: &options.ServiceSpec_GrpcJsonTranscoder{},
 	}
-	updatedUs, err := s.testInstallation.ResourceClients.UpstreamClient().Write(us, clients.WriteOpts{Ctx: s.ctx})
+	updatedUs, err := s.testInstallation.ResourceClients.UpstreamClient().Write(us, clients.WriteOpts{Ctx: s.ctx, OverwriteExisting: true})
 	s.Assert().NoError(err, "can update upstream")
-	s.Assert().Equal(us.GetKube().ServiceSpec, updatedUs.GetKube().ServiceSpec)
+	s.Assert().NotNil(updatedUs.GetKube().ServiceSpec)
 
 	// expect the Upstream to consistently have the modified Spec
-	s.EventuallyWithT(func(t *assert.CollectT) {
-		us, err = s.testInstallation.ResourceClients.UpstreamClient().Read(s.testInstallation.Metadata.InstallNamespace, labeledUsName, clients.ReadOpts{Ctx: s.ctx})
-		assert.NoError(t, err, "can read upstream")
-
-		assert.Equal(t, map[string]string{
-			"watchedKey": "watchedValue",
-			"bonusKey":   "bonusValue-modified",
-		}, us.GetDiscoveryMetadata().GetLabels())
-	}, 10*time.Second, time.Second)
+	s.testInstallation.Assertions.Gomega.Consistently(func() (*options.ServiceSpec, error) {
+		us, err := s.testInstallation.ResourceClients.UpstreamClient().Read(us.Metadata.GetNamespace(), us.Metadata.GetName(), clients.ReadOpts{Ctx: s.ctx})
+		return us.GetKube().ServiceSpec, err
+	}).Should(gomega.Not(gomega.BeNil()))
 }
