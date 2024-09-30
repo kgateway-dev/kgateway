@@ -1061,6 +1061,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		})
 	})
 
+	// as of v1.17 these tests are replaced by the discovery watchlabels suite in the new kubernetes e2e tests
 	Context("upstream discovery", func() {
 		var createdServices []string
 

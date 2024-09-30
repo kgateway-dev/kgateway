@@ -21,6 +21,7 @@ import (
 var _ e2e.NewSuiteFunc = NewDiscoveryWatchlabelsSuite
 
 // discoveryWatchlabelsSuite is the Suite of tests for validating Upstream discovery behavior when watchLabels are enabled
+// This suite replaces the "upstream discovery" Context block from kube2e gateway tests
 type discoveryWatchlabelsSuite struct {
 	suite.Suite
 
