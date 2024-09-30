@@ -22,8 +22,9 @@ func TestWatchNamespaceSelector(t *testing.T) {
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   installNs,
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "watch-namespace-selector.yaml"),
+			InstallNamespace:          installNs,
+			ProfileValuesManifestFile: e2e.EdgeGatewayProfilePath,
+			ValuesManifestFile:        filepath.Join(util.MustGetThisDir(), "manifests", "watch-namespace-selector.yaml"),
 		},
 	)
 
