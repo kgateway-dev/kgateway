@@ -24,7 +24,9 @@ gateway:
     alwaysAcceptResources: false
     # added to preserve behavior tested by this suite.
     warnMissingTlsSecret: false
-    disableTransformationValidation: false
+    # transformation validation is disabled because full envoy validation is enabled.
+    disableTransformationValidation: true
+    fullEnvoyValidation: true
 kubeGateway:
   # This is the field that enables the K8s Gateway Integration in Gloo Gateway
   enabled: true
