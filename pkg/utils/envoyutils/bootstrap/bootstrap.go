@@ -133,31 +133,33 @@ func FromSnapshot(
 	routedCluster := map[string]struct{}{}
 
 	// Gather up all of the clusters that we target with RouteConfigs that are associated with a FilterChain.
-	if err := processListeners(routedCluster, resources.Listeners, resources.routes); err != nil {
+	if err := extractRoutedClustersFromListeners(routedCluster, resources.Listeners, resources.routes); err != nil {
 		return "", err
 	}
 
 	// Next, we will look through our Snapshot's clusters and delete the ones which are
 	// already routed to.
-	processClusters(routedCluster, resources.Clusters, resources.endpoints)
+	convertToStaticClusters(routedCluster, resources.Clusters, resources.endpoints)
 
 	// We now need to find clusters which do not exist, even though they are targeted by
 	// a route. In static mode, envoy won't start without these. At this point in the
 	// processing, routedClusters holds this list, so we use it to create blackhole
-	// clusters for these routes to target.
+	// clusters for these routes to target. It is important to have unique clusters
+	// for the targets since some envoy functionality relies on such setup, like
+	// weighted destinations.
 	addBlackholeClusters(routedCluster, resources.Clusters)
 
 	return FromEnvoyResources(resources)
 }
 
-// processListeners accepts a hash set of strings containing the names of clusters
+// extractRoutedClustersFromListeners accepts a hash set of strings containing the names of clusters
 // to which routes point, a slice of pointers to Listener structs,
 // and a slice of pointers to RouteConfiguration structs from the snapshot. It looks
 // through the FilterChains on each Listener for an HttpConnectionManager, gets the
 // routes on that hcm, and gets all of the clusters targeted by those routes. It then
 // converts the hcm config to use static RouteConfiguration. routedCluster and elements
 // of listeners are mutated in this function.
-func processListeners(
+func extractRoutedClustersFromListeners(
 	routedCluster map[string]struct{},
 	listeners []*envoy_config_listener_v3.Listener,
 	routes []*envoy_config_route_v3.RouteConfiguration,
@@ -204,13 +206,13 @@ func processListeners(
 	return nil
 }
 
-// processClusters accepts a hash set of strings containing the names of clusters
+// convertToStaticClusters accepts a hash set of strings containing the names of clusters
 // to which routes point, a slice of pointers to Cluster structs,
 // and a slice of pointers to ClusterLoadAssignment structs from the snapshot. It
 // deletes all clusters that exist from the routedCluster hash set, then converts
 // the cluster's EDS config to static config using the endpoints from the snapshot.
 // clusters is mutated in this function.
-func processClusters(
+func convertToStaticClusters(
 	routedCluster map[string]struct{},
 	clusters []*envoy_config_cluster_v3.Cluster,
 	endpoints []*envoy_config_endpoint_v3.ClusterLoadAssignment,
@@ -281,7 +283,7 @@ func getHcmForFilterChain(fc *envoy_config_listener_v3.FilterChain) (
 			if hcm, ok := hcmAny.(*envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager); ok {
 				return hcm, f, nil
 			} else {
-				return nil, nil, eris.New("hcm config casting to concrete failed; likely wrong type")
+				return nil, nil, eris.Errorf("filter %v has hcm type url but casting to concrete failed", f.GetName())
 			}
 		}
 	}

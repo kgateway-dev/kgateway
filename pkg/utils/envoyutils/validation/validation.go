@@ -3,6 +3,7 @@ package validation
 import (
 	"context"
 
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/envoyutils/bootstrap"
 	"github.com/solo-io/gloo/pkg/utils/envutils"
 	"github.com/solo-io/gloo/projects/envoyinit/pkg/runner"
@@ -33,13 +34,14 @@ func ValidateSnapshot(
 	snap envoycache.Snapshot,
 ) error {
 	// THIS IS CRITICAL SO WE DO NOT INTERFERE WITH THE CONTROL PLANE.
+	// The logic for converting xDS to static bootstrap mutates some of
+	// the inputs, which is unacceptable when calling from translation.
 	snap = snap.Clone()
-
-	logger := contextutils.LoggerFrom(ctx)
 
 	bootstrapJson, err := bootstrap.FromSnapshot(ctx, snap)
 	if err != nil {
-		logger.Error(err)
+		err = eris.Wrap(err, "error converting xDS snapshot to static bootstrap")
+		contextutils.LoggerFrom(ctx).Error(err)
 		return err
 	}
 
