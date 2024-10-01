@@ -320,10 +320,11 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 		// Since ocspStaple is []byte, but we want the file path, we're storing it in a separate string variable
 		ocspStapleFile = sslFiles.GetOcspStaple()
 
-		err := isValidSslKeyPair(certChain, privateKey, rootCa)
+		cleanCertChain, err := cleanedSslKeyPair(certChain, privateKey, rootCa)
 		if err != nil {
 			return nil, InvalidTlsSecretError(nil, err)
 		}
+		certChain = cleanCertChain
 	} else if sslSds := cs.GetSds(); sslSds != nil {
 		tlsContext, err := s.handleSds(sslSds, VerifySanListToMatchSanList(cs.GetVerifySubjectAltName()))
 		if err != nil {
@@ -429,16 +430,11 @@ func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string,
 	return certChain, privateKey, rootCa, ocspStaple, nil
 }
 
-func isValidSslKeyPair(certChain, privateKey, rootCa string) error {
-	_, err := cleanedSslKeyPair(certChain, privateKey, rootCa)
-	return err
-}
-
 func cleanedSslKeyPair(certChain, privateKey, rootCa string) (cleanedChain string, err error) {
 
 	// in the case where we _only_ provide a rootCa, we do not want to validate tls.key+tls.cert
 	if (certChain == "") && (privateKey == "") && (rootCa != "") {
-		return "", nil
+		return certChain, nil
 	}
 
 	// validate that the cert and key are a valid pair
@@ -459,7 +455,7 @@ func cleanedSslKeyPair(certChain, privateKey, rootCa string) (cleanedChain strin
 	cleanedChainBytes, err := cert.EncodeCertificates(candidateCert...)
 	cleanedChain = string(cleanedChainBytes)
 
-	return cleanedChain, nil
+	return cleanedChain, err
 }
 
 func (s *sslConfigTranslator) ResolveSslParamsConfig(params *ssl.SslParameters) (*envoyauth.TlsParameters, error) {

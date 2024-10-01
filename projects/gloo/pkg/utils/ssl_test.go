@@ -183,7 +183,7 @@ var _ = Describe("Ssl", func() {
 				tlsSecret.CertChain += `-----BEGIN CERTIFICATE-----
 MIID6TCCA1ICAQEwDQYJKoZIhvcNAQEFBQAwgYsxCzAJBgNVBAYTAlVTMRMwEQYD`
 				_, err := resolveCommonSslConfig(c(), secrets)
-				Expect(err).To(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
 			},
 			Entry("upstreamCfg", func() utils.CertSource { return upstreamCfg }),
@@ -191,7 +191,8 @@ MIID6TCCA1ICAQEwDQYJKoZIhvcNAQEFBQAwgYsxCzAJBgNVBAYTAlVTMRMwEQYD`
 		)
 		DescribeTable("should scrub invalid non-certs like bad headers (no space afterdefinitions) if invalid private cert is provided",
 			func(c func() utils.CertSource) {
-				// unterminated cert in chain is valid for go b ut not envoy
+				// invalid headers should not make envoy puke.
+				// when shared as is without scrubbing envoy nacks.
 				tlsSecret.CertChain += `# subject
 
 
@@ -199,8 +200,7 @@ MIID6TCCA1ICAQEwDQYJKoZIhvcNAQEFBQAwgYsxCzAJBgNVBAYTAlVTMRMwEQYD`
 
 -----BEGIN HEADERS-----
 Header: 1
------END HEADERS----------BEGIN CERTIFICATE-----
-MIID6TCCA1ICAQEwDQYJKoZIhvcNAQEFBQAwgYsxCzAJBgNVBAYTAlVTMRMwEQYD`
+-----END HEADERS-------`
 				_, err := resolveCommonSslConfig(c(), secrets)
 				Expect(err).NotTo(HaveOccurred())
 
