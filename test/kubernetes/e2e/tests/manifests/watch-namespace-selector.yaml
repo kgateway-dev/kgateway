@@ -1,0 +1,26 @@
+discovery:
+  enabled: false
+
+global:
+  glooRbac:
+    namespaced: false
+
+settings:
+  singleNamespace: false
+  watchNamespaceSelectors:
+  - matchLabels:
+      label: match
+  - matchExpressions:
+    - key: expression
+      operator: In
+      values:
+        - match
+
+gateway:
+  validation:
+    enabled: true
+    failurePolicy: "Fail"
+    alwaysAcceptResources: false
+    allowWarnings: false
+    webhook:
+      skipDeleteValidationResources: []

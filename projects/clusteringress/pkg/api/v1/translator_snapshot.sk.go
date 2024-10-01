@@ -13,6 +13,7 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -80,6 +81,16 @@ func (s *TranslatorSnapshot) RemoveFromResourceList(resource resources.Resource)
 	default:
 		return eris.Errorf("did not remove the resource because its type does not exist [%T]", resource)
 	}
+}
+
+func (s *TranslatorSnapshot) RemoveMatches(predicate core.Predicate) {
+	var Clusteringresses github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList
+	for _, res := range s.Clusteringresses {
+		if matches := predicate(res.GetMetadata()); !matches {
+			Clusteringresses = append(Clusteringresses, res)
+		}
+	}
+	s.Clusteringresses = Clusteringresses
 }
 
 func (s *TranslatorSnapshot) UpsertToResourceList(resource resources.Resource) error {

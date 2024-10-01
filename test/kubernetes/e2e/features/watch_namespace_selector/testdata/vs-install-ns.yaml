@@ -1,0 +1,14 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: vs-install-ns
+spec:
+  virtualHost:
+    domains:
+    - 'install-ns'
+    routes:
+      - matchers:
+         - prefix: /
+        directResponseAction:
+          status: 200
+          body: "Hello, world!"

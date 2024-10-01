@@ -1,4 +1,4 @@
-package utils_test
+package namespaces_test
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 
 func TestUtils(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Utils Suite")
+	RunSpecs(t, "Namespace Suite")
 }

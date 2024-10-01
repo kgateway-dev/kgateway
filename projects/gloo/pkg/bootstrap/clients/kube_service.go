@@ -4,6 +4,7 @@ import (
 	"context"
 
 	errors "github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -27,7 +28,7 @@ func KubeServiceClientForSettings(ctx context.Context,
 	// We are running in kubernetes
 	switch settings.GetConfigSource().(type) {
 	case *v1.Settings_KubernetesConfigSource:
-		if err := initializeForKube(ctx, cfg, clientset, kubeCoreCache, settings.GetRefreshRate(), settings.GetWatchNamespaces()); err != nil {
+		if err := initializeForKube(ctx, cfg, clientset, kubeCoreCache, settings.GetRefreshRate(), settingsutil.GetNamespacesToWatch(settings)); err != nil {
 			return nil, errors.Wrapf(err, "initializing kube cfg clientset and core cache")
 		}
 		return service.NewServiceClient(*clientset, *kubeCoreCache), nil
