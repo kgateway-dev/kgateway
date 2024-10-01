@@ -47,22 +47,12 @@ type Context struct {
 	ChartUri string
 }
 
-// Validate returns an error if the defined Context is invalid for a test
-func (c *Context) Validate() error {
-	// We are intentionally restrictive, and expect a ProfileValuesManifestFile to be defined.
-	// This is because we want all existing and future tests to rely on this concept
-	if err := c.validateValuesManifest("ProfileValuesManifestFile", c.ProfileValuesManifestFile); err != nil {
-		return err
-	}
-
-	if err := c.validateValuesManifest("ValuesManifestFile", c.ValuesManifestFile); err != nil {
-		return err
-	}
-
-	return nil
+// ValidateGlooGatewayContext returns an error if the provided Context is invalid
+func ValidateGlooGatewayContext(context *Context) error {
+	return ValidateContext(context, validateGlooGatewayValuesManifest)
 }
 
-func (c *Context) validateValuesManifest(name string, file string) error {
+func validateGlooGatewayValuesManifest(name string, file string) error {
 	if file == "" {
 		return eris.Errorf("%s must be provided in glooGateway.Context", name)
 	}
@@ -75,5 +65,21 @@ func (c *Context) validateValuesManifest(name string, file string) error {
 	if err != nil {
 		return eris.Wrapf(err, "failed to validate helm values for %s", name)
 	}
+	return nil
+}
+
+// ValidateContext returns an error if the provided Context is invalid
+// This accepts a manifestValidator so that it can be used by Gloo Gateway Enterprise
+func ValidateContext(context *Context, manifestValidator func(string, string) error) error {
+	// We are intentionally restrictive, and expect a ProfileValuesManifestFile to be defined.
+	// This is because we want all existing and future tests to rely on this concept
+	if err := manifestValidator("ProfileValuesManifestFile", context.ProfileValuesManifestFile); err != nil {
+		return err
+	}
+
+	if err := manifestValidator("ValuesManifestFile", context.ValuesManifestFile); err != nil {
+		return err
+	}
+
 	return nil
 }
