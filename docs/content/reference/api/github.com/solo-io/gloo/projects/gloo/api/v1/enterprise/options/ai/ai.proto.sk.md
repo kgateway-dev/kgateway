@@ -43,10 +43,7 @@ weight: 5
 - [BuiltIn](#builtin)
 - [Webhook](#webhook)
 - [Request](#request)
-- [PIIDetection](#piidetection)
-- [Action](#action)
 - [Response](#response)
-- [PIIDetection](#piidetection)
   
 
 
@@ -764,7 +761,6 @@ Data store from which to cache the request/response pairs
 
 ```yaml
 "regex": .ai.options.gloo.solo.io.AIPromptGuard.Regex
-"piiDetection": .ai.options.gloo.solo.io.AIPromptGuard.Request.PIIDetection
 "webhook": .ai.options.gloo.solo.io.AIPromptGuard.Webhook
 "customResponseMessage": string
 
@@ -773,40 +769,8 @@ Data store from which to cache the request/response pairs
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `regex` | [.ai.options.gloo.solo.io.AIPromptGuard.Regex](../ai.proto.sk/#regex) |  |
-| `piiDetection` | [.ai.options.gloo.solo.io.AIPromptGuard.Request.PIIDetection](../ai.proto.sk/#piidetection) |  |
 | `webhook` | [.ai.options.gloo.solo.io.AIPromptGuard.Webhook](../ai.proto.sk/#webhook) |  |
 | `customResponseMessage` | `string` | Custom response message to send back to the client. If not specified, the following default message will be used: "The request was rejected due to inappropriate content". |
-
-
-
-
----
-### PIIDetection
-
-
-
-```yaml
-"action": .ai.options.gloo.solo.io.AIPromptGuard.Request.PIIDetection.Action
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `action` | [.ai.options.gloo.solo.io.AIPromptGuard.Request.PIIDetection.Action](../ai.proto.sk/#action) |  |
-
-
-
-
----
-### Action
-
-
-
-| Name | Description |
-| ----- | ----------- | 
-| `MASK` | Mask the detected PII |
-| `REJECT` | Reject the request |
-| `MASK_AND_DEMASK` | This option will mask the detected PII and also demask it in the response |
 
 
 
@@ -818,7 +782,6 @@ Data store from which to cache the request/response pairs
 
 ```yaml
 "regex": .ai.options.gloo.solo.io.AIPromptGuard.Regex
-"piiDetection": .ai.options.gloo.solo.io.AIPromptGuard.Response.PIIDetection
 "webhook": .ai.options.gloo.solo.io.AIPromptGuard.Webhook
 
 ```
@@ -826,23 +789,7 @@ Data store from which to cache the request/response pairs
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `regex` | [.ai.options.gloo.solo.io.AIPromptGuard.Regex](../ai.proto.sk/#regex) |  |
-| `piiDetection` | [.ai.options.gloo.solo.io.AIPromptGuard.Response.PIIDetection](../ai.proto.sk/#piidetection) |  |
 | `webhook` | [.ai.options.gloo.solo.io.AIPromptGuard.Webhook](../ai.proto.sk/#webhook) |  |
-
-
-
-
----
-### PIIDetection
-
-
-
-```yaml
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
 
 
 

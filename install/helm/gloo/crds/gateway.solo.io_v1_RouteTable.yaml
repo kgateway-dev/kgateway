@@ -183,12 +183,6 @@ spec:
                                   properties:
                                     customResponseMessage:
                                       type: string
-                                    piiDetection:
-                                      properties:
-                                        action:
-                                          type: string
-                                          x-kubernetes-int-or-string: true
-                                      type: object
                                     regex:
                                       properties:
                                         builtins:
@@ -213,8 +207,6 @@ spec:
                                   type: object
                                 response:
                                   properties:
-                                    piiDetection:
-                                      type: object
                                     regex:
                                       properties:
                                         builtins:
