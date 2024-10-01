@@ -1,6 +1,3 @@
-discovery:
-  enabled: false
-
 global:
   glooRbac:
     namespaced: false
@@ -18,9 +15,7 @@ settings:
 
 gateway:
   validation:
-    enabled: true
-    failurePolicy: "Fail"
-    alwaysAcceptResources: false
+    failurePolicy: Fail
     allowWarnings: false
     webhook:
       skipDeleteValidationResources: []

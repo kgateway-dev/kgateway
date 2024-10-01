@@ -1061,6 +1061,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		})
 	})
 
+	// as of v1.17 these tests are replaced by the discovery watchlabels suite in the new kubernetes e2e tests
 	Context("upstream discovery", func() {
 		var createdServices []string
 
@@ -1193,6 +1194,64 @@ var _ = Describe("Kube2e: gateway", func() {
 			Eventually(func() (*gloov1.Upstream, error) {
 				return getUpstream(svcName)
 			}, "15s", "0.5s").ShouldNot(BeNil())
+		})
+
+		It("Modifies discovered Upstream when Service is modified", func() {
+			// This tests the fix for a bug whereby Discovery would fail to update discovered Upstreams on Service
+			// updates when watchLabels were enabled
+
+			watchedKey, watchedValue := "watchKey", "watchValue"
+			bonusKey, bonusValue, modifiedBonusValue := "foo", "bar", "modified-bar"
+
+			// set watchLabels for Discovery to select on
+			labels := map[string]string{
+				watchedKey: watchedValue,
+			}
+			setWatchLabels(labels)
+
+			// add an additional label which we'll modify later
+			labels[bonusKey] = bonusValue
+
+			svcName := "uds-test-service"
+			createServiceWithWatchedLabels(svcName, labels)
+
+			// confirm the Upstream has the Service's labels in its DiscoveryMetadata
+			Eventually(func() (map[string]string, error) {
+				us, err := getUpstream(svcName)
+				if err != nil {
+					return nil, err
+				}
+				return us.DiscoveryMetadata.GetLabels(), nil
+			}, "15s", "0.5s").Should(BeEquivalentTo(
+				map[string]string{
+					"gloo":     svcName,
+					watchedKey: watchedValue,
+					bonusKey:   bonusValue,
+				},
+			))
+
+			// get the service, modify its bonus label, and update it
+			svc, err := resourceClientset.KubeClients().CoreV1().Services(namespace).Get(ctx, svcName, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			svc.Labels[bonusKey] = modifiedBonusValue
+
+			_, err = resourceClientset.KubeClients().CoreV1().Services(namespace).Update(ctx, svc, metav1.UpdateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			// expect the discovered Upstream's DiscoveryMetadata to eventually reflect the updated label
+			Eventually(func() (map[string]string, error) {
+				us, err := getUpstream(svcName)
+				if err != nil {
+					return nil, err
+				}
+				return us.DiscoveryMetadata.GetLabels(), nil
+			}, "15s", "0.5s").Should(BeEquivalentTo(
+				map[string]string{
+					"gloo":     svcName,
+					watchedKey: watchedValue,
+					bonusKey:   modifiedBonusValue,
+				},
+			))
 		})
 
 		It("Does not discover upstream with no label when watched labels are set", func() {

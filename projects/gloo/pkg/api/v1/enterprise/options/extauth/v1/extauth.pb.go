@@ -813,7 +813,7 @@ type CustomAuth struct {
 	// This allows the server to base the auth decision on metadata that you define on the source of the request.
 	//
 	// This attribute is analogous to Envoy's config.filter.http.ext_authz.v2.CheckSettings. See the official
-	// [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/ext_authz/v2/ext_authz.proto.html?highlight=ext_authz#config-filter-http-ext-authz-v2-checksettings)
+	// [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto#envoy-v3-api-msg-extensions-filters-http-ext-authz-v3-checksettings)
 	// for more details.
 	ContextExtensions map[string]string `protobuf:"bytes,1,rep,name=context_extensions,json=contextExtensions,proto3" json:"context_extensions,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// [Enterprise-only]
@@ -1446,7 +1446,7 @@ type OAuth2_OidcAuthorizationCode struct {
 type OAuth2_AccessTokenValidation struct {
 	// provide the access token on the request and let gloo handle authorization.
 	//
-	// according to https://tools.ietf.org/html/rfc6750 you can pass tokens through:
+	// according to https://datatracker.ietf.org/doc/html/rfc6750 you can pass tokens through:
 	// - form-encoded body parameter. recommended, more likely to appear. e.g.: Authorization: Bearer mytoken123
 	// - URI query parameter e.g. access_token=mytoken123
 	// - and (preferably) secure cookies
@@ -1875,7 +1875,7 @@ func (x *DiscoveryOverride) GetEndSessionEndpoint() string {
 	return ""
 }
 
-// The json web key set (JWKS) (https://tools.ietf.org/html/rfc7517) is discovered at an interval
+// The json web key set (JWKS) (https://datatracker.ietf.org/doc/html/rfc7517) is discovered at an interval
 // from a remote source. When keys rotate in the remote source, there may be a delay in the
 // local source picking up those new keys. Therefore, a user could execute a request with a token
 // that has been signed by a key in the remote JWKS, but the local cache doesn't have the key yet.
@@ -2697,12 +2697,12 @@ func (x *PlainOAuth2) GetDisableClientSecret() *wrappers.BoolValue {
 // Defines how JSON Web Token (JWT) access tokens are validated.
 //
 // Tokens are validated using a JSON Web Key Set (as defined in
-// [Section 5 of RFC7517](https://tools.ietf.org/html/rfc7517#section-5)),
+// [Section 5 of RFC7517](https://datatracker.ietf.org/doc/html/rfc7517#section-5)),
 // which can be either inlined in the configuration or fetched from a remote location via HTTP.
 // Any keys in the JWKS that are not intended for signature verification (i.e. whose
-// ["use" parameter](https://tools.ietf.org/html/rfc7517#section-4.2) is not "sig")
+// ["use" parameter](https://datatracker.ietf.org/doc/html/rfc7517#section-4.2) is not "sig")
 // will be ignored by the system, as will keys that do not specify a
-// ["kid" (Key ID) parameter](https://tools.ietf.org/html/rfc7517#section-4.2).
+// ["kid" (Key ID) parameter](https://datatracker.ietf.org/doc/html/rfc7517#section-4.2).
 //
 // The JWT to be validated must define non-empty "kid" and "alg" headers. The "kid" header
 // determines which key in the JWKS will be used to verify the signature of the token;
@@ -2806,7 +2806,7 @@ func (*JwtValidation_RemoteJwks_) isJwtValidation_JwksSourceSpecifier() {}
 func (*JwtValidation_LocalJwks_) isJwtValidation_JwksSourceSpecifier() {}
 
 // Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated
-// [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662)
+// [OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662)
 //
 // If the token introspection url requires client authentication, both the client_id and client_secret
 // are required. Unless disable_client_secret is set, when only one is provided, the config will be rejected.
@@ -2816,7 +2816,7 @@ type IntrospectionValidation struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint.
+	// The URL for the [OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662) endpoint.
 	// If provided, the (opaque) access token provided or received from the oauth authorization endpoint
 	// will be validated against this endpoint, or locally cached responses for this access token.
 	IntrospectionUrl string `protobuf:"bytes,1,opt,name=introspection_url,json=introspectionUrl,proto3" json:"introspection_url,omitempty"`
@@ -2826,7 +2826,7 @@ type IntrospectionValidation struct {
 	// Your client secret as registered with the issuer.
 	// Optional: Use if the token introspection url requires client authentication.
 	ClientSecretRef *core.ResourceRef `protobuf:"bytes,3,opt,name=client_secret_ref,json=clientSecretRef,proto3" json:"client_secret_ref,omitempty"`
-	// The name of the [introspection response](https://tools.ietf.org/html/rfc7662#section-2.2)
+	// The name of the [introspection response](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2)
 	// attribute that contains the ID of the resource owner (e.g. `sub`, `username`).
 	// If specified, the external auth server will use the value of the attribute as the identifier of the
 	// authenticated user and add it to the request headers and/or dynamic metadata (depending on how the
@@ -3046,7 +3046,7 @@ type isAccessTokenValidation_ValidationType interface {
 }
 
 type AccessTokenValidation_IntrospectionUrl struct {
-	// The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint.
+	// The URL for the [OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662) endpoint.
 	// If provided, the (opaque) access token provided or received from the oauth authorization endpoint
 	// will be validated against this endpoint, or locally cached responses for this access token.
 	// This field is deprecated as it does not support authenticated introspection requests
@@ -3063,7 +3063,7 @@ type AccessTokenValidation_Jwt struct {
 
 type AccessTokenValidation_Introspection struct {
 	// Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated
-	// [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) specification.
+	// [OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662) specification.
 	Introspection *IntrospectionValidation `protobuf:"bytes,3,opt,name=introspection,proto3,oneof"`
 }
 
@@ -3081,7 +3081,7 @@ type AccessTokenValidation_RequiredScopes struct {
 	// Require access token to have all of the scopes in the given list.
 	// This configuration applies to both opaque and JWT tokens. In the case of opaque tokens,
 	// this will check the scopes returned in the "scope" member of introspection response
-	// (as described in [Section 2.2 of RFC7662](https://tools.ietf.org/html/rfc7662#section-2.2).
+	// (as described in [Section 2.2 of RFC7662](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2).
 	// In case of JWTs the scopes to be validated are expected to be contained in the "scope" claim of the
 	// token in the form of a space-separated string.
 	// Omitting this field means that scope validation will be skipped.
@@ -4295,7 +4295,7 @@ func (x *BackoffStrategy) GetMaxInterval() *duration.Duration {
 	return nil
 }
 
-// The message specifies the retry policy of the external gRPC service when unable to initally connect.
+// The message specifies the retry policy of the external gRPC service when unable to initially connect.
 type RetryPolicy struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -6399,7 +6399,7 @@ func (*OidcAuthorizationCode_Default) Descriptor() ([]byte, []int) {
 }
 
 // For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
-// This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
+// This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
 type OidcAuthorizationCode_Azure struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -6413,7 +6413,7 @@ type OidcAuthorizationCode_Azure struct {
 	// This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`,
 	// depending on how your Azure account is provisioned.
 	TenantId string `protobuf:"bytes,2,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
-	// The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API.
+	// The client secret of the ExtAuthService app that is registered with MS Entra to communicate with the MS Graph API.
 	ClientSecret *core.ResourceRef `protobuf:"bytes,3,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
 	// Redis connection details to cache MS Entera claims.
 	// This way, you avoid performance issues of accessing the Microsoft Graph API too many times.
@@ -6551,7 +6551,7 @@ type OidcAuthorizationCode_ClientAuthentication_PrivateKeyJwt struct {
 
 	// Signing key for the JWT used to authenticate the client
 	SigningKeyRef *core.ResourceRef `protobuf:"bytes,1,opt,name=signing_key_ref,json=signingKeyRef,proto3" json:"signing_key_ref,omitempty"`
-	// Amount of time for which the JWT is valid. No maximmum is enforced, but different IDPs may impose limits on how far in
+	// Amount of time for which the JWT is valid. No maximum is enforced, but different IDPs may impose limits on how far in
 	// the future the expiration time is allowed to be. If omitted, default is 5s.
 	ValidFor *duration.Duration `protobuf:"bytes,2,opt,name=valid_for,json=validFor,proto3" json:"valid_for,omitempty"`
 }
@@ -8256,7 +8256,7 @@ type isExtAuthConfig_AccessTokenValidationConfig_ValidationType interface {
 }
 
 type ExtAuthConfig_AccessTokenValidationConfig_IntrospectionUrl struct {
-	// The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint.
+	// The URL for the [OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662) endpoint.
 	// If provided, the (opaque) access token provided or received from the oauth authorization endpoint
 	// will be validated against this endpoint, or locally cached responses for this access token.
 	// This field is deprecated as it does not support authenticated introspection requests
@@ -8273,7 +8273,7 @@ type ExtAuthConfig_AccessTokenValidationConfig_Jwt struct {
 
 type ExtAuthConfig_AccessTokenValidationConfig_Introspection struct {
 	// Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated
-	// [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) specification.
+	// [OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662) specification.
 	Introspection *ExtAuthConfig_AccessTokenValidationConfig_IntrospectionValidation `protobuf:"bytes,3,opt,name=introspection,proto3,oneof"`
 }
 
@@ -8294,7 +8294,7 @@ type ExtAuthConfig_AccessTokenValidationConfig_RequiredScopes struct {
 	// Require access token to have all of the scopes in the given list.
 	// This configuration applies to both opaque and JWT tokens. In the case of opaque tokens,
 	// this will check the scopes returned in the "scope" member of introspection response
-	// (as described in [Section 2.2 of RFC7662](https://tools.ietf.org/html/rfc7662#section-2.2).
+	// (as described in [Section 2.2 of RFC7662](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2).
 	// In case of JWTs the scopes to be validated are expected to be contained in the "scope" claim of the
 	// token in the form of a space-separated string.
 	// Omitting this field means that scope validation will be skipped.
@@ -8569,7 +8569,7 @@ type ExtAuthConfig_OAuth2Config_OidcAuthorizationCode struct {
 type ExtAuthConfig_OAuth2Config_AccessTokenValidationConfig struct {
 	// provide the access token on the request and let gloo handle authorization.
 	//
-	// according to https://tools.ietf.org/html/rfc6750 you can pass tokens through:
+	// according to https://datatracker.ietf.org/doc/html/rfc6750 you can pass tokens through:
 	// - form-encoded body parameter. recommended, more likely to appear. e.g.: Authorization: Bearer mytoken123
 	// - URI query parameter e.g. access_token=mytoken123
 	// - and (preferably) secure cookies
@@ -9754,8 +9754,8 @@ type ExtAuthConfig_OidcAuthorizationCodeConfig_PkJwtClientAuthenticationConfig s
 
 	// Signing key for the JWT used for client authentication
 	SigningKey string `protobuf:"bytes,1,opt,name=signing_key,json=signingKey,proto3" json:"signing_key,omitempty"`
-	// Amount of time for which the JWT is valid. No maximmum is enforced, but different IDPs may impose limits on how far in
-	// the future the expiration time is allowed to be. Defaults in 5s in front end, but expected to be set explictly here
+	// Amount of time for which the JWT is valid. No maximum is enforced, but different IDPs may impose limits on how far in
+	// the future the expiration time is allowed to be. Defaults in 5s in front end, but expected to be set explicitly here
 	ValidFor *duration.Duration `protobuf:"bytes,2,opt,name=valid_for,json=validFor,proto3" json:"valid_for,omitempty"`
 }
 
@@ -10010,7 +10010,7 @@ func (*ExtAuthConfig_OidcAuthorizationCodeConfig_Default) Descriptor() ([]byte, 
 }
 
 // For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
-// This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
+// This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
 type ExtAuthConfig_OidcAuthorizationCodeConfig_Azure struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -10024,7 +10024,7 @@ type ExtAuthConfig_OidcAuthorizationCodeConfig_Azure struct {
 	// This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`,
 	// depending on how your Azure account is provisioned.
 	TenantId string `protobuf:"bytes,2,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
-	// The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API.
+	// The client secret of the ExtAuthService app that is registered with MS Entra to communicate with the MS Graph API.
 	ClientSecret string `protobuf:"bytes,3,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
 	// Redis connection details to cache MS Entera claims.
 	// This way, you avoid performance issues of accessing the Microsoft Graph API too many times.
@@ -10096,12 +10096,12 @@ func (x *ExtAuthConfig_OidcAuthorizationCodeConfig_Azure) GetClaimsCachingOption
 // Defines how JSON Web Token (JWT) access tokens are validated.
 //
 // Tokens are validated using a JSON Web Key Set (as defined in
-// [Section 5 of RFC7517](https://tools.ietf.org/html/rfc7517#section-5)),
+// [Section 5 of RFC7517](https://datatracker.ietf.org/doc/html/rfc7517#section-5)),
 // which can be either inlined in the configuration or fetched from a remote location via HTTP.
 // Any keys in the JWKS that are not intended for signature verification (i.e. whose
-// ["use" parameter](https://tools.ietf.org/html/rfc7517#section-4.2) is not "sig")
+// ["use" parameter](https://datatracker.ietf.org/doc/html/rfc7517#section-4.2) is not "sig")
 // will be ignored by the system, as will keys that do not specify a
-// ["kid" (Key ID) parameter](https://tools.ietf.org/html/rfc7517#section-4.2).
+// ["kid" (Key ID) parameter](https://datatracker.ietf.org/doc/html/rfc7517#section-4.2).
 //
 // The JWT to be validated must define non-empty "kid" and "alg" headers. The "kid" header
 // determines which key in the JWKS will be used to verify the signature of the token;
@@ -10207,7 +10207,7 @@ func (*ExtAuthConfig_AccessTokenValidationConfig_JwtValidation_LocalJwks_) isExt
 }
 
 // Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated
-// [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662)
+// [OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662)
 //
 // If the token introspection url requires client authentication, both the client_id and client_secret
 // are required. If only one is provided, the config will be rejected.
@@ -10217,7 +10217,7 @@ type ExtAuthConfig_AccessTokenValidationConfig_IntrospectionValidation struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint.
+	// The URL for the [OAuth2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662) endpoint.
 	// If provided, the (opaque) access token provided or received from the oauth authorization endpoint
 	// will be validated against this endpoint, or locally cached responses for this access token.
 	IntrospectionUrl string `protobuf:"bytes,1,opt,name=introspection_url,json=introspectionUrl,proto3" json:"introspection_url,omitempty"`
@@ -10227,7 +10227,7 @@ type ExtAuthConfig_AccessTokenValidationConfig_IntrospectionValidation struct {
 	// Your client secret as registered with the issuer.
 	// Optional: Use if the token introspection url requires client authentication.
 	ClientSecret string `protobuf:"bytes,3,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
-	// The name of the [introspection response](https://tools.ietf.org/html/rfc7662#section-2.2)
+	// The name of the [introspection response](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2)
 	// attribute that contains the ID of the resource owner (e.g. `sub`, `username`).
 	// If specified, the external auth server will use the value of the attribute as the identifier of the
 	// authenticated user and add it to the request headers and/or dynamic metadata (depending on how the
