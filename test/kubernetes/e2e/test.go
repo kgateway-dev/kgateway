@@ -53,6 +53,11 @@ func CreateTestInstallation(
 	runtimeContext := testruntime.NewContext()
 	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName)
 
+	if err := gloogateway.ValidateGlooGatewayContext(glooGatewayContext); err != nil {
+		// We error loudly if the context is misconfigured
+		panic(err)
+	}
+
 	return CreateTestInstallationForCluster(t, runtimeContext, clusterContext, glooGatewayContext)
 }
 
@@ -68,11 +73,6 @@ func CreateTestInstallationForCluster(
 	clusterContext *cluster.Context,
 	glooGatewayContext *gloogateway.Context,
 ) *TestInstallation {
-	if err := glooGatewayContext.Validate(); err != nil {
-		// We error loudly if the context is misconfigured
-		panic(err)
-	}
-
 	installation := &TestInstallation{
 		// RuntimeContext contains the set of properties that are defined at runtime by whoever is invoking tests
 		RuntimeContext: runtimeContext,
