@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
+
 	"go.opencensus.io/stats"
 	"go.uber.org/zap"
 
@@ -90,6 +92,8 @@ func (c *setupSimpleEmitter) Snapshots(ctx context.Context) (<-chan *SetupSnapsh
 					switch typed := res.(type) {
 					case *Settings:
 						currentSnapshot.Settings = append(currentSnapshot.Settings, typed)
+					case *github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespace:
+						currentSnapshot.Kubenamespaces = append(currentSnapshot.Kubenamespaces, typed)
 					default:
 						select {
 						case errs <- fmt.Errorf("SetupSnapshotEmitter "+

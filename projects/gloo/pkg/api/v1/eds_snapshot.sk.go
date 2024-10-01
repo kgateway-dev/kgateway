@@ -11,6 +11,7 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -78,6 +79,16 @@ func (s *EdsSnapshot) RemoveFromResourceList(resource resources.Resource) error 
 	default:
 		return eris.Errorf("did not remove the resource because its type does not exist [%T]", resource)
 	}
+}
+
+func (s *EdsSnapshot) RemoveMatches(predicate core.Predicate) {
+	var Upstreams UpstreamList
+	for _, res := range s.Upstreams {
+		if matches := predicate(res.GetMetadata()); !matches {
+			Upstreams = append(Upstreams, res)
+		}
+	}
+	s.Upstreams = Upstreams
 }
 
 func (s *EdsSnapshot) UpsertToResourceList(resource resources.Resource) error {

@@ -70,7 +70,7 @@ weight: 5
 | `portValue` | `int` |  Only one of `portValue` or `namedPort` can be set. |
 | `namedPort` | `string` | This is only valid if :ref:`resolver_name <envoy_api_field_config.core.v3.SocketAddress.resolver_name>` is specified below and the named resolver is capable of named port resolution. Only one of `namedPort` or `portValue` can be set. |
 | `resolverName` | `string` | The name of the custom resolver. This must have been registered with Envoy. If this is empty, a context dependent default applies. If the address is a concrete IP address, no resolution will occur. If address is a hostname this should be set for resolution other than DNS. Specifying a custom resolver with *STRICT_DNS* or *LOGICAL_DNS* will generate an error at runtime. |
-| `ipv4Compat` | `bool` | When binding to an IPv6 address above, this enables `IPv4 compatibility <https://tools.ietf.org/html/rfc3493#page-11>`_. Binding to ``::`` will allow both IPv4 and IPv6 connections, with peer IPv4 addresses mapped into IPv6 space as ``::FFFF:<IPv4-address>``. |
+| `ipv4Compat` | `bool` | When binding to an IPv6 address above, this enables `IPv4 compatibility <https://datatracker.ietf.org/doc/html/rfc3493#page-11>`_. Binding to ``::`` will allow both IPv4 and IPv6 connections, with peer IPv4 addresses mapped into IPv6 space as ``::FFFF:<IPv4-address>``. |
 
 
 
@@ -157,7 +157,7 @@ management servers.
 
  
 CidrRange specifies an IP Address and a prefix length to construct
-the subnet mask for a `CIDR <https://tools.ietf.org/html/rfc4632>`_ range.
+the subnet mask for a `CIDR <https://datatracker.ietf.org/doc/html/rfc4632>`_ range.
 
 ```yaml
 "addressPrefix": string

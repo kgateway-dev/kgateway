@@ -40,6 +40,8 @@
 |kubeGateway.gatewayParameters.glooGateway.envoyContainer.resources.requests.cpu|string||amount of CPUs|
 |kubeGateway.gatewayParameters.glooGateway.proxyDeployment.replicas|int32|1|number of instances to deploy. If set to null, a default of 1 will be imposed.|
 |kubeGateway.gatewayParameters.glooGateway.service.type|string|LoadBalancer|K8s service type. If set to null, a default of LoadBalancer will be imposed.|
+|kubeGateway.gatewayParameters.glooGateway.serviceAccount.extraLabels.NAME|string||Extra labels to add to the service account.|
+|kubeGateway.gatewayParameters.glooGateway.serviceAccount.extraAnnotations.NAME|string||Extra annotations to add to the service account.|
 |kubeGateway.gatewayParameters.glooGateway.sdsContainer.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |kubeGateway.gatewayParameters.glooGateway.sdsContainer.image.repository|string|sds|The image repository (name) for the container.|
 |kubeGateway.gatewayParameters.glooGateway.sdsContainer.image.digest|string||The container image's hash digest (e.g. 'sha256:12345...'), consumed when variant=standard.|
@@ -180,7 +182,8 @@
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.ports[].protocol|string|||
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.ports[].hostIP|string|||
 |kubeGateway.gatewayParameters.glooGateway.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container. Default is false.|
-|settings.watchNamespaces[]|string||whitelist of namespaces for Gloo Edge to watch for services and CRDs. Empty list means all namespaces|
+|settings.watchNamespaces[]|string||whitelist of namespaces for Gloo Edge to watch for services and CRDs. Empty list means all namespaces. If this and WatchNamespaceSelectors are specified, this takes precedence and WatchNamespaceSelectors is ignored|
+|settings.watchNamespaceSelectors|interface||A list of Kubernetes selectors that specify the set of namespaces to restrict the namespaces that Gloo controllers take into consideration when watching for resources. Elements in the list are disjunctive (OR semantics), i.e. a namespace will be included if it matches any selector. An empty list means all namespaces. If this and WatchNamespaces are specified, WatchNamespaces takes precedence and this is ignored|
 |settings.writeNamespace|string||namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Edge Discovery.|
 |settings.integrations.knative.enabled|bool|false|enabled knative components|
 |settings.integrations.knative.version|string|0.10.0|the version of knative installed to the cluster. if using version < 0.8.0, Gloo Edge will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress|

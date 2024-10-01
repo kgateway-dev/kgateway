@@ -17,6 +17,7 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -467,6 +468,121 @@ func (s *ApiSnapshot) RemoveFromResourceList(resource resources.Resource) error 
 	default:
 		return eris.Errorf("did not remove the resource because its type does not exist [%T]", resource)
 	}
+}
+
+func (s *ApiSnapshot) RemoveMatches(predicate core.Predicate) {
+	var Artifacts gloo_solo_io.ArtifactList
+	for _, res := range s.Artifacts {
+		if matches := predicate(res.GetMetadata()); !matches {
+			Artifacts = append(Artifacts, res)
+		}
+	}
+	s.Artifacts = Artifacts
+	var Endpoints gloo_solo_io.EndpointList
+	for _, res := range s.Endpoints {
+		if matches := predicate(res.GetMetadata()); !matches {
+			Endpoints = append(Endpoints, res)
+		}
+	}
+	s.Endpoints = Endpoints
+	var Proxies gloo_solo_io.ProxyList
+	for _, res := range s.Proxies {
+		if matches := predicate(res.GetMetadata()); !matches {
+			Proxies = append(Proxies, res)
+		}
+	}
+	s.Proxies = Proxies
+	var UpstreamGroups gloo_solo_io.UpstreamGroupList
+	for _, res := range s.UpstreamGroups {
+		if matches := predicate(res.GetMetadata()); !matches {
+			UpstreamGroups = append(UpstreamGroups, res)
+		}
+	}
+	s.UpstreamGroups = UpstreamGroups
+	var Secrets gloo_solo_io.SecretList
+	for _, res := range s.Secrets {
+		if matches := predicate(res.GetMetadata()); !matches {
+			Secrets = append(Secrets, res)
+		}
+	}
+	s.Secrets = Secrets
+	var Upstreams gloo_solo_io.UpstreamList
+	for _, res := range s.Upstreams {
+		if matches := predicate(res.GetMetadata()); !matches {
+			Upstreams = append(Upstreams, res)
+		}
+	}
+	s.Upstreams = Upstreams
+	var AuthConfigs enterprise_gloo_solo_io.AuthConfigList
+	for _, res := range s.AuthConfigs {
+		if matches := predicate(res.GetMetadata()); !matches {
+			AuthConfigs = append(AuthConfigs, res)
+		}
+	}
+	s.AuthConfigs = AuthConfigs
+	var Ratelimitconfigs github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigList
+	for _, res := range s.Ratelimitconfigs {
+		if matches := predicate(res.GetMetadata()); !matches {
+			Ratelimitconfigs = append(Ratelimitconfigs, res)
+		}
+	}
+	s.Ratelimitconfigs = Ratelimitconfigs
+	var VirtualServices gateway_solo_io.VirtualServiceList
+	for _, res := range s.VirtualServices {
+		if matches := predicate(res.GetMetadata()); !matches {
+			VirtualServices = append(VirtualServices, res)
+		}
+	}
+	s.VirtualServices = VirtualServices
+	var RouteTables gateway_solo_io.RouteTableList
+	for _, res := range s.RouteTables {
+		if matches := predicate(res.GetMetadata()); !matches {
+			RouteTables = append(RouteTables, res)
+		}
+	}
+	s.RouteTables = RouteTables
+	var Gateways gateway_solo_io.GatewayList
+	for _, res := range s.Gateways {
+		if matches := predicate(res.GetMetadata()); !matches {
+			Gateways = append(Gateways, res)
+		}
+	}
+	s.Gateways = Gateways
+	var VirtualHostOptions gateway_solo_io.VirtualHostOptionList
+	for _, res := range s.VirtualHostOptions {
+		if matches := predicate(res.GetMetadata()); !matches {
+			VirtualHostOptions = append(VirtualHostOptions, res)
+		}
+	}
+	s.VirtualHostOptions = VirtualHostOptions
+	var RouteOptions gateway_solo_io.RouteOptionList
+	for _, res := range s.RouteOptions {
+		if matches := predicate(res.GetMetadata()); !matches {
+			RouteOptions = append(RouteOptions, res)
+		}
+	}
+	s.RouteOptions = RouteOptions
+	var HttpGateways gateway_solo_io.MatchableHttpGatewayList
+	for _, res := range s.HttpGateways {
+		if matches := predicate(res.GetMetadata()); !matches {
+			HttpGateways = append(HttpGateways, res)
+		}
+	}
+	s.HttpGateways = HttpGateways
+	var TcpGateways gateway_solo_io.MatchableTcpGatewayList
+	for _, res := range s.TcpGateways {
+		if matches := predicate(res.GetMetadata()); !matches {
+			TcpGateways = append(TcpGateways, res)
+		}
+	}
+	s.TcpGateways = TcpGateways
+	var GraphqlApis graphql_gloo_solo_io.GraphQLApiList
+	for _, res := range s.GraphqlApis {
+		if matches := predicate(res.GetMetadata()); !matches {
+			GraphqlApis = append(GraphqlApis, res)
+		}
+	}
+	s.GraphqlApis = GraphqlApis
 }
 
 func (s *ApiSnapshot) UpsertToResourceList(resource resources.Resource) error {
