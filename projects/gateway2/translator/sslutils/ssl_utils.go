@@ -32,7 +32,6 @@ func ValidateTlsSecret(sslSecret *corev1.Secret) (cleanedCertChain string, err e
 	return cleanedCertChain, err
 }
 
-
 func cleanedSslKeyPair(certChain, privateKey, rootCa string) (cleanedChain string, err error) {
 
 	// in the case where we _only_ provide a rootCa, we do not want to validate tls.key+tls.cert
@@ -43,7 +42,7 @@ func cleanedSslKeyPair(certChain, privateKey, rootCa string) (cleanedChain strin
 	// validate that the cert and key are a valid pair
 	_, err = tls.X509KeyPair([]byte(certChain), []byte(privateKey))
 	if err != nil {
-		return ""m err
+		return "", err
 	}
 
 	// validate that the parsed piece is valid
