@@ -189,7 +189,7 @@ MIID6TCCA1ICAQEwDQYJKoZIhvcNAQEFBQAwgYsxCzAJBgNVBAYTAlVTMRMwEQYD`
 			Entry("upstreamCfg", func() utils.CertSource { return upstreamCfg }),
 			Entry("downstreamCfg", func() utils.CertSource { return downstreamCfg }),
 		)
-		DescribeTable("should scrub invalid non-certs like bad headers (no space afterdefinitions) if invalid private cert is provided",
+		DescribeTable("should scrub invalid non-certs like bad headers (no space after header definition) ",
 			func(c func() utils.CertSource) {
 				// invalid headers should not make envoy puke.
 				// when shared as is without scrubbing envoy nacks.
