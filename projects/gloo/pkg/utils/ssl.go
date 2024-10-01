@@ -438,14 +438,13 @@ func cleanedSslKeyPair(certChain, privateKey, rootCa string) (cleanedChain strin
 
 	// in the case where we _only_ provide a rootCa, we do not want to validate tls.key+tls.cert
 	if (certChain == "") && (privateKey == "") && (rootCa != "") {
-		return
+		return "", nil
 	}
 
 	// validate that the cert and key are a valid pair
 	_, err = tls.X509KeyPair([]byte(certChain), []byte(privateKey))
 	if err != nil {
-
-		return
+		return "", err
 	}
 
 	// validate that the parsed piece is valid
@@ -455,12 +454,12 @@ func cleanedSslKeyPair(certChain, privateKey, rootCa string) (cleanedChain strin
 	candidateCert, err := cert.ParseCertsPEM([]byte(certChain))
 	if err != nil {
 		// return err rather than sanitize. This is to maintain UX with older versions and to keep in line with gateway2 pkg.
-		return
+		return "", err
 	}
 	cleanedChainBytes, err := cert.EncodeCertificates(candidateCert...)
 	cleanedChain = string(cleanedChainBytes)
 
-	return
+	return cleanedChain, nil
 }
 
 func (s *sslConfigTranslator) ResolveSslParamsConfig(params *ssl.SslParameters) (*envoyauth.TlsParameters, error) {

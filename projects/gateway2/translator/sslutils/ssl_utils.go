@@ -19,14 +19,8 @@ var (
 )
 
 // ValidateTlsSecret and return a cleaned cert
-func ValidateTlsSecret(secret *corev1.Secret) (cleanedCertChain string, err error) {
-	// why does this just do the same thing as validatedCertData?
-	// idk
-	return validatedCertData(secret)
+func ValidateTlsSecret(sslSecret *corev1.Secret) (cleanedCertChain string, err error) {
 
-}
-
-func validatedCertData(sslSecret *corev1.Secret) (cleanedCertChain string, err error) {
 	certChain := string(sslSecret.Data[corev1.TLSCertKey])
 	privateKey := string(sslSecret.Data[corev1.TLSPrivateKeyKey])
 	rootCa := string(sslSecret.Data[corev1.ServiceAccountRootCAKey])
@@ -35,9 +29,10 @@ func validatedCertData(sslSecret *corev1.Secret) (cleanedCertChain string, err e
 	if err != nil {
 		err = InvalidTlsSecretError(sslSecret, err)
 	}
-	return
+	return cleanedCertChain, err
 }
 
+// isValidSslKeyPair validates that the certChain and privateKey are a valid pair
 func isValidSslKeyPair(certChain, privateKey, rootCa []byte) error {
 	_, err := cleanedSslKeyPair(string(certChain), string(privateKey), string(rootCa))
 	return err
@@ -53,7 +48,6 @@ func cleanedSslKeyPair(certChain, privateKey, rootCa string) (cleanedChain strin
 	// validate that the cert and key are a valid pair
 	_, err = tls.X509KeyPair([]byte(certChain), []byte(privateKey))
 	if err != nil {
-
 		return
 	}
 
