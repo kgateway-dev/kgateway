@@ -10,9 +10,8 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options/contextoptions"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
-
 	v1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients/vault"
 
 	kubeconverters "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
 
@@ -115,7 +114,7 @@ func UseConsulClients(client *api.Client, rootKey string, queryOptions *api.Quer
 func UseVaultClients(ctx context.Context, client *vaultapi.Client, pathPrefix, rootKey string) {
 	lock.Lock()
 	defer lock.Unlock()
-	vaultClient = clients.NewVaultSecretClientFactory(ctx, clients.NoopVaultClientInitFunc(client), pathPrefix, rootKey)
+	vaultClient = vault.NewVaultSecretClientFactory(ctx, vault.NoopVaultClientInitFunc(client), pathPrefix, rootKey)
 }
 
 func MustKubeClient() kubernetes.Interface {
