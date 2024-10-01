@@ -23,7 +23,7 @@ jobs:
           payload="${{ github.event.client_payload.lts }}"
           echo "dispatch_lts=$payload" >> $GITHUB_OUTPUT
 
-  configure-branches:
+  copy-docs:
     runs-on: ubuntu-latest
     steps:
     - name: Get LTS branch version
@@ -84,11 +84,6 @@ jobs:
         git checkout -b ${branch}
         echo "branch=${branch}" >> $GITHUB_OUTPUT
         popd || exit 1
-
-  copy-docs:
-    runs-on: ubuntu-latest
-    needs: configure-branches
-    steps:
     - name: Generate docs
       env:
         GITHUB_TOKEN: ${{ secrets.DOCS_TOKEN }}
