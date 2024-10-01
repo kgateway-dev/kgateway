@@ -3,9 +3,7 @@ changelog:
     issueLink: https://github.com/solo-io/solo-projects/issues/6772
     resolvesIssue: false
     description: >-
-      Changes the 1.17.8 tls secret validation strictness.
-      Instead of just performing pure go validation and erroring if we lose things we now will be slightly less aggressive for certs.
-      We still validate several pieces of the cert but also scrub down to usable bits.
-      Flip side here is that we may miss some partially invalid pieces of PEM.
+      Changes to downgrade the level of strictness added in 1.17.8 for TLS secret validation.
+      We still validate several pieces of the cert but also scrub down to usable bits. This means we avoid envoy nacks while allowing more non-useful or functional info in our TLS secrets.
       This means we are RFC compliant but it may mean that there could exist some cert data in an edge case which we will elide from envoy but previously woul be nacked.
   
