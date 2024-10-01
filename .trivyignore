@@ -54,10 +54,11 @@ CVE-2024-34156
 # or later
 CVE-2024-45258
 
-# This CVE affects the packc/pgx dependency which is used in ext-auth-service
+# These CVEs affect the packc/pgx dependency which is used in ext-auth-service
 # The dependency is exclusively used in the monetization feature which we don't believe any customer uses and which is
 # set to be deprecated
-# Nevertheless the CVE has been addressed in the v1.15 LTS branch and later, however it is impractical to resolve in 1.14
+# Nevertheless the CVEs have been addressed in the v1.15 LTS branch and later, however it is impractical to resolve in 1.14
 # due to a number of other requisite dependency bumps
 # Therefore we include this entry for now and should remove it once 1.14 is no longer an LTS branch
 CVE-2024-27289
+CVE-2024-27304
