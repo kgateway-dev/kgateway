@@ -2023,9 +2023,9 @@ message ExtAuthConfig {
             AerospikeApiKeyStorage aerospike_apikey_storage = 5;
         }
 
-    // API key metadata may contain data is is invalid for a header, such as a newline. By default, this data will be validated
-    // in the data plane and mitigated in a way that provides a consistent experience for the user and visibility for the operator.
-    // This validation comes with a performance cost, and can be disabled by setting this field to `true`.
+        // API key metadata may contain data is is invalid for a header, such as a newline. By default, this data will be validated
+        // in the data plane and mitigated in a way that provides a consistent experience for the user and visibility for the operator.
+        // This validation comes with a performance cost, and can be disabled by setting this field to `true`.
         bool skip_metadata_validation = 6;
     }
 
