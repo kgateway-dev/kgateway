@@ -491,6 +491,8 @@ func translateSslConfig(
 		if err != nil {
 			return nil, err
 		}
+		// The resulting sslconfig will still have to go through a real translation where we run through this again.
+		// This means that while its nice to still fail early here we dont need to scrub the actual contents of the secret.
 		if _, err := sslutils.ValidateTlsSecret(secret.(*corev1.Secret)); err != nil {
 			return nil, err
 		}
