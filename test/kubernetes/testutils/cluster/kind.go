@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/solo-io/gloo/pkg/schemes"
+
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"k8s.io/client-go/kubernetes"
@@ -13,12 +15,11 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
-	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
 )
 
 // MustKindContext returns the Context for a KinD cluster with the given name
 func MustKindContext(clusterName string) *Context {
-	return MustKindContextWithScheme(clusterName, kubetestclients.MustClientScheme())
+	return MustKindContextWithScheme(clusterName, schemes.DefaultScheme())
 }
 
 // MustKindContextWithScheme returns the Context for a KinD cluster with the given name and scheme
