@@ -177,13 +177,32 @@ var _ = Describe("Ssl", func() {
 			Entry("upstreamCfg", func() utils.CertSource { return upstreamCfg }),
 			Entry("downstreamCfg", func() utils.CertSource { return downstreamCfg }),
 		)
-		DescribeTable("should fail if invalid for envoy cert is provided",
+		DescribeTable("should fail if a cert which is invalid for envoy is provided",
 			func(c func() utils.CertSource) {
 				// unterminated cert in chain is valid for go b ut not envoy
 				tlsSecret.CertChain += `-----BEGIN CERTIFICATE-----
 MIID6TCCA1ICAQEwDQYJKoZIhvcNAQEFBQAwgYsxCzAJBgNVBAYTAlVTMRMwEQYD`
 				_, err := resolveCommonSslConfig(c(), secrets)
-				Expect(err).To(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
+
+			},
+			Entry("upstreamCfg", func() utils.CertSource { return upstreamCfg }),
+			Entry("downstreamCfg", func() utils.CertSource { return downstreamCfg }),
+		)
+		DescribeTable("should scrub invalid non-certs like bad headers (no space after header definition) ",
+			func(c func() utils.CertSource) {
+				// invalid headers should not make envoy puke.
+				// when shared as is without scrubbing envoy nacks.
+				tlsSecret.CertChain += `# subject
+
+
+
+
+-----BEGIN HEADERS-----
+Header: 1
+-----END HEADERS-------`
+				_, err := resolveCommonSslConfig(c(), secrets)
+				Expect(err).NotTo(HaveOccurred())
 
 			},
 			Entry("upstreamCfg", func() utils.CertSource { return upstreamCfg }),
