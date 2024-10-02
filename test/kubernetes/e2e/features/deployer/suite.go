@@ -65,7 +65,7 @@ func (s *testingSuite) SetupSuite() {
 		testdefaults.NginxPodManifest:  {testdefaults.NginxPod, testdefaults.NginxSvc},
 		gatewayWithoutParameters:       {proxyService, proxyServiceAccount, proxyDeployment},
 		gatewayWithParameters:          {proxyService, proxyServiceAccount, proxyDeployment, gwParams},
-		selfManagedGatewayManifestFile: {},
+		selfManagedGatewayManifestFile: {gwParams},
 	}
 }
 
@@ -194,8 +194,9 @@ func (s *testingSuite) TestSelfManagedGateway() {
 	s.testInstallation.Assertions.ConsistentlyObjectsNotExist(s.ctx, proxyService, proxyServiceAccount, proxyDeployment)
 }
 
+// patchGatewayParameters accepts a reference to an object, and a patch function
+// It then queries the object, performs the patch in memory, and writes the object back to the cluster
 func (s *testingSuite) patchGatewayParameters(objectMeta metav1.ObjectMeta, patchFn func(*v1alpha1.GatewayParameters)) {
-	// modify the number of replicas in the GatewayParameters
 	gatewayParameters := &v1alpha1.GatewayParameters{}
 	err := s.testInstallation.ClusterContext.Client.Get(s.ctx, client.ObjectKey{
 		Name:      objectMeta.GetName(),
