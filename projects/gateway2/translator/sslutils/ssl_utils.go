@@ -3,7 +3,6 @@ package sslutils
 import (
 	"crypto/tls"
 	"fmt"
-	"strings"
 
 	"github.com/rotisserie/eris"
 	corev1 "k8s.io/api/core/v1"
@@ -19,59 +18,44 @@ var (
 	NoCertificateFoundError = eris.New("no certificate information found")
 )
 
-func ValidateTlsSecret(secret *corev1.Secret) error {
-	err := validatedCertData(secret)
+// ValidateTlsSecret and return a cleaned cert
+func ValidateTlsSecret(sslSecret *corev1.Secret) (cleanedCertChain string, err error) {
+
+	certChain := string(sslSecret.Data[corev1.TLSCertKey])
+	privateKey := string(sslSecret.Data[corev1.TLSPrivateKeyKey])
+	rootCa := string(sslSecret.Data[corev1.ServiceAccountRootCAKey])
+
+	cleanedCertChain, err = cleanedSslKeyPair(certChain, privateKey, rootCa)
 	if err != nil {
-		return err
+		err = InvalidTlsSecretError(sslSecret, err)
 	}
-	return nil
+	return cleanedCertChain, err
 }
 
-func validatedCertData(sslSecret *corev1.Secret) error {
-	certChain := sslSecret.Data[corev1.TLSCertKey]
-	privateKey := sslSecret.Data[corev1.TLSPrivateKeyKey]
-	rootCa := sslSecret.Data[corev1.ServiceAccountRootCAKey]
+func cleanedSslKeyPair(certChain, privateKey, rootCa string) (cleanedChain string, err error) {
 
-	// we always return an error when the certChain and/or privateKey are invalid
-	// in theory we could propagate only the valid blocks of the certChain (ie the output of cert.ParseCertsPEM(certChain))º
-	// and this would be accepted by Envoy, however we choose to maintain consistency between the secret at rest and in
-	// Envoy, which also maintains consistency with existing UX
-	err := isValidSslKeyPair(certChain, privateKey, rootCa)
+	// in the case where we _only_ provide a rootCa, we do not want to validate tls.key+tls.cert
+	if (certChain == "") && (privateKey == "") && (rootCa != "") {
+		return certChain, nil
+	}
+
+	// validate that the cert and key are a valid pair
+	_, err = tls.X509KeyPair([]byte(certChain), []byte(privateKey))
 	if err != nil {
-		return InvalidTlsSecretError(sslSecret, err)
+		return "", err
 	}
 
-	return nil
-}
-
-// isValidSslKeyPair validates that the cert and key are a valid pair
-// It previously only checked in go but now also checks that nothing is lost in cert encoding
-func isValidSslKeyPair(certChain, privateKey, rootCa []byte) error {
-
-	if len(certChain) == 0 || len(privateKey) == 0 {
-		return NoCertificateFoundError
-	}
-
-	_, err := tls.X509KeyPair(certChain, privateKey)
-	if err != nil {
-		return err
-	}
 	// validate that the parsed piece is valid
 	// this is still faster than a call out to openssl despite this second parsing pass of the cert
 	// pem parsing in go is permissive while envoy is not
 	// this might not be needed once we have larger envoy validation
-	candidateCert, err := cert.ParseCertsPEM(certChain)
+	candidateCert, err := cert.ParseCertsPEM([]byte(certChain))
 	if err != nil {
-		return err
+		// return err rather than sanitize. This is to maintain UX with older versions and to keep in line with gateway2 pkg.
+		return "", err
 	}
-	reencoded, err := cert.EncodeCertificates(candidateCert...)
-	if err != nil {
-		return err
-	}
-	trimmedEncoded := strings.TrimSpace(string(reencoded))
-	if trimmedEncoded != strings.TrimSpace(string(certChain)) {
-		return fmt.Errorf("certificate chain does not match parsed certificate")
-	}
+	cleanedChainBytes, err := cert.EncodeCertificates(candidateCert...)
+	cleanedChain = string(cleanedChainBytes)
 
-	return err
+	return cleanedChain, err
 }

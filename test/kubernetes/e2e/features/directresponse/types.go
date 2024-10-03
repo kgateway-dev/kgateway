@@ -6,6 +6,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/solo-io/skv2/codegen/util"
 )
@@ -25,12 +26,17 @@ var (
 		Name:      "gloo-proxy-gw",
 		Namespace: "default",
 	}
+	gwRouteMeta = metav1.ObjectMeta{
+		Name:      "gateway",
+		Namespace: "default",
+	}
+	httpbinMeta = metav1.ObjectMeta{
+		Name:      "httpbin",
+		Namespace: "httpbin",
+	}
 	proxyDeployment   = &appsv1.Deployment{ObjectMeta: glooProxyObjectMeta}
 	proxyService      = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
-	httpbinDeployment = &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "httpbin",
-			Namespace: "httpbin",
-		},
-	}
+	httpbinDeployment = &appsv1.Deployment{ObjectMeta: httpbinMeta}
+
+	gwRoute = &gwv1.HTTPRoute{ObjectMeta: gwRouteMeta}
 )
