@@ -1,6 +1,7 @@
 package assertions
 
 import (
+	"context"
 	"time"
 
 	"github.com/onsi/ginkgo/v2"
@@ -11,6 +12,8 @@ import (
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e/helper"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -101,32 +104,61 @@ func getResourceNamespacedStatus(getter helpers.InputResourceGetter) (*core.Name
 	return namespacedStatuses, nil
 }
 
-// AssertHTTPRouteStatusContainsSubstring asserts that at least one of the HTTPRoute's route parent statuses contains
+// EventuallyHTTPRouteStatusContainsMessage asserts that eventually at least one of the HTTPRoute's route parent statuses contains
 // the given message substring.
-func (p *Provider) AssertHTTPRouteStatusContainsSubstring(route *gwv1.HTTPRoute, message string) {
-	matcher := matchers.HaveKubeGatewayRouteStatus(&matchers.KubeGatewayRouteStatus{
-		Custom: gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-			"Parents": gomega.ContainElement(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-				"Conditions": gomega.ContainElement(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-					"Message": matchers.ContainSubstrings([]string{message}),
+func (p *Provider) EventuallyHTTPRouteStatusContainsMessage(
+	ctx context.Context,
+	routeName string,
+	routeNamespace string,
+	message string,
+	timeout ...time.Duration) {
+	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		matcher := matchers.HaveKubeGatewayRouteStatus(&matchers.KubeGatewayRouteStatus{
+			Custom: gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+				"Parents": gomega.ContainElement(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+					"Conditions": gomega.ContainElement(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+						"Message": matchers.ContainSubstrings([]string{message}),
+					})),
 				})),
-			})),
-		}),
-	})
-	p.Gomega.Expect(route.Status.RouteStatus).To(gomega.HaveValue(matcher))
+			}),
+		})
+
+		route := &gwv1.HTTPRoute{}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: routeName, Namespace: routeNamespace}, route)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "can get httproute")
+		g.Expect(route.Status.RouteStatus).To(gomega.HaveValue(matcher))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
 
-// AssertHTTPRouteStatusContainsSubstring asserts that at least one of the HTTPRoute's route parent statuses contains
+// EventuallyHTTPRouteStatusContainsReason asserts that eventually at least one of the HTTPRoute's route parent statuses contains
 // the given reason substring.
-func (p *Provider) AssertHTTPRouteStatusContainsReason(route *gwv1.HTTPRoute, reason string) {
-	matcher := matchers.HaveKubeGatewayRouteStatus(&matchers.KubeGatewayRouteStatus{
-		Custom: gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-			"Parents": gomega.ContainElement(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-				"Conditions": gomega.ContainElement(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-					"Reason": matchers.ContainSubstrings([]string{reason}),
+func (p *Provider) EventuallyHTTPRouteStatusContainsReason(
+	ctx context.Context,
+	routeName string,
+	routeNamespace string,
+	reason string,
+	timeout ...time.Duration) {
+	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		matcher := matchers.HaveKubeGatewayRouteStatus(&matchers.KubeGatewayRouteStatus{
+			Custom: gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+				"Parents": gomega.ContainElement(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+					"Conditions": gomega.ContainElement(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+						"Reason": matchers.ContainSubstrings([]string{reason}),
+					})),
 				})),
-			})),
-		}),
-	})
-	p.Gomega.Expect(route.Status.RouteStatus).To(gomega.HaveValue(matcher))
+			}),
+		})
+
+		route := &gwv1.HTTPRoute{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      routeName,
+				Namespace: routeNamespace,
+			},
+		}
+		err := p.clusterContext.Client.Get(ctx, types.NamespacedName{Name: routeName, Namespace: routeNamespace}, route)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "can get httproute")
+		g.Expect(route.Status.RouteStatus).To(gomega.HaveValue(matcher))
+	}, currentTimeout, pollingInterval).Should(gomega.Succeed())
 }
