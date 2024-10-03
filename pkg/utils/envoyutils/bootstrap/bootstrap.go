@@ -148,7 +148,7 @@ func FromSnapshot(
 	// clusters for these routes to target. It is important to have unique clusters
 	// for the targets since some envoy functionality relies on such setup, like
 	// weighted destinations.
-	addBlackholeClusters(routedCluster, resources.Clusters)
+	resources.Clusters = addBlackholeClusters(routedCluster, resources.Clusters)
 
 	return FromEnvoyResources(resources)
 }
@@ -259,8 +259,9 @@ func convertToStaticClusters(
 func addBlackholeClusters(
 	routedCluster map[string]struct{},
 	clusters []*envoy_config_cluster_v3.Cluster,
-) {
+) []*envoy_config_cluster_v3.Cluster {
 	for c := range routedCluster {
+		log.Println("appending cluster", c)
 		clusters = append(clusters, &envoy_config_cluster_v3.Cluster{
 			Name: c,
 			ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_Type{
@@ -272,6 +273,8 @@ func addBlackholeClusters(
 			},
 		})
 	}
+	log.Println(clusters)
+	return clusters
 }
 
 // getHcmForFilterChain accepts a pointer to a FilterChain and looks for the HttpConnectionManager
@@ -291,6 +294,9 @@ func getHcmForFilterChain(fc *envoy_config_listener_v3.FilterChain) (
 				log.Println("failed AnyToMessage", err)
 				return nil, nil, err
 			}
+			// This check can be unreliable if the proto *Any format can be successfully unmarshalled to this concrete type,
+			// which is surprisingly easy to do. This codepath is not tested as I was unable to force a failure, but we're
+			// leaving the check in to guard against NPE from the concrete cast.
 			if hcm, ok := hcmAny.(*envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager); ok {
 				log.Println("succeeded casting to concrete???")
 				log.Println(hcm)
