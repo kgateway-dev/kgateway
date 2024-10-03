@@ -2348,6 +2348,11 @@ func (m *ApiKeyAuth) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
+	err = binary.Write(hasher, binary.LittleEndian, m.GetSkipMetadataValidation())
+	if err != nil {
+		return 0, err
+	}
+
 	switch m.StorageBackend.(type) {
 
 	case *ApiKeyAuth_K8SSecretApikeyStorage:
@@ -6461,6 +6466,11 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig) Hash(hasher hash.Hash64) (uint64, error
 			return 0, err
 		}
 
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetSkipMetadataValidation())
+	if err != nil {
+		return 0, err
 	}
 
 	switch m.StorageBackend.(type) {
