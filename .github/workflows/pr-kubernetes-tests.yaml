@@ -55,22 +55,22 @@ jobs:
         # NOTE: We use the GitHub action step time (as opposed to the `go test` time), because it is easier to capture
 
         test:
-        # September 16, 2024: 22 minutes
+        # Oct 3, 2024: 24 minutes
         - cluster-name: 'cluster-one'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestK8sGateway$$/^RouteDelegation$$|^TestK8sGateway$$/^Services$$|^TestGlooctlGlooGatewayEdgeGateway$$|^TestGlooctlK8sGateway$$'
 
-        # September 16, 2024: 16 minutes
+        # Oct 3, 2024: 20 minutes
         - cluster-name: 'cluster-two'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestK8sGatewayIstioRevision$$|^TestRevisionIstioRegression$$|^TestK8sGateway$$/^Deployer$$|^TestK8sGateway$$/^RouteOptions$$|^TestK8sGateway$$/^VirtualHostOptions$$|^TestK8sGateway$$/^Upstreams$$|^TestK8sGateway$$/^HeadlessSvc$$|^TestK8sGateway$$/^PortRouting$$|^TestK8sGatewayMinimalDefaultGatewayParameters$$'
+          go-test-run-regex: '^TestK8sGatewayIstioRevision$$|^TestRevisionIstioRegression$$|^TestK8sGateway$$/^Deployer$$|^TestK8sGateway$$/^RouteOptions$$|^TestK8sGateway$$/^VirtualHostOptions$$|^TestK8sGateway$$/^Upstreams$$|^TestK8sGateway$$/^HeadlessSvc$$|^TestK8sGateway$$/^PortRouting$$|^TestK8sGatewayMinimalDefaultGatewayParameters$$|^TestK8sGateway$$/^DirectResponse$$'
 
-        # September 16, 2024: 21 minutes
+        # Oct 3, 2024: 25 minutes
         - cluster-name: 'cluster-three'
           go-test-args: '-v -timeout=30m'
           go-test-run-regex: '(^TestK8sGatewayIstioAutoMtls$$|^TestAutomtlsIstioEdgeApisGateway$$|^TestIstioEdgeApiGateway$$|^TestIstioRegression$$)'
 
-        # September 16, 2024: 23 minutes
+        # Oct 3, 2024: 24 minutes
         - cluster-name: 'cluster-four'
           go-test-args: '-v -timeout=30m'
           go-test-run-regex: '(^TestK8sGatewayIstio$$|^TestGlooGatewayEdgeGateway$$|^TestGlooctlIstioInjectEdgeApiGateway$$|^TestK8sGatewayNoValidation$$)'
