@@ -1,8 +1,6 @@
 package bootstrap
 
 import (
-	"log"
-
 	envoy_config_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -12,10 +10,11 @@ import (
 	envoy_extensions_filters_network_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	anypb "github.com/golang/protobuf/ptypes/any"
-	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"google.golang.org/protobuf/proto"
+
+	"google.golang.org/protobuf/encoding/protojson"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -201,9 +200,8 @@ var _ = Describe("Static bootstrap generation", func() {
 			})
 		})
 	})
-	Context("From Filter", func() {
+	FContext("From Filter", func() {
 		It("produces correct bootstrap", func() {
-			Skip("TODO")
 			inTransformation := &envoytransformation.RouteTransformations{
 				ClearRouteCache: true,
 				Transformations: []*envoytransformation.RouteTransformations_RouteTransformation{
@@ -276,15 +274,9 @@ var _ = Describe("Static bootstrap generation", func() {
 				},
 			}
 
-			var actualBootstrap *envoy_config_bootstrap_v3.Bootstrap
+			actualBootstrap := &envoy_config_bootstrap_v3.Bootstrap{}
 
-			log.Println(actual)
-			err = protoutils.UnmarshalBytesAllowUnknown([]byte(actual), actualBootstrap)
-			// err = (&jsonpb.Unmarshaler{
-			// 	AllowUnknownFields: true,
-			// 	AnyResolver:        nil,
-			// }).UnmarshalString(actual, actualBootstrap)
-			// err = jsonpb.Unmarshal(bytes.NewBuffer([]byte(actual)), actualBootstrap)
+			err = protojson.Unmarshal([]byte(actual), actualBootstrap)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(proto.Equal(expectedBootstrap, actualBootstrap)).To(BeTrue())
