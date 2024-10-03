@@ -41,6 +41,10 @@ const (
 )
 
 var (
+	// SupportedVersions specifies the supported versions of Gateway API.
+	// [TODO] Remove "v1.0.0-rc1" when https://github.com/solo-io/gloo/issues/10115 is fixed.
+	SupportedVersions = []string{"v1.1.0", "v1.0.0", "v1.0.0-rc1"}
+
 	GatewayGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
 		Version: apiv1.GroupVersion.Version,

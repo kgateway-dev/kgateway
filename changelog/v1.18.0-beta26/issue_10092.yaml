@@ -1,0 +1,9 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/10092
+    resolvesIssue: true
+    description: >-
+      Adds support for the GatewayClass `SupportedVersion` status condition and updates the ReconcileGatewayClasses()
+      method to manage status conditions according to the Gateway API specification. The gateway controller will now
+      reconcile supported Gateway API CRDs and set the `SupportedVersion` status condition based on the value of the
+      `gateway.networking.k8s.io/bundle-version` annotation.

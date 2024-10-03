@@ -5,6 +5,7 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/admin_server"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/deployer"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/directresponse"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/gatewayclass"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/http_listener_options"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/listener_options"
@@ -20,6 +21,7 @@ import (
 func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner := e2e.NewSuiteRunner(false)
 
+	kubeGatewaySuiteRunner.Register("GatewayClass", gatewayclass.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Deployer", deployer.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("HttpListenerOptions", http_listener_options.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("ListenerOptions", listener_options.NewTestingSuite)
