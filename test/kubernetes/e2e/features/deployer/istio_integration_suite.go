@@ -45,11 +45,11 @@ func NewIstioIntegrationTestingSuite(ctx context.Context, testInst *e2e.TestInst
 
 func (s *istioIntegrationDeployerSuite) SetupSuite() {
 	s.manifests = map[string][]string{
-		"TestConfigureIstioIntegrationFromGatewayParameters": {testdefaults.NginxPodManifest, istioGatewayParametersManifestFile},
+		"TestConfigureIstioIntegrationFromGatewayParameters": {testdefaults.NginxPodManifest, istioGatewayParameters},
 	}
 	s.manifestObjects = map[string][]client.Object{
-		testdefaults.NginxPodManifest:      {testdefaults.NginxPod, testdefaults.NginxSvc},
-		istioGatewayParametersManifestFile: {proxyService, proxyServiceAccount, proxyDeployment, gwParams},
+		testdefaults.NginxPodManifest: {testdefaults.NginxPod, testdefaults.NginxSvc},
+		istioGatewayParameters:        {proxyService, proxyServiceAccount, proxyDeployment, gwParamsDefault},
 	}
 }
 
