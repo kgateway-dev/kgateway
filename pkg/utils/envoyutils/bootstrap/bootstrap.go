@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"log"
 
 	envoy_config_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -167,11 +166,9 @@ func extractRoutedClustersFromListeners(
 ) error {
 	for _, l := range listeners {
 		for _, fc := range l.GetFilterChains() {
-			log.Println("processing filter chain", fc.GetName())
 			// Get the HttpConnectionManager for this FilterChain if it exists.
 			hcm, f, err := getHcmForFilterChain(fc)
 			if err != nil {
-				log.Println("non-nil error from getHcmForFilterChain", err)
 				// If we just don't have an hcm on this filter chain, skip to the next one.
 				if errors.Is(err, errNoHcm) {
 					continue
@@ -180,24 +177,19 @@ func extractRoutedClustersFromListeners(
 				return err
 			}
 
-			log.Println("found hcm", fc.GetName())
 			// We use Route Discovery Service (RDS) in lieu of static route table config, so we
 			// need to get the RouteConfiguration name to lookup in our Snapshot-provided routes,
 			// which contain what we serve over RDS.
 			routeConfigName := hcm.GetRds().GetRouteConfigName()
 			if routeConfigName == "" {
-				log.Println("route config name empty")
 				continue
 			}
-			log.Println("looking for route with name", routeConfigName)
 			// Find matching route config from snapshot.
 			for _, r := range routes {
 				if r.GetName() != routeConfigName {
-					log.Println("found route with name", r.GetName())
 					// These aren't the routes you're looking for.
 					continue
 				}
-				log.Println("found matching route")
 
 				// Add clusters targeted by routes on this config to our aggregate list of all targeted clusters
 				findTargetedClusters(r, routedCluster)
@@ -261,7 +253,6 @@ func addBlackholeClusters(
 	clusters []*envoy_config_cluster_v3.Cluster,
 ) []*envoy_config_cluster_v3.Cluster {
 	for c := range routedCluster {
-		log.Println("appending cluster", c)
 		clusters = append(clusters, &envoy_config_cluster_v3.Cluster{
 			Name: c,
 			ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_Type{
@@ -273,7 +264,6 @@ func addBlackholeClusters(
 			},
 		})
 	}
-	log.Println(clusters)
 	return clusters
 }
 
@@ -286,24 +276,17 @@ func getHcmForFilterChain(fc *envoy_config_listener_v3.FilterChain) (
 	error,
 ) {
 	for _, f := range fc.GetFilters() {
-		log.Println("looking for hcm, found", f.GetName())
 		if f.GetTypedConfig().GetTypeUrl() == "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager" {
-			log.Println("has right type url")
 			hcmAny, err := utils.AnyToMessage(f.GetTypedConfig())
 			if err != nil {
-				log.Println("failed AnyToMessage", err)
 				return nil, nil, err
 			}
 			// This check can be unreliable if the proto *Any format can be successfully unmarshalled to this concrete type,
 			// which is surprisingly easy to do. This codepath is not tested as I was unable to force a failure, but we're
 			// leaving the check in to guard against NPE from the concrete cast.
 			if hcm, ok := hcmAny.(*envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager); ok {
-				log.Println("succeeded casting to concrete???")
-				log.Println(hcm)
-				log.Println(f)
 				return hcm, f, nil
 			} else {
-				log.Println("failed casting to concrete", err)
 				return nil, nil, eris.Errorf("filter %v has hcm type url but casting to concrete failed", f.GetName())
 			}
 		}
@@ -315,11 +298,9 @@ func getHcmForFilterChain(fc *envoy_config_listener_v3.FilterChain) (
 // finds all clusters and weighted clusters targeted by routes on the virtual hosts in the RouteConfiguration
 // and adds their names to the routedCluster hash set. routedCluster is mutated in this function.
 func findTargetedClusters(r *envoy_config_route_v3.RouteConfiguration, routedCluster map[string]struct{}) {
-	log.Println("finding targeted clusters")
 	for _, v := range r.GetVirtualHosts() {
 		for _, r := range v.GetRoutes() {
 			if r.GetRoute() == nil {
-				log.Println("nil route")
 				continue
 			}
 
