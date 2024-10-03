@@ -9,6 +9,11 @@ import (
 func HelmSuiteRunner() e2e.SuiteRunner {
 	helmSuiteRunner := e2e.NewSuiteRunner(false)
 	helmSuiteRunner.Register("Helm", helm.NewTestingSuite)
-	helmSuiteRunner.Register("HelmSettings", helm_settings.NewTestingSuite)
 	return helmSuiteRunner
+}
+
+func HelmSettingsSuiteRunner() e2e.SuiteRunner {
+	runner := e2e.NewSuiteRunner(false)
+	runner.Register("HelmSettings", helm_settings.NewTestingSuite)
+	return runner
 }
