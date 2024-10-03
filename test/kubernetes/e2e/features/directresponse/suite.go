@@ -6,14 +6,13 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
+	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
@@ -103,6 +102,11 @@ func (s *testingSuite) AfterTest(suiteName, testName string) {
 		output, err := s.ti.Actions.Kubectl().DeleteFileWithOutput(s.ctx, manifest)
 		s.ti.Assertions.ExpectObjectDeleted(manifest, err, output)
 	}
+
+	// make sure the dynamically provisioned proxy resources are cleaned up
+	s.ti.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
+	// make sure all the resources created by the tests are cleaned up (we just pass the list types to avoid needing to enumerate each object)
+	s.ti.Assertions.EventuallyObjectTypesNotExist(s.ctx, &gwv1.GatewayList{}, &gwv1.HTTPRouteList{}, &v1alpha1.DirectResponseList{})
 }
 
 func (s *testingSuite) TestBasicDirectResponse() {
@@ -174,7 +178,8 @@ func (s *testingSuite) TestDelegation() {
 }
 
 func (s *testingSuite) TestInvalidDelegationConflictingFilters() {
-	// verify that the child's DR works as expected.
+	// the parent httproute both 1) specifies a direct response and 2) delegates to another httproute which routes to a service.
+	// since these route actions are conflicting, we should get a 500 here
 	s.ti.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		defaults.CurlPodExecOpt,
@@ -188,9 +193,14 @@ func (s *testingSuite) TestInvalidDelegationConflictingFilters() {
 		},
 		time.Minute,
 	)
+
+	// the parent should show an error in its status
+	s.ti.Assertions.EventuallyHTTPRouteStatusContainsReason(s.ctx, gwRouteMeta.Name, gwRouteMeta.Namespace,
+		string(gwv1.RouteReasonIncompatibleFilters), 10*time.Second, 1*time.Second)
 }
 
 func (s *testingSuite) TestInvalidMissingRef() {
+	// the route points to a DR that doesn't exist, so this should error
 	s.ti.Assertions.AssertEventualCurlResponse(
 		s.ctx,
 		defaults.CurlPodExecOpt,
@@ -204,9 +214,13 @@ func (s *testingSuite) TestInvalidMissingRef() {
 		},
 		time.Minute,
 	)
+
+	s.ti.Assertions.EventuallyHTTPRouteStatusContainsReason(s.ctx, httpbinMeta.Name, httpbinMeta.Namespace,
+		string(gwv1.RouteReasonBackendNotFound), 10*time.Second, 1*time.Second)
 }
 
 func (s *testingSuite) TestInvalidOverlappingFilters() {
+	// the route specifies 2 different DRs, which is invalid.
 	// verify that the route was replaced with a 500 direct response due to the
 	// invalid configuration.
 	s.ti.Assertions.AssertEventualCurlResponse(
@@ -222,16 +236,13 @@ func (s *testingSuite) TestInvalidOverlappingFilters() {
 		},
 		time.Minute,
 	)
-	c := s.ti.ClusterContext.Client
-	s.Require().EventuallyWithT(func(t *assert.CollectT) {
-		route := &gwv1.HTTPRoute{}
-		err := c.Get(s.ctx, client.ObjectKeyFromObject(httpbinDeployment), route)
-		assert.NoError(t, err, "route not found")
-		s.ti.Assertions.AssertHTTPRouteStatusContainsReason(route, string(gwv1.RouteReasonBackendNotFound))
-	}, 10*time.Second, 1*time.Second)
+
+	s.ti.Assertions.EventuallyHTTPRouteStatusContainsReason(s.ctx, httpbinMeta.Name, httpbinMeta.Namespace,
+		string(gwv1.RouteReasonIncompatibleFilters), 10*time.Second, 1*time.Second)
 }
 
 func (s *testingSuite) TestInvalidMultipleRouteActions() {
+	// the route specifies both a request redirect and a direct response, which is invalid.
 	// verify the route was replaced with a 500 direct response due to the
 	// invalid configuration.
 	s.ti.Assertions.AssertEventualCurlResponse(
@@ -247,13 +258,8 @@ func (s *testingSuite) TestInvalidMultipleRouteActions() {
 		},
 		time.Minute,
 	)
-	c := s.ti.ClusterContext.Client
-	s.Require().EventuallyWithT(func(t *assert.CollectT) {
-		route := &gwv1.HTTPRoute{}
-		err := c.Get(s.ctx, client.ObjectKeyFromObject(httpbinDeployment), route)
-		assert.NoError(t, err, "route not found")
-		s.ti.Assertions.AssertHTTPRouteStatusContainsReason(route, string(gwv1.RouteReasonIncompatibleFilters))
-	}, 10*time.Second, 1*time.Second)
+	s.ti.Assertions.EventuallyHTTPRouteStatusContainsReason(s.ctx, httpbinMeta.Name, httpbinMeta.Namespace,
+		string(gwv1.RouteReasonIncompatibleFilters), 10*time.Second, 1*time.Second)
 }
 
 func (s *testingSuite) TestInvalidBackendRefFilter() {
