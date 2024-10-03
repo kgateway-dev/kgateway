@@ -22,7 +22,7 @@ var _ e2e.NewSuiteFunc = NewTestingSuite
 // used in our Helm unit tests are valid
 //
 // These tests are defined separately from our `features/helm` tests, to ensure they are run against
-// a standalone cluster, and do not impact those other tests.
+// a standalone installation, and do not impact those other tests.
 
 // The helm unit tests involve templating settings with various values set
 // and then validating that the templated data matches fixture data.
