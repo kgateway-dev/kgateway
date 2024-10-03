@@ -59,8 +59,6 @@ func (s *testingSuite) SetupSuite() {
 		"TestProvisionResourcesNotUpdatedWithInvalidParameters": {testdefaults.NginxPodManifest, gatewayWithParameters},
 		"TestSelfManagedGateway":                                {selfManagedGatewayManifestFile},
 	}
-	// Not every resource that is applied needs to be verified. We are not testing `kubectl apply`,
-	// but the below code demonstrates how it can be done if necessary
 	s.manifestObjects = map[string][]client.Object{
 		testdefaults.NginxPodManifest:  {testdefaults.NginxPod, testdefaults.NginxSvc},
 		gatewayWithoutParameters:       {proxyService, proxyServiceAccount, proxyDeployment},
@@ -134,8 +132,8 @@ func (s *testingSuite) TestProvisionResourcesNotUpdatedWithInvalidParameters() {
 	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
 
 	var (
-		// initially, allowPrivilegeEscalation should be false and privileged should not be set
-		origAllowPrivilegeEscalation = gstruct.PointTo(gomega.BeFalse())
+		// initially, allowPrivilegeEscalation should be true and privileged should not be set
+		origAllowPrivilegeEscalation = gstruct.PointTo(gomega.BeTrue())
 		origPrivileged               = gomega.BeNil()
 	)
 

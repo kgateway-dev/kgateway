@@ -44,8 +44,6 @@ func (s *minimalDefaultGatewayParametersDeployerSuite) SetupSuite() {
 	s.manifests = map[string][]string{
 		"TestConfigureProxiesFromGatewayParameters": {testdefaults.NginxPodManifest, gatewayWithParameters},
 	}
-	// Not every resource that is applied needs to be verified. We are not testing `kubectl apply`,
-	// but the below code demonstrates how it can be done if necessary
 	s.manifestObjects = map[string][]client.Object{
 		testdefaults.NginxPodManifest: {testdefaults.NginxPod, testdefaults.NginxSvc},
 		gatewayWithParameters:         {proxyService, proxyServiceAccount, proxyDeployment, gwParams},

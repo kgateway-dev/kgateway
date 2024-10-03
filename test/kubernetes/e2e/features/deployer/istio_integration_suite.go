@@ -47,8 +47,6 @@ func (s *istioIntegrationDeployerSuite) SetupSuite() {
 	s.manifests = map[string][]string{
 		"TestConfigureIstioIntegrationFromGatewayParameters": {testdefaults.NginxPodManifest, istioGatewayParametersManifestFile},
 	}
-	// Not every resource that is applied needs to be verified. We are not testing `kubectl apply`,
-	// but the below code demonstrates how it can be done if necessary
 	s.manifestObjects = map[string][]client.Object{
 		testdefaults.NginxPodManifest:      {testdefaults.NginxPod, testdefaults.NginxSvc},
 		istioGatewayParametersManifestFile: {proxyService, proxyServiceAccount, proxyDeployment, gwParams},
