@@ -1,5 +1,5 @@
 changelog:
   - type: NON_USER_FACING
     description: >- 
-      Add docs for Argo CD. 
+      Backports of doc fixes.
       skipCI-kube-tests:true
