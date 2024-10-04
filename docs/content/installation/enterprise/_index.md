@@ -157,7 +157,11 @@ Once you've installed Gloo Gateway, please be sure [to verify your installation]
 
 **Install Gloo Gateway**
    
-1. Use the following YAML file to create an Argo CD application and deploy the Gloo Gateway Enterprise Helm chart. Make sure to enter your license key in the `license_key` field. 
+1. Use the following YAML file to create an Argo CD application and deploy the Gloo Gateway Enterprise Helm chart. Make sure to enter your license key in the `license_key` field. You can add custom settings to the `spec.source.helm.values` section. 
+         
+   {{% notice note %}}
+   Argo CD does not have a concept of installs or upgrades. All updates are executed by using syncs. Because of that, the value of `gateway.certGenJob.runOnUpdate` (if set) is ignored. Instead, the job runs on every sync. 
+   {{% /notice %}}
    
    ```yaml
    kubectl apply -f- <<EOF
