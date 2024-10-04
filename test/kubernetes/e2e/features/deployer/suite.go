@@ -4,6 +4,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/onsi/gomega/gstruct"
+	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
+	testdefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
+	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -16,7 +22,6 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -31,6 +36,12 @@ type testingSuite struct {
 	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
 	// against an installation of Gloo Gateway
 	testInstallation *e2e.TestInstallation
+
+	// manifests maps test name to a list of manifests to apply before the test
+	manifests map[string][]string
+
+	// manifestObjects maps a manifest file to a list of objects that are contained in that file
+	manifestObjects map[string][]client.Object
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
@@ -40,45 +51,54 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-func (s *testingSuite) TestProvisionDeploymentAndService() {
-	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, deployerProvisionManifestFile)
-		s.NoError(err, "can delete deployer provision manifest")
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, basicGatewayManifestFile)
-		s.NoError(err, "can delete basic gateway manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyServiceAccount, proxyDeployment)
-	})
+func (s *testingSuite) SetupSuite() {
+	s.manifests = map[string][]string{
+		"TestProvisionDeploymentAndService":                     {testdefaults.NginxPodManifest, gatewayWithoutParameters},
+		"TestConfigureProxiesFromGatewayParameters":             {testdefaults.NginxPodManifest, gatewayWithParameters},
+		"TestProvisionResourcesUpdatedWithValidParameters":      {testdefaults.NginxPodManifest, gatewayWithParameters},
+		"TestProvisionResourcesNotUpdatedWithInvalidParameters": {testdefaults.NginxPodManifest, gatewayWithParameters},
+		"TestSelfManagedGateway":                                {selfManagedGatewayManifestFile},
+	}
+	s.manifestObjects = map[string][]client.Object{
+		testdefaults.NginxPodManifest:  {testdefaults.NginxPod, testdefaults.NginxSvc},
+		gatewayWithoutParameters:       {proxyService, proxyServiceAccount, proxyDeployment},
+		gatewayWithParameters:          {proxyService, proxyServiceAccount, proxyDeployment, gwParams},
+		selfManagedGatewayManifestFile: {gwParams},
+	}
+}
 
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, deployerProvisionManifestFile)
-	s.Require().NoError(err, "can apply deployer provision manifest")
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, basicGatewayManifestFile)
-	s.Require().NoError(err, "can apply basic gateway manifest")
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyServiceAccount, proxyDeployment)
+func (s *testingSuite) TearDownSuite() {
+	// nothing at the moment
+}
+
+func (s *testingSuite) BeforeTest(suiteName, testName string) {
+	manifests := s.manifests[testName]
+	for _, manifest := range manifests {
+		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
+		s.Require().NoError(err)
+		s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, s.manifestObjects[manifest]...)
+	}
+}
+
+func (s *testingSuite) AfterTest(suiteName, testName string) {
+	manifests := s.manifests[testName]
+	for _, manifest := range manifests {
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
+		s.Require().NoError(err)
+		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, s.manifestObjects[manifest]...)
+	}
+}
+
+func (s *testingSuite) TestProvisionDeploymentAndService() {
+	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
 }
 
 func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
-	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, gwParametersManifestFile)
-		s.NoError(err, "can delete manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, gwParams)
-
-		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, deployerProvisionManifestFile)
-		s.NoError(err, "can delete manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyServiceAccount, proxyDeployment)
-	})
-
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, deployerProvisionManifestFile)
-	s.Require().NoError(err, "can apply manifest")
-
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, gwParametersManifestFile)
-	s.Require().NoError(err, "can apply manifest")
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyServiceAccount, proxyDeployment)
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, gwParams)
 	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
 
 	// check that the labels and annotations got passed through from GatewayParameters to the ServiceAccount
 	sa := &corev1.ServiceAccount{}
-	err = s.testInstallation.ClusterContext.Client.Get(s.ctx,
+	err := s.testInstallation.ClusterContext.Client.Get(s.ctx,
 		types.NamespacedName{Name: glooProxyObjectMeta.Name, Namespace: glooProxyObjectMeta.Namespace},
 		sa)
 	s.Require().NoError(err)
@@ -87,28 +107,71 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 	s.testInstallation.Assertions.Gomega.Expect(sa.GetAnnotations()).To(
 		gomega.HaveKeyWithValue("sa-anno-key", "sa-anno-val"))
 
-	// We assert that we can port-forward requests to the proxy deployment, and then execute requests against the server
-	if s.testInstallation.RuntimeContext.RunSource == runtime.LocalDevelopment {
-		// There are failures when opening port-forwards to the Envoy Admin API in CI
-		// Those are currently being investigated
-		s.testInstallation.Assertions.AssertEnvoyAdminApi(
-			s.ctx,
-			proxyDeployment.ObjectMeta,
-			serverInfoLogLevelAssertion(s.testInstallation, "debug", "connection:trace,upstream:debug"),
-			xdsClusterAssertion(s.testInstallation),
-		)
-	}
+	s.testInstallation.Assertions.AssertEnvoyAdminApi(
+		s.ctx,
+		proxyDeployment.ObjectMeta,
+		serverInfoLogLevelAssertion(s.testInstallation, "debug", "connection:trace,upstream:debug"),
+		xdsClusterAssertion(s.testInstallation),
+	)
+}
+
+func (s *testingSuite) TestProvisionResourcesUpdatedWithValidParameters() {
+	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
+
+	// modify the number of replicas in the GatewayParameters
+	s.patchGatewayParameters(gwParams.ObjectMeta, func(parameters *v1alpha1.GatewayParameters) {
+		parameters.Spec.Kube.Deployment.Replicas = ptr.To(uint32(2))
+	})
+
+	// the GatewayParameters modification should cause the deployer to re-run and update the
+	// deployment to have 2 replicas
+	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(2))
+}
+
+func (s *testingSuite) TestProvisionResourcesNotUpdatedWithInvalidParameters() {
+	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
+
+	var (
+		// initially, allowPrivilegeEscalation should be true and privileged should not be set
+		origAllowPrivilegeEscalation = gstruct.PointTo(gomega.BeTrue())
+		origPrivileged               = gomega.BeNil()
+	)
+
+	s.patchGatewayParameters(gwParams.ObjectMeta, func(parameters *v1alpha1.GatewayParameters) {
+		gomega.Expect(proxyDeployment.Spec.Template.Spec.Containers).To(gomega.HaveLen(1))
+		envoyContainer := proxyDeployment.Spec.Template.Spec.Containers[0]
+		gomega.Expect(envoyContainer.SecurityContext.AllowPrivilegeEscalation).To(origAllowPrivilegeEscalation)
+		gomega.Expect(envoyContainer.SecurityContext.Privileged).To(origPrivileged)
+
+		// try to modify GatewayParameters with invalid values
+		// K8s won't allow setting both allowPrivilegeEscalation=false and privileged=true,
+		// so the proposed patch should fail and the original values should be retained.
+		parameters.Spec.Kube.EnvoyContainer = &v1alpha1.EnvoyContainer{
+			SecurityContext: &corev1.SecurityContext{
+				Privileged:               ptr.To(true),
+				AllowPrivilegeEscalation: ptr.To(false),
+			},
+		}
+
+		// This is valid, but should be ignored, because another part of this patch is invalid
+		parameters.Spec.Kube.Deployment.Replicas = ptr.To(uint32(2))
+	})
+
+	// We keep checking for some amount of time (30s) to account for the time it might take for
+	// the deployer to run and re-provision resources. If the original values are consistently
+	// retained after that amount of time, we can be confident that the deployer has had time to
+	// consume the new values and fail to apply them.
+	s.testInstallation.Assertions.Gomega.Consistently(func(g gomega.Gomega) {
+		err := s.testInstallation.ClusterContext.Client.Get(s.ctx, client.ObjectKeyFromObject(proxyDeployment), proxyDeployment)
+		g.Expect(err).NotTo(gomega.HaveOccurred())
+		g.Expect(proxyDeployment.Spec.Template.Spec.Containers[0].SecurityContext.AllowPrivilegeEscalation).To(origAllowPrivilegeEscalation)
+		g.Expect(proxyDeployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged).To(origPrivileged)
+		g.Expect(proxyDeployment.Spec.Replicas).To(gstruct.PointTo(gomega.Equal(int32(1))))
+	}, "30s", "1s").Should(gomega.Succeed())
+
 }
 
 func (s *testingSuite) TestSelfManagedGateway() {
-	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, selfManagedGatewayManifestFile)
-		s.NoError(err, "can delete manifest")
-	})
-
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, selfManagedGatewayManifestFile)
-	s.Require().NoError(err, "can apply manifest")
-
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
 		gw := &gwv1.Gateway{}
 		err := s.testInstallation.ClusterContext.Client.Get(s.ctx,
@@ -127,6 +190,23 @@ func (s *testingSuite) TestSelfManagedGateway() {
 	}, 10*time.Second, 1*time.Second)
 
 	s.testInstallation.Assertions.ConsistentlyObjectsNotExist(s.ctx, proxyService, proxyServiceAccount, proxyDeployment)
+}
+
+// patchGatewayParameters accepts a reference to an object, and a patch function
+// It then queries the object, performs the patch in memory, and writes the object back to the cluster
+func (s *testingSuite) patchGatewayParameters(objectMeta metav1.ObjectMeta, patchFn func(*v1alpha1.GatewayParameters)) {
+	gatewayParameters := &v1alpha1.GatewayParameters{}
+	err := s.testInstallation.ClusterContext.Client.Get(s.ctx, client.ObjectKey{
+		Name:      objectMeta.GetName(),
+		Namespace: objectMeta.GetNamespace(),
+	}, gatewayParameters)
+	s.Assert().NoError(err, "can query the GatewayParameters object")
+	modifiedGatewayParameters := gatewayParameters.DeepCopy()
+
+	patchFn(modifiedGatewayParameters)
+
+	err = s.testInstallation.ClusterContext.Client.Patch(s.ctx, modifiedGatewayParameters, client.MergeFrom(gatewayParameters))
+	s.Assert().NoError(err, "can update the GatewayParameters object")
 }
 
 func serverInfoLogLevelAssertion(testInstallation *e2e.TestInstallation, expectedLogLevel, expectedComponentLogLevel string) func(ctx context.Context, adminClient *admincli.Client) {

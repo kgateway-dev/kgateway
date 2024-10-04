@@ -12,9 +12,8 @@ import (
 )
 
 var (
-	gwParametersManifestFile           = filepath.Join(util.MustGetThisDir(), "testdata", "gateway-with-parameters.yaml")
-	basicGatewayManifestFile           = filepath.Join(util.MustGetThisDir(), "testdata", "basic-gateway.yaml")
-	deployerProvisionManifestFile      = filepath.Join(util.MustGetThisDir(), "testdata", "deployer-provision.yaml")
+	gatewayWithoutParameters           = filepath.Join(util.MustGetThisDir(), "testdata", "gateway-without-parameters.yaml")
+	gatewayWithParameters              = filepath.Join(util.MustGetThisDir(), "testdata", "gateway-with-parameters.yaml")
 	istioGatewayParametersManifestFile = filepath.Join(util.MustGetThisDir(), "testdata", "istio-gateway-parameters.yaml")
 	selfManagedGatewayManifestFile     = filepath.Join(util.MustGetThisDir(), "testdata", "self-managed-gateway.yaml")
 

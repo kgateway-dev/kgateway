@@ -53,12 +53,17 @@ func (s *testingSuite) testWatchNamespaceSelector(key, value string) {
 	s.TestInstallation.Actions.Kubectl().Execute(s.Ctx, "label", "ns", "random", key+"-")
 
 	// Ensure CRs defined in non watched-namespaces are not translated
-	s.TestInstallation.Assertions.CurlConsistentlyRespondsWithStatus(s.Ctx, "random/", http.StatusNotFound)
+	s.TestInstallation.Assertions.CurlEventuallyRespondsWithStatus(s.Ctx, "random/", http.StatusNotFound)
 
 	s.labelSecondNamespaceAsWatched(key, value)
 
 	// The VS defined in the random namespace should be translated
 	s.TestInstallation.Assertions.CurlEventuallyRespondsWithStatus(s.Ctx, "random/", http.StatusOK)
+
+	s.unwatchNamespace(key)
+
+	// Ensure CRs defined in non watched-namespaces are not translated
+	s.TestInstallation.Assertions.CurlConsistentlyRespondsWithStatus(s.Ctx, "random/", http.StatusNotFound)
 }
 
 func (s *testingSuite) TestUnwatchedNamespaceValidation() {
