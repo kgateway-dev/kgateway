@@ -10,10 +10,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	// sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
+	rlexternal "github.com/solo-io/gloo/projects/gloo/api/external/solo/ratelimit"
+	skrl "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
+	extauthkubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1/kube/apis/enterprise.gloo.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
+	rlkubev1a1 "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 
 	// solokubeclient "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	// solokubecrd "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
@@ -40,6 +44,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
 	kubeconverters "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -269,6 +274,20 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	secretClient := kclient.New[*corev1.Secret](s.istioClient)
 	secrets := krt.WrapClient(secretClient, krt.WithName("Secrets"))
 
+	authConfigs, authConfigClient := setupCollectionDynamic[extauthkubev1.AuthConfig](
+		ctx,
+		s.istioClient,
+		extauthkubev1.SchemeGroupVersion.WithResource("authconfigs"),
+		krt.WithName("KubeAuthConfigs"),
+	)
+
+	rlConfigs, rlConfigClient := setupCollectionDynamic[rlkubev1a1.RateLimitConfig](
+		ctx,
+		s.istioClient,
+		rlkubev1a1.SchemeGroupVersion.WithResource("ratelimitconfigs"),
+		krt.WithName("KubeRateLimitConfigs"),
+	)
+
 	kubeUpstreams, kubeUsClient := setupCollectionDynamic[glookubev1.Upstream](
 		ctx,
 		s.istioClient,
@@ -336,6 +355,8 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			glooEndpoints,
 			secrets,
 			finalUpstreams,
+			authConfigs,
+			rlConfigs,
 		)
 		return &xdsSnap
 	})
@@ -359,6 +380,8 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	s.istioClient.WaitForCacheSync(
 		"ggv2 proxy syncer",
 		ctx.Done(),
+		authConfigClient.HasSynced,
+		rlConfigClient.HasSynced,
 		configMapClient.HasSynced,
 		secretClient.HasSynced,
 		serviceClient.HasSynced,
@@ -480,14 +503,32 @@ func (s *ProxySyncer) buildXdsSnapshot(
 	kep krt.Collection[*glooEndpoint],
 	ks krt.Collection[*corev1.Secret],
 	kus krt.Collection[*upstream],
+	authConfigs krt.Collection[*extauthkubev1.AuthConfig],
+	rlConfigs krt.Collection[*rlkubev1a1.RateLimitConfig],
 ) *xdsSnapWrapper {
 	cfgmaps := krt.Fetch(kctx, kcm)
 	endpoints := krt.Fetch(kctx, kep)
 	secrets := krt.Fetch(kctx, ks)
 	upstreams := krt.Fetch(kctx, kus)
+	authcfgs := krt.Fetch(kctx, authConfigs)
+	krlcfgs := krt.Fetch(kctx, rlConfigs)
 
 	latestSnap := gloosnapshot.ApiSnapshot{}
 	latestSnap.Proxies = gloov1.ProxyList{proxy.proxy}
+
+	acfgs := make([]*extauthv1.AuthConfig, 0, len(authcfgs))
+	for _, kac := range authcfgs {
+		acfgs = append(acfgs, &kac.Spec)
+	}
+	latestSnap.AuthConfigs = acfgs
+
+	rlcfgs := make([]*skrl.RateLimitConfig, 0, len(krlcfgs))
+	for _, rlc := range krlcfgs {
+		erlc := rlexternal.RateLimitConfig(*rlc.DeepCopy())  // DeepCopy to fix copylocks...?
+		skrlc := skrl.RateLimitConfig{RateLimitConfig: erlc} // would have to DeepCopy again here...
+		rlcfgs = append(rlcfgs, &skrlc)
+	}
+	latestSnap.Ratelimitconfigs = rlcfgs
 
 	as := make([]*gloov1.Artifact, 0, len(cfgmaps))
 	for _, u := range cfgmaps {
