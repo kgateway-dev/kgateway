@@ -341,6 +341,7 @@ var _ = Describe("Static bootstrap generation", func() {
 			})
 		})
 
+		// types.SecretTypeV3 are omitted due to not being converted from snapshot into bootstrap.
 		JustBeforeEach(func() {
 			for _, l := range listeners {
 				snap.m[types.ListenerTypeV3].Items[l.GetName()] = resource.NewEnvoyResource(l)

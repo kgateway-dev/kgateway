@@ -29,6 +29,8 @@ func ValidateBootstrap(ctx context.Context, bootstrap string) error {
 // ValidateSnapshot accepts an xDS snapshot, clones it, and does the necessary
 // conversions to imitate the same config being provided as static bootsrap config to
 // Envoy, then executes Envoy in validate mode to ensure the config is valid.
+// This is necessary as some configurations that work in dynamic do not work in static
+// and some configurations may require the context of the destination such as mounted files.
 func ValidateSnapshot(
 	ctx context.Context,
 	snap envoycache.Snapshot,
