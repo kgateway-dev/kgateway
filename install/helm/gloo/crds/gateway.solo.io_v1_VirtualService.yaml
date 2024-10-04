@@ -3200,8 +3200,21 @@ spec:
                                   properties:
                                     request:
                                       properties:
-                                        customResponseMessage:
-                                          type: string
+                                        customResponse:
+                                          properties:
+                                            message:
+                                              type: string
+                                            statusCode:
+                                              maximum: 4294967295
+                                              minimum: 0
+                                              type: integer
+                                          type: object
+                                        piiDetection:
+                                          properties:
+                                            action:
+                                              type: string
+                                              x-kubernetes-int-or-string: true
+                                          type: object
                                         regex:
                                           properties:
                                             builtins:
@@ -3226,6 +3239,8 @@ spec:
                                       type: object
                                     response:
                                       properties:
+                                        piiDetection:
+                                          type: object
                                         regex:
                                           properties:
                                             builtins:

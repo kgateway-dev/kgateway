@@ -857,6 +857,12 @@ func (m *AIPromptGuard_Request) Clone() proto.Message {
 	}
 	target = &AIPromptGuard_Request{}
 
+	if h, ok := interface{}(m.GetCustomResponse()).(clone.Cloner); ok {
+		target.CustomResponse = h.Clone().(*AIPromptGuard_Request_CustomResponse)
+	} else {
+		target.CustomResponse = proto.Clone(m.GetCustomResponse()).(*AIPromptGuard_Request_CustomResponse)
+	}
+
 	if h, ok := interface{}(m.GetRegex()).(clone.Cloner); ok {
 		target.Regex = h.Clone().(*AIPromptGuard_Regex)
 	} else {
@@ -869,7 +875,11 @@ func (m *AIPromptGuard_Request) Clone() proto.Message {
 		target.Webhook = proto.Clone(m.GetWebhook()).(*AIPromptGuard_Webhook)
 	}
 
-	target.CustomResponseMessage = m.GetCustomResponseMessage()
+	if h, ok := interface{}(m.GetPiiDetection()).(clone.Cloner); ok {
+		target.PiiDetection = h.Clone().(*AIPromptGuard_Request_PIIDetection)
+	} else {
+		target.PiiDetection = proto.Clone(m.GetPiiDetection()).(*AIPromptGuard_Request_PIIDetection)
+	}
 
 	return target
 }
@@ -893,6 +903,51 @@ func (m *AIPromptGuard_Response) Clone() proto.Message {
 	} else {
 		target.Webhook = proto.Clone(m.GetWebhook()).(*AIPromptGuard_Webhook)
 	}
+
+	if h, ok := interface{}(m.GetPiiDetection()).(clone.Cloner); ok {
+		target.PiiDetection = h.Clone().(*AIPromptGuard_Response_PIIDetection)
+	} else {
+		target.PiiDetection = proto.Clone(m.GetPiiDetection()).(*AIPromptGuard_Response_PIIDetection)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *AIPromptGuard_Request_CustomResponse) Clone() proto.Message {
+	var target *AIPromptGuard_Request_CustomResponse
+	if m == nil {
+		return target
+	}
+	target = &AIPromptGuard_Request_CustomResponse{}
+
+	target.Message = m.GetMessage()
+
+	target.StatusCode = m.GetStatusCode()
+
+	return target
+}
+
+// Clone function
+func (m *AIPromptGuard_Request_PIIDetection) Clone() proto.Message {
+	var target *AIPromptGuard_Request_PIIDetection
+	if m == nil {
+		return target
+	}
+	target = &AIPromptGuard_Request_PIIDetection{}
+
+	target.Action = m.GetAction()
+
+	return target
+}
+
+// Clone function
+func (m *AIPromptGuard_Response_PIIDetection) Clone() proto.Message {
+	var target *AIPromptGuard_Response_PIIDetection
+	if m == nil {
+		return target
+	}
+	target = &AIPromptGuard_Response_PIIDetection{}
 
 	return target
 }

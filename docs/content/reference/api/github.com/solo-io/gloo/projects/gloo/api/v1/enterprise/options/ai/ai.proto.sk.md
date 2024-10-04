@@ -43,7 +43,11 @@ weight: 5
 - [BuiltIn](#builtin)
 - [Webhook](#webhook)
 - [Request](#request)
+- [CustomResponse](#customresponse)
+- [PIIDetection](#piidetection)
+- [Action](#action)
 - [Response](#response)
+- [PIIDetection](#piidetection)
   
 
 
@@ -760,17 +764,68 @@ Data store from which to cache the request/response pairs
 
 
 ```yaml
+"customResponse": .ai.options.gloo.solo.io.AIPromptGuard.Request.CustomResponse
 "regex": .ai.options.gloo.solo.io.AIPromptGuard.Regex
 "webhook": .ai.options.gloo.solo.io.AIPromptGuard.Webhook
-"customResponseMessage": string
+"piiDetection": .ai.options.gloo.solo.io.AIPromptGuard.Request.PIIDetection
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
+| `customResponse` | [.ai.options.gloo.solo.io.AIPromptGuard.Request.CustomResponse](../ai.proto.sk/#customresponse) | Custom response message to send back to the client. If not specified, the following default message will be used: "The request was rejected due to inappropriate content". |
 | `regex` | [.ai.options.gloo.solo.io.AIPromptGuard.Regex](../ai.proto.sk/#regex) |  |
 | `webhook` | [.ai.options.gloo.solo.io.AIPromptGuard.Webhook](../ai.proto.sk/#webhook) |  |
-| `customResponseMessage` | `string` | Custom response message to send back to the client. If not specified, the following default message will be used: "The request was rejected due to inappropriate content". |
+| `piiDetection` | [.ai.options.gloo.solo.io.AIPromptGuard.Request.PIIDetection](../ai.proto.sk/#piidetection) | PII detection settings. |
+
+
+
+
+---
+### CustomResponse
+
+
+
+```yaml
+"message": string
+"statusCode": int
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `message` | `string` | Custom response message to send back to the client. If not specified, the following default message will be used: "The request was rejected due to inappropriate content". |
+| `statusCode` | `int` |  |
+
+
+
+
+---
+### PIIDetection
+
+
+
+```yaml
+"action": .ai.options.gloo.solo.io.AIPromptGuard.Request.PIIDetection.Action
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `action` | [.ai.options.gloo.solo.io.AIPromptGuard.Request.PIIDetection.Action](../ai.proto.sk/#action) | Action to take when PII is detected. |
+
+
+
+
+---
+### Action
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `MASK` | Mask the detected PII |
+| `REJECT` | Reject the request |
 
 
 
@@ -783,6 +838,7 @@ Data store from which to cache the request/response pairs
 ```yaml
 "regex": .ai.options.gloo.solo.io.AIPromptGuard.Regex
 "webhook": .ai.options.gloo.solo.io.AIPromptGuard.Webhook
+"piiDetection": .ai.options.gloo.solo.io.AIPromptGuard.Response.PIIDetection
 
 ```
 
@@ -790,6 +846,23 @@ Data store from which to cache the request/response pairs
 | ----- | ---- | ----------- | 
 | `regex` | [.ai.options.gloo.solo.io.AIPromptGuard.Regex](../ai.proto.sk/#regex) |  |
 | `webhook` | [.ai.options.gloo.solo.io.AIPromptGuard.Webhook](../ai.proto.sk/#webhook) |  |
+| `piiDetection` | [.ai.options.gloo.solo.io.AIPromptGuard.Response.PIIDetection](../ai.proto.sk/#piidetection) | PII detection settings. |
+
+
+
+
+---
+### PIIDetection
+
+ 
+Currently only masking is supported on the response
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
 
 
 

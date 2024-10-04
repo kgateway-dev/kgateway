@@ -538,19 +538,46 @@ message AIPromptGuard {
 
 
   message Request {
-    Regex regex = 1;
+    message CustomResponse {
+      // Custom response message to send back to the client.
+      // If not specified, the following default message will be used:
+      // "The request was rejected due to inappropriate content"
+      string message = 1;
 
-    Webhook webhook = 2;
+      uint32 status_code = 2;
+    }
     // Custom response message to send back to the client.
     // If not specified, the following default message will be used:
     // "The request was rejected due to inappropriate content"
-    string custom_response_message = 3;
+    CustomResponse custom_response = 1;
+
+    Regex regex = 2;
+
+    Webhook webhook = 3;
+
+    message PIIDetection {
+      enum Action {
+        // Mask the detected PII
+        MASK = 0;
+        // Reject the request
+        REJECT = 1;
+      }
+      // Action to take when PII is detected
+      Action action = 1;
+    }
+    // PII detection settings
+    PIIDetection pii_detection = 4;
   }
 
   message Response {
     Regex regex = 1;
 
     Webhook webhook = 2;
+
+    // Currently only masking is supported on the response
+    message PIIDetection {}
+    // PII detection settings
+    PIIDetection pii_detection = 4;
   }
   // Guards for the prompt request
   Request request = 1;
