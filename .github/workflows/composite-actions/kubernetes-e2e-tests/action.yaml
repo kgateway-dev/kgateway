@@ -45,11 +45,11 @@ runs:
     if: ${{ failure() }}
     uses: actions/upload-artifact@v4
     with:
-      name: bug-report-${{ inputs.cluster-name }}-${{ inputs.matrix-label }}
+      name: bug-report-${{ inputs.cluster-name }}-${{ inputs.matrix-label }}-attempt-${{ github.run_attempt }}
       path: ./_test/bug_report/${{ inputs.cluster-name }}
   - name: Archive test results
     if: ${{ always() }}
     uses: actions/upload-artifact@v4
     with:
-      name: go-test-summary-${{ inputs.cluster-name }}-${{ inputs.matrix-label }}
+      name: go-test-summary-${{ inputs.cluster-name }}-${{ inputs.matrix-label }}-attempt-${{ github.run_attempt }}
       path: ./_test/test_log/go-test-summary

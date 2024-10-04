@@ -64,5 +64,5 @@ runs:
     with:
       # Name of the path to upload. The VERSION variable refers to the Makefile
       # VERSION variable.
-      name: conformance-gloo-gateway-report@k8s${{ matrix.kube-version.kubectl }}
+      name: conformance-gloo-gateway-report-attempt-${{ github.run_attempt }}@k8s${{ matrix.kube-version.kubectl }}
       path: _test/conformance/${{ env.VERSION }}-report.yaml
