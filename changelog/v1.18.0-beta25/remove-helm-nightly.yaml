@@ -1,0 +1,7 @@
+changelog:
+- type: NON_USER_FACING
+  description: >-
+    Remove helm tests from nightly suite.
+
+    skipCI-kube-tests:true
+    skipCI-docs-build:true
