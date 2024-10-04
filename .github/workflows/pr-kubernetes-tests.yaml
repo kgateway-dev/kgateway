@@ -123,3 +123,4 @@ jobs:
         run-regex: ${{ matrix.test.go-test-run-regex }}
         istio-version: ${{ steps.dotenv.outputs.istio_version }}
         matrix-label: "pr"
+        kube-version: ${{ steps.dotenv.outputs.kubectl_version }}
