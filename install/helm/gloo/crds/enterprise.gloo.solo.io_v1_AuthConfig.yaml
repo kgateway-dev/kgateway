@@ -158,8 +158,6 @@ spec:
                           additionalProperties:
                             type: string
                           type: object
-                        skipMetadataValidation:
-                          type: boolean
                       type: object
                     basicAuth:
                       properties:

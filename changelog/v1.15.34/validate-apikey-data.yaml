@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/ext-auth-service/issues/762
+    resolvesIssue: false
+    description: >-
+      Revert updating extauth APIKey config to add 'skipMetadataValidation', as we will not be backporting to this version

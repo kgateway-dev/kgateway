@@ -1184,8 +1184,6 @@ func (m *ApiKeyAuth) Clone() proto.Message {
 		}
 	}
 
-	target.SkipMetadataValidation = m.GetSkipMetadataValidation()
-
 	switch m.StorageBackend.(type) {
 
 	case *ApiKeyAuth_K8SSecretApikeyStorage:
@@ -3183,8 +3181,6 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig) Clone() proto.Message {
 
 		}
 	}
-
-	target.SkipMetadataValidation = m.GetSkipMetadataValidation()
 
 	switch m.StorageBackend.(type) {
 
