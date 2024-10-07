@@ -26,6 +26,50 @@ var (
 )
 
 // Equal function
+func (m *DatadogRemoteConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*DatadogRemoteConfig)
+	if !ok {
+		that2, ok := that.(DatadogRemoteConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetPollingInterval()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPollingInterval()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPollingInterval(), target.GetPollingInterval()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetDisabled()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDisabled()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDisabled(), target.GetDisabled()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
 func (m *DatadogConfig) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -52,6 +96,20 @@ func (m *DatadogConfig) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetServiceName(), target.GetServiceName()) {
+			return false
+		}
+	}
+
+	if strings.Compare(m.GetCollectorHostname(), target.GetCollectorHostname()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetRemoteConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetRemoteConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetRemoteConfig(), target.GetRemoteConfig()) {
 			return false
 		}
 	}
