@@ -375,8 +375,6 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		applyStatusPlugins(ctx, proxiesWithReports, snap.pluginRegistry)
 	})
 
-	go s.istioClient.RunAndWait(ctx.Done())
-
 	s.istioClient.WaitForCacheSync(
 		"ggv2 proxy syncer",
 		ctx.Done(),
@@ -395,6 +393,8 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	if !s.mgr.GetCache().WaitForCacheSync(ctx) {
 		return errors.New("kube gateway sync loop waiting for all caches to sync failed")
 	}
+
+	go s.istioClient.RunAndWait(ctx.Done())
 
 	for {
 		select {
