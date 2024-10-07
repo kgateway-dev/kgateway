@@ -7248,6 +7248,35 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) HashUnique(hasher hash.Hash6
 		}
 	}
 
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range m.GetDynamicMetadataFromClaims() {
+			innerHash.Reset()
+
+			if _, err = innerHash.Write([]byte("v")); err != nil {
+				return 0, err
+			}
+			if _, err = innerHash.Write([]byte(v)); err != nil {
+				return 0, err
+			}
+
+			if _, err = innerHash.Write([]byte("k")); err != nil {
+				return 0, err
+			}
+			if _, err = innerHash.Write([]byte(k)); err != nil {
+				return 0, err
+			}
+
+			result = result ^ innerHash.Sum64()
+		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+
+	}
+
 	switch m.Provider.(type) {
 
 	case *ExtAuthConfig_OidcAuthorizationCodeConfig_Default_:
@@ -7340,6 +7369,35 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig) HashUnique(hasher hash.Hash6
 				return 0, err
 			}
 		}
+	}
+
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range m.GetDynamicMetadataFromClaims() {
+			innerHash.Reset()
+
+			if _, err = innerHash.Write([]byte("v")); err != nil {
+				return 0, err
+			}
+			if _, err = innerHash.Write([]byte(v)); err != nil {
+				return 0, err
+			}
+
+			if _, err = innerHash.Write([]byte("k")); err != nil {
+				return 0, err
+			}
+			if _, err = innerHash.Write([]byte(k)); err != nil {
+				return 0, err
+			}
+
+			result = result ^ innerHash.Sum64()
+		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+
 	}
 
 	switch m.ValidationType.(type) {

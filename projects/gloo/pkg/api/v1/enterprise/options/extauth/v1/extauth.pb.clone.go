@@ -3196,6 +3196,15 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Clone() proto.Message {
 		target.FrontChannelLogout = proto.Clone(m.GetFrontChannelLogout()).(*ExtAuthConfig_OidcAuthorizationCodeConfig_FrontChannelLogout)
 	}
 
+	if m.GetDynamicMetadataFromClaims() != nil {
+		target.DynamicMetadataFromClaims = make(map[string]string, len(m.GetDynamicMetadataFromClaims()))
+		for k, v := range m.GetDynamicMetadataFromClaims() {
+
+			target.DynamicMetadataFromClaims[k] = v
+
+		}
+	}
+
 	switch m.Provider.(type) {
 
 	case *ExtAuthConfig_OidcAuthorizationCodeConfig_Default_:
@@ -3241,6 +3250,15 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig) Clone() proto.Message {
 		target.CacheTimeout = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
 		target.CacheTimeout = proto.Clone(m.GetCacheTimeout()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
+	}
+
+	if m.GetDynamicMetadataFromClaims() != nil {
+		target.DynamicMetadataFromClaims = make(map[string]string, len(m.GetDynamicMetadataFromClaims()))
+		for k, v := range m.GetDynamicMetadataFromClaims() {
+
+			target.DynamicMetadataFromClaims[k] = v
+
+		}
 	}
 
 	switch m.ValidationType.(type) {

@@ -1883,9 +1883,20 @@ message ExtAuthConfig {
             string path=1;
         }
 
-    // Configuration for front channel logout. This is used to log out the user from multiple apps/clients associated with one OpenId Provider (OP).
-    // The path is registered with the OP and is called for each app/client that the user is logged into when the logout endpoint is called.
+        // Configuration for front channel logout. This is used to log out the user from multiple apps/clients associated with one OpenId Provider (OP).
+        // The path is registered with the OP and is called for each app/client that the user is logged into when the logout endpoint is called.
         FrontChannelLogout front_channel_logout = 28;
+
+
+        // Map of metadata key to claim. Ie:
+        // dynamic_metadata_from_claims:
+        //   issuer: iss
+        //   email: email
+        // When specified, the matching claims from the ID token will be emitted as dynamic metadata.
+        // Note that metadata keys must be unique, and the claim names must be alphanumeric and use `-` or `_` as separators.
+        // The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`),
+        // and the structure of the claim value will be preserved in the metadata struct.
+        map<string, string> dynamic_metadata_from_claims = 29;
     }
 
     message AccessTokenValidationConfig {
@@ -2014,6 +2025,17 @@ message ExtAuthConfig {
         message ScopeList {
             repeated string scope = 1;
         }
+
+        // Map of metadata key to claim. Ie:
+        // dynamic_metadata_from_claims:
+        //   issuer: iss
+        //   email: email
+        // When specified, the matching claims from the access token will be emitted as dynamic metadata.
+        // Note that metadata keys must be unique, and the claim names must be alphanumeric and use `-` or `_` as separators.
+        // Works when the access token is a JWT or when the access token is opaque, in which case the claims will refer to field in the response from the token introspection endpoint.
+        // The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`),
+        // and the structure of the claim value will be preserved in the metadata struct.
+        map<string, string> dynamic_metadata_from_claims = 7;
     }
 
     message PlainOAuth2Config {
