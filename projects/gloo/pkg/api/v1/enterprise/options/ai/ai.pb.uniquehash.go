@@ -1759,6 +1759,36 @@ func (m *AIPromptGuard_Webhook) HashUnique(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	if _, err = hasher.Write([]byte("Headers")); err != nil {
+		return 0, err
+	}
+	for i, v := range m.GetHeaders() {
+		if _, err = hasher.Write([]byte(strconv.Itoa(i))); err != nil {
+			return 0, err
+		}
+
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("v")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("v")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
 	return hasher.Sum64(), nil
 }
 
@@ -1935,6 +1965,40 @@ func (m *AIPromptGuard_Response) HashUnique(hasher hash.Hash64) (uint64, error) 
 				return 0, err
 			}
 		}
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// HashUnique function generates a hash of the object that is unique to the object by
+// hashing field name and value pairs.
+// Replaces Hash due to original hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
+func (m *AIPromptGuard_Webhook_HeaderMatch) HashUnique(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Webhook_HeaderMatch")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte("Name")); err != nil {
+		return 0, err
+	}
+	if _, err = hasher.Write([]byte(m.GetName())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte("MatchType")); err != nil {
+		return 0, err
+	}
+	err = binary.Write(hasher, binary.LittleEndian, m.GetMatchType())
+	if err != nil {
+		return 0, err
 	}
 
 	return hasher.Sum64(), nil

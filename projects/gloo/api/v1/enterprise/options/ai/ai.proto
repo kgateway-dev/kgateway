@@ -534,6 +534,24 @@ message AIPromptGuard {
     string host = 1;
     // Port to send the traffic to
     uint32 port = 2;
+    message HeaderMatch {
+      enum MatchType {
+        // Exact match
+        EXACT = 0;
+        // Prefix match
+        PREFIX = 1;
+        // Suffix match
+        SUFFIX = 2;
+        // Regex match
+        REGEX = 3;
+      }
+      // Header name to match
+      string name = 1;
+      // Type of match to use
+      MatchType match_type = 2;
+    }
+    // Headers to forward with the request
+    repeated HeaderMatch headers = 3;
   }
 
 

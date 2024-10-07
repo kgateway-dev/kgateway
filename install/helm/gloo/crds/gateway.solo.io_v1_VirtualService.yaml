@@ -3229,6 +3229,16 @@ spec:
                                           type: object
                                         webhook:
                                           properties:
+                                            headers:
+                                              items:
+                                                properties:
+                                                  matchType:
+                                                    type: string
+                                                    x-kubernetes-int-or-string: true
+                                                  name:
+                                                    type: string
+                                                type: object
+                                              type: array
                                             host:
                                               type: string
                                             port:
@@ -3255,6 +3265,16 @@ spec:
                                           type: object
                                         webhook:
                                           properties:
+                                            headers:
+                                              items:
+                                                properties:
+                                                  matchType:
+                                                    type: string
+                                                    x-kubernetes-int-or-string: true
+                                                  name:
+                                                    type: string
+                                                type: object
+                                              type: array
                                             host:
                                               type: string
                                             port:

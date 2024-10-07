@@ -846,6 +846,19 @@ func (m *AIPromptGuard_Webhook) Clone() proto.Message {
 
 	target.Port = m.GetPort()
 
+	if m.GetHeaders() != nil {
+		target.Headers = make([]*AIPromptGuard_Webhook_HeaderMatch, len(m.GetHeaders()))
+		for idx, v := range m.GetHeaders() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Headers[idx] = h.Clone().(*AIPromptGuard_Webhook_HeaderMatch)
+			} else {
+				target.Headers[idx] = proto.Clone(v).(*AIPromptGuard_Webhook_HeaderMatch)
+			}
+
+		}
+	}
+
 	return target
 }
 
@@ -909,6 +922,21 @@ func (m *AIPromptGuard_Response) Clone() proto.Message {
 	} else {
 		target.PiiDetection = proto.Clone(m.GetPiiDetection()).(*AIPromptGuard_Response_PIIDetection)
 	}
+
+	return target
+}
+
+// Clone function
+func (m *AIPromptGuard_Webhook_HeaderMatch) Clone() proto.Message {
+	var target *AIPromptGuard_Webhook_HeaderMatch
+	if m == nil {
+		return target
+	}
+	target = &AIPromptGuard_Webhook_HeaderMatch{}
+
+	target.Name = m.GetName()
+
+	target.MatchType = m.GetMatchType()
 
 	return target
 }

@@ -42,6 +42,8 @@ weight: 5
 - [Regex](#regex)
 - [BuiltIn](#builtin)
 - [Webhook](#webhook)
+- [HeaderMatch](#headermatch)
+- [MatchType](#matchtype)
 - [Request](#request)
 - [CustomResponse](#customresponse)
 - [PIIDetection](#piidetection)
@@ -747,6 +749,7 @@ Data store from which to cache the request/response pairs
 ```yaml
 "host": string
 "port": int
+"headers": []ai.options.gloo.solo.io.AIPromptGuard.Webhook.HeaderMatch
 
 ```
 
@@ -754,6 +757,41 @@ Data store from which to cache the request/response pairs
 | ----- | ---- | ----------- | 
 | `host` | `string` | Host to send the traffic to. |
 | `port` | `int` | Port to send the traffic to. |
+| `headers` | [[]ai.options.gloo.solo.io.AIPromptGuard.Webhook.HeaderMatch](../ai.proto.sk/#headermatch) | Headers to forward with the request. |
+
+
+
+
+---
+### HeaderMatch
+
+
+
+```yaml
+"name": string
+"matchType": .ai.options.gloo.solo.io.AIPromptGuard.Webhook.HeaderMatch.MatchType
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | `string` | Header name to match. |
+| `matchType` | [.ai.options.gloo.solo.io.AIPromptGuard.Webhook.HeaderMatch.MatchType](../ai.proto.sk/#matchtype) | Type of match to use. |
+
+
+
+
+---
+### MatchType
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `EXACT` | Exact match |
+| `PREFIX` | Prefix match |
+| `SUFFIX` | Suffix match |
+| `REGEX` | Regex match |
 
 
 
