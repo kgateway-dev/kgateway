@@ -46,7 +46,7 @@ func (s *minimalDefaultGatewayParametersDeployerSuite) SetupSuite() {
 	}
 	s.manifestObjects = map[string][]client.Object{
 		testdefaults.NginxPodManifest: {testdefaults.NginxPod, testdefaults.NginxSvc},
-		gatewayWithParameters:         {proxyService, proxyServiceAccount, proxyDeployment, gwParams},
+		gatewayWithParameters:         {proxyService, proxyServiceAccount, proxyDeployment, gwParamsDefault},
 	}
 }
 

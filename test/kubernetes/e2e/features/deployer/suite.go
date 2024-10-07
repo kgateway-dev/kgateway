@@ -6,6 +6,7 @@ import (
 
 	"github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	testdefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -53,17 +54,33 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 func (s *testingSuite) SetupSuite() {
 	s.manifests = map[string][]string{
-		"TestProvisionDeploymentAndService":                     {testdefaults.NginxPodManifest, gatewayWithoutParameters},
-		"TestConfigureProxiesFromGatewayParameters":             {testdefaults.NginxPodManifest, gatewayWithParameters},
-		"TestProvisionResourcesUpdatedWithValidParameters":      {testdefaults.NginxPodManifest, gatewayWithParameters},
-		"TestProvisionResourcesNotUpdatedWithInvalidParameters": {testdefaults.NginxPodManifest, gatewayWithParameters},
-		"TestSelfManagedGateway":                                {selfManagedGatewayManifestFile},
+		"TestProvisionDeploymentAndService": {
+			testdefaults.NginxPodManifest,
+			gatewayWithoutParameters,
+		},
+		"TestConfigureProxiesFromGatewayParameters": {
+			testdefaults.NginxPodManifest,
+			gatewayParametersCustom,
+			gatewayWithParameters,
+		},
+		"TestProvisionResourcesUpdatedWithValidParameters": {
+			testdefaults.NginxPodManifest,
+			gatewayWithParameters,
+		},
+		"TestProvisionResourcesNotUpdatedWithInvalidParameters": {
+			testdefaults.NginxPodManifest,
+			gatewayWithParameters,
+		},
+		"TestSelfManagedGateway": {
+			selfManagedGateway,
+		},
 	}
 	s.manifestObjects = map[string][]client.Object{
-		testdefaults.NginxPodManifest:  {testdefaults.NginxPod, testdefaults.NginxSvc},
-		gatewayWithoutParameters:       {proxyService, proxyServiceAccount, proxyDeployment},
-		gatewayWithParameters:          {proxyService, proxyServiceAccount, proxyDeployment, gwParams},
-		selfManagedGatewayManifestFile: {gwParams},
+		testdefaults.NginxPodManifest: {testdefaults.NginxPod, testdefaults.NginxSvc},
+		gatewayWithoutParameters:      {proxyService, proxyServiceAccount, proxyDeployment},
+		gatewayWithParameters:         {proxyService, proxyServiceAccount, proxyDeployment, gwParamsDefault},
+		gatewayParametersCustom:       {gwParamsCustom},
+		selfManagedGateway:            {gwParamsDefault},
 	}
 }
 
@@ -107,6 +124,17 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 	s.testInstallation.Assertions.Gomega.Expect(sa.GetAnnotations()).To(
 		gomega.HaveKeyWithValue("sa-anno-key", "sa-anno-val"))
 
+	// Update the Gateway to use the custom GatewayParameters
+	gwName := types.NamespacedName{Name: gw.Name, Namespace: gw.Namespace}
+	err = s.testInstallation.ClusterContext.Client.Get(s.ctx, gwName, gw)
+	s.Require().NoError(err)
+	s.patchGateway(gw.ObjectMeta, func(gw *gwv1.Gateway) {
+		gw.Annotations[wellknown.GatewayParametersAnnotationName] = gwParamsCustom.Name
+	})
+
+	// Assert that the expected custom configuration exists.
+	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(2))
+
 	s.testInstallation.Assertions.AssertEnvoyAdminApi(
 		s.ctx,
 		proxyDeployment.ObjectMeta,
@@ -119,7 +147,7 @@ func (s *testingSuite) TestProvisionResourcesUpdatedWithValidParameters() {
 	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
 
 	// modify the number of replicas in the GatewayParameters
-	s.patchGatewayParameters(gwParams.ObjectMeta, func(parameters *v1alpha1.GatewayParameters) {
+	s.patchGatewayParameters(gwParamsDefault.ObjectMeta, func(parameters *v1alpha1.GatewayParameters) {
 		parameters.Spec.Kube.Deployment.Replicas = ptr.To(uint32(2))
 	})
 
@@ -137,7 +165,7 @@ func (s *testingSuite) TestProvisionResourcesNotUpdatedWithInvalidParameters() {
 		origPrivileged               = gomega.BeNil()
 	)
 
-	s.patchGatewayParameters(gwParams.ObjectMeta, func(parameters *v1alpha1.GatewayParameters) {
+	s.patchGatewayParameters(gwParamsDefault.ObjectMeta, func(parameters *v1alpha1.GatewayParameters) {
 		gomega.Expect(proxyDeployment.Spec.Template.Spec.Containers).To(gomega.HaveLen(1))
 		envoyContainer := proxyDeployment.Spec.Template.Spec.Containers[0]
 		gomega.Expect(envoyContainer.SecurityContext.AllowPrivilegeEscalation).To(origAllowPrivilegeEscalation)
@@ -190,6 +218,24 @@ func (s *testingSuite) TestSelfManagedGateway() {
 	}, 10*time.Second, 1*time.Second)
 
 	s.testInstallation.Assertions.ConsistentlyObjectsNotExist(s.ctx, proxyService, proxyServiceAccount, proxyDeployment)
+}
+
+// patchGateway accepts a reference to an object, and a patch function. It then queries the object,
+// performs the patch in memory, and writes the object back to the cluster.
+func (s *testingSuite) patchGateway(objectMeta metav1.ObjectMeta, patchFn func(*gwv1.Gateway)) {
+	gw := new(gwv1.Gateway)
+	gwName := types.NamespacedName{
+		Namespace: objectMeta.GetNamespace(),
+		Name:      objectMeta.GetName(),
+	}
+	err := s.testInstallation.ClusterContext.Client.Get(s.ctx, gwName, gw)
+	s.Assert().NoError(err, "can get the Gateway object")
+	updated := gw.DeepCopy()
+
+	patchFn(updated)
+
+	err = s.testInstallation.ClusterContext.Client.Patch(s.ctx, updated, client.MergeFrom(gw))
+	s.Assert().NoError(err, "can update the Gateway object")
 }
 
 // patchGatewayParameters accepts a reference to an object, and a patch function

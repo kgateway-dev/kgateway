@@ -59,10 +59,10 @@ runs:
     shell: bash
     run: kubectl -n gloo-system  get events --sort-by='{.lastTimestamp}'
   - name: Upload reports
-    if: ${{ success() }}
+    if: ${{ failure() }}
     uses: actions/upload-artifact@v4
     with:
       # Name of the path to upload. The VERSION variable refers to the Makefile
       # VERSION variable.
-      name: conformance-gloo-gateway-report
+      name: conformance-gloo-gateway-report-attempt-${{ github.run_attempt }}@k8s${{ matrix.kube-version.kubectl }}
       path: _test/conformance/${{ env.VERSION }}-report.yaml

@@ -54,7 +54,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) TestApplySettingsManifestsFromUnitTests() {
-	settingsFixturesFolder := filepath.Join(util.GetModuleRoot(), "install", "tests", "fixtures", "settings")
+	settingsFixturesFolder := filepath.Join(util.GetModuleRoot(), "install", "test", "fixtures", "settings")
 
 	err := filepath.Walk(settingsFixturesFolder, func(settingsFixtureFile string, info os.FileInfo, err error) error {
 		if err != nil {
