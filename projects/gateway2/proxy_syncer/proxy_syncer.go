@@ -389,12 +389,12 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		kubeGwClient.HasSynced,
 	)
 
+	go s.istioClient.RunAndWait(ctx.Done())
+
 	// wait for caches to sync before accepting events and syncing xds
 	if !s.mgr.GetCache().WaitForCacheSync(ctx) {
 		return errors.New("kube gateway sync loop waiting for all caches to sync failed")
 	}
-
-	go s.istioClient.RunAndWait(ctx.Done())
 
 	for {
 		select {
