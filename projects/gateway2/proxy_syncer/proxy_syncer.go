@@ -375,6 +375,8 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		applyStatusPlugins(ctx, proxiesWithReports, snap.pluginRegistry)
 	})
 
+	go s.istioClient.RunAndWait(ctx.Done())
+
 	s.istioClient.WaitForCacheSync(
 		"ggv2 proxy syncer",
 		ctx.Done(),
@@ -388,8 +390,6 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		kubeUsClient.HasSynced,
 		kubeGwClient.HasSynced,
 	)
-
-	go s.istioClient.RunAndWait(ctx.Done())
 
 	// wait for caches to sync before accepting events and syncing xds
 	if !s.mgr.GetCache().WaitForCacheSync(ctx) {
