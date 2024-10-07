@@ -216,6 +216,8 @@ message UpstreamSpec {
         Anthropic anthropic = 3;
         // Azure OpenAI upstream
         AzureOpenAI azure_openai = 4;
+        // Gemini upstream
+        Gemini gemini = 5;
       }
     }
 

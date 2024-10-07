@@ -157,6 +157,32 @@ spec:
                                       endpoint:
                                         type: string
                                     type: object
+                                  gemini:
+                                    properties:
+                                      authToken:
+                                        properties:
+                                          inline:
+                                            type: string
+                                          secretRef:
+                                            properties:
+                                              name:
+                                                type: string
+                                              namespace:
+                                                type: string
+                                            type: object
+                                        type: object
+                                      customHost:
+                                        properties:
+                                          host:
+                                            type: string
+                                          port:
+                                            maximum: 4294967295
+                                            minimum: 0
+                                            type: integer
+                                        type: object
+                                      model:
+                                        type: string
+                                    type: object
                                   mistral:
                                     properties:
                                       authToken:

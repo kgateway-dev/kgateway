@@ -1061,6 +1061,21 @@ func (m *UpstreamSpec_MultiPool_Backend) Equal(that interface{}) bool {
 			}
 		}
 
+	case *UpstreamSpec_MultiPool_Backend_Gemini:
+		if _, ok := target.Llm.(*UpstreamSpec_MultiPool_Backend_Gemini); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetGemini()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetGemini()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetGemini(), target.GetGemini()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.Llm != target.Llm {

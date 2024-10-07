@@ -626,6 +626,18 @@ func (m *UpstreamSpec_MultiPool_Backend) Clone() proto.Message {
 			}
 		}
 
+	case *UpstreamSpec_MultiPool_Backend_Gemini:
+
+		if h, ok := interface{}(m.GetGemini()).(clone.Cloner); ok {
+			target.Llm = &UpstreamSpec_MultiPool_Backend_Gemini{
+				Gemini: h.Clone().(*UpstreamSpec_Gemini),
+			}
+		} else {
+			target.Llm = &UpstreamSpec_MultiPool_Backend_Gemini{
+				Gemini: proto.Clone(m.GetGemini()).(*UpstreamSpec_Gemini),
+			}
+		}
+
 	}
 
 	return target
