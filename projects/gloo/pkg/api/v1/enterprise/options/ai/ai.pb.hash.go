@@ -931,6 +931,70 @@ func (m *UpstreamSpec_AzureOpenAI) Hash(hasher hash.Hash64) (uint64, error) {
 // Deprecated: due to hashing implemention only using field values. The omission
 // of the field name in the hash calculation can lead to hash collisions.
 // Prefer the HashUnique function instead.
+func (m *UpstreamSpec_Gemini) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.UpstreamSpec_Gemini")); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetAuthToken()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("AuthToken")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetAuthToken(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("AuthToken")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetCustomHost()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("CustomHost")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetCustomHost(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("CustomHost")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if _, err = hasher.Write([]byte(m.GetModel())); err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+//
+// Deprecated: due to hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
+// Prefer the HashUnique function instead.
 func (m *UpstreamSpec_Mistral) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil

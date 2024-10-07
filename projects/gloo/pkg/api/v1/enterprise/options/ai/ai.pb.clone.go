@@ -468,6 +468,31 @@ func (m *UpstreamSpec_AzureOpenAI) Clone() proto.Message {
 }
 
 // Clone function
+func (m *UpstreamSpec_Gemini) Clone() proto.Message {
+	var target *UpstreamSpec_Gemini
+	if m == nil {
+		return target
+	}
+	target = &UpstreamSpec_Gemini{}
+
+	if h, ok := interface{}(m.GetAuthToken()).(clone.Cloner); ok {
+		target.AuthToken = h.Clone().(*SingleAuthToken)
+	} else {
+		target.AuthToken = proto.Clone(m.GetAuthToken()).(*SingleAuthToken)
+	}
+
+	if h, ok := interface{}(m.GetCustomHost()).(clone.Cloner); ok {
+		target.CustomHost = h.Clone().(*UpstreamSpec_CustomHost)
+	} else {
+		target.CustomHost = proto.Clone(m.GetCustomHost()).(*UpstreamSpec_CustomHost)
+	}
+
+	target.Model = m.GetModel()
+
+	return target
+}
+
+// Clone function
 func (m *UpstreamSpec_Mistral) Clone() proto.Message {
 	var target *UpstreamSpec_Mistral
 	if m == nil {

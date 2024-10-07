@@ -16,6 +16,7 @@ weight: 5
 - [CustomHost](#customhost)
 - [OpenAI](#openai)
 - [AzureOpenAI](#azureopenai)
+- [Gemini](#gemini)
 - [Mistral](#mistral)
 - [Anthropic](#anthropic)
 - [MultiPool](#multipool)
@@ -210,6 +211,28 @@ Settings for the Azure OpenAI API
 | `endpoint` | `string` | The endpoint to use This should be the endpoint to the Azure OpenAI API, e.g. my-endpoint.openai.azure.com If the scheme is included it will be stripped. This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}. |
 | `deploymentName` | `string` | The deployment/model name to use This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}. |
 | `apiVersion` | `string` | The version of the API to use This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}. |
+
+
+
+
+---
+### Gemini
+
+ 
+Settings for the Gemini API
+
+```yaml
+"authToken": .ai.options.gloo.solo.io.SingleAuthToken
+"customHost": .ai.options.gloo.solo.io.UpstreamSpec.CustomHost
+"model": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the Gemini API This token will be placed into the `Authorization:` header and prefixed with Bearer if not present when sending the request to the upstream. |
+| `customHost` | [.ai.options.gloo.solo.io.UpstreamSpec.CustomHost](../ai.proto.sk/#customhost) | Optional custom host to send the traffic to. |
+| `model` | `string` | Optional: override model name. If not set, the model name will be taken from the request This can be useful when trying model failover scenarios default: gemini-1.5-flash-latest. |
 
 
 
