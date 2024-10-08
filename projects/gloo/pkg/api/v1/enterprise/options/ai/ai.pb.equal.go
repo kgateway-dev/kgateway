@@ -825,28 +825,40 @@ func (m *UpstreamSpec_Gemini) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetAuthToken()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetAuthToken()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetAuthToken(), target.GetAuthToken()) {
-			return false
-		}
-	}
-
-	if h, ok := interface{}(m.GetCustomHost()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetCustomHost()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetCustomHost(), target.GetCustomHost()) {
-			return false
-		}
+	if strings.Compare(m.GetEndpoint(), target.GetEndpoint()) != 0 {
+		return false
 	}
 
 	if strings.Compare(m.GetModel(), target.GetModel()) != 0 {
 		return false
+	}
+
+	if strings.Compare(m.GetApiVersion(), target.GetApiVersion()) != 0 {
+		return false
+	}
+
+	switch m.AuthTokenSource.(type) {
+
+	case *UpstreamSpec_Gemini_AuthToken:
+		if _, ok := target.AuthTokenSource.(*UpstreamSpec_Gemini_AuthToken); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAuthToken()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAuthToken()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAuthToken(), target.GetAuthToken()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.AuthTokenSource != target.AuthTokenSource {
+			return false
+		}
 	}
 
 	return true

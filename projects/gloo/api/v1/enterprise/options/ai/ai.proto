@@ -128,16 +128,25 @@ message UpstreamSpec {
   // Settings for the Gemini API
   message Gemini {
     // Auth Token to use for the Gemini API
-    // This token will be placed into the `Authorization:` header
-    // and prefixed with Bearer if not present
-    // when sending the request to the upstream.
-    SingleAuthToken auth_token = 1;
-    // Optional custom host to send the traffic to
-    CustomHost custom_host = 2;
-    // Optional: override model name. If not set, the model name will be taken from the request
-    // This can be useful when trying model failover scenarios
-    // default: gemini-1.5-flash-latest
+    // This token will be placed into the `key` header
+    oneof auth_token_source {
+      // Auth Token to use for the Gemini API
+      // This token will be placed into the `key` header
+      SingleAuthToken auth_token = 1;
+      // TODO: use oauth
+    }
+
+    // The service endpoint to use
+    // This should be the endpoint to the Gemini API, e.g. generativelanguage.googleapis.com
+    // If the scheme is included it will be stripped.
+    // This value can be found https://{endpoint}/{version}/models/{model}:generateContent?key={api_key}
+    string endpoint = 2;
+    // The model name to use
+    // This value can be found https://{endpoint}/{version}/models/{model}:generateContent?key={api_key}
     string model = 3;
+    // The version of the API to use
+    // This value can be found https://{endpoint}/{api_version}/models/{model}:generateContent?key={api_key}
+    string api_version = 4;
   }
 
   // Settings for the Mistral API

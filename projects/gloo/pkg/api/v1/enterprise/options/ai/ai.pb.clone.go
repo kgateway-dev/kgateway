@@ -487,19 +487,27 @@ func (m *UpstreamSpec_Gemini) Clone() proto.Message {
 	}
 	target = &UpstreamSpec_Gemini{}
 
-	if h, ok := interface{}(m.GetAuthToken()).(clone.Cloner); ok {
-		target.AuthToken = h.Clone().(*SingleAuthToken)
-	} else {
-		target.AuthToken = proto.Clone(m.GetAuthToken()).(*SingleAuthToken)
-	}
-
-	if h, ok := interface{}(m.GetCustomHost()).(clone.Cloner); ok {
-		target.CustomHost = h.Clone().(*UpstreamSpec_CustomHost)
-	} else {
-		target.CustomHost = proto.Clone(m.GetCustomHost()).(*UpstreamSpec_CustomHost)
-	}
+	target.Endpoint = m.GetEndpoint()
 
 	target.Model = m.GetModel()
+
+	target.ApiVersion = m.GetApiVersion()
+
+	switch m.AuthTokenSource.(type) {
+
+	case *UpstreamSpec_Gemini_AuthToken:
+
+		if h, ok := interface{}(m.GetAuthToken()).(clone.Cloner); ok {
+			target.AuthTokenSource = &UpstreamSpec_Gemini_AuthToken{
+				AuthToken: h.Clone().(*SingleAuthToken),
+			}
+		} else {
+			target.AuthTokenSource = &UpstreamSpec_Gemini_AuthToken{
+				AuthToken: proto.Clone(m.GetAuthToken()).(*SingleAuthToken),
+			}
+		}
+
+	}
 
 	return target
 }

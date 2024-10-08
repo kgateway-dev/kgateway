@@ -76,6 +76,8 @@ spec:
                     type: object
                   gemini:
                     properties:
+                      apiVersion:
+                        type: string
                       authToken:
                         properties:
                           inline:
@@ -88,15 +90,8 @@ spec:
                                 type: string
                             type: object
                         type: object
-                      customHost:
-                        properties:
-                          host:
-                            type: string
-                          port:
-                            maximum: 4294967295
-                            minimum: 0
-                            type: integer
-                        type: object
+                      endpoint:
+                        type: string
                       model:
                         type: string
                     type: object
@@ -185,6 +180,8 @@ spec:
                                     type: object
                                   gemini:
                                     properties:
+                                      apiVersion:
+                                        type: string
                                       authToken:
                                         properties:
                                           inline:
@@ -197,15 +194,8 @@ spec:
                                                 type: string
                                             type: object
                                         type: object
-                                      customHost:
-                                        properties:
-                                          host:
-                                            type: string
-                                          port:
-                                            maximum: 4294967295
-                                            minimum: 0
-                                            type: integer
-                                        type: object
+                                      endpoint:
+                                        type: string
                                       model:
                                         type: string
                                     type: object
