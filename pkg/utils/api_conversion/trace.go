@@ -42,7 +42,7 @@ func ToEnvoyDatadogConfiguration(glooDatadogConfig *envoytracegloo.DatadogConfig
 		// and not aware that they need to set this object
 		envoyDatadogConfig.RemoteConfig = &envoytrace.DatadogRemoteConfig{}
 	} else if !remoteConfig.GetDisabled().GetValue() {
-		// This Disabled filed does not exist on the envoy side. We added it because our default
+		// This Disabled field does not exist on the envoy side. We added it because our default
 		// is to enable when remoteConfig is not set to maintain backward compatibility. So, we need
 		// this field to disable if desire.
 		envoyDatadogConfig.RemoteConfig = &envoytrace.DatadogRemoteConfig{
