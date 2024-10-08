@@ -1,8 +1,6 @@
 package tracing
 
 import (
-	"time"
-
 	v12 "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -11,6 +9,7 @@ import (
 	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -21,8 +20,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 var _ = Describe("Plugin", func() {
@@ -477,7 +474,7 @@ var _ = Describe("Plugin", func() {
 									ClusterName: "datadog-cluster-name",
 								},
 								ServiceName:  &wrappers.StringValue{Value: "datadog-gloo"},
-								RemoteConfig: &envoytrace_gloo.DatadogRemoteConfig{Disabled: wrapperspb.Bool(true)},
+								RemoteConfig: &envoytrace_gloo.DatadogRemoteConfig{Disabled: &wrappers.BoolValue{Value: true}},
 							},
 						},
 					},
@@ -513,7 +510,7 @@ var _ = Describe("Plugin", func() {
 									ClusterName: "datadog-cluster-name",
 								},
 								ServiceName:  &wrappers.StringValue{Value: "datadog-gloo"},
-								RemoteConfig: &envoytrace_gloo.DatadogRemoteConfig{PollingInterval: durationpb.New(12 * time.Second)},
+								RemoteConfig: &envoytrace_gloo.DatadogRemoteConfig{PollingInterval: &duration.Duration{Seconds: 12}},
 							},
 						},
 					},
@@ -524,7 +521,7 @@ var _ = Describe("Plugin", func() {
 				expectedEnvoyConfig := &envoytrace.DatadogConfig{
 					CollectorCluster: "datadog-cluster-name",
 					ServiceName:      "datadog-gloo",
-					RemoteConfig:     &envoytrace.DatadogRemoteConfig{PollingInterval: durationpb.New(12 * time.Second)},
+					RemoteConfig:     &envoytrace.DatadogRemoteConfig{PollingInterval: &duration.Duration{Seconds: 12}},
 				}
 				expectedEnvoyConfigMarshalled, _ := ptypes.MarshalAny(expectedEnvoyConfig)
 
@@ -550,8 +547,8 @@ var _ = Describe("Plugin", func() {
 								},
 								ServiceName: &wrappers.StringValue{Value: "datadog-gloo"},
 								RemoteConfig: &envoytrace_gloo.DatadogRemoteConfig{
-									Disabled:        wrapperspb.Bool(true),
-									PollingInterval: durationpb.New(12 * time.Second),
+									Disabled:        &wrappers.BoolValue{Value: true},
+									PollingInterval: &duration.Duration{Seconds: 12},
 								},
 							},
 						},
