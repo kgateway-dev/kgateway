@@ -13,7 +13,7 @@ weight: 5
 
 - [DatadogRemoteConfig](#datadogremoteconfig)
 - [DatadogConfig](#datadogconfig)
- 
+  
 
 
 
@@ -36,7 +36,7 @@ Configuration for the Remote Configuration feature.
 ```
 
 | Field | Type | Description |
-| ----- | ---- | ----------- |
+| ----- | ---- | ----------- | 
 | `pollingInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Frequency at which new configuration updates are queried. If no value is provided, the default value is delegated to the Datadog tracing library. |
 | `disabled` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Disabled remote config. This field does not exist in envoy's config but allow us to preserve the default behavior when upgrading to envoy v1.31. |
 
