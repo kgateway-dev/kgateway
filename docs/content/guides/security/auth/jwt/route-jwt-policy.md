@@ -1099,7 +1099,7 @@ Note that this example focuses on setting up delegation with route-level configu
 4. Create an environment variable to save a JWT token for the user Dan. Dan's JWT comes from the `docs.xyz` provider in the `jwt-child` VirtualService. Optionally, you can review the token information by debugging the token in [jwt.io](jwt.io).
 
    ```shell
-   export DAN_TOKEN=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJvcmciOiJkb2NzLnh5eiIsInN1YiI6ImRhbiIsInRlYW0iOiJvcHMiLCJpc3N1ZXIiOiJkb2NzLnh5eiIsImxsbXMiOnsiY2xhdWRlIjpbIjMuNS1zb25uZXQiXX19.fg5uMTz8dGDaIAHjKUiw2kswAiI7XT6oOWDMYTTT0BqdcFugEPDHlyLbmKoMLOGRzU_3PguY-G_NbuuooGBiLAVi4-eMv1CeZmpH68EoJy25MHSlLLHNJpgkTEwZfTISyRewgKbQYUESf20iIFwbZol-zgG_YgkO3PDTSyHmlubVUOuZCpNJgeloQO3NctxjpyC0ubBErthrES09jkS12qXWLfJI-G6TuiajZ-hLr9205_EMd4OUb6NsAORJe3TEPJuDRsgWmfScOLzruRdk_8wk32IlHBF88EmEedOmaWdyc6Rxtk-_QxUl-K4zLtg5djlGiAjv_6rP1tU-ewNDpA
+   export DAN_TOKEN=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJvcmciOiJkb2NzLnh5eiIsInN1YiI6ImRhbiIsInRlYW0iOiJvcHMiLCJpc3MiOiJkb2NzLnh5eiIsImxsbXMiOnsiY2xhdWRlIjpbIjMuNS1zb25uZXQiXX19.ny19crTIAsmlVlKjpdp52v4MJ037rNI5xyMoIqqA-jl6FK2XwhL0kn_xqvA3XDdKhMqy8hmH4nWbZPhHGzvs4gxXQW-_LPO0dDR5J_TOAqmR2j5epEyBWV7SvORGciG3nqpsJSBEzb6-artbbX8ehRpRZAyVvPQnfEYRkuPmmuzxUjyQpeWveCOJ9-HP3-PACqo2snMYoztsqR3mq2_kDWqvuxbhwuvFKEDQKe6tsvoVVc_7-qV4rHxiSmCQKagRtf0ALr7pzSOEVJ4JTWzRkkw5S5lO93sUbTittxEchZFEa7O3qKclvm5MqauF-UzFaB5YR9g2bUwGiRoYIV0BTA
    ```
 
 5. Send a request to the `/get` child route with Dan's token. The request succeeds, because the child policy takes precedence over the parent route.
