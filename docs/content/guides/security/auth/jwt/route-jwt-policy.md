@@ -939,7 +939,7 @@ In a [delegation scenario]({{< versioned_link_path fromRoot="/guides/traffic_man
 
 Note that this example focuses on setting up delegation with route-level configuration on the VirtualService and RouteTable resources. The example does not discuss gateway-level policies that are set by the VirtualHost. The same configuration interactions between the route-level and the gateway-level options as described in the previous scenarios still apply. For example, route-level JWT policies at the same stage as gateway-level JWT policies take precedence.
 
-1. Update the VirtualService to delegate the `/get` route to a child RouteTable named `httpbin-child`. Leave the JWT policy configuration on the `/get` route to keep the original route-level JWT policy.
+1. Update the VirtualService to delegate the `/status` route to a child RouteTable named `httpbin-child`. Leave the JWT policy configuration on the `/status` route to keep the original route-level JWT policy.
 
    ```yaml
    kubectl apply -f - <<EOF
@@ -952,37 +952,10 @@ Note that this example focuses on setting up delegation with route-level configu
      virtualHost:
        domains:
        - 'www.example.com'
-       options:
-         jwtStaged:
-           beforeExtAuth:
-             validationPolicy: ALLOW_MISSING
-             providers:
-               vhost-gateway-provider:
-                 issuer: solo.io
-                 jwks:
-                   local:
-                     key: |
-                       -----BEGIN PUBLIC KEY-----
-                       MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAskFAGESgB22iOsGk/UgX
-                       BXTmMtd8R0vphvZ4RkXySOIra/vsg1UKay6aESBoZzeLX3MbBp5laQenjaYJ3U8P
-                       QLCcellbaiyUuE6+obPQVIa9GEJl37GQmZIMQj4y68KHZ4m2WbQVlZVIw/Uw52cw
-                       eGtitLMztiTnsve0xtgdUzV0TaynaQrRW7REF+PtLWitnvp9evweOrzHhQiPLcdm
-                       fxfxCbEJHa0LRyyYatCZETOeZgkOHlYSU0ziyMhHBqpDH1vzXrM573MQ5MtrKkWR
-                       T4ZQKuEe0Acyd2GhRg9ZAxNqs/gbb8bukDPXv4JnFLtWZ/7EooKbUC/QBKhQYAsK
-                       bQIDAQAB
-                       -----END PUBLIC KEY-----
-         rbac:
-          policies:
-            viewer:
-              nestedClaimDelimiter: .
-              principals:
-              - jwtPrincipal:
-                  claims:
-                    team: ops
        routes:
-       - name: get
+       - name: status
          matchers:
-         - prefix: /get
+         - prefix: /status
          delegateAction:
            ref:
              name: httpbin-child
@@ -1008,26 +981,12 @@ Note that this example focuses on setting up delegation with route-level configu
                          DDMKeb2OsonQ0me3VSw2gkdnE9cyIklXcne/+oKEqineG8a12JSfEibf29iLiIXO
                          gQIDAQAB
                          -----END PUBLIC KEY-----
-           rbac:
-             policies:
-               viewer:
-                 nestedClaimDelimiter: .
-                 principals:
-                 - jwtPrincipal:
-                     claims:
-                       team: finance   
-       - name: status-200
-         matchers:
-         - prefix: /status/200
-         routeAction:
-           single:
-             upstream:
-               name: httpbin
-               namespace: default
    EOF
    ```
 
-2. Create the child RouteTable with a different JWT configuration than the parent. This JWKS has a different `docs.xyz` issuer than the `solo.io` issuer that the parent route's separate VirtualService resource configured.
+2. Create the child with two `/status` child routes of of `/status/200` and `/status/418`.
+   * The `/status/200` route does not have a JWT policy. As such, the parent JWT policy applies.
+   * The `/status/418` route does have a JWT policy with a different JWT configuration than the parent route. This JWKS has a different `docs.xyz` issuer than the `solo.io` issuer of the parent route. This child JWT policy overwrites the parent policy.
 
    ```yaml
    kubectl apply -f- <<EOF
@@ -1038,9 +997,17 @@ Note that this example focuses on setting up delegation with route-level configu
      namespace: default
    spec:
      routes:
-       - name: get
+       - name: status-200
          matchers:
-          - prefix: /get
+          - prefix: /status/200
+         routeAction:
+           single:
+             upstream:
+               name: httpbin
+               namespace: default
+       - name: status-418
+         matchers:
+          - prefix: /status/418
          routeAction:
            single:
              upstream:
@@ -1053,36 +1020,61 @@ Note that this example focuses on setting up delegation with route-level configu
                  child-route-provider:
                    issuer: docs.xyz
                    tokenSource:
-                    headers:
-                    - header: x-after-ext-auth-bearer-token                  
+                     headers:
+                     - header: x-after-ext-auth-bearer-token                  
                    jwks:
                      local:
                        key: |
                          -----BEGIN PUBLIC KEY-----
-                         MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu1SU1LfVLPHCozMxH2Mo
-                         4lgOEePzNm0tRgeLezV6ffAt0gunVTLw7onLRnrq0/IzW7yWR7QkrmBL7jTKEn5u
-                         +qKhbwKfBstIs+bMY2Zkp18gnTxKLxoS2tFczGkPLPgizskuemMghRniWaoLcyeh
-                         kd3qqGElvW/VDL5AaWTg0nLVkjRo9z+40RQzuVaE8AkAFmxZzow3x+VJYKdjykkJ
-                         0iT9wCS0DRTXu269V264Vf/3jvredZiKRkgwlL9xNAwxXFg0x/XFw005UWVRIkdg
-                         cKWTjpBP2dPwVZ4WWC+9aGVd+Gyn1o0CLelf4rEjGoXbAAEgAqeGUxrcIlbjXfbc
-                         mwIDAQAB
+                         MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAp/ZO8Qhfj6kB5BxndHds
+                         x12rgJ2DyU0lvlbC4Ip1zTlULV/Fuy1uAqKbBRC9IyoFiYxuWTLbvpLv5SLnrIPy
+                         f4nvX4oHGdyFrcwvCtKvcgtttB363HWiG0PZwSwEn0yMa7s4Rhmy9/ZSYm+sMZQw
+                         8wKv40pYnBuqRv1DpfvZLOXvICCkd5f03zv1HQXIfO3YjXOy58vOkajpzTmx4q2A
+                         UilrCJcR6tBMoAph5FiJxgRmdLziKx3QXukUSNWfrFVSL+D/BoQV+2TJDZjKfPgj
+                         DDMKeb2OsonQ0me3VSw2gkdnE9cyIklXcne/+oKEqineG8a12JSfEibf29iLiIXO
+                         gQIDAQAB
                          -----END PUBLIC KEY-----
    EOF
    ```
 
-3. Send a request to the `/get` child route with Carol's token. The request fails, because Carol's token is from the `solo.io` issuer as required by the JWT policy of the parent route, not the `docs.xyz` issuer of the child route.
+3. Send a request to the `/status/200` child route with Carol's token. The request succeeds, because Carol's token is from the `solo.io` issuer as required by the JWT policy of the parent route.
 
    {{< tabs >}}
    {{% tab name="LoadBalancer IP address or hostname" %}}
    ```sh
-   curl -vik $(glooctl proxy url)/get \
+   curl -vik $(glooctl proxy url)/status/200 \
    -H "host: www.example.com" \
    --header "x-after-ext-auth-bearer-token: $CAROL_TOKEN"
    ```
    {{% /tab %}}
    {{% tab name="Local testing in Kind" %}}
    ```sh
-   curl -vik localhost:31500/get \
+   curl -vik localhost:31500/status/200 \
+   -H "host: www.example.com" \
+   --header "x-after-ext-auth-bearer-token: $CAROL_TOKEN"
+   ```
+   {{% /tab %}}
+   {{< /tabs >}}
+
+   Example output: 
+   ```
+   HTTP/1.1 200 OK
+   ...
+   ```
+
+4. Send another request to the `/status/418` child route with Carol's token. The request fails, because Carol's token is from the `solo.io` issuer as required by the JWT policy of the parent route, but the child route for `/status/418` requires its own JWT policy from a different issuer, `docs.xyz`.
+
+   {{< tabs >}}
+   {{% tab name="LoadBalancer IP address or hostname" %}}
+   ```sh
+   curl -vik $(glooctl proxy url)/status/418 \
+   -H "host: www.example.com" \
+   --header "x-after-ext-auth-bearer-token: $CAROL_TOKEN"
+   ```
+   {{% /tab %}}
+   {{% tab name="Local testing in Kind" %}}
+   ```sh
+   curl -vik localhost:31500/status/418 \
    -H "host: www.example.com" \
    --header "x-after-ext-auth-bearer-token: $CAROL_TOKEN"
    ```
@@ -1092,29 +1084,29 @@ Note that this example focuses on setting up delegation with route-level configu
    Example output: 
    ```
    < HTTP/1.1 401 Unauthorized
-   Jwt issuer is missing
+   Jwt issuer is not configured
    ...
    ```
 
-4. Create an environment variable to save a JWT token for the user Dan. Dan's JWT comes from the `docs.xyz` provider in the `jwt-child` VirtualService. Optionally, you can review the token information by debugging the token in [jwt.io](jwt.io).
+5. Create an environment variable to save a JWT token for the user Dan. Dan's JWT comes from the `docs.xyz` provider in the `jwt-child` VirtualService. Optionally, you can review the token information by debugging the token in [jwt.io](jwt.io).
 
    ```shell
    export DAN_TOKEN=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJvcmciOiJkb2NzLnh5eiIsInN1YiI6ImRhbiIsInRlYW0iOiJvcHMiLCJpc3MiOiJkb2NzLnh5eiIsImxsbXMiOnsiY2xhdWRlIjpbIjMuNS1zb25uZXQiXX19.ny19crTIAsmlVlKjpdp52v4MJ037rNI5xyMoIqqA-jl6FK2XwhL0kn_xqvA3XDdKhMqy8hmH4nWbZPhHGzvs4gxXQW-_LPO0dDR5J_TOAqmR2j5epEyBWV7SvORGciG3nqpsJSBEzb6-artbbX8ehRpRZAyVvPQnfEYRkuPmmuzxUjyQpeWveCOJ9-HP3-PACqo2snMYoztsqR3mq2_kDWqvuxbhwuvFKEDQKe6tsvoVVc_7-qV4rHxiSmCQKagRtf0ALr7pzSOEVJ4JTWzRkkw5S5lO93sUbTittxEchZFEa7O3qKclvm5MqauF-UzFaB5YR9g2bUwGiRoYIV0BTA
    ```
 
-5. Send a request to the `/get` child route with Dan's token. The request succeeds, because the child policy takes precedence over the parent route.
+6. Send another request to the `/status/200` child route, this time with Dan's token. The request fails, because Dans's token is not valid for the JWKS provider with the `solo.io` issuer as required by the JWT policy of the parent route.
 
    {{< tabs >}}
    {{% tab name="LoadBalancer IP address or hostname" %}}
    ```sh
-   curl -vik $(glooctl proxy url)/get \
+   curl -vik $(glooctl proxy url)/status/200 \
    -H "host: www.example.com" \
    --header "x-after-ext-auth-bearer-token: $DAN_TOKEN"
    ```
    {{% /tab %}}
    {{% tab name="Local testing in Kind" %}}
    ```sh
-   curl -vik localhost:31500/get \
+   curl -vik localhost:31500/status/200 \
    -H "host: www.example.com" \
    --header "x-after-ext-auth-bearer-token: $DAN_TOKEN"
    ```
@@ -1123,8 +1115,43 @@ Note that this example focuses on setting up delegation with route-level configu
 
    Example output: 
    ```
-   < HTTP/1.1 200 OK
+   HTTP/1.1 401 Unauthorized
+   Jwt issuer is not configured
    ...
+   ```
+
+7. Send another request to the `/status/418` child route, this time with Dan's token. The request succeeds, because the JWT is valid for the JWKS provider with the `docs.xyz` issuer of the JWT policy on the child route, which takes precedence over the parent route.
+
+   {{< tabs >}}
+   {{% tab name="LoadBalancer IP address or hostname" %}}
+   ```sh
+   curl -vik $(glooctl proxy url)/status/418 \
+   -H "host: www.example.com" \
+   --header "x-after-ext-auth-bearer-token: $DAN_TOKEN"
+   ```
+   {{% /tab %}}
+   {{% tab name="Local testing in Kind" %}}
+   ```sh
+   curl -vik localhost:31500/status/418 \
+   -H "host: www.example.com" \
+   --header "x-after-ext-auth-bearer-token: $DAN_TOKEN"
+   ```
+   {{% /tab %}}
+   {{< /tabs >}}
+
+   Example output: 
+   ```
+   HTTP/1.1 418 Unknown
+   ...
+    -=[ teapot ]=-
+
+       _...._
+     .'  _ _ `.
+    | ."` ^ `". _,
+    \_;`"---"`|//
+      |       ;/
+      \_     _/
+        `"""`
    ```
 
 [Back to table of scenarios](#about)
