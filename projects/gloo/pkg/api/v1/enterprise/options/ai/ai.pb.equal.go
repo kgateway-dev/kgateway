@@ -180,6 +180,21 @@ func (m *UpstreamSpec) Equal(that interface{}) bool {
 			}
 		}
 
+	case *UpstreamSpec_Gemini_:
+		if _, ok := target.Llm.(*UpstreamSpec_Gemini_); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetGemini()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetGemini()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetGemini(), target.GetGemini()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.Llm != target.Llm {

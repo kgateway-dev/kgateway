@@ -241,6 +241,8 @@ message UpstreamSpec {
     AzureOpenAI azure_openai = 4;
     // multi upstream
     MultiPool multi = 5;
+    // Gemini upstream
+    Gemini gemini = 6;
   }
 }
 
