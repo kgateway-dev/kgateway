@@ -3,6 +3,8 @@ package proxy_syncer
 import (
 	"context"
 	"errors"
+	"fmt"
+	"time"
 
 	// "google.golang.org/protobuf/runtime/protoiface"
 	corev1 "k8s.io/api/core/v1"
@@ -33,6 +35,7 @@ import (
 	"istio.io/istio/pkg/kube/kubetypes"
 	"k8s.io/apimachinery/pkg/runtime"
 
+	"github.com/avast/retry-go/v4"
 	"github.com/golang/protobuf/proto"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -652,23 +655,40 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
-	rl := gwv1.HTTPRouteList{}
-	err := s.mgr.GetClient().List(ctx, &rl)
-	if err != nil {
-		logger.Error(err)
-		return
-	}
+	// Sometimes the List returns stale (cached) httproutes, causing the status update to fail
+	// with "the object has been modified" errors. Therefore we try the status updates in a retry loop.
+	err := retry.Do(func() error {
+		rl := gwv1.HTTPRouteList{}
+		err := s.mgr.GetClient().List(ctx, &rl)
+		if err != nil {
+			// log this at error level because this is not an expected error
+			logger.Error(err)
+			return err
+		}
 
-	for _, route := range rl.Items {
-		route := route // pike
-		if status := rm.BuildRouteStatus(ctx, route, s.controllerName); status != nil {
-			if !isHTTPRouteStatusEqual(&route.Status, status) {
-				route.Status = *status
-				if err := s.mgr.GetClient().Status().Update(ctx, &route); err != nil {
-					logger.Error(err)
+		for _, route := range rl.Items {
+			route := route // pike
+			if status := rm.BuildRouteStatus(ctx, route, s.controllerName); status != nil {
+				if !isHTTPRouteStatusEqual(&route.Status, status) {
+					route.Status = *status
+					if err := s.mgr.GetClient().Status().Update(ctx, &route); err != nil {
+						// log this as debug, since we will retry
+						logger.Debugw("httproute status update attempt failed", "error", err,
+							"httproute", fmt.Sprintf("%s.%s", route.GetNamespace(), route.GetName()))
+						return err
+					}
 				}
 			}
 		}
+
+		return nil
+	},
+		retry.Attempts(5),
+		retry.Delay(100*time.Millisecond),
+		retry.DelayType(retry.BackOffDelay),
+	)
+	if err != nil {
+		logger.Errorw("all attempts failed at updating httproute statuses", "error", err)
 	}
 }
 

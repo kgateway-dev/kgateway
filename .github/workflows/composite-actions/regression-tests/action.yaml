@@ -35,6 +35,6 @@ runs:
   - uses: actions/upload-artifact@v4
     if: ${{ failure() }}
     with:
-      name: ${{matrix.kube-e2e-test-type}}@k8s${{matrix.kube-version.kubectl}}-kube-dump
+      name: ${{matrix.kube-e2e-test-type}}-attempt-${{ github.run_attempt }}@k8s${{matrix.kube-version.kubectl}}-kube-dump
       path: "_output/kube2e-artifacts"
       if-no-files-found: warn
