@@ -572,30 +572,12 @@ message AIPromptGuard {
     Regex regex = 2;
 
     Webhook webhook = 3;
-
-    message PIIDetection {
-      enum Action {
-        // Mask the detected PII
-        MASK = 0;
-        // Reject the request
-        REJECT = 1;
-      }
-      // Action to take when PII is detected
-      Action action = 1;
-    }
-    // PII detection settings
-    PIIDetection pii_detection = 4;
   }
 
   message Response {
     Regex regex = 1;
 
     Webhook webhook = 2;
-
-    // Currently only masking is supported on the response
-    message PIIDetection {}
-    // PII detection settings
-    PIIDetection pii_detection = 4;
   }
   // Guards for the prompt request
   Request request = 1;

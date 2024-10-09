@@ -1533,16 +1533,6 @@ func (m *AIPromptGuard_Request) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetPiiDetection()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetPiiDetection()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetPiiDetection(), target.GetPiiDetection()) {
-			return false
-		}
-	}
-
 	return true
 }
 
@@ -1583,16 +1573,6 @@ func (m *AIPromptGuard_Response) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetWebhook(), target.GetWebhook()) {
-			return false
-		}
-	}
-
-	if h, ok := interface{}(m.GetPiiDetection()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetPiiDetection()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetPiiDetection(), target.GetPiiDetection()) {
 			return false
 		}
 	}
@@ -1658,58 +1638,6 @@ func (m *AIPromptGuard_Request_CustomResponse) Equal(that interface{}) bool {
 	}
 
 	if m.GetStatusCode() != target.GetStatusCode() {
-		return false
-	}
-
-	return true
-}
-
-// Equal function
-func (m *AIPromptGuard_Request_PIIDetection) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*AIPromptGuard_Request_PIIDetection)
-	if !ok {
-		that2, ok := that.(AIPromptGuard_Request_PIIDetection)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if m.GetAction() != target.GetAction() {
-		return false
-	}
-
-	return true
-}
-
-// Equal function
-func (m *AIPromptGuard_Response_PIIDetection) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*AIPromptGuard_Response_PIIDetection)
-	if !ok {
-		that2, ok := that.(AIPromptGuard_Response_PIIDetection)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
 		return false
 	}
 
