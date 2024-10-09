@@ -110,7 +110,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 	mgr.AddReadyzCheck("ready-ping", healthz.Ping)
 
 	inputChannels := proxy_syncer.NewGatewayInputChannels()
-	k8sgwExt, err := cfg.ExtensionsFactory(ctx, ext.K8sGatewayExtensionsFactoryParameters{
+	k8sGwExtensions, err := cfg.ExtensionsFactory(ctx, ext.K8sGatewayExtensionsFactoryParameters{
 		Mgr:                     mgr,
 		RouteOptionClient:       cfg.RouteOptionClient,
 		VirtualHostOptionClient: cfg.VirtualHostOptionClient,
@@ -128,7 +128,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		cfg.Opts.WriteNamespace,
 		inputChannels,
 		mgr,
-		k8sgwExt,
+		k8sGwExtensions,
 		cfg.ProxyClient,
 		cfg.Translator,
 		cfg.Opts.ControlPlane.SnapshotCache,
@@ -151,7 +151,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		ControlPlane:   cfg.Opts.ControlPlane, // TODO(Law) type seems FAR too broad, only used to provide the xds addr
 		IstioValues:    cfg.Opts.GlooGateway.IstioValues,
 		Kick:           inputChannels.Kick,
-		Extensions:     k8sgwExt,
+		Extensions:     k8sGwExtensions,
 	}
 	if err := NewBaseGatewayController(ctx, gwCfg); err != nil {
 		setupLog.Error(err, "unable to create controller")
