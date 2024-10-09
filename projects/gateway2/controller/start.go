@@ -64,12 +64,17 @@ type StartConfig struct {
 	// VirtualHostOptionClient is the client used for retrieving VirtualHostOption objects within the VirtualHostOptionsPlugin
 	VirtualHostOptionClient gatewayv1.VirtualHostOptionClient
 
+	// SecretClient is used for converting from kube Secrets to gloov1 Secrets
 	SecretClient v1.SecretClient
 
 	// StatusReporter is used within any StatusPlugins that must persist a GE-classic style status
 	StatusReporter reporter.StatusReporter
 
-	Translator       translator.Translator
+	// Translator is an instance of the Gloo translator used to translate Proxy -> xDS Snapshot
+	Translator translator.Translator
+
+	// SyncerExtensions is a list of extensions, the kube gw controller will use these to get extension-specific
+	// errors & warnings for any Proxies it generates
 	SyncerExtensions []syncer.TranslatorSyncerExtension
 }
 
