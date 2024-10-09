@@ -1080,6 +1080,10 @@ message AccessTokenValidation {
         // in the future we may add other types of scope validation (e.g. predicate matching)
     }
 
+    message ScopeList {
+      repeated string scope = 1;
+    }
+
     // Map of metadata key to claim. Ie:
     // dynamic_metadata_from_claims:
     //   issuer: iss
@@ -1090,10 +1094,6 @@ message AccessTokenValidation {
     // The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`),
     // and the structure of the claim value will be preserved in the metadata struct.
     map<string, string> dynamic_metadata_from_claims = 7;
-
-    message ScopeList {
-      repeated string scope = 1;
-    }
 }
 
 message OauthSecret {
@@ -2146,9 +2146,9 @@ message ExtAuthConfig {
             AerospikeApiKeyStorage aerospike_apikey_storage = 5;
         }
 
-    // API key metadata may contain data is is invalid for a header, such as a newline. By default, this data will be validated
-    // in the data plane and mitigated in a way that provides a consistent experience for the user and visibility for the operator.
-    // This validation comes with a performance cost, and can be disabled by setting this field to `true`.
+        // API key metadata may contain data is is invalid for a header, such as a newline. By default, this data will be validated
+        // in the data plane and mitigated in a way that provides a consistent experience for the user and visibility for the operator.
+        // This validation comes with a performance cost, and can be disabled by setting this field to `true`.
         bool skip_metadata_validation = 6;
     }
 
