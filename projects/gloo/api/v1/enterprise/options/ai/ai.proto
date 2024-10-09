@@ -542,8 +542,10 @@ message AIPromptGuard {
         PREFIX = 1;
         // Suffix match
         SUFFIX = 2;
+        // Contains match
+        CONTAINS = 3;
         // Regex match
-        REGEX = 3;
+        REGEX = 4;
       }
       // Header name to match
       string name = 1;

@@ -788,6 +788,7 @@ Data store from which to cache the request/response pairs
 | `EXACT` | Exact match |
 | `PREFIX` | Prefix match |
 | `SUFFIX` | Suffix match |
+| `CONTAINS` | Contains match |
 | `REGEX` | Regex match |
 
 
