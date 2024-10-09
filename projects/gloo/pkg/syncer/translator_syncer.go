@@ -122,10 +122,6 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 		}
 	}
 
-	// store snap for debug tooling
-	s.snapshotHistory.SetApiSnapshot(snap)
-	s.latestSnap = snap
-
 	// Reports used to aggregate results from xds and extension translation.
 	// Will contain reports for `Gloo` components (i.e. Proxies, Upstreams, AuthConfigs, etc.)
 	reports := make(reporter.ResourceReports)

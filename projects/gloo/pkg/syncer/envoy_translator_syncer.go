@@ -81,16 +81,18 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 	ctx, span := trace.StartSpan(ctx, "gloo.syncer.Sync")
 	defer span.End()
 
-	// filter out Kube Gateway proxies
-	var (
-		edgeProxies v1.ProxyList
-		kubeProxies v1.ProxyList
-	)
+	// store snap for debug tooling
+	s.snapshotHistory.SetApiSnapshot(snap)
+	s.latestSnap = snap
+
+	var nonKubeProxies v1.ProxyList
 	for _, proxy := range snap.Proxies {
-		if proxy.GetMetadata().GetLabels()[utils.ProxyTypeKey] == utils.GlooEdgeProxyValue {
-			edgeProxies = append(edgeProxies, proxy)
-		} else if proxy.GetMetadata().GetLabels()[utils.ProxyTypeKey] == utils.GatewayApiProxyValue {
-			kubeProxies = append(kubeProxies, proxy)
+		proxyType := utils.GetTranslatorValue(proxy.GetMetadata())
+		if proxyType == utils.GatewayApiProxyValue {
+			// filter out Kube Gateway proxies
+			continue
+		} else {
+			nonKubeProxies = append(nonKubeProxies, proxy)
 		}
 	}
 
@@ -98,7 +100,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 	logger := contextutils.LoggerFrom(ctx)
 	snapHash := hashutils.MustHash(snap)
 	logger.Infof("begin sync %v (%v proxies, %v upstreams, %v endpoints, %v secrets, %v artifacts, %v auth configs, %v rate limit configs, %v graphql apis)", snapHash,
-		len(edgeProxies), len(snap.Upstreams), len(snap.Endpoints), len(snap.Secrets), len(snap.Artifacts), len(snap.AuthConfigs), len(snap.Ratelimitconfigs), len(snap.GraphqlApis))
+		len(nonKubeProxies), len(snap.Upstreams), len(snap.Endpoints), len(snap.Secrets), len(snap.Artifacts), len(snap.AuthConfigs), len(snap.Ratelimitconfigs), len(snap.GraphqlApis))
 	defer logger.Infof("end sync %v", snapHash)
 
 	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
@@ -116,6 +118,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 			allKeys[key] = false
 		}
 		// Get all valid node ID keys for Proxies
+		// Note that here we handle all types of Proxies (including the kube gw proxies)
 		for _, key := range xds.SnapshotCacheKeys(snap.Proxies) {
 			allKeys[key] = true
 		}
@@ -127,7 +130,6 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 		// preserve keys from the current list of proxies, set previous invalid snapshots to empty snapshot
 		for key, valid := range allKeys {
 			if !valid {
-				logger.Infof("LAW removing snapshot for %s", key)
 				s.xdsCache.SetSnapshot(key, emptySnapshot)
 			}
 		}
@@ -139,8 +141,8 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 	// but we will just discard them; the kube gateway xds_syncer is responsible for extension reports for its own proxies
 	allReports.Accept(snap.Proxies.AsInputResources()...)
 
-	// sync edge proxies
-	for _, proxy := range edgeProxies {
+	// sync non-kube gw proxies
+	for _, proxy := range nonKubeProxies {
 		proxyCtx := ctx
 		metaKey := xds.SnapshotCacheKey(proxy)
 		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(syncerstats.ProxyNameKey, metaKey)); err == nil {
