@@ -5,7 +5,7 @@ description: Perform routing decisions using information in a JWT's claims
 ---
 
 {{% notice note %}}
-The features used here were introduced with **Gloo Gateway Enterprise**, release 0.14.0. If you are using an earlier version, this tutorial will not work.
+{{< readfile file="static/content/enterprise_only_feature_disclaimer" markdown="true">}}
 {{% /notice %}}
 
 In this guide, we will show how to configure Gloo Gateway to route requests to different services based on the claims contained 
