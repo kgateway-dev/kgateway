@@ -21,6 +21,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
+	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -103,7 +104,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
 	// string if we're not even going to log it anyway
 	if contextutils.GetLogLevel() == zapcore.DebugLevel {
-		// logger.Debug(syncutil.StringifySnapshot(snap))
+		logger.Debug(syncutil.StringifySnapshot(snap))
 	}
 
 	if !s.settings.GetGloo().GetDisableProxyGarbageCollection().GetValue() {
@@ -194,10 +195,10 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 			"routes", routesLen,
 			"endpoints", endpointsLen)
 
-		// logger.Debugf("Full snapshot for proxy %v: %+v", proxy.GetMetadata().GetName(), sanitizedSnapshot)
+		logger.Debugf("Full snapshot for proxy %v: %+v", proxy.GetMetadata().GetName(), sanitizedSnapshot)
 	}
 
-	// logger.Debugf("gloo reports to be written: %v", allReports)
+	logger.Debugf("gloo reports to be written: %v", allReports)
 }
 
 // ServeXdsSnapshots exposes Gloo configuration as an API when `devMode` in Settings is True.

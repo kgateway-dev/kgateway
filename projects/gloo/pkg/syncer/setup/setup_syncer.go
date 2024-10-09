@@ -57,7 +57,7 @@ import (
 	gwsyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
 	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gwvalidation "github.com/solo-io/gloo/projects/gateway/pkg/validation"
-	ext "github.com/solo-io/gloo/projects/gateway2/extensions"
+	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	rlv1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -459,7 +459,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 
 func RunGloo(opts bootstrap.Opts) error {
 	glooExtensions := Extensions{
-		K8sGatewayExtensionsFactory: ext.NewK8sGatewayExtensions,
+		K8sGatewayExtensionsFactory: extensions.NewK8sGatewayExtensions,
 		PluginRegistryFactory:       registry.GetPluginRegistryFactory(opts),
 		SyncerExtensions: []syncer.TranslatorSyncerExtensionFactory{
 			ratelimitExt.NewTranslatorSyncerExtension,
@@ -954,7 +954,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		validator,
 		translationSync,
 	}
-	syncers = append(syncers, validator, translationSync)
 	if opts.GatewayControllerEnabled {
 		syncers = append(syncers, gwValidationSyncer)
 	}

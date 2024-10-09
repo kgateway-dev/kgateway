@@ -73,6 +73,7 @@ var (
 	errCannotCurl = func(imageName, imageTag string) error {
 		return errors.Wrapf(ErrCannotCurl, "testContainer from image %s:%s", imageName, imageTag)
 	}
+	// DNM: bump up timeouts for local e2e runs
 	DefaultCurlTimeout        = time.Second * 600 // DefaultCurlTimeout is the default timeout for "Eventually" curl assertions
 	DefaultCurlPollingTimeout = time.Second * 4   // DefaultCurlPollingTimeout is the default pollinginterval for "Eventually" curl assertions
 )

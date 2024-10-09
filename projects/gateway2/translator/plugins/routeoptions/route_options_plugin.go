@@ -137,6 +137,7 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 		// get the obj by namespacedName
 		roObj, err := p.routeOptionClient.Read(roKey.Namespace, roKey.Name, clients.ReadOpts{Ctx: ctx})
 		if err != nil {
+			// TODO continue; here instead and drop from this PR -- unrelated and should be backported
 			return fmt.Errorf("error reading route option %v: %w", roKey, err)
 		}
 

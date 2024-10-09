@@ -145,23 +145,15 @@ func NewProxySyncer(
 	}
 	kube.EnableCrdWatcher(client)
 
-	// legacyClients := map[reflect.Type]*solokubeclient.ResourceClient{}
-	// usc := upstreamClient.BaseClient()
-	// if kusc, ok := usc.(*solokubeclient.ResourceClient); !ok {
-	// 	panic("upstream base client isn't a kube client!!!")
-	// } else {
-	// 	legacyClients[reflect.TypeOf(gloov1.Upstream{})] = kusc
-	// }
 	return &ProxySyncer{
-		controllerName:  controllerName,
-		writeNamespace:  writeNamespace,
-		inputs:          inputs,
-		mgr:             mgr,
-		k8sGwExtensions: k8sGwExtensions,
-		proxyReconciler: gloov1.NewProxyReconciler(proxyClient, statusutils.NewNoOpStatusClient()),
-		proxyTranslator: NewProxyTranslator(translator, xdsCache, settings, syncerExtensions, glooReporter),
-		istioClient:     client,
-		// legacyClients:   legacyClients,
+		controllerName:     controllerName,
+		writeNamespace:     writeNamespace,
+		inputs:             inputs,
+		mgr:                mgr,
+		k8sGwExtensions:    k8sGwExtensions,
+		proxyReconciler:    gloov1.NewProxyReconciler(proxyClient, statusutils.NewNoOpStatusClient()),
+		proxyTranslator:    NewProxyTranslator(translator, xdsCache, settings, syncerExtensions, glooReporter),
+		istioClient:        client,
 		legacySecretClient: legacySecretClient,
 	}
 }
@@ -765,67 +757,3 @@ func isGatewayStatusEqual(objA, objB *gwv1.GatewayStatus) bool {
 func isHTTPRouteStatusEqual(objA, objB *gwv1.HTTPRouteStatus) bool {
 	return cmp.Equal(objA, objB, opts)
 }
-
-// RouteOptions := setupCollectionDynamic[sologatewayv1.RouteOption](
-// 	ctx,
-// 	s.istioClient,
-// 	sologatewayv1.SchemeGroupVersion.WithResource("routeoptions"),
-// 	krt.WithName("RouteOptions"),
-// )
-// VirtualHostOptions := setupCollectionDynamic[sologatewayv1.VirtualHostOption](
-// 	ctx,
-// 	s.istioClient,
-// 	sologatewayv1.SchemeGroupVersion.WithResource("virtualhostoptions"),
-// 	krt.WithName("VirtualHostOptions"),
-// )
-
-// type metaObjWithSpec interface {
-// 	metav1.Object
-// 	GetSpec() protoiface.MessageV1
-// }
-
-// type rtOptWrapper struct {
-// 	*sologatewayv1.RouteOption
-// }
-
-// func wrapRtOpts(in []*sologatewayv1.RouteOption) []*rtOptWrapper {
-// 	out := make([]*rtOptWrapper, 0, len(in))
-// 	for _, i := range in {
-// 		out = append(out, &rtOptWrapper{i})
-// 	}
-// 	return out
-// }
-
-// func (x *rtOptWrapper) GetSpec() protoiface.MessageV1 {
-// 	return &x.Spec
-// }
-
-// type vhostOptWrapper struct {
-// 	*sologatewayv1.VirtualHostOption
-// }
-
-// func wrapVhosts(in []*sologatewayv1.VirtualHostOption) []*vhostOptWrapper {
-// 	out := make([]*vhostOptWrapper, 0, len(in))
-// 	for _, i := range in {
-// 		out = append(out, &vhostOptWrapper{i})
-// 	}
-// 	return out
-// }
-
-// func (x *vhostOptWrapper) GetSpec() protoiface.MessageV1 {
-// 	return &x.Spec
-// }
-
-// func unwrapGlooKubeTypes[I metaObjWithSpec, O resources.Resource](in []I) []O {
-// 	out := make([]O, 0, len(in))
-// 	for _, i := range in {
-// 		o := proto.Clone(i.GetSpec()).(O)
-// 		m := &core.Metadata{
-// 			Name:      i.GetName(),
-// 			Namespace: i.GetNamespace(),
-// 		}
-// 		o.SetMetadata(m)
-// 		out = append(out, o)
-// 	}
-// 	return out
-// }

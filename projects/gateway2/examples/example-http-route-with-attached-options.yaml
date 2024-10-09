@@ -31,12 +31,9 @@ spec:
   options:
     faults:
       abort:
+        percentage: 100
         httpStatus: 500
     timeout: 11s
-    # extauth:
-    #   configRef:
-    #     name: basic-auth
-    #     namespace: httpbin
 ---
 apiVersion: v1
 kind: Service
@@ -49,20 +46,6 @@ spec:
     - protocol: TCP
       port: 8080
       targetPort: http-web-svc
-# ---
-# apiVersion: v1
-# kind: Pod
-# metadata:
-#   name: nginx
-#   labels:
-#     app.kubernetes.io/name: nginx
-# spec:
-#   containers:
-#   - name: nginx
-#     image: nginx:stable
-#     ports:
-#     - containerPort: 80
-#       name: http-web-svc
 ---
 apiVersion: apps/v1
 kind: Deployment
