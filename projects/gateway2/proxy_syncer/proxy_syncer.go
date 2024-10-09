@@ -196,12 +196,12 @@ type xdsSnapWrapper struct {
 	fullReports     reporter.ResourceReports
 }
 
-var _ krt.ResourceNamer = &xdsSnapWrapper{}
+var _ krt.ResourceNamer = xdsSnapWrapper{}
 
-func (p *xdsSnapWrapper) Equals(in *xdsSnapWrapper) bool {
+func (p xdsSnapWrapper) Equals(in xdsSnapWrapper) bool {
 	return p.snap.Equal(in.snap)
 }
-func (p *xdsSnapWrapper) ResourceName() string {
+func (p xdsSnapWrapper) ResourceName() string {
 	return p.proxyKey
 }
 
@@ -211,12 +211,12 @@ type glooProxy struct {
 	pluginRegistry registry.PluginRegistry
 }
 
-var _ krt.ResourceNamer = &glooProxy{}
+var _ krt.ResourceNamer = glooProxy{}
 
-func (p *glooProxy) Equals(in *glooProxy) bool {
+func (p glooProxy) Equals(in glooProxy) bool {
 	return proto.Equal(p.proxy, in.proxy)
 }
-func (p *glooProxy) ResourceName() string {
+func (p glooProxy) ResourceName() string {
 	return xds.SnapshotCacheKey(p.proxy)
 }
 
@@ -245,17 +245,17 @@ func (ep *glooEndpoint) ResourceName() string {
 	return ep.Metadata.GetName() + "/" + ep.Metadata.GetNamespace()
 }
 
-var _ krt.ResourceNamer = &upstream{}
+var _ krt.ResourceNamer = upstream{}
 
 // upstream provides a keying function for Gloo's `v1.Upstream`
 type upstream struct {
 	*gloov1.Upstream
 }
 
-func (us *upstream) ResourceName() string {
+func (us upstream) ResourceName() string {
 	return us.Metadata.GetName() + "/" + us.Metadata.GetNamespace()
 }
-func (us *upstream) Equals(in *upstream) bool {
+func (us upstream) Equals(in upstream) bool {
 	return proto.Equal(us, in)
 }
 
@@ -291,29 +291,29 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	)
 
 	// helper collection to map from the kube Upstream type to the gloov1.Upstream wrapper
-	glooUpstreams := krt.NewCollection(kubeUpstreams, func(kctx krt.HandlerContext, u *glookubev1.Upstream) **upstream {
+	glooUpstreams := krt.NewCollection(kubeUpstreams, func(kctx krt.HandlerContext, u *glookubev1.Upstream) *upstream {
 		// TODO: not cloning, this is already a copy from the underlying cache, right?!
 		glooUs := &u.Spec
 		glooUs.Metadata = &core.Metadata{}
 		glooUs.GetMetadata().Name = u.GetName()
 		glooUs.GetMetadata().Namespace = u.GetNamespace()
 		us := &upstream{glooUs}
-		return &us
+		return us
 	}, krt.WithName("GlooUpstreams"))
 
 	serviceClient := kclient.New[*corev1.Service](s.istioClient)
 	services := krt.WrapClient(serviceClient, krt.WithName("Services"))
 
-	inMemUpstreams := krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []*upstream {
-		uss := []*upstream{}
+	inMemUpstreams := krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []upstream {
+		uss := []upstream{}
 		for _, port := range svc.Spec.Ports {
 			us := kubeupstreams.ServiceToUpstream(ctx, svc, port)
-			uss = append(uss, &upstream{us})
+			uss = append(uss, upstream{us})
 		}
 		return uss
 	}, krt.WithName("InMemoryUpstreams"))
 
-	finalUpstreams := krt.JoinCollection([]krt.Collection[*upstream]{glooUpstreams, inMemUpstreams})
+	finalUpstreams := krt.JoinCollection([]krt.Collection[upstream]{glooUpstreams, inMemUpstreams})
 
 	podClient := kclient.New[*corev1.Pod](s.istioClient)
 	pods := krt.WrapClient(podClient, krt.WithName("Pods"))
@@ -335,17 +335,17 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	// TODO: figure out the startSynced stuff
 	proxyTrigger := krt.NewRecomputeTrigger(true)
 
-	glooProxies := krt.NewCollection(kubeGateways, func(kctx krt.HandlerContext, gw *gwv1.Gateway) **glooProxy {
+	glooProxies := krt.NewCollection(kubeGateways, func(kctx krt.HandlerContext, gw *gwv1.Gateway) *glooProxy {
 		proxyTrigger.MarkDependant(kctx)
 		proxy := s.buildProxy(ctx, gw)
-		return &proxy
+		return proxy
 	})
 
-	xdsSnapshots := krt.NewCollection(glooProxies, func(kctx krt.HandlerContext, proxy *glooProxy) **xdsSnapWrapper {
+	xdsSnapshots := krt.NewCollection(glooProxies, func(kctx krt.HandlerContext, proxy glooProxy) *xdsSnapWrapper {
 		xdsSnap := s.buildXdsSnapshot(
 			ctx,
 			kctx,
-			proxy,
+			&proxy,
 			configMaps,
 			glooEndpoints,
 			secrets,
@@ -353,10 +353,10 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			authConfigs,
 			rlConfigs,
 		)
-		return &xdsSnap
+		return xdsSnap
 	})
 
-	xdsSnapshots.Register(func(e krt.Event[*xdsSnapWrapper]) {
+	xdsSnapshots.Register(func(e krt.Event[xdsSnapWrapper]) {
 		snap := e.Latest()
 
 		err := s.proxyTranslator.syncXdsAndStatus(ctx, snap.snap, snap.proxyKey, snap.fullReports)
@@ -408,7 +408,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 func buildEndpoints(
 	ctx context.Context,
 	kctx krt.HandlerContext,
-	FinalUpstreams krt.Collection[*upstream],
+	FinalUpstreams krt.Collection[upstream],
 	KubeEndpoints krt.Collection[*corev1.Endpoints],
 	Services krt.Collection[*corev1.Service],
 	Pods krt.Collection[*corev1.Pod],
@@ -497,7 +497,7 @@ func (s *ProxySyncer) buildXdsSnapshot(
 	kcm krt.Collection[*corev1.ConfigMap],
 	kep krt.Collection[*glooEndpoint],
 	ks krt.Collection[*corev1.Secret],
-	kus krt.Collection[*upstream],
+	kus krt.Collection[upstream],
 	authConfigs krt.Collection[*extauthkubev1.AuthConfig],
 	rlConfigs krt.Collection[*rlkubev1a1.RateLimitConfig],
 ) *xdsSnapWrapper {
