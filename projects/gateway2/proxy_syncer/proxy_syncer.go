@@ -174,7 +174,7 @@ type ProxyTranslator struct {
 	// used to no-op during extension syncing as we only do it to get reports
 	noopSnapSetter syncer.SnapshotSetter
 	// we need to report on upstreams/proxies that we are responsible for translating and syncing
-	// so we use this repporter to do so; do we also need to report authconfigs and RLCs...?
+	// so we use this reporter to do so; do we also need to report authconfigs and RLCs...?
 	// TODO: possibly consolidate this with the status reporter used in the plugins
 	// also TODO: copy the leader election stuff (and maybe leaderStartupAction whatever that is)
 	glooReporter reporter.StatusReporter

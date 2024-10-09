@@ -57,10 +57,7 @@ import (
 	gwsyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
 	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gwvalidation "github.com/solo-io/gloo/projects/gateway/pkg/validation"
-	"github.com/solo-io/gloo/projects/gateway2/controller"
 	ext "github.com/solo-io/gloo/projects/gateway2/extensions"
-	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
-	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	rlv1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -896,57 +893,18 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	startFuncs["admin-server"] = AdminServerStartFunc(snapshotHistory)
 
 	// MARK: build k8s gw start func
-	var proxySyncer *proxy_syncer.ProxySyncer
-	mgr, err := controller.BuildMgr(false)
-	if err != nil {
-		// do something
-	}
-	statusReporter := reporter.NewReporter(
-		defaults.KubeGatewayReporter,
-		statusClient, routeOptionClient.BaseClient(), virtualHostOptionClient.BaseClient())
 	if opts.GlooGateway.EnableK8sGatewayController {
-		inputChannels := proxy_syncer.NewGatewayInputChannels()
-		k8sgwExt, err := extensions.K8sGatewayExtensionsFactory(watchOpts.Ctx, ext.K8sGatewayExtensionsFactoryParameters{
-			Mgr:                     mgr,
-			RouteOptionClient:       routeOptionClient,
-			VirtualHostOptionClient: virtualHostOptionClient,
-			StatusReporter:          statusReporter,
-			AuthConfigClient:        authConfigClient,
-			KickXds:                 inputChannels.Kick,
-		})
-		if err != nil {
-			// do something
-		}
-		proxySyncer = proxy_syncer.NewProxySyncer(
-			wellknown.GatewayControllerName,
-			opts.WriteNamespace,
-			inputChannels,
-			mgr,
-			k8sgwExt,
-			proxyClient,
-			sharedTranslator,
-			opts.ControlPlane.SnapshotCache,
-			opts.Settings,
-			syncerExtensions,
-			secretClient,
-			rpt,
-		)
-
 		// Share proxyClient and status syncer with the gateway controller
 		startFuncs["k8s-gateway-controller"] = K8sGatewayControllerStartFunc(
 			proxyClient,
 			authConfigClient,
 			routeOptionClient,
 			virtualHostOptionClient,
+			hybridUsClient,
+			secretClient,
 			statusClient,
 			sharedTranslator,
-			opts.ControlPlane.SnapshotCache,
-			opts.Settings,
 			syncerExtensions,
-			proxySyncer,
-			k8sgwExt,
-			mgr,
-			inputChannels,
 		)
 	}
 

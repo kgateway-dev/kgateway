@@ -76,7 +76,8 @@ func (s *ProxyTranslator) buildXdsSnapshot(
 	// the reason for this is because we need to set Upstream status in lieu of an edge proxy being translated
 	// accept upstreams in snap so we can report accepted status (without this we wouldn't know to report on positive)
 	allReports.Accept(snap.Upstreams.AsInputResources()...)
-	allReports.Accept(snap.UpstreamGroups.AsInputResources()...)
+	// TODO: deprecate UsGroups -- not used in GW API! (and not really in edge either...)
+	// allReports.Accept(snap.UpstreamGroups.AsInputResources()...)
 
 	params := plugins.Params{
 		Ctx:      proxyCtx,
