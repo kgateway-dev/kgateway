@@ -338,7 +338,6 @@ func (c *controllerBuilder) watchDirectResponses(_ context.Context) error {
 
 func (c *controllerBuilder) watchPods(ctx context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
-		// WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&corev1.Pod{}).
 		Complete(reconcile.Func(c.reconciler.ReconcilePods))
 	if err != nil {
@@ -349,7 +348,6 @@ func (c *controllerBuilder) watchPods(ctx context.Context) error {
 
 func (c *controllerBuilder) watchEndpoints(ctx context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
-		// WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&corev1.Endpoints{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileEndpoints))
 	if err != nil {

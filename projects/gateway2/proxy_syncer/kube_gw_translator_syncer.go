@@ -46,10 +46,9 @@ func measureResource(ctx context.Context, resource string, length int) {
 }
 
 // buildXdsSnapshot will translate from a gloov1.Proxy to xdsSnapshot using the supplied api snapshot.
-// This method also merges in reports from extension syncing. Note that extensions are NOT actually synced,
-// as use a NoOp snapshot when running the extension syncers; we only care about getting extensions errors and warnings
-// related to the Proxy being processed.
-// The actual syncing of the extension server's AND the status of the extension resources is handled by the legacy syncer.
+// This method returns the generated xdsSnapshot along with a combined report of proxy->xds translation and extension processing on the Proxy.
+// NOTE: Extensions are NOT actually synced here as use a NoOp snapshot when running the extension syncers.
+// The actual syncing of the extensions and the status of the extension resources (e.g. AuthConfigs, RLCs) is still handled by the legacy syncer.
 func (s *ProxyTranslator) buildXdsSnapshot(
 	ctx context.Context,
 	proxy *v1.Proxy,

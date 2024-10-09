@@ -322,6 +322,8 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	kubeEndpoints := krt.WrapClient(epClient, krt.WithName("Endpoints"))
 
 	glooEndpoints := krt.NewManyFromNothing(func(kctx krt.HandlerContext) []*glooEndpoint {
+		// NOTE: buildEndpoints(...) effectively duplicates the existing GE endpoint logic
+		// into a KRT collection; this will be refactored entirely in a follow up from Yuval
 		return buildEndpoints(ctx, kctx, finalUpstreams, kubeEndpoints, services, pods)
 	}, krt.WithName("GlooEndpoints"))
 
