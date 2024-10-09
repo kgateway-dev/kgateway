@@ -14,15 +14,15 @@ You can create a JWT policy that applies to specific routes with the VirtualServ
 
 Review how the VirtualService route option and VirtualHost option configurations interact with each other in the following table. 
 
-The scenarios correspond with the steps in this guide. Each builds upon the last, updating the resources to test different scenarios. For example, you might update the stage of a JWT policy in a VirtualHost, or create a VirtualService with a JWT policy for a different issuer and JWKS provider.
+The scenarios correspond with the steps in this guide. Each builds upon the previous scenario, updating the resources to test different scenarios. For example, you might update the stage of a JWT policy in a VirtualHost, or create a VirtualService with a JWT policy for a different issuer and JWKS provider.
 
 | Scenario | Route option | VirtualHost option | Behavior |
 | --- | --- | --- | --- |
 | [1 - Protect all routes on the gateway](#gateway) | No JWT policy | JWT policy | All routes on the gateway require a JWT from the provider in the VirtualHost. |
 | [2 - Protect a specific route](#route) | JWT policy | No JWT policy | Only the routes that are configured by the route option require a JWT. |
-| [3 - Revise same stage conflicts](#same-stage) | JWT policy same stage | JWT policy same stage | For routes configured by the route option, the route option configuration overrides the VirtualHost configuration. These routes require only the JWT that meets the route option JWT policy. JWTs that meet the VirtualHost do not work on these routes. Other routes on the gateway still require a JWT that meets the VirtualHost JWT policy. You cannot use a JWT with the provider from the route option for the other routes on the gateway. |
-| [4 - Set up separate stages](#separate-stages) | JWT policy different stage | JWT policy different stage | The routes that are configured by the route option require two JWTs: one from the provider in the route option, and one from the provider in the VirtualHost. Make sure to configure the token source to come from different headers so that requests can pass in both tokens. Note that if you also configure RBAC policies on both options, the route option's RBAC policy takes precedence because only one RBAC policy is supported per route. |
-| [5 - Add validation policy](#validation) | JWT policy different stage | JWT policy different stage with validation policy | Depending on the validation policy, the routes that are configured by the route option require at least one JWT. When the `validationPolicy` field is set to `ALLOW_MISSING` or `ALLOW_MISSING_OR_FAILED`, the JWT can be for the provider that is configured in either the route option or the VirtualHost. Note that if you set a permissive validation policy on both options, the route does not require any JWT authentication. Make sure to set up the validation policy according to your security requirements. |
+| [3 - Revise same-stage conflicts](#same-stage) | JWT policy at same stage | JWT policy at same stage | For routes configured by the route option, the route option configuration overrides the VirtualHost configuration. These routes require only the JWT that meets the route option JWT policy. JWTs that meet the VirtualHost do not work on these routes. Other routes on the gateway still require a JWT that meets the VirtualHost JWT policy. You cannot use a JWT with the provider from the route option for the other routes on the gateway. |
+| [4 - Set up separate stages](#separate-stages) | JWT policy at different stage | JWT policy at different stage | The routes that are configured by the route option require two JWTs: one from the provider in the route option, and one from the provider in the VirtualHost. Make sure to configure the token source to come from different headers so that requests can pass in both tokens. Note that if you also configure RBAC policies on both options, the route option's RBAC policy takes precedence because only one RBAC policy is supported per route. |
+| [5 - Add validation policy](#validation) | JWT policy at different stage | JWT policy at different stage with validation policy | Depending on the validation policy, the routes that are configured by the route option require at least one JWT. When the `validationPolicy` field is set to `ALLOW_MISSING` or `ALLOW_MISSING_OR_FAILED`, the JWT can be for the provider that is configured in either the route option or the VirtualHost. Note that if you set a permissive validation policy on both options, the route does not require any JWT authentication. Make sure to set up the validation policy according to your security requirements. |
 | [6 - Delegated routes](#delegation) | Different JWT policies select delegated routes | N/A | For delegated routes, the JWT policies in the child route option override the parent route option when they differ. The same configuration interactions between the route-level options and the gateway-level VirtualHost options apply, as described in the previous scenarios. |
 
 ## Before you begin
@@ -101,7 +101,7 @@ Protect multiple routes that are configured on the gateway by configuring the op
 1. Create a VirtualService with a VirtualHost as in the following example.
    
    * The `domains` section sets the host domain that the VirtualHost listens on to `www.example.com`.
-   * The `options` creates a JWT policy with the details of the JSON Web Key Set (JWKS) server to use to verify the signature of JWTs in future protected requests.
+   * The `options` section creates a JWT policy with the details of the JSON Web Key Set (JWKS) server to use to verify the signature of JWTs in future protected requests.
    * The `routes` section of the VirtualHost defines two routes, `/get` and `/status/200`. 
 
    ```yaml
@@ -180,7 +180,7 @@ Protect multiple routes that are configured on the gateway by configuring the op
    ...
    ```
 
-3. Create an environment variable to save the JWT tokens for the users Alice and Bob. To review the details of the token, you can use the [jwt.io](jwt.io) website. Optionally, you can create other JWT tokens by using the [JWT generator tool](https://github.com/solo-io/solo-cop/blob/main/tools/jwt-generator/README.md).
+3. Create two environment variables to save the JWT tokens for the users Alice and Bob. To review the details of the token, you can use the [jwt.io](jwt.io) website. Optionally, you can create other JWT tokens by using the [JWT generator tool](https://github.com/solo-io/solo-cop/blob/main/tools/jwt-generator/README.md).
 
    {{< tabs >}}
    {{% tab name="Alice" %}}
@@ -231,7 +231,7 @@ Use a route option in the VirtualService to protect a specific route with a JWT 
 1. Update the VirtualService from the previous scenario as follows. 
    
    * Add an option to the `/get` route to configure a JWT policy.
-   * Name each route so that you can configure a JWT policy. Unlike the VirtualHost option. the route option does not support unnamed routes.
+   * Name each route so that you can configure a JWT policy. Unlike the VirtualHost option, the route option does not support unnamed routes.
    * Configure the JWT policy by using the `jwtProvidersStaged` option, instead of the `jwt` option. The `jwt` option does not support configuring a route-level JWT policy.
    * Set up a different provider than what is used in the VirtualHost.
 
@@ -488,15 +488,15 @@ Use a route option in the VirtualService to protect a specific route with a JWT 
 
 [Back to table of scenarios](#about)
 
-## Scenario 3: Same stage conflicts {#same-stage}
+## Scenario 3: Same-stage conflicts {#same-stage}
 
 As you saw in the previous scenario, route-level JWT policies configured in the VirtualService use the `jwtProvidersStaged` option to provide the JWT provider and server details. However, what happens if the gateway-level JWT policies in the VirtualHost are set at the same stage as the route option, such as before or after external auth? In this case, the route-level JWT policy takes precedence.
 
-1. Update the VirtualService to demonstrate same stage conflicts.
+1. Update the VirtualService to demonstrate same-stage conflicts.
    
    * In the VirtualHost options, use the `jwtStaged` option to set the stage to `afterExtAuth`.
    * In the route option for the `/get` route, use the `jwtProvidersStaged` option to keep the `afterExtAuth` stage. 
-   * In the route option, set the token source to the `x-after-ext-auth-bearer-token` header instead of the default `Authorization` header. This way, you can pass in both tokens on requests to the `/get` endpoint.
+   * In the route option, set the token source to the `x-after-ext-auth-bearer-token` header instead of the default `Authorization` header. This way, you can pass in different tokens on requests to the `/get` endpoint, such as Bob's token for the gateway-level JWT policy and Carol's token for the route-level JWT policy.
 
    ```yaml
    kubectl apply -f - <<EOF
@@ -623,7 +623,7 @@ As you saw in the previous scenario, route-level JWT policies configured in the 
 
 ## Scenario 4: Separate stages {#separate-stages}
 
-Set up the VirtualService to configure JWT policies at different stages before and after external auth. This way, the protected routes require both tokens.
+Set up the VirtualService to configure JWT policies at different stages before and after external auth. This way, the protected routes require both tokens, such as Bob's token for the gateway-level JWT policy and Carol's token for the route-level JWT policy.
 
 1. Update the VirtualService as follows.
 
@@ -722,7 +722,7 @@ Set up the VirtualService to configure JWT policies at different stages before a
    EOF
    ```
 
-2. Send a request to the `/get` endpoint with Carol's token. The request fails even though Carol's token is valid and meets the route-level RBAC policy. Instead, you need both tokens as required by the different JWT stages of the route and VirtualHost options.
+2. Send a request to the `/get` endpoint with Carol's token. The request fails even though Carol's token is valid and meets the route-level RBAC policy. Instead, you need separate tokens for the two different stages of the JWT policies in the route-level and gateway-level options.
 
    {{< tabs >}}
    {{% tab name="LoadBalancer IP address or hostname" %}}
@@ -748,7 +748,7 @@ Set up the VirtualService to configure JWT policies at different stages before a
    Jwt is missing
    ```
 
-4. Repeat the request to the `/get` endpoint with both Bob and Carol's tokens. Now, the request succeeds. Both tokens are required to pass the JWT policy at the different stages. The claims from Carol's token passes the RBAC policy.
+3. Repeat the request to the `/get` endpoint with both Bob and Carol's tokens. Now, the request succeeds. Both tokens are required to pass the JWT policy at the different stages. The claims from Carol's token passes the RBAC policy.
 
    {{< tabs >}}
    {{% tab name="LoadBalancer IP address or hostname" %}}
@@ -984,7 +984,7 @@ Note that this example focuses on setting up delegation with route-level configu
    EOF
    ```
 
-2. Create the child with two `/status` child routes of of `/status/200` and `/status/418`.
+2. Create the child with two `/status` child routes of `/status/200` and `/status/418`.
    * The `/status/200` route does not have a JWT policy. As such, the parent JWT policy applies.
    * The `/status/418` route does have a JWT policy with a different JWT configuration than the parent route. This JWKS has a different `docs.xyz` issuer than the `solo.io` issuer of the parent route. This child JWT policy overwrites the parent policy.
 
