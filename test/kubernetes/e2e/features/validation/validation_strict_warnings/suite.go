@@ -128,7 +128,10 @@ func (s *testingSuite) TestVirtualServiceWithSecretDeletion() {
 // TestInvalidUpstreamMissingPort tests behaviors when Gloo rejects an invalid upstream with a missing port
 func (s *testingSuite) TestInvalidUpstreamMissingPort() {
 	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.ExampleVS, "-n", s.testInstallation.Metadata.InstallNamespace)
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.InvalidUpstreamNoPort, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.NoError(err)
+
+		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.ExampleVS, "-n", s.testInstallation.Metadata.InstallNamespace)
 		s.Assert().NoError(err, "can delete "+validation.ExampleVS)
 
 		// Delete can fail with strict validation if VS is not deleted first from snapshot, so try multiple times so that snapshot has time to update
@@ -176,6 +179,11 @@ func (s *testingSuite) TestInvalidUpstreamMissingPort() {
 
 // TestRejectsInvalidVSMissingUpstream tests behaviors when Gloo rejects invalid VirtualService resources due to missing upstream
 func (s *testingSuite) TestRejectsInvalidVSMissingUpstream() {
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.InvalidVirtualMissingUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.NoError(err)
+	})
+
 	output, err := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidVirtualMissingUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().Error(err)
 	s.Assert().Contains(output, fmt.Sprintf(`admission webhook "gloo.%s.svc" denied the request`, s.testInstallation.Metadata.InstallNamespace))

@@ -42,6 +42,11 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) TestRejectsInvalidVSMethodMatcher() {
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.InvalidVirtualServiceMatcher, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assert().NoError(err)
+	})
+
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.InvalidVirtualServiceMatcher, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().NoError(err)
 	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
@@ -64,6 +69,12 @@ func (s *testingSuite) TestAcceptInvalidRatelimitConfigResources() {
 	if s.testInstallation.Metadata.IsEnterprise {
 		s.T().Skip("RateLimitConfig is enterprise-only, skipping test when running enterprise helm chart")
 	}
+
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.InvalidRLC, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assert().NoError(err)
+	})
+
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.InvalidRLC, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().NoError(err)
 	// We don't expect an error exit code here because alwaysAccept=true
@@ -80,6 +91,11 @@ func (s *testingSuite) TestAcceptInvalidRatelimitConfigResources() {
 }
 
 func (s *testingSuite) TestAcceptsInvalidGatewayResources() {
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.InvalidGateway, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assert().NoError(err)
+	})
+
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.InvalidGateway, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().NoError(err)
 
@@ -201,6 +217,9 @@ func (s *testingSuite) TestPersistInvalidVirtualService() {
 
 		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.ValidVS, "-n", s.testInstallation.Metadata.InstallNamespace)
 		s.NoError(err, "can delete "+validation.ValidVS)
+
+		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.InvalidVS, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assert().NoError(err, "can delete "+validation.InvalidVS)
 
 		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, testdefaults.NginxPodManifest)
 		s.Assert().NoError(err)
