@@ -232,6 +232,14 @@ func (s *testingSuite) TestConfigureVirtualHostOptionsWithSectionNameManualSetup
 func (s *testingSuite) TestMultipleVirtualHostOptionsManualSetup() {
 	// Manually apply our manifests so we can assert that basic vho exists before applying extra vho.
 	// This is needed because our solo-kit clients currently do not return creationTimestamp
+	s.T().Cleanup(func() {
+		output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, basicVhOManifest)
+		s.testInstallation.Assertions.ExpectObjectDeleted(basicVhOManifest, err, output)
+
+		output, err = s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, extraVhOManifest)
+		s.testInstallation.Assertions.ExpectObjectDeleted(extraVhOManifest, err, output)
+	})
+
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, basicVhOManifest)
 	s.NoError(err, "can apply "+basicVhOManifest)
 	// Check status is accepted before moving on to apply conflicting vho
