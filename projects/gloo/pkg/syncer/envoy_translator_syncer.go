@@ -99,7 +99,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 	ctx = contextutils.WithLogger(ctx, "envoyTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 	snapHash := hashutils.MustHash(snap)
-	logger.Infof("begin sync %v (%v proxies, %v upstreams, %v endpoints, %v secrets, %v artifacts, %v auth configs, %v rate limit configs, %v graphql apis)", snapHash,
+	logger.Infof("begin sync %v (%v edge proxies, %v upstreams, %v endpoints, %v secrets, %v artifacts, %v auth configs, %v rate limit configs, %v graphql apis)", snapHash,
 		len(nonKubeProxies), len(snap.Upstreams), len(snap.Endpoints), len(snap.Secrets), len(snap.Artifacts), len(snap.AuthConfigs), len(snap.Ratelimitconfigs), len(snap.GraphqlApis))
 	defer logger.Infof("end sync %v", snapHash)
 
@@ -113,13 +113,16 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 		allKeys := map[string]bool{
 			xds.FallbackNodeCacheKey: true,
 		}
-		// Get all envoy node ID keys
+		// Get all nonKubeGateway node ID keys currently in snapshot cache
 		for _, key := range s.xdsCache.GetStatusKeys() {
+			if xds.IsKubeGatewayCacheKey(key) {
+				// we don't want to do garbage collection for kube gateways, so skip this key
+				continue
+			}
 			allKeys[key] = false
 		}
-		// Get all valid node ID keys for Proxies
-		// Note that here we handle all types of Proxies (including the kube gw proxies)
-		for _, key := range xds.SnapshotCacheKeys(snap.Proxies) {
+		// Get all valid node ID keys for non kube gateway Proxies from api snpashot
+		for _, key := range xds.SnapshotCacheKeys(nonKubeProxies) {
 			allKeys[key] = true
 		}
 		// Get all valid node ID keys for syncerExtensions (rate-limit, ext-auth)
@@ -137,9 +140,9 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 
 	allReports.Accept(snap.Upstreams.AsInputResources()...)
 	allReports.Accept(snap.UpstreamGroups.AsInputResources()...)
-	// we will accept reports for all proxies in snap, including Kube Gateway proxies as extensions may report on them
-	// but we will just discard them; the kube gateway xds_syncer is responsible for extension reports for its own proxies
-	allReports.Accept(snap.Proxies.AsInputResources()...)
+	// Only mark non-kube gateways as accepted
+	// Regardless, kube gw proxies are filtered out of these reports before reporting in translator_syncer.go
+	allReports.Accept(nonKubeProxies.AsInputResources()...)
 
 	// sync non-kube gw proxies
 	for _, proxy := range nonKubeProxies {
@@ -169,7 +172,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 
 		sanitizedSnapshot := s.sanitizer.SanitizeSnapshot(ctx, snap, xdsSnapshot, reports)
 		// if the snapshot is not consistent, make it so
-		sanitizedSnapshot.MakeConsistent()
+		xdsSnapshot.MakeConsistent()
 
 		if validateErr := reports.ValidateStrict(); validateErr != nil {
 			logger.Warnw("Proxy had invalid config after xds sanitization", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.Error(validateErr))
@@ -181,10 +184,10 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 		s.xdsCache.SetSnapshot(key, sanitizedSnapshot)
 
 		// Record some metrics
-		clustersLen := len(sanitizedSnapshot.GetResources(types.ClusterTypeV3).Items)
-		listenersLen := len(sanitizedSnapshot.GetResources(types.ListenerTypeV3).Items)
-		routesLen := len(sanitizedSnapshot.GetResources(types.RouteTypeV3).Items)
-		endpointsLen := len(sanitizedSnapshot.GetResources(types.EndpointTypeV3).Items)
+		clustersLen := len(xdsSnapshot.GetResources(types.ClusterTypeV3).Items)
+		listenersLen := len(xdsSnapshot.GetResources(types.ListenerTypeV3).Items)
+		routesLen := len(xdsSnapshot.GetResources(types.RouteTypeV3).Items)
+		endpointsLen := len(xdsSnapshot.GetResources(types.EndpointTypeV3).Items)
 
 		measureResource(proxyCtx, "clusters", clustersLen)
 		measureResource(proxyCtx, "listeners", listenersLen)
@@ -197,7 +200,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 			"routes", routesLen,
 			"endpoints", endpointsLen)
 
-		logger.Debugf("Full snapshot for proxy %v: %+v", proxy.GetMetadata().GetName(), sanitizedSnapshot)
+		logger.Debugf("Full snapshot for proxy %v: %+v", proxy.GetMetadata().GetName(), xdsSnapshot)
 	}
 
 	logger.Debugf("gloo reports to be written: %v", allReports)
