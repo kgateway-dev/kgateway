@@ -43,7 +43,7 @@ e.g. In order to add a feature suite to be run with the test installation define
 
 ## Adding Tests to CI
 
-When writing new tests, they should be added to the the [`Kubernetes Tests` that run on PRs](https://github.com/solo-io/gloo/blob/47de5cd472a743eebc9355613f5299b3617cd07a/.github/workflows/pr-kubernetes-tests.yaml#L57-L81).
+When writing new tests, they should be added to the the [`Kubernetes Tests` that run on all PRs](https://github.com/solo-io/gloo/blob/47de5cd472a743eebc9355613f5299b3617cd07a/.github/workflows/pr-kubernetes-tests.yaml#L57-L81) if they are not already covered by an existing regex. This way we ensure parity between PR runs and nightlies. Additionally they should be added to the [OSS Tests](https://github.com/solo-io/solo-projects/blob/38bc0ac4b01ff12abaa1ab37aa8d64b6548227e5/test/kubernetes/e2e/tests/oss_test.go#L44-L135) which run in Enterprise that verify that the feature works in Enterprise as well.
 When adding it to the list, ensure that the tests are load balanced to allow quick iteration on PRs and update the date and the duration of corresponding test.
 The only exception to this is the Upgrade tests that are not run on the main branch but all LTS branches.
 
