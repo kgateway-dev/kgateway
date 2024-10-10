@@ -139,14 +139,12 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 	filteredReports := make(reporter.ResourceReports)
 	for resource, report := range reports {
 		if proxy, ok := resource.(*v1.Proxy); ok {
-			if proxy.GetMetadata().GetLabels()[utils.ProxyTypeKey] == utils.GlooEdgeProxyValue {
-				filteredReports[resource] = report
-			} else {
-				// it's a Proxy report for a kube gateway proxy, let's skip it since we don't care about them
+			// if this is a proxy report for kube gw, skip it
+			if utils.GetTranslatorValue(proxy.GetMetadata()) == utils.GatewayApiProxyValue {
 				continue
 			}
 		}
-
+		filteredReports[resource] = report
 		status := s.reporter.StatusFromReport(report, nil)
 		s.statusMetrics.SetResourceStatus(ctx, resource, status)
 	}

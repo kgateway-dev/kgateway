@@ -381,8 +381,6 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		return errors.New("kube gateway sync loop waiting for all caches to sync failed")
 	}
 
-	fmt.Println("ABOUT TO KICK OFF BLOCKING WAIT - LAW")
-
 	// wait for ctrl-rtime events to trigger syncs
 	// this will not be necessary once we switch the "front side" of translation to krt
 	for {
