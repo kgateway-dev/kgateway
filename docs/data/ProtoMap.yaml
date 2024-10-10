@@ -29,9 +29,6 @@ apis:
   ai.options.gloo.solo.io.RAG:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#RAG
     package: ai.options.gloo.solo.io
-  ai.options.gloo.solo.io.RateLimiting:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#RateLimiting
-    package: ai.options.gloo.solo.io
   ai.options.gloo.solo.io.RouteSettings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#RouteSettings
     package: ai.options.gloo.solo.io

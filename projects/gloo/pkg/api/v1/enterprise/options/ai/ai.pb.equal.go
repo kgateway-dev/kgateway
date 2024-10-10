@@ -513,41 +513,6 @@ func (m *RAG) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *RateLimiting) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*RateLimiting)
-	if !ok {
-		that2, ok := that.(RateLimiting)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if len(m.GetRateLimitConfigs()) != len(target.GetRateLimitConfigs()) {
-		return false
-	}
-	for idx, v := range m.GetRateLimitConfigs() {
-
-		if strings.Compare(v, target.GetRateLimitConfigs()[idx]) != 0 {
-			return false
-		}
-
-	}
-
-	return true
-}
-
-// Equal function
 func (m *AIPromptEnrichment) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil

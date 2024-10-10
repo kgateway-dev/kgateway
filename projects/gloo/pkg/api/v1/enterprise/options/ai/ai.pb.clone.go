@@ -315,26 +315,6 @@ func (m *RAG) Clone() proto.Message {
 }
 
 // Clone function
-func (m *RateLimiting) Clone() proto.Message {
-	var target *RateLimiting
-	if m == nil {
-		return target
-	}
-	target = &RateLimiting{}
-
-	if m.GetRateLimitConfigs() != nil {
-		target.RateLimitConfigs = make([]string, len(m.GetRateLimitConfigs()))
-		for idx, v := range m.GetRateLimitConfigs() {
-
-			target.RateLimitConfigs[idx] = v
-
-		}
-	}
-
-	return target
-}
-
-// Clone function
 func (m *AIPromptEnrichment) Clone() proto.Message {
 	var target *AIPromptEnrichment
 	if m == nil {

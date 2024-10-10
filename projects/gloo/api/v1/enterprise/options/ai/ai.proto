@@ -78,6 +78,7 @@ message SingleAuthToken {
 */
 message UpstreamSpec {
 
+  // Settings to configure a custom host to send the traffic to
   message CustomHost {
     // Custom host to send the traffic to
     string host = 1;
@@ -139,6 +140,7 @@ message UpstreamSpec {
     string model = 3;
   }
 
+  // Settings for the Anthropic API
   message Anthropic {
     // Auth Token to use for the Anthropic API.
     // This token will be placed into the `x-api-key` header
@@ -204,7 +206,9 @@ message UpstreamSpec {
       }
     }
 
+    // Priority represents a single endpoint pool with a given priority
     message Priority {
+      // list of backends representing a single endpoint pool
       repeated Backend pool = 1;
     }
 
@@ -389,6 +393,8 @@ message Postgres {
 
 
 message Embedding {
+
+  // OpenAI embedding
   message OpenAI {
     oneof auth_token_source {
       SingleAuthToken auth_token = 1;
@@ -397,6 +403,7 @@ message Embedding {
     }
   }
 
+  // Azure OpenAI embedding
   message AzureOpenAI {
     oneof auth_token_source {
       // Auth Token to use for the OpenAI API
@@ -427,7 +434,10 @@ message Embedding {
   }
 }
 
+// Settings for the Semantic Caching feature
 message SemanticCache {
+
+  // Settings for the Redis database
   message Redis {
     // Connection string to the Redis database
     string connection_string = 1;
@@ -441,6 +451,7 @@ message SemanticCache {
     float score_threshold = 2;
   }
 
+  // Settings for the Weaviate database
   message Weaviate {
     // Connection string to the Weaviate database, scheme should NOT be included.
     // For example: weaviate.my-ns.svc.cluster.local
@@ -453,6 +464,7 @@ message SemanticCache {
     // Whether or not to use a secure connection, true by default
     bool insecure = 4;
   }
+
   // Data store from which to cache the request/response pairs
   message DataStore {
     oneof datastore {
@@ -476,6 +488,7 @@ message SemanticCache {
   Mode mode = 4;
 }
 
+// Settings for the Retrieval Augmented Generation feature
 message RAG {
   message DataStore {
     oneof datastore {
@@ -490,11 +503,7 @@ message RAG {
   string prompt_template = 3;
 }
 
-message RateLimiting {
-  // List of rate_limit configs to apply
-  repeated string rate_limit_configs = 1;
-}
-
+// Settings for the Prompt Enrichment feature
 message AIPromptEnrichment {
   message Message {
     // Role of the message.
@@ -511,8 +520,10 @@ message AIPromptEnrichment {
 
 }
 
+// Settings for the Prompt Guard feature
 message AIPromptGuard {
 
+  // Regex settings for prompt guard
   message Regex {
     enum BuiltIn {
       // Default REGEX for Social Security Numbers
@@ -529,6 +540,7 @@ message AIPromptGuard {
     repeated BuiltIn builtins = 2;
   }
 
+  // Webhook settings for prompt guard
   message Webhook {
     // Host to send the traffic to.
     string host = 1;
@@ -557,6 +569,7 @@ message AIPromptGuard {
   }
 
 
+  // Request settings for Prompt Guard
   message Request {
     message CustomResponse {
       // Custom response message to send back to the client.
@@ -564,6 +577,7 @@ message AIPromptGuard {
       // "The request was rejected due to inappropriate content"
       string message = 1;
 
+      // Status code to send back to the client.
       uint32 status_code = 2;
     }
     // Custom response message to send back to the client.
@@ -571,14 +585,19 @@ message AIPromptGuard {
     // "The request was rejected due to inappropriate content"
     CustomResponse custom_response = 1;
 
+    // Regex request guard
     Regex regex = 2;
 
+    // Webhook request guard
     Webhook webhook = 3;
   }
 
+  // Request settings for Prompt Guard
   message Response {
+    // Regex response guard
     Regex regex = 1;
 
+    // Webhook response guard
     Webhook webhook = 2;
   }
   // Guards for the prompt request

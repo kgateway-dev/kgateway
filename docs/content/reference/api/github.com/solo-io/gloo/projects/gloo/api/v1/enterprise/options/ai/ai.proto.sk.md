@@ -35,7 +35,6 @@ weight: 5
 - [Mode](#mode)
 - [RAG](#rag)
 - [DataStore](#datastore)
-- [RateLimiting](#ratelimiting)
 - [AIPromptEnrichment](#aipromptenrichment)
 - [Message](#message)
 - [AIPromptGuard](#aipromptguard)
@@ -157,7 +156,8 @@ port: 443 # Port is optional and will default to 443 for HTTPS
 ---
 ### CustomHost
 
-
+ 
+Settings to configure a custom host to send the traffic to
 
 ```yaml
 "host": string
@@ -244,7 +244,8 @@ Settings for the Mistral API
 ---
 ### Anthropic
 
-
+ 
+Settings for the Anthropic API
 
 ```yaml
 "authToken": .ai.options.gloo.solo.io.SingleAuthToken
@@ -334,7 +335,8 @@ priority: 2
 ---
 ### Priority
 
-
+ 
+Priority represents a single endpoint pool with a given priority
 
 ```yaml
 "pool": []ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend
@@ -343,7 +345,7 @@ priority: 2
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `pool` | [[]ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend](../ai.proto.sk/#backend) |  |
+| `pool` | [[]ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend](../ai.proto.sk/#backend) | list of backends representing a single endpoint pool. |
 
 
 
@@ -459,7 +461,8 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 ---
 ### OpenAI
 
-
+ 
+OpenAI embedding
 
 ```yaml
 "authToken": .ai.options.gloo.solo.io.SingleAuthToken
@@ -476,7 +479,8 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 ---
 ### AzureOpenAI
 
-
+ 
+Azure OpenAI embedding
 
 ```yaml
 "authToken": .ai.options.gloo.solo.io.SingleAuthToken
@@ -499,7 +503,8 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 ---
 ### SemanticCache
 
-
+ 
+Settings for the Semantic Caching feature
 
 ```yaml
 "datastore": .ai.options.gloo.solo.io.SemanticCache.DataStore
@@ -522,7 +527,8 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 ---
 ### Redis
 
-
+ 
+Settings for the Redis database
 
 ```yaml
 "connectionString": string
@@ -541,7 +547,8 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 ---
 ### Weaviate
 
-
+ 
+Settings for the Weaviate database
 
 ```yaml
 "host": string
@@ -597,7 +604,8 @@ Data store from which to cache the request/response pairs
 ---
 ### RAG
 
-
+ 
+Settings for the Retrieval Augmented Generation feature
 
 ```yaml
 "datastore": .ai.options.gloo.solo.io.RAG.DataStore
@@ -633,26 +641,10 @@ Data store from which to cache the request/response pairs
 
 
 ---
-### RateLimiting
-
-
-
-```yaml
-"rateLimitConfigs": []string
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `rateLimitConfigs` | `[]string` | List of rate_limit configs to apply. |
-
-
-
-
----
 ### AIPromptEnrichment
 
-
+ 
+Settings for the Prompt Enrichment feature
 
 ```yaml
 "prepend": []ai.options.gloo.solo.io.AIPromptEnrichment.Message
@@ -690,7 +682,8 @@ Data store from which to cache the request/response pairs
 ---
 ### AIPromptGuard
 
-
+ 
+Settings for the Prompt Guard feature
 
 ```yaml
 "request": .ai.options.gloo.solo.io.AIPromptGuard.Request
@@ -709,7 +702,8 @@ Data store from which to cache the request/response pairs
 ---
 ### Regex
 
-
+ 
+Regex settings for prompt guard
 
 ```yaml
 "matches": []string
@@ -741,7 +735,8 @@ Data store from which to cache the request/response pairs
 ---
 ### Webhook
 
-
+ 
+Webhook settings for prompt guard
 
 ```yaml
 "host": string
@@ -797,7 +792,8 @@ Data store from which to cache the request/response pairs
 ---
 ### Request
 
-
+ 
+Request settings for Prompt Guard
 
 ```yaml
 "customResponse": .ai.options.gloo.solo.io.AIPromptGuard.Request.CustomResponse
@@ -809,8 +805,8 @@ Data store from which to cache the request/response pairs
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `customResponse` | [.ai.options.gloo.solo.io.AIPromptGuard.Request.CustomResponse](../ai.proto.sk/#customresponse) | Custom response message to send back to the client. If not specified, the following default message will be used: "The request was rejected due to inappropriate content". |
-| `regex` | [.ai.options.gloo.solo.io.AIPromptGuard.Regex](../ai.proto.sk/#regex) |  |
-| `webhook` | [.ai.options.gloo.solo.io.AIPromptGuard.Webhook](../ai.proto.sk/#webhook) |  |
+| `regex` | [.ai.options.gloo.solo.io.AIPromptGuard.Regex](../ai.proto.sk/#regex) | Regex request guard. |
+| `webhook` | [.ai.options.gloo.solo.io.AIPromptGuard.Webhook](../ai.proto.sk/#webhook) | Webhook request guard. |
 
 
 
@@ -829,7 +825,7 @@ Data store from which to cache the request/response pairs
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `message` | `string` | Custom response message to send back to the client. If not specified, the following default message will be used: "The request was rejected due to inappropriate content". |
-| `statusCode` | `int` |  |
+| `statusCode` | `int` | Status code to send back to the client. |
 
 
 
@@ -837,7 +833,8 @@ Data store from which to cache the request/response pairs
 ---
 ### Response
 
-
+ 
+Request settings for Prompt Guard
 
 ```yaml
 "regex": .ai.options.gloo.solo.io.AIPromptGuard.Regex
@@ -847,8 +844,8 @@ Data store from which to cache the request/response pairs
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `regex` | [.ai.options.gloo.solo.io.AIPromptGuard.Regex](../ai.proto.sk/#regex) |  |
-| `webhook` | [.ai.options.gloo.solo.io.AIPromptGuard.Webhook](../ai.proto.sk/#webhook) |  |
+| `regex` | [.ai.options.gloo.solo.io.AIPromptGuard.Regex](../ai.proto.sk/#regex) | Regex response guard. |
+| `webhook` | [.ai.options.gloo.solo.io.AIPromptGuard.Webhook](../ai.proto.sk/#webhook) | Webhook response guard. |
 
 
 

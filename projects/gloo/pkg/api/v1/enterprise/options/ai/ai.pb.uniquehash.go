@@ -650,42 +650,6 @@ func (m *RAG) HashUnique(hasher hash.Hash64) (uint64, error) {
 // hashing field name and value pairs.
 // Replaces Hash due to original hashing implemention only using field values. The omission
 // of the field name in the hash calculation can lead to hash collisions.
-func (m *RateLimiting) HashUnique(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.RateLimiting")); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte("RateLimitConfigs")); err != nil {
-		return 0, err
-	}
-	for i, v := range m.GetRateLimitConfigs() {
-		if _, err = hasher.Write([]byte(strconv.Itoa(i))); err != nil {
-			return 0, err
-		}
-
-		if _, err = hasher.Write([]byte("v")); err != nil {
-			return 0, err
-		}
-		if _, err = hasher.Write([]byte(v)); err != nil {
-			return 0, err
-		}
-
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// HashUnique function generates a hash of the object that is unique to the object by
-// hashing field name and value pairs.
-// Replaces Hash due to original hashing implemention only using field values. The omission
-// of the field name in the hash calculation can lead to hash collisions.
 func (m *AIPromptEnrichment) HashUnique(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
