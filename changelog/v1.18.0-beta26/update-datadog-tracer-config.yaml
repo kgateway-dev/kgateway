@@ -1,8 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/gloo/issues/10145
-    resolvesIssue: false
-    description: >-
-      Updated the datadog tracer config proto to match envoy v1.31. New fields include
-      `collector_hostname` and `remote_config`. Remote config can now be configured or 
-      disabled completely. 
