@@ -60,25 +60,30 @@ jobs:
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestK8sGateway$$/^RouteDelegation$$|^TestK8sGateway$$/^Services$$|^TestGlooctlGlooGatewayEdgeGateway$$|^TestGlooctlK8sGateway$$'
 
-        # Oct 3, 2024: 25 minutes
+        # Oct 10, 2024: 24 minutes
         - cluster-name: 'cluster-two'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestDiscoveryWatchlabels$$|^TestK8sGatewayIstioRevision$$|^TestRevisionIstioRegression$$|^TestK8sGateway$$/^Deployer$$|^TestK8sGateway$$/^RouteOptions$$|^TestK8sGateway$$/^VirtualHostOptions$$|^TestK8sGateway$$/^Upstreams$$|^TestK8sGateway$$/^HeadlessSvc$$|^TestK8sGateway$$/^PortRouting$$|^TestK8sGatewayMinimalDefaultGatewayParameters$$|^TestK8sGateway$$/^DirectResponse$$|^TestK8sGateway$$/^HttpListenerOptions$$|^TestK8sGateway$$/^ListenerOptions$$|^TestK8sGateway$$/^GlooAdminServer$$'
+          go-test-run-regex: '^TestK8sGatewayIstioRevision$$|^TestRevisionIstioRegression$$|^TestK8sGateway$$/^Deployer$$|^TestK8sGateway$$/^RouteOptions$$|^TestK8sGateway$$/^VirtualHostOptions$$|^TestK8sGateway$$/^Upstreams$$|^TestK8sGateway$$/^HeadlessSvc$$|^TestK8sGateway$$/^PortRouting$$|^TestK8sGatewayMinimalDefaultGatewayParameters$$|^TestK8sGateway$$/^DirectResponse$$|^TestK8sGateway$$/^HttpListenerOptions$$|^TestK8sGateway$$/^ListenerOptions$$|^TestK8sGateway$$/^GlooAdminServer$$'
 
         # Oct 3, 2024: 25 minutes
         - cluster-name: 'cluster-three'
           go-test-args: '-v -timeout=30m'
           go-test-run-regex: '(^TestK8sGatewayIstioAutoMtls$$|^TestAutomtlsIstioEdgeApisGateway$$|^TestIstioEdgeApiGateway$$|^TestIstioRegression$$)'
 
-        # Oct 3, 2024: 24 minutes
+        # Oct 10, 2024: 20 minutes
         - cluster-name: 'cluster-four'
           go-test-args: '-v -timeout=30m'
-          go-test-run-regex: '(^TestK8sGatewayIstio$$|^TestGlooGatewayEdgeGateway$$|^TestGlooctlIstioInjectEdgeApiGateway$$|^TestK8sGatewayNoValidation$$)'
+          go-test-run-regex: '(^TestK8sGatewayIstio$$|^TestGlooGatewayEdgeGateway$$|^TestGlooctlIstioInjectEdgeApiGateway$$)'
 
-        # October 1, 2024: 27 minutes
+        # October 10, 2024: 22 minutes
         - cluster-name: 'cluster-five'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestFullEnvoyValidation$$|^TestValidationStrict$$|^TestValidationAlwaysAccept$$|^TestTransformationValidationDisabled$$|^TestGloomtlsGatewayEdgeGateway$$|^TestHelm$$|^TestHelmSettings$$|^TestWatchNamespaceSelector$$'
+          go-test-run-regex: '^TestFullEnvoyValidation$$|^TestValidationStrict$$|^TestValidationAlwaysAccept$$|^TestTransformationValidationDisabled$$|^TestGloomtlsGatewayEdgeGateway$$|^TestWatchNamespaceSelector$$'
+
+        # October 10, 2024: 12 minutes
+        - cluster-name: 'cluster-six'
+          go-test-args: '-v -timeout=25m'
+          go-test-run-regex: '^TestDiscoveryWatchlabels$$|^TestK8sGatewayNoValidation$$|^TestHelm$$|^TestHelmSettings$$'
 
         # In our PR tests, we run the suite of tests using the upper ends of versions that we claim to support
         # The versions should mirror: https://docs.solo.io/gloo-edge/latest/reference/support/
