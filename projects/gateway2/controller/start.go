@@ -19,7 +19,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	ext "github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
-	"github.com/solo-io/gloo/projects/gateway2/secrets"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
@@ -159,11 +158,6 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		Extensions:     k8sGwExtensions,
 	}
 	if err := NewBaseGatewayController(ctx, gwCfg); err != nil {
-		setupLog.Error(err, "unable to create controller")
-		return err
-	}
-
-	if err := secrets.NewSecretsController(ctx, mgr, inputChannels); err != nil {
 		setupLog.Error(err, "unable to create controller")
 		return err
 	}

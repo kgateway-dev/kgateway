@@ -83,10 +83,6 @@ type ProxySyncer struct {
 	proxyTranslator ProxyTranslator
 	istioClient     kube.Client
 
-	// used for converting from kube type to gloo type
-	// TODO: abstract away the need for this by refactoring convert func()
-	// legacyClients map[reflect.Type]*solokubeclient.ResourceClient
-
 	// secret client needed to use existing kube secret -> gloo secret converters
 	// the only actually use is to do client.NewResource() to get a gloov1.Secret
 	// we can/should probably break this dependency entirely relatively easily
@@ -95,21 +91,15 @@ type ProxySyncer struct {
 
 type GatewayInputChannels struct {
 	genericEvent AsyncQueue[struct{}]
-	secretEvent  AsyncQueue[SecretInputs]
 }
 
 func (x *GatewayInputChannels) Kick(ctx context.Context) {
 	x.genericEvent.Enqueue(struct{}{})
 }
 
-func (x *GatewayInputChannels) UpdateSecretInputs(ctx context.Context, inputs SecretInputs) {
-	x.secretEvent.Enqueue(inputs)
-}
-
 func NewGatewayInputChannels() *GatewayInputChannels {
 	return &GatewayInputChannels{
 		genericEvent: NewAsyncQueue[struct{}](),
-		secretEvent:  NewAsyncQueue[SecretInputs](),
 	}
 }
 
@@ -121,8 +111,6 @@ var kubeGatewayProxyLabels = map[string]string{
 
 // NewProxySyncer returns an implementation of the ProxySyncer
 // The provided GatewayInputChannels are used to trigger syncs.
-// The proxy sync is triggered by the `genericEvent` which is kicked when
-// we reconcile gateway in the gateway controller. The `secretEvent` is kicked when a secret is created, updated,
 func NewProxySyncer(
 	controllerName string,
 	writeNamespace string,
@@ -140,7 +128,8 @@ func NewProxySyncer(
 	restCfg := kube.NewClientConfigForRestConfig(mgr.GetConfig())
 	client, err := kube.NewClient(restCfg, "")
 	if err != nil {
-		// TODO move this init somewhere we can handle the err
+		// TODO: the istio kube client creation will be moved earlier in the flow in a follow-up,
+		// so this will be able to be handled appropriately shortly
 		panic(err)
 	}
 	kube.EnableCrdWatcher(client)
@@ -167,8 +156,8 @@ type ProxyTranslator struct {
 	noopSnapSetter syncer.SnapshotSetter
 	// we need to report on upstreams/proxies that we are responsible for translating and syncing
 	// so we use this reporter to do so; do we also need to report authconfigs and RLCs...?
-	// TODO: possibly consolidate this with the status reporter used in the plugins
-	// also TODO: copy the leader election stuff (and maybe leaderStartupAction whatever that is)
+	// TODO: consolidate this with the status reporter used in the plugins
+	// TODO: copy the leader election stuff (and maybe leaderStartupAction whatever that is)
 	glooReporter reporter.StatusReporter
 }
 
@@ -223,7 +212,6 @@ func (p glooProxy) ResourceName() string {
 var _ krt.ResourceNamer = &glooEndpoint{}
 
 // stolen from projects/gloo/pkg/upstreams/serviceentry/krtwrappers.go
-// TODO: consolidate this stuff
 func UnwrapEps(geps []*glooEndpoint) gloov1.EndpointList {
 	out := make(gloov1.EndpointList, 0, len(geps))
 	for _, ep := range geps {
@@ -269,21 +257,21 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	secretClient := kclient.New[*corev1.Secret](s.istioClient)
 	secrets := krt.WrapClient(secretClient, krt.WithName("Secrets"))
 
-	authConfigs, authConfigClient := setupCollectionDynamic[extauthkubev1.AuthConfig](
+	authConfigs := setupCollectionDynamic[extauthkubev1.AuthConfig](
 		ctx,
 		s.istioClient,
 		extauthkubev1.SchemeGroupVersion.WithResource("authconfigs"),
 		krt.WithName("KubeAuthConfigs"),
 	)
 
-	rlConfigs, rlConfigClient := setupCollectionDynamic[rlkubev1a1.RateLimitConfig](
+	rlConfigs := setupCollectionDynamic[rlkubev1a1.RateLimitConfig](
 		ctx,
 		s.istioClient,
 		rlkubev1a1.SchemeGroupVersion.WithResource("ratelimitconfigs"),
 		krt.WithName("KubeRateLimitConfigs"),
 	)
 
-	kubeUpstreams, kubeUsClient := setupCollectionDynamic[glookubev1.Upstream](
+	kubeUpstreams := setupCollectionDynamic[glookubev1.Upstream](
 		ctx,
 		s.istioClient,
 		glookubev1.SchemeGroupVersion.WithResource("upstreams"),
@@ -324,10 +312,10 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	glooEndpoints := krt.NewManyFromNothing(func(kctx krt.HandlerContext) []*glooEndpoint {
 		// NOTE: buildEndpoints(...) effectively duplicates the existing GE endpoint logic
 		// into a KRT collection; this will be refactored entirely in a follow up from Yuval
-		return buildEndpoints(ctx, kctx, finalUpstreams, kubeEndpoints, services, pods)
+		return buildEndpoints(kctx, finalUpstreams, kubeEndpoints, services, pods)
 	}, krt.WithName("GlooEndpoints"))
 
-	kubeGateways, kubeGwClient := setupCollectionDynamic[gwv1.Gateway](
+	kubeGateways := setupCollectionDynamic[gwv1.Gateway](
 		ctx,
 		s.istioClient,
 		istiogvr.KubernetesGateway_v1,
@@ -358,6 +346,31 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		return xdsSnap
 	})
 
+	// kick off the istio informers
+	s.istioClient.RunAndWait(ctx.Done())
+
+	// wait for krt collections to sync
+	s.istioClient.WaitForCacheSync(
+		"ggv2 proxy syncer",
+		ctx.Done(),
+		authConfigs.Synced().HasSynced,
+		rlConfigs.Synced().HasSynced,
+		configMaps.Synced().HasSynced,
+		secrets.Synced().HasSynced,
+		services.Synced().HasSynced,
+		kubeEndpoints.Synced().HasSynced,
+		glooEndpoints.Synced().HasSynced,
+		pods.Synced().HasSynced,
+		kubeUpstreams.Synced().HasSynced,
+		glooUpstreams.Synced().HasSynced,
+		finalUpstreams.Synced().HasSynced,
+		inMemUpstreams.Synced().HasSynced,
+		kubeGateways.Synced().HasSynced,
+		glooProxies.Synced().HasSynced,
+		xdsSnapshots.Synced().HasSynced,
+	)
+
+	// now that krt collections and ctrl-rtime caches have synced, let's register our syncer
 	xdsSnapshots.Register(func(e krt.Event[xdsSnapWrapper]) {
 		snap := e.Latest()
 
@@ -366,33 +379,20 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			// fixme
 		}
 
-		// TODO: handle garbage collection on status plugins
 		var proxiesWithReports []translatorutils.ProxyWithReports
 		proxiesWithReports = append(proxiesWithReports, snap.proxyWithReport)
 		applyStatusPlugins(ctx, proxiesWithReports, snap.pluginRegistry)
 	})
 
-	go s.istioClient.RunAndWait(ctx.Done())
-
-	s.istioClient.WaitForCacheSync(
-		"ggv2 proxy syncer",
-		ctx.Done(),
-		authConfigClient.HasSynced,
-		rlConfigClient.HasSynced,
-		configMapClient.HasSynced,
-		secretClient.HasSynced,
-		serviceClient.HasSynced,
-		epClient.HasSynced,
-		podClient.HasSynced,
-		kubeUsClient.HasSynced,
-		kubeGwClient.HasSynced,
-	)
-
-	// wait for caches to sync before accepting events and syncing xds
+	// wait for ctrl-rtime caches to sync before accepting events
 	if !s.mgr.GetCache().WaitForCacheSync(ctx) {
 		return errors.New("kube gateway sync loop waiting for all caches to sync failed")
 	}
 
+	fmt.Println("ABOUT TO KICK OFF BLOCKING WAIT - LAW")
+
+	// wait for ctrl-rtime events to trigger syncs
+	// this will not be necessary once we switch the "front side" of translation to krt
 	for {
 		select {
 		case <-ctx.Done():
@@ -400,15 +400,12 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			return nil
 		case <-s.inputs.genericEvent.Next():
 			proxyTrigger.TriggerRecomputation()
-		case <-s.inputs.secretEvent.Next():
-			proxyTrigger.TriggerRecomputation()
 		}
 	}
 }
 
 // ripped from: projects/gloo/pkg/plugins/kubernetes/eds.go#newEndpointsWatcher(...)
 func buildEndpoints(
-	ctx context.Context,
 	kctx krt.HandlerContext,
 	FinalUpstreams krt.Collection[upstream],
 	KubeEndpoints krt.Collection[*corev1.Endpoints],
@@ -428,7 +425,9 @@ func buildEndpoints(
 	svcs := krt.Fetch(kctx, Services)
 	pods := krt.Fetch(kctx, Pods)
 	endpoints, warns, errs := kubernetes.FilterEndpoints(
-		ctx,
+		// there is an unused ctx in the existing function signature so let's just pass an empty ctx
+		// the FilterEndpoints(...) call is being removed in a follow-up so we don't need to mess with it
+		context.Background(),
 		"gloo-system",
 		keps,
 		svcs,
@@ -606,10 +605,10 @@ func setupCollectionDynamic[T any](
 	client kube.Client,
 	gvr schema.GroupVersionResource,
 	opts ...krt.CollectionOption,
-) (krt.Collection[*T], kclient.Informer[*unstructured.Unstructured]) {
-	gatewayClient := kclient.NewDelayedInformer[*unstructured.Unstructured](client, gvr, kubetypes.DynamicInformer, kclient.Filter{})
-	GatewayMapper := krt.WrapClient(gatewayClient, opts...)
-	return krt.NewCollection(GatewayMapper, func(krtctx krt.HandlerContext, i *unstructured.Unstructured) **T {
+) krt.Collection[*T] {
+	delayedClient := kclient.NewDelayedInformer[*unstructured.Unstructured](client, gvr, kubetypes.DynamicInformer, kclient.Filter{})
+	mapper := krt.WrapClient(delayedClient, opts...)
+	return krt.NewCollection(mapper, func(krtctx krt.HandlerContext, i *unstructured.Unstructured) **T {
 		var empty T
 		out := &empty
 		err := runtime.DefaultUnstructuredConverter.FromUnstructured(i.UnstructuredContent(), out)
@@ -618,7 +617,7 @@ func setupCollectionDynamic[T any](
 			return nil
 		}
 		return &out
-	}), gatewayClient
+	})
 }
 
 func applyStatusPlugins(
