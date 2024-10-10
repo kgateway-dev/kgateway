@@ -547,8 +547,8 @@ message AIPromptGuard {
         // Regex match
         REGEX = 4;
       }
-      // Header name to match
-      string name = 1;
+      // Header key to match
+      string key = 1;
       // Type of match to use
       MatchType match_type = 2;
     }

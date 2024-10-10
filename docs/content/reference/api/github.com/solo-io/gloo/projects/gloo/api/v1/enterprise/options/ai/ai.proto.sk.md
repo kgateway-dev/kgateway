@@ -765,14 +765,14 @@ Data store from which to cache the request/response pairs
 
 
 ```yaml
-"name": string
+"key": string
 "matchType": .ai.options.gloo.solo.io.AIPromptGuard.Webhook.HeaderMatch.MatchType
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `name` | `string` | Header name to match. |
+| `key` | `string` | Header key to match. |
 | `matchType` | [.ai.options.gloo.solo.io.AIPromptGuard.Webhook.HeaderMatch.MatchType](../ai.proto.sk/#matchtype) | Type of match to use. |
 
 

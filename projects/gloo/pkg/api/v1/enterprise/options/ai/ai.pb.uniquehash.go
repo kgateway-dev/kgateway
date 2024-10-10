@@ -1946,10 +1946,10 @@ func (m *AIPromptGuard_Webhook_HeaderMatch) HashUnique(hasher hash.Hash64) (uint
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte("Name")); err != nil {
+	if _, err = hasher.Write([]byte("Key")); err != nil {
 		return 0, err
 	}
-	if _, err = hasher.Write([]byte(m.GetName())); err != nil {
+	if _, err = hasher.Write([]byte(m.GetKey())); err != nil {
 		return 0, err
 	}
 

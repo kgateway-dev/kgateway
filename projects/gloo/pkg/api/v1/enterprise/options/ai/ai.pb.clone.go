@@ -922,7 +922,7 @@ func (m *AIPromptGuard_Webhook_HeaderMatch) Clone() proto.Message {
 	}
 	target = &AIPromptGuard_Webhook_HeaderMatch{}
 
-	target.Name = m.GetName()
+	target.Key = m.GetKey()
 
 	target.MatchType = m.GetMatchType()
 

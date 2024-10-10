@@ -97,11 +97,11 @@ spec:
                                   headers:
                                     items:
                                       properties:
+                                        key:
+                                          type: string
                                         matchType:
                                           type: string
                                           x-kubernetes-int-or-string: true
-                                        name:
-                                          type: string
                                       type: object
                                     type: array
                                   host:
@@ -131,11 +131,11 @@ spec:
                                   headers:
                                     items:
                                       properties:
+                                        key:
+                                          type: string
                                         matchType:
                                           type: string
                                           x-kubernetes-int-or-string: true
-                                        name:
-                                          type: string
                                       type: object
                                     type: array
                                   host:

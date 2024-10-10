@@ -1601,7 +1601,7 @@ func (m *AIPromptGuard_Webhook_HeaderMatch) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetName(), target.GetName()) != 0 {
+	if strings.Compare(m.GetKey(), target.GetKey()) != 0 {
 		return false
 	}
 

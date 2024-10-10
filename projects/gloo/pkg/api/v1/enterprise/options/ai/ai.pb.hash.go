@@ -1819,7 +1819,7 @@ func (m *AIPromptGuard_Webhook_HeaderMatch) Hash(hasher hash.Hash64) (uint64, er
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetName())); err != nil {
+	if _, err = hasher.Write([]byte(m.GetKey())); err != nil {
 		return 0, err
 	}
 
