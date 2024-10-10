@@ -147,17 +147,6 @@ func (s *testingSuite) TestConfigureInvalidRouteOptionsWithTargetRef() {
 func (s *testingSuite) TestConfigureRouteOptionsWithMultipleTargetRefManualSetup() {
 	// Manually apply our manifests so we can assert that basic rto exists before applying extra rto.
 	// This is needed because our solo-kit clients currently do not return creationTimestamp
-	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, httproute1Manifest)
-		s.Assertions.NoError(err)
-
-		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, basicRtoTargetRefManifest)
-		s.Assertions.NoError(err)
-
-		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, extraRtoTargetRefManifest)
-		s.Assertions.NoError(err)
-	})
-
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, httproute1Manifest)
 	s.NoError(err, "can apply "+httproute1Manifest)
 
@@ -201,17 +190,6 @@ func (s *testingSuite) TestConfigureRouteOptionsWithMultipleTargetRefManualSetup
 func (s *testingSuite) TestConfigureRouteOptionsWithMultipleFilterExtensionManualSetup() {
 	// Manually apply our manifests so we can assert that basic rto exists before applying extra rto.
 	// This is needed because our solo-kit clients currently do not return creationTimestamp
-	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, httproute1MultipleExtensionsManifest)
-		s.Assertions.NoError(err)
-
-		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, extraRtoManifest)
-		s.Assertions.NoError(err)
-
-		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, basicRtoManifest)
-		s.Assertions.NoError(err)
-	})
-
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, httproute1MultipleExtensionsManifest)
 	s.NoError(err, "can apply "+httproute1MultipleExtensionsManifest)
 
