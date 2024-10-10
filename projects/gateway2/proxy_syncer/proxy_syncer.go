@@ -6,12 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	// "google.golang.org/protobuf/runtime/protoiface"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	// sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	rlexternal "github.com/solo-io/gloo/projects/gloo/api/external/solo/ratelimit"
 	skrl "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	extauthkubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1/kube/apis/enterprise.gloo.solo.io/v1"
@@ -21,11 +19,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	rlkubev1a1 "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 
-	// solokubeclient "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
-	// solokubecrd "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
-	// "github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
-	// "github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	istiogvr "istio.io/istio/pkg/config/schema/gvr"
@@ -57,8 +51,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 
-	// "github.com/solo-io/solo-kit/pkg/utils/kubeutils"
-	// "github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
