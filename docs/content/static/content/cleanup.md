@@ -1,0 +1,1 @@
+You can optionally remove the resources that you set up as part of this guide.

@@ -5,7 +5,7 @@ description: Introduction to JWT and what they are used for
 ---
 
 {{% notice note %}}
-The JWT feature was introduced with **Gloo Gateway Enterprise**, release 0.13.16. If you are using an earlier version, this tutorial will not work.
+{{< readfile file="static/content/enterprise_only_feature_disclaimer" markdown="true">}}
 {{% /notice %}}
 
 ## What are JSON Web Tokens?

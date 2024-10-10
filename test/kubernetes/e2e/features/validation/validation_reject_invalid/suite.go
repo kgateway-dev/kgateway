@@ -128,6 +128,12 @@ func (s *testingSuite) TestVirtualServiceWithSecretDeletion() {
 
 // TestRejectsInvalidGatewayResources tests behaviors when Gloo rejects invalid Edge Gateway resources
 func (s *testingSuite) TestRejectsInvalidGatewayResources() {
+	s.T().Cleanup(func() {
+		// Can delete resources in correct order
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.InvalidGateway, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assert().NoError(err)
+	})
+
 	output, err := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidGateway, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().Error(err)
 	s.Assert().Contains(output, fmt.Sprintf(`admission webhook "gloo.%s.svc" denied the request`, s.testInstallation.Metadata.InstallNamespace))
@@ -140,6 +146,11 @@ func (s *testingSuite) TestRejectsInvalidRatelimitConfigResources() {
 	if s.testInstallation.Metadata.IsEnterprise {
 		s.T().Skip("RateLimitConfig is enterprise-only, skipping test when running enterprise helm chart")
 	}
+
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.InvalidRLC, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assert().NoError(err)
+	})
 	output, _ := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidRLC, "-n", s.testInstallation.Metadata.InstallNamespace)
 	// We don't expect an error exit code here because this is a warning
 	s.Assert().Contains(output, fmt.Sprintf(`admission webhook "gloo.%s.svc" denied the request`, s.testInstallation.Metadata.InstallNamespace))
@@ -149,6 +160,11 @@ func (s *testingSuite) TestRejectsInvalidRatelimitConfigResources() {
 
 // TestRejectsInvalidVSMethodMatcher tests behaviors when Gloo rejects invalid VirtualService resources due to incorrect matchers
 func (s *testingSuite) TestRejectsInvalidVSMethodMatcher() {
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.InvalidVirtualServiceMatcher, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assert().NoError(err)
+	})
+
 	output, err := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidVirtualServiceMatcher, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().Error(err)
 	s.Assert().Contains(output, fmt.Sprintf(`admission webhook "gloo.%s.svc" denied the request`, s.testInstallation.Metadata.InstallNamespace))
@@ -158,6 +174,11 @@ func (s *testingSuite) TestRejectsInvalidVSMethodMatcher() {
 
 // TestRejectsInvalidVSTypo tests behaviors when Gloo rejects invalid VirtualService resources due to typos
 func (s *testingSuite) TestRejectsInvalidVSTypo() {
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.InvalidVirtualServiceTypo, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assert().NoError(err)
+	})
+
 	output, err := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.InvalidVirtualServiceTypo, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().Error(err)
 	println(output)
@@ -177,6 +198,17 @@ func (s *testingSuite) TestRejectsInvalidVSTypo() {
 
 // TestRejectTransformation checks webhook rejects invalid transformation when disableTransformationValidation=false
 func (s *testingSuite) TestRejectTransformation() {
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.VSTransformationSingleReplace, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assert().NoError(err)
+
+		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.VSTransformationExtractors, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assert().NoError(err)
+
+		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.VSTransformationHeaderText, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assert().NoError(err)
+	})
+
 	// reject invalid inja template in transformation
 	// This is only rejected when allowWarnings=false
 	output, err := s.testInstallation.Actions.Kubectl().ApplyFileWithOutput(s.ctx, validation.VSTransformationHeaderText, "-n", s.testInstallation.Metadata.InstallNamespace)
