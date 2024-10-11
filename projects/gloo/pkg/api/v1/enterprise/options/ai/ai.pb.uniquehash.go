@@ -988,13 +988,6 @@ func (m *UpstreamSpec_Gemini) HashUnique(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte("Endpoint")); err != nil {
-		return 0, err
-	}
-	if _, err = hasher.Write([]byte(m.GetEndpoint())); err != nil {
-		return 0, err
-	}
-
 	if _, err = hasher.Write([]byte("Model")); err != nil {
 		return 0, err
 	}

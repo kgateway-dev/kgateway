@@ -90,8 +90,6 @@ spec:
                                 type: string
                             type: object
                         type: object
-                      endpoint:
-                        type: string
                       model:
                         type: string
                     type: object
@@ -194,8 +192,6 @@ spec:
                                                 type: string
                                             type: object
                                         type: object
-                                      endpoint:
-                                        type: string
                                       model:
                                         type: string
                                     type: object

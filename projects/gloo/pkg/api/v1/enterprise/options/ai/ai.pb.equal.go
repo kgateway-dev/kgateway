@@ -790,10 +790,6 @@ func (m *UpstreamSpec_Gemini) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetEndpoint(), target.GetEndpoint()) != 0 {
-		return false
-	}
-
 	if strings.Compare(m.GetModel(), target.GetModel()) != 0 {
 		return false
 	}

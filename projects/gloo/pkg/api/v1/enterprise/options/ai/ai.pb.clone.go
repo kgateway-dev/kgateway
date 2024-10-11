@@ -467,8 +467,6 @@ func (m *UpstreamSpec_Gemini) Clone() proto.Message {
 	}
 	target = &UpstreamSpec_Gemini{}
 
-	target.Endpoint = m.GetEndpoint()
-
 	target.Model = m.GetModel()
 
 	target.ApiVersion = m.GetApiVersion()

@@ -937,10 +937,6 @@ func (m *UpstreamSpec_Gemini) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetEndpoint())); err != nil {
-		return 0, err
-	}
-
 	if _, err = hasher.Write([]byte(m.GetModel())); err != nil {
 		return 0, err
 	}

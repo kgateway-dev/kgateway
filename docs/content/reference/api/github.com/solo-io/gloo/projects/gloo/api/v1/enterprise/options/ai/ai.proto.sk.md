@@ -230,7 +230,6 @@ Settings for the Gemini API
 
 ```yaml
 "authToken": .ai.options.gloo.solo.io.SingleAuthToken
-"endpoint": string
 "model": string
 "apiVersion": string
 
@@ -239,9 +238,8 @@ Settings for the Gemini API
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the Gemini API This token will be placed into the `key` header. |
-| `endpoint` | `string` | The service endpoint to use This should be the endpoint to the Gemini API, e.g. generativelanguage.googleapis.com If the scheme is included it will be stripped. This value can be found https://{endpoint}/{version}/models/{model}:generateContent?key={api_key}. |
-| `model` | `string` | The model name to use This value can be found https://{endpoint}/{version}/models/{model}:generateContent?key={api_key}. |
-| `apiVersion` | `string` | The version of the API to use This value can be found https://{endpoint}/{api_version}/models/{model}:generateContent?key={api_key}. |
+| `model` | `string` | The model name to use This value can be found https://generativelanguage.googleapis.com/{version}/models/{model}:generateContent?key={api_key}. |
+| `apiVersion` | `string` | The version of the API to use This value can be found https://generativelanguage.googleapis.com/{api_version}/models/{model}:generateContent?key={api_key}. |
 
 
 
