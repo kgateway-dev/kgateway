@@ -126,6 +126,25 @@ message UpstreamSpec {
     string api_version = 4;
   }
 
+  // Settings for the Gemini API
+  message Gemini {
+    // Auth Token to use for the Gemini API
+    // This token will be placed into the `key` header
+    oneof auth_token_source {
+      // Auth Token to use for the Gemini API
+      // This token will be placed into the `key` header
+      SingleAuthToken auth_token = 1;
+      // TODO: use oauth
+    }
+
+    // The model name to use
+    // This value can be found https://generativelanguage.googleapis.com/{version}/models/{model}:generateContent?key={api_key}
+    string model = 2;
+    // The version of the API to use
+    // This value can be found https://generativelanguage.googleapis.com/{api_version}/models/{model}:generateContent?key={api_key}
+    string api_version = 3;
+  }
+
   // Settings for the Mistral API
   message Mistral {
     // Auth Token to use for the Mistral API.
@@ -203,6 +222,8 @@ message UpstreamSpec {
         Anthropic anthropic = 3;
         // Azure OpenAI upstream
         AzureOpenAI azure_openai = 4;
+        // Gemini upstream
+        Gemini gemini = 5;
       }
     }
 
@@ -228,6 +249,8 @@ message UpstreamSpec {
     AzureOpenAI azure_openai = 4;
     // multi upstream
     MultiPool multi = 5;
+    // Gemini upstream
+    Gemini gemini = 6;
   }
 }
 

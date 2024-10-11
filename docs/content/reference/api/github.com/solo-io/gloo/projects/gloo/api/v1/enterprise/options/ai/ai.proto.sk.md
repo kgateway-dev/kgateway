@@ -16,6 +16,7 @@ weight: 5
 - [CustomHost](#customhost)
 - [OpenAI](#openai)
 - [AzureOpenAI](#azureopenai)
+- [Gemini](#gemini)
 - [Mistral](#mistral)
 - [Anthropic](#anthropic)
 - [MultiPool](#multipool)
@@ -139,16 +140,18 @@ port: 443 # Port is optional and will default to 443 for HTTPS
 "anthropic": .ai.options.gloo.solo.io.UpstreamSpec.Anthropic
 "azureOpenai": .ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI
 "multi": .ai.options.gloo.solo.io.UpstreamSpec.MultiPool
+"gemini": .ai.options.gloo.solo.io.UpstreamSpec.Gemini
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `openai` | [.ai.options.gloo.solo.io.UpstreamSpec.OpenAI](../ai.proto.sk/#openai) | OpenAI upstream. Only one of `openai`, `mistral`, `anthropic`, `azureOpenai`, or `multi` can be set. |
-| `mistral` | [.ai.options.gloo.solo.io.UpstreamSpec.Mistral](../ai.proto.sk/#mistral) | Mistral upstream. Only one of `mistral`, `openai`, `anthropic`, `azureOpenai`, or `multi` can be set. |
-| `anthropic` | [.ai.options.gloo.solo.io.UpstreamSpec.Anthropic](../ai.proto.sk/#anthropic) | Anthropic upstream. Only one of `anthropic`, `openai`, `mistral`, `azureOpenai`, or `multi` can be set. |
-| `azureOpenai` | [.ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI upstream. Only one of `azureOpenai`, `openai`, `mistral`, `anthropic`, or `multi` can be set. |
-| `multi` | [.ai.options.gloo.solo.io.UpstreamSpec.MultiPool](../ai.proto.sk/#multipool) | multi upstream. Only one of `multi`, `openai`, `mistral`, `anthropic`, or `azureOpenai` can be set. |
+| `openai` | [.ai.options.gloo.solo.io.UpstreamSpec.OpenAI](../ai.proto.sk/#openai) | OpenAI upstream. Only one of `openai`, `mistral`, `anthropic`, `azureOpenai`, `multi`, or `gemini` can be set. |
+| `mistral` | [.ai.options.gloo.solo.io.UpstreamSpec.Mistral](../ai.proto.sk/#mistral) | Mistral upstream. Only one of `mistral`, `openai`, `anthropic`, `azureOpenai`, `multi`, or `gemini` can be set. |
+| `anthropic` | [.ai.options.gloo.solo.io.UpstreamSpec.Anthropic](../ai.proto.sk/#anthropic) | Anthropic upstream. Only one of `anthropic`, `openai`, `mistral`, `azureOpenai`, `multi`, or `gemini` can be set. |
+| `azureOpenai` | [.ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI upstream. Only one of `azureOpenai`, `openai`, `mistral`, `anthropic`, `multi`, or `gemini` can be set. |
+| `multi` | [.ai.options.gloo.solo.io.UpstreamSpec.MultiPool](../ai.proto.sk/#multipool) | multi upstream. Only one of `multi`, `openai`, `mistral`, `anthropic`, `azureOpenai`, or `gemini` can be set. |
+| `gemini` | [.ai.options.gloo.solo.io.UpstreamSpec.Gemini](../ai.proto.sk/#gemini) | Gemini upstream. Only one of `gemini`, `openai`, `mistral`, `anthropic`, `azureOpenai`, or `multi` can be set. |
 
 
 
@@ -215,6 +218,28 @@ Settings for the Azure OpenAI API
 | `endpoint` | `string` | The endpoint to use This should be the endpoint to the Azure OpenAI API, e.g. my-endpoint.openai.azure.com If the scheme is included it will be stripped. This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}. |
 | `deploymentName` | `string` | The deployment/model name to use This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}. |
 | `apiVersion` | `string` | The version of the API to use This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}. |
+
+
+
+
+---
+### Gemini
+
+ 
+Settings for the Gemini API
+
+```yaml
+"authToken": .ai.options.gloo.solo.io.SingleAuthToken
+"model": string
+"apiVersion": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the Gemini API This token will be placed into the `key` header. |
+| `model` | `string` | The model name to use This value can be found https://generativelanguage.googleapis.com/{version}/models/{model}:generateContent?key={api_key}. |
+| `apiVersion` | `string` | The version of the API to use This value can be found https://generativelanguage.googleapis.com/{api_version}/models/{model}:generateContent?key={api_key}. |
 
 
 
@@ -319,15 +344,17 @@ priority: 2
 "mistral": .ai.options.gloo.solo.io.UpstreamSpec.Mistral
 "anthropic": .ai.options.gloo.solo.io.UpstreamSpec.Anthropic
 "azureOpenai": .ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI
+"gemini": .ai.options.gloo.solo.io.UpstreamSpec.Gemini
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `openai` | [.ai.options.gloo.solo.io.UpstreamSpec.OpenAI](../ai.proto.sk/#openai) | OpenAI upstream. Only one of `openai`, `mistral`, `anthropic`, or `azureOpenai` can be set. |
-| `mistral` | [.ai.options.gloo.solo.io.UpstreamSpec.Mistral](../ai.proto.sk/#mistral) | Mistral upstream. Only one of `mistral`, `openai`, `anthropic`, or `azureOpenai` can be set. |
-| `anthropic` | [.ai.options.gloo.solo.io.UpstreamSpec.Anthropic](../ai.proto.sk/#anthropic) | Anthropic upstream. Only one of `anthropic`, `openai`, `mistral`, or `azureOpenai` can be set. |
-| `azureOpenai` | [.ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI upstream. Only one of `azureOpenai`, `openai`, `mistral`, or `anthropic` can be set. |
+| `openai` | [.ai.options.gloo.solo.io.UpstreamSpec.OpenAI](../ai.proto.sk/#openai) | OpenAI upstream. Only one of `openai`, `mistral`, `anthropic`, `azureOpenai`, or `gemini` can be set. |
+| `mistral` | [.ai.options.gloo.solo.io.UpstreamSpec.Mistral](../ai.proto.sk/#mistral) | Mistral upstream. Only one of `mistral`, `openai`, `anthropic`, `azureOpenai`, or `gemini` can be set. |
+| `anthropic` | [.ai.options.gloo.solo.io.UpstreamSpec.Anthropic](../ai.proto.sk/#anthropic) | Anthropic upstream. Only one of `anthropic`, `openai`, `mistral`, `azureOpenai`, or `gemini` can be set. |
+| `azureOpenai` | [.ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI upstream. Only one of `azureOpenai`, `openai`, `mistral`, `anthropic`, or `gemini` can be set. |
+| `gemini` | [.ai.options.gloo.solo.io.UpstreamSpec.Gemini](../ai.proto.sk/#gemini) | Gemini upstream. Only one of `gemini`, `openai`, `mistral`, `anthropic`, or `azureOpenai` can be set. |
 
 
 
