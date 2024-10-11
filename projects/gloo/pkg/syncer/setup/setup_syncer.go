@@ -905,6 +905,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 			statusClient,
 			sharedTranslator,
 			syncerExtensions,
+			rpt,
 		)
 	}
 

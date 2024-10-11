@@ -66,9 +66,10 @@ func K8sGatewayControllerStartFunc(
 	statusClient resources.StatusClient,
 	translator translator.Translator,
 	syncerExtensions []syncer.TranslatorSyncerExtension,
+	glooReporter reporter.StatusReporter,
 ) StartFunc {
 	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
-		statusReporter := reporter.NewReporter(
+		kubeGwStatusReporter := reporter.NewReporter(
 			defaults.KubeGatewayReporter,
 			statusClient,
 			routeOptionClient.BaseClient(),
@@ -85,9 +86,10 @@ func K8sGatewayControllerStartFunc(
 			RouteOptionClient:         routeOptionClient,
 			VirtualHostOptionClient:   vhOptionClient,
 			SecretClient:              secretClient,
-			StatusReporter:            statusReporter,
+			KubeGwStatusReporter:      kubeGwStatusReporter,
 			Translator:                translator,
 			SyncerExtensions:          syncerExtensions,
+			GlooStatusReporter:        glooReporter,
 			// Useful for development purposes; not currently tied to any user-facing API
 			Dev: false,
 		})

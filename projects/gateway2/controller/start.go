@@ -66,8 +66,15 @@ type StartConfig struct {
 	// SecretClient is used for converting from kube Secrets to gloov1 Secrets
 	SecretClient v1.SecretClient
 
-	// StatusReporter is used within any StatusPlugins that must persist a GE-classic style status
-	StatusReporter reporter.StatusReporter
+	// GlooStatusReporter is the shared reporter from setup_syncer that reports as 'gloo',
+	// it is used to report on Upstreams and Proxies after xds translation.
+	// this is required because various upstream tests expect a certain reporter for Upstreams
+	// TODO: remove the other reporter and only use this one, no need for 2 different reporters
+	GlooStatusReporter reporter.StatusReporter
+
+	// KubeGwStatusReporter is used within any StatusPlugins that must persist a GE-classic style status
+	// TODO: as mentioned above, this should be removed: https://github.com/solo-io/solo-projects/issues/7055
+	KubeGwStatusReporter reporter.StatusReporter
 
 	// Translator is an instance of the Gloo translator used to translate Proxy -> xDS Snapshot
 	Translator translator.Translator
@@ -118,7 +125,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		Mgr:                     mgr,
 		RouteOptionClient:       cfg.RouteOptionClient,
 		VirtualHostOptionClient: cfg.VirtualHostOptionClient,
-		StatusReporter:          cfg.StatusReporter,
+		StatusReporter:          cfg.KubeGwStatusReporter,
 		AuthConfigClient:        cfg.AuthConfigClient,
 		KickXds:                 inputChannels.Kick,
 	})
@@ -139,7 +146,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		cfg.Opts.Settings,
 		cfg.SyncerExtensions,
 		cfg.SecretClient,
-		cfg.StatusReporter,
+		cfg.GlooStatusReporter,
 	)
 
 	if err := mgr.Add(proxySyncer); err != nil {
