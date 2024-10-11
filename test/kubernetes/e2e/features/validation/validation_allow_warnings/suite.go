@@ -43,7 +43,7 @@ func (s *testingSuite) TestMissingUpstream() {
 		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.ExampleVS, "-n", s.testInstallation.Metadata.InstallNamespace)
 		s.Assert().NoError(err, "can delete "+validation.ExampleVS)
 
-		err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, testdefaults.NginxPodManifest)
+		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, testdefaults.NginxPodManifest)
 		s.Assert().NoError(err)
 	})
 

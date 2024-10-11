@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6839
+    description: >- 
+      Add docs for applying JWT policy at the route level.
+      skipCI-kube-tests:true
