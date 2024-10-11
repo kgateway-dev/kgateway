@@ -1374,6 +1374,17 @@ func (m *AerospikeApiKeyStorage) Clone() proto.Message {
 }
 
 // Clone function
+func (m *DefaultApiKeyStorage) Clone() proto.Message {
+	var target *DefaultApiKeyStorage
+	if m == nil {
+		return target
+	}
+	target = &DefaultApiKeyStorage{}
+
+	return target
+}
+
+// Clone function
 func (m *ApiKey) Clone() proto.Message {
 	var target *ApiKey
 	if m == nil {
@@ -3490,6 +3501,18 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig) Clone() proto.Message {
 		} else {
 			target.StorageBackend = &ExtAuthConfig_ApiKeyAuthConfig_AerospikeApikeyStorage{
 				AerospikeApikeyStorage: proto.Clone(m.GetAerospikeApikeyStorage()).(*AerospikeApiKeyStorage),
+			}
+		}
+
+	case *ExtAuthConfig_ApiKeyAuthConfig_DefaultApikeyStorage:
+
+		if h, ok := interface{}(m.GetDefaultApikeyStorage()).(clone.Cloner); ok {
+			target.StorageBackend = &ExtAuthConfig_ApiKeyAuthConfig_DefaultApikeyStorage{
+				DefaultApikeyStorage: h.Clone().(*DefaultApiKeyStorage),
+			}
+		} else {
+			target.StorageBackend = &ExtAuthConfig_ApiKeyAuthConfig_DefaultApikeyStorage{
+				DefaultApikeyStorage: proto.Clone(m.GetDefaultApikeyStorage()).(*DefaultApiKeyStorage),
 			}
 		}
 

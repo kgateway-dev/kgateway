@@ -3174,6 +3174,25 @@ func (m *AerospikeApiKeyStorage) HashUnique(hasher hash.Hash64) (uint64, error) 
 // hashing field name and value pairs.
 // Replaces Hash due to original hashing implemention only using field values. The omission
 // of the field name in the hash calculation can lead to hash collisions.
+func (m *DefaultApiKeyStorage) HashUnique(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.DefaultApiKeyStorage")); err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// HashUnique function generates a hash of the object that is unique to the object by
+// hashing field name and value pairs.
+// Replaces Hash due to original hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
 func (m *ApiKey) HashUnique(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -7912,6 +7931,28 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig) HashUnique(hasher hash.Hash64) (uint64,
 				return 0, err
 			} else {
 				if _, err = hasher.Write([]byte("AerospikeApikeyStorage")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *ExtAuthConfig_ApiKeyAuthConfig_DefaultApikeyStorage:
+
+		if h, ok := interface{}(m.GetDefaultApikeyStorage()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("DefaultApikeyStorage")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetDefaultApikeyStorage(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("DefaultApikeyStorage")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {

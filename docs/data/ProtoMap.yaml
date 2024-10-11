@@ -281,6 +281,9 @@ apis:
   enterprise.gloo.solo.io.CustomAuth:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#CustomAuth
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.DefaultApiKeyStorage:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#DefaultApiKeyStorage
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.DiscoveryOverride:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#DiscoveryOverride
     package: enterprise.gloo.solo.io
