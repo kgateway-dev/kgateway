@@ -152,9 +152,9 @@ func (m *RouteSettings) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetPromptGuard()).(clone.Cloner); ok {
-		target.PromptGuard = h.Clone().(*AIPromptGaurd)
+		target.PromptGuard = h.Clone().(*AIPromptGuard)
 	} else {
-		target.PromptGuard = proto.Clone(m.GetPromptGuard()).(*AIPromptGaurd)
+		target.PromptGuard = proto.Clone(m.GetPromptGuard()).(*AIPromptGuard)
 	}
 
 	if h, ok := interface{}(m.GetRag()).(clone.Cloner); ok {
@@ -315,26 +315,6 @@ func (m *RAG) Clone() proto.Message {
 }
 
 // Clone function
-func (m *RateLimiting) Clone() proto.Message {
-	var target *RateLimiting
-	if m == nil {
-		return target
-	}
-	target = &RateLimiting{}
-
-	if m.GetRateLimitConfigs() != nil {
-		target.RateLimitConfigs = make([]string, len(m.GetRateLimitConfigs()))
-		for idx, v := range m.GetRateLimitConfigs() {
-
-			target.RateLimitConfigs[idx] = v
-
-		}
-	}
-
-	return target
-}
-
-// Clone function
 func (m *AIPromptEnrichment) Clone() proto.Message {
 	var target *AIPromptEnrichment
 	if m == nil {
@@ -372,23 +352,23 @@ func (m *AIPromptEnrichment) Clone() proto.Message {
 }
 
 // Clone function
-func (m *AIPromptGaurd) Clone() proto.Message {
-	var target *AIPromptGaurd
+func (m *AIPromptGuard) Clone() proto.Message {
+	var target *AIPromptGuard
 	if m == nil {
 		return target
 	}
-	target = &AIPromptGaurd{}
+	target = &AIPromptGuard{}
 
 	if h, ok := interface{}(m.GetRequest()).(clone.Cloner); ok {
-		target.Request = h.Clone().(*AIPromptGaurd_Request)
+		target.Request = h.Clone().(*AIPromptGuard_Request)
 	} else {
-		target.Request = proto.Clone(m.GetRequest()).(*AIPromptGaurd_Request)
+		target.Request = proto.Clone(m.GetRequest()).(*AIPromptGuard_Request)
 	}
 
 	if h, ok := interface{}(m.GetResponse()).(clone.Cloner); ok {
-		target.Response = h.Clone().(*AIPromptGaurd_Response)
+		target.Response = h.Clone().(*AIPromptGuard_Response)
 	} else {
-		target.Response = proto.Clone(m.GetResponse()).(*AIPromptGaurd_Response)
+		target.Response = proto.Clone(m.GetResponse()).(*AIPromptGuard_Response)
 	}
 
 	return target
@@ -806,34 +786,12 @@ func (m *AIPromptEnrichment_Message) Clone() proto.Message {
 }
 
 // Clone function
-func (m *AIPromptGaurd_Request) Clone() proto.Message {
-	var target *AIPromptGaurd_Request
+func (m *AIPromptGuard_Regex) Clone() proto.Message {
+	var target *AIPromptGuard_Regex
 	if m == nil {
 		return target
 	}
-	target = &AIPromptGaurd_Request{}
-
-	if m.GetMatches() != nil {
-		target.Matches = make([]string, len(m.GetMatches()))
-		for idx, v := range m.GetMatches() {
-
-			target.Matches[idx] = v
-
-		}
-	}
-
-	target.CustomResponseMessage = m.GetCustomResponseMessage()
-
-	return target
-}
-
-// Clone function
-func (m *AIPromptGaurd_Response) Clone() proto.Message {
-	var target *AIPromptGaurd_Response
-	if m == nil {
-		return target
-	}
-	target = &AIPromptGaurd_Response{}
+	target = &AIPromptGuard_Regex{}
 
 	if m.GetMatches() != nil {
 		target.Matches = make([]string, len(m.GetMatches()))
@@ -845,13 +803,123 @@ func (m *AIPromptGaurd_Response) Clone() proto.Message {
 	}
 
 	if m.GetBuiltins() != nil {
-		target.Builtins = make([]AIPromptGaurd_Response_BuiltIn, len(m.GetBuiltins()))
+		target.Builtins = make([]AIPromptGuard_Regex_BuiltIn, len(m.GetBuiltins()))
 		for idx, v := range m.GetBuiltins() {
 
 			target.Builtins[idx] = v
 
 		}
 	}
+
+	return target
+}
+
+// Clone function
+func (m *AIPromptGuard_Webhook) Clone() proto.Message {
+	var target *AIPromptGuard_Webhook
+	if m == nil {
+		return target
+	}
+	target = &AIPromptGuard_Webhook{}
+
+	target.Host = m.GetHost()
+
+	target.Port = m.GetPort()
+
+	if m.GetHeaders() != nil {
+		target.Headers = make([]*AIPromptGuard_Webhook_HeaderMatch, len(m.GetHeaders()))
+		for idx, v := range m.GetHeaders() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Headers[idx] = h.Clone().(*AIPromptGuard_Webhook_HeaderMatch)
+			} else {
+				target.Headers[idx] = proto.Clone(v).(*AIPromptGuard_Webhook_HeaderMatch)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *AIPromptGuard_Request) Clone() proto.Message {
+	var target *AIPromptGuard_Request
+	if m == nil {
+		return target
+	}
+	target = &AIPromptGuard_Request{}
+
+	if h, ok := interface{}(m.GetCustomResponse()).(clone.Cloner); ok {
+		target.CustomResponse = h.Clone().(*AIPromptGuard_Request_CustomResponse)
+	} else {
+		target.CustomResponse = proto.Clone(m.GetCustomResponse()).(*AIPromptGuard_Request_CustomResponse)
+	}
+
+	if h, ok := interface{}(m.GetRegex()).(clone.Cloner); ok {
+		target.Regex = h.Clone().(*AIPromptGuard_Regex)
+	} else {
+		target.Regex = proto.Clone(m.GetRegex()).(*AIPromptGuard_Regex)
+	}
+
+	if h, ok := interface{}(m.GetWebhook()).(clone.Cloner); ok {
+		target.Webhook = h.Clone().(*AIPromptGuard_Webhook)
+	} else {
+		target.Webhook = proto.Clone(m.GetWebhook()).(*AIPromptGuard_Webhook)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *AIPromptGuard_Response) Clone() proto.Message {
+	var target *AIPromptGuard_Response
+	if m == nil {
+		return target
+	}
+	target = &AIPromptGuard_Response{}
+
+	if h, ok := interface{}(m.GetRegex()).(clone.Cloner); ok {
+		target.Regex = h.Clone().(*AIPromptGuard_Regex)
+	} else {
+		target.Regex = proto.Clone(m.GetRegex()).(*AIPromptGuard_Regex)
+	}
+
+	if h, ok := interface{}(m.GetWebhook()).(clone.Cloner); ok {
+		target.Webhook = h.Clone().(*AIPromptGuard_Webhook)
+	} else {
+		target.Webhook = proto.Clone(m.GetWebhook()).(*AIPromptGuard_Webhook)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *AIPromptGuard_Webhook_HeaderMatch) Clone() proto.Message {
+	var target *AIPromptGuard_Webhook_HeaderMatch
+	if m == nil {
+		return target
+	}
+	target = &AIPromptGuard_Webhook_HeaderMatch{}
+
+	target.Key = m.GetKey()
+
+	target.MatchType = m.GetMatchType()
+
+	return target
+}
+
+// Clone function
+func (m *AIPromptGuard_Request_CustomResponse) Clone() proto.Message {
+	var target *AIPromptGuard_Request_CustomResponse
+	if m == nil {
+		return target
+	}
+	target = &AIPromptGuard_Request_CustomResponse{}
+
+	target.Message = m.GetMessage()
+
+	target.StatusCode = m.GetStatusCode()
 
 	return target
 }

@@ -35,13 +35,17 @@ weight: 5
 - [Mode](#mode)
 - [RAG](#rag)
 - [DataStore](#datastore)
-- [RateLimiting](#ratelimiting)
 - [AIPromptEnrichment](#aipromptenrichment)
 - [Message](#message)
-- [AIPromptGaurd](#aipromptgaurd)
-- [Request](#request)
-- [Response](#response)
+- [AIPromptGuard](#aipromptguard)
+- [Regex](#regex)
 - [BuiltIn](#builtin)
+- [Webhook](#webhook)
+- [HeaderMatch](#headermatch)
+- [MatchType](#matchtype)
+- [Request](#request)
+- [CustomResponse](#customresponse)
+- [Response](#response)
   
 
 
@@ -152,7 +156,8 @@ port: 443 # Port is optional and will default to 443 for HTTPS
 ---
 ### CustomHost
 
-
+ 
+Settings to configure a custom host to send the traffic to
 
 ```yaml
 "host": string
@@ -239,7 +244,8 @@ Settings for the Mistral API
 ---
 ### Anthropic
 
-
+ 
+Settings for the Anthropic API
 
 ```yaml
 "authToken": .ai.options.gloo.solo.io.SingleAuthToken
@@ -329,7 +335,8 @@ priority: 2
 ---
 ### Priority
 
-
+ 
+Priority represents a single endpoint pool with a given priority
 
 ```yaml
 "pool": []ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend
@@ -338,7 +345,7 @@ priority: 2
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `pool` | [[]ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend](../ai.proto.sk/#backend) |  |
+| `pool` | [[]ai.options.gloo.solo.io.UpstreamSpec.MultiPool.Backend](../ai.proto.sk/#backend) | list of backends representing a single endpoint pool. |
 
 
 
@@ -360,7 +367,7 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 
 ```yaml
 "promptEnrichment": .ai.options.gloo.solo.io.AIPromptEnrichment
-"promptGuard": .ai.options.gloo.solo.io.AIPromptGaurd
+"promptGuard": .ai.options.gloo.solo.io.AIPromptGuard
 "rag": .ai.options.gloo.solo.io.RAG
 "semanticCache": .ai.options.gloo.solo.io.SemanticCache
 "defaults": []ai.options.gloo.solo.io.FieldDefault
@@ -371,7 +378,7 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `promptEnrichment` | [.ai.options.gloo.solo.io.AIPromptEnrichment](../ai.proto.sk/#aipromptenrichment) | Config used to enrich the prompt. This can only be used with LLMProviders using the CHAT API type. Prompt enrichment allows you to add additional context to the prompt before sending it to the model. Unlike RAG or other dynamic context methods, prompt enrichment is static and will be applied to every request. Note: Some providers, including Anthropic do not support SYSTEM role messages, but rather have a dedicated system field in the input JSON. In this case, `field_defaults` should be used to set the system field. See the docs for that field for an example. Example: ``` promptEnrichment: prepend: - role: SYSTEM content: "answer all questions in french" append: - role: USER content: "Describe the painting as if you were a famous art critic from the 17th century" ```. |
-| `promptGuard` | [.ai.options.gloo.solo.io.AIPromptGaurd](../ai.proto.sk/#aipromptgaurd) | Guards to apply to the LLM requests on this route. This can be used to reject requests based on the content of the prompt, as well as mask responses based on the content of the response. These guards can be also be used at the same time. Below is a simple example of a prompt guard that will reject any prompt that contains the string "credit card" and will mask any credit card numbers in the response. ``` promptGuard: request: customResponseMessage: "Rejected due to inappropriate content" matches: - "credit card" response: matches: # Mastercard - '(?:^|\D)(5[1-5][0-9]{2}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4})(?:\D|$)' ````. |
+| `promptGuard` | [.ai.options.gloo.solo.io.AIPromptGuard](../ai.proto.sk/#aipromptguard) | Guards to apply to the LLM requests on this route. This can be used to reject requests based on the content of the prompt, as well as mask responses based on the content of the response. These guards can be also be used at the same time. Below is a simple example of a prompt guard that will reject any prompt that contains the string "credit card" and will mask any credit card numbers in the response. ``` promptGuard: request: customResponseMessage: "Rejected due to inappropriate content" regex: matches: - "credit card" response: regex: matches: # Mastercard - '(?:^|\D)(5[1-5][0-9]{2}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4})(?:\D|$)' ````. |
 | `rag` | [.ai.options.gloo.solo.io.RAG](../ai.proto.sk/#rag) | Retrieval Augmented Generation. https://research.ibm.com/blog/retrieval-augmented-generation-RAG Retrieval Augmented Generation is a process by which you "augment" the information a model has access to by providing it with a set of documents to use as context. This can be used to improve the quality of the generated text. Important Note: The same embedding mechanism must be used for the prompt which was used for the initial creation of the context documents. Example using postgres for storage and OpenAI for embedding: ``` rag: datastore: postgres: connectionString: postgresql+psycopg://gloo:gloo@172.17.0.1:6024/gloo collectionName: default embedding: openai: authToken: secretRef: name: openai-secret namespace: gloo-system ```. |
 | `semanticCache` | [.ai.options.gloo.solo.io.SemanticCache](../ai.proto.sk/#semanticcache) | Semantic caching configuration Semantic caching allows you to cache previous model responses in order to provide faster responses to similar requests in the future. Results will vary depending on the embedding mechanism used, as well as the similarity threshold set. Example using Redis for storage and OpenAI for embedding: ``` semanticCache: datastore: redis: connectionString: redis://172.17.0.1:6379 embedding: openai: authToken: secretRef: name: openai-secret namespace: gloo-system ```. |
 | `defaults` | [[]ai.options.gloo.solo.io.FieldDefault](../ai.proto.sk/#fielddefault) | A list of defaults to be merged with the user input fields. These will NOT override the user input fields unless override is explicitly set to true. Some examples include setting the temperature, max_tokens, etc. Example overriding system field for Anthropic: ``` # Anthropic doesn't support a system chat type defaults: - field: "system" value: "answer all questions in french" ``` Example setting the temperature and max_tokens, overriding max_tokens: ``` defaults: - field: "temperature" value: 0.5 - field: "max_tokens" value: 100 ```. |
@@ -454,7 +461,8 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 ---
 ### OpenAI
 
-
+ 
+OpenAI embedding
 
 ```yaml
 "authToken": .ai.options.gloo.solo.io.SingleAuthToken
@@ -471,7 +479,8 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 ---
 ### AzureOpenAI
 
-
+ 
+Azure OpenAI embedding
 
 ```yaml
 "authToken": .ai.options.gloo.solo.io.SingleAuthToken
@@ -494,7 +503,8 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 ---
 ### SemanticCache
 
-
+ 
+Settings for the Semantic Caching feature
 
 ```yaml
 "datastore": .ai.options.gloo.solo.io.SemanticCache.DataStore
@@ -517,7 +527,8 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 ---
 ### Redis
 
-
+ 
+Settings for the Redis database
 
 ```yaml
 "connectionString": string
@@ -536,7 +547,8 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 ---
 ### Weaviate
 
-
+ 
+Settings for the Weaviate database
 
 ```yaml
 "host": string
@@ -592,7 +604,8 @@ Data store from which to cache the request/response pairs
 ---
 ### RAG
 
-
+ 
+Settings for the Retrieval Augmented Generation feature
 
 ```yaml
 "datastore": .ai.options.gloo.solo.io.RAG.DataStore
@@ -628,26 +641,10 @@ Data store from which to cache the request/response pairs
 
 
 ---
-### RateLimiting
-
-
-
-```yaml
-"rateLimitConfigs": []string
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `rateLimitConfigs` | `[]string` | List of rate_limit configs to apply. |
-
-
-
-
----
 ### AIPromptEnrichment
 
-
+ 
+Settings for the Prompt Enrichment feature
 
 ```yaml
 "prepend": []ai.options.gloo.solo.io.AIPromptEnrichment.Message
@@ -683,58 +680,41 @@ Data store from which to cache the request/response pairs
 
 
 ---
-### AIPromptGaurd
+### AIPromptGuard
 
-
+ 
+Settings for the Prompt Guard feature
 
 ```yaml
-"request": .ai.options.gloo.solo.io.AIPromptGaurd.Request
-"response": .ai.options.gloo.solo.io.AIPromptGaurd.Response
+"request": .ai.options.gloo.solo.io.AIPromptGuard.Request
+"response": .ai.options.gloo.solo.io.AIPromptGuard.Response
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `request` | [.ai.options.gloo.solo.io.AIPromptGaurd.Request](../ai.proto.sk/#request) | Guards for the prompt request. |
-| `response` | [.ai.options.gloo.solo.io.AIPromptGaurd.Response](../ai.proto.sk/#response) | Guards for the LLM response. |
+| `request` | [.ai.options.gloo.solo.io.AIPromptGuard.Request](../ai.proto.sk/#request) | Guards for the prompt request. |
+| `response` | [.ai.options.gloo.solo.io.AIPromptGuard.Response](../ai.proto.sk/#response) | Guards for the LLM response. |
 
 
 
 
 ---
-### Request
+### Regex
 
-
-
-```yaml
-"matches": []string
-"customResponseMessage": string
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `matches` | `[]string` | A list of Regex patterns to match against the prompt. Each one will be checked against the prompt and if any match the request will be rejected. |
-| `customResponseMessage` | `string` | Custom response message to send back to the client. If not specified, the following default message will be used: "The request was rejected due to inappropriate content". |
-
-
-
-
----
-### Response
-
-
+ 
+Regex settings for prompt guard
 
 ```yaml
 "matches": []string
-"builtins": []ai.options.gloo.solo.io.AIPromptGaurd.Response.BuiltIn
+"builtins": []ai.options.gloo.solo.io.AIPromptGuard.Regex.BuiltIn
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `matches` | `[]string` | A list of Regex patterns to match against the response. All matches will be masked before being sent back to the client. matches and builtins are additive. |
-| `builtins` | [[]ai.options.gloo.solo.io.AIPromptGaurd.Response.BuiltIn](../ai.proto.sk/#builtin) | A list of built-in regexes to mask in the response. matches and builtins are additive. |
+| `builtins` | [[]ai.options.gloo.solo.io.AIPromptGuard.Regex.BuiltIn](../ai.proto.sk/#builtin) | A list of built-in regexes to mask in the response. matches and builtins are additive. |
 
 
 
@@ -748,8 +728,124 @@ Data store from which to cache the request/response pairs
 | ----- | ----------- | 
 | `SSN` | Default REGEX for Social Security Numbers |
 | `CREDIT_CARD` | Default REGEX for Credit Card Numbers |
-| `EMAIL` | Default REGEX for Email Addresses |
-| `PHONE_NUMBER` | Default REGEX for Phone Numbers |
+
+
+
+
+---
+### Webhook
+
+ 
+Webhook settings for prompt guard
+
+```yaml
+"host": string
+"port": int
+"headers": []ai.options.gloo.solo.io.AIPromptGuard.Webhook.HeaderMatch
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `host` | `string` | Host to send the traffic to. |
+| `port` | `int` | Port to send the traffic to. |
+| `headers` | [[]ai.options.gloo.solo.io.AIPromptGuard.Webhook.HeaderMatch](../ai.proto.sk/#headermatch) | Headers to forward with the request. |
+
+
+
+
+---
+### HeaderMatch
+
+
+
+```yaml
+"key": string
+"matchType": .ai.options.gloo.solo.io.AIPromptGuard.Webhook.HeaderMatch.MatchType
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `key` | `string` | Header key to match. |
+| `matchType` | [.ai.options.gloo.solo.io.AIPromptGuard.Webhook.HeaderMatch.MatchType](../ai.proto.sk/#matchtype) | Type of match to use. |
+
+
+
+
+---
+### MatchType
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `EXACT` | Exact match |
+| `PREFIX` | Prefix match |
+| `SUFFIX` | Suffix match |
+| `CONTAINS` | Contains match |
+| `REGEX` | Regex match |
+
+
+
+
+---
+### Request
+
+ 
+Request settings for Prompt Guard
+
+```yaml
+"customResponse": .ai.options.gloo.solo.io.AIPromptGuard.Request.CustomResponse
+"regex": .ai.options.gloo.solo.io.AIPromptGuard.Regex
+"webhook": .ai.options.gloo.solo.io.AIPromptGuard.Webhook
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `customResponse` | [.ai.options.gloo.solo.io.AIPromptGuard.Request.CustomResponse](../ai.proto.sk/#customresponse) | Custom response message to send back to the client. If not specified, the following default message will be used: "The request was rejected due to inappropriate content". |
+| `regex` | [.ai.options.gloo.solo.io.AIPromptGuard.Regex](../ai.proto.sk/#regex) | Regex request guard. |
+| `webhook` | [.ai.options.gloo.solo.io.AIPromptGuard.Webhook](../ai.proto.sk/#webhook) | Webhook request guard. |
+
+
+
+
+---
+### CustomResponse
+
+
+
+```yaml
+"message": string
+"statusCode": int
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `message` | `string` | Custom response message to send back to the client. If not specified, the following default message will be used: "The request was rejected due to inappropriate content". |
+| `statusCode` | `int` | Status code to send back to the client. |
+
+
+
+
+---
+### Response
+
+ 
+Request settings for Prompt Guard
+
+```yaml
+"regex": .ai.options.gloo.solo.io.AIPromptGuard.Regex
+"webhook": .ai.options.gloo.solo.io.AIPromptGuard.Webhook
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `regex` | [.ai.options.gloo.solo.io.AIPromptGuard.Regex](../ai.proto.sk/#regex) | Regex response guard. |
+| `webhook` | [.ai.options.gloo.solo.io.AIPromptGuard.Webhook](../ai.proto.sk/#webhook) | Webhook response guard. |
 
 
 
