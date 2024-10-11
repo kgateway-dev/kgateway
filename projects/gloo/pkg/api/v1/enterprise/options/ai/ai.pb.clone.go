@@ -132,6 +132,18 @@ func (m *UpstreamSpec) Clone() proto.Message {
 			}
 		}
 
+	case *UpstreamSpec_Gemini_:
+
+		if h, ok := interface{}(m.GetGemini()).(clone.Cloner); ok {
+			target.Llm = &UpstreamSpec_Gemini_{
+				Gemini: h.Clone().(*UpstreamSpec_Gemini),
+			}
+		} else {
+			target.Llm = &UpstreamSpec_Gemini_{
+				Gemini: proto.Clone(m.GetGemini()).(*UpstreamSpec_Gemini),
+			}
+		}
+
 	}
 
 	return target
@@ -448,6 +460,37 @@ func (m *UpstreamSpec_AzureOpenAI) Clone() proto.Message {
 }
 
 // Clone function
+func (m *UpstreamSpec_Gemini) Clone() proto.Message {
+	var target *UpstreamSpec_Gemini
+	if m == nil {
+		return target
+	}
+	target = &UpstreamSpec_Gemini{}
+
+	target.Model = m.GetModel()
+
+	target.ApiVersion = m.GetApiVersion()
+
+	switch m.AuthTokenSource.(type) {
+
+	case *UpstreamSpec_Gemini_AuthToken:
+
+		if h, ok := interface{}(m.GetAuthToken()).(clone.Cloner); ok {
+			target.AuthTokenSource = &UpstreamSpec_Gemini_AuthToken{
+				AuthToken: h.Clone().(*SingleAuthToken),
+			}
+		} else {
+			target.AuthTokenSource = &UpstreamSpec_Gemini_AuthToken{
+				AuthToken: proto.Clone(m.GetAuthToken()).(*SingleAuthToken),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
 func (m *UpstreamSpec_Mistral) Clone() proto.Message {
 	var target *UpstreamSpec_Mistral
 	if m == nil {
@@ -578,6 +621,18 @@ func (m *UpstreamSpec_MultiPool_Backend) Clone() proto.Message {
 		} else {
 			target.Llm = &UpstreamSpec_MultiPool_Backend_AzureOpenai{
 				AzureOpenai: proto.Clone(m.GetAzureOpenai()).(*UpstreamSpec_AzureOpenAI),
+			}
+		}
+
+	case *UpstreamSpec_MultiPool_Backend_Gemini:
+
+		if h, ok := interface{}(m.GetGemini()).(clone.Cloner); ok {
+			target.Llm = &UpstreamSpec_MultiPool_Backend_Gemini{
+				Gemini: h.Clone().(*UpstreamSpec_Gemini),
+			}
+		} else {
+			target.Llm = &UpstreamSpec_MultiPool_Backend_Gemini{
+				Gemini: proto.Clone(m.GetGemini()).(*UpstreamSpec_Gemini),
 			}
 		}
 

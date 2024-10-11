@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: hhttps://github.com/solo-io/solo-projects/issues/7030
+    description: >-
+      Add an API to allow configuring Gemini as AI upstream.
+    resolvesIssue: false
