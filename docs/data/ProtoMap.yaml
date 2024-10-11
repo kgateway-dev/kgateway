@@ -1808,6 +1808,9 @@ apis:
   solo.io.envoy.config.trace.v3.DatadogConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/datadog.proto.sk/#DatadogConfig
     package: solo.io.envoy.config.trace.v3
+  solo.io.envoy.config.trace.v3.DatadogRemoteConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/datadog.proto.sk/#DatadogRemoteConfig
+    package: solo.io.envoy.config.trace.v3
   solo.io.envoy.config.trace.v3.OpenCensusConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opencensus.proto.sk/#OpenCensusConfig
     package: solo.io.envoy.config.trace.v3
