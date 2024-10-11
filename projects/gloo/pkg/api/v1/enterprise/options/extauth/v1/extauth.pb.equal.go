@@ -2281,14 +2281,14 @@ func (m *AerospikeApiKeyStorage) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *DefaultApiKeyStorage) Equal(that interface{}) bool {
+func (m *ServerDefaultApiKeyStorage) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*DefaultApiKeyStorage)
+	target, ok := that.(*ServerDefaultApiKeyStorage)
 	if !ok {
-		that2, ok := that.(DefaultApiKeyStorage)
+		that2, ok := that.(ServerDefaultApiKeyStorage)
 		if ok {
 			target = &that2
 		} else {
@@ -5917,17 +5917,17 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig) Equal(that interface{}) bool {
 			}
 		}
 
-	case *ExtAuthConfig_ApiKeyAuthConfig_DefaultApikeyStorage:
-		if _, ok := target.StorageBackend.(*ExtAuthConfig_ApiKeyAuthConfig_DefaultApikeyStorage); !ok {
+	case *ExtAuthConfig_ApiKeyAuthConfig_ServerApikeyStorage:
+		if _, ok := target.StorageBackend.(*ExtAuthConfig_ApiKeyAuthConfig_ServerApikeyStorage); !ok {
 			return false
 		}
 
-		if h, ok := interface{}(m.GetDefaultApikeyStorage()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetDefaultApikeyStorage()) {
+		if h, ok := interface{}(m.GetServerApikeyStorage()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetServerApikeyStorage()) {
 				return false
 			}
 		} else {
-			if !proto.Equal(m.GetDefaultApikeyStorage(), target.GetDefaultApikeyStorage()) {
+			if !proto.Equal(m.GetServerApikeyStorage(), target.GetServerApikeyStorage()) {
 				return false
 			}
 		}
