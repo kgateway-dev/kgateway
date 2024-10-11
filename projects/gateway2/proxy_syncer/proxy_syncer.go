@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -241,6 +242,7 @@ func (us upstream) Equals(in upstream) bool {
 
 func (s *ProxySyncer) Start(ctx context.Context) error {
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-syncer")
+	logger := contextutils.LoggerFrom(ctx)
 	// TODO: handle cfgmap noisiness?
 	// https://github.com/solo-io/gloo/blob/main/projects/gloo/pkg/api/converters/kube/artifact_converter.go#L31
 	configMapClient := kclient.New[*corev1.ConfigMap](s.istioClient)
@@ -304,7 +306,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	glooEndpoints := krt.NewManyFromNothing(func(kctx krt.HandlerContext) []*glooEndpoint {
 		// NOTE: buildEndpoints(...) effectively duplicates the existing GE endpoint logic
 		// into a KRT collection; this will be refactored entirely in a follow up from Yuval
-		return buildEndpoints(kctx, finalUpstreams, kubeEndpoints, services, pods)
+		return buildEndpoints(kctx, logger, finalUpstreams, kubeEndpoints, services, pods)
 	}, krt.WithName("GlooEndpoints"))
 
 	kubeGateways := setupCollectionDynamic[gwv1.Gateway](
@@ -327,6 +329,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		xdsSnap := s.buildXdsSnapshot(
 			ctx,
 			kctx,
+			logger,
 			&proxy,
 			configMaps,
 			glooEndpoints,
@@ -397,6 +400,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 // ripped from: projects/gloo/pkg/plugins/kubernetes/eds.go#newEndpointsWatcher(...)
 func buildEndpoints(
 	kctx krt.HandlerContext,
+	logger *zap.SugaredLogger,
 	FinalUpstreams krt.Collection[upstream],
 	KubeEndpoints krt.Collection[*corev1.Endpoints],
 	Services krt.Collection[*corev1.Service],
@@ -415,7 +419,7 @@ func buildEndpoints(
 	svcs := krt.Fetch(kctx, Services)
 	pods := krt.Fetch(kctx, Pods)
 	endpoints, warns, errs := kubernetes.FilterEndpoints(
-		// there is an unused ctx in the existing function signature so let's just pass an empty ctx
+		// there is an unused ctx in the existing function signature so let's just pass an empty ctx.
 		// the FilterEndpoints(...) call is being removed in a follow-up so we don't need to mess with it
 		context.Background(),
 		"gloo-system",
@@ -424,8 +428,11 @@ func buildEndpoints(
 		pods,
 		upstreamSpecs,
 	)
-	if len(warns) > 0 || len(errs) > 0 {
-		// FIXME
+	for _, warn := range warns {
+		logger.Warn(warn)
+	}
+	for _, err := range errs {
+		logger.Error(err)
 	}
 	out := make([]*glooEndpoint, 0, len(endpoints))
 	for _, gep := range endpoints {
@@ -484,6 +491,7 @@ func (s *ProxySyncer) buildProxy(ctx context.Context, gw *gwv1.Gateway) *glooPro
 func (s *ProxySyncer) buildXdsSnapshot(
 	ctx context.Context,
 	kctx krt.HandlerContext,
+	logger *zap.SugaredLogger,
 	proxy *glooProxy,
 	kcm krt.Collection[*corev1.ConfigMap],
 	kep krt.Collection[*glooEndpoint],
@@ -523,23 +531,22 @@ func (s *ProxySyncer) buildXdsSnapshot(
 	}
 	latestSnap.Artifacts = as
 
-	secretResourceClient, ok := s.legacySecretClient.BaseClient().(*kubesecret.ResourceClient)
-	if !ok {
-		// something is wrong
-	}
+	// this must be a solo-kit based kube secret client, we accept a panic if not
+	secretResourceClient := s.legacySecretClient.BaseClient().(*kubesecret.ResourceClient)
 	gs := make([]*gloov1.Secret, 0, len(secrets))
 	for _, i := range secrets {
 		secret, err := kubeconverters.GlooSecretConverterChain.FromKubeSecret(ctx, secretResourceClient, i)
 		if err != nil {
-			// do something
+			logger.Errorf(
+				"error while trying to convert kube secret %s to gloo secret: %s",
+				client.ObjectKeyFromObject(i).String(), err)
+			continue
 		}
 		if secret == nil {
 			continue
 		}
-		glooSecret, ok := secret.(*gloov1.Secret)
-		if !ok {
-			// something else is wrong
-		}
+		// this must be a gloov1 secret, we accept a panic if not
+		glooSecret := secret.(*gloov1.Secret)
 		gs = append(gs, glooSecret)
 	}
 	latestSnap.Secrets = gs
@@ -570,10 +577,9 @@ func (s *ProxySyncer) buildXdsSnapshot(
 			ResourceReports: r,
 		},
 	}
-	envoySnap, ok := xdsSnapshot.(*xds.EnvoySnapshot)
-	if !ok {
-		// fixme
-	}
+
+	// this must be an EnvoySnapshot, we accept a panic() if not
+	envoySnap := xdsSnapshot.(*xds.EnvoySnapshot)
 	out := xdsSnapWrapper{
 		snap:            envoySnap,
 		proxyKey:        proxy.ResourceName(),
