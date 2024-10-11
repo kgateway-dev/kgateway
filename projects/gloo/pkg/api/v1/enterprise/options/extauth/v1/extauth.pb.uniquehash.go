@@ -7939,20 +7939,20 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig) HashUnique(hasher hash.Hash64) (uint64,
 			}
 		}
 
-	case *ExtAuthConfig_ApiKeyAuthConfig_ServerApikeyStorage:
+	case *ExtAuthConfig_ApiKeyAuthConfig_ServerDefaultApikeyStorage:
 
-		if h, ok := interface{}(m.GetServerApikeyStorage()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("ServerApikeyStorage")); err != nil {
+		if h, ok := interface{}(m.GetServerDefaultApikeyStorage()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("ServerDefaultApikeyStorage")); err != nil {
 				return 0, err
 			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetServerApikeyStorage(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetServerDefaultApikeyStorage(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("ServerApikeyStorage")); err != nil {
+				if _, err = hasher.Write([]byte("ServerDefaultApikeyStorage")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {

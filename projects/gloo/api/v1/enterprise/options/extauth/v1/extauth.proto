@@ -2147,7 +2147,7 @@ message ExtAuthConfig {
         oneof storage_backend {
             K8sSecretApiKeyStorage k8s_secret_apikey_storage = 4;
             AerospikeApiKeyStorage aerospike_apikey_storage = 5;
-            ServerDefaultApiKeyStorage server_apikey_storage = 7;
+            ServerDefaultApiKeyStorage server_default_apikey_storage = 7;
         }
 
         // API key metadata may contain data is is invalid for a header, such as a newline. By default, this data will be validated

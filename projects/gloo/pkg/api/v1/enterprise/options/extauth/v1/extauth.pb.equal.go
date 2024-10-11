@@ -5917,17 +5917,17 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig) Equal(that interface{}) bool {
 			}
 		}
 
-	case *ExtAuthConfig_ApiKeyAuthConfig_ServerApikeyStorage:
-		if _, ok := target.StorageBackend.(*ExtAuthConfig_ApiKeyAuthConfig_ServerApikeyStorage); !ok {
+	case *ExtAuthConfig_ApiKeyAuthConfig_ServerDefaultApikeyStorage:
+		if _, ok := target.StorageBackend.(*ExtAuthConfig_ApiKeyAuthConfig_ServerDefaultApikeyStorage); !ok {
 			return false
 		}
 
-		if h, ok := interface{}(m.GetServerApikeyStorage()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetServerApikeyStorage()) {
+		if h, ok := interface{}(m.GetServerDefaultApikeyStorage()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetServerDefaultApikeyStorage()) {
 				return false
 			}
 		} else {
-			if !proto.Equal(m.GetServerApikeyStorage(), target.GetServerApikeyStorage()) {
+			if !proto.Equal(m.GetServerDefaultApikeyStorage(), target.GetServerDefaultApikeyStorage()) {
 				return false
 			}
 		}

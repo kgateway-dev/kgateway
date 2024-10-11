@@ -3504,15 +3504,15 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig) Clone() proto.Message {
 			}
 		}
 
-	case *ExtAuthConfig_ApiKeyAuthConfig_ServerApikeyStorage:
+	case *ExtAuthConfig_ApiKeyAuthConfig_ServerDefaultApikeyStorage:
 
-		if h, ok := interface{}(m.GetServerApikeyStorage()).(clone.Cloner); ok {
-			target.StorageBackend = &ExtAuthConfig_ApiKeyAuthConfig_ServerApikeyStorage{
-				ServerApikeyStorage: h.Clone().(*ServerDefaultApiKeyStorage),
+		if h, ok := interface{}(m.GetServerDefaultApikeyStorage()).(clone.Cloner); ok {
+			target.StorageBackend = &ExtAuthConfig_ApiKeyAuthConfig_ServerDefaultApikeyStorage{
+				ServerDefaultApikeyStorage: h.Clone().(*ServerDefaultApiKeyStorage),
 			}
 		} else {
-			target.StorageBackend = &ExtAuthConfig_ApiKeyAuthConfig_ServerApikeyStorage{
-				ServerApikeyStorage: proto.Clone(m.GetServerApikeyStorage()).(*ServerDefaultApiKeyStorage),
+			target.StorageBackend = &ExtAuthConfig_ApiKeyAuthConfig_ServerDefaultApikeyStorage{
+				ServerDefaultApikeyStorage: proto.Clone(m.GetServerDefaultApikeyStorage()).(*ServerDefaultApiKeyStorage),
 			}
 		}
 

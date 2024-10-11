@@ -2721,7 +2721,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 "headersFromKeyMetadata": map<string, string>
 "k8SSecretApikeyStorage": .enterprise.gloo.solo.io.K8sSecretApiKeyStorage
 "aerospikeApikeyStorage": .enterprise.gloo.solo.io.AerospikeApiKeyStorage
-"serverApikeyStorage": .enterprise.gloo.solo.io.ServerDefaultApiKeyStorage
+"serverDefaultApikeyStorage": .enterprise.gloo.solo.io.ServerDefaultApiKeyStorage
 "skipMetadataValidation": bool
 
 ```
@@ -2731,9 +2731,9 @@ These values will be encoded in a basic auth header in order to authenticate the
 | `validApiKeys` | `map<string, .enterprise.gloo.solo.io.ExtAuthConfig.ApiKeyAuthConfig.KeyMetadata>` | A mapping of valid API keys to their associated metadata. This map is automatically populated with the information from the relevant `ApiKey`s. Currently this is only configured when using the k8s Secret storage backend. |
 | `headerName` | `string` | (Optional) When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header with this name. This field is optional; if not provided it defaults to `api-key`. |
 | `headersFromKeyMetadata` | `map<string, string>` | Determines the key metadata that will be included as headers on the upstream request. Each entry represents a header to add: the key is the name of the header, and the value is the key that will be used to look up the data entry in the key metadata. |
-| `k8SSecretApikeyStorage` | [.enterprise.gloo.solo.io.K8sSecretApiKeyStorage](../extauth.proto.sk/#k8ssecretapikeystorage) |  Only one of `k8sSecretApikeyStorage`, `aerospikeApikeyStorage`, or `serverApikeyStorage` can be set. |
-| `aerospikeApikeyStorage` | [.enterprise.gloo.solo.io.AerospikeApiKeyStorage](../extauth.proto.sk/#aerospikeapikeystorage) |  Only one of `aerospikeApikeyStorage`, `k8sSecretApikeyStorage`, or `serverApikeyStorage` can be set. |
-| `serverApikeyStorage` | [.enterprise.gloo.solo.io.ServerDefaultApiKeyStorage](../extauth.proto.sk/#serverdefaultapikeystorage) |  Only one of `serverApikeyStorage`, `k8sSecretApikeyStorage`, or `aerospikeApikeyStorage` can be set. |
+| `k8SSecretApikeyStorage` | [.enterprise.gloo.solo.io.K8sSecretApiKeyStorage](../extauth.proto.sk/#k8ssecretapikeystorage) |  Only one of `k8sSecretApikeyStorage`, `aerospikeApikeyStorage`, or `serverDefaultApikeyStorage` can be set. |
+| `aerospikeApikeyStorage` | [.enterprise.gloo.solo.io.AerospikeApiKeyStorage](../extauth.proto.sk/#aerospikeapikeystorage) |  Only one of `aerospikeApikeyStorage`, `k8sSecretApikeyStorage`, or `serverDefaultApikeyStorage` can be set. |
+| `serverDefaultApikeyStorage` | [.enterprise.gloo.solo.io.ServerDefaultApiKeyStorage](../extauth.proto.sk/#serverdefaultapikeystorage) |  Only one of `serverDefaultApikeyStorage`, `k8sSecretApikeyStorage`, or `aerospikeApikeyStorage` can be set. |
 | `skipMetadataValidation` | `bool` | API key metadata may contain data is is invalid for a header, such as a newline. By default, this data will be validated in the data plane and mitigated in a way that provides a consistent experience for the user and visibility for the operator. This validation comes with a performance cost, and can be disabled by setting this field to `true`. |
 
 
