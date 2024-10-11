@@ -71,24 +71,80 @@ spec:
                         properties:
                           request:
                             properties:
-                              customResponseMessage:
-                                type: string
-                              matches:
-                                items:
-                                  type: string
-                                type: array
+                              customResponse:
+                                properties:
+                                  message:
+                                    type: string
+                                  statusCode:
+                                    maximum: 4294967295
+                                    minimum: 0
+                                    type: integer
+                                type: object
+                              regex:
+                                properties:
+                                  builtins:
+                                    items:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    type: array
+                                  matches:
+                                    items:
+                                      type: string
+                                    type: array
+                                type: object
+                              webhook:
+                                properties:
+                                  headers:
+                                    items:
+                                      properties:
+                                        key:
+                                          type: string
+                                        matchType:
+                                          type: string
+                                          x-kubernetes-int-or-string: true
+                                      type: object
+                                    type: array
+                                  host:
+                                    type: string
+                                  port:
+                                    maximum: 4294967295
+                                    minimum: 0
+                                    type: integer
+                                type: object
                             type: object
                           response:
                             properties:
-                              builtins:
-                                items:
-                                  type: string
-                                  x-kubernetes-int-or-string: true
-                                type: array
-                              matches:
-                                items:
-                                  type: string
-                                type: array
+                              regex:
+                                properties:
+                                  builtins:
+                                    items:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    type: array
+                                  matches:
+                                    items:
+                                      type: string
+                                    type: array
+                                type: object
+                              webhook:
+                                properties:
+                                  headers:
+                                    items:
+                                      properties:
+                                        key:
+                                          type: string
+                                        matchType:
+                                          type: string
+                                          x-kubernetes-int-or-string: true
+                                      type: object
+                                    type: array
+                                  host:
+                                    type: string
+                                  port:
+                                    maximum: 4294967295
+                                    minimum: 0
+                                    type: integer
+                                type: object
                             type: object
                         type: object
                       rag:

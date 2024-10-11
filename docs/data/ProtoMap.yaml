@@ -14,8 +14,8 @@ apis:
   ai.options.gloo.solo.io.AIPromptEnrichment:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#AIPromptEnrichment
     package: ai.options.gloo.solo.io
-  ai.options.gloo.solo.io.AIPromptGaurd:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#AIPromptGaurd
+  ai.options.gloo.solo.io.AIPromptGuard:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#AIPromptGuard
     package: ai.options.gloo.solo.io
   ai.options.gloo.solo.io.Embedding:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#Embedding
@@ -28,9 +28,6 @@ apis:
     package: ai.options.gloo.solo.io
   ai.options.gloo.solo.io.RAG:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#RAG
-    package: ai.options.gloo.solo.io
-  ai.options.gloo.solo.io.RateLimiting:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#RateLimiting
     package: ai.options.gloo.solo.io
   ai.options.gloo.solo.io.RouteSettings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#RouteSettings
