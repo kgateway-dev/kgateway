@@ -1,0 +1,7 @@
+changelog:
+- type: NON_USER_FACING
+  description: >-
+    Change the image used in our kubernetes/e2e tests from kennship/http-echo
+    to jmalloc/echo-server. This image supports http/2. It is also smaller and
+    faster, which may speed up our e2e tests and reduce CI costs.
+
