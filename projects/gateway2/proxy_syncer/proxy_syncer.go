@@ -341,6 +341,20 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		return xdsSnap
 	})
 
+	// unused collection; used purely for imperatively fetching proxies as needed and reconciling the full list of proxies
+	tmpProxies := krt.NewManyFromNothing(func(kctx krt.HandlerContext) []glooProxy {
+		proxies := krt.Fetch(kctx, glooProxies)
+		var proxyList gloov1.ProxyList
+		for _, p := range proxies {
+			proxyList = append(proxyList, p.proxy)
+		}
+		s.reconcileProxies(ctx, proxyList)
+		return proxies
+	})
+	tmpProxies.Register(func(o krt.Event[glooProxy]) {
+		//no-op; used to keep tmpProxies collection around and in scope
+	})
+
 	// kick off the istio informers
 	s.istioClient.RunAndWait(ctx.Done())
 
@@ -445,13 +459,6 @@ func buildEndpoints(
 func (s *ProxySyncer) buildProxy(ctx context.Context, gw *gwv1.Gateway) *glooProxy {
 	stopwatch := statsutils.NewTranslatorStopWatch("ProxySyncer")
 	stopwatch.Start()
-	var (
-		proxies gloov1.ProxyList
-	)
-	defer func() {
-		duration := stopwatch.Stop(ctx)
-		contextutils.LoggerFrom(ctx).Debugf("translated and wrote %d proxies in %s", len(proxies), duration.String())
-	}()
 
 	pluginRegistry := s.k8sGwExtensions.CreatePluginRegistry(ctx)
 	rm := reports.NewReportMap()
@@ -465,18 +472,17 @@ func (s *ProxySyncer) buildProxy(ctx context.Context, gw *gwv1.Gateway) *glooPro
 	}
 	proxy := gatewayTranslator.TranslateProxy(ctx, gw, s.writeNamespace, r)
 	if proxy != nil {
-		proxies = append(proxies, proxy)
 		translatedGateways = append(translatedGateways, gwplugins.TranslatedGateway{
 			Gateway: *gw,
 		})
 	}
 
+	duration := stopwatch.Stop(ctx)
+	contextutils.LoggerFrom(ctx).Debugf("translated proxy %s/%s in %s", proxy.GetMetadata().GetNamespace(), proxy.GetMetadata().GetName(), duration.String())
+
 	applyPostTranslationPlugins(ctx, pluginRegistry, &gwplugins.PostTranslationContext{
 		TranslatedGateways: translatedGateways,
 	})
-
-	// reconcile proxy via legacy in-memory Proxy client so legacy syncer can handle extension syncing
-	s.reconcileProxies(ctx, proxies)
 
 	// sync gateway api resource status
 	s.syncGatewayStatus(ctx, rm, gw)
@@ -699,10 +705,16 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMa
 	}
 }
 
-// reconcileProxies persists the proxies that were generated during translations and stores them in an in-memory cache
-// The Gloo Xds Translator will receive these proxies via List() using a MultiResourceClient; two reasons it is needed there:
+// reconcileProxies persists the provided proxies by reconciling them with the proxyReconciler.
+// as the Kube GW impl does not support reading Proxies from etcd, the expectation is these proxies are
+// written and persisted to the in-memory cache.
+// The list MUST contain all valid kube Gw proxies, as the edge reconciler expects the full set; proxies that
+// are not added to this list will be garbage collected by the solo-kit base reconciler, so this list must be the
+// full SotW.
+// The Gloo Xds translator_syncer will receive these proxies via List() using a MultiResourceClient.
+// There are two reasons we must make these proxies available to legacy syncer:
 // 1. To allow Rate Limit extensions to work, as it only syncs RL configs it finds used on Proxies in the snapshots
-// 2. This cache is utilized by the debug.ProxyEndpointServer
+// 2. For debug tooling, notably the debug.ProxyEndpointServer
 func (s *ProxySyncer) reconcileProxies(ctx context.Context, proxyList gloov1.ProxyList) {
 	ctx = contextutils.WithLogger(ctx, "proxyCache")
 	logger := contextutils.LoggerFrom(ctx)
