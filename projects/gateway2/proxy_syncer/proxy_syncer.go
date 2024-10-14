@@ -698,6 +698,8 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMa
 	stopwatch.Start()
 
 	if status := rm.BuildGWStatus(ctx, *gw); status != nil {
+		logger.Infof("comparing gw '%s' status, status from obj: '%v' status from report: '%v'",
+			client.ObjectKeyFromObject(gw).String(), gw.Status, status)
 		if !isGatewayStatusEqual(&gw.Status, status) {
 			gw.Status = *status
 			logger.Infof("about to patch gw '%s' status", client.ObjectKeyFromObject(gw).String())
