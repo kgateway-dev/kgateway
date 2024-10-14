@@ -320,6 +320,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	proxyTrigger := krt.NewRecomputeTrigger(true)
 
 	glooProxies := krt.NewCollection(kubeGateways, func(kctx krt.HandlerContext, gw *gwv1.Gateway) *glooProxy {
+		logger.Info("LAW: recomputing gloo proxy collection")
 		proxyTrigger.MarkDependant(kctx)
 		proxy := s.buildProxy(ctx, gw)
 		return proxy
@@ -407,6 +408,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			contextutils.LoggerFrom(ctx).Debug("context done, stopping proxy syncer")
 			return nil
 		case <-s.inputs.genericEvent.Next():
+			logger.Info("LAW: got generic event, triggering recompute")
 			proxyTrigger.TriggerRecomputation()
 		}
 	}
@@ -479,7 +481,7 @@ func (s *ProxySyncer) buildProxy(ctx context.Context, gw *gwv1.Gateway) *glooPro
 	}
 
 	duration := stopwatch.Stop(ctx)
-	contextutils.LoggerFrom(ctx).Debugf("translated proxy %s/%s in %s", proxy.GetMetadata().GetNamespace(), proxy.GetMetadata().GetName(), duration.String())
+	contextutils.LoggerFrom(ctx).Infof("translated proxy %s/%s in %s", proxy.GetMetadata().GetNamespace(), proxy.GetMetadata().GetName(), duration.String())
 
 	applyPostTranslationPlugins(ctx, pluginRegistry, &gwplugins.PostTranslationContext{
 		TranslatedGateways: translatedGateways,
@@ -694,16 +696,19 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMa
 	logger := contextutils.LoggerFrom(ctx)
 	stopwatch := statsutils.NewTranslatorStopWatch("GatewayStatusSyncer")
 	stopwatch.Start()
-	defer stopwatch.Stop(ctx)
 
 	if status := rm.BuildGWStatus(ctx, *gw); status != nil {
 		if !isGatewayStatusEqual(&gw.Status, status) {
 			gw.Status = *status
+			logger.Infof("about to patch gw '%s' status", client.ObjectKeyFromObject(gw).String())
 			if err := s.mgr.GetClient().Status().Patch(ctx, gw, client.Merge); err != nil {
 				logger.Error(err)
 			}
+			logger.Infof("patched gw '%s' status", client.ObjectKeyFromObject(gw).String())
 		}
 	}
+	duration := stopwatch.Stop(ctx)
+	contextutils.LoggerFrom(ctx).Infof("synced gw %s status in %s", client.ObjectKeyFromObject(gw).String(), duration.String())
 }
 
 // reconcileProxies persists the provided proxies by reconciling them with the proxyReconciler.
