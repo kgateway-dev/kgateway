@@ -386,6 +386,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 	// now that krt collections and ctrl-rtime caches have synced, let's register our syncer
 	xdsSnapshots.Register(func(e krt.Event[xdsSnapWrapper]) {
+		logger.Info("LAW in register, got event: ", e.Event)
 		snap := e.Latest()
 
 		err := s.proxyTranslator.syncXdsAndStatus(ctx, snap.snap, snap.proxyKey, snap.fullReports)
