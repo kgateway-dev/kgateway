@@ -265,15 +265,15 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		krt.WithName("KubeRateLimitConfigs"),
 	)
 
-	kubeUpstreams := setupCollectionDynamic[glookubev1.Upstream](
+	upstreams := setupCollectionDynamic[glookubev1.Upstream](
 		ctx,
 		s.istioClient,
 		glookubev1.SchemeGroupVersion.WithResource("upstreams"),
 		krt.WithName("KubeUpstreams"),
 	)
 
-	// helper collection to map from the kube Upstream type to the gloov1.Upstream wrapper
-	glooUpstreams := krt.NewCollection(kubeUpstreams, func(kctx krt.HandlerContext, u *glookubev1.Upstream) *upstream {
+	// helper collection to map from the runtime.Object Upstream representation to the gloov1.Upstream wrapper
+	glooUpstreams := krt.NewCollection(upstreams, func(kctx krt.HandlerContext, u *glookubev1.Upstream) *upstream {
 		// TODO: not cloning, this is already a copy from the underlying cache, right?!
 		glooUs := &u.Spec
 		glooUs.Metadata = &core.Metadata{}
@@ -356,7 +356,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		kubeEndpoints.Synced().HasSynced,
 		glooEndpoints.Synced().HasSynced,
 		pods.Synced().HasSynced,
-		kubeUpstreams.Synced().HasSynced,
+		upstreams.Synced().HasSynced,
 		glooUpstreams.Synced().HasSynced,
 		finalUpstreams.Synced().HasSynced,
 		inMemUpstreams.Synced().HasSynced,

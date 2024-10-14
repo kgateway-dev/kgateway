@@ -54,12 +54,14 @@ func (s *ProxyTranslator) buildXdsSnapshot(
 	proxy *v1.Proxy,
 	snap *v1snap.ApiSnapshot,
 ) (cache.Snapshot, reporter.ResourceReports, *validation.ProxyReport) {
-	ctx = contextutils.WithLogger(ctx, "kube-gateway-xds-snapshot")
-	logger := contextutils.LoggerFrom(ctx)
-	snapHash := hashutils.MustHash(snap)
 	metaKey := xds.SnapshotCacheKey(proxy)
+
+	ctx = contextutils.WithLogger(ctx, "kube-gateway-xds-snapshot")
+	logger := contextutils.LoggerFrom(ctx).With("proxy", metaKey)
+
 	logger.Infof("build xds snapshot for proxy %v (%v upstreams, %v endpoints, %v secrets, %v artifacts, %v auth configs, %v rate limit configs)",
 		metaKey, len(snap.Upstreams), len(snap.Endpoints), len(snap.Secrets), len(snap.Artifacts), len(snap.AuthConfigs), len(snap.Ratelimitconfigs))
+	snapHash := hashutils.MustHash(snap)
 	defer logger.Infof("end sync %v", snapHash)
 
 	proxyCtx := ctx
