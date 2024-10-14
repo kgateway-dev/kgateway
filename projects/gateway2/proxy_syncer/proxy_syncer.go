@@ -365,6 +365,11 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		xdsSnapshots.Synced().HasSynced,
 	)
 
+	// wait for ctrl-rtime caches to sync before accepting events
+	if !s.mgr.GetCache().WaitForCacheSync(ctx) {
+		return errors.New("kube gateway sync loop waiting for all caches to sync failed")
+	}
+
 	// now that krt collections and ctrl-rtime caches have synced, let's register our syncer
 	xdsSnapshots.Register(func(e krt.Event[xdsSnapWrapper]) {
 		snap := e.Latest()
@@ -378,11 +383,6 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		proxiesWithReports = append(proxiesWithReports, snap.proxyWithReport)
 		applyStatusPlugins(ctx, proxiesWithReports, snap.pluginRegistry)
 	})
-
-	// wait for ctrl-rtime caches to sync before accepting events
-	if !s.mgr.GetCache().WaitForCacheSync(ctx) {
-		return errors.New("kube gateway sync loop waiting for all caches to sync failed")
-	}
 
 	// wait for ctrl-rtime events to trigger syncs
 	// this will not be necessary once we switch the "front side" of translation to krt
