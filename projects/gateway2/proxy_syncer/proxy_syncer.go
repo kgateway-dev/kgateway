@@ -380,29 +380,9 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 		// used to reconcile all proxies
 		var proxyList gloov1.ProxyList
-		// reportMap that contains reports for all Gateways (i.e. Proxies) and merged route reports
-		// each Proxy's reportMap should only contain parentRefs corresponding to the Gateway that was translated
-		merged := reports.NewReportMap()
 		for _, p := range proxies {
 			proxyList = append(proxyList, p.proxy)
-
-			// 1. merge GW Reports for all Proxies' status reports
-			maps.Copy(merged.Gateways, p.reportMap.Gateways)
-
-			// 2. merge parentRefs into RouteReports
-			for rnn, rr := range p.reportMap.Routes {
-				// if we haven't encountered this route, just copy it over completely
-				old := merged.Routes[rnn]
-				if old == nil {
-					merged.Routes[rnn] = rr
-					continue
-				}
-				// else, let's merge our parentRefs into the existing map
-				// obsGen will stay as-is...
-				maps.Copy(p.reportMap.Routes[rnn].Parents, rr.Parents)
-			}
 		}
-
 		s.reconcileProxies(ctx, proxyList)
 
 		return proxies
@@ -734,7 +714,7 @@ func applyStatusPlugins(
 func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
 	ctx = contextutils.WithLogger(ctx, "routeStatusSyncer")
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Debugf("syncing k8s gateway route status")
+	logger.Info("syncing k8s gateway route status")
 	stopwatch := statsutils.NewTranslatorStopWatch("HTTPRouteStatusSyncer")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
@@ -742,16 +722,15 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 	// Sometimes the List returns stale (cached) httproutes, causing the status update to fail
 	// with "the object has been modified" errors. Therefore we try the status updates in a retry loop.
 	err := retry.Do(func() error {
-		rl := gwv1.HTTPRouteList{}
-		err := s.mgr.GetClient().List(ctx, &rl)
-		if err != nil {
-			// log this at error level because this is not an expected error
-			logger.Error(err)
-			return err
-		}
 
-		for _, route := range rl.Items {
-			route := route // pike
+		for rnn, _ := range rm.Routes {
+			route := gwv1.HTTPRoute{}
+			err := s.mgr.GetClient().Get(ctx, rnn, &route)
+			if err != nil {
+				// log this at error level because this is not an expected error
+				logger.Error(err)
+				return err
+			}
 			if status := rm.BuildRouteStatus(ctx, route, s.controllerName); status != nil {
 				if !isHTTPRouteStatusEqual(&route.Status, status) {
 					route.Status = *status
@@ -788,6 +767,7 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMa
 
 	err := retry.Do(func() error {
 		for gwnn, _ := range rm.Gateways {
+			logger.Infof("syncing k8s gateway %s route status", gwnn.String())
 			gw := gwv1.Gateway{}
 			err := s.mgr.GetClient().Get(ctx, gwnn, &gw)
 			if err != nil {
