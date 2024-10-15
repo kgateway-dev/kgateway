@@ -376,6 +376,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 	// unused collection; used purely for imperatively fetching proxies as needed and reconciling the full list of proxies
 	tmpProxies := krt.NewManyFromNothing(func(kctx krt.HandlerContext) []glooProxy {
+		logger.Info("building tmpProxies collection")
 		proxies := krt.Fetch(kctx, glooProxies)
 
 		// used to reconcile all proxies
@@ -391,6 +392,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		//no-op; used to keep tmpProxies collection around and in scope
 	})
 	statusReport := krt.NewSingleton(func(kctx krt.HandlerContext) *report {
+		logger.Info("building derived status report collection")
 		proxies := krt.Fetch(kctx, glooProxies)
 		// reportMap that contains reports for all Gateways (i.e. Proxies) and merged route reports
 		// each Proxy's reportMap should only contain parentRefs corresponding to the Gateway that was translated
@@ -420,6 +422,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	// it will also contain the reportMap from that translation
 	// need to handle how the HTTPRoutes work here...
 	statusReport.Register(func(o krt.Event[report]) {
+		logger.Info("in status report register handler")
 		s.syncGatewayStatus(ctx, o.Latest().ReportMap)
 		s.syncRouteStatus(ctx, o.Latest().ReportMap)
 	})
@@ -765,6 +768,7 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMa
 	stopwatch := statsutils.NewTranslatorStopWatch("GatewayStatusSyncer")
 	stopwatch.Start()
 
+	logger.Infof("syncGatewayStatus for rm %v", rm)
 	err := retry.Do(func() error {
 		for gwnn, _ := range rm.Gateways {
 			logger.Infof("syncing k8s gateway %s route status", gwnn.String())
@@ -784,6 +788,8 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMa
 						return err
 					}
 					logger.Infof("patched gw '%s' status", gwnn.String())
+				} else {
+					logger.Infof("skipping k8s gateway %s status update, status equal", gwnn.String())
 				}
 			}
 		}
