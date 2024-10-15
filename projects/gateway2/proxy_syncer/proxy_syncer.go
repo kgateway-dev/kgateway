@@ -786,28 +786,39 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMa
 	stopwatch := statsutils.NewTranslatorStopWatch("GatewayStatusSyncer")
 	stopwatch.Start()
 
-	for gwnn, _ := range rm.Gateways {
-		gw := gwv1.Gateway{}
-		err := s.mgr.GetClient().Get(ctx, gwnn, &gw)
-		if err != nil {
-			// FIXME
-			logger.Info("error getting gw", err.Error())
-			continue
-		}
-		if status := rm.BuildGWStatus(ctx, gw); status != nil {
-			if !isGatewayStatusEqual(&gw.Status, status) {
-				gw.Status = *status
-				logger.Infof("about to patch gw '%s' status", gwnn.String())
-				if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
-					logger.Error(err)
+	err := retry.Do(func() error {
+		for gwnn, _ := range rm.Gateways {
+			gw := gwv1.Gateway{}
+			err := s.mgr.GetClient().Get(ctx, gwnn, &gw)
+			if err != nil {
+				// FIXME
+				logger.Info("error getting gw", err.Error())
+				return err
+			}
+			if status := rm.BuildGWStatus(ctx, gw); status != nil {
+				if !isGatewayStatusEqual(&gw.Status, status) {
+					gw.Status = *status
+					logger.Infof("about to patch gw '%s' status", gwnn.String())
+					if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
+						logger.Error(err)
+						return err
+					}
+					logger.Infof("patched gw '%s' status", gwnn.String())
 				}
-				logger.Infof("patched gw '%s' status", gwnn.String())
 			}
 		}
+		duration := stopwatch.Stop(ctx)
+		// contextutils.LoggerFrom(ctx).Infof("synced gw %s status in %s", gwnn.String(), duration.String())
+		contextutils.LoggerFrom(ctx).Infof("synced gw status in %s", duration.String())
+		return nil
+	},
+		retry.Attempts(5),
+		retry.Delay(100*time.Millisecond),
+		retry.DelayType(retry.BackOffDelay),
+	)
+	if err != nil {
+		logger.Errorw("all attempts failed at updating gateway statuses", "error", err)
 	}
-	duration := stopwatch.Stop(ctx)
-	// contextutils.LoggerFrom(ctx).Infof("synced gw %s status in %s", gwnn.String(), duration.String())
-	contextutils.LoggerFrom(ctx).Infof("synced gw status in %s", duration.String())
 }
 
 // reconcileProxies persists the provided proxies by reconciling them with the proxyReconciler.
