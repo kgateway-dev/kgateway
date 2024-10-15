@@ -26,6 +26,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	istiogvr "istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube"
+	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/kubetypes"
@@ -423,6 +424,11 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	// need to handle how the HTTPRoutes work here...
 	statusReport.Register(func(o krt.Event[report]) {
 		logger.Info("in status report register handler")
+		if o.Event == controllers.EventDelete {
+			// FIXME: handle garbage collection
+			logger.Info("got delete status report register handler, returning")
+			return
+		}
 		s.syncGatewayStatus(ctx, o.Latest().ReportMap)
 		s.syncRouteStatus(ctx, o.Latest().ReportMap)
 	})
@@ -458,7 +464,12 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 	// now that krt collections and ctrl-rtime caches have synced, let's register our syncer
 	xdsSnapshots.Register(func(e krt.Event[xdsSnapWrapper]) {
-		logger.Info("LAW in register, got event: ", e.Event)
+		logger.Info("in xds snap register, got event: ", e.Event)
+		if e.Event == controllers.EventDelete {
+			// FIXME: handle garbage collection
+			logger.Info("got delete xds snap register handler, returning")
+			return
+		}
 		snap := e.Latest()
 
 		err := s.proxyTranslator.syncXdsAndStatus(ctx, snap.snap, snap.proxyKey, snap.fullReports)
@@ -506,7 +517,8 @@ func buildEndpoints(
 	keps := krt.Fetch(kctx, KubeEndpoints)
 	svcs := krt.Fetch(kctx, Services)
 	pods := krt.Fetch(kctx, Pods)
-	endpoints, warns, errs := kubernetes.FilterEndpoints(
+	// endpoints, warns, errs := kubernetes.FilterEndpoints(
+	endpoints, _, _ := kubernetes.FilterEndpoints(
 		// there is an unused ctx in the existing function signature so let's just pass an empty ctx.
 		// the FilterEndpoints(...) call is being removed in a follow-up so we don't need to mess with it
 		context.Background(),
@@ -516,12 +528,12 @@ func buildEndpoints(
 		pods,
 		upstreamSpecs,
 	)
-	for _, warn := range warns {
-		logger.Warn(warn)
-	}
-	for _, err := range errs {
-		logger.Error(err)
-	}
+	// for _, warn := range warns {
+	// 	logger.Warn(warn)
+	// }
+	// for _, err := range errs {
+	// 	logger.Error(err)
+	// }
 	out := make([]*glooEndpoint, 0, len(endpoints))
 	for _, gep := range endpoints {
 		out = append(out, &glooEndpoint{gep})
