@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"time"
 
 	"go.uber.org/zap"
@@ -191,12 +192,24 @@ type glooProxy struct {
 	proxy *gloov1.Proxy
 	// plugins used to generate this proxy
 	pluginRegistry registry.PluginRegistry
+	// the GWAPI reports generated for translation from a GW->Proxy
+	// this contains status for the Gateway and referenced Routes
+	reportMap reports.ReportMap
 }
 
 var _ krt.ResourceNamer = glooProxy{}
 
 func (p glooProxy) Equals(in glooProxy) bool {
-	return proto.Equal(p.proxy, in.proxy)
+	if !proto.Equal(p.proxy, in.proxy) {
+		return false
+	}
+	if !maps.Equal(p.reportMap.Gateways, in.reportMap.Gateways) {
+		return false
+	}
+	if !maps.Equal(p.reportMap.Routes, in.reportMap.Routes) {
+		return false
+	}
+	return true
 }
 func (p glooProxy) ResourceName() string {
 	return xds.SnapshotCacheKey(p.proxy)
@@ -238,6 +251,25 @@ func (us upstream) ResourceName() string {
 }
 func (us upstream) Equals(in upstream) bool {
 	return proto.Equal(us, in)
+}
+
+type report struct {
+	reports.ReportMap
+}
+
+func (r report) ResourceName() string {
+	return "report"
+}
+
+// do we really need this for a singleton?
+func (r report) Equals(in report) bool {
+	if !maps.Equal(r.ReportMap.Gateways, in.ReportMap.Gateways) {
+		return false
+	}
+	if !maps.Equal(r.ReportMap.Routes, in.ReportMap.Routes) {
+		return false
+	}
+	return true
 }
 
 func (s *ProxySyncer) Start(ctx context.Context) error {
@@ -345,15 +377,71 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	// unused collection; used purely for imperatively fetching proxies as needed and reconciling the full list of proxies
 	tmpProxies := krt.NewManyFromNothing(func(kctx krt.HandlerContext) []glooProxy {
 		proxies := krt.Fetch(kctx, glooProxies)
+
+		// used to reconcile all proxies
 		var proxyList gloov1.ProxyList
+		// reportMap that contains reports for all Gateways (i.e. Proxies) and merged route reports
+		// each Proxy's reportMap should only contain parentRefs corresponding to the Gateway that was translated
+		merged := reports.NewReportMap()
 		for _, p := range proxies {
 			proxyList = append(proxyList, p.proxy)
+
+			// 1. merge GW Reports for all Proxies' status reports
+			maps.Copy(merged.Gateways, p.reportMap.Gateways)
+
+			// 2. merge parentRefs into RouteReports
+			for rnn, rr := range p.reportMap.Routes {
+				// if we haven't encountered this route, just copy it over completely
+				old := merged.Routes[rnn]
+				if old == nil {
+					merged.Routes[rnn] = rr
+					continue
+				}
+				// else, let's merge our parentRefs into the existing map
+				// obsGen will stay as-is...
+				maps.Copy(p.reportMap.Routes[rnn].Parents, rr.Parents)
+			}
 		}
+
 		s.reconcileProxies(ctx, proxyList)
+
 		return proxies
 	})
 	tmpProxies.Register(func(o krt.Event[glooProxy]) {
 		//no-op; used to keep tmpProxies collection around and in scope
+	})
+	statusReport := krt.NewSingleton(func(kctx krt.HandlerContext) *report {
+		proxies := krt.Fetch(kctx, glooProxies)
+		// reportMap that contains reports for all Gateways (i.e. Proxies) and merged route reports
+		// each Proxy's reportMap should only contain parentRefs corresponding to the Gateway that was translated
+		merged := reports.NewReportMap()
+		for _, p := range proxies {
+			// 1. merge GW Reports for all Proxies' status reports
+			maps.Copy(merged.Gateways, p.reportMap.Gateways)
+
+			// 2. merge parentRefs into RouteReports
+			for rnn, rr := range p.reportMap.Routes {
+				// if we haven't encountered this route, just copy it over completely
+				old := merged.Routes[rnn]
+				if old == nil {
+					merged.Routes[rnn] = rr
+					continue
+				}
+				// else, let's merge our parentRefs into the existing map
+				// obsGen will stay as-is...
+				maps.Copy(p.reportMap.Routes[rnn].Parents, rr.Parents)
+			}
+		}
+		return &report{merged}
+	})
+
+	// status handler for gw api resources
+	// as we translate proxies on a per-Gateway basis, each event is a discrete update for a Proxy
+	// it will also contain the reportMap from that translation
+	// need to handle how the HTTPRoutes work here...
+	statusReport.Register(func(o krt.Event[report]) {
+		s.syncGatewayStatus(ctx, o.Latest().ReportMap)
+		s.syncRouteStatus(ctx, o.Latest().ReportMap)
 	})
 
 	// kick off the istio informers
@@ -483,17 +571,15 @@ func (s *ProxySyncer) buildProxy(ctx context.Context, gw *gwv1.Gateway) *glooPro
 	duration := stopwatch.Stop(ctx)
 	contextutils.LoggerFrom(ctx).Infof("translated proxy %s/%s in %s", proxy.GetMetadata().GetNamespace(), proxy.GetMetadata().GetName(), duration.String())
 
+	// TODO: these are likely unnecessary and should be removed!
 	applyPostTranslationPlugins(ctx, pluginRegistry, &gwplugins.PostTranslationContext{
 		TranslatedGateways: translatedGateways,
 	})
 
-	// sync gateway api resource status
-	s.syncGatewayStatus(ctx, rm, gw)
-	s.syncRouteStatus(ctx, rm)
-
 	return &glooProxy{
 		proxy:          proxy,
 		pluginRegistry: pluginRegistry,
+		reportMap:      rm,
 	}
 }
 
@@ -690,27 +776,38 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 	}
 }
 
-// syncGatewayStatus updates the status of the Gateway CRs
-func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMap, gw *gwv1.Gateway) {
+// syncGatewayStatus will build and update status for all objects in a reportMap
+func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMap) {
+	// logger.Infof("comparing gw '%s' status, status from obj: '%v' status from report: '%v'",
+	// 	client.ObjectKeyFromObject(gw).String(), gw.Status, status)
+
 	ctx = contextutils.WithLogger(ctx, "statusSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 	stopwatch := statsutils.NewTranslatorStopWatch("GatewayStatusSyncer")
 	stopwatch.Start()
 
-	if status := rm.BuildGWStatus(ctx, *gw); status != nil {
-		logger.Infof("comparing gw '%s' status, status from obj: '%v' status from report: '%v'",
-			client.ObjectKeyFromObject(gw).String(), gw.Status, status)
-		if !isGatewayStatusEqual(&gw.Status, status) {
-			gw.Status = *status
-			logger.Infof("about to patch gw '%s' status", client.ObjectKeyFromObject(gw).String())
-			if err := s.mgr.GetClient().Status().Patch(ctx, gw, client.Merge); err != nil {
-				logger.Error(err)
+	for gwnn, _ := range rm.Gateways {
+		gw := gwv1.Gateway{}
+		err := s.mgr.GetClient().Get(ctx, gwnn, &gw)
+		if err != nil {
+			// FIXME
+			logger.Info("error getting gw", err.Error())
+			continue
+		}
+		if status := rm.BuildGWStatus(ctx, gw); status != nil {
+			if !isGatewayStatusEqual(&gw.Status, status) {
+				gw.Status = *status
+				logger.Infof("about to patch gw '%s' status", gwnn.String())
+				if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
+					logger.Error(err)
+				}
+				logger.Infof("patched gw '%s' status", gwnn.String())
 			}
-			logger.Infof("patched gw '%s' status", client.ObjectKeyFromObject(gw).String())
 		}
 	}
 	duration := stopwatch.Stop(ctx)
-	contextutils.LoggerFrom(ctx).Infof("synced gw %s status in %s", client.ObjectKeyFromObject(gw).String(), duration.String())
+	// contextutils.LoggerFrom(ctx).Infof("synced gw %s status in %s", gwnn.String(), duration.String())
+	contextutils.LoggerFrom(ctx).Infof("synced gw status in %s", duration.String())
 }
 
 // reconcileProxies persists the provided proxies by reconciling them with the proxyReconciler.

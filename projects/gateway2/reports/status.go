@@ -112,7 +112,7 @@ func (r *ReportMap) BuildRouteStatus(ctx context.Context, route gwv1.HTTPRoute, 
 
 		finalConditions := make([]metav1.Condition, 0, len(parentStatusReport.Conditions))
 		for _, pCondition := range parentStatusReport.Conditions {
-			pCondition.ObservedGeneration = routeReport.observedGeneration
+			pCondition.ObservedGeneration = routeReport.ObservedGeneration
 
 			// copy old condition from gw so LastTransitionTime is set correctly below by SetStatusCondition()
 			if cond := meta.FindStatusCondition(currentParentRefConditions, pCondition.Type); cond != nil {
