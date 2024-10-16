@@ -8,8 +8,10 @@ import (
 	"sync"
 
 	errors "github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	kubeconverters "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients/vault"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -35,7 +37,7 @@ type SecretFactoryParams struct {
 	Cfg                **rest.Config
 	Clientset          *kubernetes.Interface
 	KubeCoreCache      *cache.KubeCoreCache
-	VaultClientInitMap map[int]VaultClientInitFunc // map client init funcs to their index in the sources slice
+	VaultClientInitMap map[int]vault.VaultClientInitFunc // map client init funcs to their index in the sources slice
 	PluralName         string
 }
 
@@ -44,7 +46,7 @@ type SecretFactoryParams struct {
 func SecretFactoryForSettings(ctx context.Context, params SecretFactoryParams) (factory.ResourceClientFactory, error) {
 	settings := params.Settings
 	if params.VaultClientInitMap == nil {
-		params.VaultClientInitMap = map[int]VaultClientInitFunc{}
+		params.VaultClientInitMap = map[int]vault.VaultClientInitFunc{}
 	}
 
 	if settings.GetSecretSource() == nil && settings.GetSecretOptions() == nil {
@@ -79,7 +81,7 @@ func SecretFactoryForSettings(ctx context.Context, params SecretFactoryParams) (
 func NewSecretResourceClientFactory(ctx context.Context, params SecretFactoryParams) (factory.ResourceClientFactory, error) {
 	switch source := params.Settings.GetSecretSource().(type) {
 	case *v1.Settings_KubernetesSecretSource:
-		if err := initializeForKube(ctx, params.Cfg, params.Clientset, params.KubeCoreCache, params.Settings.GetRefreshRate(), params.Settings.GetWatchNamespaces()); err != nil {
+		if err := initializeForKube(ctx, params.Cfg, params.Clientset, params.KubeCoreCache, params.Settings.GetRefreshRate(), settingsutil.GetNamespacesToWatch(params.Settings)); err != nil {
 			return nil, errors.Wrapf(err, "initializing kube cfg clientset and core cache")
 		}
 		return &factory.KubeSecretClientFactory{
@@ -94,12 +96,12 @@ func NewSecretResourceClientFactory(ctx context.Context, params SecretFactoryPar
 		}
 		pathPrefix := source.VaultSecretSource.GetPathPrefix()
 		if pathPrefix == "" {
-			pathPrefix = DefaultPathPrefix
+			pathPrefix = vault.DefaultPathPrefix
 		}
 		vaultClientFunc := params.VaultClientInitMap[SecretSourceAPIVaultClientInitIndex]
 		// We do not error upon creating a vault ResourceClientFactory, but we can
 		// check for a nil API client here before returning it and error appropriately.
-		f := NewVaultSecretClientFactory(ctx, vaultClientFunc, pathPrefix, rootKey)
+		f := vault.NewVaultSecretClientFactory(ctx, vaultClientFunc, pathPrefix, rootKey)
 		if vaultClientFactory, ok := f.(*factory.VaultSecretClientFactory); ok && vaultClientFactory.Vault == nil {
 			return nil, errors.New("resource client creation failed due to nil vault API client")
 		}
@@ -118,7 +120,7 @@ type MultiSecretResourceClientFactory struct {
 	cfg                **rest.Config
 	clientset          *kubernetes.Interface
 	kubeCoreCache      *cache.KubeCoreCache
-	vaultClientInitMap map[int]VaultClientInitFunc
+	vaultClientInitMap map[int]vault.VaultClientInitFunc
 
 	refreshRate     *durationpb.Duration
 	watchNamespaces []string
@@ -184,7 +186,7 @@ type MultiSecretFactoryParams struct {
 	Cfg                **rest.Config
 	Clientset          *kubernetes.Interface
 	KubeCoreCache      *cache.KubeCoreCache
-	VaultClientInitMap map[int]VaultClientInitFunc
+	VaultClientInitMap map[int]vault.VaultClientInitFunc
 }
 
 // NewMultiSecretResourceClientFactory returns a resource client factory for a client
@@ -206,7 +208,7 @@ func NewMultiSecretResourceClientFactory(params MultiSecretFactoryParams) (facto
 
 func (m *MultiSecretResourceClientFactory) getFactoryForSource(ctx context.Context,
 	source *v1.Settings_SecretOptions_Source,
-	vaultInitFunc VaultClientInitFunc) (factory.ResourceClientFactory, error) {
+	vaultInitFunc vault.VaultClientInitFunc) (factory.ResourceClientFactory, error) {
 
 	switch source := source.GetSource().(type) {
 	case *v1.Settings_SecretOptions_Source_Directory:
@@ -238,12 +240,12 @@ func (m *MultiSecretResourceClientFactory) getFactoryForSource(ctx context.Conte
 			}
 			pathPrefix := source.Vault.GetPathPrefix()
 			if pathPrefix == "" {
-				pathPrefix = DefaultPathPrefix
+				pathPrefix = vault.DefaultPathPrefix
 			}
 			// We do not error upon creating a ResourceClientFactory, but we can
 			// check for a nil API client when attempting to use the factory to
 			// create a ResourceClient and error here.
-			f := NewVaultSecretClientFactory(ctx, vaultInitFunc, pathPrefix, rootKey)
+			f := vault.NewVaultSecretClientFactory(ctx, vaultInitFunc, pathPrefix, rootKey)
 			if vaultClientFactory, ok := f.(*factory.VaultSecretClientFactory); ok && vaultClientFactory.Vault == nil {
 				return nil, errors.New("resource client creation failed due to nil vault API client")
 			}

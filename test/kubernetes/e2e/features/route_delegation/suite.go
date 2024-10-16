@@ -6,9 +6,7 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -126,12 +124,8 @@ func (s *tsuite) TestCyclic() {
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam2)},
 		&testmatchers.HttpResponse{StatusCode: http.StatusNotFound})
 
-	cyclicRoute := &gwv1.HTTPRoute{}
-	err := s.ti.ClusterContext.Client.Get(s.ctx,
-		types.NamespacedName{Name: routeTeam2.Name, Namespace: routeTeam2.Namespace},
-		cyclicRoute)
-	s.Require().NoError(err)
-	s.ti.Assertions.AssertHTTPRouteStatusContainsSubstring(cyclicRoute, "cyclic reference detected")
+	s.ti.Assertions.EventuallyHTTPRouteStatusContainsMessage(s.ctx, routeTeam2.Name, routeTeam2.Namespace,
+		"cyclic reference detected", 10*time.Second, 1*time.Second)
 }
 
 func (s *tsuite) TestInvalidChild() {
@@ -143,12 +137,8 @@ func (s *tsuite) TestInvalidChild() {
 	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt, []curl.Option{curl.WithHostPort(proxyHostPort), curl.WithPath(pathTeam2)},
 		&testmatchers.HttpResponse{StatusCode: http.StatusNotFound})
 
-	invalidRoute := &gwv1.HTTPRoute{}
-	err := s.ti.ClusterContext.Client.Get(s.ctx,
-		types.NamespacedName{Name: routeTeam2.Name, Namespace: routeTeam2.Namespace},
-		invalidRoute)
-	s.Require().NoError(err)
-	s.ti.Assertions.AssertHTTPRouteStatusContainsSubstring(invalidRoute, "spec.hostnames must be unset")
+	s.ti.Assertions.EventuallyHTTPRouteStatusContainsMessage(s.ctx, routeTeam2.Name, routeTeam2.Namespace,
+		"spec.hostnames must be unset", 10*time.Second, 1*time.Second)
 }
 
 func (s *tsuite) TestHeaderQueryMatch() {
@@ -238,23 +228,13 @@ func (s *tsuite) TestInvalidChildValidStandalone() {
 		},
 		&testmatchers.HttpResponse{StatusCode: http.StatusOK, Body: ContainSubstring(pathTeam2)})
 
-	invalidRoute := &gwv1.HTTPRoute{}
-	err := s.ti.ClusterContext.Client.Get(s.ctx,
-		types.NamespacedName{Name: routeTeam2.Name, Namespace: routeTeam2.Namespace},
-		invalidRoute)
-	s.Require().NoError(err)
-	s.ti.Assertions.AssertHTTPRouteStatusContainsSubstring(invalidRoute, "spec.hostnames must be unset")
+	s.ti.Assertions.EventuallyHTTPRouteStatusContainsMessage(s.ctx, routeTeam2.Name, routeTeam2.Namespace,
+		"spec.hostnames must be unset", 10*time.Second, 1*time.Second)
 }
 
 func (s *tsuite) TestUnresolvedChild() {
-	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		route := &gwv1.HTTPRoute{}
-		err := s.ti.ClusterContext.Client.Get(s.ctx,
-			types.NamespacedName{Name: routeRoot.Name, Namespace: routeRoot.Namespace},
-			route)
-		assert.NoError(c, err, "route not found")
-		s.ti.Assertions.AssertHTTPRouteStatusContainsReason(route, string(gwv1.RouteReasonBackendNotFound))
-	}, 10*time.Second, 1*time.Second)
+	s.ti.Assertions.EventuallyHTTPRouteStatusContainsReason(s.ctx, routeRoot.Name, routeRoot.Namespace,
+		string(gwv1.RouteReasonBackendNotFound), 10*time.Second, 1*time.Second)
 }
 
 func (s *tsuite) TestRouteOptions() {

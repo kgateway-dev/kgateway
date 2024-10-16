@@ -13,11 +13,11 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
-
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
+
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -40,27 +40,27 @@ func (m *HeaderMutationRules) Clone() proto.Message {
 	target = &HeaderMutationRules{}
 
 	if h, ok := interface{}(m.GetAllowAllRouting()).(clone.Cloner); ok {
-		target.AllowAllRouting = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.AllowAllRouting = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.AllowAllRouting = proto.Clone(m.GetAllowAllRouting()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.AllowAllRouting = proto.Clone(m.GetAllowAllRouting()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetAllowEnvoy()).(clone.Cloner); ok {
-		target.AllowEnvoy = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.AllowEnvoy = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.AllowEnvoy = proto.Clone(m.GetAllowEnvoy()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.AllowEnvoy = proto.Clone(m.GetAllowEnvoy()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetDisallowSystem()).(clone.Cloner); ok {
-		target.DisallowSystem = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.DisallowSystem = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.DisallowSystem = proto.Clone(m.GetDisallowSystem()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.DisallowSystem = proto.Clone(m.GetDisallowSystem()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetDisallowAll()).(clone.Cloner); ok {
-		target.DisallowAll = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.DisallowAll = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.DisallowAll = proto.Clone(m.GetDisallowAll()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.DisallowAll = proto.Clone(m.GetDisallowAll()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetAllowExpression()).(clone.Cloner); ok {
@@ -76,9 +76,9 @@ func (m *HeaderMutationRules) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetDisallowIsError()).(clone.Cloner); ok {
-		target.DisallowIsError = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.DisallowIsError = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.DisallowIsError = proto.Clone(m.GetDisallowIsError()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.DisallowIsError = proto.Clone(m.GetDisallowIsError()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	return target

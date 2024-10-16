@@ -3,7 +3,6 @@ package tests_test
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -11,9 +10,7 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	. "github.com/solo-io/gloo/test/kubernetes/e2e/tests"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
 	"github.com/solo-io/gloo/test/testutils"
-	"github.com/solo-io/skv2/codegen/util"
 )
 
 // TestK8sGatewayIstioRevision is the function which executes a series of tests against a given installation with
@@ -24,8 +21,9 @@ func TestK8sGatewayIstioRevision(t *testing.T) {
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:   installNs,
-			ValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "istio-revision-k8s-gateway-helm.yaml"),
+			InstallNamespace:          installNs,
+			ProfileValuesManifestFile: e2e.KubernetesGatewayProfilePath,
+			ValuesManifestFile:        e2e.ManifestPath("istio-revision-k8s-gateway-helm.yaml"),
 		},
 	)
 
@@ -53,9 +51,7 @@ func TestK8sGatewayIstioRevision(t *testing.T) {
 			testInstallation.CreateIstioBugReport(ctx)
 		}
 
-		testInstallation.UninstallGlooGateway(ctx, func(ctx context.Context) error {
-			return testHelper.UninstallGlooAll()
-		})
+		testInstallation.UninstallGlooGatewayWithTestHelper(ctx, testHelper)
 
 		// Uninstall Istio
 		err = testInstallation.UninstallIstio()
@@ -71,9 +67,7 @@ func TestK8sGatewayIstioRevision(t *testing.T) {
 	}
 
 	// Install Gloo Gateway
-	testInstallation.InstallGlooGateway(ctx, func(ctx context.Context) error {
-		return testHelper.InstallGloo(ctx, 5*time.Minute, helper.WithExtraArgs("--values", testInstallation.Metadata.ValuesManifestFile))
-	})
+	testInstallation.InstallGlooGatewayWithTestHelper(ctx, testHelper, 5*time.Minute)
 
 	RevisionIstioK8sGatewaySuiteRunner().Run(ctx, t, testInstallation)
 }

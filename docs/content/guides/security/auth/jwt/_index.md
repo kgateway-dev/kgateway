@@ -5,7 +5,7 @@ description: Introduction to JWT and what they are used for
 ---
 
 {{% notice note %}}
-The JWT feature was introduced with **Gloo Gateway Enterprise**, release 0.13.16. If you are using an earlier version, this tutorial will not work.
+{{< readfile file="static/content/enterprise_only_feature_disclaimer" markdown="true">}}
 {{% /notice %}}
 
 ## What are JSON Web Tokens?
@@ -45,7 +45,7 @@ Inside the JWT various *claims* are encoded; claims provide identity information
 - `aud`: The audience the token was issued for. This is an important security feature that makes sure that a token 
 issued for one use cannot be used for other purposes.
           
-See the [JWT specification](https://tools.ietf.org/html/rfc7519#section-4.1) for a complete description of all standard claims.
+See the [JWT specification](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1) for a complete description of all standard claims.
 
 The claims are encoded as a JSON object, and then encoded with base64 to form the payload of the JWT
 

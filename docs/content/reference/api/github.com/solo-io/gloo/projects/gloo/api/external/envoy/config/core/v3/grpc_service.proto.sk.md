@@ -200,7 +200,7 @@ credential types.
 | `serviceAccountJwtAccess` | [.solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.ServiceAccountJWTAccessCredentials](../grpc_service.proto.sk/#serviceaccountjwtaccesscredentials) | Service Account JWT Access credentials. https://grpc.io/grpc/cpp/namespacegrpc.html#a92a9f959d6102461f66ee973d8e9d3aa. Only one of `serviceAccountJwtAccess`, `accessToken`, `googleComputeEngine`, `googleRefreshToken`, `googleIam`, `fromPlugin`, or `stsService` can be set. |
 | `googleIam` | [.solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.GoogleIAMCredentials](../grpc_service.proto.sk/#googleiamcredentials) | Google IAM credentials. https://grpc.io/grpc/cpp/namespacegrpc.html#a9fc1fc101b41e680d47028166e76f9d0. Only one of `googleIam`, `accessToken`, `googleComputeEngine`, `googleRefreshToken`, `serviceAccountJwtAccess`, `fromPlugin`, or `stsService` can be set. |
 | `fromPlugin` | [.solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.MetadataCredentialsFromPlugin](../grpc_service.proto.sk/#metadatacredentialsfromplugin) | Custom authenticator credentials. https://grpc.io/grpc/cpp/namespacegrpc.html#a823c6a4b19ffc71fb33e90154ee2ad07. https://grpc.io/docs/guides/auth.html#extending-grpc-to-support-other-authentication-mechanisms. Only one of `fromPlugin`, `accessToken`, `googleComputeEngine`, `googleRefreshToken`, `serviceAccountJwtAccess`, `googleIam`, or `stsService` can be set. |
-| `stsService` | [.solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.StsService](../grpc_service.proto.sk/#stsservice) | Custom security token service which implements OAuth 2.0 token exchange. https://tools.ietf.org/html/draft-ietf-oauth-token-exchange-16 See https://github.com/grpc/grpc/pull/19587. Only one of `stsService`, `accessToken`, `googleComputeEngine`, `googleRefreshToken`, `serviceAccountJwtAccess`, `googleIam`, or `fromPlugin` can be set. |
+| `stsService` | [.solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.StsService](../grpc_service.proto.sk/#stsservice) | Custom security token service which implements OAuth 2.0 token exchange. https://datatracker.ietf.org/doc/html/draft-ietf-oauth-token-exchange-16 See https://github.com/grpc/grpc/pull/19587. Only one of `stsService`, `accessToken`, `googleComputeEngine`, `googleRefreshToken`, `serviceAccountJwtAccess`, `googleIam`, or `fromPlugin` can be set. |
 
 
 
@@ -268,7 +268,7 @@ credential types.
  
 Security token service configuration that allows Google gRPC to
 fetch security token from an OAuth 2.0 authorization server.
-See https://tools.ietf.org/html/draft-ietf-oauth-token-exchange-16 and
+See https://datatracker.ietf.org/doc/html/draft-ietf-oauth-token-exchange-16 and
 https://github.com/grpc/grpc/pull/19587.
 [#next-free-field: 10]
 

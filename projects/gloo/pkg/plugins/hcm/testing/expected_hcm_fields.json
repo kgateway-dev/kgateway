@@ -55,7 +55,6 @@
     "FlushAccessLogOnNewRequest",
     "AccessLogOptions",
     "AddProxyProtocolConnectionState",
-
     "Http1SafeMaxConnectionDuration",
     "AppendLocalOverload"
 ]

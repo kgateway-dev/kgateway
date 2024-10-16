@@ -13,9 +13,9 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_struct "github.com/golang/protobuf/ptypes/struct"
-
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	google_golang_org_protobuf_types_known_structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
 // ensure the imports are used
@@ -120,6 +120,30 @@ func (m *UpstreamSpec) Clone() proto.Message {
 			}
 		}
 
+	case *UpstreamSpec_Multi:
+
+		if h, ok := interface{}(m.GetMulti()).(clone.Cloner); ok {
+			target.Llm = &UpstreamSpec_Multi{
+				Multi: h.Clone().(*UpstreamSpec_MultiPool),
+			}
+		} else {
+			target.Llm = &UpstreamSpec_Multi{
+				Multi: proto.Clone(m.GetMulti()).(*UpstreamSpec_MultiPool),
+			}
+		}
+
+	case *UpstreamSpec_Gemini_:
+
+		if h, ok := interface{}(m.GetGemini()).(clone.Cloner); ok {
+			target.Llm = &UpstreamSpec_Gemini_{
+				Gemini: h.Clone().(*UpstreamSpec_Gemini),
+			}
+		} else {
+			target.Llm = &UpstreamSpec_Gemini_{
+				Gemini: proto.Clone(m.GetGemini()).(*UpstreamSpec_Gemini),
+			}
+		}
+
 	}
 
 	return target
@@ -140,9 +164,9 @@ func (m *RouteSettings) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetPromptGuard()).(clone.Cloner); ok {
-		target.PromptGuard = h.Clone().(*AIPromptGaurd)
+		target.PromptGuard = h.Clone().(*AIPromptGuard)
 	} else {
-		target.PromptGuard = proto.Clone(m.GetPromptGuard()).(*AIPromptGaurd)
+		target.PromptGuard = proto.Clone(m.GetPromptGuard()).(*AIPromptGuard)
 	}
 
 	if h, ok := interface{}(m.GetRag()).(clone.Cloner); ok {
@@ -155,15 +179,6 @@ func (m *RouteSettings) Clone() proto.Message {
 		target.SemanticCache = h.Clone().(*SemanticCache)
 	} else {
 		target.SemanticCache = proto.Clone(m.GetSemanticCache()).(*SemanticCache)
-	}
-
-	if m.GetBackupModels() != nil {
-		target.BackupModels = make([]string, len(m.GetBackupModels()))
-		for idx, v := range m.GetBackupModels() {
-
-			target.BackupModels[idx] = v
-
-		}
 	}
 
 	if m.GetDefaults() != nil {
@@ -179,6 +194,8 @@ func (m *RouteSettings) Clone() proto.Message {
 		}
 	}
 
+	target.RouteType = m.GetRouteType()
+
 	return target
 }
 
@@ -193,9 +210,9 @@ func (m *FieldDefault) Clone() proto.Message {
 	target.Field = m.GetField()
 
 	if h, ok := interface{}(m.GetValue()).(clone.Cloner); ok {
-		target.Value = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Value)
+		target.Value = h.Clone().(*google_golang_org_protobuf_types_known_structpb.Value)
 	} else {
-		target.Value = proto.Clone(m.GetValue()).(*github_com_golang_protobuf_ptypes_struct.Value)
+		target.Value = proto.Clone(m.GetValue()).(*google_golang_org_protobuf_types_known_structpb.Value)
 	}
 
 	target.Override = m.GetOverride()
@@ -310,26 +327,6 @@ func (m *RAG) Clone() proto.Message {
 }
 
 // Clone function
-func (m *RateLimiting) Clone() proto.Message {
-	var target *RateLimiting
-	if m == nil {
-		return target
-	}
-	target = &RateLimiting{}
-
-	if m.GetRateLimitConfigs() != nil {
-		target.RateLimitConfigs = make([]string, len(m.GetRateLimitConfigs()))
-		for idx, v := range m.GetRateLimitConfigs() {
-
-			target.RateLimitConfigs[idx] = v
-
-		}
-	}
-
-	return target
-}
-
-// Clone function
 func (m *AIPromptEnrichment) Clone() proto.Message {
 	var target *AIPromptEnrichment
 	if m == nil {
@@ -367,23 +364,23 @@ func (m *AIPromptEnrichment) Clone() proto.Message {
 }
 
 // Clone function
-func (m *AIPromptGaurd) Clone() proto.Message {
-	var target *AIPromptGaurd
+func (m *AIPromptGuard) Clone() proto.Message {
+	var target *AIPromptGuard
 	if m == nil {
 		return target
 	}
-	target = &AIPromptGaurd{}
+	target = &AIPromptGuard{}
 
 	if h, ok := interface{}(m.GetRequest()).(clone.Cloner); ok {
-		target.Request = h.Clone().(*AIPromptGaurd_Request)
+		target.Request = h.Clone().(*AIPromptGuard_Request)
 	} else {
-		target.Request = proto.Clone(m.GetRequest()).(*AIPromptGaurd_Request)
+		target.Request = proto.Clone(m.GetRequest()).(*AIPromptGuard_Request)
 	}
 
 	if h, ok := interface{}(m.GetResponse()).(clone.Cloner); ok {
-		target.Response = h.Clone().(*AIPromptGaurd_Response)
+		target.Response = h.Clone().(*AIPromptGuard_Response)
 	} else {
-		target.Response = proto.Clone(m.GetResponse()).(*AIPromptGaurd_Response)
+		target.Response = proto.Clone(m.GetResponse()).(*AIPromptGuard_Response)
 	}
 
 	return target
@@ -424,6 +421,8 @@ func (m *UpstreamSpec_OpenAI) Clone() proto.Message {
 		target.CustomHost = proto.Clone(m.GetCustomHost()).(*UpstreamSpec_CustomHost)
 	}
 
+	target.Model = m.GetModel()
+
 	return target
 }
 
@@ -437,6 +436,10 @@ func (m *UpstreamSpec_AzureOpenAI) Clone() proto.Message {
 
 	target.Endpoint = m.GetEndpoint()
 
+	target.DeploymentName = m.GetDeploymentName()
+
+	target.ApiVersion = m.GetApiVersion()
+
 	switch m.AuthTokenSource.(type) {
 
 	case *UpstreamSpec_AzureOpenAI_AuthToken:
@@ -447,6 +450,37 @@ func (m *UpstreamSpec_AzureOpenAI) Clone() proto.Message {
 			}
 		} else {
 			target.AuthTokenSource = &UpstreamSpec_AzureOpenAI_AuthToken{
+				AuthToken: proto.Clone(m.GetAuthToken()).(*SingleAuthToken),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *UpstreamSpec_Gemini) Clone() proto.Message {
+	var target *UpstreamSpec_Gemini
+	if m == nil {
+		return target
+	}
+	target = &UpstreamSpec_Gemini{}
+
+	target.Model = m.GetModel()
+
+	target.ApiVersion = m.GetApiVersion()
+
+	switch m.AuthTokenSource.(type) {
+
+	case *UpstreamSpec_Gemini_AuthToken:
+
+		if h, ok := interface{}(m.GetAuthToken()).(clone.Cloner); ok {
+			target.AuthTokenSource = &UpstreamSpec_Gemini_AuthToken{
+				AuthToken: h.Clone().(*SingleAuthToken),
+			}
+		} else {
+			target.AuthTokenSource = &UpstreamSpec_Gemini_AuthToken{
 				AuthToken: proto.Clone(m.GetAuthToken()).(*SingleAuthToken),
 			}
 		}
@@ -476,6 +510,8 @@ func (m *UpstreamSpec_Mistral) Clone() proto.Message {
 		target.CustomHost = proto.Clone(m.GetCustomHost()).(*UpstreamSpec_CustomHost)
 	}
 
+	target.Model = m.GetModel()
+
 	return target
 }
 
@@ -500,6 +536,131 @@ func (m *UpstreamSpec_Anthropic) Clone() proto.Message {
 	}
 
 	target.Version = m.GetVersion()
+
+	target.Model = m.GetModel()
+
+	return target
+}
+
+// Clone function
+func (m *UpstreamSpec_MultiPool) Clone() proto.Message {
+	var target *UpstreamSpec_MultiPool
+	if m == nil {
+		return target
+	}
+	target = &UpstreamSpec_MultiPool{}
+
+	if m.GetPriorities() != nil {
+		target.Priorities = make([]*UpstreamSpec_MultiPool_Priority, len(m.GetPriorities()))
+		for idx, v := range m.GetPriorities() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Priorities[idx] = h.Clone().(*UpstreamSpec_MultiPool_Priority)
+			} else {
+				target.Priorities[idx] = proto.Clone(v).(*UpstreamSpec_MultiPool_Priority)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *UpstreamSpec_MultiPool_Backend) Clone() proto.Message {
+	var target *UpstreamSpec_MultiPool_Backend
+	if m == nil {
+		return target
+	}
+	target = &UpstreamSpec_MultiPool_Backend{}
+
+	switch m.Llm.(type) {
+
+	case *UpstreamSpec_MultiPool_Backend_Openai:
+
+		if h, ok := interface{}(m.GetOpenai()).(clone.Cloner); ok {
+			target.Llm = &UpstreamSpec_MultiPool_Backend_Openai{
+				Openai: h.Clone().(*UpstreamSpec_OpenAI),
+			}
+		} else {
+			target.Llm = &UpstreamSpec_MultiPool_Backend_Openai{
+				Openai: proto.Clone(m.GetOpenai()).(*UpstreamSpec_OpenAI),
+			}
+		}
+
+	case *UpstreamSpec_MultiPool_Backend_Mistral:
+
+		if h, ok := interface{}(m.GetMistral()).(clone.Cloner); ok {
+			target.Llm = &UpstreamSpec_MultiPool_Backend_Mistral{
+				Mistral: h.Clone().(*UpstreamSpec_Mistral),
+			}
+		} else {
+			target.Llm = &UpstreamSpec_MultiPool_Backend_Mistral{
+				Mistral: proto.Clone(m.GetMistral()).(*UpstreamSpec_Mistral),
+			}
+		}
+
+	case *UpstreamSpec_MultiPool_Backend_Anthropic:
+
+		if h, ok := interface{}(m.GetAnthropic()).(clone.Cloner); ok {
+			target.Llm = &UpstreamSpec_MultiPool_Backend_Anthropic{
+				Anthropic: h.Clone().(*UpstreamSpec_Anthropic),
+			}
+		} else {
+			target.Llm = &UpstreamSpec_MultiPool_Backend_Anthropic{
+				Anthropic: proto.Clone(m.GetAnthropic()).(*UpstreamSpec_Anthropic),
+			}
+		}
+
+	case *UpstreamSpec_MultiPool_Backend_AzureOpenai:
+
+		if h, ok := interface{}(m.GetAzureOpenai()).(clone.Cloner); ok {
+			target.Llm = &UpstreamSpec_MultiPool_Backend_AzureOpenai{
+				AzureOpenai: h.Clone().(*UpstreamSpec_AzureOpenAI),
+			}
+		} else {
+			target.Llm = &UpstreamSpec_MultiPool_Backend_AzureOpenai{
+				AzureOpenai: proto.Clone(m.GetAzureOpenai()).(*UpstreamSpec_AzureOpenAI),
+			}
+		}
+
+	case *UpstreamSpec_MultiPool_Backend_Gemini:
+
+		if h, ok := interface{}(m.GetGemini()).(clone.Cloner); ok {
+			target.Llm = &UpstreamSpec_MultiPool_Backend_Gemini{
+				Gemini: h.Clone().(*UpstreamSpec_Gemini),
+			}
+		} else {
+			target.Llm = &UpstreamSpec_MultiPool_Backend_Gemini{
+				Gemini: proto.Clone(m.GetGemini()).(*UpstreamSpec_Gemini),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *UpstreamSpec_MultiPool_Priority) Clone() proto.Message {
+	var target *UpstreamSpec_MultiPool_Priority
+	if m == nil {
+		return target
+	}
+	target = &UpstreamSpec_MultiPool_Priority{}
+
+	if m.GetPool() != nil {
+		target.Pool = make([]*UpstreamSpec_MultiPool_Backend, len(m.GetPool()))
+		for idx, v := range m.GetPool() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Pool[idx] = h.Clone().(*UpstreamSpec_MultiPool_Backend)
+			} else {
+				target.Pool[idx] = proto.Clone(v).(*UpstreamSpec_MultiPool_Backend)
+			}
+
+		}
+	}
 
 	return target
 }
@@ -580,6 +741,25 @@ func (m *SemanticCache_Redis) Clone() proto.Message {
 }
 
 // Clone function
+func (m *SemanticCache_Weaviate) Clone() proto.Message {
+	var target *SemanticCache_Weaviate
+	if m == nil {
+		return target
+	}
+	target = &SemanticCache_Weaviate{}
+
+	target.Host = m.GetHost()
+
+	target.HttpPort = m.GetHttpPort()
+
+	target.GrpcPort = m.GetGrpcPort()
+
+	target.Insecure = m.GetInsecure()
+
+	return target
+}
+
+// Clone function
 func (m *SemanticCache_DataStore) Clone() proto.Message {
 	var target *SemanticCache_DataStore
 	if m == nil {
@@ -598,6 +778,18 @@ func (m *SemanticCache_DataStore) Clone() proto.Message {
 		} else {
 			target.Datastore = &SemanticCache_DataStore_Redis{
 				Redis: proto.Clone(m.GetRedis()).(*SemanticCache_Redis),
+			}
+		}
+
+	case *SemanticCache_DataStore_Weaviate:
+
+		if h, ok := interface{}(m.GetWeaviate()).(clone.Cloner); ok {
+			target.Datastore = &SemanticCache_DataStore_Weaviate{
+				Weaviate: h.Clone().(*SemanticCache_Weaviate),
+			}
+		} else {
+			target.Datastore = &SemanticCache_DataStore_Weaviate{
+				Weaviate: proto.Clone(m.GetWeaviate()).(*SemanticCache_Weaviate),
 			}
 		}
 
@@ -649,34 +841,12 @@ func (m *AIPromptEnrichment_Message) Clone() proto.Message {
 }
 
 // Clone function
-func (m *AIPromptGaurd_Request) Clone() proto.Message {
-	var target *AIPromptGaurd_Request
+func (m *AIPromptGuard_Regex) Clone() proto.Message {
+	var target *AIPromptGuard_Regex
 	if m == nil {
 		return target
 	}
-	target = &AIPromptGaurd_Request{}
-
-	if m.GetMatches() != nil {
-		target.Matches = make([]string, len(m.GetMatches()))
-		for idx, v := range m.GetMatches() {
-
-			target.Matches[idx] = v
-
-		}
-	}
-
-	target.CustomResponseMessage = m.GetCustomResponseMessage()
-
-	return target
-}
-
-// Clone function
-func (m *AIPromptGaurd_Response) Clone() proto.Message {
-	var target *AIPromptGaurd_Response
-	if m == nil {
-		return target
-	}
-	target = &AIPromptGaurd_Response{}
+	target = &AIPromptGuard_Regex{}
 
 	if m.GetMatches() != nil {
 		target.Matches = make([]string, len(m.GetMatches()))
@@ -688,13 +858,123 @@ func (m *AIPromptGaurd_Response) Clone() proto.Message {
 	}
 
 	if m.GetBuiltins() != nil {
-		target.Builtins = make([]AIPromptGaurd_Response_BuiltIn, len(m.GetBuiltins()))
+		target.Builtins = make([]AIPromptGuard_Regex_BuiltIn, len(m.GetBuiltins()))
 		for idx, v := range m.GetBuiltins() {
 
 			target.Builtins[idx] = v
 
 		}
 	}
+
+	return target
+}
+
+// Clone function
+func (m *AIPromptGuard_Webhook) Clone() proto.Message {
+	var target *AIPromptGuard_Webhook
+	if m == nil {
+		return target
+	}
+	target = &AIPromptGuard_Webhook{}
+
+	target.Host = m.GetHost()
+
+	target.Port = m.GetPort()
+
+	if m.GetHeaders() != nil {
+		target.Headers = make([]*AIPromptGuard_Webhook_HeaderMatch, len(m.GetHeaders()))
+		for idx, v := range m.GetHeaders() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Headers[idx] = h.Clone().(*AIPromptGuard_Webhook_HeaderMatch)
+			} else {
+				target.Headers[idx] = proto.Clone(v).(*AIPromptGuard_Webhook_HeaderMatch)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *AIPromptGuard_Request) Clone() proto.Message {
+	var target *AIPromptGuard_Request
+	if m == nil {
+		return target
+	}
+	target = &AIPromptGuard_Request{}
+
+	if h, ok := interface{}(m.GetCustomResponse()).(clone.Cloner); ok {
+		target.CustomResponse = h.Clone().(*AIPromptGuard_Request_CustomResponse)
+	} else {
+		target.CustomResponse = proto.Clone(m.GetCustomResponse()).(*AIPromptGuard_Request_CustomResponse)
+	}
+
+	if h, ok := interface{}(m.GetRegex()).(clone.Cloner); ok {
+		target.Regex = h.Clone().(*AIPromptGuard_Regex)
+	} else {
+		target.Regex = proto.Clone(m.GetRegex()).(*AIPromptGuard_Regex)
+	}
+
+	if h, ok := interface{}(m.GetWebhook()).(clone.Cloner); ok {
+		target.Webhook = h.Clone().(*AIPromptGuard_Webhook)
+	} else {
+		target.Webhook = proto.Clone(m.GetWebhook()).(*AIPromptGuard_Webhook)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *AIPromptGuard_Response) Clone() proto.Message {
+	var target *AIPromptGuard_Response
+	if m == nil {
+		return target
+	}
+	target = &AIPromptGuard_Response{}
+
+	if h, ok := interface{}(m.GetRegex()).(clone.Cloner); ok {
+		target.Regex = h.Clone().(*AIPromptGuard_Regex)
+	} else {
+		target.Regex = proto.Clone(m.GetRegex()).(*AIPromptGuard_Regex)
+	}
+
+	if h, ok := interface{}(m.GetWebhook()).(clone.Cloner); ok {
+		target.Webhook = h.Clone().(*AIPromptGuard_Webhook)
+	} else {
+		target.Webhook = proto.Clone(m.GetWebhook()).(*AIPromptGuard_Webhook)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *AIPromptGuard_Webhook_HeaderMatch) Clone() proto.Message {
+	var target *AIPromptGuard_Webhook_HeaderMatch
+	if m == nil {
+		return target
+	}
+	target = &AIPromptGuard_Webhook_HeaderMatch{}
+
+	target.Key = m.GetKey()
+
+	target.MatchType = m.GetMatchType()
+
+	return target
+}
+
+// Clone function
+func (m *AIPromptGuard_Request_CustomResponse) Clone() proto.Message {
+	var target *AIPromptGuard_Request_CustomResponse
+	if m == nil {
+		return target
+	}
+	target = &AIPromptGuard_Request_CustomResponse{}
+
+	target.Message = m.GetMessage()
+
+	target.StatusCode = m.GetStatusCode()
 
 	return target
 }

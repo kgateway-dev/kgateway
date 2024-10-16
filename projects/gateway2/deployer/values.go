@@ -24,6 +24,9 @@ type helmGateway struct {
 	Service        *helmService     `json:"service,omitempty"`
 	FloatingUserId *bool            `json:"floatingUserId,omitempty"`
 
+	// serviceaccount values
+	ServiceAccount *helmServiceAccount `json:"serviceAccount,omitempty"`
+
 	// pod template values
 	ExtraPodAnnotations map[string]string             `json:"extraPodAnnotations,omitempty"`
 	ExtraPodLabels      map[string]string             `json:"extraPodLabels,omitempty"`
@@ -76,6 +79,11 @@ type helmImage struct {
 type helmService struct {
 	Type             *string           `json:"type,omitempty"`
 	ClusterIP        *string           `json:"clusterIP,omitempty"`
+	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
+	ExtraLabels      map[string]string `json:"extraLabels,omitempty"`
+}
+
+type helmServiceAccount struct {
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 	ExtraLabels      map[string]string `json:"extraLabels,omitempty"`
 }

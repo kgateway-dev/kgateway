@@ -13,13 +13,13 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
-
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
-
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_jwt_authn_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/jwt_authn/v3"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	google_golang_org_protobuf_types_known_durationpb "google.golang.org/protobuf/types/known/durationpb"
+
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -190,9 +190,9 @@ func (m *Provider) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetClockSkewSeconds()).(clone.Cloner); ok {
-		target.ClockSkewSeconds = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.ClockSkewSeconds = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.ClockSkewSeconds = proto.Clone(m.GetClockSkewSeconds()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.ClockSkewSeconds = proto.Clone(m.GetClockSkewSeconds()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	return target
@@ -254,9 +254,9 @@ func (m *RemoteJwks) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetCacheDuration()).(clone.Cloner); ok {
-		target.CacheDuration = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.CacheDuration = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.CacheDuration = proto.Clone(m.GetCacheDuration()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.CacheDuration = proto.Clone(m.GetCacheDuration()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	if h, ok := interface{}(m.GetAsyncFetch()).(clone.Cloner); ok {

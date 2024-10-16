@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/9683
+    resolvesIssue: false
+    description: >-
+      Remove the solo-kit.json options that enable k8s code generation for the
+      extauth, graphql, and gloosnapshot APIs/snapshots. This isn't needed for
+      those APIs and enabling those options caused codegen to create nested
+      hack/*-codegen.sh files that weren't needed.

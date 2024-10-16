@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/pkg/utils/namespaces"
 
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -35,7 +35,7 @@ func (c *readOnlyUpstreamBaseClient) NewResource() resources.Resource {
 	return &v1.Upstream{
 		Metadata: &core.Metadata{
 			Name:      "dev-error-placeholder",
-			Namespace: utils.GetPodNamespace(),
+			Namespace: namespaces.GetPodNamespace(),
 		},
 	}
 }

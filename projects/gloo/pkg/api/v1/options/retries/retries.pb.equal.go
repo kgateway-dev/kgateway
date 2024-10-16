@@ -118,6 +118,17 @@ func (m *RetryPolicy) Equal(that interface{}) bool {
 		}
 	}
 
+	if len(m.GetRetriableStatusCodes()) != len(target.GetRetriableStatusCodes()) {
+		return false
+	}
+	for idx, v := range m.GetRetriableStatusCodes() {
+
+		if v != target.GetRetriableStatusCodes()[idx] {
+			return false
+		}
+
+	}
+
 	switch m.PriorityPredicate.(type) {
 
 	case *RetryPolicy_PreviousPriorities_:

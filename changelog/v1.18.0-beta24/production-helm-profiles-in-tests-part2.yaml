@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/docs/issues/489
+    resolvesIssue: false
+    description: >-
+      Validate the gloogateway.Context object in a way that it can be invoked by an Enterprise installation

@@ -20,17 +20,13 @@ package v1
 
 import (
 	"context"
-	json "encoding/json"
-	"fmt"
-	"time"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	gatewaysoloiov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/applyconfiguration/gateway.solo.io/v1"
 	scheme "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
-	rest "k8s.io/client-go/rest"
+	gentype "k8s.io/client-go/gentype"
 )
 
 // VirtualHostOptionsGetter has a method to return a VirtualHostOptionInterface.
@@ -43,6 +39,7 @@ type VirtualHostOptionsGetter interface {
 type VirtualHostOptionInterface interface {
 	Create(ctx context.Context, virtualHostOption *v1.VirtualHostOption, opts metav1.CreateOptions) (*v1.VirtualHostOption, error)
 	Update(ctx context.Context, virtualHostOption *v1.VirtualHostOption, opts metav1.UpdateOptions) (*v1.VirtualHostOption, error)
+	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
 	UpdateStatus(ctx context.Context, virtualHostOption *v1.VirtualHostOption, opts metav1.UpdateOptions) (*v1.VirtualHostOption, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error
@@ -50,207 +47,23 @@ type VirtualHostOptionInterface interface {
 	List(ctx context.Context, opts metav1.ListOptions) (*v1.VirtualHostOptionList, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.VirtualHostOption, err error)
-	Apply(ctx context.Context, virtualHostOption *gatewaysoloiov1.VirtualHostOptionApplyConfiguration, opts metav1.ApplyOptions) (result *v1.VirtualHostOption, err error)
-	ApplyStatus(ctx context.Context, virtualHostOption *gatewaysoloiov1.VirtualHostOptionApplyConfiguration, opts metav1.ApplyOptions) (result *v1.VirtualHostOption, err error)
 	VirtualHostOptionExpansion
 }
 
 // virtualHostOptions implements VirtualHostOptionInterface
 type virtualHostOptions struct {
-	client rest.Interface
-	ns     string
+	*gentype.ClientWithList[*v1.VirtualHostOption, *v1.VirtualHostOptionList]
 }
 
 // newVirtualHostOptions returns a VirtualHostOptions
 func newVirtualHostOptions(c *GatewayV1Client, namespace string) *virtualHostOptions {
 	return &virtualHostOptions{
-		client: c.RESTClient(),
-		ns:     namespace,
+		gentype.NewClientWithList[*v1.VirtualHostOption, *v1.VirtualHostOptionList](
+			"virtualhostoptions",
+			c.RESTClient(),
+			scheme.ParameterCodec,
+			namespace,
+			func() *v1.VirtualHostOption { return &v1.VirtualHostOption{} },
+			func() *v1.VirtualHostOptionList { return &v1.VirtualHostOptionList{} }),
 	}
-}
-
-// Get takes name of the virtualHostOption, and returns the corresponding virtualHostOption object, and an error if there is any.
-func (c *virtualHostOptions) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.VirtualHostOption, err error) {
-	result = &v1.VirtualHostOption{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("virtualhostoptions").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of VirtualHostOptions that match those selectors.
-func (c *virtualHostOptions) List(ctx context.Context, opts metav1.ListOptions) (result *v1.VirtualHostOptionList, err error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	result = &v1.VirtualHostOptionList{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("virtualhostoptions").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested virtualHostOptions.
-func (c *virtualHostOptions) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	opts.Watch = true
-	return c.client.Get().
-		Namespace(c.ns).
-		Resource("virtualhostoptions").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Watch(ctx)
-}
-
-// Create takes the representation of a virtualHostOption and creates it.  Returns the server's representation of the virtualHostOption, and an error, if there is any.
-func (c *virtualHostOptions) Create(ctx context.Context, virtualHostOption *v1.VirtualHostOption, opts metav1.CreateOptions) (result *v1.VirtualHostOption, err error) {
-	result = &v1.VirtualHostOption{}
-	err = c.client.Post().
-		Namespace(c.ns).
-		Resource("virtualhostoptions").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(virtualHostOption).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Update takes the representation of a virtualHostOption and updates it. Returns the server's representation of the virtualHostOption, and an error, if there is any.
-func (c *virtualHostOptions) Update(ctx context.Context, virtualHostOption *v1.VirtualHostOption, opts metav1.UpdateOptions) (result *v1.VirtualHostOption, err error) {
-	result = &v1.VirtualHostOption{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("virtualhostoptions").
-		Name(virtualHostOption.Name).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(virtualHostOption).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *virtualHostOptions) UpdateStatus(ctx context.Context, virtualHostOption *v1.VirtualHostOption, opts metav1.UpdateOptions) (result *v1.VirtualHostOption, err error) {
-	result = &v1.VirtualHostOption{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("virtualhostoptions").
-		Name(virtualHostOption.Name).
-		SubResource("status").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(virtualHostOption).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Delete takes name of the virtualHostOption and deletes it. Returns an error if one occurs.
-func (c *virtualHostOptions) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("virtualhostoptions").
-		Name(name).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *virtualHostOptions) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
-	var timeout time.Duration
-	if listOpts.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
-	}
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("virtualhostoptions").
-		VersionedParams(&listOpts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// Patch applies the patch and returns the patched virtualHostOption.
-func (c *virtualHostOptions) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.VirtualHostOption, err error) {
-	result = &v1.VirtualHostOption{}
-	err = c.client.Patch(pt).
-		Namespace(c.ns).
-		Resource("virtualhostoptions").
-		Name(name).
-		SubResource(subresources...).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Apply takes the given apply declarative configuration, applies it and returns the applied virtualHostOption.
-func (c *virtualHostOptions) Apply(ctx context.Context, virtualHostOption *gatewaysoloiov1.VirtualHostOptionApplyConfiguration, opts metav1.ApplyOptions) (result *v1.VirtualHostOption, err error) {
-	if virtualHostOption == nil {
-		return nil, fmt.Errorf("virtualHostOption provided to Apply must not be nil")
-	}
-	patchOpts := opts.ToPatchOptions()
-	data, err := json.Marshal(virtualHostOption)
-	if err != nil {
-		return nil, err
-	}
-	name := virtualHostOption.Name
-	if name == nil {
-		return nil, fmt.Errorf("virtualHostOption.Name must be provided to Apply")
-	}
-	result = &v1.VirtualHostOption{}
-	err = c.client.Patch(types.ApplyPatchType).
-		Namespace(c.ns).
-		Resource("virtualhostoptions").
-		Name(*name).
-		VersionedParams(&patchOpts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// ApplyStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
-func (c *virtualHostOptions) ApplyStatus(ctx context.Context, virtualHostOption *gatewaysoloiov1.VirtualHostOptionApplyConfiguration, opts metav1.ApplyOptions) (result *v1.VirtualHostOption, err error) {
-	if virtualHostOption == nil {
-		return nil, fmt.Errorf("virtualHostOption provided to Apply must not be nil")
-	}
-	patchOpts := opts.ToPatchOptions()
-	data, err := json.Marshal(virtualHostOption)
-	if err != nil {
-		return nil, err
-	}
-
-	name := virtualHostOption.Name
-	if name == nil {
-		return nil, fmt.Errorf("virtualHostOption.Name must be provided to Apply")
-	}
-
-	result = &v1.VirtualHostOption{}
-	err = c.client.Patch(types.ApplyPatchType).
-		Namespace(c.ns).
-		Resource("virtualhostoptions").
-		Name(*name).
-		SubResource("status").
-		VersionedParams(&patchOpts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
 }

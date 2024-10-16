@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/docs/issues/489
+    resolvesIssue: false
+    description: >-
+      Introduce a standardized set of values to pass into our e2e tests as a way of codifying the recommendations.

@@ -1432,6 +1432,12 @@ spec:
                                 nullable: true
                                 type: integer
                             type: object
+                          retriableStatusCodes:
+                            items:
+                              maximum: 4294967295
+                              minimum: 0
+                              type: integer
+                            type: array
                           retryBackOff:
                             properties:
                               baseInterval:
@@ -3158,10 +3164,6 @@ spec:
                           properties:
                             ai:
                               properties:
-                                backupModels:
-                                  items:
-                                    type: string
-                                  type: array
                                 defaults:
                                   items:
                                     properties:
@@ -3198,24 +3200,80 @@ spec:
                                   properties:
                                     request:
                                       properties:
-                                        customResponseMessage:
-                                          type: string
-                                        matches:
-                                          items:
-                                            type: string
-                                          type: array
+                                        customResponse:
+                                          properties:
+                                            message:
+                                              type: string
+                                            statusCode:
+                                              maximum: 4294967295
+                                              minimum: 0
+                                              type: integer
+                                          type: object
+                                        regex:
+                                          properties:
+                                            builtins:
+                                              items:
+                                                type: string
+                                                x-kubernetes-int-or-string: true
+                                              type: array
+                                            matches:
+                                              items:
+                                                type: string
+                                              type: array
+                                          type: object
+                                        webhook:
+                                          properties:
+                                            headers:
+                                              items:
+                                                properties:
+                                                  key:
+                                                    type: string
+                                                  matchType:
+                                                    type: string
+                                                    x-kubernetes-int-or-string: true
+                                                type: object
+                                              type: array
+                                            host:
+                                              type: string
+                                            port:
+                                              maximum: 4294967295
+                                              minimum: 0
+                                              type: integer
+                                          type: object
                                       type: object
                                     response:
                                       properties:
-                                        builtins:
-                                          items:
-                                            type: string
-                                            x-kubernetes-int-or-string: true
-                                          type: array
-                                        matches:
-                                          items:
-                                            type: string
-                                          type: array
+                                        regex:
+                                          properties:
+                                            builtins:
+                                              items:
+                                                type: string
+                                                x-kubernetes-int-or-string: true
+                                              type: array
+                                            matches:
+                                              items:
+                                                type: string
+                                              type: array
+                                          type: object
+                                        webhook:
+                                          properties:
+                                            headers:
+                                              items:
+                                                properties:
+                                                  key:
+                                                    type: string
+                                                  matchType:
+                                                    type: string
+                                                    x-kubernetes-int-or-string: true
+                                                type: object
+                                              type: array
+                                            host:
+                                              type: string
+                                            port:
+                                              maximum: 4294967295
+                                              minimum: 0
+                                              type: integer
+                                          type: object
                                       type: object
                                   type: object
                                 rag:
@@ -3272,6 +3330,9 @@ spec:
                                     promptTemplate:
                                       type: string
                                   type: object
+                                routeType:
+                                  type: string
+                                  x-kubernetes-int-or-string: true
                                 semanticCache:
                                   properties:
                                     datastore:
@@ -3282,6 +3343,21 @@ spec:
                                               type: string
                                             scoreThreshold:
                                               type: number
+                                          type: object
+                                        weaviate:
+                                          properties:
+                                            grpcPort:
+                                              maximum: 4294967295
+                                              minimum: 0
+                                              type: integer
+                                            host:
+                                              type: string
+                                            httpPort:
+                                              maximum: 4294967295
+                                              minimum: 0
+                                              type: integer
+                                            insecure:
+                                              type: boolean
                                           type: object
                                       type: object
                                     embedding:
@@ -4681,6 +4757,12 @@ spec:
                                       nullable: true
                                       type: integer
                                   type: object
+                                retriableStatusCodes:
+                                  items:
+                                    maximum: 4294967295
+                                    minimum: 0
+                                    type: integer
+                                  type: array
                                 retryBackOff:
                                   properties:
                                     baseInterval:

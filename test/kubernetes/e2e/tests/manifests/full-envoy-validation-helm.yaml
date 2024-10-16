@@ -1,0 +1,7 @@
+gateway:
+  validation:
+    failurePolicy: Fail # For "strict" validation mode, fail the validation if webhook server is not available
+    allowWarnings: false # For "strict" validation mode, webhook will also reject warnings
+    # transformation validation is disabled because full envoy validation is enabled.
+    disableTransformationValidation: true
+    fullEnvoyValidation: true

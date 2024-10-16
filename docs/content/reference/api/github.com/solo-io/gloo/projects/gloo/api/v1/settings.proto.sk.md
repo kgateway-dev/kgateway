@@ -35,6 +35,8 @@ weight: 5
 - [ObservabilityOptions](#observabilityoptions)
 - [GrafanaIntegration](#grafanaintegration)
 - [MetricLabels](#metriclabels)
+- [LabelSelector](#labelselector)
+- [LabelSelectorRequirement](#labelselectorrequirement)
 - [UpstreamOptions](#upstreamoptions)
 - [GlooOptions](#gloooptions)
 - [AWSOptions](#awsoptions)
@@ -100,13 +102,14 @@ Represents global settings for all the Gloo components.
 "consoleOptions": .gloo.solo.io.ConsoleOptions
 "graphqlOptions": .gloo.solo.io.GraphqlOptions
 "extProc": .extproc.options.gloo.solo.io.Settings
+"watchNamespaceSelectors": []gloo.solo.io.LabelSelector
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `discoveryNamespace` | `string` | This is the namespace to which Gloo controllers will write their own resources, e.g. discovered Upstreams or default Gateways. If empty, this will default to "gloo-system". |
-| `watchNamespaces` | `[]string` | Use this setting to restrict the namespaces that Gloo controllers take into consideration when watching for resources.In a usual production scenario, RBAC policies will limit the namespaces that Gloo has access to. If `watch_namespaces` contains namespaces outside of this whitelist, Gloo will fail to start. If not set, this defaults to all available namespaces. Please note that, the `discovery_namespace` will always be included in this list. |
+| `watchNamespaces` | `[]string` | Use this setting to restrict the namespaces that Gloo controllers take into consideration when watching for resources.In a usual production scenario, RBAC policies will limit the namespaces that Gloo has access to. If `watch_namespaces` contains namespaces outside of this whitelist, Gloo will fail to start. If not set, this defaults to all available namespaces. Please note that, the `discovery_namespace` will always be included in this list. If this is specified, it overwrites the `watch_namespace_selectors` specified. |
 | `kubernetesConfigSource` | [.gloo.solo.io.Settings.KubernetesCrds](../settings.proto.sk/#kubernetescrds) |  Only one of `kubernetesConfigSource`, `directoryConfigSource`, or `consulKvSource` can be set. |
 | `directoryConfigSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directoryConfigSource`, `kubernetesConfigSource`, or `consulKvSource` can be set. |
 | `consulKvSource` | [.gloo.solo.io.Settings.ConsulKv](../settings.proto.sk/#consulkv) |  Only one of `consulKvSource`, `kubernetesConfigSource`, or `directoryConfigSource` can be set. |
@@ -141,6 +144,7 @@ Represents global settings for all the Gloo components.
 | `consoleOptions` | [.gloo.solo.io.ConsoleOptions](../settings.proto.sk/#consoleoptions) | Enterprise-only: Settings for the Gloo Edge Enterprise Console (UI). |
 | `graphqlOptions` | [.gloo.solo.io.GraphqlOptions](../settings.proto.sk/#graphqloptions) | Enterprise-only: GraphQL settings. |
 | `extProc` | [.extproc.options.gloo.solo.io.Settings](../enterprise/options/extproc/extproc.proto.sk/#settings) | Enterprise-only: External Processing filter settings. These settings are used as defaults globally, and can be overridden by HttpListenerOptions, VirtualHostOptions, or RouteOptions. |
+| `watchNamespaceSelectors` | [[]gloo.solo.io.LabelSelector](../settings.proto.sk/#labelselector) | A list of Kubernetes selectors that specify the set of namespaces to restrict the namespaces that Gloo controllers take into consideration when watching for resources. Elements in the list are disjunctive (OR semantics), i.e. a namespace will be included if it matches any selector. The following example selects any namespace that matches either below: 1. The namespace has both of these labels: `env: prod` and `region: us-east1` 2. The namespace has label `app` equal to `cassandra` or `spark`. ```yaml watchNamespaceSelectors: - matchLabels: env: prod region: us-east1 - matchExpressions: - key: app operator: In values: - cassandra - spark ``` However, if the match conditions are part of the same same list item, the namespace must match all conditions. ```yaml watchNamespaceSelectors: - matchLabels: env: prod region: us-east1 matchExpressions: - key: app operator: In values: - cassandra - spark ``` Refer to the [Kubernetes selector docs](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors) for additional detail on selector semantics. |
 
 
 
@@ -665,6 +669,54 @@ Provides settings related to the observability pod's interactions with grafana
 
 
 ---
+### LabelSelector
+
+ 
+A label selector requirement is a selector that contains values, a key, and an operator that
+relates the key and values.
+Copied from Kubernetes to avoid expensive dependency on Kubernetes libraries.
+Ref: https://github.com/kubernetes/apimachinery/blob/f7615f37d717297aca51101478406af712553c5b/pkg/apis/meta/v1/generated.proto#L442-L453
+
+```yaml
+"matchLabels": map<string, string>
+"matchExpressions": []gloo.solo.io.LabelSelectorRequirement
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `matchLabels` | `map<string, string>` | matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed. +optional. |
+| `matchExpressions` | [[]gloo.solo.io.LabelSelectorRequirement](../settings.proto.sk/#labelselectorrequirement) | matchExpressions is a list of label selector requirements. The requirements are ANDed. +optional. |
+
+
+
+
+---
+### LabelSelectorRequirement
+
+ 
+A label selector requirement is a selector that contains values, a key, and an operator that
+relates the key and values.
+Copied from Kubernetes to avoid expensive dependency on Kubernetes libraries.
+Ref: https://github.com/kubernetes/apimachinery/blob/f7615f37d717297aca51101478406af712553c5b/pkg/apis/meta/v1/generated.proto#L455-L472
+
+```yaml
+"key": string
+"operator": string
+"values": []string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `key` | `string` | key is the label key that the selector applies to. +patchMergeKey=key +patchStrategy=merge. |
+| `operator` | `string` | operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist. |
+| `values` | `[]string` | values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch. +optional. |
+
+
+
+
+---
 ### UpstreamOptions
 
  
@@ -879,6 +931,7 @@ options for configuring admission control / validation
 "validationServerGrpcMaxSizeBytes": .google.protobuf.Int32Value
 "serverEnabled": .google.protobuf.BoolValue
 "warnMissingTlsSecret": .google.protobuf.BoolValue
+"fullEnvoyValidation": .google.protobuf.BoolValue
 
 ```
 
@@ -895,6 +948,7 @@ options for configuring admission control / validation
 | `validationServerGrpcMaxSizeBytes` | [.google.protobuf.Int32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/int-32-value) | By default, gRPC validation messages between gateway and gloo pods have a max message size of 100 MB. Setting this value sets the gRPC max message size in bytes for the gloo validation server. This should only be changed if necessary. If not included, the gRPC max message size will be the default of 100 MB. |
 | `serverEnabled` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | By providing the validation field (parent of this object) the user is implicitly opting into validation. This field allows the user to opt out of the validation server, while still configuring pre-existing fields such as `warn_route_short_circuiting` and `disable_transformation_validation`. If not included, the validation server will be enabled. |
 | `warnMissingTlsSecret` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Allows configuring validation to report a missing TLS secret referenced by a SslConfig or UpstreamSslConfig as a warning instead of an error. This will allow for eventually consistent workloads, but will also permit the accidental deletion of secrets being referenced, which would cause disruption in traffic. |
+| `fullEnvoyValidation` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Configures the Gloo translation loop to send the final product of translation through Envoy validation mode. This has an negative impact on the total translation throughput, but it helps ensure the configuration will not be nacked when served to Envoy. This feature is not yet implemented. |
 
 
 

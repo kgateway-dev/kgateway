@@ -231,7 +231,7 @@ var _ = Describe("plugin", func() {
 		p.Init(plugins.InitParams{Ctx: context.TODO(), Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}}}})
 
 		out := &envoy_config_route.WeightedCluster_ClusterWeight{}
-		err := p.ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
+		err := p.ProcessWeightedDestination(plugins.RouteActionParams{}, &v1.WeightedDestination{
 			Options: &v1.WeightedDestinationOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
 					FilterEnabled:     &apiFilter,

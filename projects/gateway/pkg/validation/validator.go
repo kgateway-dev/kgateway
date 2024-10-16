@@ -488,7 +488,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 	// verify the mutation against a snapshot clone first, only apply the change to the actual snapshot if this passes
 	if opts.Delete {
-		if err := snapshotClone.RemoveFromResourceList(opts.Resource); err != nil {
+		if err := gloovalidation.HandleResourceDeletion(snapshotClone, opts.Resource); err != nil {
 			return nil, err
 		}
 	} else {
@@ -538,8 +538,8 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	if !opts.DryRun {
 		// update internal snapshot to handle race where a lot of resources may be applied at once, before syncer updates
 		if opts.Delete {
-			if err = v.latestSnapshot.RemoveFromResourceList(opts.Resource); err != nil {
-				return reports, err
+			if err := gloovalidation.HandleResourceDeletion(v.latestSnapshot, opts.Resource); err != nil {
+				return nil, err
 			}
 		} else {
 			if err = v.latestSnapshot.UpsertToResourceList(opts.Resource); err != nil {

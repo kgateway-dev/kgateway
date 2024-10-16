@@ -7,6 +7,7 @@ import (
 	v1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	graphqlv1beta1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients/vault"
 
 	"net"
 	"net/http"
@@ -55,7 +56,6 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	bootstrap_clients "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 	"google.golang.org/grpc"
 
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -298,7 +298,7 @@ func constructTestOpts(ctx context.Context, runOptions *RunOptions, settings *gl
 	var kubeCoreCache corecache.KubeCoreCache
 	if runOptions.KubeClient != nil {
 		var err error
-		kubeCoreCache, err = cache.NewKubeCoreCacheWithOptions(ctx, runOptions.KubeClient, time.Hour, settings.GetWatchNamespaces())
+		kubeCoreCache, err = cache.NewKubeCoreCacheWithOptions(ctx, runOptions.KubeClient, time.Hour, settingsutil.GetNamespacesToWatch(settings))
 		Expect(err).NotTo(HaveOccurred())
 	}
 	var validationOpts *translator.ValidationOpts
@@ -328,9 +328,9 @@ func constructTestOpts(ctx context.Context, runOptions *RunOptions, settings *gl
 		// The test author has configured the secret source to be Vault, instead of an in memory cache
 		// As a result, we need to construct a client to communicate with that vault instance
 		vaultSecretSource := settings.GetVaultSecretSource()
-		vaultClient, err := bootstrap_clients.VaultClientForSettings(ctx, vaultSecretSource)
+		vaultClient, err := vault.VaultClientForSettings(ctx, vaultSecretSource)
 		Expect(err).NotTo(HaveOccurred())
-		secretFactory = bootstrap_clients.NewVaultSecretClientFactory(ctx, bootstrap_clients.NoopVaultClientInitFunc(vaultClient), vaultSecretSource.GetPathPrefix(), vaultSecretSource.GetRootKey())
+		secretFactory = vault.NewVaultSecretClientFactory(ctx, vault.NoopVaultClientInitFunc(vaultClient), vaultSecretSource.GetPathPrefix(), vaultSecretSource.GetRootKey())
 	}
 
 	return bootstrap.Opts{
@@ -353,7 +353,7 @@ func constructTestOpts(ctx context.Context, runOptions *RunOptions, settings *gl
 		RouteOptions:            f,
 		VirtualHostOptions:      f,
 		KubeServiceClient:       newServiceClient(ctx, f, runOptions),
-		WatchNamespaces:         settings.GetWatchNamespaces(),
+		WatchNamespaces:         settingsutil.GetNamespacesToWatch(settings),
 		WatchOpts: clients.WatchOpts{
 			Ctx:         ctx,
 			RefreshRate: time.Second / 10,

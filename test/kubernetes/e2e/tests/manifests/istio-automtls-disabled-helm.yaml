@@ -1,0 +1,6 @@
+global:
+  # Set up gloo with istio integration enabled
+  istioIntegration:
+    enabled: true
+    enableAutoMtls: false # Automtls is disabled in this test setup
+

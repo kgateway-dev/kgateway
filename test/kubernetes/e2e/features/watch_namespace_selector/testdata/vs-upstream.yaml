@@ -1,0 +1,14 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: vs-upstream
+spec:
+  virtualHost:
+    routes:
+      - matchers:
+         - prefix: /
+        routeAction:
+          single:
+            upstream:
+              name: postman-echo
+              namespace: random

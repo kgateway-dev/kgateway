@@ -6,8 +6,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+	"github.com/solo-io/gloo/pkg/utils/namespaces"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -28,7 +28,7 @@ var (
 // GetControlPlaneXdsPort gets the xDS port from the gloo Service.
 func GetControlPlaneXdsPort(ctx context.Context, svcClient skkube.ServiceClient) (int32, error) {
 	// When this code is invoked from within the running Pod, this will contain the namespace where Gloo is running
-	svcNamespace := utils.GetPodNamespace()
+	svcNamespace := namespaces.GetPodNamespace()
 	return GetNamespacedControlPlaneXdsPort(ctx, svcNamespace, svcClient)
 }
 
@@ -55,6 +55,6 @@ func GetNamespacedControlPlaneXdsPort(ctx context.Context, svcNamespace string, 
 func GetControlPlaneXdsHost() string {
 	return kubeutils.ServiceFQDN(metav1.ObjectMeta{
 		Name:      kubeutils.GlooServiceName,
-		Namespace: utils.GetPodNamespace(),
+		Namespace: namespaces.GetPodNamespace(),
 	})
 }

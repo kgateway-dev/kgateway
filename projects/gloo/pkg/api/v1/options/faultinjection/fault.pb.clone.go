@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
+	google_golang_org_protobuf_types_known_durationpb "google.golang.org/protobuf/types/known/durationpb"
 )
 
 // ensure the imports are used
@@ -53,9 +53,9 @@ func (m *RouteDelay) Clone() proto.Message {
 	target.Percentage = m.GetPercentage()
 
 	if h, ok := interface{}(m.GetFixedDelay()).(clone.Cloner); ok {
-		target.FixedDelay = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.FixedDelay = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.FixedDelay = proto.Clone(m.GetFixedDelay()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.FixedDelay = proto.Clone(m.GetFixedDelay()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	return target

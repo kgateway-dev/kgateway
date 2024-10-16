@@ -13,9 +13,9 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_any "github.com/golang/protobuf/ptypes/any"
-
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	google_golang_org_protobuf_types_known_anypb "google.golang.org/protobuf/types/known/anypb"
 )
 
 // ensure the imports are used
@@ -38,15 +38,15 @@ func (m *KubeService) Clone() proto.Message {
 	target = &KubeService{}
 
 	if h, ok := interface{}(m.GetKubeServiceSpec()).(clone.Cloner); ok {
-		target.KubeServiceSpec = h.Clone().(*github_com_golang_protobuf_ptypes_any.Any)
+		target.KubeServiceSpec = h.Clone().(*google_golang_org_protobuf_types_known_anypb.Any)
 	} else {
-		target.KubeServiceSpec = proto.Clone(m.GetKubeServiceSpec()).(*github_com_golang_protobuf_ptypes_any.Any)
+		target.KubeServiceSpec = proto.Clone(m.GetKubeServiceSpec()).(*google_golang_org_protobuf_types_known_anypb.Any)
 	}
 
 	if h, ok := interface{}(m.GetKubeServiceStatus()).(clone.Cloner); ok {
-		target.KubeServiceStatus = h.Clone().(*github_com_golang_protobuf_ptypes_any.Any)
+		target.KubeServiceStatus = h.Clone().(*google_golang_org_protobuf_types_known_anypb.Any)
 	} else {
-		target.KubeServiceStatus = proto.Clone(m.GetKubeServiceStatus()).(*github_com_golang_protobuf_ptypes_any.Any)
+		target.KubeServiceStatus = proto.Clone(m.GetKubeServiceStatus()).(*google_golang_org_protobuf_types_known_anypb.Any)
 	}
 
 	if h, ok := interface{}(m.GetMetadata()).(clone.Cloner); ok {

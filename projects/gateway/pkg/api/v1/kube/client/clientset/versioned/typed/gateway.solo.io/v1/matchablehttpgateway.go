@@ -20,17 +20,13 @@ package v1
 
 import (
 	"context"
-	json "encoding/json"
-	"fmt"
-	"time"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	gatewaysoloiov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/applyconfiguration/gateway.solo.io/v1"
 	scheme "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
-	rest "k8s.io/client-go/rest"
+	gentype "k8s.io/client-go/gentype"
 )
 
 // MatchableHttpGatewaysGetter has a method to return a MatchableHttpGatewayInterface.
@@ -43,6 +39,7 @@ type MatchableHttpGatewaysGetter interface {
 type MatchableHttpGatewayInterface interface {
 	Create(ctx context.Context, matchableHttpGateway *v1.MatchableHttpGateway, opts metav1.CreateOptions) (*v1.MatchableHttpGateway, error)
 	Update(ctx context.Context, matchableHttpGateway *v1.MatchableHttpGateway, opts metav1.UpdateOptions) (*v1.MatchableHttpGateway, error)
+	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
 	UpdateStatus(ctx context.Context, matchableHttpGateway *v1.MatchableHttpGateway, opts metav1.UpdateOptions) (*v1.MatchableHttpGateway, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error
@@ -50,207 +47,23 @@ type MatchableHttpGatewayInterface interface {
 	List(ctx context.Context, opts metav1.ListOptions) (*v1.MatchableHttpGatewayList, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.MatchableHttpGateway, err error)
-	Apply(ctx context.Context, matchableHttpGateway *gatewaysoloiov1.MatchableHttpGatewayApplyConfiguration, opts metav1.ApplyOptions) (result *v1.MatchableHttpGateway, err error)
-	ApplyStatus(ctx context.Context, matchableHttpGateway *gatewaysoloiov1.MatchableHttpGatewayApplyConfiguration, opts metav1.ApplyOptions) (result *v1.MatchableHttpGateway, err error)
 	MatchableHttpGatewayExpansion
 }
 
 // matchableHttpGateways implements MatchableHttpGatewayInterface
 type matchableHttpGateways struct {
-	client rest.Interface
-	ns     string
+	*gentype.ClientWithList[*v1.MatchableHttpGateway, *v1.MatchableHttpGatewayList]
 }
 
 // newMatchableHttpGateways returns a MatchableHttpGateways
 func newMatchableHttpGateways(c *GatewayV1Client, namespace string) *matchableHttpGateways {
 	return &matchableHttpGateways{
-		client: c.RESTClient(),
-		ns:     namespace,
+		gentype.NewClientWithList[*v1.MatchableHttpGateway, *v1.MatchableHttpGatewayList](
+			"httpgateways",
+			c.RESTClient(),
+			scheme.ParameterCodec,
+			namespace,
+			func() *v1.MatchableHttpGateway { return &v1.MatchableHttpGateway{} },
+			func() *v1.MatchableHttpGatewayList { return &v1.MatchableHttpGatewayList{} }),
 	}
-}
-
-// Get takes name of the matchableHttpGateway, and returns the corresponding matchableHttpGateway object, and an error if there is any.
-func (c *matchableHttpGateways) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.MatchableHttpGateway, err error) {
-	result = &v1.MatchableHttpGateway{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("httpgateways").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of MatchableHttpGateways that match those selectors.
-func (c *matchableHttpGateways) List(ctx context.Context, opts metav1.ListOptions) (result *v1.MatchableHttpGatewayList, err error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	result = &v1.MatchableHttpGatewayList{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("httpgateways").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested matchableHttpGateways.
-func (c *matchableHttpGateways) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	opts.Watch = true
-	return c.client.Get().
-		Namespace(c.ns).
-		Resource("httpgateways").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Watch(ctx)
-}
-
-// Create takes the representation of a matchableHttpGateway and creates it.  Returns the server's representation of the matchableHttpGateway, and an error, if there is any.
-func (c *matchableHttpGateways) Create(ctx context.Context, matchableHttpGateway *v1.MatchableHttpGateway, opts metav1.CreateOptions) (result *v1.MatchableHttpGateway, err error) {
-	result = &v1.MatchableHttpGateway{}
-	err = c.client.Post().
-		Namespace(c.ns).
-		Resource("httpgateways").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(matchableHttpGateway).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Update takes the representation of a matchableHttpGateway and updates it. Returns the server's representation of the matchableHttpGateway, and an error, if there is any.
-func (c *matchableHttpGateways) Update(ctx context.Context, matchableHttpGateway *v1.MatchableHttpGateway, opts metav1.UpdateOptions) (result *v1.MatchableHttpGateway, err error) {
-	result = &v1.MatchableHttpGateway{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("httpgateways").
-		Name(matchableHttpGateway.Name).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(matchableHttpGateway).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *matchableHttpGateways) UpdateStatus(ctx context.Context, matchableHttpGateway *v1.MatchableHttpGateway, opts metav1.UpdateOptions) (result *v1.MatchableHttpGateway, err error) {
-	result = &v1.MatchableHttpGateway{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("httpgateways").
-		Name(matchableHttpGateway.Name).
-		SubResource("status").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(matchableHttpGateway).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Delete takes name of the matchableHttpGateway and deletes it. Returns an error if one occurs.
-func (c *matchableHttpGateways) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("httpgateways").
-		Name(name).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *matchableHttpGateways) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
-	var timeout time.Duration
-	if listOpts.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
-	}
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("httpgateways").
-		VersionedParams(&listOpts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// Patch applies the patch and returns the patched matchableHttpGateway.
-func (c *matchableHttpGateways) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.MatchableHttpGateway, err error) {
-	result = &v1.MatchableHttpGateway{}
-	err = c.client.Patch(pt).
-		Namespace(c.ns).
-		Resource("httpgateways").
-		Name(name).
-		SubResource(subresources...).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Apply takes the given apply declarative configuration, applies it and returns the applied matchableHttpGateway.
-func (c *matchableHttpGateways) Apply(ctx context.Context, matchableHttpGateway *gatewaysoloiov1.MatchableHttpGatewayApplyConfiguration, opts metav1.ApplyOptions) (result *v1.MatchableHttpGateway, err error) {
-	if matchableHttpGateway == nil {
-		return nil, fmt.Errorf("matchableHttpGateway provided to Apply must not be nil")
-	}
-	patchOpts := opts.ToPatchOptions()
-	data, err := json.Marshal(matchableHttpGateway)
-	if err != nil {
-		return nil, err
-	}
-	name := matchableHttpGateway.Name
-	if name == nil {
-		return nil, fmt.Errorf("matchableHttpGateway.Name must be provided to Apply")
-	}
-	result = &v1.MatchableHttpGateway{}
-	err = c.client.Patch(types.ApplyPatchType).
-		Namespace(c.ns).
-		Resource("httpgateways").
-		Name(*name).
-		VersionedParams(&patchOpts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// ApplyStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
-func (c *matchableHttpGateways) ApplyStatus(ctx context.Context, matchableHttpGateway *gatewaysoloiov1.MatchableHttpGatewayApplyConfiguration, opts metav1.ApplyOptions) (result *v1.MatchableHttpGateway, err error) {
-	if matchableHttpGateway == nil {
-		return nil, fmt.Errorf("matchableHttpGateway provided to Apply must not be nil")
-	}
-	patchOpts := opts.ToPatchOptions()
-	data, err := json.Marshal(matchableHttpGateway)
-	if err != nil {
-		return nil, err
-	}
-
-	name := matchableHttpGateway.Name
-	if name == nil {
-		return nil, fmt.Errorf("matchableHttpGateway.Name must be provided to Apply")
-	}
-
-	result = &v1.MatchableHttpGateway{}
-	err = c.client.Patch(types.ApplyPatchType).
-		Namespace(c.ns).
-		Resource("httpgateways").
-		Name(*name).
-		SubResource("status").
-		VersionedParams(&patchOpts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
 }

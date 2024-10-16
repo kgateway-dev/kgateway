@@ -2,10 +2,10 @@ package testutils
 
 import (
 	"encoding/json"
-	"os"
 	"path"
 
 	"github.com/solo-io/gloo/install/helm/gloo/generate"
+	"github.com/solo-io/gloo/pkg/utils/helmutils"
 	"helm.sh/helm/v3/pkg/strvals"
 	"knative.dev/pkg/test/helpers"
 	k8syamlutil "sigs.k8s.io/yaml"
@@ -54,8 +54,21 @@ func ValidateHelmValues(unstructuredHelmValues map[string]interface{}) error {
 // BuildHelmValues reads the base values.yaml file from a Helm chart and merges it with the provided values
 // each entry in valuesArgs should look like `path.to.helm.field=value`
 func BuildHelmValues(values HelmValues) (map[string]interface{}, error) {
+	// read the chart's base values file first
+	rootDir, err := helpers.GetRootDir()
+	if err != nil {
+		return nil, err
+	}
+	chartPath := path.Join(rootDir, "install", "helm", "gloo")
 
-	finalValues, err := readFinalValues()
+	return BuildHelmValuesForChart(chartPath, values)
+}
+
+// BuildHelmValuesForChart reads the base values.yaml file from a Helm chart and merges it with the provided values
+// each entry in valuesArgs should look like `path.to.helm.field=value`
+func BuildHelmValuesForChart(chartPath string, values HelmValues) (map[string]interface{}, error) {
+	// read the chart's base values file first
+	finalValues, err := helmutils.UnmarshalValuesFile(path.Join(chartPath, "values.yaml"))
 	if err != nil {
 		return nil, err
 	}
@@ -70,62 +83,14 @@ func BuildHelmValues(values HelmValues) (map[string]interface{}, error) {
 	if values.ValuesFile != "" {
 		// these lines ripped out of Helm internals
 		// https://github.com/helm/helm/blob/release-3.0/pkg/cli/values/options.go
-		mapFromFile, err := readValuesFile(values.ValuesFile)
+		mapFromFile, err := helmutils.UnmarshalValuesFile(values.ValuesFile)
 		if err != nil {
 			return nil, err
 		}
 
 		// Merge with the previous map
-		finalValues = mergeMaps(finalValues, mapFromFile)
+		finalValues = helmutils.MergeMaps(finalValues, mapFromFile)
 	}
 
 	return finalValues, nil
-}
-
-func readFinalValues() (map[string]interface{}, error) {
-	// read the chart's base values file first
-	rootDir, err := helpers.GetRootDir()
-	if err != nil {
-		return nil, err
-	}
-	filePath := path.Join(rootDir, "install", "helm", "gloo", "values.yaml")
-	return readValuesFile(filePath)
-}
-
-func readValuesFile(filePath string) (map[string]interface{}, error) {
-	mapFromFile := map[string]interface{}{}
-
-	bytes, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, err
-	}
-
-	// NOTE: This is not the default golang yaml.Unmarshal, because that implementation
-	// does not unmarshal into a map[string]interface{}; it unmarshals the file into a map[interface{}]interface{}
-	// https://github.com/go-yaml/yaml/issues/139
-	if err := k8syamlutil.Unmarshal(bytes, &mapFromFile); err != nil {
-		return nil, err
-	}
-
-	return mapFromFile, nil
-}
-
-// mergeMaps comes from Helm internals: https://github.com/helm/helm/blob/release-3.0/pkg/cli/values/options.go#L88
-func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
-	out := make(map[string]interface{}, len(a))
-	for k, v := range a {
-		out[k] = v
-	}
-	for k, v := range b {
-		if v, ok := v.(map[string]interface{}); ok {
-			if bv, ok := out[k]; ok {
-				if bv, ok := bv.(map[string]interface{}); ok {
-					out[k] = mergeMaps(bv, v)
-					continue
-				}
-			}
-		}
-		out[k] = v
-	}
-	return out
 }

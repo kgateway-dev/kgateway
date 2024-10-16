@@ -87,16 +87,33 @@ func (el *edsEventLoop) Run(namespaces []string, opts clients.WatchOpts) (<-chan
 	go errutils.AggregateErrs(opts.Ctx, errs, emitterErrs, "v1.emitter errors")
 	go func() {
 		var channelClosed bool
+
 		// create a new context for each loop, cancel it before each loop
 		var cancel context.CancelFunc = func() {}
+
 		// use closure to allow cancel function to be updated as context changes
 		defer func() { cancel() }()
+
+		// cache the previous snapshot for comparison
+		var previousSnapshot *EdsSnapshot
+
 		for {
 			select {
 			case snapshot, ok := <-watch:
 				if !ok {
 					return
 				}
+
+				if syncDecider, isDecider := el.syncer.(EdsSyncDecider); isDecider {
+					if shouldSync := syncDecider.ShouldSync(previousSnapshot, snapshot); !shouldSync {
+						continue // skip syncing this syncer
+					}
+				} else if syncDeciderWithContext, isDecider := el.syncer.(EdsSyncDeciderWithContext); isDecider {
+					if shouldSync := syncDeciderWithContext.ShouldSync(opts.Ctx, previousSnapshot, snapshot); !shouldSync {
+						continue // skip syncing this syncer
+					}
+				}
+
 				// cancel any open watches from previous loop
 				cancel()
 
@@ -124,6 +141,9 @@ func (el *edsEventLoop) Run(namespaces []string, opts clients.WatchOpts) (<-chan
 					channelClosed = true
 					close(el.ready)
 				}
+
+				previousSnapshot = snapshot
+
 			case <-opts.Ctx.Done():
 				return
 			}

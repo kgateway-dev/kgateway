@@ -16,27 +16,26 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
+	values "github.com/solo-io/gloo/install/helm/gloo/generate"
 	"github.com/solo-io/gloo/install/test/securitycontext"
+	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/gloo/test/gomega/matchers"
 	glootestutils "github.com/solo-io/gloo/test/testutils"
+	"github.com/solo-io/k8s-utils/installutils/kuberesource"
+	. "github.com/solo-io/k8s-utils/manifesttestutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/pointer"
-
-	values "github.com/solo-io/gloo/install/helm/gloo/generate"
-	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/test/gomega/matchers"
-	"github.com/solo-io/k8s-utils/installutils/kuberesource"
-	. "github.com/solo-io/k8s-utils/manifesttestutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 )
 
 func GetPodNamespaceStats() corev1.EnvVar {
@@ -2936,7 +2935,11 @@ spec:
 								Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
 								Expect(structuredDeployment.Spec.Template.Spec.Containers).To(HaveLen(1))
-								expectEnvVarExists(structuredDeployment.Spec.Template.Spec.Containers[0], "DISABLE_CORE_DUMPS", "true")
+								expectEnvVarExists(structuredDeployment.Spec.Template.Spec.Containers[0],
+									corev1.EnvVar{
+										Name:  "DISABLE_CORE_DUMPS",
+										Value: "true",
+									})
 							})
 						})
 
@@ -4171,6 +4174,7 @@ spec:
 								"gateway.validation.disableTransformationValidation=true",
 								"gateway.validation.warnRouteShortCircuiting=true",
 								"gateway.validation.warnMissingTlsSecret=false",
+								"gateway.validation.fullEnvoyValidation=true",
 							},
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
@@ -4370,6 +4374,7 @@ spec:
     enableGatewayController: true
     isolateVirtualHostsBySslConfig: false
     validation:
+      fullEnvoyValidation: false
       proxyValidationServerAddr: gloo:9988
       alwaysAccept: true
       allowWarnings: true
@@ -5017,7 +5022,7 @@ metadata:
 						testManifest.ExpectDeploymentAppsV1(glooDeployment)
 					})
 
-					It("has limits", func() {
+					It("can set both requests and limits", func() {
 						prepareMakefile(namespace, glootestutils.HelmValues{
 							ValuesArgs: []string{
 								"gloo.deployment.resources.limits.memory=2Mi",
@@ -5027,8 +5032,10 @@ metadata:
 							},
 						})
 
-						// Add the limits we are testing:
-						glooDeployment.Spec.Template.Spec.Containers[0].Resources = corev1.ResourceRequirements{
+						// make sure the resource requests and limits are set in the pod template
+						deploy := getStructuredDeployment(testManifest, kubeutils.GlooDeploymentName)
+						glooContainer := deploy.Spec.Template.Spec.Containers[0]
+						Expect(glooContainer.Resources).To(Equal(corev1.ResourceRequirements{
 							Limits: corev1.ResourceList{
 								corev1.ResourceMemory: resource.MustParse("2Mi"),
 								corev1.ResourceCPU:    resource.MustParse("3m"),
@@ -5037,8 +5044,48 @@ metadata:
 								corev1.ResourceMemory: resource.MustParse("4Mi"),
 								corev1.ResourceCPU:    resource.MustParse("5m"),
 							},
-						}
-						testManifest.ExpectDeploymentAppsV1(glooDeployment)
+						}))
+
+						// should set GOMEMLIMIT and GOMAXPROCS when resource limits are set
+						expectEnvVarExists(glooContainer, corev1.EnvVar{
+							Name: "GOMEMLIMIT",
+							ValueFrom: &corev1.EnvVarSource{
+								ResourceFieldRef: &corev1.ResourceFieldSelector{
+									Resource: string(corev1.ResourceLimitsMemory),
+									Divisor:  resource.MustParse("1"),
+								},
+							}})
+						expectEnvVarExists(glooContainer, corev1.EnvVar{
+							Name: "GOMAXPROCS",
+							ValueFrom: &corev1.EnvVarSource{
+								ResourceFieldRef: &corev1.ResourceFieldSelector{
+									Resource: string(corev1.ResourceLimitsCPU),
+									Divisor:  resource.MustParse("1"),
+								},
+							}})
+					})
+
+					It("can set requests only", func() {
+						prepareMakefile(namespace, glootestutils.HelmValues{
+							ValuesArgs: []string{
+								"gloo.deployment.resources.requests.memory=6Mi",
+								"gloo.deployment.resources.requests.cpu=7m",
+							},
+						})
+
+						// make sure the resource requests are set in the pod template
+						deploy := getStructuredDeployment(testManifest, kubeutils.GlooDeploymentName)
+						glooContainer := deploy.Spec.Template.Spec.Containers[0]
+						Expect(glooContainer.Resources).To(Equal(corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceMemory: resource.MustParse("6Mi"),
+								corev1.ResourceCPU:    resource.MustParse("7m"),
+							},
+						}))
+
+						// since no resource limits are set, GOMEMLIMIT and GOMAXPROCS should also not be set
+						expectEnvVarDoesNotExist(glooContainer, "GOMEMLIMIT")
+						expectEnvVarDoesNotExist(glooContainer, "GOMAXPROCS")
 					})
 
 					It("can overwrite the container image information", func() {
@@ -5262,7 +5309,7 @@ metadata:
 						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
 					})
 
-					It("has limits", func() {
+					It("can set both requests and limits", func() {
 						prepareMakefile(namespace, glootestutils.HelmValues{
 							ValuesArgs: []string{
 								"discovery.deployment.resources.limits.memory=2Mi",
@@ -5272,8 +5319,10 @@ metadata:
 							},
 						})
 
-						// Add the limits we are testing:
-						discoveryDeployment.Spec.Template.Spec.Containers[0].Resources = corev1.ResourceRequirements{
+						// make sure the resource requests and limits are set in the pod template
+						deploy := getStructuredDeployment(testManifest, kubeutils.DiscoveryDeploymentName)
+						discoveryContainer := deploy.Spec.Template.Spec.Containers[0]
+						Expect(discoveryContainer.Resources).To(Equal(corev1.ResourceRequirements{
 							Limits: corev1.ResourceList{
 								corev1.ResourceMemory: resource.MustParse("2Mi"),
 								corev1.ResourceCPU:    resource.MustParse("3m"),
@@ -5282,8 +5331,48 @@ metadata:
 								corev1.ResourceMemory: resource.MustParse("4Mi"),
 								corev1.ResourceCPU:    resource.MustParse("5m"),
 							},
-						}
-						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
+						}))
+
+						// should set GOMEMLIMIT and GOMAXPROCS when resource limits are set
+						expectEnvVarExists(discoveryContainer, corev1.EnvVar{
+							Name: "GOMEMLIMIT",
+							ValueFrom: &corev1.EnvVarSource{
+								ResourceFieldRef: &corev1.ResourceFieldSelector{
+									Resource: string(corev1.ResourceLimitsMemory),
+									Divisor:  resource.MustParse("1"),
+								},
+							}})
+						expectEnvVarExists(discoveryContainer, corev1.EnvVar{
+							Name: "GOMAXPROCS",
+							ValueFrom: &corev1.EnvVarSource{
+								ResourceFieldRef: &corev1.ResourceFieldSelector{
+									Resource: string(corev1.ResourceLimitsCPU),
+									Divisor:  resource.MustParse("1"),
+								},
+							}})
+					})
+
+					It("can set requests only", func() {
+						prepareMakefile(namespace, glootestutils.HelmValues{
+							ValuesArgs: []string{
+								"discovery.deployment.resources.requests.memory=6Mi",
+								"discovery.deployment.resources.requests.cpu=7m",
+							},
+						})
+
+						// make sure the resource requests are set in the pod template
+						deploy := getStructuredDeployment(testManifest, kubeutils.DiscoveryDeploymentName)
+						discoveryContainer := deploy.Spec.Template.Spec.Containers[0]
+						Expect(discoveryContainer.Resources).To(Equal(corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceMemory: resource.MustParse("6Mi"),
+								corev1.ResourceCPU:    resource.MustParse("7m"),
+							},
+						}))
+
+						// since no resource limits are set, GOMEMLIMIT and GOMAXPROCS should also not be set
+						expectEnvVarDoesNotExist(discoveryContainer, "GOMEMLIMIT")
+						expectEnvVarDoesNotExist(discoveryContainer, "GOMAXPROCS")
 					})
 
 					It("can overwrite the container image information", func() {

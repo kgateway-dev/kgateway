@@ -20,8 +20,8 @@ package v1
 
 import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -38,25 +38,17 @@ type VirtualHostOptionLister interface {
 
 // virtualHostOptionLister implements the VirtualHostOptionLister interface.
 type virtualHostOptionLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v1.VirtualHostOption]
 }
 
 // NewVirtualHostOptionLister returns a new VirtualHostOptionLister.
 func NewVirtualHostOptionLister(indexer cache.Indexer) VirtualHostOptionLister {
-	return &virtualHostOptionLister{indexer: indexer}
-}
-
-// List lists all VirtualHostOptions in the indexer.
-func (s *virtualHostOptionLister) List(selector labels.Selector) (ret []*v1.VirtualHostOption, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.VirtualHostOption))
-	})
-	return ret, err
+	return &virtualHostOptionLister{listers.New[*v1.VirtualHostOption](indexer, v1.Resource("virtualhostoption"))}
 }
 
 // VirtualHostOptions returns an object that can list and get VirtualHostOptions.
 func (s *virtualHostOptionLister) VirtualHostOptions(namespace string) VirtualHostOptionNamespaceLister {
-	return virtualHostOptionNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return virtualHostOptionNamespaceLister{listers.NewNamespaced[*v1.VirtualHostOption](s.ResourceIndexer, namespace)}
 }
 
 // VirtualHostOptionNamespaceLister helps list and get VirtualHostOptions.
@@ -74,26 +66,5 @@ type VirtualHostOptionNamespaceLister interface {
 // virtualHostOptionNamespaceLister implements the VirtualHostOptionNamespaceLister
 // interface.
 type virtualHostOptionNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all VirtualHostOptions in the indexer for a given namespace.
-func (s virtualHostOptionNamespaceLister) List(selector labels.Selector) (ret []*v1.VirtualHostOption, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.VirtualHostOption))
-	})
-	return ret, err
-}
-
-// Get retrieves the VirtualHostOption from the indexer for a given namespace and name.
-func (s virtualHostOptionNamespaceLister) Get(name string) (*v1.VirtualHostOption, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("virtualhostoption"), name)
-	}
-	return obj.(*v1.VirtualHostOption), nil
+	listers.ResourceIndexer[*v1.VirtualHostOption]
 }

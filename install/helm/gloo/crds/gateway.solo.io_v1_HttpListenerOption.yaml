@@ -979,11 +979,21 @@ spec:
                             properties:
                               clusterName:
                                 type: string
+                              collectorHostname:
+                                type: string
                               collectorUpstreamRef:
                                 properties:
                                   name:
                                     type: string
                                   namespace:
+                                    type: string
+                                type: object
+                              remoteConfig:
+                                properties:
+                                  disabled:
+                                    nullable: true
+                                    type: boolean
+                                  pollingInterval:
                                     type: string
                                 type: object
                               serviceName:

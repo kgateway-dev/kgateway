@@ -50,7 +50,7 @@ func NewSuiteRunner(ordered bool) SuiteRunner {
 	return new(suites)
 }
 
-func (o orderedSuites) Run(ctx context.Context, t *testing.T, testInstallation *TestInstallation) {
+func (o *orderedSuites) Run(ctx context.Context, t *testing.T, testInstallation *TestInstallation) {
 	for _, namedTest := range o.suites {
 		t.Run(namedTest.name, func(t *testing.T) {
 			suite.Run(t, namedTest.newSuite(ctx, testInstallation))
@@ -69,7 +69,7 @@ func (o *orderedSuites) Register(name string, newSuite NewSuiteFunc) {
 
 }
 
-func (u suites) Run(ctx context.Context, t *testing.T, testInstallation *TestInstallation) {
+func (u *suites) Run(ctx context.Context, t *testing.T, testInstallation *TestInstallation) {
 	// TODO(jbohanon) does some randomness need to be injected here to ensure they aren't run in the same order every time?
 	// from https://goplay.tools/snippet/A-qqQCWkFaZ it looks like maps are not stable, but tend toward stability.
 	for testName, newSuite := range u.suites {

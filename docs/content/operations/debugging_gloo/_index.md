@@ -89,7 +89,7 @@ Gloo Gateway is based on Envoy proxies. If requests are handled incorrectly, use
 
 4. Next, check the proxy configuration that is served by the Gloo Gateway xDS server. When you create Gloo Gateway resources, these resources are translated into Envoy configuration and sent to the xDS server. If Gloo Gateway resources are configured correctly, the configuration must be included in the proxy configuration that is served by the xDS server. 
    ```sh
-   glooctl proxy served config
+   glooctl proxy served-config
    ```
 
 5. If the Gloo Gateway xDS server has the correct configuration, you can then check what configuration is served by the gateway proxies in your cluster. 

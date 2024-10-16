@@ -21,10 +21,9 @@ package fake
 import (
 	"context"
 
-	gloosoloiov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -36,36 +35,38 @@ type FakeSecrets struct {
 	ns   string
 }
 
-var secretsResource = schema.GroupVersionResource{Group: "gloo.solo.io", Version: "v1", Resource: "secrets"}
+var secretsResource = v1.SchemeGroupVersion.WithResource("secrets")
 
-var secretsKind = schema.GroupVersionKind{Group: "gloo.solo.io", Version: "v1", Kind: "Secret"}
+var secretsKind = v1.SchemeGroupVersion.WithKind("Secret")
 
 // Get takes name of the secret, and returns the corresponding secret object, and an error if there is any.
-func (c *FakeSecrets) Get(ctx context.Context, name string, options v1.GetOptions) (result *gloosoloiov1.Secret, err error) {
+func (c *FakeSecrets) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.Secret, err error) {
+	emptyResult := &v1.Secret{}
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(secretsResource, c.ns, name), &gloosoloiov1.Secret{})
+		Invokes(testing.NewGetActionWithOptions(secretsResource, c.ns, name, options), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
-	return obj.(*gloosoloiov1.Secret), err
+	return obj.(*v1.Secret), err
 }
 
 // List takes label and field selectors, and returns the list of Secrets that match those selectors.
-func (c *FakeSecrets) List(ctx context.Context, opts v1.ListOptions) (result *gloosoloiov1.SecretList, err error) {
+func (c *FakeSecrets) List(ctx context.Context, opts metav1.ListOptions) (result *v1.SecretList, err error) {
+	emptyResult := &v1.SecretList{}
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(secretsResource, secretsKind, c.ns, opts), &gloosoloiov1.SecretList{})
+		Invokes(testing.NewListActionWithOptions(secretsResource, secretsKind, c.ns, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 
 	label, _, _ := testing.ExtractFromListOptions(opts)
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &gloosoloiov1.SecretList{ListMeta: obj.(*gloosoloiov1.SecretList).ListMeta}
-	for _, item := range obj.(*gloosoloiov1.SecretList).Items {
+	list := &v1.SecretList{ListMeta: obj.(*v1.SecretList).ListMeta}
+	for _, item := range obj.(*v1.SecretList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -74,57 +75,60 @@ func (c *FakeSecrets) List(ctx context.Context, opts v1.ListOptions) (result *gl
 }
 
 // Watch returns a watch.Interface that watches the requested secrets.
-func (c *FakeSecrets) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeSecrets) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(secretsResource, c.ns, opts))
+		InvokesWatch(testing.NewWatchActionWithOptions(secretsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a secret and creates it.  Returns the server's representation of the secret, and an error, if there is any.
-func (c *FakeSecrets) Create(ctx context.Context, secret *gloosoloiov1.Secret, opts v1.CreateOptions) (result *gloosoloiov1.Secret, err error) {
+func (c *FakeSecrets) Create(ctx context.Context, secret *v1.Secret, opts metav1.CreateOptions) (result *v1.Secret, err error) {
+	emptyResult := &v1.Secret{}
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(secretsResource, c.ns, secret), &gloosoloiov1.Secret{})
+		Invokes(testing.NewCreateActionWithOptions(secretsResource, c.ns, secret, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
-	return obj.(*gloosoloiov1.Secret), err
+	return obj.(*v1.Secret), err
 }
 
 // Update takes the representation of a secret and updates it. Returns the server's representation of the secret, and an error, if there is any.
-func (c *FakeSecrets) Update(ctx context.Context, secret *gloosoloiov1.Secret, opts v1.UpdateOptions) (result *gloosoloiov1.Secret, err error) {
+func (c *FakeSecrets) Update(ctx context.Context, secret *v1.Secret, opts metav1.UpdateOptions) (result *v1.Secret, err error) {
+	emptyResult := &v1.Secret{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(secretsResource, c.ns, secret), &gloosoloiov1.Secret{})
+		Invokes(testing.NewUpdateActionWithOptions(secretsResource, c.ns, secret, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
-	return obj.(*gloosoloiov1.Secret), err
+	return obj.(*v1.Secret), err
 }
 
 // Delete takes name of the secret and deletes it. Returns an error if one occurs.
-func (c *FakeSecrets) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
+func (c *FakeSecrets) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(secretsResource, c.ns, name), &gloosoloiov1.Secret{})
+		Invokes(testing.NewDeleteActionWithOptions(secretsResource, c.ns, name, opts), &v1.Secret{})
 
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeSecrets) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(secretsResource, c.ns, listOpts)
+func (c *FakeSecrets) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
+	action := testing.NewDeleteCollectionActionWithOptions(secretsResource, c.ns, opts, listOpts)
 
-	_, err := c.Fake.Invokes(action, &gloosoloiov1.SecretList{})
+	_, err := c.Fake.Invokes(action, &v1.SecretList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched secret.
-func (c *FakeSecrets) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *gloosoloiov1.Secret, err error) {
+func (c *FakeSecrets) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Secret, err error) {
+	emptyResult := &v1.Secret{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(secretsResource, c.ns, name, pt, data, subresources...), &gloosoloiov1.Secret{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(secretsResource, c.ns, name, pt, data, opts, subresources...), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
-	return obj.(*gloosoloiov1.Secret), err
+	return obj.(*v1.Secret), err
 }

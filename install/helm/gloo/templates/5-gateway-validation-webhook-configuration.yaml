@@ -59,6 +59,13 @@ specific resources, we will manage the resources that the webhook receives via t
     apiVersions: ["v1"]
     resources: ["secrets"]
 {{- end }}
+{{- if and (not (has "*" .Values.gateway.validation.webhook.skipDeleteValidationResources)) (not (has "namespaces" .Values.gateway.validation.webhook.skipDeleteValidationResources)) }}
+{{- /* A namespace with an updated to a label can cause it to no longer be watched, equivalent to deleting it from the controller's perspective */}}
+  - operations: [ "UPDATE", "DELETE"]
+    apiGroups: [""]{{/* We do not have internal namespace CRDs. We want to validate the updation and deletion of namespaces that are watched. */}}
+    apiVersions: ["v1"]
+    resources: ["namespaces"]
+{{- end }}
   - operations: {{ include "gloo.webhookvalidation.operationsForResource" (list "ratelimitconfigs" .Values.gateway.validation.webhook.skipDeleteValidationResources) }}
     apiGroups: ["ratelimit.solo.io"]
     apiVersions: ["v1alpha1"]

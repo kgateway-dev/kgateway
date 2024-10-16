@@ -14,8 +14,8 @@ apis:
   ai.options.gloo.solo.io.AIPromptEnrichment:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#AIPromptEnrichment
     package: ai.options.gloo.solo.io
-  ai.options.gloo.solo.io.AIPromptGaurd:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#AIPromptGaurd
+  ai.options.gloo.solo.io.AIPromptGuard:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#AIPromptGuard
     package: ai.options.gloo.solo.io
   ai.options.gloo.solo.io.Embedding:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#Embedding
@@ -28,9 +28,6 @@ apis:
     package: ai.options.gloo.solo.io
   ai.options.gloo.solo.io.RAG:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#RAG
-    package: ai.options.gloo.solo.io
-  ai.options.gloo.solo.io.RateLimiting:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#RateLimiting
     package: ai.options.gloo.solo.io
   ai.options.gloo.solo.io.RouteSettings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto.sk/#RouteSettings
@@ -871,6 +868,12 @@ apis:
     package: gloo.solo.io
   gloo.solo.io.KubernetesServiceDestination:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#KubernetesServiceDestination
+    package: gloo.solo.io
+  gloo.solo.io.LabelSelector:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#LabelSelector
+    package: gloo.solo.io
+  gloo.solo.io.LabelSelectorRequirement:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#LabelSelectorRequirement
     package: gloo.solo.io
   gloo.solo.io.LbEndpoint:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/failover.proto.sk/#LbEndpoint
@@ -1804,6 +1807,9 @@ apis:
     package: solo.io.envoy.config.trace.v3
   solo.io.envoy.config.trace.v3.DatadogConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/datadog.proto.sk/#DatadogConfig
+    package: solo.io.envoy.config.trace.v3
+  solo.io.envoy.config.trace.v3.DatadogRemoteConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/datadog.proto.sk/#DatadogRemoteConfig
     package: solo.io.envoy.config.trace.v3
   solo.io.envoy.config.trace.v3.OpenCensusConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opencensus.proto.sk/#OpenCensusConfig

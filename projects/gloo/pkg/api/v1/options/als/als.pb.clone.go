@@ -13,13 +13,13 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_struct "github.com/golang/protobuf/ptypes/struct"
-
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_route_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
+
+	google_golang_org_protobuf_types_known_structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
 // ensure the imports are used
@@ -124,11 +124,11 @@ func (m *FileSink) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetJsonFormat()).(clone.Cloner); ok {
 			target.OutputFormat = &FileSink_JsonFormat{
-				JsonFormat: h.Clone().(*github_com_golang_protobuf_ptypes_struct.Struct),
+				JsonFormat: h.Clone().(*google_golang_org_protobuf_types_known_structpb.Struct),
 			}
 		} else {
 			target.OutputFormat = &FileSink_JsonFormat{
-				JsonFormat: proto.Clone(m.GetJsonFormat()).(*github_com_golang_protobuf_ptypes_struct.Struct),
+				JsonFormat: proto.Clone(m.GetJsonFormat()).(*google_golang_org_protobuf_types_known_structpb.Struct),
 			}
 		}
 

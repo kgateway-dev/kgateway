@@ -13,9 +13,9 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
+	google_golang_org_protobuf_types_known_durationpb "google.golang.org/protobuf/types/known/durationpb"
 
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -40,15 +40,15 @@ func (m *TokenBucket) Clone() proto.Message {
 	target.MaxTokens = m.GetMaxTokens()
 
 	if h, ok := interface{}(m.GetTokensPerFill()).(clone.Cloner); ok {
-		target.TokensPerFill = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.TokensPerFill = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.TokensPerFill = proto.Clone(m.GetTokensPerFill()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.TokensPerFill = proto.Clone(m.GetTokensPerFill()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	if h, ok := interface{}(m.GetFillInterval()).(clone.Cloner); ok {
-		target.FillInterval = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.FillInterval = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.FillInterval = proto.Clone(m.GetFillInterval()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.FillInterval = proto.Clone(m.GetFillInterval()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	return target
@@ -69,15 +69,15 @@ func (m *Settings) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetLocalRateLimitPerDownstreamConnection()).(clone.Cloner); ok {
-		target.LocalRateLimitPerDownstreamConnection = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.LocalRateLimitPerDownstreamConnection = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.LocalRateLimitPerDownstreamConnection = proto.Clone(m.GetLocalRateLimitPerDownstreamConnection()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.LocalRateLimitPerDownstreamConnection = proto.Clone(m.GetLocalRateLimitPerDownstreamConnection()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetEnableXRatelimitHeaders()).(clone.Cloner); ok {
-		target.EnableXRatelimitHeaders = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.EnableXRatelimitHeaders = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.EnableXRatelimitHeaders = proto.Clone(m.GetEnableXRatelimitHeaders()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.EnableXRatelimitHeaders = proto.Clone(m.GetEnableXRatelimitHeaders()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	return target

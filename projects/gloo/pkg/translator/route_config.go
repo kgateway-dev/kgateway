@@ -299,7 +299,7 @@ func (h *httpRouteConfigurationTranslator) setAction(
 			Route: routeAction,
 		}
 
-		if err := h.setRouteAction(params, action.RouteAction, out.GetAction().(*envoy_config_route_v3.Route_Route).Route, routeReport, out.GetName()); err != nil {
+		if err := h.setRouteAction(params, action.RouteAction, out.GetAction().(*envoy_config_route_v3.Route_Route).Route, routeReport, in, out.GetName()); err != nil {
 			reportRouteActionProcessingError(routeReport, out, err)
 		}
 		h.runRoutePlugins(params, routeReport, in, out)
@@ -414,7 +414,14 @@ func (h *httpRouteConfigurationTranslator) runRouteActionPlugins(
 	}
 }
 
-func (h *httpRouteConfigurationTranslator) setRouteAction(params plugins.RouteParams, in *v1.RouteAction, out *envoy_config_route_v3.RouteAction, routeReport *validationapi.RouteReport, routeName string) error {
+func (h *httpRouteConfigurationTranslator) setRouteAction(
+	params plugins.RouteParams,
+	in *v1.RouteAction,
+	out *envoy_config_route_v3.RouteAction,
+	routeReport *validationapi.RouteReport,
+	route *v1.Route,
+	routeName string,
+) error {
 	switch dest := in.GetDestination().(type) {
 	case *v1.RouteAction_Single:
 		out.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{}
@@ -428,7 +435,7 @@ func (h *httpRouteConfigurationTranslator) setRouteAction(params plugins.RoutePa
 
 		return checkThatSubsetMatchesUpstream(params.Params, dest.Single)
 	case *v1.RouteAction_Multi:
-		return h.setWeightedClusters(params, dest.Multi, out, routeReport, routeName)
+		return h.setWeightedClusters(params, dest.Multi, out, routeReport, route, routeName)
 	case *v1.RouteAction_UpstreamGroup:
 		upstreamGroupRef := dest.UpstreamGroup
 		upstreamGroup, err := params.Snapshot.UpstreamGroups.Find(upstreamGroupRef.GetNamespace(), upstreamGroupRef.GetName())
@@ -442,7 +449,7 @@ func (h *httpRouteConfigurationTranslator) setRouteAction(params plugins.RoutePa
 		md := &v1.MultiDestination{
 			Destinations: upstreamGroup.GetDestinations(),
 		}
-		return h.setWeightedClusters(params, md, out, routeReport, routeName)
+		return h.setWeightedClusters(params, md, out, routeReport, route, routeName)
 	case *v1.RouteAction_ClusterHeader:
 		// ClusterHeader must use the naming convention {{namespace}}_{{clustername}}
 		out.ClusterSpecifier = &envoy_config_route_v3.RouteAction_ClusterHeader{
@@ -458,7 +465,14 @@ func (h *httpRouteConfigurationTranslator) setRouteAction(params plugins.RoutePa
 	return eris.Errorf("unknown upstream destination type")
 }
 
-func (h *httpRouteConfigurationTranslator) setWeightedClusters(params plugins.RouteParams, multiDest *v1.MultiDestination, out *envoy_config_route_v3.RouteAction, routeReport *validationapi.RouteReport, routeName string) error {
+func (h *httpRouteConfigurationTranslator) setWeightedClusters(
+	params plugins.RouteParams,
+	multiDest *v1.MultiDestination,
+	out *envoy_config_route_v3.RouteAction,
+	routeReport *validationapi.RouteReport,
+	route *v1.Route,
+	routeName string,
+) error {
 	clusterSpecifier := &envoy_config_route_v3.RouteAction_WeightedClusters{
 		WeightedClusters: &envoy_config_route_v3.WeightedCluster{},
 	}
@@ -490,9 +504,13 @@ func (h *httpRouteConfigurationTranslator) setWeightedClusters(params plugins.Ro
 			MetadataMatch: getSubsetMatch(weightedDest.GetDestination()),
 		}
 
+		raParams := plugins.RouteActionParams{
+			RouteParams: params,
+			Route:       route,
+		}
 		// run the plugins for Weighted Destinations
 		for _, plugin := range h.pluginRegistry.GetWeightedDestinationPlugins() {
-			if err := plugin.ProcessWeightedDestination(params, weightedDest, weightedCluster); err != nil {
+			if err := plugin.ProcessWeightedDestination(raParams, weightedDest, weightedCluster); err != nil {
 				reportWeightedDestinationPluginProcessingError(
 					params,
 					routeReport,

@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 # The name of the kind cluster to deploy to
 CLUSTER_NAME="${CLUSTER_NAME:-kind}"
 # The version of the Node Docker image to use for booting the cluster
-CLUSTER_NODE_VERSION="${CLUSTER_NODE_VERSION:-v1.28.0}"
+CLUSTER_NODE_VERSION="${CLUSTER_NODE_VERSION:-v1.31.0}"
 # The version used to tag images
 VERSION="${VERSION:-1.0.0-ci1}"
 # Skip building docker images if we are testing a released version
@@ -17,6 +17,11 @@ JUST_KIND="${JUST_KIND:-false}"
 IMAGE_VARIANT="${IMAGE_VARIANT:-standard}"
 # If true, run extra steps to set up k8s gateway api conformance test environment
 CONFORMANCE="${CONFORMANCE:-false}"
+# The version of the k8s gateway api conformance tests to run. Requires CONFORMANCE=true
+CONFORMANCE_VERSION="${CONFORMANCE_VERSION:-v1.1.0}"
+# The channel of the k8s gateway api conformance tests to run. Requires CONFORMANCE=true
+CONFORMANCE_CHANNEL="${CONFORMANCE_CHANNEL:-"experimental"}"
+# The version of Cilium to install.
 CILIUM_VERSION="${CILIUM_VERSION:-1.15.5}"
 
 function create_kind_cluster_or_skip() {
@@ -75,7 +80,12 @@ fi
 make -s build-cli-local
 
 # 5. Apply the Kubernetes Gateway API CRDs
-kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml
+# Note, we're using kustomize to apply the CRDs from the k8s gateway api repo as
+# kustomize supports remote GH URLs and provides more flexibility compared to
+# alternatives like running a series of `kubectl apply -f <url>` commands. This
+# approach is largely necessary since upstream hasn't adopted a helm chart for
+# the CRDs yet, or won't be for the foreseeable future.
+kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/$CONFORMANCE_CHANNEL?ref=$CONFORMANCE_VERSION"
 
 # 6. Conformance test setup
 if [[ $CONFORMANCE == "true" ]]; then

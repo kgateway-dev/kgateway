@@ -13,15 +13,15 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
-
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
-
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_protocol "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_protocol_upgrade "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_tracing "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
+
+	google_golang_org_protobuf_types_known_durationpb "google.golang.org/protobuf/types/known/durationpb"
+
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -44,117 +44,117 @@ func (m *HttpConnectionManagerSettings) Clone() proto.Message {
 	target = &HttpConnectionManagerSettings{}
 
 	if h, ok := interface{}(m.GetSkipXffAppend()).(clone.Cloner); ok {
-		target.SkipXffAppend = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.SkipXffAppend = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.SkipXffAppend = proto.Clone(m.GetSkipXffAppend()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.SkipXffAppend = proto.Clone(m.GetSkipXffAppend()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetVia()).(clone.Cloner); ok {
-		target.Via = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.Via = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	} else {
-		target.Via = proto.Clone(m.GetVia()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.Via = proto.Clone(m.GetVia()).(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	}
 
 	if h, ok := interface{}(m.GetXffNumTrustedHops()).(clone.Cloner); ok {
-		target.XffNumTrustedHops = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.XffNumTrustedHops = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.XffNumTrustedHops = proto.Clone(m.GetXffNumTrustedHops()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.XffNumTrustedHops = proto.Clone(m.GetXffNumTrustedHops()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	if h, ok := interface{}(m.GetUseRemoteAddress()).(clone.Cloner); ok {
-		target.UseRemoteAddress = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.UseRemoteAddress = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.UseRemoteAddress = proto.Clone(m.GetUseRemoteAddress()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.UseRemoteAddress = proto.Clone(m.GetUseRemoteAddress()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetGenerateRequestId()).(clone.Cloner); ok {
-		target.GenerateRequestId = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.GenerateRequestId = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.GenerateRequestId = proto.Clone(m.GetGenerateRequestId()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.GenerateRequestId = proto.Clone(m.GetGenerateRequestId()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetProxy_100Continue()).(clone.Cloner); ok {
-		target.Proxy_100Continue = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.Proxy_100Continue = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.Proxy_100Continue = proto.Clone(m.GetProxy_100Continue()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.Proxy_100Continue = proto.Clone(m.GetProxy_100Continue()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetStreamIdleTimeout()).(clone.Cloner); ok {
-		target.StreamIdleTimeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.StreamIdleTimeout = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.StreamIdleTimeout = proto.Clone(m.GetStreamIdleTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.StreamIdleTimeout = proto.Clone(m.GetStreamIdleTimeout()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	if h, ok := interface{}(m.GetIdleTimeout()).(clone.Cloner); ok {
-		target.IdleTimeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.IdleTimeout = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.IdleTimeout = proto.Clone(m.GetIdleTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.IdleTimeout = proto.Clone(m.GetIdleTimeout()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	if h, ok := interface{}(m.GetMaxRequestHeadersKb()).(clone.Cloner); ok {
-		target.MaxRequestHeadersKb = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxRequestHeadersKb = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.MaxRequestHeadersKb = proto.Clone(m.GetMaxRequestHeadersKb()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxRequestHeadersKb = proto.Clone(m.GetMaxRequestHeadersKb()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	if h, ok := interface{}(m.GetRequestTimeout()).(clone.Cloner); ok {
-		target.RequestTimeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.RequestTimeout = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.RequestTimeout = proto.Clone(m.GetRequestTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.RequestTimeout = proto.Clone(m.GetRequestTimeout()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	if h, ok := interface{}(m.GetRequestHeadersTimeout()).(clone.Cloner); ok {
-		target.RequestHeadersTimeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.RequestHeadersTimeout = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.RequestHeadersTimeout = proto.Clone(m.GetRequestHeadersTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.RequestHeadersTimeout = proto.Clone(m.GetRequestHeadersTimeout()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	if h, ok := interface{}(m.GetDrainTimeout()).(clone.Cloner); ok {
-		target.DrainTimeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.DrainTimeout = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.DrainTimeout = proto.Clone(m.GetDrainTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.DrainTimeout = proto.Clone(m.GetDrainTimeout()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	if h, ok := interface{}(m.GetDelayedCloseTimeout()).(clone.Cloner); ok {
-		target.DelayedCloseTimeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.DelayedCloseTimeout = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.DelayedCloseTimeout = proto.Clone(m.GetDelayedCloseTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.DelayedCloseTimeout = proto.Clone(m.GetDelayedCloseTimeout()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	if h, ok := interface{}(m.GetServerName()).(clone.Cloner); ok {
-		target.ServerName = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.ServerName = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	} else {
-		target.ServerName = proto.Clone(m.GetServerName()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.ServerName = proto.Clone(m.GetServerName()).(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	}
 
 	if h, ok := interface{}(m.GetStripAnyHostPort()).(clone.Cloner); ok {
-		target.StripAnyHostPort = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.StripAnyHostPort = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.StripAnyHostPort = proto.Clone(m.GetStripAnyHostPort()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.StripAnyHostPort = proto.Clone(m.GetStripAnyHostPort()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetAcceptHttp_10()).(clone.Cloner); ok {
-		target.AcceptHttp_10 = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.AcceptHttp_10 = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.AcceptHttp_10 = proto.Clone(m.GetAcceptHttp_10()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.AcceptHttp_10 = proto.Clone(m.GetAcceptHttp_10()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetDefaultHostForHttp_10()).(clone.Cloner); ok {
-		target.DefaultHostForHttp_10 = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.DefaultHostForHttp_10 = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	} else {
-		target.DefaultHostForHttp_10 = proto.Clone(m.GetDefaultHostForHttp_10()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.DefaultHostForHttp_10 = proto.Clone(m.GetDefaultHostForHttp_10()).(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	}
 
 	if h, ok := interface{}(m.GetAllowChunkedLength()).(clone.Cloner); ok {
-		target.AllowChunkedLength = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.AllowChunkedLength = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.AllowChunkedLength = proto.Clone(m.GetAllowChunkedLength()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.AllowChunkedLength = proto.Clone(m.GetAllowChunkedLength()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetEnableTrailers()).(clone.Cloner); ok {
-		target.EnableTrailers = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.EnableTrailers = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.EnableTrailers = proto.Clone(m.GetEnableTrailers()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.EnableTrailers = proto.Clone(m.GetEnableTrailers()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetTracing()).(clone.Cloner); ok {
@@ -172,9 +172,9 @@ func (m *HttpConnectionManagerSettings) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetPreserveExternalRequestId()).(clone.Cloner); ok {
-		target.PreserveExternalRequestId = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.PreserveExternalRequestId = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.PreserveExternalRequestId = proto.Clone(m.GetPreserveExternalRequestId()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.PreserveExternalRequestId = proto.Clone(m.GetPreserveExternalRequestId()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if m.GetUpgrades() != nil {
@@ -191,29 +191,29 @@ func (m *HttpConnectionManagerSettings) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetMaxConnectionDuration()).(clone.Cloner); ok {
-		target.MaxConnectionDuration = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.MaxConnectionDuration = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.MaxConnectionDuration = proto.Clone(m.GetMaxConnectionDuration()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.MaxConnectionDuration = proto.Clone(m.GetMaxConnectionDuration()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	if h, ok := interface{}(m.GetMaxStreamDuration()).(clone.Cloner); ok {
-		target.MaxStreamDuration = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.MaxStreamDuration = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.MaxStreamDuration = proto.Clone(m.GetMaxStreamDuration()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.MaxStreamDuration = proto.Clone(m.GetMaxStreamDuration()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	if h, ok := interface{}(m.GetMaxHeadersCount()).(clone.Cloner); ok {
-		target.MaxHeadersCount = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxHeadersCount = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.MaxHeadersCount = proto.Clone(m.GetMaxHeadersCount()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxHeadersCount = proto.Clone(m.GetMaxHeadersCount()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	target.HeadersWithUnderscoresAction = m.GetHeadersWithUnderscoresAction()
 
 	if h, ok := interface{}(m.GetMaxRequestsPerConnection()).(clone.Cloner); ok {
-		target.MaxRequestsPerConnection = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxRequestsPerConnection = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.MaxRequestsPerConnection = proto.Clone(m.GetMaxRequestsPerConnection()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxRequestsPerConnection = proto.Clone(m.GetMaxRequestsPerConnection()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	target.ServerHeaderTransformation = m.GetServerHeaderTransformation()
@@ -223,15 +223,15 @@ func (m *HttpConnectionManagerSettings) Clone() proto.Message {
 	target.CodecType = m.GetCodecType()
 
 	if h, ok := interface{}(m.GetMergeSlashes()).(clone.Cloner); ok {
-		target.MergeSlashes = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.MergeSlashes = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.MergeSlashes = proto.Clone(m.GetMergeSlashes()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.MergeSlashes = proto.Clone(m.GetMergeSlashes()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetNormalizePath()).(clone.Cloner); ok {
-		target.NormalizePath = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.NormalizePath = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.NormalizePath = proto.Clone(m.GetNormalizePath()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.NormalizePath = proto.Clone(m.GetNormalizePath()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetUuidRequestIdConfig()).(clone.Cloner); ok {
@@ -253,9 +253,9 @@ func (m *HttpConnectionManagerSettings) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetAppendXForwardedPort()).(clone.Cloner); ok {
-		target.AppendXForwardedPort = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.AppendXForwardedPort = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.AppendXForwardedPort = proto.Clone(m.GetAppendXForwardedPort()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.AppendXForwardedPort = proto.Clone(m.GetAppendXForwardedPort()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	switch m.HeaderFormat.(type) {
@@ -264,11 +264,11 @@ func (m *HttpConnectionManagerSettings) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetProperCaseHeaderKeyFormat()).(clone.Cloner); ok {
 			target.HeaderFormat = &HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat{
-				ProperCaseHeaderKeyFormat: h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue),
+				ProperCaseHeaderKeyFormat: h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue),
 			}
 		} else {
 			target.HeaderFormat = &HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat{
-				ProperCaseHeaderKeyFormat: proto.Clone(m.GetProperCaseHeaderKeyFormat()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue),
+				ProperCaseHeaderKeyFormat: proto.Clone(m.GetProperCaseHeaderKeyFormat()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue),
 			}
 		}
 
@@ -276,11 +276,11 @@ func (m *HttpConnectionManagerSettings) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetPreserveCaseHeaderKeyFormat()).(clone.Cloner); ok {
 			target.HeaderFormat = &HttpConnectionManagerSettings_PreserveCaseHeaderKeyFormat{
-				PreserveCaseHeaderKeyFormat: h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue),
+				PreserveCaseHeaderKeyFormat: h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue),
 			}
 		} else {
 			target.HeaderFormat = &HttpConnectionManagerSettings_PreserveCaseHeaderKeyFormat{
-				PreserveCaseHeaderKeyFormat: proto.Clone(m.GetPreserveCaseHeaderKeyFormat()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue),
+				PreserveCaseHeaderKeyFormat: proto.Clone(m.GetPreserveCaseHeaderKeyFormat()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue),
 			}
 		}
 
@@ -298,33 +298,33 @@ func (m *HttpConnectionManagerSettings_SetCurrentClientCertDetails) Clone() prot
 	target = &HttpConnectionManagerSettings_SetCurrentClientCertDetails{}
 
 	if h, ok := interface{}(m.GetSubject()).(clone.Cloner); ok {
-		target.Subject = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.Subject = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.Subject = proto.Clone(m.GetSubject()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.Subject = proto.Clone(m.GetSubject()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetCert()).(clone.Cloner); ok {
-		target.Cert = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.Cert = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.Cert = proto.Clone(m.GetCert()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.Cert = proto.Clone(m.GetCert()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetChain()).(clone.Cloner); ok {
-		target.Chain = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.Chain = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.Chain = proto.Clone(m.GetChain()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.Chain = proto.Clone(m.GetChain()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetDns()).(clone.Cloner); ok {
-		target.Dns = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.Dns = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.Dns = proto.Clone(m.GetDns()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.Dns = proto.Clone(m.GetDns()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetUri()).(clone.Cloner); ok {
-		target.Uri = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.Uri = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.Uri = proto.Clone(m.GetUri()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.Uri = proto.Clone(m.GetUri()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	return target
@@ -339,15 +339,15 @@ func (m *HttpConnectionManagerSettings_UuidRequestIdConfigSettings) Clone() prot
 	target = &HttpConnectionManagerSettings_UuidRequestIdConfigSettings{}
 
 	if h, ok := interface{}(m.GetPackTraceReason()).(clone.Cloner); ok {
-		target.PackTraceReason = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.PackTraceReason = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.PackTraceReason = proto.Clone(m.GetPackTraceReason()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.PackTraceReason = proto.Clone(m.GetPackTraceReason()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetUseRequestIdForTraceSampling()).(clone.Cloner); ok {
-		target.UseRequestIdForTraceSampling = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.UseRequestIdForTraceSampling = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.UseRequestIdForTraceSampling = proto.Clone(m.GetUseRequestIdForTraceSampling()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.UseRequestIdForTraceSampling = proto.Clone(m.GetUseRequestIdForTraceSampling()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	return target
@@ -364,9 +364,9 @@ func (m *HttpConnectionManagerSettings_CidrRange) Clone() proto.Message {
 	target.AddressPrefix = m.GetAddressPrefix()
 
 	if h, ok := interface{}(m.GetPrefixLen()).(clone.Cloner); ok {
-		target.PrefixLen = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.PrefixLen = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.PrefixLen = proto.Clone(m.GetPrefixLen()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.PrefixLen = proto.Clone(m.GetPrefixLen()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	return target
@@ -381,9 +381,9 @@ func (m *HttpConnectionManagerSettings_InternalAddressConfig) Clone() proto.Mess
 	target = &HttpConnectionManagerSettings_InternalAddressConfig{}
 
 	if h, ok := interface{}(m.GetUnixSockets()).(clone.Cloner); ok {
-		target.UnixSockets = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.UnixSockets = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.UnixSockets = proto.Clone(m.GetUnixSockets()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.UnixSockets = proto.Clone(m.GetUnixSockets()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if m.GetCidrRanges() != nil {

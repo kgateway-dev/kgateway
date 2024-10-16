@@ -13,15 +13,15 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
-
-	github_com_golang_protobuf_ptypes_struct "github.com/golang/protobuf/ptypes/struct"
-
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_ext_proc_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/ext_proc/v3"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
+
+	google_golang_org_protobuf_types_known_durationpb "google.golang.org/protobuf/types/known/durationpb"
+
+	google_golang_org_protobuf_types_known_structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
 // ensure the imports are used
@@ -50,13 +50,13 @@ func (m *ProcessingRequest) Clone() proto.Message {
 	}
 
 	if m.GetAttributes() != nil {
-		target.Attributes = make(map[string]*github_com_golang_protobuf_ptypes_struct.Struct, len(m.GetAttributes()))
+		target.Attributes = make(map[string]*google_golang_org_protobuf_types_known_structpb.Struct, len(m.GetAttributes()))
 		for k, v := range m.GetAttributes() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Attributes[k] = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Struct)
+				target.Attributes[k] = h.Clone().(*google_golang_org_protobuf_types_known_structpb.Struct)
 			} else {
-				target.Attributes[k] = proto.Clone(v).(*github_com_golang_protobuf_ptypes_struct.Struct)
+				target.Attributes[k] = proto.Clone(v).(*google_golang_org_protobuf_types_known_structpb.Struct)
 			}
 
 		}
@@ -152,9 +152,9 @@ func (m *ProcessingResponse) Clone() proto.Message {
 	target = &ProcessingResponse{}
 
 	if h, ok := interface{}(m.GetDynamicMetadata()).(clone.Cloner); ok {
-		target.DynamicMetadata = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Struct)
+		target.DynamicMetadata = h.Clone().(*google_golang_org_protobuf_types_known_structpb.Struct)
 	} else {
-		target.DynamicMetadata = proto.Clone(m.GetDynamicMetadata()).(*github_com_golang_protobuf_ptypes_struct.Struct)
+		target.DynamicMetadata = proto.Clone(m.GetDynamicMetadata()).(*google_golang_org_protobuf_types_known_structpb.Struct)
 	}
 
 	if h, ok := interface{}(m.GetModeOverride()).(clone.Cloner); ok {
@@ -164,9 +164,9 @@ func (m *ProcessingResponse) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetOverrideMessageTimeout()).(clone.Cloner); ok {
-		target.OverrideMessageTimeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.OverrideMessageTimeout = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.OverrideMessageTimeout = proto.Clone(m.GetOverrideMessageTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.OverrideMessageTimeout = proto.Clone(m.GetOverrideMessageTimeout()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	switch m.Response.(type) {
@@ -275,13 +275,13 @@ func (m *HttpHeaders) Clone() proto.Message {
 	}
 
 	if m.GetAttributes() != nil {
-		target.Attributes = make(map[string]*github_com_golang_protobuf_ptypes_struct.Struct, len(m.GetAttributes()))
+		target.Attributes = make(map[string]*google_golang_org_protobuf_types_known_structpb.Struct, len(m.GetAttributes()))
 		for k, v := range m.GetAttributes() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Attributes[k] = h.Clone().(*github_com_golang_protobuf_ptypes_struct.Struct)
+				target.Attributes[k] = h.Clone().(*google_golang_org_protobuf_types_known_structpb.Struct)
 			} else {
-				target.Attributes[k] = proto.Clone(v).(*github_com_golang_protobuf_ptypes_struct.Struct)
+				target.Attributes[k] = proto.Clone(v).(*google_golang_org_protobuf_types_known_structpb.Struct)
 			}
 
 		}

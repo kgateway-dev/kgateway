@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -84,9 +84,9 @@ func (m *RegexMatcher_GoogleRE2) Clone() proto.Message {
 	target = &RegexMatcher_GoogleRE2{}
 
 	if h, ok := interface{}(m.GetMaxProgramSize()).(clone.Cloner); ok {
-		target.MaxProgramSize = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxProgramSize = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.MaxProgramSize = proto.Clone(m.GetMaxProgramSize()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxProgramSize = proto.Clone(m.GetMaxProgramSize()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	return target

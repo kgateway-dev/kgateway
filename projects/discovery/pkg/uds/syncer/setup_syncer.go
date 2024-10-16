@@ -8,7 +8,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 
-	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/pkg/utils/namespaces"
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 	syncerutils "github.com/solo-io/gloo/projects/discovery/pkg/syncer"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -82,7 +82,7 @@ func RunUDS(opts bootstrap.Opts) error {
 			discoveryPlugins = append(discoveryPlugins, disc)
 		}
 	}
-	watchNamespaces := utils.ProcessWatchNamespaces(opts.WatchNamespaces, opts.WriteNamespace)
+	watchNamespaces := namespaces.ProcessWatchNamespaces(opts.WatchNamespaces, opts.WriteNamespace)
 
 	errs := make(chan error)
 

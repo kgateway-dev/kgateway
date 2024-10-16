@@ -26,6 +26,10 @@ var (
 )
 
 // Hash function
+//
+// Deprecated: due to hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
+// Prefer the HashUnique function instead.
 func (m *RetryBackOff) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -82,6 +86,10 @@ func (m *RetryBackOff) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
+//
+// Deprecated: due to hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
+// Prefer the HashUnique function instead.
 func (m *RetryPolicy) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -143,6 +151,11 @@ func (m *RetryPolicy) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	err = binary.Write(hasher, binary.LittleEndian, m.GetRetriableStatusCodes())
+	if err != nil {
+		return 0, err
+	}
+
 	switch m.PriorityPredicate.(type) {
 
 	case *RetryPolicy_PreviousPriorities_:
@@ -173,6 +186,10 @@ func (m *RetryPolicy) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
+//
+// Deprecated: due to hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
+// Prefer the HashUnique function instead.
 func (m *RetryPolicy_PreviousPriorities) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil

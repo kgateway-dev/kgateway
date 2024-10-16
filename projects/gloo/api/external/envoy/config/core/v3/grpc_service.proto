@@ -137,7 +137,7 @@ message GrpcService {
 
       // Security token service configuration that allows Google gRPC to
       // fetch security token from an OAuth 2.0 authorization server.
-      // See https://tools.ietf.org/html/draft-ietf-oauth-token-exchange-16 and
+      // See https://datatracker.ietf.org/doc/html/draft-ietf-oauth-token-exchange-16 and
       // https://github.com/grpc/grpc/pull/19587.
       // [#next-free-field: 10]
       message StsService {
@@ -209,7 +209,7 @@ message GrpcService {
         MetadataCredentialsFromPlugin from_plugin = 6;
 
         // Custom security token service which implements OAuth 2.0 token exchange.
-        // https://tools.ietf.org/html/draft-ietf-oauth-token-exchange-16
+        // https://datatracker.ietf.org/doc/html/draft-ietf-oauth-token-exchange-16
         // See https://github.com/grpc/grpc/pull/19587.
         StsService sts_service = 7;
       }

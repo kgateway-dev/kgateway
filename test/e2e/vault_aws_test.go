@@ -102,7 +102,7 @@ var _ = Describe("Vault Secret Store (AWS Auth)", decorators.Vault, func() {
 						LeaseIncrement:  5,
 					},
 				},
-				PathPrefix: bootstrap.DefaultPathPrefix,
+				PathPrefix: vault.DefaultPathPrefix,
 				RootKey:    bootstrap.DefaultRootKey,
 			}
 		})

@@ -137,6 +137,7 @@ spec:
       disableTransformationValidation: {{ .Values.gateway.validation.disableTransformationValidation }}
       warnRouteShortCircuiting: {{ .Values.gateway.validation.warnRouteShortCircuiting }}
       validationServerGrpcMaxSizeBytes: {{ .Values.gateway.validation.validationServerGrpcMaxSizeBytes }}
+      fullEnvoyValidation: {{ .Values.gateway.validation.fullEnvoyValidation }}
 {{- end }}
 
 {{- if .Values.discovery }}
@@ -192,8 +193,13 @@ spec:
   {{- range . }}
   - {{ . }}
   {{- end }}
-{{- end }}
-{{- end }}
+{{- end }} {{/* with .Values.settings.watchNamespaces */}}
+{{- end }} {{/* if .Values.settings.singleNamespace */}}
+
+{{- if .Values.settings.watchNamespaceSelectors }}
+  watchNamespaceSelectors:
+  {{ toYaml .Values.settings.watchNamespaceSelectors | nindent 4 }}
+{{- end }} {{/* if .Values.settings.watchNamespaceSelectors */}}
 
 {{- end }} {{/* if .Values.settings.create  */}}
 {{- end }} {{/* define "settings.settingsSpec" */}}

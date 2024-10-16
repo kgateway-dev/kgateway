@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -86,21 +86,21 @@ func (m *TcpKeepalive) Clone() proto.Message {
 	target = &TcpKeepalive{}
 
 	if h, ok := interface{}(m.GetKeepaliveProbes()).(clone.Cloner); ok {
-		target.KeepaliveProbes = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.KeepaliveProbes = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.KeepaliveProbes = proto.Clone(m.GetKeepaliveProbes()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.KeepaliveProbes = proto.Clone(m.GetKeepaliveProbes()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	if h, ok := interface{}(m.GetKeepaliveTime()).(clone.Cloner); ok {
-		target.KeepaliveTime = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.KeepaliveTime = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.KeepaliveTime = proto.Clone(m.GetKeepaliveTime()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.KeepaliveTime = proto.Clone(m.GetKeepaliveTime()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	if h, ok := interface{}(m.GetKeepaliveInterval()).(clone.Cloner); ok {
-		target.KeepaliveInterval = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.KeepaliveInterval = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.KeepaliveInterval = proto.Clone(m.GetKeepaliveInterval()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.KeepaliveInterval = proto.Clone(m.GetKeepaliveInterval()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	return target
@@ -121,9 +121,9 @@ func (m *BindConfig) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetFreebind()).(clone.Cloner); ok {
-		target.Freebind = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.Freebind = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.Freebind = proto.Clone(m.GetFreebind()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.Freebind = proto.Clone(m.GetFreebind()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if m.GetSocketOptions() != nil {
@@ -192,9 +192,9 @@ func (m *CidrRange) Clone() proto.Message {
 	target.AddressPrefix = m.GetAddressPrefix()
 
 	if h, ok := interface{}(m.GetPrefixLen()).(clone.Cloner); ok {
-		target.PrefixLen = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.PrefixLen = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.PrefixLen = proto.Clone(m.GetPrefixLen()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.PrefixLen = proto.Clone(m.GetPrefixLen()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	return target
