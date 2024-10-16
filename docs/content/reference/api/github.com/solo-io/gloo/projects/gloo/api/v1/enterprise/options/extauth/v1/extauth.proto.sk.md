@@ -59,7 +59,6 @@ weight: 5
 - [ClientSecret](#clientsecret)
 - [PrivateKeyJwt](#privatekeyjwt)
 - [Default](#default)
-- [Azure](#azure)
 - [FrontChannelLogout](#frontchannellogout)
 - [PlainOAuth2](#plainoauth2)
 - [JwtValidation](#jwtvalidation)
@@ -1084,7 +1083,7 @@ This way, you can enable distibuted claims and caching for when users are member
 "identityToken": .enterprise.gloo.solo.io.OidcAuthorizationCode.IdentityToken
 "clientAuthentication": .enterprise.gloo.solo.io.OidcAuthorizationCode.ClientAuthentication
 "default": .enterprise.gloo.solo.io.OidcAuthorizationCode.Default
-"azure": .enterprise.gloo.solo.io.OidcAuthorizationCode.Azure
+"azure": .enterprise.gloo.solo.io.Azure
 "frontChannelLogout": .enterprise.gloo.solo.io.OidcAuthorizationCode.FrontChannelLogout
 
 ```
@@ -1116,7 +1115,7 @@ This way, you can enable distibuted claims and caching for when users are member
 | `identityToken` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.IdentityToken](../extauth.proto.sk/#identitytoken) | Optional: Configuration specific to the OIDC identity token received and processed by the ext-auth-service. |
 | `clientAuthentication` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.ClientAuthentication](../extauth.proto.sk/#clientauthentication) | +kubebuilder:validation:XValidation:rule="has(self.clientSecret) || has(self.privateKeyJwt)",message="Must specify clientSecret or privateKeyJwt". |
 | `default` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.Default](../extauth.proto.sk/#default) |  Only one of `default` or `azure` can be set. |
-| `azure` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.Azure](../extauth.proto.sk/#azure) |  Only one of `azure` or `default` can be set. |
+| `azure` | [.enterprise.gloo.solo.io.Azure](../extauth.proto.sk/#azure) |  Only one of `azure` or `default` can be set. |
 | `frontChannelLogout` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.FrontChannelLogout](../extauth.proto.sk/#frontchannellogout) | Configuration for front channel logout. This is used to log out the user from multiple apps/clients associated with one OpenId Provider (OP). The path is registered with the OP and is called for each app/client that the user is logged into when the logout endpoint is called. |
 
 
@@ -1233,31 +1232,6 @@ No-op, represents default OIDC behavior
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-
-
-
-
----
-### Azure
-
- 
-For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
-This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
-
-```yaml
-"clientId": string
-"tenantId": string
-"clientSecret": .core.solo.io.ResourceRef
-"claimsCachingOptions": .enterprise.gloo.solo.io.RedisOptions
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `clientId` | `string` | The client ID for the ExtAuthService app that is registered in MS Entra, to access the Microsoft Graph API to retrieve distributed claims. This app is NOT the app that you want to configure external auth for. |
-| `tenantId` | `string` | The tenant ID represents the MS Entra organization ID where the ExtAuthService app is registered. This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`, depending on how your Azure account is provisioned. |
-| `clientSecret` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API. |
-| `claimsCachingOptions` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) | Redis connection details to cache MS Entera claims. This way, you avoid performance issues of accessing the Microsoft Graph API too many times. Note that this setting does NOT turn on Redis caching for the user session. To turn on Redis user session caching, use the `userSessionConfig` field. |
 
 
 

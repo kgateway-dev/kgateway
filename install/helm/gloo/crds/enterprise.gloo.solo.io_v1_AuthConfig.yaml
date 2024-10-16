@@ -581,12 +581,7 @@ spec:
                                 clientId:
                                   type: string
                                 clientSecret:
-                                  properties:
-                                    name:
-                                      type: string
-                                    namespace:
-                                      type: string
-                                  type: object
+                                  type: string
                                 tenantId:
                                   type: string
                               type: object
