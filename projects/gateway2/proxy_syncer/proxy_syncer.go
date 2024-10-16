@@ -339,6 +339,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	kubeEndpoints := krt.WrapClient(epClient, krt.WithName("Endpoints"))
 
 	glooEndpoints := krt.NewManyFromNothing(func(kctx krt.HandlerContext) []*glooEndpoint {
+		logger.Info("in gloo endpoints transformation")
 		// NOTE: buildEndpoints(...) effectively duplicates the existing GE endpoint logic
 		// into a KRT collection; this will be refactored entirely in a follow up from Yuval
 		return buildEndpoints(kctx, logger, finalUpstreams, kubeEndpoints, services, pods)
@@ -362,6 +363,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	})
 
 	xdsSnapshots := krt.NewCollection(glooProxies, func(kctx krt.HandlerContext, proxy glooProxy) *xdsSnapWrapper {
+		logger.Info("in xds snapshot transformation")
 		xdsSnap := s.buildXdsSnapshot(
 			ctx,
 			kctx,
@@ -484,6 +486,8 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		applyStatusPlugins(ctx, proxiesWithReports, snap.pluginRegistry)
 	})
 
+	timer := time.NewTicker(time.Second * 1)
+	needsSync := false
 	// wait for ctrl-rtime events to trigger syncs
 	// this will not be necessary once we switch the "front side" of translation to krt
 	for {
@@ -491,9 +495,14 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		case <-ctx.Done():
 			contextutils.LoggerFrom(ctx).Debug("context done, stopping proxy syncer")
 			return nil
+		case <-timer.C:
+			if needsSync {
+				logger.Info("timer tick and needs sync, triggering recompute")
+				proxyTrigger.TriggerRecomputation()
+			}
 		case <-s.inputs.genericEvent.Next():
-			logger.Info("LAW: got generic event, triggering recompute")
-			proxyTrigger.TriggerRecomputation()
+			logger.Info("got generic event, setting needs sync")
+			needsSync = true
 		}
 	}
 }
