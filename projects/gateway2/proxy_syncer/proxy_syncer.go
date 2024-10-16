@@ -30,6 +30,7 @@ import (
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/kubetypes"
+	istiolog "istio.io/istio/pkg/log"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/avast/retry-go/v4"
@@ -274,6 +275,7 @@ func (r report) Equals(in report) bool {
 }
 
 func (s *ProxySyncer) Start(ctx context.Context) error {
+	istiolog.FindScope("krt").SetOutputLevel(istiolog.DebugLevel)
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-syncer")
 	logger := contextutils.LoggerFrom(ctx)
 	// TODO: handle cfgmap noisiness?
