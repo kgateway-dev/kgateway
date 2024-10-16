@@ -422,6 +422,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		return &report{merged}
 	})
 
+	latestReport := reports.NewReportMap()
 	// status handler for gw api resources
 	// as we translate proxies on a per-Gateway basis, each event is a discrete update for a Proxy
 	// it will also contain the reportMap from that translation
@@ -433,8 +434,9 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			logger.Info("got delete status report register handler, returning")
 			return
 		}
-		s.syncGatewayStatus(ctx, o.Latest().ReportMap)
-		s.syncRouteStatus(ctx, o.Latest().ReportMap)
+		latestReport = o.Latest().ReportMap
+		// s.syncGatewayStatus(ctx, o.Latest().ReportMap)
+		// s.syncRouteStatus(ctx, o.Latest().ReportMap)
 	})
 
 	// kick off the istio informers
@@ -468,22 +470,23 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 	// now that krt collections and ctrl-rtime caches have synced, let's register our syncer
 	xdsSnapshots.Register(func(e krt.Event[xdsSnapWrapper]) {
-		logger.Info("in xds snap register, got event: ", e.Event)
-		if e.Event == controllers.EventDelete {
-			// FIXME: handle garbage collection
-			logger.Info("got delete xds snap register handler, returning")
-			return
-		}
-		snap := e.Latest()
+		return // no-op
+		// logger.Info("in xds snap register, got event: ", e.Event)
+		// if e.Event == controllers.EventDelete {
+		// 	// FIXME: handle garbage collection
+		// 	logger.Info("got delete xds snap register handler, returning")
+		// 	return
+		// }
+		// snap := e.Latest()
 
-		err := s.proxyTranslator.syncXdsAndStatus(ctx, snap.snap, snap.proxyKey, snap.fullReports)
-		if err != nil {
-			// fixme
-		}
+		// err := s.proxyTranslator.syncXdsAndStatus(ctx, snap.snap, snap.proxyKey, snap.fullReports)
+		// if err != nil {
+		// 	// fixme
+		// }
 
-		var proxiesWithReports []translatorutils.ProxyWithReports
-		proxiesWithReports = append(proxiesWithReports, snap.proxyWithReport)
-		applyStatusPlugins(ctx, proxiesWithReports, snap.pluginRegistry)
+		// var proxiesWithReports []translatorutils.ProxyWithReports
+		// proxiesWithReports = append(proxiesWithReports, snap.proxyWithReport)
+		// applyStatusPlugins(ctx, proxiesWithReports, snap.pluginRegistry)
 	})
 
 	timer := time.NewTicker(time.Second * 1)
@@ -497,6 +500,23 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		case <-timer.C:
 			logger.Info("timer tick and needs sync, triggering recompute")
 			proxyTrigger.TriggerRecomputation()
+			go func() {
+				s.syncGatewayStatus(ctx, latestReport)
+				s.syncRouteStatus(ctx, latestReport)
+			}()
+			go func() {
+				logger.Info("in xds snap tick")
+				for _, snapWrap := range xdsSnapshots.List() {
+					err := s.proxyTranslator.syncXdsAndStatus(ctx, snapWrap.snap, snapWrap.proxyKey, snapWrap.fullReports)
+					if err != nil {
+						// fixme
+					}
+
+					var proxiesWithReports []translatorutils.ProxyWithReports
+					proxiesWithReports = append(proxiesWithReports, snapWrap.proxyWithReport)
+					applyStatusPlugins(ctx, proxiesWithReports, snapWrap.pluginRegistry)
+				}
+			}()
 			// case <-s.inputs.genericEvent.Next():
 			// 	logger.Info("got generic event, setting needs sync")
 			// 	needsSync = true
@@ -791,7 +811,7 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMa
 	logger.Infof("syncGatewayStatus for rm %v", rm)
 	err := retry.Do(func() error {
 		for gwnn, _ := range rm.Gateways {
-			logger.Infof("syncing k8s gateway %s route status", gwnn.String())
+			logger.Infof("syncing k8s gateway %s status", gwnn.String())
 			gw := gwv1.Gateway{}
 			err := s.mgr.GetClient().Get(ctx, gwnn, &gw)
 			if err != nil {
