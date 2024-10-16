@@ -30,6 +30,17 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 // TestDoesNotReject checks webhook does not reject invalid transformation when disable_transformation_validation=false
 func (s *testingSuite) TestDoesNotReject() {
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.VSTransformationSingleReplace, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assertions.NoError(err)
+
+		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.VSTransformationHeaderText, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assertions.NoError(err)
+
+		err = s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, validation.VSTransformationExtractors, "-n", s.testInstallation.Metadata.InstallNamespace)
+		s.Assertions.NoError(err)
+	})
+
 	// accepts invalid inja template in transformation
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.VSTransformationExtractors, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().NoError(err)

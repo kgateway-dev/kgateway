@@ -530,6 +530,9 @@ spec:
                       disableTransformationValidation:
                         nullable: true
                         type: boolean
+                      fullEnvoyValidation:
+                        nullable: true
+                        type: boolean
                       ignoreGlooValidationFailure:
                         type: boolean
                       proxyValidationServerAddr:
@@ -1054,6 +1057,28 @@ spec:
                   token:
                     type: string
                 type: object
+              watchNamespaceSelectors:
+                items:
+                  properties:
+                    matchExpressions:
+                      items:
+                        properties:
+                          key:
+                            type: string
+                          operator:
+                            type: string
+                          values:
+                            items:
+                              type: string
+                            type: array
+                        type: object
+                      type: array
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      type: object
+                  type: object
+                type: array
               watchNamespaces:
                 items:
                   type: string

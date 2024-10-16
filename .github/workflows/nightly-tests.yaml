@@ -243,9 +243,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kube-e2e-test-type: ['gateway', 'gloo', 'helm', 'upgrade']
+        kube-e2e-test-type: ['gateway', 'gloo', 'upgrade']
         kube-version: [ { node: 'v1.25.16@sha256:5da57dfc290ac3599e775e63b8b6c49c0c85d3fec771cd7d55b45fae14b38d3b', kubectl: 'v1.25.16', kind: 'v0.20.0', helm: 'v3.13.2' },
-                        { node: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245', kubectl: 'v1.29.2', kind: 'v0.20.0', helm: 'v3.14.4' }]
+                        { node: 'v1.31.0@sha256:53df588e04085fd41ae12de0c3fe4c72f7013bba32a20e7325357a1ac94ba865', kubectl: 'v1.31.0', kind: 'v0.24.0', helm: 'v3.14.4' }]
         image-variant:
           - standard
     steps:
@@ -272,9 +272,9 @@ jobs:
         #   We should extend the support/usage of those .env files to these other jobs.
         #   The tests are currently in flux, and some of these regression tests are being migrated, so we decided
         #   to limit the scope (and potentially unnecessary work) for now
-        kube-e2e-test-type: ['gateway', 'gloo', 'helm', 'upgrade']
-        kube-version: [ { node: 'v1.25.16@sha256:5da57dfc290ac3599e775e63b8b6c49c0c85d3fec771cd7d55b45fae14b38d3b', kubectl: 'v1.25.16', kind: 'v0.20.0', helm: 'v3.13.2' },
-                        { node: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245', kubectl: 'v1.29.2', kind: 'v0.20.0', helm: 'v3.14.4' }]
+        kube-e2e-test-type: ['gateway', 'gloo', 'upgrade']
+        kube-version: [ { node: 'v1.27.3@sha256:3966ac761ae0136263ffdb6cfd4db23ef8a83cba8a463690e98317add2c9ba72', kubectl: 'v1.27.3', kind: 'v0.20.0', helm: 'v3.13.2' },
+                        { node: 'v1.31.0@sha256:53df588e04085fd41ae12de0c3fe4c72f7013bba32a20e7325357a1ac94ba865', kubectl: 'v1.31.0', kind: 'v0.24.0', helm: 'v3.14.4' }]
         image-variant:
           - standard
     steps:
@@ -311,7 +311,7 @@ jobs:
       matrix:
         kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade']
         kube-version: [ { node: 'v1.25.16@sha256:5da57dfc290ac3599e775e63b8b6c49c0c85d3fec771cd7d55b45fae14b38d3b', kubectl: 'v1.25.16', kind: 'v0.20.0', helm: 'v3.13.2' },
-                        { node: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245', kubectl: 'v1.29.2', kind: 'v0.20.0', helm: 'v3.14.4' }]
+                        { node: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31', kubectl: 'v1.28.4', kind: 'v0.20.0', helm: 'v3.14.4' }]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -403,12 +403,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kube-version: [ { node: 'v1.25.16@sha256:5da57dfc290ac3599e775e63b8b6c49c0c85d3fec771cd7d55b45fae14b38d3b', kubectl: 'v1.25.16', kind: 'v0.20.0', helm: 'v3.13.2' },
-                        { node: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245', kubectl: 'v1.29.2', kind: 'v0.20.0', helm: 'v3.14.4' }]
+        kube-version: [ { node: 'v1.27.3@sha256:3966ac761ae0136263ffdb6cfd4db23ef8a83cba8a463690e98317add2c9ba72', kubectl: 'v1.27.3', kind: 'v0.20.0', helm: 'v3.13.2' },
+                        { node: 'v1.31.0@sha256:53df588e04085fd41ae12de0c3fe4c72f7013bba32a20e7325357a1ac94ba865', kubectl: 'v1.31.0', kind: 'v0.24.0', helm: 'v3.14.4' }]
         image-variant:
           - standard
-        profile:
-        - standard
     steps:
     - uses: actions/checkout@v4
       with:
@@ -427,8 +425,6 @@ jobs:
                         { node: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245', kubectl: 'v1.29.2', kind: 'v0.20.0', helm: 'v3.14.4' } ]
         image-variant:
           - standard
-        # profile:
-        # - standard
     steps:
       - uses: actions/checkout@v4
         with:

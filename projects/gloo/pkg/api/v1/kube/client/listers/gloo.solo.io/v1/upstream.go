@@ -20,14 +20,16 @@ package v1
 
 import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
 // UpstreamLister helps list Upstreams.
+// All objects returned here must be treated as read-only.
 type UpstreamLister interface {
 	// List lists all Upstreams in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Upstream, err error)
 	// Upstreams returns an object that can list and get Upstreams.
 	Upstreams(namespace string) UpstreamNamespaceLister
@@ -36,32 +38,27 @@ type UpstreamLister interface {
 
 // upstreamLister implements the UpstreamLister interface.
 type upstreamLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v1.Upstream]
 }
 
 // NewUpstreamLister returns a new UpstreamLister.
 func NewUpstreamLister(indexer cache.Indexer) UpstreamLister {
-	return &upstreamLister{indexer: indexer}
-}
-
-// List lists all Upstreams in the indexer.
-func (s *upstreamLister) List(selector labels.Selector) (ret []*v1.Upstream, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Upstream))
-	})
-	return ret, err
+	return &upstreamLister{listers.New[*v1.Upstream](indexer, v1.Resource("upstream"))}
 }
 
 // Upstreams returns an object that can list and get Upstreams.
 func (s *upstreamLister) Upstreams(namespace string) UpstreamNamespaceLister {
-	return upstreamNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return upstreamNamespaceLister{listers.NewNamespaced[*v1.Upstream](s.ResourceIndexer, namespace)}
 }
 
 // UpstreamNamespaceLister helps list and get Upstreams.
+// All objects returned here must be treated as read-only.
 type UpstreamNamespaceLister interface {
 	// List lists all Upstreams in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Upstream, err error)
 	// Get retrieves the Upstream from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1.Upstream, error)
 	UpstreamNamespaceListerExpansion
 }
@@ -69,26 +66,5 @@ type UpstreamNamespaceLister interface {
 // upstreamNamespaceLister implements the UpstreamNamespaceLister
 // interface.
 type upstreamNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all Upstreams in the indexer for a given namespace.
-func (s upstreamNamespaceLister) List(selector labels.Selector) (ret []*v1.Upstream, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Upstream))
-	})
-	return ret, err
-}
-
-// Get retrieves the Upstream from the indexer for a given namespace and name.
-func (s upstreamNamespaceLister) Get(name string) (*v1.Upstream, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("upstream"), name)
-	}
-	return obj.(*v1.Upstream), nil
+	listers.ResourceIndexer[*v1.Upstream]
 }

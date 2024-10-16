@@ -13,13 +13,13 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
-
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
-
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
+
+	google_golang_org_protobuf_types_known_durationpb "google.golang.org/protobuf/types/known/durationpb"
+
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -67,9 +67,9 @@ func (m *DnsCacheCircuitBreakers) Clone() proto.Message {
 	target = &DnsCacheCircuitBreakers{}
 
 	if h, ok := interface{}(m.GetMaxPendingRequests()).(clone.Cloner); ok {
-		target.MaxPendingRequests = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxPendingRequests = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.MaxPendingRequests = proto.Clone(m.GetMaxPendingRequests()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxPendingRequests = proto.Clone(m.GetMaxPendingRequests()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	return target
@@ -86,21 +86,21 @@ func (m *DnsCacheConfig) Clone() proto.Message {
 	target.DnsLookupFamily = m.GetDnsLookupFamily()
 
 	if h, ok := interface{}(m.GetDnsRefreshRate()).(clone.Cloner); ok {
-		target.DnsRefreshRate = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.DnsRefreshRate = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.DnsRefreshRate = proto.Clone(m.GetDnsRefreshRate()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.DnsRefreshRate = proto.Clone(m.GetDnsRefreshRate()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	if h, ok := interface{}(m.GetHostTtl()).(clone.Cloner); ok {
-		target.HostTtl = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.HostTtl = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.HostTtl = proto.Clone(m.GetHostTtl()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.HostTtl = proto.Clone(m.GetHostTtl()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	if h, ok := interface{}(m.GetMaxHosts()).(clone.Cloner); ok {
-		target.MaxHosts = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxHosts = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.MaxHosts = proto.Clone(m.GetMaxHosts()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxHosts = proto.Clone(m.GetMaxHosts()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	if h, ok := interface{}(m.GetDnsFailureRefreshRate()).(clone.Cloner); ok {
@@ -129,9 +129,9 @@ func (m *DnsCacheConfig) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetDnsQueryTimeout()).(clone.Cloner); ok {
-		target.DnsQueryTimeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.DnsQueryTimeout = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.DnsQueryTimeout = proto.Clone(m.GetDnsQueryTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.DnsQueryTimeout = proto.Clone(m.GetDnsQueryTimeout()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	switch m.DnsCacheType.(type) {
@@ -174,15 +174,15 @@ func (m *RefreshRate) Clone() proto.Message {
 	target = &RefreshRate{}
 
 	if h, ok := interface{}(m.GetBaseInterval()).(clone.Cloner); ok {
-		target.BaseInterval = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.BaseInterval = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.BaseInterval = proto.Clone(m.GetBaseInterval()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.BaseInterval = proto.Clone(m.GetBaseInterval()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	if h, ok := interface{}(m.GetMaxInterval()).(clone.Cloner); ok {
-		target.MaxInterval = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.MaxInterval = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.MaxInterval = proto.Clone(m.GetMaxInterval()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.MaxInterval = proto.Clone(m.GetMaxInterval()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	return target

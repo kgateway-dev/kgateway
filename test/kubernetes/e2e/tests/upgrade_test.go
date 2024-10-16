@@ -3,10 +3,8 @@ package tests_test
 import (
 	"context"
 	"log"
-	"path/filepath"
 	"testing"
 
-	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/require"
 
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
@@ -27,10 +25,11 @@ func TestUpgradeFromLastPatchPreviousMinor(t *testing.T) {
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:       "upgrade-from-last-patch-previous-minor",
-			ValuesManifestFile:     filepath.Join(util.MustGetThisDir(), "manifests", "upgrade-base-test-helm.yaml"),
-			ValidationAlwaysAccept: false,
-			ReleasedVersion:        lastPatchPreviousMinorVersion.String(),
+			InstallNamespace:          "upgrade-from-last-patch-previous-minor",
+			ProfileValuesManifestFile: e2e.FullGatewayProfilePath,
+			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
+			ValidationAlwaysAccept:    false,
+			ReleasedVersion:           lastPatchPreviousMinorVersion.String(),
 		},
 	)
 
@@ -53,10 +52,11 @@ func TestUpgradeFromCurrentPatchLatestMinor(t *testing.T) {
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&gloogateway.Context{
-			InstallNamespace:       "upgrade-from-current-patch-latest-minor",
-			ValuesManifestFile:     filepath.Join(util.MustGetThisDir(), "manifests", "upgrade-base-test-helm.yaml"),
-			ValidationAlwaysAccept: false,
-			ReleasedVersion:        currentPatchMostRecentMinorVersion.String(),
+			InstallNamespace:          "upgrade-from-current-patch-latest-minor",
+			ProfileValuesManifestFile: e2e.FullGatewayProfilePath,
+			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
+			ValidationAlwaysAccept:    false,
+			ReleasedVersion:           currentPatchMostRecentMinorVersion.String(),
 		},
 	)
 

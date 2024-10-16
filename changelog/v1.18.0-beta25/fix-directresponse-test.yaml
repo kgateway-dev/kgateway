@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/10058
+    description: >-
+      Fix DirectResponse failing and flaking tests, and re-add them to the PR CI workflow.

@@ -20,8 +20,8 @@ package v1
 
 import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -38,25 +38,17 @@ type GatewayLister interface {
 
 // gatewayLister implements the GatewayLister interface.
 type gatewayLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v1.Gateway]
 }
 
 // NewGatewayLister returns a new GatewayLister.
 func NewGatewayLister(indexer cache.Indexer) GatewayLister {
-	return &gatewayLister{indexer: indexer}
-}
-
-// List lists all Gateways in the indexer.
-func (s *gatewayLister) List(selector labels.Selector) (ret []*v1.Gateway, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Gateway))
-	})
-	return ret, err
+	return &gatewayLister{listers.New[*v1.Gateway](indexer, v1.Resource("gateway"))}
 }
 
 // Gateways returns an object that can list and get Gateways.
 func (s *gatewayLister) Gateways(namespace string) GatewayNamespaceLister {
-	return gatewayNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return gatewayNamespaceLister{listers.NewNamespaced[*v1.Gateway](s.ResourceIndexer, namespace)}
 }
 
 // GatewayNamespaceLister helps list and get Gateways.
@@ -74,26 +66,5 @@ type GatewayNamespaceLister interface {
 // gatewayNamespaceLister implements the GatewayNamespaceLister
 // interface.
 type gatewayNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all Gateways in the indexer for a given namespace.
-func (s gatewayNamespaceLister) List(selector labels.Selector) (ret []*v1.Gateway, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Gateway))
-	})
-	return ret, err
-}
-
-// Get retrieves the Gateway from the indexer for a given namespace and name.
-func (s gatewayNamespaceLister) Get(name string) (*v1.Gateway, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("gateway"), name)
-	}
-	return obj.(*v1.Gateway), nil
+	listers.ResourceIndexer[*v1.Gateway]
 }

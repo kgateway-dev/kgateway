@@ -1,0 +1,14 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6334
+    resolvesIssue: false
+    description: >-
+      Add initial support for the Gateway API v1.1 conformance tests. This will
+      help us ensure that Gloo Gateway is conformant with the latest Gateway API
+      specification.
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: sigs.k8s.io
+    dependencyRepo: gateway-api
+    dependencyTag: v1.1.0
+    description: Update sigs.k8s.io/gateway-api to version v1.1.0, to pick up the latest Gateway API specification.
+    issueLink: https://github.com/solo-io/solo-projects/issues/6334

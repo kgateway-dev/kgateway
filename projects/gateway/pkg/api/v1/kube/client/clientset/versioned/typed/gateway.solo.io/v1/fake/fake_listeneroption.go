@@ -20,11 +20,8 @@ package fake
 
 import (
 	"context"
-	json "encoding/json"
-	"fmt"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	gatewaysoloiov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/applyconfiguration/gateway.solo.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	types "k8s.io/apimachinery/pkg/types"
@@ -44,22 +41,24 @@ var listeneroptionsKind = v1.SchemeGroupVersion.WithKind("ListenerOption")
 
 // Get takes name of the listenerOption, and returns the corresponding listenerOption object, and an error if there is any.
 func (c *FakeListenerOptions) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.ListenerOption, err error) {
+	emptyResult := &v1.ListenerOption{}
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(listeneroptionsResource, c.ns, name), &v1.ListenerOption{})
+		Invokes(testing.NewGetActionWithOptions(listeneroptionsResource, c.ns, name, options), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.ListenerOption), err
 }
 
 // List takes label and field selectors, and returns the list of ListenerOptions that match those selectors.
 func (c *FakeListenerOptions) List(ctx context.Context, opts metav1.ListOptions) (result *v1.ListenerOptionList, err error) {
+	emptyResult := &v1.ListenerOptionList{}
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(listeneroptionsResource, listeneroptionsKind, c.ns, opts), &v1.ListenerOptionList{})
+		Invokes(testing.NewListActionWithOptions(listeneroptionsResource, listeneroptionsKind, c.ns, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 
 	label, _, _ := testing.ExtractFromListOptions(opts)
@@ -78,28 +77,30 @@ func (c *FakeListenerOptions) List(ctx context.Context, opts metav1.ListOptions)
 // Watch returns a watch.Interface that watches the requested listenerOptions.
 func (c *FakeListenerOptions) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(listeneroptionsResource, c.ns, opts))
+		InvokesWatch(testing.NewWatchActionWithOptions(listeneroptionsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a listenerOption and creates it.  Returns the server's representation of the listenerOption, and an error, if there is any.
 func (c *FakeListenerOptions) Create(ctx context.Context, listenerOption *v1.ListenerOption, opts metav1.CreateOptions) (result *v1.ListenerOption, err error) {
+	emptyResult := &v1.ListenerOption{}
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(listeneroptionsResource, c.ns, listenerOption), &v1.ListenerOption{})
+		Invokes(testing.NewCreateActionWithOptions(listeneroptionsResource, c.ns, listenerOption, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.ListenerOption), err
 }
 
 // Update takes the representation of a listenerOption and updates it. Returns the server's representation of the listenerOption, and an error, if there is any.
 func (c *FakeListenerOptions) Update(ctx context.Context, listenerOption *v1.ListenerOption, opts metav1.UpdateOptions) (result *v1.ListenerOption, err error) {
+	emptyResult := &v1.ListenerOption{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(listeneroptionsResource, c.ns, listenerOption), &v1.ListenerOption{})
+		Invokes(testing.NewUpdateActionWithOptions(listeneroptionsResource, c.ns, listenerOption, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.ListenerOption), err
 }
@@ -114,7 +115,7 @@ func (c *FakeListenerOptions) Delete(ctx context.Context, name string, opts meta
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakeListenerOptions) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(listeneroptionsResource, c.ns, listOpts)
+	action := testing.NewDeleteCollectionActionWithOptions(listeneroptionsResource, c.ns, opts, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1.ListenerOptionList{})
 	return err
@@ -122,33 +123,12 @@ func (c *FakeListenerOptions) DeleteCollection(ctx context.Context, opts metav1.
 
 // Patch applies the patch and returns the patched listenerOption.
 func (c *FakeListenerOptions) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.ListenerOption, err error) {
+	emptyResult := &v1.ListenerOption{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(listeneroptionsResource, c.ns, name, pt, data, subresources...), &v1.ListenerOption{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(listeneroptionsResource, c.ns, name, pt, data, opts, subresources...), emptyResult)
 
 	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1.ListenerOption), err
-}
-
-// Apply takes the given apply declarative configuration, applies it and returns the applied listenerOption.
-func (c *FakeListenerOptions) Apply(ctx context.Context, listenerOption *gatewaysoloiov1.ListenerOptionApplyConfiguration, opts metav1.ApplyOptions) (result *v1.ListenerOption, err error) {
-	if listenerOption == nil {
-		return nil, fmt.Errorf("listenerOption provided to Apply must not be nil")
-	}
-	data, err := json.Marshal(listenerOption)
-	if err != nil {
-		return nil, err
-	}
-	name := listenerOption.Name
-	if name == nil {
-		return nil, fmt.Errorf("listenerOption.Name must be provided to Apply")
-	}
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(listeneroptionsResource, c.ns, *name, types.ApplyPatchType, data), &v1.ListenerOption{})
-
-	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.ListenerOption), err
 }

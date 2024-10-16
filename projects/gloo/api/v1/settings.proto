@@ -42,6 +42,7 @@ message Settings {
     //
     // If not set, this defaults to all available namespaces. Please note that, the `discovery_namespace` will always
     // be included in this list.
+    // If this is specified, it overwrites the `watch_namespace_selectors` specified
     repeated string watch_namespaces = 2;
 
     // This setting determines where Gloo controllers will store its resources
@@ -567,6 +568,79 @@ message Settings {
     // defaults globally, and can be overridden by HttpListenerOptions, VirtualHostOptions,
     // or RouteOptions.
     extproc.options.gloo.solo.io.Settings ext_proc = 39;
+
+    // A list of Kubernetes selectors that specify the set of namespaces to restrict the namespaces that Gloo controllers
+    // take into consideration when watching for resources.
+    // Elements in the list are disjunctive (OR semantics), i.e. a namespace will be included if it matches any selector.
+    // The following example selects any namespace that matches either below:
+    // 1. The namespace has both of these labels: `env: prod` and `region: us-east1`
+    // 2. The namespace has label `app` equal to `cassandra` or `spark`.
+    // ```yaml
+    // watchNamespaceSelectors:
+    //   - matchLabels:
+    //       env: prod
+    //       region: us-east1
+    //   - matchExpressions:
+    //     - key: app
+    //       operator: In
+    //       values:
+    //         - cassandra
+    //         - spark
+    // ```
+    // However, if the match conditions are part of the same same list item, the namespace must match all conditions.
+    // ```yaml
+    // watchNamespaceSelectors:
+    //   - matchLabels:
+    //       env: prod
+    //       region: us-east1
+    //     matchExpressions:
+    //     - key: app
+    //       operator: In
+    //       values:
+    //         - cassandra
+    //         - spark
+    // ```
+    // Refer to the [Kubernetes selector docs](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors)
+    // for additional detail on selector semantics.
+    repeated LabelSelector watch_namespace_selectors = 40;
+}
+
+// A label selector requirement is a selector that contains values, a key, and an operator that
+// relates the key and values.
+// Copied from Kubernetes to avoid expensive dependency on Kubernetes libraries.
+// Ref: https://github.com/kubernetes/apimachinery/blob/f7615f37d717297aca51101478406af712553c5b/pkg/apis/meta/v1/generated.proto#L442-L453
+message LabelSelector {
+    // matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+    // map is equivalent to an element of matchExpressions, whose key field is "key", the
+    // operator is "In", and the values array contains only "value". The requirements are ANDed.
+    // +optional
+    map<string, string> match_labels = 1;
+
+    // matchExpressions is a list of label selector requirements. The requirements are ANDed.
+    // +optional
+    repeated LabelSelectorRequirement match_expressions = 2;
+}
+
+// A label selector requirement is a selector that contains values, a key, and an operator that
+// relates the key and values.
+// Copied from Kubernetes to avoid expensive dependency on Kubernetes libraries.
+// Ref: https://github.com/kubernetes/apimachinery/blob/f7615f37d717297aca51101478406af712553c5b/pkg/apis/meta/v1/generated.proto#L455-L472
+message LabelSelectorRequirement {
+    // key is the label key that the selector applies to.
+    // +patchMergeKey=key
+    // +patchStrategy=merge
+    string key = 1;
+
+    // operator represents a key's relationship to a set of values.
+    // Valid operators are In, NotIn, Exists and DoesNotExist.
+    string operator = 2;
+
+    // values is an array of string values. If the operator is In or NotIn,
+    // the values array must be non-empty. If the operator is Exists or DoesNotExist,
+    // the values array must be empty. This array is replaced during a strategic
+    // merge patch.
+    // +optional
+    repeated string values = 3;
 }
 
 // Default configuration to use for upstreams, when not provided by a specific upstream
@@ -673,15 +747,15 @@ message GlooOptions {
     // set these options to fine-tune the way Gloo handles invalid user configuration
     InvalidConfigPolicy invalid_config_policy = 6;
 
-    // Enable or disable Gloo Edge to scan Kubernetes services in the cluster and create in-memory Upstream resources 
-    // to represent them. These resources enable Gloo Edge to route requests to a Kubernetes service. Note that if  
+    // Enable or disable Gloo Edge to scan Kubernetes services in the cluster and create in-memory Upstream resources
+    // to represent them. These resources enable Gloo Edge to route requests to a Kubernetes service. Note that if
     // you have a large number of services in your cluster and you do not restrict the namespaces that Gloo Edge watches,
-    // the API snapshot increases which can have a negative impact on the Gloo Edge translation time. In addition, load 
+    // the API snapshot increases which can have a negative impact on the Gloo Edge translation time. In addition, load
     // balancing is done in `kube-proxy` which can have further performance impacts. Using Gloo Upstreams as a routing
-    // destination bypasses `kube-proxy` as the request is routed to the pod directly. Alternatively, you can use 
-    // [`Kubernetes`](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/kubernetes/kubernetes.proto.sk/) 
-    // Upstream resources as a routing destination to forward requests to the pod directly. 
-    // 
+    // destination bypasses `kube-proxy` as the request is routed to the pod directly. Alternatively, you can use
+    // [`Kubernetes`](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/kubernetes/kubernetes.proto.sk/)
+    // Upstream resources as a routing destination to forward requests to the pod directly.
+    //
     // For more information, see the [docs](https://docs.solo.io/gloo-edge/latest/guides/traffic_management/destination_types/kubernetes_services/).
     bool disable_kubernetes_destinations = 7;
 
@@ -837,6 +911,13 @@ message GatewayOptions {
         // as a warning instead of an error. This will allow for eventually consistent workloads, but will also permit
         // the accidental deletion of secrets being referenced, which would cause disruption in traffic.
         google.protobuf.BoolValue warn_missing_tls_secret = 13;
+
+        // Configures the Gloo translation loop to send the final product of translation through Envoy
+        // validation mode. This has an negative impact on the total translation throughput, but it
+        // helps ensure the configuration will not be nacked when served to Envoy.
+        //
+        // This feature is not yet implemented.
+        google.protobuf.BoolValue full_envoy_validation = 14;
     }
 
     // If provided, the Gateway will perform [Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)

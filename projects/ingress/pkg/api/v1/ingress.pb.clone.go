@@ -13,9 +13,9 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_any "github.com/golang/protobuf/ptypes/any"
-
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	google_golang_org_protobuf_types_known_anypb "google.golang.org/protobuf/types/known/anypb"
 )
 
 // ensure the imports are used
@@ -38,15 +38,15 @@ func (m *Ingress) Clone() proto.Message {
 	target = &Ingress{}
 
 	if h, ok := interface{}(m.GetKubeIngressSpec()).(clone.Cloner); ok {
-		target.KubeIngressSpec = h.Clone().(*github_com_golang_protobuf_ptypes_any.Any)
+		target.KubeIngressSpec = h.Clone().(*google_golang_org_protobuf_types_known_anypb.Any)
 	} else {
-		target.KubeIngressSpec = proto.Clone(m.GetKubeIngressSpec()).(*github_com_golang_protobuf_ptypes_any.Any)
+		target.KubeIngressSpec = proto.Clone(m.GetKubeIngressSpec()).(*google_golang_org_protobuf_types_known_anypb.Any)
 	}
 
 	if h, ok := interface{}(m.GetKubeIngressStatus()).(clone.Cloner); ok {
-		target.KubeIngressStatus = h.Clone().(*github_com_golang_protobuf_ptypes_any.Any)
+		target.KubeIngressStatus = h.Clone().(*google_golang_org_protobuf_types_known_anypb.Any)
 	} else {
-		target.KubeIngressStatus = proto.Clone(m.GetKubeIngressStatus()).(*github_com_golang_protobuf_ptypes_any.Any)
+		target.KubeIngressStatus = proto.Clone(m.GetKubeIngressStatus()).(*google_golang_org_protobuf_types_known_anypb.Any)
 	}
 
 	if h, ok := interface{}(m.GetMetadata()).(clone.Cloner); ok {

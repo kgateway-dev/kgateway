@@ -20,8 +20,8 @@ package v1
 
 import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -38,25 +38,17 @@ type MatchableHttpGatewayLister interface {
 
 // matchableHttpGatewayLister implements the MatchableHttpGatewayLister interface.
 type matchableHttpGatewayLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v1.MatchableHttpGateway]
 }
 
 // NewMatchableHttpGatewayLister returns a new MatchableHttpGatewayLister.
 func NewMatchableHttpGatewayLister(indexer cache.Indexer) MatchableHttpGatewayLister {
-	return &matchableHttpGatewayLister{indexer: indexer}
-}
-
-// List lists all MatchableHttpGateways in the indexer.
-func (s *matchableHttpGatewayLister) List(selector labels.Selector) (ret []*v1.MatchableHttpGateway, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.MatchableHttpGateway))
-	})
-	return ret, err
+	return &matchableHttpGatewayLister{listers.New[*v1.MatchableHttpGateway](indexer, v1.Resource("matchablehttpgateway"))}
 }
 
 // MatchableHttpGateways returns an object that can list and get MatchableHttpGateways.
 func (s *matchableHttpGatewayLister) MatchableHttpGateways(namespace string) MatchableHttpGatewayNamespaceLister {
-	return matchableHttpGatewayNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return matchableHttpGatewayNamespaceLister{listers.NewNamespaced[*v1.MatchableHttpGateway](s.ResourceIndexer, namespace)}
 }
 
 // MatchableHttpGatewayNamespaceLister helps list and get MatchableHttpGateways.
@@ -74,26 +66,5 @@ type MatchableHttpGatewayNamespaceLister interface {
 // matchableHttpGatewayNamespaceLister implements the MatchableHttpGatewayNamespaceLister
 // interface.
 type matchableHttpGatewayNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all MatchableHttpGateways in the indexer for a given namespace.
-func (s matchableHttpGatewayNamespaceLister) List(selector labels.Selector) (ret []*v1.MatchableHttpGateway, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.MatchableHttpGateway))
-	})
-	return ret, err
-}
-
-// Get retrieves the MatchableHttpGateway from the indexer for a given namespace and name.
-func (s matchableHttpGatewayNamespaceLister) Get(name string) (*v1.MatchableHttpGateway, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("matchablehttpgateway"), name)
-	}
-	return obj.(*v1.MatchableHttpGateway), nil
+	listers.ResourceIndexer[*v1.MatchableHttpGateway]
 }

@@ -2,11 +2,15 @@ package runner
 
 import (
 	"bytes"
+	"context"
 	"log"
 	"os"
 	"syscall"
 
+	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/utils/cmdutils"
 	"github.com/solo-io/gloo/projects/envoyinit/pkg/downward"
+	"github.com/solo-io/go-utils/contextutils"
 )
 
 const (
@@ -22,6 +26,24 @@ const (
 	envoyExecutableEnv     = "ENVOY"
 	defaultEnvoyExecutable = "/usr/local/bin/envoy"
 )
+
+func RunEnvoyValidate(ctx context.Context, envoyExecutable, bootstrapConfig string) error {
+	logger := contextutils.LoggerFrom(ctx)
+
+	validateCmd := cmdutils.Command(ctx, envoyExecutable, "--mode", "validate", "--config-yaml", bootstrapConfig, "-l", "critical", "--log-format", "%v")
+	if err := validateCmd.Run(); err != nil {
+		if os.IsNotExist(err) {
+			// log a warning and return nil; will allow users to continue to run Gloo locally without
+			// relying on the Gloo container with Envoy already published to the expected directory
+			logger.Warnf("Unable to validate envoy configuration using envoy at %v; "+
+				"skipping additional validation of Gloo config.", envoyExecutable)
+			return nil
+		}
+		return eris.Errorf("envoy validation mode output: %v, error: %v", err.OutputString(), err.Error())
+	}
+
+	return nil
+}
 
 // RunEnvoy run Envoy with bootstrap configuration injected from a file
 func RunEnvoy(envoyExecutable, inputPath, outputPath string) {

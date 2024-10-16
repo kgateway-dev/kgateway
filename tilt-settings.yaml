@@ -17,7 +17,8 @@ providers :
     build_binary: make -B gloo
     binary_name: gloo-linux-$ARCH
     # debug_port: 50100
-    # port_forwards":
+    port_forwards:
+      - 9091
     #   - 50100
   gateway-proxy:
     context: _output/gateway-proxy

@@ -1,0 +1,10 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/6846
+    resolvesIssue: false
+    description: >-
+      When using the Kubernetes Gateway API, the provisioned ServiceAccount's labels and annotations
+      are now configurable via the GatewayParameters fields `spec.kube.serviceAccount.extraLabels` and
+      `spec.kube.serviceAccount.extraAnnotations`. These values can also be set on the default GatewayParameters
+      during install/upgrade using the Helm values `kubeGateway.gatewayParameters.glooGateway.serviceAccount.extraLabels`
+      and `kubeGateway.gatewayParameters.glooGateway.serviceAccount.extraAnnotations`.

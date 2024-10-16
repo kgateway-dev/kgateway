@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_any "github.com/golang/protobuf/ptypes/any"
+	google_golang_org_protobuf_types_known_anypb "google.golang.org/protobuf/types/known/anypb"
 )
 
 // ensure the imports are used
@@ -38,9 +38,9 @@ func (m *TypedExtensionConfig) Clone() proto.Message {
 	target.Name = m.GetName()
 
 	if h, ok := interface{}(m.GetTypedConfig()).(clone.Cloner); ok {
-		target.TypedConfig = h.Clone().(*github_com_golang_protobuf_ptypes_any.Any)
+		target.TypedConfig = h.Clone().(*google_golang_org_protobuf_types_known_anypb.Any)
 	} else {
-		target.TypedConfig = proto.Clone(m.GetTypedConfig()).(*github_com_golang_protobuf_ptypes_any.Any)
+		target.TypedConfig = proto.Clone(m.GetTypedConfig()).(*google_golang_org_protobuf_types_known_anypb.Any)
 	}
 
 	return target

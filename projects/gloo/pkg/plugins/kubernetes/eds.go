@@ -118,7 +118,7 @@ func newEndpointWatcherForUpstreams(kubeFactoryFactory func(ns []string) KubePlu
 	// When creating the InformerFactory, by convention, an empty namespace list means watch all namespaces.
 	// To ensure that we only watch what we are supposed to, fallback to WatchNamespaces if namespaces is an empty list.
 	if len(namespaces) == 0 {
-		namespaces = settings.GetWatchNamespaces()
+		namespaces = settingsutil.GetNamespacesToWatch(settings)
 	}
 	kubeFactory := kubeFactoryFactory(namespaces)
 	// this can take a bit of time some make sure we are still in business

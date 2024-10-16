@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -36,27 +36,27 @@ func (m *CircuitBreakerConfig) Clone() proto.Message {
 	target = &CircuitBreakerConfig{}
 
 	if h, ok := interface{}(m.GetMaxConnections()).(clone.Cloner); ok {
-		target.MaxConnections = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxConnections = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.MaxConnections = proto.Clone(m.GetMaxConnections()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxConnections = proto.Clone(m.GetMaxConnections()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	if h, ok := interface{}(m.GetMaxPendingRequests()).(clone.Cloner); ok {
-		target.MaxPendingRequests = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxPendingRequests = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.MaxPendingRequests = proto.Clone(m.GetMaxPendingRequests()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxPendingRequests = proto.Clone(m.GetMaxPendingRequests()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	if h, ok := interface{}(m.GetMaxRequests()).(clone.Cloner); ok {
-		target.MaxRequests = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxRequests = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.MaxRequests = proto.Clone(m.GetMaxRequests()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxRequests = proto.Clone(m.GetMaxRequests()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	if h, ok := interface{}(m.GetMaxRetries()).(clone.Cloner); ok {
-		target.MaxRetries = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxRetries = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.MaxRetries = proto.Clone(m.GetMaxRetries()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.MaxRetries = proto.Clone(m.GetMaxRetries()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	return target

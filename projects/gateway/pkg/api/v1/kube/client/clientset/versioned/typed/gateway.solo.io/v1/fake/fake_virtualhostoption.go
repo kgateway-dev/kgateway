@@ -20,11 +20,8 @@ package fake
 
 import (
 	"context"
-	json "encoding/json"
-	"fmt"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	gatewaysoloiov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/applyconfiguration/gateway.solo.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	types "k8s.io/apimachinery/pkg/types"
@@ -44,22 +41,24 @@ var virtualhostoptionsKind = v1.SchemeGroupVersion.WithKind("VirtualHostOption")
 
 // Get takes name of the virtualHostOption, and returns the corresponding virtualHostOption object, and an error if there is any.
 func (c *FakeVirtualHostOptions) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.VirtualHostOption, err error) {
+	emptyResult := &v1.VirtualHostOption{}
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(virtualhostoptionsResource, c.ns, name), &v1.VirtualHostOption{})
+		Invokes(testing.NewGetActionWithOptions(virtualhostoptionsResource, c.ns, name, options), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.VirtualHostOption), err
 }
 
 // List takes label and field selectors, and returns the list of VirtualHostOptions that match those selectors.
 func (c *FakeVirtualHostOptions) List(ctx context.Context, opts metav1.ListOptions) (result *v1.VirtualHostOptionList, err error) {
+	emptyResult := &v1.VirtualHostOptionList{}
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(virtualhostoptionsResource, virtualhostoptionsKind, c.ns, opts), &v1.VirtualHostOptionList{})
+		Invokes(testing.NewListActionWithOptions(virtualhostoptionsResource, virtualhostoptionsKind, c.ns, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 
 	label, _, _ := testing.ExtractFromListOptions(opts)
@@ -78,40 +77,43 @@ func (c *FakeVirtualHostOptions) List(ctx context.Context, opts metav1.ListOptio
 // Watch returns a watch.Interface that watches the requested virtualHostOptions.
 func (c *FakeVirtualHostOptions) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(virtualhostoptionsResource, c.ns, opts))
+		InvokesWatch(testing.NewWatchActionWithOptions(virtualhostoptionsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a virtualHostOption and creates it.  Returns the server's representation of the virtualHostOption, and an error, if there is any.
 func (c *FakeVirtualHostOptions) Create(ctx context.Context, virtualHostOption *v1.VirtualHostOption, opts metav1.CreateOptions) (result *v1.VirtualHostOption, err error) {
+	emptyResult := &v1.VirtualHostOption{}
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(virtualhostoptionsResource, c.ns, virtualHostOption), &v1.VirtualHostOption{})
+		Invokes(testing.NewCreateActionWithOptions(virtualhostoptionsResource, c.ns, virtualHostOption, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.VirtualHostOption), err
 }
 
 // Update takes the representation of a virtualHostOption and updates it. Returns the server's representation of the virtualHostOption, and an error, if there is any.
 func (c *FakeVirtualHostOptions) Update(ctx context.Context, virtualHostOption *v1.VirtualHostOption, opts metav1.UpdateOptions) (result *v1.VirtualHostOption, err error) {
+	emptyResult := &v1.VirtualHostOption{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(virtualhostoptionsResource, c.ns, virtualHostOption), &v1.VirtualHostOption{})
+		Invokes(testing.NewUpdateActionWithOptions(virtualhostoptionsResource, c.ns, virtualHostOption, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.VirtualHostOption), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeVirtualHostOptions) UpdateStatus(ctx context.Context, virtualHostOption *v1.VirtualHostOption, opts metav1.UpdateOptions) (*v1.VirtualHostOption, error) {
+func (c *FakeVirtualHostOptions) UpdateStatus(ctx context.Context, virtualHostOption *v1.VirtualHostOption, opts metav1.UpdateOptions) (result *v1.VirtualHostOption, err error) {
+	emptyResult := &v1.VirtualHostOption{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(virtualhostoptionsResource, "status", c.ns, virtualHostOption), &v1.VirtualHostOption{})
+		Invokes(testing.NewUpdateSubresourceActionWithOptions(virtualhostoptionsResource, "status", c.ns, virtualHostOption, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.VirtualHostOption), err
 }
@@ -126,7 +128,7 @@ func (c *FakeVirtualHostOptions) Delete(ctx context.Context, name string, opts m
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakeVirtualHostOptions) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(virtualhostoptionsResource, c.ns, listOpts)
+	action := testing.NewDeleteCollectionActionWithOptions(virtualhostoptionsResource, c.ns, opts, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1.VirtualHostOptionList{})
 	return err
@@ -134,56 +136,12 @@ func (c *FakeVirtualHostOptions) DeleteCollection(ctx context.Context, opts meta
 
 // Patch applies the patch and returns the patched virtualHostOption.
 func (c *FakeVirtualHostOptions) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.VirtualHostOption, err error) {
+	emptyResult := &v1.VirtualHostOption{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(virtualhostoptionsResource, c.ns, name, pt, data, subresources...), &v1.VirtualHostOption{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(virtualhostoptionsResource, c.ns, name, pt, data, opts, subresources...), emptyResult)
 
 	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1.VirtualHostOption), err
-}
-
-// Apply takes the given apply declarative configuration, applies it and returns the applied virtualHostOption.
-func (c *FakeVirtualHostOptions) Apply(ctx context.Context, virtualHostOption *gatewaysoloiov1.VirtualHostOptionApplyConfiguration, opts metav1.ApplyOptions) (result *v1.VirtualHostOption, err error) {
-	if virtualHostOption == nil {
-		return nil, fmt.Errorf("virtualHostOption provided to Apply must not be nil")
-	}
-	data, err := json.Marshal(virtualHostOption)
-	if err != nil {
-		return nil, err
-	}
-	name := virtualHostOption.Name
-	if name == nil {
-		return nil, fmt.Errorf("virtualHostOption.Name must be provided to Apply")
-	}
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(virtualhostoptionsResource, c.ns, *name, types.ApplyPatchType, data), &v1.VirtualHostOption{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1.VirtualHostOption), err
-}
-
-// ApplyStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
-func (c *FakeVirtualHostOptions) ApplyStatus(ctx context.Context, virtualHostOption *gatewaysoloiov1.VirtualHostOptionApplyConfiguration, opts metav1.ApplyOptions) (result *v1.VirtualHostOption, err error) {
-	if virtualHostOption == nil {
-		return nil, fmt.Errorf("virtualHostOption provided to Apply must not be nil")
-	}
-	data, err := json.Marshal(virtualHostOption)
-	if err != nil {
-		return nil, err
-	}
-	name := virtualHostOption.Name
-	if name == nil {
-		return nil, fmt.Errorf("virtualHostOption.Name must be provided to Apply")
-	}
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(virtualhostoptionsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1.VirtualHostOption{})
-
-	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 	return obj.(*v1.VirtualHostOption), err
 }

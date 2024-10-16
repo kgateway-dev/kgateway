@@ -13,15 +13,15 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_empty "github.com/golang/protobuf/ptypes/empty"
-
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
-
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_route_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
+
+	google_golang_org_protobuf_types_known_emptypb "google.golang.org/protobuf/types/known/emptypb"
+
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -186,9 +186,9 @@ func (m *Transformation) Clone() proto.Message {
 	target = &Transformation{}
 
 	if h, ok := interface{}(m.GetLogRequestResponseInfo()).(clone.Cloner); ok {
-		target.LogRequestResponseInfo = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.LogRequestResponseInfo = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.LogRequestResponseInfo = proto.Clone(m.GetLogRequestResponseInfo()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.LogRequestResponseInfo = proto.Clone(m.GetLogRequestResponseInfo()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	switch m.TransformationType.(type) {
@@ -247,9 +247,9 @@ func (m *Extraction) Clone() proto.Message {
 	target.Subgroup = m.GetSubgroup()
 
 	if h, ok := interface{}(m.GetReplacementText()).(clone.Cloner); ok {
-		target.ReplacementText = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.ReplacementText = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	} else {
-		target.ReplacementText = proto.Clone(m.GetReplacementText()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.ReplacementText = proto.Clone(m.GetReplacementText()).(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	}
 
 	target.Mode = m.GetMode()
@@ -266,11 +266,11 @@ func (m *Extraction) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetBody()).(clone.Cloner); ok {
 			target.Source = &Extraction_Body{
-				Body: h.Clone().(*github_com_golang_protobuf_ptypes_empty.Empty),
+				Body: h.Clone().(*google_golang_org_protobuf_types_known_emptypb.Empty),
 			}
 		} else {
 			target.Source = &Extraction_Body{
-				Body: proto.Clone(m.GetBody()).(*github_com_golang_protobuf_ptypes_empty.Empty),
+				Body: proto.Clone(m.GetBody()).(*google_golang_org_protobuf_types_known_emptypb.Empty),
 			}
 		}
 

@@ -32,12 +32,16 @@
 |kubeGateway.gatewayParameters.glooGateway.envoyContainer.securityContext.procMount|string|||
 |kubeGateway.gatewayParameters.glooGateway.envoyContainer.securityContext.seccompProfile.type|string|||
 |kubeGateway.gatewayParameters.glooGateway.envoyContainer.securityContext.seccompProfile.localhostProfile|string|||
+|kubeGateway.gatewayParameters.glooGateway.envoyContainer.securityContext.appArmorProfile.type|string|||
+|kubeGateway.gatewayParameters.glooGateway.envoyContainer.securityContext.appArmorProfile.localhostProfile|string|||
 |kubeGateway.gatewayParameters.glooGateway.envoyContainer.resources.limits.memory|string||amount of memory|
 |kubeGateway.gatewayParameters.glooGateway.envoyContainer.resources.limits.cpu|string||amount of CPUs|
 |kubeGateway.gatewayParameters.glooGateway.envoyContainer.resources.requests.memory|string||amount of memory|
 |kubeGateway.gatewayParameters.glooGateway.envoyContainer.resources.requests.cpu|string||amount of CPUs|
 |kubeGateway.gatewayParameters.glooGateway.proxyDeployment.replicas|int32|1|number of instances to deploy. If set to null, a default of 1 will be imposed.|
 |kubeGateway.gatewayParameters.glooGateway.service.type|string|LoadBalancer|K8s service type. If set to null, a default of LoadBalancer will be imposed.|
+|kubeGateway.gatewayParameters.glooGateway.serviceAccount.extraLabels.NAME|string||Extra labels to add to the service account.|
+|kubeGateway.gatewayParameters.glooGateway.serviceAccount.extraAnnotations.NAME|string||Extra annotations to add to the service account.|
 |kubeGateway.gatewayParameters.glooGateway.sdsContainer.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |kubeGateway.gatewayParameters.glooGateway.sdsContainer.image.repository|string|sds|The image repository (name) for the container.|
 |kubeGateway.gatewayParameters.glooGateway.sdsContainer.image.digest|string||The container image's hash digest (e.g. 'sha256:12345...'), consumed when variant=standard.|
@@ -68,6 +72,8 @@
 |kubeGateway.gatewayParameters.glooGateway.sdsContainer.securityContext.procMount|string|||
 |kubeGateway.gatewayParameters.glooGateway.sdsContainer.securityContext.seccompProfile.type|string|||
 |kubeGateway.gatewayParameters.glooGateway.sdsContainer.securityContext.seccompProfile.localhostProfile|string|||
+|kubeGateway.gatewayParameters.glooGateway.sdsContainer.securityContext.appArmorProfile.type|string|||
+|kubeGateway.gatewayParameters.glooGateway.sdsContainer.securityContext.appArmorProfile.localhostProfile|string|||
 |kubeGateway.gatewayParameters.glooGateway.sdsContainer.logLevel|string|info|Log level for sds.  Options include "info", "debug", "warn", "error", "panic" and "fatal". Default level is info.|
 |kubeGateway.gatewayParameters.glooGateway.sdsContainer.sdsResources.limits.memory|string||amount of memory|
 |kubeGateway.gatewayParameters.glooGateway.sdsContainer.sdsResources.limits.cpu|string||amount of CPUs|
@@ -103,6 +109,8 @@
 |kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.securityContext.procMount|string|||
 |kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.securityContext.seccompProfile.type|string|||
 |kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.securityContext.seccompProfile.localhostProfile|string|||
+|kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.securityContext.appArmorProfile.type|string|||
+|kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.securityContext.appArmorProfile.localhostProfile|string|||
 |kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.logLevel|string|warning|Log level for istio-proxy. Options include "info", "debug", "warning", and "error". Default level is info Default is 'warning'.|
 |kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.istioMetaMeshId|string|cluster.local|ISTIO_META_MESH_ID Environment Variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to "cluster.local"|
 |kubeGateway.gatewayParameters.glooGateway.istio.istioProxyContainer.istioMetaClusterId|string|Kubernetes|ISTIO_META_CLUSTER_ID Environment Variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to "Kubernetes"|
@@ -143,6 +151,8 @@
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.procMount|string|||
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.seccompProfile.type|string|||
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.seccompProfile.localhostProfile|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.appArmorProfile.type|string|||
+|kubeGateway.gatewayParameters.glooGateway.aiExtension.securityContext.appArmorProfile.localhostProfile|string|||
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.resources.limits.memory|string||amount of memory|
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.resources.limits.cpu|string||amount of CPUs|
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.resources.requests.memory|string||amount of memory|
@@ -172,7 +182,8 @@
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.ports[].protocol|string|||
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.ports[].hostIP|string|||
 |kubeGateway.gatewayParameters.glooGateway.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container. Default is false.|
-|settings.watchNamespaces[]|string||whitelist of namespaces for Gloo Edge to watch for services and CRDs. Empty list means all namespaces|
+|settings.watchNamespaces[]|string||whitelist of namespaces for Gloo Edge to watch for services and CRDs. Empty list means all namespaces. If this and WatchNamespaceSelectors are specified, this takes precedence and WatchNamespaceSelectors is ignored|
+|settings.watchNamespaceSelectors|interface||A list of Kubernetes selectors that specify the set of namespaces to restrict the namespaces that Gloo controllers take into consideration when watching for resources. Elements in the list are disjunctive (OR semantics), i.e. a namespace will be included if it matches any selector. An empty list means all namespaces. If this and WatchNamespaces are specified, WatchNamespaces takes precedence and this is ignored|
 |settings.writeNamespace|string||namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Edge Discovery.|
 |settings.integrations.knative.enabled|bool|false|enabled knative components|
 |settings.integrations.knative.version|string|0.10.0|the version of knative installed to the cluster. if using version < 0.8.0, Gloo Edge will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress|
@@ -262,6 +273,8 @@
 |settings.integrations.knative.proxy.containerSecurityContext.procMount|string|||
 |settings.integrations.knative.proxy.containerSecurityContext.seccompProfile.type|string|||
 |settings.integrations.knative.proxy.containerSecurityContext.seccompProfile.localhostProfile|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.appArmorProfile.type|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.appArmorProfile.localhostProfile|string|||
 |settings.integrations.knative.proxy.containerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |settings.integrations.knative.requireIngressClass|bool||only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'.|
 |settings.integrations.knative.extraKnativeInternalLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the knative internal deployment.|
@@ -307,8 +320,8 @@
 |settings.rateLimit|interface||Partial config for Gloo Edge Enterprise’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit descriptors here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of actions, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes.|
 |settings.ratelimitServer|interface||External Ratelimit Server configuration for Gloo Edge Open Sources’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://docs.solo.io/gloo-edge/main/guides/security/rate_limiting/)|
 |settings.circuitBreakers.maxConnections|uint32||Set this field to specify the maximum number of connections that Envoy will make to the upstream cluster. If not specified, the default is 1024.|
-|settings.circuitBreakers.maxPendingRequests|uint32||Set this field to specfify the maximum number of pending requests that Envoy will allow to the upstream cluster. If not specified, the default is 1024.|
-|settings.circuitBreakers.maxRequests|uint32||Set this field to specfify the maximum number of parallel requests that Envoy will make to the upstream cluster. If not specified, the default is 1024.|
+|settings.circuitBreakers.maxPendingRequests|uint32||Set this field to specify the maximum number of pending requests that Envoy will allow to the upstream cluster. If not specified, the default is 1024.|
+|settings.circuitBreakers.maxRequests|uint32||Set this field to specify the maximum number of parallel requests that Envoy will make to the upstream cluster. If not specified, the default is 1024.|
 |settings.circuitBreakers.maxRetries|uint32||Set this field to specify the maximum number of parallel retries that Envoy will allow to the upstream cluster. If not specified, the default is 3.|
 |settings.enableRestEds|bool|false|Whether or not to use rest xds for all EDS by default. Defaults to false.|
 |settings.devMode|bool||Whether or not to enable dev mode. Defaults to false. Setting to true at install time will expose the gloo dev admin endpoint on port 10010. Not recommended for production. Warning: this value is deprecated as of 1.17 and will be removed in a future release.|
@@ -362,12 +375,15 @@
 |gloo.deployment.podSecurityContext.runAsGroup|int64|||
 |gloo.deployment.podSecurityContext.runAsNonRoot|bool|||
 |gloo.deployment.podSecurityContext.supplementalGroups[]|int64|||
+|gloo.deployment.podSecurityContext.supplementalGroupsPolicy|string|||
 |gloo.deployment.podSecurityContext.fsGroup|int64|||
 |gloo.deployment.podSecurityContext.sysctls[].name|string|||
 |gloo.deployment.podSecurityContext.sysctls[].value|string|||
 |gloo.deployment.podSecurityContext.fsGroupChangePolicy|string|||
 |gloo.deployment.podSecurityContext.seccompProfile.type|string|||
 |gloo.deployment.podSecurityContext.seccompProfile.localhostProfile|string|||
+|gloo.deployment.podSecurityContext.appArmorProfile.type|string|||
+|gloo.deployment.podSecurityContext.appArmorProfile.localhostProfile|string|||
 |gloo.deployment.podSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |gloo.deployment.replicas|int|1|number of instances to deploy|
 |gloo.deployment.customEnv[].name|string|||
@@ -436,6 +452,8 @@
 |gloo.deployment.glooContainerSecurityContext.procMount|string|||
 |gloo.deployment.glooContainerSecurityContext.seccompProfile.type|string|||
 |gloo.deployment.glooContainerSecurityContext.seccompProfile.localhostProfile|string|||
+|gloo.deployment.glooContainerSecurityContext.appArmorProfile.type|string|||
+|gloo.deployment.glooContainerSecurityContext.appArmorProfile.localhostProfile|string|||
 |gloo.deployment.glooContainerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |gloo.serviceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
 |gloo.serviceAccount.disableAutomount|bool||disable automounting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
@@ -490,6 +508,8 @@
 |discovery.deployment.discoveryContainerSecurityContext.procMount|string|||
 |discovery.deployment.discoveryContainerSecurityContext.seccompProfile.type|string|||
 |discovery.deployment.discoveryContainerSecurityContext.seccompProfile.localhostProfile|string|||
+|discovery.deployment.discoveryContainerSecurityContext.appArmorProfile.type|string|||
+|discovery.deployment.discoveryContainerSecurityContext.appArmorProfile.localhostProfile|string|||
 |discovery.deployment.discoveryContainerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |discovery.deployment.replicas|int|1|number of instances to deploy|
 |discovery.deployment.customEnv[].name|string|||
@@ -543,7 +563,7 @@
 |gateway.validation.allowWarnings|bool|true|set this to false in order to ensure validation webhook rejects resources that would have warning status or rejected status, rather than just rejected.|
 |gateway.validation.warnMissingTlsSecret|bool|true|set this to false in order to treat missing tls secret references as errors, causing validation to fail.|
 |gateway.validation.serverEnabled|bool|true|By providing the validation field (parent of this object) the user is implicitly opting into validation. This field allows the user to opt out of the validation server, while still configuring pre-existing fields such as warn_route_short_circuiting and disable_transformation_validation.|
-|gateway.validation.disableTransformationValidation|bool|false|set this to true to disable transformation validation. This may bring signifigant performance benefits if using many transformations, at the cost of possibly incorrect transformations being sent to Envoy. When using this value make sure to pre-validate transformations.|
+|gateway.validation.disableTransformationValidation|bool|false|set this to true to disable transformation validation. This may bring significant performance benefits if using many transformations, at the cost of possibly incorrect transformations being sent to Envoy. When using this value make sure to pre-validate transformations.|
 |gateway.validation.warnRouteShortCircuiting|bool|false|Write a warning to route resources if validation produced a route ordering warning (defaults to false). By setting to true, this means that Gloo Edge will start assigning warnings to resources that would result in route short-circuiting within a virtual host.|
 |gateway.validation.secretName|string|gateway-validation-certs|Name of the Kubernetes Secret containing TLS certificates used by the validation webhook server. This secret will be created by the certGen Job if the certGen Job is enabled.|
 |gateway.validation.failurePolicy|string|Ignore|failurePolicy defines how unrecognized errors from the Gateway validation endpoint are handled - allowed values are 'Ignore' or 'Fail'. Defaults to Ignore |
@@ -556,6 +576,7 @@
 |gateway.validation.webhook.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gateway.validation.validationServerGrpcMaxSizeBytes|int|104857600|gRPC max message size in bytes for the gloo validation server|
 |gateway.validation.livenessProbeEnabled|bool||Set to true to enable a liveness probe for the gateway (default is false). You must also set the 'Probes' value to true.|
+|gateway.validation.fullEnvoyValidation|bool|false|enable feature which validates all final translated config against envoy Validate mode|
 |gateway.certGenJob.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |gateway.certGenJob.image.repository|string|certgen|The image repository (name) for the container.|
 |gateway.certGenJob.image.digest|string||The container image's hash digest (e.g. 'sha256:12345...'), consumed when variant=standard.|
@@ -606,6 +627,8 @@
 |gateway.certGenJob.containerSecurityContext.procMount|string|||
 |gateway.certGenJob.containerSecurityContext.seccompProfile.type|string|||
 |gateway.certGenJob.containerSecurityContext.seccompProfile.localhostProfile|string|||
+|gateway.certGenJob.containerSecurityContext.appArmorProfile.type|string|||
+|gateway.certGenJob.containerSecurityContext.appArmorProfile.localhostProfile|string|||
 |gateway.certGenJob.containerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |gateway.certGenJob.kubeResourceOverride.NAME|interface||override fields in the gateway-certgen job.|
 |gateway.certGenJob.mtlsKubeResourceOverride.NAME|interface||override fields in the gloo-mtls-certgen job.|
@@ -663,6 +686,8 @@
 |gateway.rolloutJob.containerSecurityContext.procMount|string|||
 |gateway.rolloutJob.containerSecurityContext.seccompProfile.type|string|||
 |gateway.rolloutJob.containerSecurityContext.seccompProfile.localhostProfile|string|||
+|gateway.rolloutJob.containerSecurityContext.appArmorProfile.type|string|||
+|gateway.rolloutJob.containerSecurityContext.appArmorProfile.localhostProfile|string|||
 |gateway.rolloutJob.containerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |gateway.rolloutJob.enabled|bool|true|Enable the job that applies default Gloo Edge custom resources at install and upgrade time (default true).|
 |gateway.rolloutJob.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
@@ -722,6 +747,8 @@
 |gateway.cleanupJob.containerSecurityContext.procMount|string|||
 |gateway.cleanupJob.containerSecurityContext.seccompProfile.type|string|||
 |gateway.cleanupJob.containerSecurityContext.seccompProfile.localhostProfile|string|||
+|gateway.cleanupJob.containerSecurityContext.appArmorProfile.type|string|||
+|gateway.cleanupJob.containerSecurityContext.appArmorProfile.localhostProfile|string|||
 |gateway.cleanupJob.containerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |gateway.cleanupJob.enabled|bool|true|Enable the job that removes Gloo Edge custom resources when Gloo Edge is uninstalled (default true).|
 |gateway.cleanupJob.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
@@ -870,12 +897,15 @@
 |gatewayProxies.NAME.podTemplate.podSecurityContext.runAsGroup|int64|||
 |gatewayProxies.NAME.podTemplate.podSecurityContext.runAsNonRoot|bool|||
 |gatewayProxies.NAME.podTemplate.podSecurityContext.supplementalGroups[]|int64|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.supplementalGroupsPolicy|string|||
 |gatewayProxies.NAME.podTemplate.podSecurityContext.fsGroup|int64|||
 |gatewayProxies.NAME.podTemplate.podSecurityContext.sysctls[].name|string|||
 |gatewayProxies.NAME.podTemplate.podSecurityContext.sysctls[].value|string|||
 |gatewayProxies.NAME.podTemplate.podSecurityContext.fsGroupChangePolicy|string|||
 |gatewayProxies.NAME.podTemplate.podSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.NAME.podTemplate.podSecurityContext.seccompProfile.localhostProfile|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.appArmorProfile.type|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.appArmorProfile.localhostProfile|string|||
 |gatewayProxies.NAME.podTemplate.podSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |gatewayProxies.NAME.podTemplate.image.tag|string||The image tag for the container.|
 |gatewayProxies.NAME.podTemplate.image.repository|string||The image repository (name) for the container.|
@@ -907,6 +937,8 @@
 |gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.procMount|string|||
 |gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.seccompProfile.localhostProfile|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.appArmorProfile.type|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.appArmorProfile.localhostProfile|string|||
 |gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |gatewayProxies.NAME.configMap.data.NAME|string|||
 |gatewayProxies.NAME.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
@@ -1118,12 +1150,15 @@
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.runAsGroup|int64|||
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.runAsNonRoot|bool|||
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.supplementalGroups[]|int64|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.supplementalGroupsPolicy|string|||
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.fsGroup|int64|||
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.sysctls[].name|string|||
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.sysctls[].value|string|||
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.fsGroupChangePolicy|string|||
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seccompProfile.localhostProfile|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.appArmorProfile.type|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.appArmorProfile.localhostProfile|string|||
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |gatewayProxies.gatewayProxy.podTemplate.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |gatewayProxies.gatewayProxy.podTemplate.image.repository|string|gloo-envoy-wrapper|The image repository (name) for the container.|
@@ -1155,6 +1190,8 @@
 |gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.procMount|string|||
 |gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.seccompProfile.localhostProfile|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.appArmorProfile.type|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.appArmorProfile.localhostProfile|string|||
 |gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |gatewayProxies.gatewayProxy.configMap.data.NAME|string|||
 |gatewayProxies.gatewayProxy.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
@@ -1288,6 +1325,8 @@
 |ingress.deployment.ingressContainerSecurityContext.procMount|string|||
 |ingress.deployment.ingressContainerSecurityContext.seccompProfile.type|string|||
 |ingress.deployment.ingressContainerSecurityContext.seccompProfile.localhostProfile|string|||
+|ingress.deployment.ingressContainerSecurityContext.appArmorProfile.type|string|||
+|ingress.deployment.ingressContainerSecurityContext.appArmorProfile.localhostProfile|string|||
 |ingress.deployment.ingressContainerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |ingress.deployment.replicas|int|1|number of instances to deploy|
 |ingress.deployment.customEnv[].name|string|||
@@ -1326,7 +1365,7 @@
 |ingress.deployment.resources.requests.memory|string||amount of memory|
 |ingress.deployment.resources.requests.cpu|string||amount of CPUs|
 |ingress.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
-|ingress.requireIngressClass|bool||only serve traffic for Ingress objects with the Ingress Class annotation 'kubernetes.io/ingress.class'. By default the annotation value must be set to 'gloo', however this can be overriden via customIngressClass.|
+|ingress.requireIngressClass|bool||only serve traffic for Ingress objects with the Ingress Class annotation 'kubernetes.io/ingress.class'. By default the annotation value must be set to 'gloo', however this can be overridden via customIngressClass.|
 |ingress.customIngressClass|bool||Only relevant when requireIngressClass is set to true. Setting this value will cause the Gloo Edge Ingress Controller to process only those Ingress objects which have their ingress class set to this value (e.g. 'kubernetes.io/ingress.class=SOMEVALUE').|
 |ingressProxy.deployment.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |ingressProxy.deployment.image.repository|string|gloo-envoy-wrapper|The image repository (name) for the container.|
@@ -1366,6 +1405,8 @@
 |ingressProxy.deployment.ingressProxyContainerSecurityContext.procMount|string|||
 |ingressProxy.deployment.ingressProxyContainerSecurityContext.seccompProfile.type|string|||
 |ingressProxy.deployment.ingressProxyContainerSecurityContext.seccompProfile.localhostProfile|string|||
+|ingressProxy.deployment.ingressProxyContainerSecurityContext.appArmorProfile.type|string|||
+|ingressProxy.deployment.ingressProxyContainerSecurityContext.appArmorProfile.localhostProfile|string|||
 |ingressProxy.deployment.ingressProxyContainerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |ingressProxy.deployment.replicas|int|1|number of instances to deploy|
 |ingressProxy.deployment.customEnv[].name|string|||
@@ -1462,6 +1503,8 @@
 |accessLogger.accessLoggerContainerSecurityContext.procMount|string|||
 |accessLogger.accessLoggerContainerSecurityContext.seccompProfile.type|string|||
 |accessLogger.accessLoggerContainerSecurityContext.seccompProfile.localhostProfile|string|||
+|accessLogger.accessLoggerContainerSecurityContext.appArmorProfile.type|string|||
+|accessLogger.accessLoggerContainerSecurityContext.appArmorProfile.localhostProfile|string|||
 |accessLogger.accessLoggerContainerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |accessLogger.replicas|int|1|number of instances to deploy|
 |accessLogger.customEnv[].name|string|||
@@ -1553,6 +1596,8 @@
 |global.glooMtls.sds.securityContext.procMount|string|||
 |global.glooMtls.sds.securityContext.seccompProfile.type|string|||
 |global.glooMtls.sds.securityContext.seccompProfile.localhostProfile|string|||
+|global.glooMtls.sds.securityContext.appArmorProfile.type|string|||
+|global.glooMtls.sds.securityContext.appArmorProfile.localhostProfile|string|||
 |global.glooMtls.sds.securityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |global.glooMtls.sds.logLevel|string|info|Log level for sds.  Options include "info", "debug", "warn", "error", "panic" and "fatal". Default level is info.|
 |global.glooMtls.sds.sdsResources.limits.memory|string||amount of memory|
@@ -1589,6 +1634,8 @@
 |global.glooMtls.envoy.securityContext.procMount|string|||
 |global.glooMtls.envoy.securityContext.seccompProfile.type|string|||
 |global.glooMtls.envoy.securityContext.seccompProfile.localhostProfile|string|||
+|global.glooMtls.envoy.securityContext.appArmorProfile.type|string|||
+|global.glooMtls.envoy.securityContext.appArmorProfile.localhostProfile|string|||
 |global.glooMtls.envoy.securityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |global.glooMtls.istioProxy.image.tag|string|1.22.0|The image tag for the container.|
 |global.glooMtls.istioProxy.image.repository|string|proxyv2|The image repository (name) for the container.|
@@ -1620,6 +1667,8 @@
 |global.glooMtls.istioProxy.securityContext.procMount|string|||
 |global.glooMtls.istioProxy.securityContext.seccompProfile.type|string|||
 |global.glooMtls.istioProxy.securityContext.seccompProfile.localhostProfile|string|||
+|global.glooMtls.istioProxy.securityContext.appArmorProfile.type|string|||
+|global.glooMtls.istioProxy.securityContext.appArmorProfile.localhostProfile|string|||
 |global.glooMtls.istioProxy.securityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this value to false. Default value is "".|
 |global.glooMtls.istioProxy.logLevel|string|warning|Log level for istio-proxy. Options include "info", "debug", "warning", and "error". Default level is info Default is 'warning'.|
 |global.glooMtls.istioProxy.istioMetaMeshId|string||ISTIO_META_MESH_ID Environment Variable. Warning: this value is only supported with Kubernetes Gateway API proxy. Defaults to "cluster.local"|

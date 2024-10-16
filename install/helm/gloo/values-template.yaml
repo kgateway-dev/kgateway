@@ -145,6 +145,7 @@ gateway:
       # https://github.com/solo-io/gloo/issues/9309
       # As a result, for our Policy API, we default it to on, and provide users the way to opt-out of it
       enablePolicyApi: true
+    fullEnvoyValidation: false
   certGenJob:
     enabled: true
     image:

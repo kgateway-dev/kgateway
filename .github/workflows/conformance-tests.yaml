@@ -11,13 +11,6 @@ on:
         options:
           - standard
           - distroless
-      profile:
-        description: "The conformance profile to run."
-        required: true
-        type: choice
-        options:
-          - standard
-          - experimental
       version:
         description: "Optional: Specify an existing Gloo Gateway release tag to deploy and test (e.g., 1.17.3). Leave empty to use the default branch."
         required: false
@@ -32,14 +25,12 @@ jobs:
         # how this was setup and there's a limited # of dispatch inputs that GH
         # supports. We can revisit this later.
         kube-version:
-        - node: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245'
-          kubectl: 'v1.29.2'
-          kind: 'v0.20.0'
+        - node: 'v1.31.0@sha256:53df588e04085fd41ae12de0c3fe4c72f7013bba32a20e7325357a1ac94ba865'
+          kubectl: 'v1.31.0'
+          kind: 'v0.24.0'
           helm: 'v3.14.4'
         image-variant:
           - ${{ inputs.image-variant }}
-        profile:
-          - ${{ inputs.profile }}
         version:
           - ${{ inputs.version }}
     steps:

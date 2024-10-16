@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/solo-io/gloo/pkg/schemes"
-
 	envoy_config_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
+	"github.com/solo-io/gloo/pkg/schemes"
 	"github.com/solo-io/gloo/pkg/version"
 	gw2_v1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	wellknownkube "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
@@ -104,6 +104,10 @@ func (objs *clientObjects) getEnvoyConfig(namespace, name string) *testBootstrap
 	return &bootstrapCfg
 }
 
+func proxyName(name string) string {
+	return fmt.Sprintf("gloo-proxy-%s", name)
+}
+
 var _ = Describe("Deployer", func() {
 	const (
 		defaultNamespace = "default"
@@ -115,7 +119,7 @@ var _ = Describe("Deployer", func() {
 		defaultGatewayParams = func() *gw2_v1alpha1.GatewayParameters {
 			return &gw2_v1alpha1.GatewayParameters{
 				TypeMeta: metav1.TypeMeta{
-					Kind: "GatewayParameters",
+					Kind: gw2_v1alpha1.GatewayParametersKind,
 					// The parsing expects GROUP/VERSION format in this field
 					APIVersion: gw2_v1alpha1.GroupVersion.String(),
 				},
@@ -160,6 +164,14 @@ var _ = Describe("Deployer", func() {
 								"foo": "bar",
 							},
 						},
+						ServiceAccount: &gw2_v1alpha1.ServiceAccount{
+							ExtraLabels: map[string]string{
+								"default-label-key": "default-label-val",
+							},
+							ExtraAnnotations: map[string]string{
+								"default-anno-key": "default-anno-val",
+							},
+						},
 						Stats: &gw2_v1alpha1.StatsConfig{
 							Enabled:                 ptr.To(true),
 							RoutePrefixRewrite:      ptr.To("/stats/prometheus"),
@@ -174,7 +186,7 @@ var _ = Describe("Deployer", func() {
 		selfManagedGatewayParam = func(name string) *gw2_v1alpha1.GatewayParameters {
 			return &gw2_v1alpha1.GatewayParameters{
 				TypeMeta: metav1.TypeMeta{
-					Kind: "GatewayParameters",
+					Kind: gw2_v1alpha1.GatewayParametersKind,
 					// The parsing expects GROUP/VERSION format in this field
 					APIVersion: gw2_v1alpha1.GroupVersion.String(),
 				},
@@ -200,8 +212,8 @@ var _ = Describe("Deployer", func() {
 				Spec: api.GatewayClassSpec{
 					ControllerName: wellknown.GatewayControllerName,
 					ParametersRef: &api.ParametersReference{
-						Group:     "gateway.gloo.solo.io",
-						Kind:      "GatewayParameters",
+						Group:     gw2_v1alpha1.Group,
+						Kind:      gw2_v1alpha1.GatewayParametersKind,
 						Name:      wellknown.DefaultGatewayParametersName,
 						Namespace: ptr.To(api.Namespace(defaultNamespace)),
 					},
@@ -209,7 +221,7 @@ var _ = Describe("Deployer", func() {
 			}
 			gwParams := &gw2_v1alpha1.GatewayParameters{
 				TypeMeta: metav1.TypeMeta{
-					Kind: "GatewayParameters",
+					Kind: gw2_v1alpha1.GatewayParametersKind,
 					// The parsing expects GROUP/VERSION format in this field
 					APIVersion: gw2_v1alpha1.GroupVersion.String(),
 				},
@@ -226,6 +238,7 @@ var _ = Describe("Deployer", func() {
 					Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
 				},
 			})
+			Expect(err).NotTo(HaveOccurred())
 
 			gw := &api.Gateway{
 				ObjectMeta: metav1.ObjectMeta{
@@ -242,10 +255,14 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 
+			var objs clientObjects
+			objs, err = d.GetObjsToDeploy(context.Background(), gw)
 			Expect(err).NotTo(HaveOccurred())
-			gvks, err := d.GetObjsToDeploy(context.Background(), gw)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(gvks).NotTo(BeEmpty())
+			Expect(objs).To(HaveLen(4))
+			Expect(objs.findDeployment(defaultNamespace, proxyName(gw.Name))).ToNot(BeNil())
+			Expect(objs.findService(defaultNamespace, proxyName(gw.Name))).ToNot(BeNil())
+			Expect(objs.findConfigMap(defaultNamespace, proxyName(gw.Name))).ToNot(BeNil())
+			Expect(objs.findServiceAccount(defaultNamespace, proxyName(gw.Name))).ToNot(BeNil())
 		})
 	})
 
@@ -259,8 +276,8 @@ var _ = Describe("Deployer", func() {
 				Spec: api.GatewayClassSpec{
 					ControllerName: wellknown.GatewayControllerName,
 					ParametersRef: &api.ParametersReference{
-						Group:     "gateway.gloo.solo.io",
-						Kind:      "GatewayParameters",
+						Group:     gw2_v1alpha1.Group,
+						Kind:      gw2_v1alpha1.GatewayParametersKind,
 						Name:      wellknown.DefaultGatewayParametersName,
 						Namespace: ptr.To(api.Namespace(defaultNamespace)),
 					},
@@ -281,7 +298,13 @@ var _ = Describe("Deployer", func() {
 		It("should get gvks", func() {
 			gvks, err := d.GetGvksToWatch(context.Background())
 			Expect(err).NotTo(HaveOccurred())
-			Expect(gvks).NotTo(BeEmpty())
+			Expect(gvks).To(HaveLen(4))
+			Expect(gvks).To(ConsistOf(
+				wellknownkube.DeploymentGVK,
+				wellknownkube.ServiceGVK,
+				wellknownkube.ServiceAccountGVK,
+				wellknownkube.ConfigMapGVK,
+			))
 		})
 
 		It("support segmenting by release", func() {
@@ -333,9 +356,6 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 
-			proxyName := func(name string) string {
-				return fmt.Sprintf("gloo-proxy-%s", name)
-			}
 			var objs1, objs2 clientObjects
 			objs1, err = d1.GetObjsToDeploy(context.Background(), gw1)
 			Expect(err).NotTo(HaveOccurred())
@@ -343,14 +363,15 @@ var _ = Describe("Deployer", func() {
 			Expect(objs1.findDeployment(defaultNamespace, proxyName(gw1.Name))).ToNot(BeNil())
 			Expect(objs1.findService(defaultNamespace, proxyName(gw1.Name))).ToNot(BeNil())
 			Expect(objs1.findConfigMap(defaultNamespace, proxyName(gw1.Name))).ToNot(BeNil())
-			// Expect(objs1.findServiceAccount("default")).ToNot(BeNil())
+			Expect(objs1.findServiceAccount(defaultNamespace, proxyName(gw1.Name))).ToNot(BeNil())
+
 			objs2, err = d2.GetObjsToDeploy(context.Background(), gw2)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(objs2).NotTo(BeEmpty())
 			Expect(objs2.findDeployment(defaultNamespace, proxyName(gw2.Name))).ToNot(BeNil())
 			Expect(objs2.findService(defaultNamespace, proxyName(gw2.Name))).ToNot(BeNil())
 			Expect(objs2.findConfigMap(defaultNamespace, proxyName(gw2.Name))).ToNot(BeNil())
-			// Expect(objs2.findServiceAccount("default")).ToNot(BeNil())
+			Expect(objs2.findServiceAccount(defaultNamespace, proxyName(gw2.Name))).ToNot(BeNil())
 
 			for _, obj := range objs1 {
 				Expect(obj.GetName()).To(Equal("gloo-proxy-foo"))
@@ -378,7 +399,7 @@ var _ = Describe("Deployer", func() {
 		}
 
 		var (
-			gwpOverrideName       = "default-gateway-params"
+			gwpOverrideName       = "gateway-params-override"
 			defaultDeployerInputs = func() *deployer.Inputs {
 				return &deployer.Inputs{
 					ControllerName: wellknown.GatewayControllerName,
@@ -426,8 +447,8 @@ var _ = Describe("Deployer", func() {
 					Spec: api.GatewayClassSpec{
 						ControllerName: wellknown.GatewayControllerName,
 						ParametersRef: &api.ParametersReference{
-							Group:     "gateway.gloo.solo.io",
-							Kind:      "GatewayParameters",
+							Group:     gw2_v1alpha1.Group,
+							Kind:      gw2_v1alpha1.GatewayParametersKind,
 							Name:      wellknown.DefaultGatewayParametersName,
 							Namespace: ptr.To(api.Namespace(defaultNamespace)),
 						},
@@ -437,7 +458,7 @@ var _ = Describe("Deployer", func() {
 			defaultGatewayParamsOverride = func() *gw2_v1alpha1.GatewayParameters {
 				return &gw2_v1alpha1.GatewayParameters{
 					TypeMeta: metav1.TypeMeta{
-						Kind: "GatewayParameters",
+						Kind: gw2_v1alpha1.GatewayParametersKind,
 						// The parsing expects GROUP/VERSION format in this field
 						APIVersion: gw2_v1alpha1.GroupVersion.String(),
 					},
@@ -468,7 +489,7 @@ var _ = Describe("Deployer", func() {
 							},
 							PodTemplate: &gw2_v1alpha1.Pod{
 								ExtraAnnotations: map[string]string{
-									"foo": "bar",
+									"override-foo": "override-bar",
 								},
 								SecurityContext: &corev1.PodSecurityContext{
 									RunAsUser:  ptr.To(int64(3)),
@@ -479,7 +500,80 @@ var _ = Describe("Deployer", func() {
 								Type:      ptr.To(corev1.ServiceTypeClusterIP),
 								ClusterIP: ptr.To("99.99.99.99"),
 								ExtraAnnotations: map[string]string{
-									"foo": "bar",
+									"override-foo": "override-bar",
+								},
+							},
+							ServiceAccount: &gw2_v1alpha1.ServiceAccount{
+								ExtraLabels: map[string]string{
+									"override-label-key": "override-label-val",
+								},
+								ExtraAnnotations: map[string]string{
+									"override-anno-key": "override-anno-val",
+								},
+							},
+						},
+					},
+				}
+			}
+			// this is the result of `defaultGatewayParams` (GatewayClass-level) merged with `defaultGatewayParamsOverride` (Gateway-level)
+			mergedGatewayParams = func() *gw2_v1alpha1.GatewayParameters {
+				return &gw2_v1alpha1.GatewayParameters{
+					TypeMeta: metav1.TypeMeta{
+						Kind: gw2_v1alpha1.GatewayParametersKind,
+						// The parsing expects GROUP/VERSION format in this field
+						APIVersion: gw2_v1alpha1.GroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      gwpOverrideName,
+						Namespace: defaultNamespace,
+						UID:       "1236",
+					},
+					Spec: gw2_v1alpha1.GatewayParametersSpec{
+						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+							Deployment: &gw2_v1alpha1.ProxyDeployment{
+								Replicas: ptr.To(uint32(3)),
+							},
+							EnvoyContainer: &gw2_v1alpha1.EnvoyContainer{
+								Bootstrap: &gw2_v1alpha1.EnvoyBootstrap{
+									LogLevel: ptr.To("debug"),
+									ComponentLogLevels: map[string]string{
+										"router":   "info",
+										"listener": "warn",
+									},
+								},
+								Image: &gw2_v1alpha1.Image{
+									Registry:   ptr.To("foo"),
+									Repository: ptr.To("bar"),
+									Tag:        ptr.To("bat"),
+									PullPolicy: ptr.To(corev1.PullAlways),
+								},
+							},
+							PodTemplate: &gw2_v1alpha1.Pod{
+								ExtraAnnotations: map[string]string{
+									"foo":          "bar",
+									"override-foo": "override-bar",
+								},
+								SecurityContext: &corev1.PodSecurityContext{
+									RunAsUser:  ptr.To(int64(3)),
+									RunAsGroup: ptr.To(int64(4)),
+								},
+							},
+							Service: &gw2_v1alpha1.Service{
+								Type:      ptr.To(corev1.ServiceTypeClusterIP),
+								ClusterIP: ptr.To("99.99.99.99"),
+								ExtraAnnotations: map[string]string{
+									"foo":          "bar",
+									"override-foo": "override-bar",
+								},
+							},
+							ServiceAccount: &gw2_v1alpha1.ServiceAccount{
+								ExtraLabels: map[string]string{
+									"default-label-key":  "default-label-val",
+									"override-label-key": "override-label-val",
+								},
+								ExtraAnnotations: map[string]string{
+									"default-anno-key":  "default-anno-val",
+									"override-anno-key": "override-anno-val",
 								},
 							},
 						},
@@ -489,7 +583,7 @@ var _ = Describe("Deployer", func() {
 			gatewayParamsOverrideWithSds = func() *gw2_v1alpha1.GatewayParameters {
 				return &gw2_v1alpha1.GatewayParameters{
 					TypeMeta: metav1.TypeMeta{
-						Kind: "GatewayParameters",
+						Kind: gw2_v1alpha1.GatewayParametersKind,
 						// The parsing expects GROUP/VERSION format in this field
 						APIVersion: gw2_v1alpha1.GroupVersion.String(),
 					},
@@ -545,7 +639,7 @@ var _ = Describe("Deployer", func() {
 			gatewayParamsOverrideWithoutStats = func() *gw2_v1alpha1.GatewayParameters {
 				return &gw2_v1alpha1.GatewayParameters{
 					TypeMeta: metav1.TypeMeta{
-						Kind: "GatewayParameters",
+						Kind: gw2_v1alpha1.GatewayParametersKind,
 						// The parsing expects GROUP/VERSION format in this field
 						APIVersion: gw2_v1alpha1.GroupVersion.String(),
 					},
@@ -591,7 +685,7 @@ var _ = Describe("Deployer", func() {
 					gwc:        defaultGatewayClass(),
 				}
 			}
-			defaultDeploymentName     = fmt.Sprintf("gloo-proxy-%s", defaultGateway().Name)
+			defaultDeploymentName     = proxyName(defaultGateway().Name)
 			defaultConfigMapName      = defaultDeploymentName
 			defaultServiceName        = defaultDeploymentName
 			defaultServiceAccountName = defaultDeploymentName
@@ -630,6 +724,10 @@ var _ = Describe("Deployer", func() {
 
 				sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
 				Expect(sa).ToNot(BeNil())
+				Expect(sa.GetAnnotations()).ToNot(BeNil())
+				Expect(sa.GetAnnotations()).To(matchers.ContainMapElements(expectedGwp.ServiceAccount.ExtraAnnotations))
+				Expect(sa.GetLabels()).ToNot(BeNil())
+				Expect(sa.GetLabels()).To(matchers.ContainMapElements(expectedGwp.ServiceAccount.ExtraLabels))
 
 				cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 				Expect(cm).ToNot(BeNil())
@@ -740,6 +838,10 @@ var _ = Describe("Deployer", func() {
 
 			sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
 			Expect(sa).ToNot(BeNil())
+			Expect(sa.GetAnnotations()).ToNot(BeNil())
+			Expect(sa.GetAnnotations()).To(matchers.ContainMapElements(expectedGwp.ServiceAccount.ExtraAnnotations))
+			Expect(sa.GetLabels()).ToNot(BeNil())
+			Expect(sa.GetLabels()).To(matchers.ContainMapElements(expectedGwp.ServiceAccount.ExtraLabels))
 
 			cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 			Expect(cm).ToNot(BeNil())
@@ -942,7 +1044,7 @@ var _ = Describe("Deployer", func() {
 				overrideGwp: defaultGatewayParamsOverride(),
 			}, &expectedOutput{
 				validationFunc: func(objs clientObjects, inp *input) error {
-					return validateGatewayParametersPropagation(objs, inp.overrideGwp)
+					return validateGatewayParametersPropagation(objs, mergedGatewayParams())
 				},
 			}),
 			Entry("Fully defined GatewayParameters", &input{
@@ -1202,7 +1304,7 @@ func newFakeClientWithObjs(objs ...client.Object) client.Client {
 func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.GatewayParameters {
 	return &gw2_v1alpha1.GatewayParameters{
 		TypeMeta: metav1.TypeMeta{
-			Kind: "GatewayParameters",
+			Kind: gw2_v1alpha1.GatewayParametersKind,
 			// The parsing expects GROUP/VERSION format in this field
 			APIVersion: gw2_v1alpha1.GroupVersion.String(),
 		},
@@ -1307,6 +1409,14 @@ func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.Gateway
 					},
 					ExtraLabels: map[string]string{
 						"service-label": "foo",
+					},
+				},
+				ServiceAccount: &gw2_v1alpha1.ServiceAccount{
+					ExtraLabels: map[string]string{
+						"a": "b",
+					},
+					ExtraAnnotations: map[string]string{
+						"c": "d",
 					},
 				},
 				Istio: &gw2_v1alpha1.IstioIntegration{

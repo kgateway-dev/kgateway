@@ -20,8 +20,8 @@ package v1
 
 import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -38,25 +38,17 @@ type RouteTableLister interface {
 
 // routeTableLister implements the RouteTableLister interface.
 type routeTableLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v1.RouteTable]
 }
 
 // NewRouteTableLister returns a new RouteTableLister.
 func NewRouteTableLister(indexer cache.Indexer) RouteTableLister {
-	return &routeTableLister{indexer: indexer}
-}
-
-// List lists all RouteTables in the indexer.
-func (s *routeTableLister) List(selector labels.Selector) (ret []*v1.RouteTable, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.RouteTable))
-	})
-	return ret, err
+	return &routeTableLister{listers.New[*v1.RouteTable](indexer, v1.Resource("routetable"))}
 }
 
 // RouteTables returns an object that can list and get RouteTables.
 func (s *routeTableLister) RouteTables(namespace string) RouteTableNamespaceLister {
-	return routeTableNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return routeTableNamespaceLister{listers.NewNamespaced[*v1.RouteTable](s.ResourceIndexer, namespace)}
 }
 
 // RouteTableNamespaceLister helps list and get RouteTables.
@@ -74,26 +66,5 @@ type RouteTableNamespaceLister interface {
 // routeTableNamespaceLister implements the RouteTableNamespaceLister
 // interface.
 type routeTableNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all RouteTables in the indexer for a given namespace.
-func (s routeTableNamespaceLister) List(selector labels.Selector) (ret []*v1.RouteTable, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.RouteTable))
-	})
-	return ret, err
-}
-
-// Get retrieves the RouteTable from the indexer for a given namespace and name.
-func (s routeTableNamespaceLister) Get(name string) (*v1.RouteTable, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("routetable"), name)
-	}
-	return obj.(*v1.RouteTable), nil
+	listers.ResourceIndexer[*v1.RouteTable]
 }

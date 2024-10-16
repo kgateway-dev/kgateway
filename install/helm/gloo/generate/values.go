@@ -214,7 +214,8 @@ type KnativeProxyInternal struct {
 }
 
 type Settings struct {
-	WatchNamespaces               []string                `json:"watchNamespaces,omitempty" desc:"whitelist of namespaces for Gloo Edge to watch for services and CRDs. Empty list means all namespaces"`
+	WatchNamespaces               []string                `json:"watchNamespaces,omitempty" desc:"whitelist of namespaces for Gloo Edge to watch for services and CRDs. Empty list means all namespaces. If this and WatchNamespaceSelectors are specified, this takes precedence and WatchNamespaceSelectors is ignored"`
+	WatchNamespaceSelectors       interface{}             `json:"watchNamespaceSelectors,omitempty" desc:"A list of Kubernetes selectors that specify the set of namespaces to restrict the namespaces that Gloo controllers take into consideration when watching for resources. Elements in the list are disjunctive (OR semantics), i.e. a namespace will be included if it matches any selector. An empty list means all namespaces. If this and WatchNamespaces are specified, WatchNamespaces takes precedence and this is ignored"`
 	WriteNamespace                *string                 `json:"writeNamespace,omitempty" desc:"namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Edge Discovery."`
 	Integrations                  *Integrations           `json:"integrations,omitempty"`
 	Create                        *bool                   `json:"create,omitempty" desc:"create a Settings CRD which provides bootstrap configuration to Gloo Edge controllers"`
@@ -292,8 +293,8 @@ type Directory struct {
 
 type CircuitBreakersSettings struct {
 	MaxConnections     *uint32 `json:"maxConnections,omitempty" desc:"Set this field to specify the maximum number of connections that Envoy will make to the upstream cluster. If not specified, the default is 1024."`
-	MaxPendingRequests *uint32 `json:"maxPendingRequests,omitempty" desc:"Set this field to specfify the maximum number of pending requests that Envoy will allow to the upstream cluster. If not specified, the default is 1024."`
-	MaxRequests        *uint32 `json:"maxRequests,omitempty" desc:"Set this field to specfify the maximum number of parallel requests that Envoy will make to the upstream cluster. If not specified, the default is 1024."`
+	MaxPendingRequests *uint32 `json:"maxPendingRequests,omitempty" desc:"Set this field to specify the maximum number of pending requests that Envoy will allow to the upstream cluster. If not specified, the default is 1024."`
+	MaxRequests        *uint32 `json:"maxRequests,omitempty" desc:"Set this field to specify the maximum number of parallel requests that Envoy will make to the upstream cluster. If not specified, the default is 1024."`
 	MaxRetries         *uint32 `json:"maxRetries,omitempty" desc:"Set this field to specify the maximum number of parallel retries that Envoy will allow to the upstream cluster. If not specified, the default is 3."`
 }
 
@@ -327,6 +328,7 @@ type GatewayParameters struct {
 	EnvoyContainer  *EnvoyContainer            `json:"envoyContainer,omitempty" desc:"Config for the Envoy container of the proxy deployment."`
 	ProxyDeployment *ProvisionedDeployment     `json:"proxyDeployment,omitempty" desc:"Options specific to the deployment of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedDeployment\" for which are configurable via helm."`
 	Service         *ProvisionedService        `json:"service,omitempty" desc:"Options specific to the service of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedService\" for which are configurable via helm."`
+	ServiceAccount  *ProvisionedServiceAccount `json:"serviceAccount,omitempty" desc:"Options specific to the ServiceAccount of the dynamically provisioned gateway proxy. Only a subset of all possible options is available. See \"ProvisionedServiceAccount\" for which are configurable via helm."`
 	SdsContainer    *GatewayParamsSdsContainer `json:"sdsContainer,omitempty" desc:"Config used to manage the Gloo Gateway SDS container."`
 	Istio           *Istio                     `json:"istio,omitempty" desc:"Configs used to manage Istio integration."`
 	Stats           *GatewayParamsStatsConfig  `json:"stats,omitempty" desc:"Config used to manage the stats endpoints exposed on the deployed proxies"`
@@ -353,6 +355,11 @@ type ProvisionedDeployment struct {
 
 type ProvisionedService struct {
 	Type *string `json:"type,omitempty" desc:"K8s service type. If set to null, a default of LoadBalancer will be imposed."`
+}
+
+type ProvisionedServiceAccount struct {
+	ExtraLabels      map[string]string `json:"extraLabels,omitempty" desc:"Extra labels to add to the service account."`
+	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty" desc:"Extra annotations to add to the service account."`
 }
 
 type SecurityOpts struct {
@@ -462,13 +469,14 @@ type GatewayValidation struct {
 	AllowWarnings                    *bool    `json:"allowWarnings,omitempty" desc:"set this to false in order to ensure validation webhook rejects resources that would have warning status or rejected status, rather than just rejected."`
 	WarnMissingTlsSecret             *bool    `json:"warnMissingTlsSecret,omitempty" desc:"set this to false in order to treat missing tls secret references as errors, causing validation to fail."`
 	ServerEnabled                    *bool    `json:"serverEnabled,omitempty" desc:"By providing the validation field (parent of this object) the user is implicitly opting into validation. This field allows the user to opt out of the validation server, while still configuring pre-existing fields such as warn_route_short_circuiting and disable_transformation_validation."`
-	DisableTransformationValidation  *bool    `json:"disableTransformationValidation,omitempty" desc:"set this to true to disable transformation validation. This may bring signifigant performance benefits if using many transformations, at the cost of possibly incorrect transformations being sent to Envoy. When using this value make sure to pre-validate transformations."`
+	DisableTransformationValidation  *bool    `json:"disableTransformationValidation,omitempty" desc:"set this to true to disable transformation validation. This may bring significant performance benefits if using many transformations, at the cost of possibly incorrect transformations being sent to Envoy. When using this value make sure to pre-validate transformations."`
 	WarnRouteShortCircuiting         *bool    `json:"warnRouteShortCircuiting,omitempty" desc:"Write a warning to route resources if validation produced a route ordering warning (defaults to false). By setting to true, this means that Gloo Edge will start assigning warnings to resources that would result in route short-circuiting within a virtual host."`
 	SecretName                       *string  `json:"secretName,omitempty" desc:"Name of the Kubernetes Secret containing TLS certificates used by the validation webhook server. This secret will be created by the certGen Job if the certGen Job is enabled."`
 	FailurePolicy                    *string  `json:"failurePolicy,omitempty" desc:"failurePolicy defines how unrecognized errors from the Gateway validation endpoint are handled - allowed values are 'Ignore' or 'Fail'. Defaults to Ignore "`
 	Webhook                          *Webhook `json:"webhook,omitempty" desc:"webhook specific configuration"`
 	ValidationServerGrpcMaxSizeBytes *int     `json:"validationServerGrpcMaxSizeBytes,omitempty" desc:"gRPC max message size in bytes for the gloo validation server"`
 	LivenessProbeEnabled             *bool    `json:"livenessProbeEnabled,omitempty" desc:"Set to true to enable a liveness probe for the gateway (default is false). You must also set the 'Probes' value to true."`
+	FullEnvoyValidation              *bool    `json:"fullEnvoyValidation,omitempty" desc:"enable feature which validates all final translated config against envoy Validate mode"`
 }
 
 type Webhook struct {
@@ -734,7 +742,7 @@ type AccessLogger struct {
 type Ingress struct {
 	Enabled             *bool              `json:"enabled,omitempty"`
 	Deployment          *IngressDeployment `json:"deployment,omitempty"`
-	RequireIngressClass *bool              `json:"requireIngressClass,omitempty" desc:"only serve traffic for Ingress objects with the Ingress Class annotation 'kubernetes.io/ingress.class'. By default the annotation value must be set to 'gloo', however this can be overriden via customIngressClass."`
+	RequireIngressClass *bool              `json:"requireIngressClass,omitempty" desc:"only serve traffic for Ingress objects with the Ingress Class annotation 'kubernetes.io/ingress.class'. By default the annotation value must be set to 'gloo', however this can be overridden via customIngressClass."`
 	CustomIngress       *bool              `json:"customIngressClass,omitempty" desc:"Only relevant when requireIngressClass is set to true. Setting this value will cause the Gloo Edge Ingress Controller to process only those Ingress objects which have their ingress class set to this value (e.g. 'kubernetes.io/ingress.class=SOMEVALUE')."`
 }
 

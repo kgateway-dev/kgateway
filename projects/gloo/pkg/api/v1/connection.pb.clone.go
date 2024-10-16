@@ -13,11 +13,11 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
-
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
-
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_protocol "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol"
+
+	google_golang_org_protobuf_types_known_durationpb "google.golang.org/protobuf/types/known/durationpb"
+
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -42,9 +42,9 @@ func (m *ConnectionConfig) Clone() proto.Message {
 	target.MaxRequestsPerConnection = m.GetMaxRequestsPerConnection()
 
 	if h, ok := interface{}(m.GetConnectTimeout()).(clone.Cloner); ok {
-		target.ConnectTimeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.ConnectTimeout = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.ConnectTimeout = proto.Clone(m.GetConnectTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.ConnectTimeout = proto.Clone(m.GetConnectTimeout()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	if h, ok := interface{}(m.GetTcpKeepalive()).(clone.Cloner); ok {
@@ -54,9 +54,9 @@ func (m *ConnectionConfig) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetPerConnectionBufferLimitBytes()).(clone.Cloner); ok {
-		target.PerConnectionBufferLimitBytes = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.PerConnectionBufferLimitBytes = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	} else {
-		target.PerConnectionBufferLimitBytes = proto.Clone(m.GetPerConnectionBufferLimitBytes()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
+		target.PerConnectionBufferLimitBytes = proto.Clone(m.GetPerConnectionBufferLimitBytes()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
 	}
 
 	if h, ok := interface{}(m.GetCommonHttpProtocolOptions()).(clone.Cloner); ok {
@@ -85,15 +85,15 @@ func (m *ConnectionConfig_TcpKeepAlive) Clone() proto.Message {
 	target.KeepaliveProbes = m.GetKeepaliveProbes()
 
 	if h, ok := interface{}(m.GetKeepaliveTime()).(clone.Cloner); ok {
-		target.KeepaliveTime = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.KeepaliveTime = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.KeepaliveTime = proto.Clone(m.GetKeepaliveTime()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.KeepaliveTime = proto.Clone(m.GetKeepaliveTime()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	if h, ok := interface{}(m.GetKeepaliveInterval()).(clone.Cloner); ok {
-		target.KeepaliveInterval = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.KeepaliveInterval = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.KeepaliveInterval = proto.Clone(m.GetKeepaliveInterval()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.KeepaliveInterval = proto.Clone(m.GetKeepaliveInterval()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	return target

@@ -239,8 +239,17 @@ func (c *Client) GetSingleListenerFromDynamicListeners(
 		return nil, fmt.Errorf("could not get envoy config_dump from adminClient: %w", err)
 	}
 
+	configs := cfgDump.GetConfigs()
+
+	// if no dynamic listeners name matching listenerNameRegex or
+	// before envoy is full configured, dynamic listeners will be missing
+	// and envoy will return an empty object json object `{}`
+	if len(configs) == 0 {
+		return nil, fmt.Errorf("could not get config: config is empty")
+	}
+
 	listenerDump := adminv3.ListenersConfigDump_DynamicListener{}
-	err = cfgDump.GetConfigs()[0].UnmarshalTo(&listenerDump)
+	err = configs[0].UnmarshalTo(&listenerDump)
 	if err != nil {
 		return nil, fmt.Errorf("could not unmarshal envoy config_dump: %w", err)
 	}

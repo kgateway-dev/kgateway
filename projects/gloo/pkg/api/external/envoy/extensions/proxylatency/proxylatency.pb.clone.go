@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -42,21 +42,21 @@ func (m *ProxyLatency) Clone() proto.Message {
 	target.Response = m.GetResponse()
 
 	if h, ok := interface{}(m.GetChargeClusterStat()).(clone.Cloner); ok {
-		target.ChargeClusterStat = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.ChargeClusterStat = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.ChargeClusterStat = proto.Clone(m.GetChargeClusterStat()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.ChargeClusterStat = proto.Clone(m.GetChargeClusterStat()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetChargeListenerStat()).(clone.Cloner); ok {
-		target.ChargeListenerStat = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.ChargeListenerStat = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.ChargeListenerStat = proto.Clone(m.GetChargeListenerStat()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.ChargeListenerStat = proto.Clone(m.GetChargeListenerStat()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetEmitDynamicMetadata()).(clone.Cloner); ok {
-		target.EmitDynamicMetadata = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.EmitDynamicMetadata = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.EmitDynamicMetadata = proto.Clone(m.GetEmitDynamicMetadata()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.EmitDynamicMetadata = proto.Clone(m.GetEmitDynamicMetadata()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	return target

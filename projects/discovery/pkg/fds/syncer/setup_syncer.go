@@ -1,8 +1,7 @@
 package syncer
 
 import (
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-
+	"github.com/solo-io/gloo/pkg/utils/namespaces"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	discoveryRegistry "github.com/solo-io/gloo/projects/discovery/pkg/fds/discoveries/registry"
 	syncerutils "github.com/solo-io/gloo/projects/discovery/pkg/syncer"
@@ -81,7 +80,7 @@ func RunFDSWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	if opts.KubeClient != nil && opts.KubeCoreCache.NamespaceLister() != nil {
 		nsClient = namespace.NewNamespaceClient(opts.KubeClient, opts.KubeCoreCache)
 	} else {
-		nsClient = &FakeKubeNamespaceWatcher{}
+		nsClient = &namespaces.NoOpKubeNamespaceWatcher{}
 	}
 
 	cache := v1.NewDiscoveryEmitter(upstreamClient, nsClient, secretClient)
@@ -142,31 +141,4 @@ func GetFunctionDiscoveriesWithExtensionsAndRegistry(opts bootstrap.Opts, regist
 		}
 	}
 	return discFactories
-}
-
-// FakeKubeNamespaceWatcher to eliminate the need for this fake client for non kube environments
-// TODO: consider using regular solo-kit namespace client instead of KubeNamespace client
-type FakeKubeNamespaceWatcher struct{}
-
-func (f *FakeKubeNamespaceWatcher) Watch(opts clients.WatchOpts) (<-chan skkube.KubeNamespaceList, <-chan error, error) {
-	return nil, nil, nil
-}
-func (f *FakeKubeNamespaceWatcher) BaseClient() clients.ResourceClient {
-	return nil
-
-}
-func (f *FakeKubeNamespaceWatcher) Register() error {
-	return nil
-}
-func (f *FakeKubeNamespaceWatcher) Read(name string, opts clients.ReadOpts) (*skkube.KubeNamespace, error) {
-	return nil, nil
-}
-func (f *FakeKubeNamespaceWatcher) Write(resource *skkube.KubeNamespace, opts clients.WriteOpts) (*skkube.KubeNamespace, error) {
-	return nil, nil
-}
-func (f *FakeKubeNamespaceWatcher) Delete(name string, opts clients.DeleteOpts) error {
-	return nil
-}
-func (f *FakeKubeNamespaceWatcher) List(opts clients.ListOpts) (skkube.KubeNamespaceList, error) {
-	return nil, nil
 }

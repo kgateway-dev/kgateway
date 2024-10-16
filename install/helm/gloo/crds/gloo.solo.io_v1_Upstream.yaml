@@ -48,11 +48,15 @@ spec:
                             minimum: 0
                             type: integer
                         type: object
+                      model:
+                        type: string
                       version:
                         type: string
                     type: object
                   azureOpenai:
                     properties:
+                      apiVersion:
+                        type: string
                       authToken:
                         properties:
                           inline:
@@ -65,7 +69,28 @@ spec:
                                 type: string
                             type: object
                         type: object
+                      deploymentName:
+                        type: string
                       endpoint:
+                        type: string
+                    type: object
+                  gemini:
+                    properties:
+                      apiVersion:
+                        type: string
+                      authToken:
+                        properties:
+                          inline:
+                            type: string
+                          secretRef:
+                            properties:
+                              name:
+                                type: string
+                              namespace:
+                                type: string
+                            type: object
+                        type: object
+                      model:
                         type: string
                     type: object
                   mistral:
@@ -91,6 +116,141 @@ spec:
                             minimum: 0
                             type: integer
                         type: object
+                      model:
+                        type: string
+                    type: object
+                  multi:
+                    properties:
+                      priorities:
+                        items:
+                          properties:
+                            pool:
+                              items:
+                                properties:
+                                  anthropic:
+                                    properties:
+                                      authToken:
+                                        properties:
+                                          inline:
+                                            type: string
+                                          secretRef:
+                                            properties:
+                                              name:
+                                                type: string
+                                              namespace:
+                                                type: string
+                                            type: object
+                                        type: object
+                                      customHost:
+                                        properties:
+                                          host:
+                                            type: string
+                                          port:
+                                            maximum: 4294967295
+                                            minimum: 0
+                                            type: integer
+                                        type: object
+                                      model:
+                                        type: string
+                                      version:
+                                        type: string
+                                    type: object
+                                  azureOpenai:
+                                    properties:
+                                      apiVersion:
+                                        type: string
+                                      authToken:
+                                        properties:
+                                          inline:
+                                            type: string
+                                          secretRef:
+                                            properties:
+                                              name:
+                                                type: string
+                                              namespace:
+                                                type: string
+                                            type: object
+                                        type: object
+                                      deploymentName:
+                                        type: string
+                                      endpoint:
+                                        type: string
+                                    type: object
+                                  gemini:
+                                    properties:
+                                      apiVersion:
+                                        type: string
+                                      authToken:
+                                        properties:
+                                          inline:
+                                            type: string
+                                          secretRef:
+                                            properties:
+                                              name:
+                                                type: string
+                                              namespace:
+                                                type: string
+                                            type: object
+                                        type: object
+                                      model:
+                                        type: string
+                                    type: object
+                                  mistral:
+                                    properties:
+                                      authToken:
+                                        properties:
+                                          inline:
+                                            type: string
+                                          secretRef:
+                                            properties:
+                                              name:
+                                                type: string
+                                              namespace:
+                                                type: string
+                                            type: object
+                                        type: object
+                                      customHost:
+                                        properties:
+                                          host:
+                                            type: string
+                                          port:
+                                            maximum: 4294967295
+                                            minimum: 0
+                                            type: integer
+                                        type: object
+                                      model:
+                                        type: string
+                                    type: object
+                                  openai:
+                                    properties:
+                                      authToken:
+                                        properties:
+                                          inline:
+                                            type: string
+                                          secretRef:
+                                            properties:
+                                              name:
+                                                type: string
+                                              namespace:
+                                                type: string
+                                            type: object
+                                        type: object
+                                      customHost:
+                                        properties:
+                                          host:
+                                            type: string
+                                          port:
+                                            maximum: 4294967295
+                                            minimum: 0
+                                            type: integer
+                                        type: object
+                                      model:
+                                        type: string
+                                    type: object
+                                type: object
+                              type: array
+                          type: object
+                        type: array
                     type: object
                   openai:
                     properties:
@@ -115,6 +275,8 @@ spec:
                             minimum: 0
                             type: integer
                         type: object
+                      model:
+                        type: string
                     type: object
                 type: object
               aws:

@@ -86,6 +86,14 @@ func getServiceValues(svcConfig *v1alpha1.Service) *helmService {
 	}
 }
 
+// Convert service account values from GatewayParameters into helm values to be used by the deployer.
+func getServiceAccountValues(svcAccountConfig *v1alpha1.ServiceAccount) *helmServiceAccount {
+	return &helmServiceAccount{
+		ExtraAnnotations: svcAccountConfig.GetExtraAnnotations(),
+		ExtraLabels:      svcAccountConfig.GetExtraLabels(),
+	}
+}
+
 // Convert sds values from GatewayParameters into helm values to be used by the deployer.
 func getSdsContainerValues(sdsContainerConfig *v1alpha1.SdsContainer) *helmSdsContainer {
 	if sdsContainerConfig == nil {

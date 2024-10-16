@@ -13,9 +13,9 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
-
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_trace_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
+
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -38,22 +38,22 @@ func (m *ListenerTracingSettings) Clone() proto.Message {
 	target = &ListenerTracingSettings{}
 
 	if m.GetRequestHeadersForTags() != nil {
-		target.RequestHeadersForTags = make([]*github_com_golang_protobuf_ptypes_wrappers.StringValue, len(m.GetRequestHeadersForTags()))
+		target.RequestHeadersForTags = make([]*google_golang_org_protobuf_types_known_wrapperspb.StringValue, len(m.GetRequestHeadersForTags()))
 		for idx, v := range m.GetRequestHeadersForTags() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.RequestHeadersForTags[idx] = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+				target.RequestHeadersForTags[idx] = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 			} else {
-				target.RequestHeadersForTags[idx] = proto.Clone(v).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+				target.RequestHeadersForTags[idx] = proto.Clone(v).(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 			}
 
 		}
 	}
 
 	if h, ok := interface{}(m.GetVerbose()).(clone.Cloner); ok {
-		target.Verbose = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.Verbose = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.Verbose = proto.Clone(m.GetVerbose()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.Verbose = proto.Clone(m.GetVerbose()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetTracePercentages()).(clone.Cloner); ok {
@@ -160,9 +160,9 @@ func (m *RouteTracingSettings) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetPropagate()).(clone.Cloner); ok {
-		target.Propagate = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.Propagate = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.Propagate = proto.Clone(m.GetPropagate()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.Propagate = proto.Clone(m.GetPropagate()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	return target
@@ -177,21 +177,21 @@ func (m *TracePercentages) Clone() proto.Message {
 	target = &TracePercentages{}
 
 	if h, ok := interface{}(m.GetClientSamplePercentage()).(clone.Cloner); ok {
-		target.ClientSamplePercentage = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.FloatValue)
+		target.ClientSamplePercentage = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.FloatValue)
 	} else {
-		target.ClientSamplePercentage = proto.Clone(m.GetClientSamplePercentage()).(*github_com_golang_protobuf_ptypes_wrappers.FloatValue)
+		target.ClientSamplePercentage = proto.Clone(m.GetClientSamplePercentage()).(*google_golang_org_protobuf_types_known_wrapperspb.FloatValue)
 	}
 
 	if h, ok := interface{}(m.GetRandomSamplePercentage()).(clone.Cloner); ok {
-		target.RandomSamplePercentage = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.FloatValue)
+		target.RandomSamplePercentage = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.FloatValue)
 	} else {
-		target.RandomSamplePercentage = proto.Clone(m.GetRandomSamplePercentage()).(*github_com_golang_protobuf_ptypes_wrappers.FloatValue)
+		target.RandomSamplePercentage = proto.Clone(m.GetRandomSamplePercentage()).(*google_golang_org_protobuf_types_known_wrapperspb.FloatValue)
 	}
 
 	if h, ok := interface{}(m.GetOverallSamplePercentage()).(clone.Cloner); ok {
-		target.OverallSamplePercentage = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.FloatValue)
+		target.OverallSamplePercentage = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.FloatValue)
 	} else {
-		target.OverallSamplePercentage = proto.Clone(m.GetOverallSamplePercentage()).(*github_com_golang_protobuf_ptypes_wrappers.FloatValue)
+		target.OverallSamplePercentage = proto.Clone(m.GetOverallSamplePercentage()).(*google_golang_org_protobuf_types_known_wrapperspb.FloatValue)
 	}
 
 	return target
@@ -206,21 +206,21 @@ func (m *TracingTagEnvironmentVariable) Clone() proto.Message {
 	target = &TracingTagEnvironmentVariable{}
 
 	if h, ok := interface{}(m.GetTag()).(clone.Cloner); ok {
-		target.Tag = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.Tag = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	} else {
-		target.Tag = proto.Clone(m.GetTag()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.Tag = proto.Clone(m.GetTag()).(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	}
 
 	if h, ok := interface{}(m.GetName()).(clone.Cloner); ok {
-		target.Name = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.Name = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	} else {
-		target.Name = proto.Clone(m.GetName()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.Name = proto.Clone(m.GetName()).(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	}
 
 	if h, ok := interface{}(m.GetDefaultValue()).(clone.Cloner); ok {
-		target.DefaultValue = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.DefaultValue = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	} else {
-		target.DefaultValue = proto.Clone(m.GetDefaultValue()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.DefaultValue = proto.Clone(m.GetDefaultValue()).(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	}
 
 	return target
@@ -235,15 +235,15 @@ func (m *TracingTagLiteral) Clone() proto.Message {
 	target = &TracingTagLiteral{}
 
 	if h, ok := interface{}(m.GetTag()).(clone.Cloner); ok {
-		target.Tag = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.Tag = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	} else {
-		target.Tag = proto.Clone(m.GetTag()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.Tag = proto.Clone(m.GetTag()).(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	}
 
 	if h, ok := interface{}(m.GetValue()).(clone.Cloner); ok {
-		target.Value = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.Value = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	} else {
-		target.Value = proto.Clone(m.GetValue()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+		target.Value = proto.Clone(m.GetValue()).(*google_golang_org_protobuf_types_known_wrapperspb.StringValue)
 	}
 
 	return target

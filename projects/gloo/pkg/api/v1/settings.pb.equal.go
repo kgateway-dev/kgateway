@@ -310,6 +310,23 @@ func (m *Settings) Equal(that interface{}) bool {
 		}
 	}
 
+	if len(m.GetWatchNamespaceSelectors()) != len(target.GetWatchNamespaceSelectors()) {
+		return false
+	}
+	for idx, v := range m.GetWatchNamespaceSelectors() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetWatchNamespaceSelectors()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetWatchNamespaceSelectors()[idx]) {
+				return false
+			}
+		}
+
+	}
+
 	switch m.ConfigSource.(type) {
 
 	case *Settings_KubernetesConfigSource:
@@ -470,6 +487,101 @@ func (m *Settings) Equal(that interface{}) bool {
 		if m.ArtifactSource != target.ArtifactSource {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *LabelSelector) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*LabelSelector)
+	if !ok {
+		that2, ok := that.(LabelSelector)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetMatchLabels()) != len(target.GetMatchLabels()) {
+		return false
+	}
+	for k, v := range m.GetMatchLabels() {
+
+		if strings.Compare(v, target.GetMatchLabels()[k]) != 0 {
+			return false
+		}
+
+	}
+
+	if len(m.GetMatchExpressions()) != len(target.GetMatchExpressions()) {
+		return false
+	}
+	for idx, v := range m.GetMatchExpressions() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetMatchExpressions()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetMatchExpressions()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *LabelSelectorRequirement) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*LabelSelectorRequirement)
+	if !ok {
+		that2, ok := that.(LabelSelectorRequirement)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetKey(), target.GetKey()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetOperator(), target.GetOperator()) != 0 {
+		return false
+	}
+
+	if len(m.GetValues()) != len(target.GetValues()) {
+		return false
+	}
+	for idx, v := range m.GetValues() {
+
+		if strings.Compare(v, target.GetValues()[idx]) != 0 {
+			return false
+		}
+
 	}
 
 	return true
@@ -2237,6 +2349,16 @@ func (m *GatewayOptions_ValidationOptions) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetWarnMissingTlsSecret(), target.GetWarnMissingTlsSecret()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetFullEnvoyValidation()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetFullEnvoyValidation()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetFullEnvoyValidation(), target.GetFullEnvoyValidation()) {
 			return false
 		}
 	}

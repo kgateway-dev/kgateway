@@ -166,7 +166,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 }
 
 func (p *Plugin) ProcessWeightedDestination(
-	params plugins.RouteParams,
+	params plugins.RouteActionParams,
 	in *v1.WeightedDestination,
 	out *envoy_config_route_v3.WeightedCluster_ClusterWeight,
 ) error {

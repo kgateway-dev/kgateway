@@ -21,10 +21,9 @@ package fake
 import (
 	"context"
 
-	gloosoloiov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -36,36 +35,38 @@ type FakeEndpoints struct {
 	ns   string
 }
 
-var endpointsResource = schema.GroupVersionResource{Group: "gloo.solo.io", Version: "v1", Resource: "endpoints"}
+var endpointsResource = v1.SchemeGroupVersion.WithResource("endpoints")
 
-var endpointsKind = schema.GroupVersionKind{Group: "gloo.solo.io", Version: "v1", Kind: "Endpoint"}
+var endpointsKind = v1.SchemeGroupVersion.WithKind("Endpoint")
 
 // Get takes name of the endpoint, and returns the corresponding endpoint object, and an error if there is any.
-func (c *FakeEndpoints) Get(ctx context.Context, name string, options v1.GetOptions) (result *gloosoloiov1.Endpoint, err error) {
+func (c *FakeEndpoints) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.Endpoint, err error) {
+	emptyResult := &v1.Endpoint{}
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(endpointsResource, c.ns, name), &gloosoloiov1.Endpoint{})
+		Invokes(testing.NewGetActionWithOptions(endpointsResource, c.ns, name, options), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
-	return obj.(*gloosoloiov1.Endpoint), err
+	return obj.(*v1.Endpoint), err
 }
 
 // List takes label and field selectors, and returns the list of Endpoints that match those selectors.
-func (c *FakeEndpoints) List(ctx context.Context, opts v1.ListOptions) (result *gloosoloiov1.EndpointList, err error) {
+func (c *FakeEndpoints) List(ctx context.Context, opts metav1.ListOptions) (result *v1.EndpointList, err error) {
+	emptyResult := &v1.EndpointList{}
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(endpointsResource, endpointsKind, c.ns, opts), &gloosoloiov1.EndpointList{})
+		Invokes(testing.NewListActionWithOptions(endpointsResource, endpointsKind, c.ns, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
 
 	label, _, _ := testing.ExtractFromListOptions(opts)
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &gloosoloiov1.EndpointList{ListMeta: obj.(*gloosoloiov1.EndpointList).ListMeta}
-	for _, item := range obj.(*gloosoloiov1.EndpointList).Items {
+	list := &v1.EndpointList{ListMeta: obj.(*v1.EndpointList).ListMeta}
+	for _, item := range obj.(*v1.EndpointList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -74,57 +75,60 @@ func (c *FakeEndpoints) List(ctx context.Context, opts v1.ListOptions) (result *
 }
 
 // Watch returns a watch.Interface that watches the requested endpoints.
-func (c *FakeEndpoints) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeEndpoints) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(endpointsResource, c.ns, opts))
+		InvokesWatch(testing.NewWatchActionWithOptions(endpointsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a endpoint and creates it.  Returns the server's representation of the endpoint, and an error, if there is any.
-func (c *FakeEndpoints) Create(ctx context.Context, endpoint *gloosoloiov1.Endpoint, opts v1.CreateOptions) (result *gloosoloiov1.Endpoint, err error) {
+func (c *FakeEndpoints) Create(ctx context.Context, endpoint *v1.Endpoint, opts metav1.CreateOptions) (result *v1.Endpoint, err error) {
+	emptyResult := &v1.Endpoint{}
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(endpointsResource, c.ns, endpoint), &gloosoloiov1.Endpoint{})
+		Invokes(testing.NewCreateActionWithOptions(endpointsResource, c.ns, endpoint, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
-	return obj.(*gloosoloiov1.Endpoint), err
+	return obj.(*v1.Endpoint), err
 }
 
 // Update takes the representation of a endpoint and updates it. Returns the server's representation of the endpoint, and an error, if there is any.
-func (c *FakeEndpoints) Update(ctx context.Context, endpoint *gloosoloiov1.Endpoint, opts v1.UpdateOptions) (result *gloosoloiov1.Endpoint, err error) {
+func (c *FakeEndpoints) Update(ctx context.Context, endpoint *v1.Endpoint, opts metav1.UpdateOptions) (result *v1.Endpoint, err error) {
+	emptyResult := &v1.Endpoint{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(endpointsResource, c.ns, endpoint), &gloosoloiov1.Endpoint{})
+		Invokes(testing.NewUpdateActionWithOptions(endpointsResource, c.ns, endpoint, opts), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
-	return obj.(*gloosoloiov1.Endpoint), err
+	return obj.(*v1.Endpoint), err
 }
 
 // Delete takes name of the endpoint and deletes it. Returns an error if one occurs.
-func (c *FakeEndpoints) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
+func (c *FakeEndpoints) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(endpointsResource, c.ns, name), &gloosoloiov1.Endpoint{})
+		Invokes(testing.NewDeleteActionWithOptions(endpointsResource, c.ns, name, opts), &v1.Endpoint{})
 
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeEndpoints) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(endpointsResource, c.ns, listOpts)
+func (c *FakeEndpoints) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
+	action := testing.NewDeleteCollectionActionWithOptions(endpointsResource, c.ns, opts, listOpts)
 
-	_, err := c.Fake.Invokes(action, &gloosoloiov1.EndpointList{})
+	_, err := c.Fake.Invokes(action, &v1.EndpointList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched endpoint.
-func (c *FakeEndpoints) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *gloosoloiov1.Endpoint, err error) {
+func (c *FakeEndpoints) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Endpoint, err error) {
+	emptyResult := &v1.Endpoint{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(endpointsResource, c.ns, name, pt, data, subresources...), &gloosoloiov1.Endpoint{})
+		Invokes(testing.NewPatchSubresourceActionWithOptions(endpointsResource, c.ns, name, pt, data, opts, subresources...), emptyResult)
 
 	if obj == nil {
-		return nil, err
+		return emptyResult, err
 	}
-	return obj.(*gloosoloiov1.Endpoint), err
+	return obj.(*v1.Endpoint), err
 }

@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -36,9 +36,9 @@ func (m *QueryOptions) Clone() proto.Message {
 	target = &QueryOptions{}
 
 	if h, ok := interface{}(m.GetUseCache()).(clone.Cloner); ok {
-		target.UseCache = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.UseCache = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.UseCache = proto.Clone(m.GetUseCache()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.UseCache = proto.Clone(m.GetUseCache()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	return target

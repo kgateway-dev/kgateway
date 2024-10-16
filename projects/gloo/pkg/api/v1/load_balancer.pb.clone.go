@@ -13,11 +13,11 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
+	google_golang_org_protobuf_types_known_durationpb "google.golang.org/protobuf/types/known/durationpb"
 
-	github_com_golang_protobuf_ptypes_empty "github.com/golang/protobuf/ptypes/empty"
+	google_golang_org_protobuf_types_known_emptypb "google.golang.org/protobuf/types/known/emptypb"
 
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -40,21 +40,21 @@ func (m *LoadBalancerConfig) Clone() proto.Message {
 	target = &LoadBalancerConfig{}
 
 	if h, ok := interface{}(m.GetHealthyPanicThreshold()).(clone.Cloner); ok {
-		target.HealthyPanicThreshold = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.DoubleValue)
+		target.HealthyPanicThreshold = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.DoubleValue)
 	} else {
-		target.HealthyPanicThreshold = proto.Clone(m.GetHealthyPanicThreshold()).(*github_com_golang_protobuf_ptypes_wrappers.DoubleValue)
+		target.HealthyPanicThreshold = proto.Clone(m.GetHealthyPanicThreshold()).(*google_golang_org_protobuf_types_known_wrapperspb.DoubleValue)
 	}
 
 	if h, ok := interface{}(m.GetUpdateMergeWindow()).(clone.Cloner); ok {
-		target.UpdateMergeWindow = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.UpdateMergeWindow = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.UpdateMergeWindow = proto.Clone(m.GetUpdateMergeWindow()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.UpdateMergeWindow = proto.Clone(m.GetUpdateMergeWindow()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	if h, ok := interface{}(m.GetUseHostnameForHashing()).(clone.Cloner); ok {
-		target.UseHostnameForHashing = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.UseHostnameForHashing = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.UseHostnameForHashing = proto.Clone(m.GetUseHostnameForHashing()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.UseHostnameForHashing = proto.Clone(m.GetUseHostnameForHashing()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	switch m.Type.(type) {
@@ -127,11 +127,11 @@ func (m *LoadBalancerConfig) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetLocalityWeightedLbConfig()).(clone.Cloner); ok {
 			target.LocalityConfig = &LoadBalancerConfig_LocalityWeightedLbConfig{
-				LocalityWeightedLbConfig: h.Clone().(*github_com_golang_protobuf_ptypes_empty.Empty),
+				LocalityWeightedLbConfig: h.Clone().(*google_golang_org_protobuf_types_known_emptypb.Empty),
 			}
 		} else {
 			target.LocalityConfig = &LoadBalancerConfig_LocalityWeightedLbConfig{
-				LocalityWeightedLbConfig: proto.Clone(m.GetLocalityWeightedLbConfig()).(*github_com_golang_protobuf_ptypes_empty.Empty),
+				LocalityWeightedLbConfig: proto.Clone(m.GetLocalityWeightedLbConfig()).(*google_golang_org_protobuf_types_known_emptypb.Empty),
 			}
 		}
 
@@ -239,21 +239,21 @@ func (m *LoadBalancerConfig_SlowStartConfig) Clone() proto.Message {
 	target = &LoadBalancerConfig_SlowStartConfig{}
 
 	if h, ok := interface{}(m.GetSlowStartWindow()).(clone.Cloner); ok {
-		target.SlowStartWindow = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.SlowStartWindow = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.SlowStartWindow = proto.Clone(m.GetSlowStartWindow()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.SlowStartWindow = proto.Clone(m.GetSlowStartWindow()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	if h, ok := interface{}(m.GetAggression()).(clone.Cloner); ok {
-		target.Aggression = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.DoubleValue)
+		target.Aggression = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.DoubleValue)
 	} else {
-		target.Aggression = proto.Clone(m.GetAggression()).(*github_com_golang_protobuf_ptypes_wrappers.DoubleValue)
+		target.Aggression = proto.Clone(m.GetAggression()).(*google_golang_org_protobuf_types_known_wrapperspb.DoubleValue)
 	}
 
 	if h, ok := interface{}(m.GetMinWeightPercent()).(clone.Cloner); ok {
-		target.MinWeightPercent = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.DoubleValue)
+		target.MinWeightPercent = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.DoubleValue)
 	} else {
-		target.MinWeightPercent = proto.Clone(m.GetMinWeightPercent()).(*github_com_golang_protobuf_ptypes_wrappers.DoubleValue)
+		target.MinWeightPercent = proto.Clone(m.GetMinWeightPercent()).(*google_golang_org_protobuf_types_known_wrapperspb.DoubleValue)
 	}
 
 	return target

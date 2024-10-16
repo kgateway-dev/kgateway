@@ -6,6 +6,7 @@ import (
 
 	consulapi "github.com/hashicorp/consul/api"
 	errors "github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	kubeconverters "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -37,7 +38,7 @@ func ArtifactFactoryForSettings(ctx context.Context,
 
 	switch source := settings.GetArtifactSource().(type) {
 	case *v1.Settings_KubernetesArtifactSource:
-		if err := initializeForKube(ctx, cfg, clientset, kubeCoreCache, settings.GetRefreshRate(), settings.GetWatchNamespaces()); err != nil {
+		if err := initializeForKube(ctx, cfg, clientset, kubeCoreCache, settings.GetRefreshRate(), settingsutil.GetNamespacesToWatch(settings)); err != nil {
 			return nil, errors.Wrapf(err, "initializing kube cfg clientset and core cache")
 		}
 		return &factory.KubeConfigMapClientFactory{

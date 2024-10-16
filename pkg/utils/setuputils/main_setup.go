@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+	"github.com/solo-io/gloo/pkg/utils/namespaces"
 
 	"github.com/go-logr/zapr"
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
@@ -83,9 +84,15 @@ func Main(opts SetupOpts) error {
 		return err
 	}
 
+	namespaceClient, err := namespaces.NewKubeNamespaceClient(ctx)
+	// If there is any error when creating a KubeNamespaceClient (RBAC issues) default to a fake client
+	if err != nil {
+		namespaceClient = &namespaces.NoOpKubeNamespaceWatcher{}
+	}
+
 	// settings come from the ResourceClient in the settingsClient
-	// the eventLoop will Watch the emitter's settingsClient to recieve settings from the ResourceClient
-	emitter := v1.NewSetupEmitter(settingsClient)
+	// the eventLoop will Watch the emitter's settingsClient to receive settings from the ResourceClient
+	emitter := v1.NewSetupEmitter(settingsClient, namespaceClient)
 	settingsRef := &core.ResourceRef{Namespace: setupNamespace, Name: setupName}
 	eventLoop := v1.NewSetupEventLoop(emitter, NewSetupSyncer(settingsRef, opts.SetupFunc, identity))
 	errs, err := eventLoop.Run([]string{setupNamespace}, clients.WatchOpts{

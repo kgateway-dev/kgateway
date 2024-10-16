@@ -51,6 +51,9 @@ var _ = Describe("Aggregate Listener", func() {
 	JustBeforeEach(func() {
 		testContext.SetRunSettings(&gloov1.Settings{
 			Gateway: &gloov1.GatewayOptions{
+				EnableGatewayController: &wrappers.BoolValue{
+					Value: true,
+				},
 				IsolateVirtualHostsBySslConfig: &wrappers.BoolValue{
 					Value: isolateVirtualHostsBySslConfig,
 				},

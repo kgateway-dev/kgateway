@@ -80,6 +80,6 @@
       }
     ]
   },
-  "gen_kube_types": true,
-  "gen_kube_validation_schemas": true
+  "gen_kube_types": false,
+  "gen_kube_validation_schemas": false
 }

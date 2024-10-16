@@ -13,9 +13,9 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_any "github.com/golang/protobuf/ptypes/any"
-
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+
+	google_golang_org_protobuf_types_known_anypb "google.golang.org/protobuf/types/known/anypb"
 )
 
 // ensure the imports are used
@@ -48,9 +48,9 @@ func (m *VmConfig) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetConfiguration()).(clone.Cloner); ok {
-		target.Configuration = h.Clone().(*github_com_golang_protobuf_ptypes_any.Any)
+		target.Configuration = h.Clone().(*google_golang_org_protobuf_types_known_anypb.Any)
 	} else {
-		target.Configuration = proto.Clone(m.GetConfiguration()).(*github_com_golang_protobuf_ptypes_any.Any)
+		target.Configuration = proto.Clone(m.GetConfiguration()).(*google_golang_org_protobuf_types_known_anypb.Any)
 	}
 
 	target.AllowPrecompiled = m.GetAllowPrecompiled()
@@ -73,9 +73,9 @@ func (m *PluginConfig) Clone() proto.Message {
 	target.RootId = m.GetRootId()
 
 	if h, ok := interface{}(m.GetConfiguration()).(clone.Cloner); ok {
-		target.Configuration = h.Clone().(*github_com_golang_protobuf_ptypes_any.Any)
+		target.Configuration = h.Clone().(*google_golang_org_protobuf_types_known_anypb.Any)
 	} else {
-		target.Configuration = proto.Clone(m.GetConfiguration()).(*github_com_golang_protobuf_ptypes_any.Any)
+		target.Configuration = proto.Clone(m.GetConfiguration()).(*google_golang_org_protobuf_types_known_anypb.Any)
 	}
 
 	target.FailOpen = m.GetFailOpen()

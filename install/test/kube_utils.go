@@ -47,17 +47,17 @@ func getConfigMap(testManifest TestManifest, namespace string, name string) *cor
 	return configMapObj.(*corev1.ConfigMap)
 }
 
-// verifies that the container contains an env var with the given name and value
-func expectEnvVarExists(container corev1.Container, name string, value string) {
+// verifies that the container contains the expected environment variable
+func expectEnvVarExists(container corev1.Container, expectedEnvVar corev1.EnvVar) {
 	foundName := false
 	for _, envVar := range container.Env {
-		if envVar.Name == name {
-			Expect(envVar.Value).To(Equal(value), fmt.Sprintf("expected env var %s to have value %s", name, value))
+		if envVar.Name == expectedEnvVar.Name {
+			Expect(envVar).To(Equal(expectedEnvVar), fmt.Sprintf("expected env var %s to have value %v, but actual value was %v", envVar.Name, expectedEnvVar, envVar))
 			foundName = true
 			break
 		}
 	}
-	Expect(foundName).To(BeTrue(), fmt.Sprintf("env var with name %s should exist", name))
+	Expect(foundName).To(BeTrue(), fmt.Sprintf("env var with name %s should exist", expectedEnvVar.Name))
 }
 
 // verifies that the container does not contain an env var with the given name

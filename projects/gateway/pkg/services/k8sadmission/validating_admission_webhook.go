@@ -9,9 +9,11 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"slices"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/pkg/utils/statsutils"
 
 	"github.com/ghodss/yaml"
@@ -21,7 +23,7 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
-	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/pkg/utils/namespaces"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
@@ -30,7 +32,9 @@ import (
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/validation"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/solo-kit/api/external/kubernetes/namespace"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -319,35 +323,47 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 		Kind:    req.Kind.Kind,
 	}
 
-	// If we've specified to NOT read gateway requests from all namespaces, then only
-	// check gateway requests for the same namespace as this webhook, regardless of the
-	// contents of watchNamespaces. It's assumed that if it's non-empty, watchNamespaces
-	// contains the webhook's own namespace, since this was checked during setup in setup_syncer.go
 	watchNamespaces := make([]string, len(wh.watchNamespaces))
 	copy(watchNamespaces, wh.watchNamespaces) // important we make a deep copy
-	if gvk == gwv1.GatewayGVK && !wh.readGatewaysFromAllNamespaces && !utils.AllNamespaces(wh.watchNamespaces) {
-		watchNamespaces = []string{wh.webhookNamespace}
-	}
 
-	// ensure the request applies to a watched namespace, if watchNamespaces is set
-	var validatingForNamespace bool
-	if len(watchNamespaces) > 0 {
-		for _, ns := range watchNamespaces {
-			if ns == metav1.NamespaceAll || ns == req.Namespace {
-				validatingForNamespace = true
-				break
+	if req.Kind.Kind == "Namespace" {
+		// if it's not a namespace we watch, do not validate
+		if !slices.Contains(watchNamespaces, req.Name) {
+			return &AdmissionResponseWithProxies{
+				AdmissionResponse: &v1beta1.AdmissionResponse{
+					Allowed: true,
+				},
 			}
 		}
 	} else {
-		validatingForNamespace = true
-	}
+		// If we've specified to NOT read gateway requests from all namespaces, then only
+		// check gateway requests for the same namespace as this webhook, regardless of the
+		// contents of watchNamespaces. It's assumed that if it's non-empty, watchNamespaces
+		// contains the webhook's own namespace, since this was checked during setup in setup_syncer.go
+		if gvk == gwv1.GatewayGVK && !wh.readGatewaysFromAllNamespaces && !namespaces.AllNamespaces(wh.watchNamespaces) {
+			watchNamespaces = []string{wh.webhookNamespace}
+		}
 
-	// if it's not our namespace, do not validate
-	if !validatingForNamespace {
-		return &AdmissionResponseWithProxies{
-			AdmissionResponse: &v1beta1.AdmissionResponse{
-				Allowed: true,
-			},
+		// ensure the request applies to a watched namespace, if watchNamespaces is set
+		var validatingForNamespace bool
+		if len(watchNamespaces) > 0 {
+			for _, ns := range watchNamespaces {
+				if ns == metav1.NamespaceAll || ns == req.Namespace {
+					validatingForNamespace = true
+					break
+				}
+			}
+		} else {
+			validatingForNamespace = true
+		}
+
+		// if it's not our namespace, do not validate
+		if !validatingForNamespace {
+			return &AdmissionResponseWithProxies{
+				AdmissionResponse: &v1beta1.AdmissionResponse{
+					Allowed: true,
+				},
+			}
 		}
 	}
 
@@ -419,19 +435,54 @@ func (wh *gatewayValidationWebhook) validateAdmissionRequest(
 ) (*validation.Reports, *multierror.Error) {
 
 	isDelete := admissionRequest.Operation == v1beta1.Delete
+	isUpdate := admissionRequest.Operation == v1beta1.Update
 	dryRun := isDryRun(admissionRequest)
 
 	if gvk == ListGVK {
 		return wh.validateList(ctx, admissionRequest.Object.Raw, dryRun)
 	}
 
-	// Kubernetes' Secrets deletions are the only non-Solo API resource operations we support validation requests for.
-	// For a Kubernetes Secrets, we want to skip validation on operations we don't support. We only support DELETEs.
+	// Kubernetes Secrets and Namespace are the only non-Solo API resources we support validation requests for.
+	// For a these resources, we want to skip validation on operations we don't support. For Namespaces, we
+	// support DELETE and UPDATE. For Secrets, we support DELETE.
 	// Else, we expect to find the resource in our ApiGvkToHashableResource map - if the resource is supported.
+
 	if gvk.Group == kubernetesCoreApiGroup && gvk.Kind == "Secret" {
 		if !isDelete {
 			contextutils.LoggerFrom(ctx).Infof("unsupported operation validation [%s] for resource namespace [%s] name [%s] group [%s] kind [%s]", admissionRequest.Operation, ref.GetNamespace(), ref.GetName(), gvk.Group, gvk.Kind)
 			return &validation.Reports{}, nil
+		}
+	} else if gvk.Group == kubernetesCoreApiGroup && gvk.Kind == "Namespace" {
+		if !isDelete && !isUpdate {
+			contextutils.LoggerFrom(ctx).Infof("unsupported operation validation [%s] for resource namespace [%s] name [%s] group [%s] kind [%s]", admissionRequest.Operation, ref.GetNamespace(), ref.GetName(), gvk.Group, gvk.Kind)
+			return &validation.Reports{}, nil
+		}
+
+		if isUpdate {
+			var namespace namespace.KubeNamespace
+			err := json.Unmarshal(admissionRequest.Object.Raw, &namespace)
+			if err != nil {
+				return nil, &multierror.Error{Errors: []error{err}}
+			}
+			kns := kubernetes.KubeNamespace{
+				KubeNamespace: namespace,
+			}
+			// At this point, any namespace update we receive is a result of modifying a namespace we watch
+			// Check if we still watch the namespace after the modification
+			namespaceStillWatched, err := settingsutil.NamespaceWatched(settingsutil.FromContext(ctx), kns)
+			if err != nil {
+				return nil, &multierror.Error{Errors: []error{err}}
+			}
+
+			if namespaceStillWatched {
+				// The namespace has changed in a way that does not affect us so we let it through
+				return &validation.Reports{}, nil
+			} else {
+				// The namespace used to be watched but will now be removed from the list of namespaces we watch
+				// Run validation on this updated list of namespaces and report if anything breaks
+				return wh.deleteRef(ctx, gvk, ref, admissionRequest)
+			}
+
 		}
 	} else if _, hit := gloosnapshot.ApiGvkToHashableResource[gvk]; !hit {
 		contextutils.LoggerFrom(ctx).Infof("unsupported validation for resource namespace [%s] name [%s] group [%s] kind [%s]", ref.GetNamespace(), ref.GetName(), gvk.Group, gvk.Kind)
@@ -447,10 +498,13 @@ func (wh *gatewayValidationWebhook) validateAdmissionRequest(
 
 func (wh *gatewayValidationWebhook) deleteRef(ctx context.Context, gvk schema.GroupVersionKind, ref *core.ResourceRef, admissionRequest *v1beta1.AdmissionRequest) (*validation.Reports, *multierror.Error) {
 	newResourceFunc := gloosnapshot.ApiGvkToHashableResource[gvk]
-	// Special case for Kubernetes secrets, since they are not handled by our hashable resource.
+	// Special case for Kubernetes secrets and namespaces, since they are not handled by our hashable resource.
 	// We can reuse the NewSecretHashableResource resource.Resource, since all that matters is the metadata for deletion.
 	if gvk.Group == kubernetesCoreApiGroup && gvk.Kind == "Secret" {
 		newResourceFunc = gloov1.NewSecretHashableResource
+	}
+	if gvk.Group == kubernetesCoreApiGroup && gvk.Kind == "Namespace" {
+		newResourceFunc = kubernetes.NewKubeNamespaceHashableResource
 	}
 	newResource := newResourceFunc()
 	newResource.SetMetadata(&core.Metadata{

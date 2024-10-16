@@ -179,12 +179,17 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	buildr := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		// Don't use WithEventFilter here as it also filters events for Owned objects.
 		For(&apiv1.Gateway{}, builder.WithPredicates(predicate.NewPredicateFuncs(func(object client.Object) bool {
-			// we only care about Gateways that use our GatewayClass
+			// We only care about Gateways that use our GatewayClass
 			if gw, ok := object.(*apiv1.Gateway); ok {
 				return c.cfg.GWClasses.Has(string(gw.Spec.GatewayClassName))
 			}
 			return false
-		}), predicate.GenerationChangedPredicate{}))
+		}),
+			predicate.Or(
+				predicate.AnnotationChangedPredicate{},
+				predicate.GenerationChangedPredicate{},
+			),
+		))
 
 	// watch for changes in GatewayParameters
 	cli := c.cfg.Mgr.GetClient()

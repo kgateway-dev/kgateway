@@ -13,8 +13,6 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
-
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_matchers "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -22,6 +20,8 @@ import (
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -149,15 +149,15 @@ func (m *Route) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetInheritableMatchers()).(clone.Cloner); ok {
-		target.InheritableMatchers = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.InheritableMatchers = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.InheritableMatchers = proto.Clone(m.GetInheritableMatchers()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.InheritableMatchers = proto.Clone(m.GetInheritableMatchers()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetInheritablePathMatchers()).(clone.Cloner); ok {
-		target.InheritablePathMatchers = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.InheritablePathMatchers = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	} else {
-		target.InheritablePathMatchers = proto.Clone(m.GetInheritablePathMatchers()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+		target.InheritablePathMatchers = proto.Clone(m.GetInheritablePathMatchers()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
 	if h, ok := interface{}(m.GetOptions()).(clone.Cloner); ok {

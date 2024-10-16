@@ -27,7 +27,7 @@ weight: 5
 
  
 CidrRange specifies an IP Address and a prefix length to construct
-the subnet mask for a `CIDR <https://tools.ietf.org/html/rfc4632>`_ range.
+the subnet mask for a `CIDR <https://datatracker.ietf.org/doc/html/rfc4632>`_ range.
 
 ```yaml
 "addressPrefix": string

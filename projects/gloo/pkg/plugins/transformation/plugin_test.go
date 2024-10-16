@@ -779,10 +779,12 @@ var _ = Describe("Plugin", func() {
 
 		It("sets transformation config for weighted destinations", func() {
 			out := &envoy_config_route_v3.WeightedCluster_ClusterWeight{}
-			err := p.(plugins.WeightedDestinationPlugin).ProcessWeightedDestination(plugins.RouteParams{
-				VirtualHostParams: plugins.VirtualHostParams{
-					Params: plugins.Params{
-						Ctx: ctx,
+			err := p.(plugins.WeightedDestinationPlugin).ProcessWeightedDestination(plugins.RouteActionParams{
+				RouteParams: plugins.RouteParams{
+					VirtualHostParams: plugins.VirtualHostParams{
+						Params: plugins.Params{
+							Ctx: ctx,
+						},
 					},
 				},
 			}, &v1.WeightedDestination{
@@ -1190,17 +1192,20 @@ var _ = Describe("Plugin", func() {
 		})
 		It("sets transformation config for weighted dest", func() {
 			out := &envoy_config_route_v3.WeightedCluster_ClusterWeight{}
-			err := p.(plugins.WeightedDestinationPlugin).ProcessWeightedDestination(plugins.RouteParams{
-				VirtualHostParams: plugins.VirtualHostParams{
-					Params: plugins.Params{
-						Ctx: ctx,
+			err := p.(plugins.WeightedDestinationPlugin).ProcessWeightedDestination(
+				plugins.RouteActionParams{
+					RouteParams: plugins.RouteParams{
+						VirtualHostParams: plugins.VirtualHostParams{
+							Params: plugins.Params{
+								Ctx: ctx,
+							},
+						},
 					},
-				},
-			}, &v1.WeightedDestination{
-				Options: &v1.WeightedDestinationOptions{
-					StagedTransformations: inputTransform,
-				},
-			}, out)
+				}, &v1.WeightedDestination{
+					Options: &v1.WeightedDestinationOptions{
+						StagedTransformations: inputTransform,
+					},
+				}, out)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 		})

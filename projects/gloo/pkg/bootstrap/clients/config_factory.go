@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 
 	consulapi "github.com/hashicorp/consul/api"
 	errors "github.com/rotisserie/eris"
@@ -97,7 +98,7 @@ func ConfigFactoryForSettings(params ConfigFactoryParams, resourceCrd crd.Crd) (
 			Crd:                resourceCrd,
 			Cfg:                *cfg,
 			SharedCache:        kubeCache,
-			NamespaceWhitelist: settings.GetWatchNamespaces(),
+			NamespaceWhitelist: settingsutil.GetNamespacesToWatch(settings),
 		}, nil
 	case *v1.Settings_ConsulKvSource:
 		consulClient := params.consul.consulClient

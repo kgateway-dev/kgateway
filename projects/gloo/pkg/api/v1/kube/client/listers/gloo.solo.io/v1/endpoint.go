@@ -20,14 +20,16 @@ package v1
 
 import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
 // EndpointLister helps list Endpoints.
+// All objects returned here must be treated as read-only.
 type EndpointLister interface {
 	// List lists all Endpoints in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Endpoint, err error)
 	// Endpoints returns an object that can list and get Endpoints.
 	Endpoints(namespace string) EndpointNamespaceLister
@@ -36,32 +38,27 @@ type EndpointLister interface {
 
 // endpointLister implements the EndpointLister interface.
 type endpointLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v1.Endpoint]
 }
 
 // NewEndpointLister returns a new EndpointLister.
 func NewEndpointLister(indexer cache.Indexer) EndpointLister {
-	return &endpointLister{indexer: indexer}
-}
-
-// List lists all Endpoints in the indexer.
-func (s *endpointLister) List(selector labels.Selector) (ret []*v1.Endpoint, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Endpoint))
-	})
-	return ret, err
+	return &endpointLister{listers.New[*v1.Endpoint](indexer, v1.Resource("endpoint"))}
 }
 
 // Endpoints returns an object that can list and get Endpoints.
 func (s *endpointLister) Endpoints(namespace string) EndpointNamespaceLister {
-	return endpointNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return endpointNamespaceLister{listers.NewNamespaced[*v1.Endpoint](s.ResourceIndexer, namespace)}
 }
 
 // EndpointNamespaceLister helps list and get Endpoints.
+// All objects returned here must be treated as read-only.
 type EndpointNamespaceLister interface {
 	// List lists all Endpoints in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Endpoint, err error)
 	// Get retrieves the Endpoint from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1.Endpoint, error)
 	EndpointNamespaceListerExpansion
 }
@@ -69,26 +66,5 @@ type EndpointNamespaceLister interface {
 // endpointNamespaceLister implements the EndpointNamespaceLister
 // interface.
 type endpointNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all Endpoints in the indexer for a given namespace.
-func (s endpointNamespaceLister) List(selector labels.Selector) (ret []*v1.Endpoint, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.Endpoint))
-	})
-	return ret, err
-}
-
-// Get retrieves the Endpoint from the indexer for a given namespace and name.
-func (s endpointNamespaceLister) Get(name string) (*v1.Endpoint, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("endpoint"), name)
-	}
-	return obj.(*v1.Endpoint), nil
+	listers.ResourceIndexer[*v1.Endpoint]
 }

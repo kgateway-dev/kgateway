@@ -3,18 +3,18 @@ package kubernetes
 import (
 	"context"
 
-	"github.com/solo-io/go-utils/stringutils"
-	corev1 "k8s.io/api/core/v1"
-
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/go-utils/contextutils"
-
-	"github.com/solo-io/gloo/pkg/utils"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+
+	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/stringutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+
+	"github.com/solo-io/gloo/pkg/utils/namespaces"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 )
 
 const (
@@ -23,14 +23,12 @@ const (
 )
 
 func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace string, opts clients.WatchOpts, discOpts discovery.Opts) (chan v1.UpstreamList, chan error, error) {
-
 	if len(watchNamespaces) == 0 {
 		watchNamespaces = []string{metav1.NamespaceAll}
 	}
 
 	ctx := contextutils.WithLogger(opts.Ctx, "kube-uds")
 	logger := contextutils.LoggerFrom(ctx)
-
 	logger.Infow("started", "watchns", watchNamespaces, "writens", writeNamespace)
 
 	watch := p.kubeCoreCache.Subscribe()
@@ -41,7 +39,6 @@ func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace stri
 	discoverUpstreams := func() {
 		var serviceList []*corev1.Service
 		for _, ns := range watchNamespaces {
-
 			lister := p.kubeCoreCache.NamespacedServiceLister(ns)
 			if lister == nil {
 				errs <- errors.Errorf("Kubernetes upstream discovery: Tried to discover upstreams in invalid namespace \"%s\".", ns)
@@ -55,6 +52,7 @@ func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace stri
 			}
 			serviceList = append(serviceList, services...)
 		}
+
 		upstreams := p.ConvertServices(ctx, watchNamespaces, serviceList, discOpts, writeNamespace)
 		logger.Debugw("discovered services", "num", len(upstreams))
 		upstreamsChan <- upstreams
@@ -65,6 +63,7 @@ func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace stri
 		defer p.kubeCoreCache.Unsubscribe(watch)
 		defer close(upstreamsChan)
 		defer close(errs)
+
 		// watch should open up with an initial read
 		discoverUpstreams()
 		for {
@@ -79,6 +78,7 @@ func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace stri
 			}
 		}
 	}()
+
 	return upstreamsChan, errs, nil
 }
 
@@ -89,17 +89,16 @@ func (p *plugin) ConvertServices(ctx context.Context, watchNamespaces []string, 
 			continue
 		}
 
-		if !utils.AllNamespaces(watchNamespaces) {
+		if !namespaces.AllNamespaces(watchNamespaces) {
 			if !stringutils.ContainsString(svc.Namespace, watchNamespaces) {
 				continue
 			}
 		}
 
-		upstreamsToCreate := p.UpstreamConverter.UpstreamsForService(ctx, svc)
+		upstreamsToCreate := p.UpstreamsForService(ctx, svc)
 		for _, u := range upstreamsToCreate {
 			u.GetMetadata().Namespace = writeNamespace
 		}
-
 		upstreams = append(upstreams, upstreamsToCreate...)
 	}
 	return upstreams

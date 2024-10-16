@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
+	google_golang_org_protobuf_types_known_durationpb "google.golang.org/protobuf/types/known/durationpb"
 )
 
 // ensure the imports are used
@@ -62,9 +62,9 @@ func (m *Cookie) Clone() proto.Message {
 	target.Name = m.GetName()
 
 	if h, ok := interface{}(m.GetTtl()).(clone.Cloner); ok {
-		target.Ttl = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.Ttl = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
-		target.Ttl = proto.Clone(m.GetTtl()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+		target.Ttl = proto.Clone(m.GetTtl()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	}
 
 	target.Path = m.GetPath()

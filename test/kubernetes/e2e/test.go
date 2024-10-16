@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
@@ -40,20 +41,6 @@ func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper
 	installation.Metadata.HelmRepoIndexFileName = testHelper.HelmRepoIndexFileName
 	installation.Metadata.ChartUri = filepath.Join(testutils.GitRootDirectory(), installation.Metadata.TestAssetDir, installation.Metadata.HelmChartName+"-"+installation.Metadata.ChartVersion+".tgz")
 
-	// validate that the glooGatewayContext has a valid manifest
-	if installation.Metadata.ValuesManifestFile == "" {
-		panic("ValuesManifestFile must be provided in glooGatewayContext")
-	}
-
-	values, err := testutils.BuildHelmValues(testutils.HelmValues{ValuesFile: installation.Metadata.ValuesManifestFile})
-	if err != nil {
-		panic(fmt.Sprintf("failed to build helm values: %v", err))
-	}
-	err = testutils.ValidateHelmValues(values)
-	if err != nil {
-		panic(fmt.Sprintf("failed to validate helm values: %v", err))
-	}
-
 	return testHelper
 }
 
@@ -65,6 +52,11 @@ func CreateTestInstallation(
 ) *TestInstallation {
 	runtimeContext := testruntime.NewContext()
 	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName)
+
+	if err := gloogateway.ValidateGlooGatewayContext(glooGatewayContext); err != nil {
+		// We error loudly if the context is misconfigured
+		panic(err)
+	}
 
 	return CreateTestInstallationForCluster(t, runtimeContext, clusterContext, glooGatewayContext)
 }
@@ -179,6 +171,27 @@ func (i *TestInstallation) CreateIstioBugReport(ctx context.Context) {
 	cluster.CreateIstioBugReport(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext, i.GeneratedFiles.FailureDir)
 }
 
+// InstallGlooGatewayWithTestHelper is the common way to install Gloo Gateway.
+// However, it relies on a SoloTestHelper which is an artifact of the legacy e2e tests that we hope to deprecate
+func (i *TestInstallation) InstallGlooGatewayWithTestHelper(ctx context.Context, testHelper *helper.SoloTestHelper, timeout time.Duration) {
+	installFn := func(ctx context.Context) error {
+		return testHelper.InstallGloo(
+			ctx,
+			timeout,
+			// We layer the values that are provided to a given TestInstallation, as a way to reduce the complexity that developers
+			// have to concern themselves with.
+			//	1. First, we define the common recommendations. These are values which we want all tests to inherit by default.
+			//	2. Next, we define a "profile", which is a standard collection of values for a type of installation
+			//	3. Finally, we define test specific values, so that a test can have the final say over which values to define.
+			helper.WithExtraArgs("--values", CommonRecommendationManifest),
+			helper.WithExtraArgs("--values", i.Metadata.ProfileValuesManifestFile),
+			helper.WithExtraArgs("--values", i.Metadata.ValuesManifestFile),
+		)
+	}
+
+	i.InstallGlooGateway(ctx, installFn)
+}
+
 func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installFn func(ctx context.Context) error) {
 	if !testutils.ShouldSkipInstall() {
 		err := installFn(ctx)
@@ -191,6 +204,16 @@ func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installFn fun
 	clients, err := gloogateway.NewResourceClients(ctx, i.ClusterContext)
 	i.Assertions.Require.NoError(err)
 	i.ResourceClients = clients
+}
+
+// UninstallGlooGatewayWithTestHelper is the common way to uninstall Gloo Gateway.
+// However, it relies on a SoloTestHelper which is an artifact of the legacy e2e tests that we hope to deprecate
+func (i *TestInstallation) UninstallGlooGatewayWithTestHelper(ctx context.Context, testHelper *helper.SoloTestHelper) {
+	uninstallFn := func(ctx context.Context) error {
+		return testHelper.UninstallGlooAll()
+	}
+
+	i.UninstallGlooGateway(ctx, uninstallFn)
 }
 
 func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallFn func(ctx context.Context) error) {

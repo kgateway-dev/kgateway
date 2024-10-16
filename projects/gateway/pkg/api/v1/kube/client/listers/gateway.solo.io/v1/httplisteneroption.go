@@ -20,8 +20,8 @@ package v1
 
 import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -38,25 +38,17 @@ type HttpListenerOptionLister interface {
 
 // httpListenerOptionLister implements the HttpListenerOptionLister interface.
 type httpListenerOptionLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*v1.HttpListenerOption]
 }
 
 // NewHttpListenerOptionLister returns a new HttpListenerOptionLister.
 func NewHttpListenerOptionLister(indexer cache.Indexer) HttpListenerOptionLister {
-	return &httpListenerOptionLister{indexer: indexer}
-}
-
-// List lists all HttpListenerOptions in the indexer.
-func (s *httpListenerOptionLister) List(selector labels.Selector) (ret []*v1.HttpListenerOption, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.HttpListenerOption))
-	})
-	return ret, err
+	return &httpListenerOptionLister{listers.New[*v1.HttpListenerOption](indexer, v1.Resource("httplisteneroption"))}
 }
 
 // HttpListenerOptions returns an object that can list and get HttpListenerOptions.
 func (s *httpListenerOptionLister) HttpListenerOptions(namespace string) HttpListenerOptionNamespaceLister {
-	return httpListenerOptionNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return httpListenerOptionNamespaceLister{listers.NewNamespaced[*v1.HttpListenerOption](s.ResourceIndexer, namespace)}
 }
 
 // HttpListenerOptionNamespaceLister helps list and get HttpListenerOptions.
@@ -74,26 +66,5 @@ type HttpListenerOptionNamespaceLister interface {
 // httpListenerOptionNamespaceLister implements the HttpListenerOptionNamespaceLister
 // interface.
 type httpListenerOptionNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all HttpListenerOptions in the indexer for a given namespace.
-func (s httpListenerOptionNamespaceLister) List(selector labels.Selector) (ret []*v1.HttpListenerOption, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1.HttpListenerOption))
-	})
-	return ret, err
-}
-
-// Get retrieves the HttpListenerOption from the indexer for a given namespace and name.
-func (s httpListenerOptionNamespaceLister) Get(name string) (*v1.HttpListenerOption, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1.Resource("httplisteneroption"), name)
-	}
-	return obj.(*v1.HttpListenerOption), nil
+	listers.ResourceIndexer[*v1.HttpListenerOption]
 }
