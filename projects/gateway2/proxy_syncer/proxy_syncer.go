@@ -487,7 +487,6 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	})
 
 	timer := time.NewTicker(time.Second * 1)
-	needsSync := false
 	// wait for ctrl-rtime events to trigger syncs
 	// this will not be necessary once we switch the "front side" of translation to krt
 	for {
@@ -496,13 +495,11 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			contextutils.LoggerFrom(ctx).Debug("context done, stopping proxy syncer")
 			return nil
 		case <-timer.C:
-			if needsSync {
-				logger.Info("timer tick and needs sync, triggering recompute")
-				proxyTrigger.TriggerRecomputation()
-			}
-		case <-s.inputs.genericEvent.Next():
-			logger.Info("got generic event, setting needs sync")
-			needsSync = true
+			logger.Info("timer tick and needs sync, triggering recompute")
+			proxyTrigger.TriggerRecomputation()
+			// case <-s.inputs.genericEvent.Next():
+			// 	logger.Info("got generic event, setting needs sync")
+			// 	needsSync = true
 		}
 	}
 }
