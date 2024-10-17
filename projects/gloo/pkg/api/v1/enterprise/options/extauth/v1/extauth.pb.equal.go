@@ -1321,8 +1321,14 @@ func (m *Azure) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetClientSecret(), target.GetClientSecret()) != 0 {
-		return false
+	if h, ok := interface{}(m.GetClientSecret()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetClientSecret()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetClientSecret(), target.GetClientSecret()) {
+			return false
+		}
 	}
 
 	if h, ok := interface{}(m.GetClaimsCachingOptions()).(equality.Equalizer); ok {
@@ -5477,8 +5483,8 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Equal(that interface{}) bool
 			}
 		}
 
-	case *ExtAuthConfig_OidcAuthorizationCodeConfig_Azure:
-		if _, ok := target.Provider.(*ExtAuthConfig_OidcAuthorizationCodeConfig_Azure); !ok {
+	case *ExtAuthConfig_OidcAuthorizationCodeConfig_Azure_:
+		if _, ok := target.Provider.(*ExtAuthConfig_OidcAuthorizationCodeConfig_Azure_); !ok {
 			return false
 		}
 
@@ -6840,6 +6846,52 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_Default) Equal(that interface
 		return m == nil
 	} else if m == nil {
 		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_Azure) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ExtAuthConfig_OidcAuthorizationCodeConfig_Azure)
+	if !ok {
+		that2, ok := that.(ExtAuthConfig_OidcAuthorizationCodeConfig_Azure)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetClientId(), target.GetClientId()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetTenantId(), target.GetTenantId()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetClientSecret(), target.GetClientSecret()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetClaimsCachingOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetClaimsCachingOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetClaimsCachingOptions(), target.GetClaimsCachingOptions()) {
+			return false
+		}
 	}
 
 	return true

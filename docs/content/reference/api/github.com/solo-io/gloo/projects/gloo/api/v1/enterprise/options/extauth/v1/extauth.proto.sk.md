@@ -108,6 +108,7 @@ weight: 5
 - [AccessToken](#accesstoken)
 - [IdentityToken](#identitytoken)
 - [Default](#default)
+- [Azure](#azure)
 - [FrontChannelLogout](#frontchannellogout)
 - [AccessTokenValidationConfig](#accesstokenvalidationconfig)
 - [JwtValidation](#jwtvalidation)
@@ -1037,7 +1038,7 @@ This way, you can enable distibuted claims and caching for when users are member
 ```yaml
 "clientId": string
 "tenantId": string
-"clientSecret": string
+"clientSecret": .core.solo.io.ResourceRef
 "claimsCachingOptions": .enterprise.gloo.solo.io.RedisOptions
 
 ```
@@ -1046,7 +1047,7 @@ This way, you can enable distibuted claims and caching for when users are member
 | ----- | ---- | ----------- | 
 | `clientId` | `string` | The client ID for the ExtAuthService app that is registered in MS Entra, to access the Microsoft Graph API to retrieve distributed claims. This app is NOT the app that you want to configure external auth for. |
 | `tenantId` | `string` | The tenant ID represents the MS Entra organization ID where the ExtAuthService app is registered. This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`, depending on how your Azure account is provisioned. |
-| `clientSecret` | `string` | The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API. |
+| `clientSecret` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API. |
 | `claimsCachingOptions` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) | Redis connection details to cache MS Entera claims. This way, you avoid performance issues of accessing the Microsoft Graph API too many times. Note that this setting does NOT turn on Redis caching for the user session. To turn on Redis user session caching, use the `userSessionConfig` field. |
 
 
@@ -2303,7 +2304,7 @@ Deprecated, prefer OAuth2Config
 "accessToken": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.AccessToken
 "identityToken": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.IdentityToken
 "default": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.Default
-"azure": .enterprise.gloo.solo.io.Azure
+"azure": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.Azure
 "frontChannelLogout": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.FrontChannelLogout
 
 ```
@@ -2334,7 +2335,7 @@ Deprecated, prefer OAuth2Config
 | `accessToken` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.AccessToken](../extauth.proto.sk/#accesstoken) | Optional: Configuration specific to the OAuth2 access token received and processed by the ext-auth-service. |
 | `identityToken` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.IdentityToken](../extauth.proto.sk/#identitytoken) | Optional: Configuration specific to the OIDC identity token received and processed by the ext-auth-service. |
 | `default` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.Default](../extauth.proto.sk/#default) |  Only one of `default` or `azure` can be set. |
-| `azure` | [.enterprise.gloo.solo.io.Azure](../extauth.proto.sk/#azure) |  Only one of `azure` or `default` can be set. |
+| `azure` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.Azure](../extauth.proto.sk/#azure) |  Only one of `azure` or `default` can be set. |
 | `frontChannelLogout` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.FrontChannelLogout](../extauth.proto.sk/#frontchannellogout) | Configuration for front channel logout. This is used to log out the user from multiple apps/clients associated with one OpenId Provider (OP). The path is registered with the OP and is called for each app/client that the user is logged into when the logout endpoint is called. |
 
 
@@ -2430,6 +2431,31 @@ No-op, represents default OIDC behavior
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
+
+
+
+
+---
+### Azure
+
+ 
+For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
+This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
+
+```yaml
+"clientId": string
+"tenantId": string
+"clientSecret": string
+"claimsCachingOptions": .enterprise.gloo.solo.io.RedisOptions
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `clientId` | `string` | The client ID for the ExtAuthService app that is registered in MS Entra, to access the Microsoft Graph API to retrieve distributed claims. This app is NOT the app that you want to configure external auth for. |
+| `tenantId` | `string` | The tenant ID represents the MS Entra organization ID where the ExtAuthService app is registered. This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`, depending on how your Azure account is provisioned. |
+| `clientSecret` | `string` | The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API. |
+| `claimsCachingOptions` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) | Redis connection details to cache MS Entera claims. This way, you avoid performance issues of accessing the Microsoft Graph API too many times. Note that this setting does NOT turn on Redis caching for the user session. To turn on Redis user session caching, use the `userSessionConfig` field. |
 
 
 

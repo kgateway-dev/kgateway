@@ -333,7 +333,12 @@ spec:
                                 clientId:
                                   type: string
                                 clientSecret:
-                                  type: string
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  type: object
                                 tenantId:
                                   type: string
                               type: object
@@ -583,7 +588,12 @@ spec:
                                 clientId:
                                   type: string
                                 clientSecret:
-                                  type: string
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  type: object
                                 tenantId:
                                   type: string
                               type: object
