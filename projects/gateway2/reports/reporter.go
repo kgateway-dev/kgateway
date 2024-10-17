@@ -25,7 +25,7 @@ type ListenerReport struct {
 
 type RouteReport struct {
 	Parents            map[ParentRefKey]*ParentRefReport
-	ObservedGeneration int64
+	observedGeneration int64
 }
 
 // TODO: rename to e.g. RouteParentRefReport
@@ -76,7 +76,7 @@ func (r *ReportMap) route(route *gwv1.HTTPRoute) *RouteReport {
 
 func (r *ReportMap) newRouteReport(route *gwv1.HTTPRoute) *RouteReport {
 	rr := &RouteReport{}
-	rr.ObservedGeneration = route.Generation
+	rr.observedGeneration = route.Generation
 	key := client.ObjectKeyFromObject(route)
 	r.Routes[key] = rr
 	return rr

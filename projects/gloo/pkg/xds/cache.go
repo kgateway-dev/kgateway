@@ -7,6 +7,7 @@ import (
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 )
 
@@ -58,8 +59,7 @@ func NewAdsSnapshotCache(ctx context.Context) cache.SnapshotCache {
 	settings := cache.CacheSettings{
 		Ads:    true,
 		Hash:   NewNodeRoleHasher(),
-		Logger: nil,
-		// Logger: contextutils.LoggerFrom(ctx),
+		Logger: contextutils.LoggerFrom(ctx),
 	}
 	return cache.NewSnapshotCache(settings)
 }
