@@ -281,7 +281,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 	timer := time.NewTicker(time.Second * 1)
 	var (
-		needsProxyRecompute  bool = false
+		// needsProxyRecompute  bool = false
 		needsGwApiStatusSync bool = false
 		// needsXdsSync         bool = false
 	)
@@ -475,10 +475,10 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			logger.Debug("context done, stopping proxy syncer")
 			return nil
 		case <-timer.C:
-			if needsProxyRecompute {
-				needsProxyRecompute = false
-				proxyTrigger.TriggerRecomputation()
-			}
+			// if needsProxyRecompute {
+			// needsProxyRecompute = false
+			proxyTrigger.TriggerRecomputation()
+			// }
 			if needsGwApiStatusSync {
 				needsGwApiStatusSync = false
 				go func() {
@@ -503,7 +503,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			// }
 		case <-s.inputs.genericEvent.Next():
 			// event from ctrl-rtime, signal that we need to recompute proxies on next tick
-			needsProxyRecompute = true
+			// needsProxyRecompute = true
 		}
 	}
 }
