@@ -283,7 +283,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	var (
 		needsProxyRecompute  bool = false
 		needsGwApiStatusSync bool = false
-		needsXdsSync         bool = false
+		// needsXdsSync         bool = false
 	)
 
 	// TODO: handle cfgmap noisiness? (https://github.com/solo-io/gloo/blob/main/projects/gloo/pkg/api/converters/kube/artifact_converter.go#L31)
@@ -370,7 +370,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 	xdsSnapshots := krt.NewCollection(glooProxies, func(kctx krt.HandlerContext, proxy glooProxy) *xdsSnapWrapper {
 		// we are recomputing xds snapshots as proxies have changed, signal that we need to sync xds with these new snapshots
-		needsXdsSync = true
+		// needsXdsSync = true
 		xdsSnap := s.buildXdsSnapshot(
 			ctx,
 			kctx,
@@ -486,21 +486,21 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 					s.syncRouteStatus(ctx, latestReport)
 				}()
 			}
-			if needsXdsSync {
-				needsXdsSync = false
-				go func() {
-					for _, snapWrap := range xdsSnapshots.List() {
-						err := s.proxyTranslator.syncXdsAndStatus(ctx, snapWrap.snap, snapWrap.proxyKey, snapWrap.fullReports)
-						if err != nil {
-							// fixme
-						}
-
-						var proxiesWithReports []translatorutils.ProxyWithReports
-						proxiesWithReports = append(proxiesWithReports, snapWrap.proxyWithReport)
-						applyStatusPlugins(ctx, proxiesWithReports, snapWrap.pluginRegistry)
+			// if needsXdsSync {
+			// 	needsXdsSync = false
+			go func() {
+				for _, snapWrap := range xdsSnapshots.List() {
+					err := s.proxyTranslator.syncXdsAndStatus(ctx, snapWrap.snap, snapWrap.proxyKey, snapWrap.fullReports)
+					if err != nil {
+						// fixme
 					}
-				}()
-			}
+
+					var proxiesWithReports []translatorutils.ProxyWithReports
+					proxiesWithReports = append(proxiesWithReports, snapWrap.proxyWithReport)
+					applyStatusPlugins(ctx, proxiesWithReports, snapWrap.pluginRegistry)
+				}
+			}()
+			// }
 		case <-s.inputs.genericEvent.Next():
 			// event from ctrl-rtime, signal that we need to recompute proxies on next tick
 			needsProxyRecompute = true
