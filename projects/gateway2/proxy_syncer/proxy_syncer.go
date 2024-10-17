@@ -278,6 +278,14 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-syncer")
 	logger := contextutils.LoggerFrom(ctx)
+
+	timer := time.NewTicker(time.Second * 1)
+	var (
+		needsProxyRecompute  bool = false
+		needsGwApiStatusSync bool = false
+		needsXdsSync         bool = false
+	)
+
 	// TODO: handle cfgmap noisiness? (https://github.com/solo-io/gloo/blob/main/projects/gloo/pkg/api/converters/kube/artifact_converter.go#L31)
 	configMapClient := kclient.New[*corev1.ConfigMap](s.istioClient)
 	configMaps := krt.WrapClient(configMapClient, krt.WithName("ConfigMaps"))
@@ -361,6 +369,8 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	})
 
 	xdsSnapshots := krt.NewCollection(glooProxies, func(kctx krt.HandlerContext, proxy glooProxy) *xdsSnapWrapper {
+		// we are recomputing xds snapshots as proxies have changed, signal that we need to sync xds with these new snapshots
+		needsXdsSync = true
 		xdsSnap := s.buildXdsSnapshot(
 			ctx,
 			kctx,
@@ -424,6 +434,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			// FIXME: handle garbage collection
 			return
 		}
+		needsGwApiStatusSync = true
 		latestReport = o.Latest().ReportMap
 	})
 
@@ -456,37 +467,43 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		return errors.New("kube gateway sync loop waiting for all caches to sync failed")
 	}
 
-	timer := time.NewTicker(time.Second * 1)
 	// wait for ctrl-rtime events to trigger syncs
 	// this will not be necessary once we switch the "front side" of translation to krt
 	for {
 		select {
 		case <-ctx.Done():
-			contextutils.LoggerFrom(ctx).Debug("context done, stopping proxy syncer")
+			logger.Debug("context done, stopping proxy syncer")
 			return nil
 		case <-timer.C:
-			logger.Info("timer tick and needs sync, triggering recompute")
-			proxyTrigger.TriggerRecomputation()
-			go func() {
-				s.syncGatewayStatus(ctx, latestReport)
-				s.syncRouteStatus(ctx, latestReport)
-			}()
-			go func() {
-				logger.Info("in xds snap tick")
-				for _, snapWrap := range xdsSnapshots.List() {
-					err := s.proxyTranslator.syncXdsAndStatus(ctx, snapWrap.snap, snapWrap.proxyKey, snapWrap.fullReports)
-					if err != nil {
-						// fixme
-					}
+			if needsProxyRecompute {
+				needsProxyRecompute = false
+				proxyTrigger.TriggerRecomputation()
+			}
+			if needsGwApiStatusSync {
+				needsGwApiStatusSync = false
+				go func() {
+					s.syncGatewayStatus(ctx, latestReport)
+					s.syncRouteStatus(ctx, latestReport)
+				}()
+			}
+			if needsXdsSync {
+				needsXdsSync = false
+				go func() {
+					for _, snapWrap := range xdsSnapshots.List() {
+						err := s.proxyTranslator.syncXdsAndStatus(ctx, snapWrap.snap, snapWrap.proxyKey, snapWrap.fullReports)
+						if err != nil {
+							// fixme
+						}
 
-					var proxiesWithReports []translatorutils.ProxyWithReports
-					proxiesWithReports = append(proxiesWithReports, snapWrap.proxyWithReport)
-					applyStatusPlugins(ctx, proxiesWithReports, snapWrap.pluginRegistry)
-				}
-			}()
-			// case <-s.inputs.genericEvent.Next():
-			// 	logger.Info("got generic event, setting needs sync")
-			// 	needsSync = true
+						var proxiesWithReports []translatorutils.ProxyWithReports
+						proxiesWithReports = append(proxiesWithReports, snapWrap.proxyWithReport)
+						applyStatusPlugins(ctx, proxiesWithReports, snapWrap.pluginRegistry)
+					}
+				}()
+			}
+		case <-s.inputs.genericEvent.Next():
+			// event from ctrl-rtime, signal that we need to recompute proxies on next tick
+			needsProxyRecompute = true
 		}
 	}
 }
