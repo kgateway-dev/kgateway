@@ -341,7 +341,9 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 	finalUpstreams := krt.JoinCollection([]krt.Collection[upstream]{glooUpstreams, inMemUpstreams})
 
-	podClient := kclient.New[*corev1.Pod](s.istioClient)
+	podClient := kclient.NewFiltered[*corev1.Pod](s.istioClient, kclient.Filter{
+		ObjectTransform: kube.StripPodUnusedFields,
+	})
 	pods := krt.WrapClient(podClient, krt.WithName("Pods"))
 
 	epClient := kclient.New[*corev1.Endpoints](s.istioClient)
