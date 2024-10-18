@@ -8,6 +8,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
+	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
@@ -45,8 +46,6 @@ func (s *ProxyTranslator) buildXdsSnapshot(
 	// the reason for this is because we need to set Upstream status in lieu of an edge proxy being translated
 	// accept upstreams in snap so we can report accepted status (without this we wouldn't know to report on positive)
 	allReports.Accept(snap.Upstreams.AsInputResources()...)
-	// TODO: deprecate UsGroups -- not used in GW API! (and not really in edge either...)
-	// allReports.Accept(snap.UpstreamGroups.AsInputResources()...)
 
 	params := plugins.Params{
 		Ctx:      ctx,
@@ -64,7 +63,16 @@ func (s *ProxyTranslator) buildXdsSnapshot(
 
 	allReports.Merge(reports)
 
-	s.syncExtensions(ctx, snap, allReports)
+	// run through extensions to get extension reports and updated Proxy reports
+	for _, syncerExtension := range s.syncerExtensions {
+		intermediateReports := make(reporter.ResourceReports)
+		// we use the no-op setter here as we don't actually sync the extensions here,
+		// that is classic edge syncer's job [see: projects/gloo/pkg/syncer/translator_syncer.go#Sync(...)]
+		// all we care about is getting the reports, as our `Proxies` will get reports for errors/warns
+		// related to the extension processing
+		syncerExtension.Sync(ctx, snap, s.settings, s.noopSnapSetter, intermediateReports)
+		allReports.Merge(intermediateReports)
+	}
 
 	return xdsSnapshot, allReports, proxyReport
 }
@@ -77,62 +85,25 @@ func (s *ProxyTranslator) syncXdsAndStatus(
 ) error {
 	ctx = contextutils.WithLogger(ctx, "kube-gateway-xds-syncer")
 	logger := contextutils.LoggerFrom(ctx)
-	// snapHash := hashutils.MustHash(snap)
-	// TODO: add versions?
-	logger.Infof("begin kube gw sync for proxy %v (%v listeners, %v clusters, %v routes, %v endpoints)",
+	logger.Infof("begin kube gw sync for proxy %s (%v listeners, %v clusters, %v routes, %v endpoints)",
 		proxyKey, len(snap.Listeners.Items), len(snap.Clusters.Items), len(snap.Routes.Items), len(snap.Endpoints.Items))
-	// defer logger.Infof("end sync %v", snapHash)
+	defer logger.Infof("end kube gw sync for proxy %s", proxyKey)
 
 	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
 	// string if we're not even going to log it anyway
 	if contextutils.GetLogLevel() == zapcore.DebugLevel {
-		// logger.Debug(syncutil.StringifySnapshot(snap))
+		logger.Debugw(syncutil.StringifySnapshot(snap), "proxyKey", proxyKey)
 	}
 
 	// if the snapshot is not consistent, make it so
 	snap.MakeConsistent()
 	s.xdsCache.SetSnapshot(proxyKey, snap)
 
-	return s.syncStatus(ctx, reports)
-}
-
-func (s *ProxyTranslator) syncStatus(ctx context.Context, reports reporter.ResourceReports) error {
-	// leftover from translator_syncer's statusSyncer
-	// analyze our plan for concurrency, data ownership, do we need locks, etc.?
-
-	// s.reportsLock.RLock()
-	// // deep copy the reports so we can release the lock
-	// reports := make(reporter.ResourceReports, len(s.latestReports))
-	// for k, v := range s.latestReports {
-	// 	reports[k] = v
-	// }
-	// s.reportsLock.RUnlock()
-
-	logger := contextutils.LoggerFrom(ctx)
-	logger.Debugf("gloo reports to be written: %v", reports)
-	// if s.identity.IsLeader() {
+	// TODO: only leaders should write status (https://github.com/solo-io/solo-projects/issues/6367)
+	logger.Debugf("gloo reports for proxy %s to be written: %v", proxyKey, reports)
 	if err := s.glooReporter.WriteReports(ctx, reports, nil); err != nil {
-		logger.Debugf("Failed writing report for proxies: %v", err)
+		logger.Errorf("Failed writing gloo reports for proxy %s: %v", proxyKey, err)
 		return err
 	}
 	return nil
-}
-
-// syncExtensions executes each of the TranslatorSyncerExtensions
-// we do not actually set the xds cache for these extensions here, we only aggregate the reports
-// from a NoOp sync into the provided reports
-func (s *ProxyTranslator) syncExtensions(
-	ctx context.Context,
-	snap *v1snap.ApiSnapshot,
-	reports reporter.ResourceReports,
-) {
-	for _, syncerExtension := range s.syncerExtensions {
-		intermediateReports := make(reporter.ResourceReports)
-		// we use the no-op setter here as we don't actually sync the extensions here,
-		// that is classic edge syncer's job [see: projects/gloo/pkg/syncer/translator_syncer.go#Sync(...)]
-		// all we care about is getting the reports, as our `Proxies` will get reports for errors/warns
-		// related to the extension processing
-		syncerExtension.Sync(ctx, snap, s.settings, s.noopSnapSetter, intermediateReports)
-		reports.Merge(intermediateReports)
-	}
 }
