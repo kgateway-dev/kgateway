@@ -281,9 +281,9 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 	timer := time.NewTicker(time.Second * 1)
 	var (
-		// needsProxyRecompute  = false
-		needsGwApiStatusSync = false
-		needsXdsSync         = false
+	// needsProxyRecompute  = false
+	// needsGwApiStatusSync = false
+	// needsXdsSync         = false
 	)
 	// var pmu sync.Mutex
 
@@ -443,7 +443,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			// FIXME: handle garbage collection
 			return
 		}
-		needsGwApiStatusSync = true
+		// needsGwApiStatusSync = true
 		latestReport = o.Latest().ReportMap
 	})
 
@@ -487,28 +487,28 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			// if needsProxyRecompute {
 			proxyTrigger.TriggerRecomputation()
 			// }
-			if needsGwApiStatusSync {
-				needsGwApiStatusSync = false
-				go func() {
-					s.syncGatewayStatus(ctx, latestReport)
-					s.syncRouteStatus(ctx, latestReport)
-				}()
-			}
-			if needsXdsSync {
-				needsXdsSync = false
-				go func() {
-					for _, snapWrap := range xdsSnapshots.List() {
-						err := s.proxyTranslator.syncXdsAndStatus(ctx, snapWrap.snap, snapWrap.proxyKey, snapWrap.fullReports)
-						if err != nil {
-							// fixme
-						}
-
-						var proxiesWithReports []translatorutils.ProxyWithReports
-						proxiesWithReports = append(proxiesWithReports, snapWrap.proxyWithReport)
-						applyStatusPlugins(ctx, proxiesWithReports, snapWrap.pluginRegistry)
+			// if needsGwApiStatusSync {
+			// needsGwApiStatusSync = false
+			go func() {
+				s.syncGatewayStatus(ctx, latestReport)
+				s.syncRouteStatus(ctx, latestReport)
+			}()
+			// }
+			// if needsXdsSync {
+			// 	needsXdsSync = false
+			go func() {
+				for _, snapWrap := range xdsSnapshots.List() {
+					err := s.proxyTranslator.syncXdsAndStatus(ctx, snapWrap.snap, snapWrap.proxyKey, snapWrap.fullReports)
+					if err != nil {
+						// fixme
 					}
-				}()
-			}
+
+					var proxiesWithReports []translatorutils.ProxyWithReports
+					proxiesWithReports = append(proxiesWithReports, snapWrap.proxyWithReport)
+					applyStatusPlugins(ctx, proxiesWithReports, snapWrap.pluginRegistry)
+				}
+			}()
+			// }
 		case <-s.inputs.genericEvent.Next():
 			// event from ctrl-rtime, signal that we need to recompute proxies on next tick
 			// pmu.Lock()
