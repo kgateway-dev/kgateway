@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -282,11 +281,11 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 	timer := time.NewTicker(time.Second * 1)
 	var (
-		needsProxyRecompute  = false
+		// needsProxyRecompute  = false
 		needsGwApiStatusSync = false
 		needsXdsSync         = false
 	)
-	var pmu sync.Mutex
+	// var pmu sync.Mutex
 
 	// TODO: handle cfgmap noisiness? (https://github.com/solo-io/gloo/blob/main/projects/gloo/pkg/api/converters/kube/artifact_converter.go#L31)
 	configMapClient := kclient.New[*corev1.ConfigMap](s.istioClient)
@@ -372,11 +371,11 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		return proxy
 	})
 	// as the set of proxies has been computed, we can signal we don't need to recompute
-	glooProxies.RegisterBatch(func(o []krt.Event[glooProxy], initialSync bool) {
-		pmu.Lock()
-		needsProxyRecompute = false
-		pmu.Unlock()
-	}, true)
+	// glooProxies.RegisterBatch(func(o []krt.Event[glooProxy], initialSync bool) {
+	// 	pmu.Lock()
+	// 	needsProxyRecompute = false
+	// 	pmu.Unlock()
+	// }, true)
 
 	xdsSnapshots := krt.NewCollection(glooProxies, func(kctx krt.HandlerContext, proxy glooProxy) *xdsSnapWrapper {
 		// we are recomputing xds snapshots as proxies have changed, signal that we need to sync xds with these new snapshots
@@ -485,9 +484,9 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			logger.Debug("context done, stopping proxy syncer")
 			return nil
 		case <-timer.C:
-			if needsProxyRecompute {
-				proxyTrigger.TriggerRecomputation()
-			}
+			// if needsProxyRecompute {
+			proxyTrigger.TriggerRecomputation()
+			// }
 			if needsGwApiStatusSync {
 				needsGwApiStatusSync = false
 				go func() {
@@ -512,9 +511,9 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			}
 		case <-s.inputs.genericEvent.Next():
 			// event from ctrl-rtime, signal that we need to recompute proxies on next tick
-			pmu.Lock()
-			needsProxyRecompute = true
-			pmu.Unlock()
+			// pmu.Lock()
+			// needsProxyRecompute = true
+			// pmu.Unlock()
 		}
 	}
 }
