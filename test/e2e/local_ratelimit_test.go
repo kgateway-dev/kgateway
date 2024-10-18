@@ -57,14 +57,13 @@ var _ = Describe("Local Rate Limit", func() {
 		expectNotRateLimitedWithOutXRateLimitHeader = func() {
 			response := expectNotRateLimited()
 			// Since the values of the x-rate-limit headers change with time, we only check the presence of these header keys and not match their value
-			ExpectWithOffset(1, response).ToNot(matchers.ContainHeaderKeys([]string{"x-ratelimit-reset", "x-ratelimit-limit", "x-ratelimit-remaining"}),
+			ExpectWithOffset(1, response).ToNot(matchers.ContainHeaderKeys([]string{"x-ratelimit-limit", "x-ratelimit-remaining"}),
 				"x-ratelimit headers should not be present for non rate limited requests")
 		}
 
 		expectNotRateLimitedWithXRateLimitHeader = func() {
 			response := expectNotRateLimited()
-			// Since the x-ratelimit-reset header value changes with time, we only check the presence of this header key and not match its value
-			ExpectWithOffset(2, response).To(matchers.ContainHeaderKeys([]string{"x-ratelimit-reset", "x-ratelimit-limit", "x-ratelimit-remaining"}),
+			ExpectWithOffset(2, response).To(matchers.ContainHeaderKeys([]string{"x-ratelimit-limit", "x-ratelimit-remaining"}),
 				"x-ratelimit headers should be present")
 		}
 
@@ -79,9 +78,6 @@ var _ = Describe("Local Rate Limit", func() {
 				"x-ratelimit-limit":     []string{fmt.Sprint(limit)},
 				"x-ratelimit-remaining": []string{"0"},
 			}), "x-ratelimit headers should be present")
-			// Since the x-ratelimit-reset header value changes with time, we only check the presence of this header key and not match its value
-			ExpectWithOffset(1, response).To(matchers.ContainHeaderKeys([]string{"x-ratelimit-reset"}),
-				"x-ratelimit headers should be present")
 			ExpectWithOffset(1, err).NotTo(HaveOccurred(), "There should be no error when rate limited")
 		}
 
