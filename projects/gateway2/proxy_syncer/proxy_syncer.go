@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -281,10 +282,11 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 	timer := time.NewTicker(time.Second * 1)
 	var (
-		// needsProxyRecompute  bool = false
-		needsGwApiStatusSync bool = false
-		// needsXdsSync         bool = false
+		needsProxyRecompute  = false
+		needsGwApiStatusSync = false
+		needsXdsSync         = false
 	)
+	var pmu sync.Mutex
 
 	// TODO: handle cfgmap noisiness? (https://github.com/solo-io/gloo/blob/main/projects/gloo/pkg/api/converters/kube/artifact_converter.go#L31)
 	configMapClient := kclient.New[*corev1.ConfigMap](s.istioClient)
@@ -367,6 +369,12 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		proxy := s.buildProxy(ctx, gw)
 		return proxy
 	})
+	// as the set of proxies has been computed, we can signal we don't need to recompute
+	glooProxies.RegisterBatch(func(o []krt.Event[glooProxy], initialSync bool) {
+		pmu.Lock()
+		needsProxyRecompute = false
+		pmu.Unlock()
+	}, true)
 
 	xdsSnapshots := krt.NewCollection(glooProxies, func(kctx krt.HandlerContext, proxy glooProxy) *xdsSnapWrapper {
 		// we are recomputing xds snapshots as proxies have changed, signal that we need to sync xds with these new snapshots
@@ -475,10 +483,9 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			logger.Debug("context done, stopping proxy syncer")
 			return nil
 		case <-timer.C:
-			// if needsProxyRecompute {
-			// needsProxyRecompute = false
-			proxyTrigger.TriggerRecomputation()
-			// }
+			if needsProxyRecompute {
+				proxyTrigger.TriggerRecomputation()
+			}
 			if needsGwApiStatusSync {
 				needsGwApiStatusSync = false
 				go func() {
@@ -486,24 +493,26 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 					s.syncRouteStatus(ctx, latestReport)
 				}()
 			}
-			// if needsXdsSync {
-			// 	needsXdsSync = false
-			go func() {
-				for _, snapWrap := range xdsSnapshots.List() {
-					err := s.proxyTranslator.syncXdsAndStatus(ctx, snapWrap.snap, snapWrap.proxyKey, snapWrap.fullReports)
-					if err != nil {
-						// fixme
-					}
+			if needsXdsSync {
+				needsXdsSync = false
+				go func() {
+					for _, snapWrap := range xdsSnapshots.List() {
+						err := s.proxyTranslator.syncXdsAndStatus(ctx, snapWrap.snap, snapWrap.proxyKey, snapWrap.fullReports)
+						if err != nil {
+							// fixme
+						}
 
-					var proxiesWithReports []translatorutils.ProxyWithReports
-					proxiesWithReports = append(proxiesWithReports, snapWrap.proxyWithReport)
-					applyStatusPlugins(ctx, proxiesWithReports, snapWrap.pluginRegistry)
-				}
-			}()
-			// }
+						var proxiesWithReports []translatorutils.ProxyWithReports
+						proxiesWithReports = append(proxiesWithReports, snapWrap.proxyWithReport)
+						applyStatusPlugins(ctx, proxiesWithReports, snapWrap.pluginRegistry)
+					}
+				}()
+			}
 		case <-s.inputs.genericEvent.Next():
 			// event from ctrl-rtime, signal that we need to recompute proxies on next tick
-			// needsProxyRecompute = true
+			pmu.Lock()
+			needsProxyRecompute = true
+			pmu.Unlock()
 		}
 	}
 }
