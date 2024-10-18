@@ -630,7 +630,7 @@ message ClaimToHeader {
 }
 
 // For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
-// This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
+// This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
 message Azure {
     // The client ID for the ExtAuthService app that is registered in MS Entra,
     // to access the Microsoft Graph API to retrieve distributed claims.
@@ -642,7 +642,7 @@ message Azure {
     // depending on how your Azure account is provisioned.
     string tenant_id = 2;
 
-    // The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API.
+    // The client secret of the ExtAuthService app that is registered with MS Entra to communicate with the MS Graph API.
     core.solo.io.ResourceRef client_secret = 3;
 
     // Redis connection details to cache MS Entera claims.
@@ -1094,7 +1094,7 @@ message AccessTokenValidation {
     repeated ClaimToHeader claims_to_headers = 8;
 
     // For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
-    // This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
+    // This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
     Azure azure = 9;
 
     message ScopeList {
@@ -1861,7 +1861,7 @@ message ExtAuthConfig {
         message Default {}
 
         // For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
-        // This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
+        // This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
         message Azure {
             // The client ID for the ExtAuthService app that is registered in MS Entra,
             // to access the Microsoft Graph API to retrieve distributed claims.
@@ -1873,7 +1873,7 @@ message ExtAuthConfig {
             // depending on how your Azure account is provisioned.
             string tenant_id = 2;
 
-            // The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API.
+            // The client secret of the ExtAuthService app that is registered with MS Entra to communicate with the MS Graph API.
             string client_secret = 3 [(extproto.sensitive) = true];
 
             // Redis connection details to cache MS Entera claims.
