@@ -10,6 +10,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	"github.com/solo-io/gloo/pkg/utils/statsutils/metrics"
+	"github.com/solo-io/gloo/pkg/utils/syncutil"
 
 	gloo_translator "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -97,7 +98,7 @@ func (s *TranslatorSyncer) Sync(ctx context.Context, snap *gloov1snap.ApiSnapsho
 	// stringify-ing the snapshot may be an expensive operation, so we'd like to avoid building the large
 	// string if we're not even going to log it anyway
 	if contextutils.GetLogLevel() == zapcore.DebugLevel {
-		// logger.Debug(syncutil.StringifySnapshot(snap))
+		logger.Debug(syncutil.StringifySnapshot(snap))
 	}
 
 	desiredProxies, invalidProxies := s.GeneratedDesiredProxies(ctx, snap)
