@@ -16,34 +16,9 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.uber.org/zap/zapcore"
 )
-
-var (
-	envoySnapshotOut   = stats.Int64("api.gloo.solo.io/translator/resources", "The number of resources in the snapshot in", "1")
-	resourceNameKey, _ = tag.NewKey("resource")
-
-	envoySnapshotOutView = &view.View{
-		Name:        "api.gloo.solo.io/translator/resources",
-		Measure:     envoySnapshotOut,
-		Description: "The number of resources in the snapshot for envoy",
-		Aggregation: view.LastValue(),
-		TagKeys:     []tag.Key{syncerstats.ProxyNameKey, resourceNameKey},
-	}
-)
-
-func init() {
-	_ = view.Register(envoySnapshotOutView)
-}
-
-func measureResource(ctx context.Context, resource string, length int) {
-	if ctxWithTags, err := tag.New(ctx, tag.Insert(resourceNameKey, resource)); err == nil {
-		stats.Record(ctxWithTags, envoySnapshotOut.M(int64(length)))
-	}
-}
 
 // buildXdsSnapshot will translate from a gloov1.Proxy to xdsSnapshot using the supplied api snapshot.
 // This method returns the generated xdsSnapshot along with a combined report of proxy->xds translation and extension processing on the Proxy.
