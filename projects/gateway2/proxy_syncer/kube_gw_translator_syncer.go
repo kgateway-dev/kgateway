@@ -12,11 +12,9 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 
-	"go.opencensus.io/tag"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -39,11 +37,6 @@ func (s *ProxyTranslator) buildXdsSnapshot(
 	snapHash := hashutils.MustHash(snap)
 	defer logger.Infof("end sync %v", snapHash)
 
-	proxyCtx := ctx
-	if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(syncerstats.ProxyNameKey, metaKey)); err == nil {
-		proxyCtx = ctxWithTags
-	}
-
 	// Reports used to aggregate results from xds and extension translation.
 	// Will contain reports only `Gloo` components (i.e. Proxies, Upstreams, AuthConfigs, etc.)
 	allReports := make(reporter.ResourceReports)
@@ -56,7 +49,7 @@ func (s *ProxyTranslator) buildXdsSnapshot(
 	// allReports.Accept(snap.UpstreamGroups.AsInputResources()...)
 
 	params := plugins.Params{
-		Ctx:      proxyCtx,
+		Ctx:      ctx,
 		Settings: s.settings,
 		Snapshot: snap,
 		Messages: map[*core.ResourceRef][]string{},
