@@ -317,7 +317,6 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 	// helper collection to map from the runtime.Object Upstream representation to the gloov1.Upstream wrapper
 	glooUpstreams := krt.NewCollection(upstreams, func(kctx krt.HandlerContext, u *glookubev1.Upstream) *upstream {
-		// TODO: not cloning, this is already a copy from the underlying cache, right?!
 		glooUs := &u.Spec
 		glooUs.Metadata = &core.Metadata{}
 		glooUs.GetMetadata().Name = u.GetName()
@@ -452,7 +451,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 	// wait for krt collections to sync
 	s.istioClient.WaitForCacheSync(
-		"ggv2 proxy syncer",
+		"kube gw proxy syncer",
 		ctx.Done(),
 		authConfigs.Synced().HasSynced,
 		rlConfigs.Synced().HasSynced,
@@ -611,13 +610,18 @@ func (s *ProxySyncer) buildXdsSnapshot(
 	authConfigs krt.Collection[*extauthkubev1.AuthConfig],
 	rlConfigs krt.Collection[*rlkubev1a1.RateLimitConfig],
 ) *xdsSnapWrapper {
-	// TODO: add stopwatch with debug log for it to this method
+	// TODO: add stopwatch with debug log
 	cfgmaps := krt.Fetch(kctx, kcm)
 	endpoints := krt.Fetch(kctx, kep)
 	secrets := krt.Fetch(kctx, ks)
 	upstreams := krt.Fetch(kctx, kus)
 	authcfgs := krt.Fetch(kctx, authConfigs)
 	krlcfgs := krt.Fetch(kctx, rlConfigs)
+	// NOTE: the objects from all these Fetch(...) calls comes from client-go/istio client
+	// which does NOT do a DeepCopy like the default ctrl-rtime cache does, so it is crucial to not modify
+	// the objects retrieved; they are used to build our ApiSnapshot so as long as the various translator & plugins
+	// don't modify them, we are safe.
+	// see also: https://github.com/solo-io/solo-projects/issues/7080
 
 	latestSnap := gloosnapshot.ApiSnapshot{}
 	latestSnap.Proxies = gloov1.ProxyList{proxy.proxy}
