@@ -3218,12 +3218,17 @@ spec:
                                               type: array
                                             matches:
                                               items:
-                                                type: string
+                                                properties:
+                                                  name:
+                                                    type: string
+                                                  pattern:
+                                                    type: string
+                                                type: object
                                               type: array
                                           type: object
                                         webhook:
                                           properties:
-                                            headers:
+                                            forwardHeaders:
                                               items:
                                                 properties:
                                                   key:
@@ -3252,12 +3257,17 @@ spec:
                                               type: array
                                             matches:
                                               items:
-                                                type: string
+                                                properties:
+                                                  name:
+                                                    type: string
+                                                  pattern:
+                                                    type: string
+                                                type: object
                                               type: array
                                           type: object
                                         webhook:
                                           properties:
-                                            headers:
+                                            forwardHeaders:
                                               items:
                                                 properties:
                                                   key:

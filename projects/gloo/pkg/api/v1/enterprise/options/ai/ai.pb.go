@@ -125,6 +125,10 @@ const (
 	AIPromptGuard_Regex_SSN AIPromptGuard_Regex_BuiltIn = 0
 	// Default REGEX for Credit Card Numbers
 	AIPromptGuard_Regex_CREDIT_CARD AIPromptGuard_Regex_BuiltIn = 1
+	// Default REGEX for Phone Numbers
+	AIPromptGuard_Regex_PHONE_NUMBER AIPromptGuard_Regex_BuiltIn = 2
+	// Default REGEX for Email Addresses
+	AIPromptGuard_Regex_EMAIL AIPromptGuard_Regex_BuiltIn = 3
 )
 
 // Enum value maps for AIPromptGuard_Regex_BuiltIn.
@@ -132,10 +136,14 @@ var (
 	AIPromptGuard_Regex_BuiltIn_name = map[int32]string{
 		0: "SSN",
 		1: "CREDIT_CARD",
+		2: "PHONE_NUMBER",
+		3: "EMAIL",
 	}
 	AIPromptGuard_Regex_BuiltIn_value = map[string]int32{
-		"SSN":         0,
-		"CREDIT_CARD": 1,
+		"SSN":          0,
+		"CREDIT_CARD":  1,
+		"PHONE_NUMBER": 2,
+		"EMAIL":        3,
 	}
 )
 
@@ -2426,7 +2434,7 @@ type AIPromptGuard_Regex struct {
 	// A list of Regex patterns to match against the response.
 	// All matches will be masked before being sent back to the client.
 	// matches and builtins are additive.
-	Matches []string `protobuf:"bytes,1,rep,name=matches,proto3" json:"matches,omitempty"`
+	Matches []*AIPromptGuard_Regex_RegexMatch `protobuf:"bytes,1,rep,name=matches,proto3" json:"matches,omitempty"`
 	// A list of built-in regexes to mask in the response.
 	// matches and builtins are additive.
 	Builtins []AIPromptGuard_Regex_BuiltIn `protobuf:"varint,2,rep,packed,name=builtins,proto3,enum=ai.options.gloo.solo.io.AIPromptGuard_Regex_BuiltIn" json:"builtins,omitempty"`
@@ -2464,7 +2472,7 @@ func (*AIPromptGuard_Regex) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_rawDescGZIP(), []int{9, 0}
 }
 
-func (x *AIPromptGuard_Regex) GetMatches() []string {
+func (x *AIPromptGuard_Regex) GetMatches() []*AIPromptGuard_Regex_RegexMatch {
 	if x != nil {
 		return x.Matches
 	}
@@ -2489,7 +2497,7 @@ type AIPromptGuard_Webhook struct {
 	// Port to send the traffic to
 	Port uint32 `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
 	// Headers to forward with the request
-	Headers []*AIPromptGuard_Webhook_HeaderMatch `protobuf:"bytes,3,rep,name=headers,proto3" json:"headers,omitempty"`
+	ForwardHeaders []*AIPromptGuard_Webhook_HeaderMatch `protobuf:"bytes,3,rep,name=forwardHeaders,proto3" json:"forwardHeaders,omitempty"`
 }
 
 func (x *AIPromptGuard_Webhook) Reset() {
@@ -2538,9 +2546,9 @@ func (x *AIPromptGuard_Webhook) GetPort() uint32 {
 	return 0
 }
 
-func (x *AIPromptGuard_Webhook) GetHeaders() []*AIPromptGuard_Webhook_HeaderMatch {
+func (x *AIPromptGuard_Webhook) GetForwardHeaders() []*AIPromptGuard_Webhook_HeaderMatch {
 	if x != nil {
-		return x.Headers
+		return x.ForwardHeaders
 	}
 	return nil
 }
@@ -2672,6 +2680,63 @@ func (x *AIPromptGuard_Response) GetWebhook() *AIPromptGuard_Webhook {
 	return nil
 }
 
+type AIPromptGuard_Regex_RegexMatch struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The regex pattern to match against the response.
+	Pattern string `protobuf:"bytes,1,opt,name=pattern,proto3" json:"pattern,omitempty"`
+	// An optional name for this match which can be used for debugging purposes.
+	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+}
+
+func (x *AIPromptGuard_Regex_RegexMatch) Reset() {
+	*x = AIPromptGuard_Regex_RegexMatch{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[30]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AIPromptGuard_Regex_RegexMatch) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AIPromptGuard_Regex_RegexMatch) ProtoMessage() {}
+
+func (x *AIPromptGuard_Regex_RegexMatch) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[30]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AIPromptGuard_Regex_RegexMatch.ProtoReflect.Descriptor instead.
+func (*AIPromptGuard_Regex_RegexMatch) Descriptor() ([]byte, []int) {
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_rawDescGZIP(), []int{9, 0, 0}
+}
+
+func (x *AIPromptGuard_Regex_RegexMatch) GetPattern() string {
+	if x != nil {
+		return x.Pattern
+	}
+	return ""
+}
+
+func (x *AIPromptGuard_Regex_RegexMatch) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
 type AIPromptGuard_Webhook_HeaderMatch struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2686,7 +2751,7 @@ type AIPromptGuard_Webhook_HeaderMatch struct {
 func (x *AIPromptGuard_Webhook_HeaderMatch) Reset() {
 	*x = AIPromptGuard_Webhook_HeaderMatch{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[30]
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[31]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2699,7 +2764,7 @@ func (x *AIPromptGuard_Webhook_HeaderMatch) String() string {
 func (*AIPromptGuard_Webhook_HeaderMatch) ProtoMessage() {}
 
 func (x *AIPromptGuard_Webhook_HeaderMatch) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[30]
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[31]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2745,7 +2810,7 @@ type AIPromptGuard_Request_CustomResponse struct {
 func (x *AIPromptGuard_Request_CustomResponse) Reset() {
 	*x = AIPromptGuard_Request_CustomResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[31]
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[32]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2758,7 +2823,7 @@ func (x *AIPromptGuard_Request_CustomResponse) String() string {
 func (*AIPromptGuard_Request_CustomResponse) ProtoMessage() {}
 
 func (x *AIPromptGuard_Request_CustomResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[31]
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[32]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3097,7 +3162,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_p
 	0x65, 0x6e, 0x64, 0x1a, 0x37, 0x0a, 0x07, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12, 0x12,
 	0x0a, 0x04, 0x72, 0x6f, 0x6c, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x72, 0x6f,
 	0x6c, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x18, 0x02, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x22, 0x85, 0x09, 0x0a,
+	0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x22, 0xa5, 0x0a, 0x0a,
 	0x0d, 0x41, 0x49, 0x50, 0x72, 0x6f, 0x6d, 0x70, 0x74, 0x47, 0x75, 0x61, 0x72, 0x64, 0x12, 0x48,
 	0x0a, 0x07, 0x72, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32,
 	0x2e, 0x2e, 0x61, 0x69, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f,
@@ -3108,25 +3173,35 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_p
 	0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c,
 	0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x41, 0x49, 0x50, 0x72, 0x6f, 0x6d, 0x70, 0x74, 0x47, 0x75, 0x61,
 	0x72, 0x64, 0x2e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x52, 0x08, 0x72, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x1a, 0x98, 0x01, 0x0a, 0x05, 0x52, 0x65, 0x67, 0x65, 0x78, 0x12,
-	0x18, 0x0a, 0x07, 0x6d, 0x61, 0x74, 0x63, 0x68, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09,
-	0x52, 0x07, 0x6d, 0x61, 0x74, 0x63, 0x68, 0x65, 0x73, 0x12, 0x50, 0x0a, 0x08, 0x62, 0x75, 0x69,
-	0x6c, 0x74, 0x69, 0x6e, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0e, 0x32, 0x34, 0x2e, 0x61, 0x69,
-	0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f,
-	0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x41, 0x49, 0x50, 0x72, 0x6f, 0x6d, 0x70, 0x74, 0x47, 0x75,
-	0x61, 0x72, 0x64, 0x2e, 0x52, 0x65, 0x67, 0x65, 0x78, 0x2e, 0x42, 0x75, 0x69, 0x6c, 0x74, 0x49,
-	0x6e, 0x52, 0x08, 0x62, 0x75, 0x69, 0x6c, 0x74, 0x69, 0x6e, 0x73, 0x22, 0x23, 0x0a, 0x07, 0x42,
-	0x75, 0x69, 0x6c, 0x74, 0x49, 0x6e, 0x12, 0x07, 0x0a, 0x03, 0x53, 0x53, 0x4e, 0x10, 0x00, 0x12,
-	0x0f, 0x0a, 0x0b, 0x43, 0x52, 0x45, 0x44, 0x49, 0x54, 0x5f, 0x43, 0x41, 0x52, 0x44, 0x10, 0x01,
-	0x1a, 0xd7, 0x02, 0x0a, 0x07, 0x57, 0x65, 0x62, 0x68, 0x6f, 0x6f, 0x6b, 0x12, 0x12, 0x0a, 0x04,
-	0x68, 0x6f, 0x73, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x68, 0x6f, 0x73, 0x74,
-	0x12, 0x12, 0x0a, 0x04, 0x70, 0x6f, 0x72, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x04,
-	0x70, 0x6f, 0x72, 0x74, 0x12, 0x54, 0x0a, 0x07, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x18,
-	0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x3a, 0x2e, 0x61, 0x69, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f,
-	0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e,
-	0x41, 0x49, 0x50, 0x72, 0x6f, 0x6d, 0x70, 0x74, 0x47, 0x75, 0x61, 0x72, 0x64, 0x2e, 0x57, 0x65,
-	0x62, 0x68, 0x6f, 0x6f, 0x6b, 0x2e, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x4d, 0x61, 0x74, 0x63,
-	0x68, 0x52, 0x07, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x1a, 0xcd, 0x01, 0x0a, 0x0b, 0x48,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x1a, 0xaa, 0x02, 0x0a, 0x05, 0x52, 0x65, 0x67, 0x65, 0x78, 0x12,
+	0x51, 0x0a, 0x07, 0x6d, 0x61, 0x74, 0x63, 0x68, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b,
+	0x32, 0x37, 0x2e, 0x61, 0x69, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c,
+	0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x41, 0x49, 0x50, 0x72, 0x6f,
+	0x6d, 0x70, 0x74, 0x47, 0x75, 0x61, 0x72, 0x64, 0x2e, 0x52, 0x65, 0x67, 0x65, 0x78, 0x2e, 0x52,
+	0x65, 0x67, 0x65, 0x78, 0x4d, 0x61, 0x74, 0x63, 0x68, 0x52, 0x07, 0x6d, 0x61, 0x74, 0x63, 0x68,
+	0x65, 0x73, 0x12, 0x50, 0x0a, 0x08, 0x62, 0x75, 0x69, 0x6c, 0x74, 0x69, 0x6e, 0x73, 0x18, 0x02,
+	0x20, 0x03, 0x28, 0x0e, 0x32, 0x34, 0x2e, 0x61, 0x69, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e,
+	0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x41,
+	0x49, 0x50, 0x72, 0x6f, 0x6d, 0x70, 0x74, 0x47, 0x75, 0x61, 0x72, 0x64, 0x2e, 0x52, 0x65, 0x67,
+	0x65, 0x78, 0x2e, 0x42, 0x75, 0x69, 0x6c, 0x74, 0x49, 0x6e, 0x52, 0x08, 0x62, 0x75, 0x69, 0x6c,
+	0x74, 0x69, 0x6e, 0x73, 0x1a, 0x3a, 0x0a, 0x0a, 0x52, 0x65, 0x67, 0x65, 0x78, 0x4d, 0x61, 0x74,
+	0x63, 0x68, 0x12, 0x18, 0x0a, 0x07, 0x70, 0x61, 0x74, 0x74, 0x65, 0x72, 0x6e, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x07, 0x70, 0x61, 0x74, 0x74, 0x65, 0x72, 0x6e, 0x12, 0x12, 0x0a, 0x04,
+	0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65,
+	0x22, 0x40, 0x0a, 0x07, 0x42, 0x75, 0x69, 0x6c, 0x74, 0x49, 0x6e, 0x12, 0x07, 0x0a, 0x03, 0x53,
+	0x53, 0x4e, 0x10, 0x00, 0x12, 0x0f, 0x0a, 0x0b, 0x43, 0x52, 0x45, 0x44, 0x49, 0x54, 0x5f, 0x43,
+	0x41, 0x52, 0x44, 0x10, 0x01, 0x12, 0x10, 0x0a, 0x0c, 0x50, 0x48, 0x4f, 0x4e, 0x45, 0x5f, 0x4e,
+	0x55, 0x4d, 0x42, 0x45, 0x52, 0x10, 0x02, 0x12, 0x09, 0x0a, 0x05, 0x45, 0x4d, 0x41, 0x49, 0x4c,
+	0x10, 0x03, 0x1a, 0xe5, 0x02, 0x0a, 0x07, 0x57, 0x65, 0x62, 0x68, 0x6f, 0x6f, 0x6b, 0x12, 0x12,
+	0x0a, 0x04, 0x68, 0x6f, 0x73, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x68, 0x6f,
+	0x73, 0x74, 0x12, 0x12, 0x0a, 0x04, 0x70, 0x6f, 0x72, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0d,
+	0x52, 0x04, 0x70, 0x6f, 0x72, 0x74, 0x12, 0x62, 0x0a, 0x0e, 0x66, 0x6f, 0x72, 0x77, 0x61, 0x72,
+	0x64, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x3a,
+	0x2e, 0x61, 0x69, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f,
+	0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x41, 0x49, 0x50, 0x72, 0x6f, 0x6d, 0x70,
+	0x74, 0x47, 0x75, 0x61, 0x72, 0x64, 0x2e, 0x57, 0x65, 0x62, 0x68, 0x6f, 0x6f, 0x6b, 0x2e, 0x48,
+	0x65, 0x61, 0x64, 0x65, 0x72, 0x4d, 0x61, 0x74, 0x63, 0x68, 0x52, 0x0e, 0x66, 0x6f, 0x72, 0x77,
+	0x61, 0x72, 0x64, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x1a, 0xcd, 0x01, 0x0a, 0x0b, 0x48,
 	0x65, 0x61, 0x64, 0x65, 0x72, 0x4d, 0x61, 0x74, 0x63, 0x68, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65,
 	0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x63, 0x0a, 0x0a,
 	0x6d, 0x61, 0x74, 0x63, 0x68, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0e,
@@ -3192,7 +3267,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_
 }
 
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
+var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_goTypes = []any{
 	(RouteSettings_RouteType)(0),                     // 0: ai.options.gloo.solo.io.RouteSettings.RouteType
 	(SemanticCache_Mode)(0),                          // 1: ai.options.gloo.solo.io.SemanticCache.Mode
@@ -3228,13 +3303,14 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_p
 	(*AIPromptGuard_Webhook)(nil),                    // 31: ai.options.gloo.solo.io.AIPromptGuard.Webhook
 	(*AIPromptGuard_Request)(nil),                    // 32: ai.options.gloo.solo.io.AIPromptGuard.Request
 	(*AIPromptGuard_Response)(nil),                   // 33: ai.options.gloo.solo.io.AIPromptGuard.Response
-	(*AIPromptGuard_Webhook_HeaderMatch)(nil),        // 34: ai.options.gloo.solo.io.AIPromptGuard.Webhook.HeaderMatch
-	(*AIPromptGuard_Request_CustomResponse)(nil),     // 35: ai.options.gloo.solo.io.AIPromptGuard.Request.CustomResponse
-	(*core.ResourceRef)(nil),                         // 36: core.solo.io.ResourceRef
-	(*structpb.Value)(nil),                           // 37: google.protobuf.Value
+	(*AIPromptGuard_Regex_RegexMatch)(nil),           // 34: ai.options.gloo.solo.io.AIPromptGuard.Regex.RegexMatch
+	(*AIPromptGuard_Webhook_HeaderMatch)(nil),        // 35: ai.options.gloo.solo.io.AIPromptGuard.Webhook.HeaderMatch
+	(*AIPromptGuard_Request_CustomResponse)(nil),     // 36: ai.options.gloo.solo.io.AIPromptGuard.Request.CustomResponse
+	(*core.ResourceRef)(nil),                         // 37: core.solo.io.ResourceRef
+	(*structpb.Value)(nil),                           // 38: google.protobuf.Value
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_depIdxs = []int32{
-	36, // 0: ai.options.gloo.solo.io.SingleAuthToken.secret_ref:type_name -> core.solo.io.ResourceRef
+	37, // 0: ai.options.gloo.solo.io.SingleAuthToken.secret_ref:type_name -> core.solo.io.ResourceRef
 	15, // 1: ai.options.gloo.solo.io.UpstreamSpec.openai:type_name -> ai.options.gloo.solo.io.UpstreamSpec.OpenAI
 	18, // 2: ai.options.gloo.solo.io.UpstreamSpec.mistral:type_name -> ai.options.gloo.solo.io.UpstreamSpec.Mistral
 	19, // 3: ai.options.gloo.solo.io.UpstreamSpec.anthropic:type_name -> ai.options.gloo.solo.io.UpstreamSpec.Anthropic
@@ -3247,7 +3323,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_p
 	10, // 10: ai.options.gloo.solo.io.RouteSettings.semantic_cache:type_name -> ai.options.gloo.solo.io.SemanticCache
 	7,  // 11: ai.options.gloo.solo.io.RouteSettings.defaults:type_name -> ai.options.gloo.solo.io.FieldDefault
 	0,  // 12: ai.options.gloo.solo.io.RouteSettings.route_type:type_name -> ai.options.gloo.solo.io.RouteSettings.RouteType
-	37, // 13: ai.options.gloo.solo.io.FieldDefault.value:type_name -> google.protobuf.Value
+	38, // 13: ai.options.gloo.solo.io.FieldDefault.value:type_name -> google.protobuf.Value
 	23, // 14: ai.options.gloo.solo.io.Embedding.openai:type_name -> ai.options.gloo.solo.io.Embedding.OpenAI
 	24, // 15: ai.options.gloo.solo.io.Embedding.azure_openai:type_name -> ai.options.gloo.solo.io.Embedding.AzureOpenAI
 	27, // 16: ai.options.gloo.solo.io.SemanticCache.datastore:type_name -> ai.options.gloo.solo.io.SemanticCache.DataStore
@@ -3279,19 +3355,20 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_p
 	25, // 42: ai.options.gloo.solo.io.SemanticCache.DataStore.redis:type_name -> ai.options.gloo.solo.io.SemanticCache.Redis
 	26, // 43: ai.options.gloo.solo.io.SemanticCache.DataStore.weaviate:type_name -> ai.options.gloo.solo.io.SemanticCache.Weaviate
 	8,  // 44: ai.options.gloo.solo.io.RAG.DataStore.postgres:type_name -> ai.options.gloo.solo.io.Postgres
-	2,  // 45: ai.options.gloo.solo.io.AIPromptGuard.Regex.builtins:type_name -> ai.options.gloo.solo.io.AIPromptGuard.Regex.BuiltIn
-	34, // 46: ai.options.gloo.solo.io.AIPromptGuard.Webhook.headers:type_name -> ai.options.gloo.solo.io.AIPromptGuard.Webhook.HeaderMatch
-	35, // 47: ai.options.gloo.solo.io.AIPromptGuard.Request.custom_response:type_name -> ai.options.gloo.solo.io.AIPromptGuard.Request.CustomResponse
-	30, // 48: ai.options.gloo.solo.io.AIPromptGuard.Request.regex:type_name -> ai.options.gloo.solo.io.AIPromptGuard.Regex
-	31, // 49: ai.options.gloo.solo.io.AIPromptGuard.Request.webhook:type_name -> ai.options.gloo.solo.io.AIPromptGuard.Webhook
-	30, // 50: ai.options.gloo.solo.io.AIPromptGuard.Response.regex:type_name -> ai.options.gloo.solo.io.AIPromptGuard.Regex
-	31, // 51: ai.options.gloo.solo.io.AIPromptGuard.Response.webhook:type_name -> ai.options.gloo.solo.io.AIPromptGuard.Webhook
-	3,  // 52: ai.options.gloo.solo.io.AIPromptGuard.Webhook.HeaderMatch.match_type:type_name -> ai.options.gloo.solo.io.AIPromptGuard.Webhook.HeaderMatch.MatchType
-	53, // [53:53] is the sub-list for method output_type
-	53, // [53:53] is the sub-list for method input_type
-	53, // [53:53] is the sub-list for extension type_name
-	53, // [53:53] is the sub-list for extension extendee
-	0,  // [0:53] is the sub-list for field type_name
+	34, // 45: ai.options.gloo.solo.io.AIPromptGuard.Regex.matches:type_name -> ai.options.gloo.solo.io.AIPromptGuard.Regex.RegexMatch
+	2,  // 46: ai.options.gloo.solo.io.AIPromptGuard.Regex.builtins:type_name -> ai.options.gloo.solo.io.AIPromptGuard.Regex.BuiltIn
+	35, // 47: ai.options.gloo.solo.io.AIPromptGuard.Webhook.forwardHeaders:type_name -> ai.options.gloo.solo.io.AIPromptGuard.Webhook.HeaderMatch
+	36, // 48: ai.options.gloo.solo.io.AIPromptGuard.Request.custom_response:type_name -> ai.options.gloo.solo.io.AIPromptGuard.Request.CustomResponse
+	30, // 49: ai.options.gloo.solo.io.AIPromptGuard.Request.regex:type_name -> ai.options.gloo.solo.io.AIPromptGuard.Regex
+	31, // 50: ai.options.gloo.solo.io.AIPromptGuard.Request.webhook:type_name -> ai.options.gloo.solo.io.AIPromptGuard.Webhook
+	30, // 51: ai.options.gloo.solo.io.AIPromptGuard.Response.regex:type_name -> ai.options.gloo.solo.io.AIPromptGuard.Regex
+	31, // 52: ai.options.gloo.solo.io.AIPromptGuard.Response.webhook:type_name -> ai.options.gloo.solo.io.AIPromptGuard.Webhook
+	3,  // 53: ai.options.gloo.solo.io.AIPromptGuard.Webhook.HeaderMatch.match_type:type_name -> ai.options.gloo.solo.io.AIPromptGuard.Webhook.HeaderMatch.MatchType
+	54, // [54:54] is the sub-list for method output_type
+	54, // [54:54] is the sub-list for method input_type
+	54, // [54:54] is the sub-list for extension type_name
+	54, // [54:54] is the sub-list for extension extendee
+	0,  // [0:54] is the sub-list for field type_name
 }
 
 func init() { file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_init() }
@@ -3661,7 +3738,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_
 			}
 		}
 		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[30].Exporter = func(v any, i int) any {
-			switch v := v.(*AIPromptGuard_Webhook_HeaderMatch); i {
+			switch v := v.(*AIPromptGuard_Regex_RegexMatch); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3673,6 +3750,18 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_
 			}
 		}
 		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[31].Exporter = func(v any, i int) any {
+			switch v := v.(*AIPromptGuard_Webhook_HeaderMatch); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_msgTypes[32].Exporter = func(v any, i int) any {
 			switch v := v.(*AIPromptGuard_Request_CustomResponse); i {
 			case 0:
 				return &v.state
@@ -3733,7 +3822,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_ai_ai_proto_rawDesc,
 			NumEnums:      4,
-			NumMessages:   32,
+			NumMessages:   33,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

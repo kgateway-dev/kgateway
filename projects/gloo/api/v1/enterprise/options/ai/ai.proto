@@ -553,11 +553,22 @@ message AIPromptGuard {
       SSN = 0;
       // Default REGEX for Credit Card Numbers
       CREDIT_CARD = 1;
+      // Default REGEX for Phone Numbers
+      PHONE_NUMBER = 2;
+      // Default REGEX for Email Addresses
+      EMAIL = 3;
+    }
+
+    message RegexMatch {
+      // The regex pattern to match against the response.
+      string pattern = 1;
+      // An optional name for this match which can be used for debugging purposes.
+      string name = 2;
     }
     // A list of Regex patterns to match against the response.
     // All matches will be masked before being sent back to the client.
     // matches and builtins are additive.
-    repeated string matches = 1;
+    repeated RegexMatch matches = 1;
     // A list of built-in regexes to mask in the response.
     // matches and builtins are additive.
     repeated BuiltIn builtins = 2;
@@ -588,7 +599,7 @@ message AIPromptGuard {
       MatchType match_type = 2;
     }
     // Headers to forward with the request
-    repeated HeaderMatch headers = 3;
+    repeated HeaderMatch forwardHeaders = 3;
   }
 
 
