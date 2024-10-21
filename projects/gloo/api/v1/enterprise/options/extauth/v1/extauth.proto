@@ -643,6 +643,7 @@ message Azure {
     string tenant_id = 2;
 
     // The client secret of the ExtAuthService app that is registered with MS Entra to communicate with the MS Graph API.
+    // The client secret data must be placed in a k8s secret under a key called 'client-secret'.
     core.solo.io.ResourceRef client_secret = 3;
 
     // Redis connection details to cache MS Entera claims.
