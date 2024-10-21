@@ -5,8 +5,6 @@ go 1.23.1
 // Note for developers: upgrading go will also require upgrading go in the following files:
 // ./cloudbuild-cache.yaml,
 
-replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
-
 require (
 	github.com/Masterminds/semver/v3 v3.3.0
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
@@ -371,7 +369,10 @@ replace (
 	// remove this when we fix https://github.com/solo-io/solo-kit/issues/516
 	github.com/iancoleman/strcase => github.com/iancoleman/strcase v0.1.3
 
+	github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
+
 	// github.com/opencontainers/go-digest => github.com/opencontainers/go-digest v1.0.0-rc1
+
 	// skv2 uses a newer version than the imported solo-kit version which causes issues. Replaces the version with the solo-kit version
 	github.com/pseudomuto/protoc-gen-doc => github.com/pseudomuto/protoc-gen-doc v1.0.0
 	// Required for proper serialization of CRDs
