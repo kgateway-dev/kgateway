@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/10146
+    resolvesIssue: false
+    description: >-
+      Updated doc to call out changes in envoy 1.31.x
+      skipCI-kube-tests:true
