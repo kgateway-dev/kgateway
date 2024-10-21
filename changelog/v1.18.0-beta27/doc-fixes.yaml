@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >- 
+      Weekly doc fixes such as links, grammar, typos, and version updates.
+      skipCI-kube-tests:true
+  - type: NON_USER_FACING
+    description: >- 
+      Add RSS feed to changelogs.
+      skipCI-kube-tests:true

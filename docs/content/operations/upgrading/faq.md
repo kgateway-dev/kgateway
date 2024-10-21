@@ -44,37 +44,27 @@ You might deploy Gloo Gateway in Kubernetes environments that use the Kubernetes
 
 Review the following changes made to Gloo Gateway in version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}. For some changes, you might be required to complete additional steps during the upgrade process.
 
-### Kubernetes Gateway API support
-
-Gloo Gateway is now a fully conformant Kubernetes Gateway API implementation. The existing Gloo Edge APIs were not changed and continue to be fully supported. To deploy a gateway proxy that is based on the Kubernetes Gateway API, see the [docs](https://docs.solo.io/gateway). 
-
 ### Breaking changes
 
-<a id="extproc"></a>
-**ExtProc attribute processing**
+**Envoy version 1.31 upgrade**
 
-The Gloo Gateway extProc filter implementation was changed to comply with the latest extProc implementation in Envoy. Previously, request and response attributes were included only in a [header processing request](https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/ext_proc/v3/external_processor.proto#service-ext-proc-v3-httpheaders), and were therefore sent to the extProc server only when request header processing messages were configured to be sent. Starting in Gloo Gateway version 1.17.0, the Gloo extProc filter sends request and response attributes as part of the top level [processing request](https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/ext_proc/v3/external_processor.proto#service-ext-proc-v3-processingrequest). That way, attributes can be processed on the first processing request regardless of its type.  
+The Envoy dependency in Gloo Gateway 1.18 was upgraded from 1.29.x to 1.31.x. This upgrade includes the following changes. For more information about these changes, see the [Envoy changelog documentation](https://www.envoyproxy.io/docs/envoy/latest/version_history/v1.31/v1.31).
+* **Opencensus**: Opencensus was marked as deprecated in previous Envoy releases. Starting in the 1.31.x Envoy release, Opencensus is now disabled by default. If Opencensus is set, Envoy rejects the configuration. You can use Envoy's [layered_runtime](https://github.com/envoyproxy/envoy/blob/38530270d6cb3a3a71a9b70b3de55854750b75a9/configs/using_deprecated_config.yaml) section to enable deprecated configuration so that you can continue using Opencensus. However, note that Opencensus is completely removed in Envoy version 1.32.x.
+* **JWT tokens**: The behavior for extracting JWT tokens changed in the 1.29.x Envoy release. Previously, the JWT token was cut into non-base64 characters. Now, the entire JWT token is passed for validation. You can no longer revert this change by setting `envoy.reloadable_features.token_passed_entirely` to `false` as this option was removed in the 1.31.x Envoy release.
+* **JWT_authn**: Provider URIs that are defined in the `jwt_authn` section are now validated for RFC-compliance. Envoy might fail to start correctly if non-compliant URIs are found. If the URI validation is too strict, you can temporarily disable it by setting the runtime guard `envoy.reloadable_features.jwt_authn_validate_uri` to false. Common URI issues that were previously ignored, include: 
+    - Hostname contains `_` (underscore character)
+    - URL contains non-English characters (ASCII code > 127)
+    - URL contains an unencoded ` ` (space character)
+    - URL contains TAB (ASCII code 9) or FormFeed (ASCII code 12) characters
+* **JWT_authn**: The provider [forward](https://www.envoyproxy.io/docs/envoy/v1.31.2/api-v3/extensions/filters/http/jwt_authn/v3/config.proto#envoy-v3-api-field-extensions-filters-http-jwt-authn-v3-jwtprovider-forward) configuration changed. Previously, JWTs could only be removed from headers. Starting in Envoy version 1.31.x, JWTs can now be removed from query parameters. You can temporarily revert this change by setting `envoy.reloadable_features.jwt_authn_remove_jwt_from_query_params` to `false`.
+* **access_log**: The following access log format specifiers changed: 
+    - The upstream connection address is now used for the `%UPSTREAM_REMOTE_ADDRESS%`, `%UPSTREAM_REMOTE_PORT%` and `%UPSTREAM_REMOTE_ADDRESS_WITHOUT_PORT%` access log format specifiers. Previously, the upstream host address was used. You can temporarily revert this change by setting the runtime guard `envoy.reloadable_features.upstream_remote_address_use_connection` to `false`.
+    - The `%UPSTREAM_CLUSTER_RAW%` access log formatter was added to log the original upstream cluster name, regardless of whether `alt_stat_name` is set.
+    - SNIs are automatically sanitized for potential log injection. The invalid characters are replaced by `_` with an `invalid:` marker. To disable this feature, set `envoy.reloadable_features.sanitize_sni_in_access_log` is set to `false`.
+* **YAML parsing**: The behavior for parsing YAML configuration changed. Previously, malformed boolean values and fraction objects that set `true` or `false` as a string value, are no longer interpreted as a boolean value. You can revert this change by setting `envoy.reloadable_features.reject_invalid_yaml` to `false`.
+* **HTTP/2**: HTTP/2 colon prefixed headers are now sanitized by Envoy. Previously, sanitation was performed by the `nghttp2` library, which caused pseudo headers with upper case letters to fail validation. Now, these pseudo headers pass validation. You can temporarily revert this change by setting the runtime guard `envoy.reloadable_features.sanitize_http2_headers_without_nghttp2` to `false`. 
+* **Local ratelimit**: The token bucket implementation changed. Previously, a timer-based token bucket was used to assign tokens to connections. In Envoy 1.31.x, the new AtomicToken bucket is used that is no longer timer-based. Tokens are now automatically refilled when the token bucket is accessed. Because of this change, the `x-ratelimit-reset` header is no longer sent. You can temporarily revert this change by setting the runtime guard `envoy.reloadable_features.no_timer_based_rate_limit_token_bucket` to `false`.
 
-If you implemented your extProc server to expect request and response attributes as part of the HTTP header processing request, you must change this implementation to read attributes from the top-level processing request instead. 
-
-For more information, see the [extProc proto definition](https://github.com/envoyproxy/envoy/blob/main/api/envoy/service/ext_proc/v3/external_processor.proto) in Envoy.
-
-**Envoy version 1.29 upgrade**
-
-The Envoy dependency in Gloo Gateway 1.17 was upgraded from 1.27.x to 1.29.x. This upgrade includes the following changes. For more information about these changes, see the [Envoy changelog documentation](https://www.envoyproxy.io/docs/envoy/latest/version_history/v1.29/v1.29).
-
-* **ExtProc attribute processing**: For more information, see [ExtProc attribute processing](#extproc).
-* **JWT tokens**: The behavior for extracting JWT tokens changed. Previously, the JWT token was cut into non-base64 characters. Now, the entire JWT token is passed for validation. This change can be reverted temporarily by setting `envoy.reloadable_features.token_passed_entirely` to `false`.
-* **HTTP2 host header**: The HTTP2 host header is discarded if the `:authority` header is received. This change makes Envoy compliant with the HTTP2 request pseudo-header field implementation. For more information, see the [HTTP2 reference](https://www.rfc-editor.org/rfc/rfc9113#section-8.3.1). You can temporarily revert this change by setting the `envoy.reloadable_features.http2_discard_host_header` runtime flag to `false`.
-* **Transfer encoding header**: The transfer encoding header is removed from downstream request headers. You can temporarily revert this change by setting `envoy.reloadable_features.sanitize_te` to `false`.
-
-**Kubernetes Ingress API deprecation**
-
-As of version 1.17, the Kubernetes Ingress API is deprecated in Gloo Gateway. Instead, you can use the Gloo Gateway (Edge API) `Gateway` custom resource. Alternatively, to use the Kubernetes Gateway API for `Gateway` custom resources, you can check out the [Gloo Gateway (Kubernetes Gateway API) docs](https://docs.solo.io/gateway/latest/).
-
-**OTel service name change**
-
-Previously, when using the [Envoy OpenTelemetry configuration](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/opentelemetry.proto.html) with Gloo Gateway, the `service_name` field was set to an empty string, which resulted in a display name of `unknown_service:envoy`. Now, the `service_name` is set to the name that you define in the `Gateway` resource.
 
 <!-- ggv2-related changes:
 ggv2 - Disable Istio Envoy proxy from running by default and only rely on proxyless Istio agent mtls integration. Note: Although this is a change to the default behavior of the istio integration, this should not have any impact on most users as the sidecar proxy was unused in the data path. (https://github.com/solo-io/solo-projects/issues/5711)
@@ -171,22 +161,9 @@ Review the following summary of important new, deprecated, or removed Helm field
 
 **New Helm fields**:
 
-* `global.image.variant`: Specify the image variant for all Gloo Gateway components. Supported values include `standard`, `fips`, `distroless`, `fips-distroless`, and the default value is `standard`. Note that the `fips` and `fips-distroless` image variants are supported for Enterise only. Additionally, the `global.image.fips` setting is now deprecated.
-* `global.additionalLabels`: Specify additional labels to add to Gloo resources.
-* `containerSecurityContext`: Specify values for Pod Security Standards in each component. For example, Helm fields such as `settings.integrations.knative.proxy.containerSecurityContext` or `global.extensions.extAuth.deployment.extAuthContainerSecurityContext` now exist to allow you to specify container security context settings.
-
 **Updated Helm fields**:
-* `deployment.runAsUser`: The `discovery` and `ingress-proxy` deployments now respect the `deployment.runAsUser` value.
-* `kubeGateway.enabled`: The Kubernetes Gateway API integration is now disabled by default. To use the Kubernetes Gateway API, you can set this field to true, or check out the [Gloo Gateway with Kubernetes Gateway API docs](https://docs.solo.io/gateway/latest/).
 
 **Deprecated Helm fields**:
-* `global.image.fips`: This setting is now deprecated. Use the `global.image.variant=fips` setting instead.
-* `global.istioIntegration`: The following Istio integration Helm settings that rely on a double proxy setup are now deprecated:
-  * `global.istioIntegration.labelInstallNamespace`
-  * `global.istioIntegration.whitelistDiscovery`
-  * `global.istioIntegration.enableIstioSidecarOnGateway`
-  * `global.istioIntegration.istioSidecarRevTag`
-  * `global.istioIntegration.appendXForwardedHost`
 
 <!--GGv2 changes:
 
@@ -205,15 +182,11 @@ New CRDs are automatically applied to your cluster when performing a `helm insta
 
 Review the following summary of important new, deprecated, or removed CRD updates. For full details, see the [changelogs](#changelogs).
 
+As part of the {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}} release, no CLI changes were introduced.
+<!--
 **New and updated CRDs**:
 
-* `ExtAuth`: A new [`retryPolicy` section]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#retrypolicy" %}}) is added to the `PassThroughGrpc` settings in the `ExtAuth` CRD. You can use this option to configure retries for gRPC passthrough authentication in the case that the service is unavailable.
-* `RateLimit`: A new [`grpcService` setting]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto.sk/#grpcservice" %}}) is added to the `RateLimit` CRD to configure the authority header for the rate limit gRPC call.
-* `Settings` (Enterprise-only):
-  * A new [`observabilityOptions.grafanaIntegration.dashboardPrefix` setting]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#grafanaintegration" %}}) allows you to specify the prefix for the title and UID of Grafana dashboards that Gloo Gateway generates. This prefix can be useful when you aggregate data in a central Grafana instance to prevent conflicts across multiple Gloo environments. Note that if you set this field, you must manually remove any dashboard created without a prefix or with a different prefix.
-  * A new [`observabilityOptions.grafanaIntegration.extraMetricQueryParameters` setting]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#grafanaintegration" %}}) allows you to specify additional query parameters to add to all metric query definitions in the Grafana dashboards that Gloo Gateway generates. This string value can consist of multiple query parameters separated by a comma, such as `cluster="some-cluster",gateway_proxy_id="proxy-2"`.
 
-<!--
 **Deprecated CRDs**:
 N/A
 

@@ -29,9 +29,27 @@ var (
 
 func ToEnvoyDatadogConfiguration(glooDatadogConfig *envoytracegloo.DatadogConfig, clusterName string) (*envoytrace.DatadogConfig, error) {
 	envoyDatadogConfig := &envoytrace.DatadogConfig{
-		CollectorCluster: clusterName,
-		ServiceName:      glooDatadogConfig.GetServiceName().GetValue(),
+		CollectorCluster:  clusterName,
+		ServiceName:       glooDatadogConfig.GetServiceName().GetValue(),
+		CollectorHostname: glooDatadogConfig.GetCollectorHostname(),
 	}
+
+	remoteConfig := glooDatadogConfig.GetRemoteConfig()
+	if remoteConfig == nil {
+		// An empty RemoteConfig object on the envoy side means enabling RemoteConfig
+		// RemoteConfig was enabled by default before envoy v1.31 and could not be turned off
+		// Here, we are trying to maintain this behavior for existing customer who might rely on this
+		// and not aware that they need to set this object
+		envoyDatadogConfig.RemoteConfig = &envoytrace.DatadogRemoteConfig{}
+	} else if !remoteConfig.GetDisabled().GetValue() {
+		// This Disabled field does not exist on the envoy side. We added it because our default
+		// is to enable when remoteConfig is not set to maintain backward compatibility. So, we need
+		// this field to disable if desire.
+		envoyDatadogConfig.RemoteConfig = &envoytrace.DatadogRemoteConfig{
+			PollingInterval: glooDatadogConfig.GetRemoteConfig().GetPollingInterval(),
+		}
+	} // Leaving RemoteConfig not set means it's disabled on the envoy side.
+
 	return envoyDatadogConfig, nil
 }
 

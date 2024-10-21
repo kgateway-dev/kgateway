@@ -9,6 +9,7 @@ import (
 	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -370,6 +371,9 @@ var _ = Describe("Plugin", func() {
 				expectedEnvoyConfig := &envoytrace.DatadogConfig{
 					CollectorCluster: "valid_default",
 					ServiceName:      "datadog-gloo",
+					// This would turn on RemoteConfig when nothing is set on the gloo settings side
+					// to preserve existing behavior for envoy >= v1.31
+					RemoteConfig: &envoytrace.DatadogRemoteConfig{},
 				}
 				expectedEnvoyConfigMarshalled, _ := ptypes.MarshalAny(expectedEnvoyConfig)
 
@@ -404,6 +408,159 @@ var _ = Describe("Plugin", func() {
 				expectedEnvoyConfig := &envoytrace.DatadogConfig{
 					CollectorCluster: "datadog-cluster-name",
 					ServiceName:      "datadog-gloo",
+					// This would turn on RemoteConfig when nothing is set on the gloo settings side
+					// to preserve existing behavior for envoy >= v1.31
+					RemoteConfig: &envoytrace.DatadogRemoteConfig{},
+				}
+				expectedEnvoyConfigMarshalled, _ := ptypes.MarshalAny(expectedEnvoyConfig)
+
+				expectedEnvoyTracingProvider := &envoytrace.Tracing_Http{
+					Name: "envoy.tracers.datadog",
+					ConfigType: &envoytrace.Tracing_Http_TypedConfig{
+						TypedConfig: expectedEnvoyConfigMarshalled,
+					},
+				}
+
+				Expect(cfg.Tracing.Provider.GetName()).To(Equal(expectedEnvoyTracingProvider.GetName()))
+				Expect(cfg.Tracing.Provider.GetTypedConfig()).To(Equal(expectedEnvoyTracingProvider.GetTypedConfig()))
+			})
+
+			It("overrides cluster hostname", func() {
+				cfg := &envoyhttp.HttpConnectionManager{}
+				hcmSettings = &hcm.HttpConnectionManagerSettings{
+					Tracing: &tracing.ListenerTracingSettings{
+						ProviderConfig: &tracing.ListenerTracingSettings_DatadogConfig{
+							DatadogConfig: &envoytrace_gloo.DatadogConfig{
+								CollectorCluster: &envoytrace_gloo.DatadogConfig_ClusterName{
+									ClusterName: "datadog-cluster-name",
+								},
+								ServiceName:       &wrappers.StringValue{Value: "datadog-gloo"},
+								CollectorHostname: "foodog.com",
+							},
+						},
+					},
+				}
+				err := processHcmNetworkFilter(cfg)
+				Expect(err).NotTo(HaveOccurred())
+
+				expectedEnvoyConfig := &envoytrace.DatadogConfig{
+					CollectorCluster:  "datadog-cluster-name",
+					ServiceName:       "datadog-gloo",
+					CollectorHostname: "foodog.com",
+					// This would turn on RemoteConfig when nothing is set on the gloo settings side
+					// to preserve existing behavior for envoy >= v1.31
+					RemoteConfig: &envoytrace.DatadogRemoteConfig{},
+				}
+				expectedEnvoyConfigMarshalled, _ := ptypes.MarshalAny(expectedEnvoyConfig)
+
+				expectedEnvoyTracingProvider := &envoytrace.Tracing_Http{
+					Name: "envoy.tracers.datadog",
+					ConfigType: &envoytrace.Tracing_Http_TypedConfig{
+						TypedConfig: expectedEnvoyConfigMarshalled,
+					},
+				}
+
+				Expect(cfg.Tracing.Provider.GetName()).To(Equal(expectedEnvoyTracingProvider.GetName()))
+				Expect(cfg.Tracing.Provider.GetTypedConfig()).To(Equal(expectedEnvoyTracingProvider.GetTypedConfig()))
+			})
+
+			It("disables remote config", func() {
+				cfg := &envoyhttp.HttpConnectionManager{}
+				hcmSettings = &hcm.HttpConnectionManagerSettings{
+					Tracing: &tracing.ListenerTracingSettings{
+						ProviderConfig: &tracing.ListenerTracingSettings_DatadogConfig{
+							DatadogConfig: &envoytrace_gloo.DatadogConfig{
+								CollectorCluster: &envoytrace_gloo.DatadogConfig_ClusterName{
+									ClusterName: "datadog-cluster-name",
+								},
+								ServiceName:  &wrappers.StringValue{Value: "datadog-gloo"},
+								RemoteConfig: &envoytrace_gloo.DatadogRemoteConfig{Disabled: &wrappers.BoolValue{Value: true}},
+							},
+						},
+					},
+				}
+				err := processHcmNetworkFilter(cfg)
+				Expect(err).NotTo(HaveOccurred())
+
+				expectedEnvoyConfig := &envoytrace.DatadogConfig{
+					CollectorCluster: "datadog-cluster-name",
+					ServiceName:      "datadog-gloo",
+					// Note that RemoteConfig will be missing because it's disabled
+				}
+				expectedEnvoyConfigMarshalled, _ := ptypes.MarshalAny(expectedEnvoyConfig)
+
+				expectedEnvoyTracingProvider := &envoytrace.Tracing_Http{
+					Name: "envoy.tracers.datadog",
+					ConfigType: &envoytrace.Tracing_Http_TypedConfig{
+						TypedConfig: expectedEnvoyConfigMarshalled,
+					},
+				}
+
+				Expect(cfg.Tracing.Provider.GetName()).To(Equal(expectedEnvoyTracingProvider.GetName()))
+				Expect(cfg.Tracing.Provider.GetTypedConfig()).To(Equal(expectedEnvoyTracingProvider.GetTypedConfig()))
+			})
+
+			It("sets poll interval", func() {
+				cfg := &envoyhttp.HttpConnectionManager{}
+				hcmSettings = &hcm.HttpConnectionManagerSettings{
+					Tracing: &tracing.ListenerTracingSettings{
+						ProviderConfig: &tracing.ListenerTracingSettings_DatadogConfig{
+							DatadogConfig: &envoytrace_gloo.DatadogConfig{
+								CollectorCluster: &envoytrace_gloo.DatadogConfig_ClusterName{
+									ClusterName: "datadog-cluster-name",
+								},
+								ServiceName:  &wrappers.StringValue{Value: "datadog-gloo"},
+								RemoteConfig: &envoytrace_gloo.DatadogRemoteConfig{PollingInterval: &duration.Duration{Seconds: 12}},
+							},
+						},
+					},
+				}
+				err := processHcmNetworkFilter(cfg)
+				Expect(err).NotTo(HaveOccurred())
+
+				expectedEnvoyConfig := &envoytrace.DatadogConfig{
+					CollectorCluster: "datadog-cluster-name",
+					ServiceName:      "datadog-gloo",
+					RemoteConfig:     &envoytrace.DatadogRemoteConfig{PollingInterval: &duration.Duration{Seconds: 12}},
+				}
+				expectedEnvoyConfigMarshalled, _ := ptypes.MarshalAny(expectedEnvoyConfig)
+
+				expectedEnvoyTracingProvider := &envoytrace.Tracing_Http{
+					Name: "envoy.tracers.datadog",
+					ConfigType: &envoytrace.Tracing_Http_TypedConfig{
+						TypedConfig: expectedEnvoyConfigMarshalled,
+					},
+				}
+
+				Expect(cfg.Tracing.Provider.GetName()).To(Equal(expectedEnvoyTracingProvider.GetName()))
+				Expect(cfg.Tracing.Provider.GetTypedConfig()).To(Equal(expectedEnvoyTracingProvider.GetTypedConfig()))
+			})
+
+			It("ignore poll interval when remote config is disabled", func() {
+				cfg := &envoyhttp.HttpConnectionManager{}
+				hcmSettings = &hcm.HttpConnectionManagerSettings{
+					Tracing: &tracing.ListenerTracingSettings{
+						ProviderConfig: &tracing.ListenerTracingSettings_DatadogConfig{
+							DatadogConfig: &envoytrace_gloo.DatadogConfig{
+								CollectorCluster: &envoytrace_gloo.DatadogConfig_ClusterName{
+									ClusterName: "datadog-cluster-name",
+								},
+								ServiceName: &wrappers.StringValue{Value: "datadog-gloo"},
+								RemoteConfig: &envoytrace_gloo.DatadogRemoteConfig{
+									Disabled:        &wrappers.BoolValue{Value: true},
+									PollingInterval: &duration.Duration{Seconds: 12},
+								},
+							},
+						},
+					},
+				}
+				err := processHcmNetworkFilter(cfg)
+				Expect(err).NotTo(HaveOccurred())
+
+				expectedEnvoyConfig := &envoytrace.DatadogConfig{
+					CollectorCluster: "datadog-cluster-name",
+					ServiceName:      "datadog-gloo",
+					// Note that RemoteConfig will be missing because it's disabled
 				}
 				expectedEnvoyConfigMarshalled, _ := ptypes.MarshalAny(expectedEnvoyConfig)
 

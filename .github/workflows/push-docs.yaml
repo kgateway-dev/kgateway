@@ -159,3 +159,34 @@ jobs:
           --head ${{ steps.create-branch.outputs.branch }} \
           --reviewer solo-io/solo-docs
         popd || exit 1
+
+  slack-notification:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Notify on workflow success
+      if: |
+        needs.copy-docs.result == 'success'
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      run: |
+        MESSAGE="✅ *Success:* Automated copy of reference docs for ${{ steps.version-variables.outputs.minor }} was successful. <https://github.com/solo-io/docs/pulls|Review the PR>"
+
+        curl \
+          -d "text=$MESSAGE" \
+          -d "channel=doctopus-tests" \
+          -d "token=${SLACK_BOT_TOKEN}" \
+          -X POST https://slack.com/api/chat.postMessage
+    - name: Notify on workflow failure
+      if: |
+        needs.copy-docs.result == 'failure'
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      run: |
+        JOB_URL=https://github.com/solo-io/gloo/actions/runs/${GITHUB_RUN_ID}
+        MESSAGE="❌ *Failure:* Automated copy of reference docs for ${{ steps.version-variables.outputs.minor }} failed. <${JOB_URL}|Review the workflow failure>"
+
+        curl \
+          -d "text=$MESSAGE" \
+          -d "channel=doctopus-tests" \
+          -d "token=${SLACK_BOT_TOKEN}" \
+          -X POST https://slack.com/api/chat.postMessage
