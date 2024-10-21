@@ -68,6 +68,26 @@ The Envoy dependency in Gloo Gateway 1.17 was upgraded from 1.27.x to 1.29.x. Th
 * **HTTP2 host header**: The HTTP2 host header is discarded if the `:authority` header is received. This change makes Envoy compliant with the HTTP2 request pseudo-header field implementation. For more information, see the [HTTP2 reference](https://www.rfc-editor.org/rfc/rfc9113#section-8.3.1). You can temporarily revert this change by setting the `envoy.reloadable_features.http2_discard_host_header` runtime flag to `false`.
 * **Transfer encoding header**: The transfer encoding header is removed from downstream request headers. You can temporarily revert this change by setting `envoy.reloadable_features.sanitize_te` to `false`.
 
+**Envoy version 1.31 upgrade**
+
+The Envoy dependency in Gloo Gateway 1.18 was upgraded from 1.29.x to 1.31.x. This upgrade includes the following changes. For more information about these changes, see the [Envoy changelog documentation](https://www.envoyproxy.io/docs/envoy/latest/version_history/v1.31/v1.31).
+* **Opencensus**: Opencensus has been marked as deprecated for a while and it’s disabled by default in the 1.31.x envoy release. Config will be rejected by envoy if Opencensus is set. See the [layered_runtime](https://github.com/envoyproxy/envoy/blob/38530270d6cb3a3a71a9b70b3de55854750b75a9/configs/using_deprecated_config.yaml) section for example to how to allow it but this will be completely removed in 1.32.x envoy.
+* **JWT tokens**: The behavior for extracting JWT tokens changed in 1.29.x envoy. Previously, the JWT token was cut into non-base64 characters. Now, the entire JWT token is passed for validation. This change can NO LONGER be reverted by setting `envoy.reloadable_features.token_passed_entirely` to `false` as the option has been removed in 1.31.x envoy.
+* **JWT_authn**: jwt_authn now validates provider URIs. If the validation is too strict it can temporarily be disabled by setting the runtime guard `envoy.reloadable_features.jwt_authn_validate_uri` to false. This might impact customers if their provider URI is not strictly following the RFC. Here is some common issue that might work before but will not longer work (envoy would not start):
+    - hostname contains _ (underscore character)
+    - url contains non-English characters (ASCII code > 127)
+    - url contains unencoded   (space character)
+    - url contains TAB (ASCII code 9) or FormFeed (ASCII code 12) characters
+* **JWT_authn**: jwt_authn will remove token from qs param now if forward is set to false. Previously, it would only remove from headers. `Set envoy.reloadable_features.jwt_authn_remove_jwt_from_query_params` to `false` to go back to old behavior.
+* **JWT_authn**: jwt_authn now validates provider URIs. If the validation is too strict it can temporarily be disabled by setting the runtime guard `envoy.reloadable_features.jwt_authn_validate_uri` to `false`.
+* **access_log**: formatter specifier changes:
+    - The upstream connection address, rather than the upstream host address, will be used for the `%UPSTREAM_REMOTE_ADDRESS%`, `%UPSTREAM_REMOTE_PORT%` and `%UPSTREAM_REMOTE_ADDRESS_WITHOUT_PORT%` access log format specifiers. This behavior can be reverted by setting the runtime guard `envoy.reloadable_features.upstream_remote_address_use_connection` to `false`.
+    - added `%UPSTREAM_CLUSTER_RAW%` access log formatter to log the original upstream cluster name, regardless of whether alt_stat_name is set.
+    - Sanitize SNI for potential log injection. The invalid character will be replaced by `_` with an invalid: marker. If runtime flag `envoy.reloadable_features.sanitize_sni_in_access_log` is set to `false`, the sanitize behavior is disabled.
+* **Yaml**: Yaml parsing behavior change to no longer support the malformed boolean and fraction object as string (ie `"true"` and `"false"` as a string will no longer be interpreted as boolean). Set envoy.reloadable_features.reject_invalid_yaml to false to get back this behavior.
+* **http**: Changing HTTP/2 colon prefixed headers to being sanitized by Envoy code rather than nghttp2. This can be reverted by setting `envoy.reloadable_features.sanitize_http2_headers_without_nghttp2` to `false`. Previously, pseudo header with upper case letters will fail validation, now it will pass.
+* **Local ratelimit**: This release default to use the new AtomicToken and will no longer send out the `x-ratelimit-reset` header as it is no longer timer based. This behavior can be temporarily reverted by setting the runtime guard `envoy.reloadable_features.no_timer_based_rate_limit_token_bucket` to `false`.
+
 **Kubernetes Ingress API deprecation**
 
 As of version 1.17, the Kubernetes Ingress API is deprecated in Gloo Gateway. Instead, you can use the Gloo Gateway (Edge API) `Gateway` custom resource. Alternatively, to use the Kubernetes Gateway API for `Gateway` custom resources, you can check out the [Gloo Gateway (Kubernetes Gateway API) docs](https://docs.solo.io/gateway/latest/).
