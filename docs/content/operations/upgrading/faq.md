@@ -44,10 +44,6 @@ You might deploy Gloo Gateway in Kubernetes environments that use the Kubernetes
 
 Review the following changes made to Gloo Gateway in version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}. For some changes, you might be required to complete additional steps during the upgrade process.
 
-### Kubernetes Gateway API support
-
-Gloo Gateway is now a fully conformant Kubernetes Gateway API implementation. The existing Gloo Edge APIs were not changed and continue to be fully supported. To deploy a gateway proxy that is based on the Kubernetes Gateway API, see the [docs](https://docs.solo.io/gateway). 
-
 ### Breaking changes
 
 **Envoy version 1.31 upgrade**
@@ -165,22 +161,9 @@ Review the following summary of important new, deprecated, or removed Helm field
 
 **New Helm fields**:
 
-* `global.image.variant`: Specify the image variant for all Gloo Gateway components. Supported values include `standard`, `fips`, `distroless`, `fips-distroless`, and the default value is `standard`. Note that the `fips` and `fips-distroless` image variants are supported for Enterise only. Additionally, the `global.image.fips` setting is now deprecated.
-* `global.additionalLabels`: Specify additional labels to add to Gloo resources.
-* `containerSecurityContext`: Specify values for Pod Security Standards in each component. For example, Helm fields such as `settings.integrations.knative.proxy.containerSecurityContext` or `global.extensions.extAuth.deployment.extAuthContainerSecurityContext` now exist to allow you to specify container security context settings.
-
 **Updated Helm fields**:
-* `deployment.runAsUser`: The `discovery` and `ingress-proxy` deployments now respect the `deployment.runAsUser` value.
-* `kubeGateway.enabled`: The Kubernetes Gateway API integration is now disabled by default. To use the Kubernetes Gateway API, you can set this field to true, or check out the [Gloo Gateway with Kubernetes Gateway API docs](https://docs.solo.io/gateway/latest/).
 
 **Deprecated Helm fields**:
-* `global.image.fips`: This setting is now deprecated. Use the `global.image.variant=fips` setting instead.
-* `global.istioIntegration`: The following Istio integration Helm settings that rely on a double proxy setup are now deprecated:
-  * `global.istioIntegration.labelInstallNamespace`
-  * `global.istioIntegration.whitelistDiscovery`
-  * `global.istioIntegration.enableIstioSidecarOnGateway`
-  * `global.istioIntegration.istioSidecarRevTag`
-  * `global.istioIntegration.appendXForwardedHost`
 
 <!--GGv2 changes:
 
@@ -199,15 +182,11 @@ New CRDs are automatically applied to your cluster when performing a `helm insta
 
 Review the following summary of important new, deprecated, or removed CRD updates. For full details, see the [changelogs](#changelogs).
 
+As part of the {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}} release, no CLI changes were introduced.
+<!--
 **New and updated CRDs**:
 
-* `ExtAuth`: A new [`retryPolicy` section]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#retrypolicy" %}}) is added to the `PassThroughGrpc` settings in the `ExtAuth` CRD. You can use this option to configure retries for gRPC passthrough authentication in the case that the service is unavailable.
-* `RateLimit`: A new [`grpcService` setting]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto.sk/#grpcservice" %}}) is added to the `RateLimit` CRD to configure the authority header for the rate limit gRPC call.
-* `Settings` (Enterprise-only):
-  * A new [`observabilityOptions.grafanaIntegration.dashboardPrefix` setting]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#grafanaintegration" %}}) allows you to specify the prefix for the title and UID of Grafana dashboards that Gloo Gateway generates. This prefix can be useful when you aggregate data in a central Grafana instance to prevent conflicts across multiple Gloo environments. Note that if you set this field, you must manually remove any dashboard created without a prefix or with a different prefix.
-  * A new [`observabilityOptions.grafanaIntegration.extraMetricQueryParameters` setting]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#grafanaintegration" %}}) allows you to specify additional query parameters to add to all metric query definitions in the Grafana dashboards that Gloo Gateway generates. This string value can consist of multiple query parameters separated by a comma, such as `cluster="some-cluster",gateway_proxy_id="proxy-2"`.
 
-<!--
 **Deprecated CRDs**:
 N/A
 
