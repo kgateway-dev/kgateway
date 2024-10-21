@@ -274,18 +274,8 @@ func (r report) Equals(in report) bool {
 }
 
 func (s *ProxySyncer) Start(ctx context.Context) error {
-	// istiolog.FindScope("krt").SetOutputLevel(istiolog.DebugLevel)
-
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-syncer")
 	logger := contextutils.LoggerFrom(ctx)
-
-	timer := time.NewTicker(time.Second * 1)
-	var (
-		needsProxyRecompute = false
-	// needsGwApiStatusSync = false
-	// needsXdsSync         = false
-	)
-	// var pmu sync.Mutex
 
 	// TODO: handle cfgmap noisiness? (https://github.com/solo-io/gloo/blob/main/projects/gloo/pkg/api/converters/kube/artifact_converter.go#L31)
 	configMapClient := kclient.New[*corev1.ConfigMap](s.istioClient)
@@ -369,16 +359,8 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		proxy := s.buildProxy(ctx, gw)
 		return proxy
 	})
-	// as the set of proxies has been computed, we can signal we don't need to recompute
-	// glooProxies.RegisterBatch(func(o []krt.Event[glooProxy], initialSync bool) {
-	// 	pmu.Lock()
-	// 	needsProxyRecompute = false
-	// 	pmu.Unlock()
-	// }, true)
-
 	xdsSnapshots := krt.NewCollection(glooProxies, func(kctx krt.HandlerContext, proxy glooProxy) *xdsSnapWrapper {
 		// we are recomputing xds snapshots as proxies have changed, signal that we need to sync xds with these new snapshots
-		// needsXdsSync = true
 		xdsSnap := s.buildXdsSnapshot(
 			ctx,
 			kctx,
@@ -439,10 +421,9 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	latestReport = reports.NewReportMap()
 	statusReport.Register(func(o krt.Event[report]) {
 		if o.Event == controllers.EventDelete {
-			// FIXME: handle garbage collection
+			// TODO: handle garbage collection (see: https://github.com/solo-io/solo-projects/issues/7086)
 			return
 		}
-		// needsGwApiStatusSync = true
 		latestReport = o.Latest().ReportMap
 	})
 
@@ -475,8 +456,8 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		return errors.New("kube gateway sync loop waiting for all caches to sync failed")
 	}
 
-	// wait for ctrl-rtime events to trigger syncs
-	// this will not be necessary once we switch the "front side" of translation to krt
+	timer := time.NewTicker(time.Second * 1)
+	var needsProxyRecompute = false
 	for {
 		select {
 		case <-ctx.Done():
@@ -487,20 +468,15 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 				needsProxyRecompute = false
 				proxyTrigger.TriggerRecomputation()
 			}
-			// if needsGwApiStatusSync {
-			// needsGwApiStatusSync = false
 			go func() {
 				s.syncGatewayStatus(ctx, latestReport)
 				s.syncRouteStatus(ctx, latestReport)
 			}()
-			// }
-			// if needsXdsSync {
-			// 	needsXdsSync = false
 			go func() {
 				for _, snapWrap := range xdsSnapshots.List() {
 					err := s.proxyTranslator.syncXdsAndStatus(ctx, snapWrap.snap, snapWrap.proxyKey, snapWrap.fullReports)
 					if err != nil {
-						// fixme
+						logger.Errorf("error while syncing proxy '%s': %s", snapWrap.proxyKey, err.Error())
 					}
 
 					var proxiesWithReports []translatorutils.ProxyWithReports
@@ -508,12 +484,10 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 					applyStatusPlugins(ctx, proxiesWithReports, snapWrap.pluginRegistry)
 				}
 			}()
-			// }
 		case <-s.inputs.genericEvent.Next():
 			// event from ctrl-rtime, signal that we need to recompute proxies on next tick
-			// pmu.Lock()
+			// this will not be necessary once we switch the "front side" of translation to krt
 			needsProxyRecompute = true
-			// pmu.Unlock()
 		}
 	}
 }
