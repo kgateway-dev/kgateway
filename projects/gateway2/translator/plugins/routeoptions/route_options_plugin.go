@@ -135,11 +135,7 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 	routeOptionReport := make(reporter.ResourceReports)
 	for roKey, status := range p.legacyStatusCache {
 		// get the obj by namespacedName
-		roObj, err := p.routeOptionClient.Read(roKey.Namespace, roKey.Name, clients.ReadOpts{Ctx: ctx})
-		if err != nil {
-			// TODO continue; here instead and drop from this PR -- unrelated and should be backported
-			return fmt.Errorf("error reading route option %v: %w", roKey, err)
-		}
+		roObj, _ := p.routeOptionClient.Read(roKey.Namespace, roKey.Name, clients.ReadOpts{Ctx: ctx})
 
 		// mark this object to be processed
 		routeOptionReport.Accept(roObj)
@@ -150,7 +146,7 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 		}
 
 		// actually write out the reports!
-		err = p.statusReporter.WriteReports(ctx, routeOptionReport, status.subresourceStatus)
+		err := p.statusReporter.WriteReports(ctx, routeOptionReport, status.subresourceStatus)
 		if err != nil {
 			return fmt.Errorf("error writing status report from RouteOptionPlugin: %w", err)
 		}
