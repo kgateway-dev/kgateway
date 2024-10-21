@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"slices"
 	"time"
 
 	"go.uber.org/zap"
@@ -273,6 +274,22 @@ func (r report) Equals(in report) bool {
 	return true
 }
 
+type proxyList struct {
+	list gloov1.ProxyList
+}
+
+func (p proxyList) ResourceName() string {
+	return "proxyList"
+}
+
+func (p proxyList) Equals(in proxyList) bool {
+	sorted := p.list.Sort()
+	sortedIn := in.list.Sort()
+	return slices.EqualFunc(sorted, sortedIn, func(x, y *gloov1.Proxy) bool {
+		return proto.Equal(x, y)
+	})
+}
+
 func (s *ProxySyncer) Start(ctx context.Context) error {
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-syncer")
 	logger := contextutils.LoggerFrom(ctx)
@@ -376,18 +393,22 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		return xdsSnap
 	})
 
-	// unused collection, needed for "side-effect" of proxy reconciliation
-	proxiesToReconcile := krt.NewManyFromNothing(func(kctx krt.HandlerContext) []glooProxy {
+	// build ProxyList collection as glooProxies change
+	proxiesToReconcile := krt.NewSingleton(func(kctx krt.HandlerContext) *proxyList {
 		proxies := krt.Fetch(kctx, glooProxies)
-		var proxyList gloov1.ProxyList
+		var l gloov1.ProxyList
 		for _, p := range proxies {
-			proxyList = append(proxyList, p.proxy)
+			l = append(l, p.proxy)
 		}
-		s.reconcileProxies(ctx, proxyList)
-		return proxies
+		return &proxyList{l}
 	})
-	proxiesToReconcile.Register(func(o krt.Event[glooProxy]) {
-		// no-op; used to keep collection in scope
+	// handler to reconcile ProxyList for in-memory proxy client
+	proxiesToReconcile.Register(func(o krt.Event[proxyList]) {
+		var l gloov1.ProxyList
+		if o.Event != controllers.EventDelete {
+			l = o.Latest().list
+		}
+		s.reconcileProxies(ctx, l)
 	})
 
 	// as proxies are created, they also contain a reportMap containing status for the Gateway and associated HTTPRoutes (really parentRefs)
