@@ -5,4 +5,3 @@ changelog:
     description: >-
       Updated doc to call out changes in envoy 1.31.x
       skipCI-kube-tests:true
-      skipCI-docs-build:true
