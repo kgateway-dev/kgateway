@@ -42,9 +42,9 @@ func (s *ProxyTranslator) buildXdsSnapshot(
 	// Will contain reports only `Gloo` components (i.e. Proxies, Upstreams, AuthConfigs, etc.)
 	allReports := make(reporter.ResourceReports)
 
-	// we need to track and report upstreams, even though this is possibly duplicate work with the latest syncer
-	// the reason for this is because we need to set Upstream status in lieu of an edge proxy being translated
-	// accept upstreams in snap so we can report accepted status (without this we wouldn't know to report on positive)
+	// we need to track and report upstreams, even though this is possibly duplicate work with the legacy syncer
+	// the reason for this is because we need to set Upstream status even if no edge proxies are being translated
+	// here we Accept() upstreams in snap so we can report accepted status (without this we wouldn't report on positive case)
 	allReports.Accept(snap.Upstreams.AsInputResources()...)
 
 	params := plugins.Params{

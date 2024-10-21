@@ -127,8 +127,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 	reports := make(reporter.ResourceReports)
 
 	// Execute the EnvoySyncer
-	// This will update the xDS SnapshotCache for each entry that corresponds to a Proxy in the API Snapshot
-	// This also handles garbage collection for ALL proxies in the xdsCache (including kube gateway proxies)
+	// This will update the xDS SnapshotCache for each entry that corresponds to a non-kube gw Proxy in the API Snapshot
 	s.syncEnvoy(ctx, snap, reports)
 
 	// Execute the SyncerExtensions
