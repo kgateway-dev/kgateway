@@ -94,6 +94,7 @@ func (t *translator) TranslateProxy(
 func proxyMetadata(gateway *gwv1.Gateway, writeNamespace string) *core.Metadata {
 	return &core.Metadata{
 		// Add the gateway name to the proxy name to ensure uniqueness of proxies
+		// TODO(Law): should this match the deployer generated name instead?
 		Name: fmt.Sprintf("%s-%s", gateway.GetNamespace(), gateway.GetName()),
 
 		// This needs to match the writeNamespace because the proxyClient will only look at namespaces in the whitelisted namespace list

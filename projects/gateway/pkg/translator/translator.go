@@ -20,6 +20,8 @@ import (
 
 // Translator converts a set of Gateways into a Proxy, with the provided proxyName
 type Translator interface {
+	// Translate converts a set of Gateways into a Proxy, with the provided proxyName.
+	// If no Listeners are built (e.g. due to an error during translation), nil will be returned.
 	Translate(ctx context.Context, proxyName string, snap *gloov1snap.ApiSnapshot, filteredGateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports)
 }
 
@@ -87,8 +89,14 @@ func NewDefaultTranslator(opts Opts) *GwTranslator {
 	}
 }
 
-// Translate converts a set of Gateways into a Proxy, with the provided proxyName
-func (t *GwTranslator) Translate(ctx context.Context, proxyName string, snap *gloov1snap.ApiSnapshot, gateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports) {
+// Translate converts a set of Gateways into a Proxy, with the provided proxyName.
+// If no Listeners are built (e.g. due to an error during translation), nil will be returned.
+func (t *GwTranslator) Translate(
+	ctx context.Context,
+	proxyName string,
+	snap *gloov1snap.ApiSnapshot,
+	gateways v1.GatewayList,
+) (*gloov1.Proxy, reporter.ResourceReports) {
 	logger := contextutils.LoggerFrom(ctx)
 
 	reports := make(reporter.ResourceReports)

@@ -9,8 +9,8 @@ import (
 )
 
 type ReportMap struct {
-	gateways map[types.NamespacedName]*GatewayReport
-	routes   map[types.NamespacedName]*RouteReport
+	Gateways map[types.NamespacedName]*GatewayReport
+	Routes   map[types.NamespacedName]*RouteReport
 }
 
 type GatewayReport struct {
@@ -24,7 +24,7 @@ type ListenerReport struct {
 }
 
 type RouteReport struct {
-	parents            map[ParentRefKey]*ParentRefReport
+	Parents            map[ParentRefKey]*ParentRefReport
 	observedGeneration int64
 }
 
@@ -43,8 +43,8 @@ func NewReportMap() ReportMap {
 	gr := make(map[types.NamespacedName]*GatewayReport)
 	rr := make(map[types.NamespacedName]*RouteReport)
 	return ReportMap{
-		gateways: gr,
-		routes:   rr,
+		Gateways: gr,
+		Routes:   rr,
 	}
 }
 
@@ -55,14 +55,14 @@ func NewReportMap() ReportMap {
 // NOTE: Exported for unit testing, validation_test.go should be refactored to reduce this visibility
 func (r *ReportMap) Gateway(gateway *gwv1.Gateway) *GatewayReport {
 	key := client.ObjectKeyFromObject(gateway)
-	return r.gateways[key]
+	return r.Gateways[key]
 }
 
 func (r *ReportMap) newGatewayReport(gateway *gwv1.Gateway) *GatewayReport {
 	gr := &GatewayReport{}
 	gr.observedGeneration = gateway.Generation
 	key := client.ObjectKeyFromObject(gateway)
-	r.gateways[key] = gr
+	r.Gateways[key] = gr
 	return gr
 }
 
@@ -71,14 +71,14 @@ func (r *ReportMap) newGatewayReport(gateway *gwv1.Gateway) *GatewayReport {
 // reports are not generated for a HTTPRoute that has been translated.
 func (r *ReportMap) route(route *gwv1.HTTPRoute) *RouteReport {
 	key := client.ObjectKeyFromObject(route)
-	return r.routes[key]
+	return r.Routes[key]
 }
 
 func (r *ReportMap) newRouteReport(route *gwv1.HTTPRoute) *RouteReport {
 	rr := &RouteReport{}
 	rr.observedGeneration = route.Generation
 	key := client.ObjectKeyFromObject(route)
-	r.routes[key] = rr
+	r.Routes[key] = rr
 	return rr
 }
 
@@ -185,14 +185,14 @@ func getParentRefKey(parentRef *gwv1.ParentReference) ParentRefKey {
 
 func (r *RouteReport) parentRef(parentRef *gwv1.ParentReference) *ParentRefReport {
 	key := getParentRefKey(parentRef)
-	if r.parents == nil {
-		r.parents = make(map[ParentRefKey]*ParentRefReport)
+	if r.Parents == nil {
+		r.Parents = make(map[ParentRefKey]*ParentRefReport)
 	}
 	var prr *ParentRefReport
-	prr, ok := r.parents[key]
+	prr, ok := r.Parents[key]
 	if !ok {
 		prr = &ParentRefReport{}
-		r.parents[key] = prr
+		r.Parents[key] = prr
 	}
 	return prr
 }
@@ -202,7 +202,7 @@ func (r *RouteReport) parentRef(parentRef *gwv1.ParentReference) *ParentRefRepor
 // the parentRefs field.
 func (r *RouteReport) parentRefs() []gwv1.ParentReference {
 	var refs []gwv1.ParentReference
-	for key := range r.parents {
+	for key := range r.Parents {
 		parentRef := gwv1.ParentReference{
 			Group:     ptr.To(gwv1.Group(key.Group)),
 			Kind:      ptr.To(gwv1.Kind(key.Kind)),
