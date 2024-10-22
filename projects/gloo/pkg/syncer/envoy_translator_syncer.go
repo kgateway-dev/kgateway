@@ -22,10 +22,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
-	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 )
 
@@ -74,19 +75,32 @@ func measureResource(ctx context.Context, resource string, length int) {
 	}
 }
 
-// syncEnvoy will translate, sanitize, and set the snapshot for each of the proxies, all while merging all the reports into allReports.
+// syncEnvoy will translate, sanitize, and set the xds snapshot for each of the proxies in the provided api snapshot.
+// Reports from translation attempts on every Proxy will be merged into allReports.
 func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot, allReports reporter.ResourceReports) {
 	ctx, span := trace.StartSpan(ctx, "gloo.syncer.Sync")
 	defer span.End()
 
+	// store snap for debug tooling
 	s.snapshotHistory.SetApiSnapshot(snap)
 	s.latestSnap = snap
+
+	var nonKubeProxies v1.ProxyList
+	for _, proxy := range snap.Proxies {
+		proxyType := utils.GetTranslatorValue(proxy.GetMetadata())
+		if proxyType == utils.GatewayApiProxyValue {
+			// filter out Kube Gateway proxies
+			continue
+		} else {
+			nonKubeProxies = append(nonKubeProxies, proxy)
+		}
+	}
 
 	ctx = contextutils.WithLogger(ctx, "envoyTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 	snapHash := hashutils.MustHash(snap)
-	logger.Infof("begin sync %v (%v proxies, %v upstreams, %v endpoints, %v secrets, %v artifacts, %v auth configs, %v rate limit configs, %v graphql apis)", snapHash,
-		len(snap.Proxies), len(snap.Upstreams), len(snap.Endpoints), len(snap.Secrets), len(snap.Artifacts), len(snap.AuthConfigs), len(snap.Ratelimitconfigs), len(snap.GraphqlApis))
+	logger.Infof("begin sync %v (%d edge proxies, %d upstreams, %d endpoints, %d secrets, %d artifacts, %d auth configs, %d rate limit configs, %d graphql apis)", snapHash,
+		len(nonKubeProxies), len(snap.Upstreams), len(snap.Endpoints), len(snap.Secrets), len(snap.Artifacts), len(snap.AuthConfigs), len(snap.Ratelimitconfigs), len(snap.GraphqlApis))
 	defer logger.Infof("end sync %v", snapHash)
 
 	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
@@ -95,20 +109,20 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 		logger.Debug(syncutil.StringifySnapshot(snap))
 	}
 
-	allReports.Accept(snap.Upstreams.AsInputResources()...)
-	allReports.Accept(snap.UpstreamGroups.AsInputResources()...)
-	allReports.Accept(snap.Proxies.AsInputResources()...)
-
 	if !s.settings.GetGloo().GetDisableProxyGarbageCollection().GetValue() {
 		allKeys := map[string]bool{
 			xds.FallbackNodeCacheKey: true,
 		}
-		// Get all envoy node ID keys
+		// Get all nonKubeGateway node ID keys currently in snapshot cache
 		for _, key := range s.xdsCache.GetStatusKeys() {
+			if xds.IsKubeGatewayCacheKey(key) {
+				// we don't want to do garbage collection for kube gateways, so skip this key
+				continue
+			}
 			allKeys[key] = false
 		}
-		// Get all valid node ID keys for Proxies
-		for _, key := range xds.SnapshotCacheKeys(snap.Proxies) {
+		// Get all valid node ID keys for non kube gateway Proxies from api snpashot
+		for _, key := range xds.SnapshotCacheKeys(nonKubeProxies) {
 			allKeys[key] = true
 		}
 		// Get all valid node ID keys for syncerExtensions (rate-limit, ext-auth)
@@ -123,8 +137,15 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 			}
 		}
 	}
-	var proxiesWithReports []translatorutils.ProxyWithReports
-	for _, proxy := range snap.Proxies {
+
+	allReports.Accept(snap.Upstreams.AsInputResources()...)
+	allReports.Accept(snap.UpstreamGroups.AsInputResources()...)
+	// Only mark non-kube gateways as accepted
+	// Regardless, kube gw proxies are filtered out of these reports before reporting in translator_syncer.go
+	allReports.Accept(nonKubeProxies.AsInputResources()...)
+
+	// sync non-kube gw proxies
+	for _, proxy := range nonKubeProxies {
 		proxyCtx := ctx
 		metaKey := xds.SnapshotCacheKey(proxy)
 		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(syncerstats.ProxyNameKey, metaKey)); err == nil {
@@ -138,7 +159,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 			Messages: map[*core.ResourceRef][]string{},
 		}
 
-		xdsSnapshot, reports, proxyReport := s.translator.Translate(params, proxy)
+		xdsSnapshot, reports, _ := s.translator.Translate(params, proxy)
 
 		// Messages are aggregated during translation, and need to be added to reports
 		for _, messages := range params.Messages {
@@ -161,13 +182,6 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 		allReports.Merge(reports)
 		key := xds.SnapshotCacheKey(proxy)
 		s.xdsCache.SetSnapshot(key, sanitizedSnapshot)
-		proxiesWithReports = append(proxiesWithReports, translatorutils.ProxyWithReports{
-			Proxy: proxy,
-			Reports: translatorutils.TranslationReports{
-				ProxyReport:     proxyReport,
-				ResourceReports: reports,
-			},
-		})
 
 		// Record some metrics
 		clustersLen := len(xdsSnapshot.GetResources(types.ClusterTypeV3).Items)
@@ -187,11 +201,6 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 			"endpoints", endpointsLen)
 
 		logger.Debugf("Full snapshot for proxy %v: %+v", proxy.GetMetadata().GetName(), xdsSnapshot)
-	}
-
-	// Call the callback with the proxies and reports
-	if s.onProxyTranslated != nil {
-		s.onProxyTranslated(ctx, proxiesWithReports)
 	}
 
 	logger.Debugf("gloo reports to be written: %v", allReports)

@@ -34,13 +34,13 @@ func KubeServicesToUpstreams(ctx context.Context, services skkube.ServiceList) v
 	for _, svc := range services {
 		for _, port := range svc.Spec.Ports {
 			kubeSvc := svc.Service.GetKubeService()
-			result = append(result, serviceToUpstream(ctx, &kubeSvc, port))
+			result = append(result, ServiceToUpstream(ctx, &kubeSvc, port))
 		}
 	}
 	return result
 }
 
-func serviceToUpstream(ctx context.Context, svc *corev1.Service, port corev1.ServicePort) *gloov1.Upstream {
+func ServiceToUpstream(ctx context.Context, svc *corev1.Service, port corev1.ServicePort) *gloov1.Upstream {
 	us := kubeplugin.DefaultUpstreamConverter().CreateUpstream(ctx, svc, port)
 
 	us.GetMetadata().Name = fakeUpstreamName(svc.Name, svc.Namespace, port.Port)

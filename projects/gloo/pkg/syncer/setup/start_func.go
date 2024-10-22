@@ -5,6 +5,8 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/servers/admin"
 	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
+	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/go-utils/stats"
 
 	"golang.org/x/sync/errgroup"
@@ -15,9 +17,8 @@ import (
 
 	gateway "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway2/controller"
-	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	api "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
@@ -57,28 +58,39 @@ func ExecuteAsynchronousStartFuncs(
 // K8sGatewayControllerStartFunc returns a StartFunc to run the k8s Gateway controller
 func K8sGatewayControllerStartFunc(
 	proxyClient v1.ProxyClient,
-	queueStatusForProxies proxy_syncer.QueueStatusForProxiesFn,
-	authConfigClient api.AuthConfigClient,
+	authConfigClient extauthv1.AuthConfigClient,
 	routeOptionClient gateway.RouteOptionClient,
 	vhOptionClient gateway.VirtualHostOptionClient,
+	upstreamClient v1.UpstreamClient,
+	secretClient v1.SecretClient,
 	statusClient resources.StatusClient,
+	translator translator.Translator,
+	syncerExtensions []syncer.TranslatorSyncerExtension,
+	glooReporter reporter.StatusReporter,
 ) StartFunc {
 	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
-		statusReporter := reporter.NewReporter(defaults.KubeGatewayReporter, statusClient, routeOptionClient.BaseClient(), vhOptionClient.BaseClient())
+		kubeGwStatusReporter := reporter.NewReporter(
+			defaults.KubeGatewayReporter,
+			statusClient,
+			routeOptionClient.BaseClient(),
+			vhOptionClient.BaseClient(),
+			proxyClient.BaseClient(),
+			upstreamClient.BaseClient(),
+		)
 		return controller.Start(ctx, controller.StartConfig{
 			ExtensionsFactory:         extensions.K8sGatewayExtensionsFactory,
 			GlooPluginRegistryFactory: extensions.PluginRegistryFactory,
 			Opts:                      opts,
-			QueueStatusForProxies:     queueStatusForProxies,
-
-			ProxyClient:             proxyClient,
-			AuthConfigClient:        authConfigClient,
-			RouteOptionClient:       routeOptionClient,
-			VirtualHostOptionClient: vhOptionClient,
-			StatusReporter:          statusReporter,
-
-			// Useful for development purposes
-			// At the moment, this is not tied to any user-facing API
+			ProxyClient:               proxyClient,
+			AuthConfigClient:          authConfigClient,
+			RouteOptionClient:         routeOptionClient,
+			VirtualHostOptionClient:   vhOptionClient,
+			SecretClient:              secretClient,
+			KubeGwStatusReporter:      kubeGwStatusReporter,
+			Translator:                translator,
+			SyncerExtensions:          syncerExtensions,
+			GlooStatusReporter:        glooReporter,
+			// Useful for development purposes; not currently tied to any user-facing API
 			Dev: false,
 		})
 	}
