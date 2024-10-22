@@ -8,6 +8,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/go-utils/stats"
+	istiokube "istio.io/istio/pkg/kube"
+	"istio.io/istio/pkg/kube/krt"
 
 	"golang.org/x/sync/errgroup"
 
@@ -17,6 +19,7 @@ import (
 
 	gateway "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway2/controller"
+	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
@@ -64,6 +67,8 @@ func K8sGatewayControllerStartFunc(
 	upstreamClient v1.UpstreamClient,
 	secretClient v1.SecretClient,
 	statusClient resources.StatusClient,
+	client istiokube.Client,
+	pods krt.Collection[krtcollections.LocalityPod],
 	translator translator.Translator,
 	syncerExtensions []syncer.TranslatorSyncerExtension,
 	glooReporter reporter.StatusReporter,
@@ -90,6 +95,8 @@ func K8sGatewayControllerStartFunc(
 			Translator:                translator,
 			SyncerExtensions:          syncerExtensions,
 			GlooStatusReporter:        glooReporter,
+			Client:                    client,
+			Pods:                      pods,
 			// Useful for development purposes; not currently tied to any user-facing API
 			Dev: false,
 		})

@@ -58,6 +58,7 @@ import (
 	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gwvalidation "github.com/solo-io/gloo/projects/gateway/pkg/validation"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
+	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	rlv1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -84,6 +85,9 @@ import (
 	sslutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
+	istiokube "istio.io/istio/pkg/kube"
+	"istio.io/istio/pkg/kube/krt"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 // TODO: (copied from gateway) switch AcceptAllResourcesByDefault to false after validation has been tested in user environments
@@ -156,6 +160,9 @@ type setupSyncer struct {
 	validationServer         bootstrap.ValidationServer
 	proxyDebugServer         bootstrap.ProxyDebugServer
 	callbacks                xdsserver.Callbacks
+
+	kubeClient istiokube.Client
+	pods       krt.Collection[krtcollections.LocalityPod]
 }
 
 func NewControlPlane(ctx context.Context, grpcServer *grpc.Server, bindAddr net.Addr, kubeControlPlaneCfg bootstrap.KubernetesControlPlaneConfig,
@@ -221,6 +228,17 @@ func getAddr(addr string) (*net.TCPAddr, error) {
 	}
 
 	return &net.TCPAddr{IP: ip, Port: port}, nil
+}
+
+func createKubeClient() istiokube.Client {
+	restCfg := istiokube.NewClientConfigForRestConfig(ctrl.GetConfigOrDie())
+	client, err := istiokube.NewClient(restCfg, "")
+	if err != nil {
+		// TODO move this init somewhere we can handle the err
+		panic(err)
+	}
+	istiokube.EnableCrdWatcher(client)
+	return client
 }
 
 // Setup constructs bootstrap options based on settings and other input, and calls the runFunc with these options.
@@ -346,6 +364,21 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	emptyValidationServer := bootstrap.ValidationServer{}
 	emptyProxyDebugServer := bootstrap.ProxyDebugServer{}
 
+	if opts.GlooGateway.EnableK8sGatewayController {
+		if s.kubeClient == nil {
+			// kube client has to have a global lifetime here.
+			// i.e. not be created and destroyed on each setup (which happens on every Settings change).
+			// the reason being, is that the control plane server also has a global lifetime. the callbacks
+			// that we add to the control plane need a pod client, to get the pod labels of incoming clients.
+			// and hence, this needs a global lifetime too.
+			s.kubeClient = createKubeClient()
+			ctx := contextutils.WithLogger(context.Background(), "k8s")
+			go s.kubeClient.RunAndWait(ctx.Done())
+			// create agumented pods
+			s.pods = krtcollections.NewPodsCollection(ctx, s.kubeClient)
+		}
+	}
+
 	// check if we need to restart the control plane
 	if xdsBindAddr != s.previousXdsServer.addr ||
 		xdsHost != s.previousControlPlane.Kube.XdsHost ||
@@ -433,6 +466,8 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	opts.KubeClient = clientset
 	opts.DevMode = settings.GetDevMode()
 	opts.Settings = settings
+	opts.IsitoClient = s.kubeClient
+	opts.Pods = s.pods
 
 	opts.Consul.DnsServer = settings.GetConsul().GetDnsAddress()
 	if len(opts.Consul.DnsServer) == 0 {
@@ -894,6 +929,10 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	// MARK: build k8s gw start func
 	if opts.GlooGateway.EnableK8sGatewayController {
+		if opts.Pods == nil || opts.IsitoClient == nil {
+			return errors.Errorf("k8s gateway controller enabled, but pods or istio client is nil")
+		}
+
 		// Share proxyClient and status syncer with the gateway controller
 		startFuncs["k8s-gateway-controller"] = K8sGatewayControllerStartFunc(
 			proxyClient,
@@ -903,6 +942,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 			hybridUsClient,
 			secretClient,
 			statusClient,
+			opts.IsitoClient,
+			opts.Pods,
 			sharedTranslator,
 			syncerExtensions,
 			rpt,

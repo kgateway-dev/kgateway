@@ -18,6 +18,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	ext "github.com/solo-io/gloo/projects/gateway2/extensions"
+	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -27,6 +28,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	istiokube "istio.io/istio/pkg/kube"
+	"istio.io/istio/pkg/kube/krt"
 )
 
 const (
@@ -82,6 +85,9 @@ type StartConfig struct {
 	// SyncerExtensions is a list of extensions, the kube gw controller will use these to get extension-specific
 	// errors & warnings for any Proxies it generates
 	SyncerExtensions []syncer.TranslatorSyncerExtension
+
+	Client istiokube.Client
+	Pods   krt.Collection[krtcollections.LocalityPod]
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -139,6 +145,8 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		cfg.Opts.WriteNamespace,
 		inputChannels,
 		mgr,
+		cfg.Client,
+		cfg.Pods,
 		k8sGwExtensions,
 		cfg.ProxyClient,
 		cfg.Translator,
@@ -170,4 +178,15 @@ func Start(ctx context.Context, cfg StartConfig) error {
 	}
 
 	return mgr.Start(ctx)
+}
+
+func createKubeClient() istiokube.Client {
+	restCfg := istiokube.NewClientConfigForRestConfig(ctrl.GetConfigOrDie())
+	client, err := istiokube.NewClient(restCfg, "")
+	if err != nil {
+		// TODO move this init somewhere we can handle the err
+		panic(err)
+	}
+	istiokube.EnableCrdWatcher(client)
+	return client
 }

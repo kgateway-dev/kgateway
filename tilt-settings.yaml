@@ -1,13 +1,17 @@
 
 helm_installation_name: gloo-oss
-helm_values_file: ./test/kube2e/helm/artifacts/helm.yaml
+helm_values_files:
+- ./test/kubernetes/e2e/tests/manifests/common-recommendations.yaml
+# - ./test/kubernetes/e2e/tests/manifests/profiles/kubernetes-gateway.yaml
 helm_installation_namespace: gloo-system
 
 enabled_providers:
   - gloo
   - gateway-proxy
 
-providers :
+metal_lb: false
+
+providers:
   gloo:
     context: _output/projects/gloo
     image: quay.io/solo-io/gloo
@@ -19,7 +23,7 @@ providers :
     # debug_port: 50100
     port_forwards:
       - 9091
-    #   - 50100
+    #  - 50100
   gateway-proxy:
     context: _output/gateway-proxy
     image: quay.io/solo-io/gloo-envoy-wrapper
