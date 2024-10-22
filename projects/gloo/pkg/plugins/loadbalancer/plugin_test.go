@@ -364,6 +364,15 @@ status: {}
 		Expect(out.CommonLbConfig.LocalityConfigSpecifier).To(BeNil())
 	})
 
+	It("should set close connections on host set change", func() {
+		upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
+			CloseConnectionsOnHostSetChange: true,
+		}
+		err := plugin.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.CommonLbConfig.CloseConnectionsOnHostSetChange).To(BeTrue())
+	})
+
 	Context("route plugin", func() {
 
 		var (

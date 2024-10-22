@@ -107,4 +107,7 @@ message LoadBalancerConfig {
         // If not specified, the default is 10%.
         google.protobuf.DoubleValue min_weight_percent = 3;
     }
+
+    // If set to true, the load balancer will close connections when the host set changes.
+    bool close_connections_on_host_set_change = 10;
 }

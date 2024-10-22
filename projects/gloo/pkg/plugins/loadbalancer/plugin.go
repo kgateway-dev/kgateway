@@ -115,6 +115,9 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 				}
 			}
 		}
+		if cfg.GetCloseConnectionsOnHostSetChange() {
+			out.GetCommonLbConfig().CloseConnectionsOnHostSetChange = true
+		}
 	}
 
 	if cfg.GetType() != nil {
