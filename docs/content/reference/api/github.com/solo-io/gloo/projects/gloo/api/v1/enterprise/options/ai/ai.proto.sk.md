@@ -422,6 +422,7 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 | Name | Description |
 | ----- | ----------- | 
 | `CHAT` |  |
+| `CHAT_STREAMING` |  |
 
 
 

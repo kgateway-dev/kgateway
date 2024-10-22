@@ -134,7 +134,7 @@ message UpstreamSpec {
       // Auth Token to use for the Gemini API
       // This token will be placed into the `key` header
       SingleAuthToken auth_token = 1;
-      // TODO: use oauth
+        OAuth2 oauth2 = 2;
     }
 
     // The model name to use
@@ -390,6 +390,7 @@ message RouteSettings {
 
   enum RouteType {
     CHAT = 0;
+    CHAT_STREAMING = 1;
   }
 
   // The type of route this is, currently only CHAT is supported
