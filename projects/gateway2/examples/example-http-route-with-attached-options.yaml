@@ -47,16 +47,23 @@ spec:
       port: 8080
       targetPort: http-web-svc
 ---
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: nginx
-  labels:
-    app.kubernetes.io/name: nginx
 spec:
-  containers:
-  - name: nginx
-    image: nginx:stable
-    ports:
-    - containerPort: 80
-      name: http-web-svc
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nginx
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:stable
+        ports:
+        - containerPort: 80
+          name: http-web-svc
