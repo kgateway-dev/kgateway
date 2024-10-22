@@ -227,7 +227,7 @@ func (r *gatewayQueries) allowedRoutes(gw *gwv1.Gateway, l *gwv1.Listener) (func
 				allowedNs = AllNamespace()
 			case gwv1.NamespacesFromSelector:
 				if ar.Namespaces.Selector == nil {
-					return nil, nil, fmt.Errorf("selector must be set")
+					return nil, nil, ErrMissingSelector
 				}
 				selector, err := metav1.LabelSelectorAsSelector(ar.Namespaces.Selector)
 				if err != nil {

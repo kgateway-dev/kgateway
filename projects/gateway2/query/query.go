@@ -19,6 +19,7 @@ import (
 )
 
 var (
+	ErrMissingSelector            = fmt.Errorf("selector must be set")
 	ErrMissingReferenceGrant      = fmt.Errorf("missing reference grant")
 	ErrUnknownBackendKind         = fmt.Errorf("unknown backend kind")
 	ErrNoMatchingListenerHostname = fmt.Errorf("no matching listener hostname")

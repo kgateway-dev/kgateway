@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/9691
+    resolvesIssue: false
+    description: >-
+      "Refactors `query_test` package to use `go test` and the `testify/assert` package."
