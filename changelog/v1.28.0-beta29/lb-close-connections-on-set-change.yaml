@@ -3,4 +3,4 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/9505
     description: >-
       Allow setting the Envoy LB policy to close connections on set change.
-    resolvesIssue: true
+    resolvesIssue: false
