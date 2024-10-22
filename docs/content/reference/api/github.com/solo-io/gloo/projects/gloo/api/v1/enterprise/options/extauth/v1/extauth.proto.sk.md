@@ -1033,7 +1033,7 @@ Map a single claim from an OAuth2 or OIDC token to a header in the request to th
 
  
 For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
-This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
+This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
 
 ```yaml
 "clientId": string
@@ -1047,7 +1047,7 @@ This way, you can enable distibuted claims and caching for when users are member
 | ----- | ---- | ----------- | 
 | `clientId` | `string` | The client ID for the ExtAuthService app that is registered in MS Entra, to access the Microsoft Graph API to retrieve distributed claims. This app is NOT the app that you want to configure external auth for. |
 | `tenantId` | `string` | The tenant ID represents the MS Entra organization ID where the ExtAuthService app is registered. This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`, depending on how your Azure account is provisioned. |
-| `clientSecret` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API. |
+| `clientSecret` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The client secret of the ExtAuthService app that is registered with MS Entra to communicate with the MS Graph API. The client secret data must be placed in a k8s secret under a key called 'client-secret'. |
 | `claimsCachingOptions` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) | Redis connection details to cache MS Entera claims. This way, you avoid performance issues of accessing the Microsoft Graph API too many times. Note that this setting does NOT turn on Redis caching for the user session. To turn on Redis user session caching, use the `userSessionConfig` field. |
 
 
@@ -1434,7 +1434,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 | `requiredScopes` | [.enterprise.gloo.solo.io.AccessTokenValidation.ScopeList](../extauth.proto.sk/#scopelist) | Require access token to have all of the scopes in the given list. This configuration applies to both opaque and JWT tokens. In the case of opaque tokens, this will check the scopes returned in the "scope" member of introspection response (as described in [Section 2.2 of RFC7662](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2). In case of JWTs the scopes to be validated are expected to be contained in the "scope" claim of the token in the form of a space-separated string. Omitting this field means that scope validation will be skipped. |
 | `dynamicMetadataFromClaims` | `map<string, string>` | Map of metadata key to claim. Ie: dynamic_metadata_from_claims: issuer: iss email: email When specified, the matching claims from the access token will be emitted as dynamic metadata. Note that metadata keys must be unique, and the claim names must be alphanumeric and use `-` or `_` as separators. Works when the access token is a JWT or when the access token is opaque, in which case the claims will refer to field in the response from the token introspection endpoint. The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`), and the structure of the claim value will be preserved in the metadata struct. |
 | `claimsToHeaders` | [[]enterprise.gloo.solo.io.ClaimToHeader](../extauth.proto.sk/#claimtoheader) | A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination. |
-| `azure` | [.enterprise.gloo.solo.io.Azure](../extauth.proto.sk/#azure) | For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider. This way, you can enable distibuted claims and caching for when users are members of more than 200 groups. |
+| `azure` | [.enterprise.gloo.solo.io.Azure](../extauth.proto.sk/#azure) | For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider. This way, you can enable distributed claims and caching for when users are members of more than 200 groups. |
 
 
 
@@ -2440,7 +2440,7 @@ No-op, represents default OIDC behavior
 
  
 For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
-This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
+This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
 
 ```yaml
 "clientId": string
@@ -2454,7 +2454,7 @@ This way, you can enable distibuted claims and caching for when users are member
 | ----- | ---- | ----------- | 
 | `clientId` | `string` | The client ID for the ExtAuthService app that is registered in MS Entra, to access the Microsoft Graph API to retrieve distributed claims. This app is NOT the app that you want to configure external auth for. |
 | `tenantId` | `string` | The tenant ID represents the MS Entra organization ID where the ExtAuthService app is registered. This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`, depending on how your Azure account is provisioned. |
-| `clientSecret` | `string` | The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API. |
+| `clientSecret` | `string` | The client secret of the ExtAuthService app that is registered with MS Entra to communicate with the MS Graph API. |
 | `claimsCachingOptions` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) | Redis connection details to cache MS Entera claims. This way, you avoid performance issues of accessing the Microsoft Graph API too many times. Note that this setting does NOT turn on Redis caching for the user session. To turn on Redis user session caching, use the `userSessionConfig` field. |
 
 

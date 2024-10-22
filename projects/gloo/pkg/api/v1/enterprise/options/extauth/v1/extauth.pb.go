@@ -2168,7 +2168,7 @@ func (x *ClaimToHeader) GetAppend() bool {
 }
 
 // For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
-// This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
+// This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
 type Azure struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2182,7 +2182,8 @@ type Azure struct {
 	// This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`,
 	// depending on how your Azure account is provisioned.
 	TenantId string `protobuf:"bytes,2,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
-	// The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API.
+	// The client secret of the ExtAuthService app that is registered with MS Entra to communicate with the MS Graph API.
+	// The client secret data must be placed in a k8s secret under a key called 'client-secret'.
 	ClientSecret *core.ResourceRef `protobuf:"bytes,3,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
 	// Redis connection details to cache MS Entera claims.
 	// This way, you avoid performance issues of accessing the Microsoft Graph API too many times.
@@ -3086,7 +3087,7 @@ type AccessTokenValidation struct {
 	// A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination
 	ClaimsToHeaders []*ClaimToHeader `protobuf:"bytes,8,rep,name=claims_to_headers,json=claimsToHeaders,proto3" json:"claims_to_headers,omitempty"`
 	// For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
-	// This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
+	// This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
 	Azure *Azure `protobuf:"bytes,9,opt,name=azure,proto3" json:"azure,omitempty"`
 }
 
@@ -10197,7 +10198,7 @@ func (*ExtAuthConfig_OidcAuthorizationCodeConfig_Default) Descriptor() ([]byte, 
 }
 
 // For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
-// This way, you can enable distibuted claims and caching for when users are members of more than 200 groups.
+// This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
 type ExtAuthConfig_OidcAuthorizationCodeConfig_Azure struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -10211,7 +10212,7 @@ type ExtAuthConfig_OidcAuthorizationCodeConfig_Azure struct {
 	// This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`,
 	// depending on how your Azure account is provisioned.
 	TenantId string `protobuf:"bytes,2,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
-	// The client secret of the ExtAuthService app that is registered with MS Entra to communciate with the MS Graph API.
+	// The client secret of the ExtAuthService app that is registered with MS Entra to communicate with the MS Graph API.
 	ClientSecret string `protobuf:"bytes,3,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
 	// Redis connection details to cache MS Entera claims.
 	// This way, you avoid performance issues of accessing the Microsoft Graph API too many times.
