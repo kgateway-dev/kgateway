@@ -134,7 +134,7 @@ message UpstreamSpec {
       // Auth Token to use for the Gemini API
       // This token will be placed into the `key` header
       SingleAuthToken auth_token = 1;
-        OAuth2 oauth2 = 2;
+      // TODO: use oauth
     }
 
     // The model name to use
