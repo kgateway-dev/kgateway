@@ -10,6 +10,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	"github.com/solo-io/gloo/pkg/utils/statsutils/metrics"
+	"github.com/solo-io/gloo/pkg/utils/syncutil"
 
 	gloo_translator "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -18,7 +19,6 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
-	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
@@ -87,7 +87,7 @@ func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatche
 
 // TODO (ilackarms): make sure that sync happens if proxies get updated as well; may need to resync
 func (s *TranslatorSyncer) Sync(ctx context.Context, snap *gloov1snap.ApiSnapshot) error {
-	ctx = contextutils.WithLogger(ctx, "TranslatorSyncer")
+	ctx = contextutils.WithLogger(ctx, "GatewayTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 
 	snapHash := hashutils.MustHash(snap)
@@ -109,12 +109,19 @@ func (s *TranslatorSyncer) Sync(ctx context.Context, snap *gloov1snap.ApiSnapsho
 // This replaced a watch on the proxy CR from when the gloo and gateway pods were separate
 // Now it is called at the end of the gloo translation loop after statuses have been set for proxies
 // This is where we update statuses on gateway types based on the proxy statuses.
-// After this method runs, all Proxies (those retrieved from the proxy client) will have their status
-// written, along with the translation reports that correspond to the Gateway resources.
+// After this method runs, the gateway syncer's status syncer will have an updated view of the status of
+// all Proxies (those retrieved from the proxy client), which will trigger a status update for the Gateway resources.
 func (s *TranslatorSyncer) UpdateStatusForAllProxies(ctx context.Context) {
 	s.statusSyncer.handleUpdatedProxies(ctx)
 }
-func (s *TranslatorSyncer) GeneratedDesiredProxies(ctx context.Context, snap *gloov1snap.ApiSnapshot) (reconciler.GeneratedProxies, reconciler.InvalidProxies) {
+
+// GeneratedDesiredProxies performs Edge Gateway-to-Proxy translation for the Edge `Gateways` in the provided snapshot.
+// Successfully translated Proxies and references to any unsuccessfully translated Proxies will be returned
+// along with their corresponding translation reports.
+func (s *TranslatorSyncer) GeneratedDesiredProxies(
+	ctx context.Context,
+	snap *gloov1snap.ApiSnapshot,
+) (reconciler.GeneratedProxies, reconciler.InvalidProxies) {
 	logger := contextutils.LoggerFrom(ctx)
 	gatewaysByProxyName := utils.GatewaysByProxyName(snap.Gateways)
 
@@ -157,7 +164,6 @@ func (s *TranslatorSyncer) reconcile(ctx context.Context, desiredProxies reconci
 		return err
 	}
 
-	// repeat for all resources
 	s.statusSyncer.setCurrentProxies(desiredProxies, invalidProxies)
 	s.statusSyncer.forceSync()
 	return nil

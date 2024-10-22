@@ -11,18 +11,11 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-var (
-	missingGatewayReportErr = "building status for Gateway '%s' (namespace: '%s') but no GatewayReport was present"
-	missingRouteReportErr   = "building status for HTTPRoute '%s' (namespace: '%s') but no RouteReport was present"
-)
+// TODO: refactor this struct + methods to better reflect the usage now in proxy_syncer
 
 func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) *gwv1.GatewayStatus {
 	gwReport := r.Gateway(&gw)
 	if gwReport == nil {
-		// If the gwReport for a gateway we translated is missing, something is not correct in the reporting flow.
-		// If we hit this DPanic() we need to understand what has changed in the flow where we are translating Gateways but
-		// not initializing a report for it.
-		contextutils.LoggerFrom(ctx).DPanicf(missingGatewayReportErr, gw.Name, gw.Namespace)
 		return nil
 	}
 
@@ -75,15 +68,9 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) *gwv1.Ga
 func (r *ReportMap) BuildRouteStatus(ctx context.Context, route gwv1.HTTPRoute, cName string) *gwv1.HTTPRouteStatus {
 	routeReport := r.route(&route)
 	if routeReport == nil {
-		// a route report may be missing because of the disconnect between when routes are retrieved for translation,
-		// which the query engine performs inside gateway_translator.go/TranslateProxy(), and when the list of routes
-		// for status syncing is retrieved after translation, separately in xds_syncer.go/syncRouteStatus().
-		// Since there may have been additions/deletions in that window, a missing route report will just be treated
-		// as informational and we will return nil, signaling to status syncer to not touch this Routes status.
-		contextutils.LoggerFrom(ctx).Infof(missingRouteReportErr, route.Name, route.Namespace)
 		return nil
 	}
-	contextutils.LoggerFrom(ctx).Infof("building status for route %s/%s", route.Namespace, route.Name)
+	contextutils.LoggerFrom(ctx).Debugf("building status for route %s/%s", route.Namespace, route.Name)
 
 	routeStatus := gwv1.RouteStatus{}
 

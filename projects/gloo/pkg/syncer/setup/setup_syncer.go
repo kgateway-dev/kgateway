@@ -58,7 +58,6 @@ import (
 	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gwvalidation "github.com/solo-io/gloo/projects/gateway/pkg/validation"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
-	"github.com/solo-io/gloo/projects/gateway2/status"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	rlv1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -652,8 +651,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	// MARK: build and run EDS loop
 	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, statusClient, discoveryPlugins)
 	edsSync := discovery.NewEdsSyncer(disc, discovery.Opts{}, watchOpts.RefreshRate)
-	discoveryCache := v1.NewEdsEmitter(hybridUsClient)
-	edsEventLoop := v1.NewEdsEventLoop(discoveryCache, edsSync)
+	edsEmitter := v1.NewEdsEmitter(hybridUsClient)
+	edsEventLoop := v1.NewEdsEventLoop(edsEmitter, edsSync)
 	edsErrs, err := edsEventLoop.Run(opts.WatchNamespaces, watchOpts)
 	if err != nil {
 		return err
@@ -893,23 +892,20 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	startFuncs["admin-server"] = AdminServerStartFunc(snapshotHistory)
 
-	var (
-		gwv2StatusSyncer       status.GatewayStatusSyncer
-		gwv2StatusSyncCallback syncer.OnProxiesTranslatedFn
-	)
 	// MARK: build k8s gw start func
 	if opts.GlooGateway.EnableK8sGatewayController {
-		gwv2StatusSyncer = status.NewStatusSyncerFactory()
-		gwv2StatusSyncCallback = gwv2StatusSyncer.HandleProxyReports
-
 		// Share proxyClient and status syncer with the gateway controller
 		startFuncs["k8s-gateway-controller"] = K8sGatewayControllerStartFunc(
 			proxyClient,
-			gwv2StatusSyncer.QueueStatusForProxies,
 			authConfigClient,
 			routeOptionClient,
 			virtualHostOptionClient,
+			hybridUsClient,
+			secretClient,
 			statusClient,
+			sharedTranslator,
+			syncerExtensions,
+			rpt,
 		)
 	}
 
@@ -931,12 +927,11 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		proxyClient,
 		opts.WriteNamespace,
 		opts.Identity,
-		gwv2StatusSyncCallback,
 		snapshotHistory,
 	)
 
 	// MARK: build & run api snap loop
-	apiCache := v1snap.NewApiEmitterWithEmit(
+	apiEmitter := v1snap.NewApiEmitterWithEmit(
 		artifactClient,
 		endpointClient,
 		proxyClient,
@@ -955,6 +950,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		graphqlApiClient,
 		extensions.ApiEmitterChannel,
 	)
+
 	syncers := v1snap.ApiSyncers{
 		validator,
 		translationSync,
@@ -962,7 +958,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	if opts.GatewayControllerEnabled {
 		syncers = append(syncers, gwValidationSyncer)
 	}
-	apiEventLoop := v1snap.NewApiEventLoop(apiCache, syncers)
+
+	apiEventLoop := v1snap.NewApiEventLoop(apiEmitter, syncers)
 	apiEventLoopErrs, err := apiEventLoop.Run(opts.WatchNamespaces, watchOpts)
 	if err != nil {
 		return err
@@ -1136,6 +1133,7 @@ func constructOpts(ctx context.Context, params constructOptsParams) (bootstrap.O
 		kubeCoreCache corecache.KubeCoreCache
 	)
 
+	// MARK: build client factories
 	factoryParams := bootstrap_clients.NewConfigFactoryParams(
 		params.settings,
 		params.memCache,
