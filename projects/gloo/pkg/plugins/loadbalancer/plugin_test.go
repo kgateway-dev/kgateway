@@ -370,6 +370,19 @@ status: {}
 		}
 		err := plugin.ProcessUpstream(params, upstream, out)
 		Expect(err).NotTo(HaveOccurred())
+		Expect(out.CommonLbConfig).To(BeNil())
+	})
+
+	It("should not set close connections on host set change w/ other options", func() {
+		upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
+			HealthyPanicThreshold: &wrappers.DoubleValue{
+				Value: 50,
+			},
+			CloseConnectionsOnHostSetChange: false,
+		}
+		err := plugin.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.CommonLbConfig.HealthyPanicThreshold.Value).To(BeEquivalentTo(50))
 		Expect(out.CommonLbConfig.CloseConnectionsOnHostSetChange).To(BeFalse())
 	})
 

@@ -97,7 +97,9 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		return nil
 	}
 
-	if cfg.GetHealthyPanicThreshold() != nil || cfg.GetUpdateMergeWindow() != nil || cfg.GetLocalityConfig() != nil {
+	if cfg.GetHealthyPanicThreshold() != nil || cfg.GetUpdateMergeWindow() != nil ||
+		cfg.GetLocalityConfig() != nil || cfg.GetCloseConnectionsOnHostSetChange() {
+
 		out.CommonLbConfig = &envoy_config_cluster_v3.Cluster_CommonLbConfig{}
 		if cfg.GetHealthyPanicThreshold() != nil {
 			out.GetCommonLbConfig().HealthyPanicThreshold = &envoy_type_v3.Percent{
