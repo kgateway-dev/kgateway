@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
-	"sort"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -17,8 +17,6 @@ import (
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/go-utils/contextutils"
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	"istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -62,9 +60,10 @@ type EndpointsForUpstream struct {
 	UpstreamRef types.NamespacedName
 
 	lbEpsEqualityHash uint64
+	logger            *zap.Logger
 }
 
-func NewEndpointsForUpstream(us UpstreamWrapper) *EndpointsForUpstream {
+func NewEndpointsForUpstream(us UpstreamWrapper, logger *zap.Logger) *EndpointsForUpstream {
 	clusterName := translator.UpstreamToClusterName(us.Inner.GetMetadata().Ref())
 	// start with a hash of the cluster name. technically we dont need it for krt, as we can compare the upstream name. but it helps later
 	// to compute the hash we present envoy with.
@@ -91,12 +90,23 @@ func (e *EndpointsForUpstream) Add(l krtcollections.PodLocality, emd EndpointWit
 	hasher.Write([]byte(l.Zone))
 	hasher.Write([]byte(l.Subzone))
 
-	addr := emd.GetEndpoint().GetAddress().GetSocketAddress().GetAddress()
-	port := emd.GetEndpoint().GetAddress().GetSocketAddress().GetPortValue()
-	hasher.Write([]byte(addr))
-	hashUint64(hasher, uint64(port))
 	hashUint64(hasher, hashLabels(emd.EndpointMd.Labels))
-	hashUint64(hasher, HashMetadata(fnv.New64, emd.GetMetadata()))
+
+	var buffer [1024]byte
+	mo := proto.MarshalOptions{Deterministic: true}
+	buf := buffer[:0]
+	out, err := mo.MarshalAppend(buf, emd.LbEndpoint)
+	if err != nil {
+		if e.logger != nil {
+			e.logger.DPanic("marshalling envoy snapshot components", zap.Error(err))
+		}
+	}
+	_, err = hasher.Write(out)
+	if err != nil {
+		if e.logger != nil {
+			e.logger.DPanic("constructing hash for envoy snapshot components", zap.Error(err))
+		}
+	}
 
 	// xor it as we dont care about order - if we have the same endpoints in the same locality
 	// we are good.
@@ -122,7 +132,7 @@ func TransformUpstreamsBuilder(ctx context.Context, inputs EndpointsInputs) func
 	enableAutoMtls := inputs.EnableAutoMtls
 	services := inputs.Services
 
-	logger := contextutils.LoggerFrom(ctx)
+	logger := contextutils.LoggerFrom(ctx).Desugar()
 
 	return func(kctx krt.HandlerContext, us UpstreamWrapper) *EndpointsForUpstream {
 		var warnsToLog []string
@@ -131,9 +141,9 @@ func TransformUpstreamsBuilder(ctx context.Context, inputs EndpointsInputs) func
 				logger.Warn(warn)
 			}
 		}()
-		logger := logger.With("upstream", us.Inner.GetMetadata().Ref().Key())
+		logger := logger.With(zap.String("upstream", us.Inner.GetMetadata().Ref().Key()))
 
-		logger.Debugf("building endpoints")
+		logger.Debug("building endpoints")
 
 		kubeUpstream, ok := us.Inner.GetUpstreamType().(*v1.Upstream_Kube)
 		// only care about kube upstreams
@@ -143,7 +153,7 @@ func TransformUpstreamsBuilder(ctx context.Context, inputs EndpointsInputs) func
 		spec := kubeUpstream.Kube
 		kubeServicePort, singlePortService := findPortForService(kctx, services, spec)
 		if kubeServicePort == nil {
-			logger.Debugf("findPortForService - not found. port: %d. service %s.%s", spec.GetServicePort(), spec.GetServiceName(), spec.GetServiceNamespace())
+			logger.Debug("findPortForService - not found.", zap.Uint32("port", spec.GetServicePort()), zap.String("svcName", spec.GetServiceName()), zap.String("svcNamespace", spec.GetServiceNamespace()))
 			return nil
 		}
 
@@ -157,7 +167,7 @@ func TransformUpstreamsBuilder(ctx context.Context, inputs EndpointsInputs) func
 		}
 		eps := *maybeEps
 
-		ret := NewEndpointsForUpstream(us)
+		ret := NewEndpointsForUpstream(us, logger)
 		for _, subset := range eps.Subsets {
 			port := findFirstPortInEndpointSubsets(subset, singlePortService, kubeServicePort)
 			if port == 0 {
@@ -260,13 +270,6 @@ func addIstioAutomtlsMetadata(metadata *envoy_config_core_v3.Metadata, labels ma
 	return metadata
 }
 
-func createEndpoint(upstream *v1.Upstream) *envoy_config_endpoint_v3.ClusterLoadAssignment {
-	clusterName := translator.UpstreamToClusterName(upstream.GetMetadata().Ref())
-	return &envoy_config_endpoint_v3.ClusterLoadAssignment{
-		ClusterName: getEndpointClusterName(clusterName, upstream),
-	}
-}
-
 func findPortForService(kctx krt.HandlerContext, services krt.Collection[*corev1.Service], spec *kubeplugin.UpstreamSpec) (*corev1.ServicePort, bool) {
 	maybeSvc := krt.FetchOne(kctx, services, krt.FilterObjectName(types.NamespacedName{
 		Namespace: spec.GetServiceNamespace(),
@@ -305,108 +308,9 @@ func findFirstPortInEndpointSubsets(subset corev1.EndpointSubset, singlePortServ
 
 // TODO: use exported version from translator?
 func getEndpointClusterName(clusterName string, upstream *v1.Upstream) string {
-	hash, err := upstream.Hash(nil)
+	endpointClusterName, err := translator.GetEndpointClusterName(clusterName, upstream)
 	if err != nil {
 		panic(err)
 	}
-	endpointClusterName := fmt.Sprintf("%s-%d", clusterName, hash)
 	return endpointClusterName
-}
-
-// TODO: generalize this
-func EnvoyCacheResourcesSetToFnvHash(resources []envoycache.Resource) uint64 {
-	hasher := fnv.New64()
-	var hash uint64
-	// 8kb capacity, consider raising if we find the buffer is frequently being
-	// re-allocated by MarshalAppend to fit larger protos.
-	// the goal is to keep allocations constant for GC, without allocating an
-	// unnecessarily large buffer.
-	buffer := make([]byte, 0, 8*1024)
-	mo := proto.MarshalOptions{Deterministic: true}
-	for _, r := range resources {
-		buf := buffer[:0]
-		out, err := mo.MarshalAppend(buf, r.ResourceProto().(proto.Message))
-		if err != nil {
-			contextutils.LoggerFrom(context.Background()).DPanic(fmt.Errorf("marshalling envoy snapshot components: %w", err))
-		}
-		_, err = hasher.Write(out)
-		if err != nil {
-			contextutils.LoggerFrom(context.Background()).DPanic(fmt.Errorf("constructing hash for envoy snapshot components: %w", err))
-		}
-		hasher.Write([]byte{0})
-		hash ^= hasher.Sum64()
-		hasher.Reset()
-	}
-	return hash
-}
-
-// talk about settings doing an internal restart - we may not need it here with krt.
-// and if we do, make sure that it works correctly with connected client set
-// set locality loadbalancing priority - This is based on Region/Zone/SubZone matching.
-func applyLocalityFailover(
-	proxyLocality *envoy_config_core_v3.Locality,
-	loadAssignment *envoy_config_endpoint_v3.ClusterLoadAssignment,
-	failover []*v1alpha3.LocalityLoadBalancerSetting_Failover,
-) {
-	// key is priority, value is the index of the LocalityLbEndpoints in ClusterLoadAssignment
-	priorityMap := map[int][]int{}
-
-	// 1. calculate the LocalityLbEndpoints.Priority compared with proxy locality
-	for i, localityEndpoint := range loadAssignment.GetEndpoints() {
-		// if region/zone/subZone all match, the priority is 0.
-		// if region/zone match, the priority is 1.
-		// if region matches, the priority is 2.
-		// if locality not match, the priority is 3.
-		priority := LbPriority(proxyLocality, localityEndpoint.GetLocality())
-		// region not match, apply failover settings when specified
-		// update localityLbEndpoints' priority to 4 if failover not match
-		if priority == 3 {
-			for _, failoverSetting := range failover {
-				if failoverSetting.GetFrom() == proxyLocality.GetRegion() {
-					if localityEndpoint.GetLocality() == nil || localityEndpoint.GetLocality().GetRegion() != failoverSetting.GetTo() {
-						priority = 4
-					}
-					break
-				}
-			}
-		}
-		// priority is calculated using the already assigned priority using failoverPriority.
-		// Since there are at most 5 priorities can be assigned using locality failover(0-4),
-		// we multiply the priority by 5 for maintaining the priorities already assigned.
-		// Afterwards the final priorities can be calculted from 0 (highest) to N (lowest) without skipping.
-		priorityInt := int(loadAssignment.GetEndpoints()[i].GetPriority()*5) + priority
-		loadAssignment.GetEndpoints()[i].Priority = uint32(priorityInt)
-		priorityMap[priorityInt] = append(priorityMap[priorityInt], i)
-	}
-
-	// since Priorities should range from 0 (highest) to N (lowest) without skipping.
-	// 2. adjust the priorities in order
-	// 2.1 sort all priorities in increasing order.
-	priorities := []int{}
-	for priority := range priorityMap {
-		priorities = append(priorities, priority)
-	}
-	sort.Ints(priorities)
-	// 2.2 adjust LocalityLbEndpoints priority
-	// if the index and value of priorities array is not equal.
-	for i, priority := range priorities {
-		if i != priority {
-			// the LocalityLbEndpoints index in ClusterLoadAssignment.Endpoints
-			for _, index := range priorityMap[priority] {
-				loadAssignment.GetEndpoints()[index].Priority = uint32(i)
-			}
-		}
-	}
-}
-func LbPriority(proxyLocality, endpointsLocality *envoy_config_core_v3.Locality) int {
-	if proxyLocality.GetRegion() == endpointsLocality.GetRegion() {
-		if proxyLocality.GetZone() == endpointsLocality.GetZone() {
-			if proxyLocality.GetSubZone() == endpointsLocality.GetSubZone() {
-				return 0
-			}
-			return 1
-		}
-		return 2
-	}
-	return 3
 }

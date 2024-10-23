@@ -12,31 +12,34 @@ import (
 )
 
 type EndpointResources struct {
-	endpoints        envoycache.Resource
-	endpointsVersion uint64
-	upstreamRef      types.NamespacedName
+	Endpoints        envoycache.Resource
+	EndpointsVersion uint64
+	UpstreamRef      types.NamespacedName
 }
 
 func (c EndpointResources) ResourceName() string {
-	return c.upstreamRef.String()
+	return c.UpstreamRef.String()
 }
 
 func (c EndpointResources) Equals(in EndpointResources) bool {
-	return c.upstreamRef == in.upstreamRef && c.endpointsVersion == in.endpointsVersion
+	return c.UpstreamRef == in.UpstreamRef && c.EndpointsVersion == in.EndpointsVersion
 }
 
 func newEnvoyEndpoints(glooEndpoints krt.Collection[EndpointsForUpstream]) krt.Collection[EndpointResources] {
 
-	clas := krt.NewCollection(glooEndpoints, func(kctx krt.HandlerContext, ep EndpointsForUpstream) *EndpointResources {
-		cla := prioritize(ep)
-		return &EndpointResources{
-			endpoints:        resource.NewEnvoyResource(cla),
-			endpointsVersion: ep.lbEpsEqualityHash,
-			upstreamRef:      ep.UpstreamRef,
-		}
+	clas := krt.NewCollection(glooEndpoints, func(_ krt.HandlerContext, ep EndpointsForUpstream) *EndpointResources {
+		return TransformEndpointToResources(ep)
 	})
-
 	return clas
+}
+
+func TransformEndpointToResources(ep EndpointsForUpstream) *EndpointResources {
+	cla := prioritize(ep)
+	return &EndpointResources{
+		Endpoints:        resource.NewEnvoyResource(cla),
+		EndpointsVersion: ep.lbEpsEqualityHash,
+		UpstreamRef:      ep.UpstreamRef,
+	}
 }
 
 func prioritize(ep EndpointsForUpstream) *envoy_config_endpoint_v3.ClusterLoadAssignment {

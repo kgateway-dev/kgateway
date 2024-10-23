@@ -83,7 +83,7 @@ func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 			},
 		},
 	}
-	result1 := NewEndpointsForUpstream(us)
+	result1 := NewEndpointsForUpstream(us, nil)
 	result1.Add(krtcollections.PodLocality{
 		Region: "region",
 		Zone:   "zone",
@@ -93,7 +93,7 @@ func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 		Zone:   "zone2",
 	}, emd2)
 
-	result2 := NewEndpointsForUpstream(us)
+	result2 := NewEndpointsForUpstream(us, nil)
 	result2.Add(krtcollections.PodLocality{
 		Region: "region2",
 		Zone:   "zone2",
@@ -105,7 +105,7 @@ func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 	g.Expect(result1.Equals(*result2)).To(BeTrue(), "expected %v, got %v", result1, result2)
 
 	// test with non matching locality
-	result3 := NewEndpointsForUpstream(us)
+	result3 := NewEndpointsForUpstream(us, nil)
 	result3.Add(krtcollections.PodLocality{
 		Region: "region",
 		Zone:   "zone",
@@ -117,7 +117,7 @@ func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 	g.Expect(result1.Equals(*result3)).To(BeFalse(), "not expected %v, got %v", result1, result2)
 
 	// test with non matching labels
-	result4 := NewEndpointsForUpstream(us)
+	result4 := NewEndpointsForUpstream(us, nil)
 	result4.Add(krtcollections.PodLocality{
 		Region: "region",
 		Zone:   "zone",
@@ -245,7 +245,7 @@ func TestEndpoints(t *testing.T) {
 						},
 					},
 				}
-				result := NewEndpointsForUpstream(us)
+				result := NewEndpointsForUpstream(us, nil)
 				result.Add(krtcollections.PodLocality{
 					Region: "region",
 					Zone:   "zone",
@@ -374,7 +374,7 @@ func TestEndpoints(t *testing.T) {
 			},
 			result: func(us UpstreamWrapper) *EndpointsForUpstream {
 				// output
-				result := NewEndpointsForUpstream(us)
+				result := NewEndpointsForUpstream(us, nil)
 				result.Add(krtcollections.PodLocality{
 					Region: "region",
 					Zone:   "zone",
@@ -544,7 +544,7 @@ func TestEndpoints(t *testing.T) {
 						},
 					},
 				}
-				result := NewEndpointsForUpstream(us)
+				result := NewEndpointsForUpstream(us, nil)
 				result.Add(krtcollections.PodLocality{
 					Region: "region",
 					Zone:   "zone",

@@ -670,8 +670,8 @@ func (s *ProxySyncer) buildXdsSnapshot(
 	endpointsProto := make([]envoycache.Resource, 0, len(endpoints))
 	var endpointsVersion uint64
 	for _, ep := range endpoints {
-		endpointsProto = append(endpointsProto, ep.endpoints)
-		endpointsVersion ^= ep.endpointsVersion
+		endpointsProto = append(endpointsProto, ep.Endpoints)
+		endpointsVersion ^= ep.EndpointsVersion
 	}
 	clustersVersion := envoySnap.Clusters.Version
 	envoySnap.Endpoints = envoycache.NewResources(fmt.Sprintf("%v-%v", clustersVersion, endpointsVersion), endpointsProto)
