@@ -15,7 +15,7 @@ if str(local("command -v " + helm_cmd + " || true", quiet = True)) == "":
 settings = {
     "helm_installation_name": "gloo-oss",
     "helm_installation_namespace": "gloo-system",
-    "helm_values_file": "./test/kube2e/helm/artifacts/helm.yaml",
+    "helm_values_file": "./test/kubernetes/e2e/tests/manifests/common-recommendations.yaml",
 }
 
 tilt_file = "./tilt-settings.yaml" if os.path.exists("./tilt-settings.yaml") else "./tilt-settings.json"
