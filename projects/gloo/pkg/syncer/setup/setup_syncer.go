@@ -237,7 +237,7 @@ func createKubeClient() (istiokube.Client, error) {
 		return nil, err
 	}
 	istiokube.EnableCrdWatcher(client)
-	return client
+	return client, nil
 }
 
 // Setup constructs bootstrap options based on settings and other input, and calls the runFunc with these options.
