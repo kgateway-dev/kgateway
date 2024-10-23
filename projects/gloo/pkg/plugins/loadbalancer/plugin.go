@@ -97,6 +97,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		return nil
 	}
 
+	// if any of the common LB config options are set, create and build a common lb config
 	if cfg.GetHealthyPanicThreshold() != nil || cfg.GetUpdateMergeWindow() != nil ||
 		cfg.GetLocalityConfig() != nil || cfg.GetCloseConnectionsOnHostSetChange() {
 

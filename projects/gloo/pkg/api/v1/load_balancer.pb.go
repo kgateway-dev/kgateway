@@ -54,6 +54,12 @@ type LoadBalancerConfig struct {
 	// Default: false, If set to true, the hostname will be used for hashing when using maglev for example, useful when using multiple host in the upstreams that resolve to the same IP.
 	UseHostnameForHashing *wrapperspb.BoolValue `protobuf:"bytes,9,opt,name=use_hostname_for_hashing,json=useHostnameForHashing,proto3" json:"use_hostname_for_hashing,omitempty"`
 	// If set to true, the load balancer will close connections when the host set changes.
+	//
+	// Ring Hash or Maglev can be used to ensure that groups of clients with the same key are routed to the
+	// same upstream host.
+	// Disruptions can result in the the host set to change for a subset of proxies causing connections
+	// to no longer be routed consistently.
+	// Enabling this feature will help ensure that clients reconnect after recovery and are routed consistently.
 	CloseConnectionsOnHostSetChange bool `protobuf:"varint,10,opt,name=close_connections_on_host_set_change,json=closeConnectionsOnHostSetChange,proto3" json:"close_connections_on_host_set_change,omitempty"`
 }
 

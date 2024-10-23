@@ -109,5 +109,11 @@ message LoadBalancerConfig {
     }
 
     // If set to true, the load balancer will close connections when the host set changes.
+    //
+    // Ring Hash or Maglev can be used to ensure that groups of clients with the same key are routed to the
+    // same upstream host.
+    // Disruptions can result in the the host set to change for a subset of proxies causing connections
+    // to no longer be routed consistently.
+    // Enabling this feature will help ensure that clients reconnect after recovery and are routed consistently again.
     bool close_connections_on_host_set_change = 10;
 }
