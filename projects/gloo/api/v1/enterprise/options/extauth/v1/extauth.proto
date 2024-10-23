@@ -1296,7 +1296,7 @@ message ApiKeySecret {
 // that is built into the Gloo external auth server.
 // 
 // For larger scale operations and more capabilities like bundling,
-// run the OPA engine as a sidecar or bring your own server
+// you might run the OPA engine as a sidecar or bring your own server
 // by using the OpaServerAuth setting instead.
 message OpaAuth {
     // An optional resource reference to config maps containing modules to assist in the resolution of `query`.
