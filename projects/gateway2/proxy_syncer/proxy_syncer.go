@@ -478,17 +478,17 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	}
 
 	timer := time.NewTicker(time.Second * 1)
-	// var needsProxyRecompute = false
+	var needsProxyRecompute = false
 	for {
 		select {
 		case <-ctx.Done():
 			logger.Debug("context done, stopping proxy syncer")
 			return nil
 		case <-timer.C:
-			// if needsProxyRecompute {
-			// 	needsProxyRecompute = false
-			proxyTrigger.TriggerRecomputation()
-			// }
+			if needsProxyRecompute {
+				needsProxyRecompute = false
+				proxyTrigger.TriggerRecomputation()
+			}
 			go func() {
 				s.syncGatewayStatus(ctx, latestReport)
 				s.syncRouteStatus(ctx, latestReport)
@@ -508,7 +508,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		case <-s.inputs.genericEvent.Next():
 			// event from ctrl-rtime, signal that we need to recompute proxies on next tick
 			// this will not be necessary once we switch the "front side" of translation to krt
-			// needsProxyRecompute = true
+			needsProxyRecompute = true
 		}
 	}
 }
