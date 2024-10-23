@@ -58,7 +58,7 @@ func prioritize(ep EndpointsForUpstream) *envoy_config_endpoint_v3.ClusterLoadAs
 			Locality:    l,
 		}
 
-		cla.Endpoints = append(cla.Endpoints, endpoint)
+		cla.Endpoints = append(cla.GetEndpoints(), endpoint)
 	}
 
 	// In theory we want to run endpoint plugins here.

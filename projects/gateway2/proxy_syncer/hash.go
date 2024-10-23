@@ -18,7 +18,7 @@ func HashMetadata(newhash func() hash.Hash64, md *envoy_config_core_v3.Metadata)
 		return finalHash
 	}
 	// Iterate over the sorted keys and add them and their values to the hash
-	for key, value := range md.FilterMetadata {
+	for key, value := range md.GetFilterMetadata() {
 		h := newhash()
 		// Write the field name (key) to the hash
 		_, err := h.Write([]byte(key))
@@ -36,7 +36,7 @@ func HashMetadata(newhash func() hash.Hash64, md *envoy_config_core_v3.Metadata)
 func HashProtoStruct(newhash func() hash.Hash64, pbStruct *structpb.Struct) uint64 {
 	var finalHash uint64
 	// Iterate over the sorted keys and add them and their values to the hash
-	for key, value := range pbStruct.Fields {
+	for key, value := range pbStruct.GetFields() {
 		h := newhash()
 		// Write the field name (key) to the hash
 		_, err := h.Write([]byte(key))
@@ -56,7 +56,7 @@ func HashProtoStruct(newhash func() hash.Hash64, pbStruct *structpb.Struct) uint
 
 // hashValue recursively hashes a protobuf Value based on its type
 func hashValue(newhash func() hash.Hash64, h hash.Hash, value *structpb.Value) error {
-	switch kind := value.Kind.(type) {
+	switch kind := value.GetKind().(type) {
 	case *structpb.Value_NullValue:
 		// Null values can just be hashed as a constant
 		_, err := h.Write([]byte("null"))
@@ -81,7 +81,7 @@ func hashValue(newhash func() hash.Hash64, h hash.Hash, value *structpb.Value) e
 		hashUint64(h, HashProtoStruct(newhash, kind.StructValue))
 	case *structpb.Value_ListValue:
 		// Recursively hash each element of the list
-		for _, elem := range kind.ListValue.Values {
+		for _, elem := range kind.ListValue.GetValues() {
 			if err := hashValue(newhash, h, elem); err != nil {
 				return err
 			}
