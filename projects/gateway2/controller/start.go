@@ -179,14 +179,3 @@ func Start(ctx context.Context, cfg StartConfig) error {
 
 	return mgr.Start(ctx)
 }
-
-func createKubeClient() istiokube.Client {
-	restCfg := istiokube.NewClientConfigForRestConfig(ctrl.GetConfigOrDie())
-	client, err := istiokube.NewClient(restCfg, "")
-	if err != nil {
-		// TODO move this init somewhere we can handle the err
-		panic(err)
-	}
-	istiokube.EnableCrdWatcher(client)
-	return client
-}

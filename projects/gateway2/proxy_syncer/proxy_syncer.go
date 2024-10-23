@@ -237,35 +237,8 @@ func (ep *glooEndpoint) ResourceName() string {
 	return ep.Metadata.GetName() + "/" + ep.Metadata.GetNamespace()
 }
 
-type GlooResource interface {
-	proto.Message
-	interface {
-		GetMetadata() *core.Metadata
-	}
-}
-
-type ResourceWrapper[T GlooResource] struct {
-	Inner T
-}
-
-func (us ResourceWrapper[T]) ResourceName() string {
-	return krt.Named{
-		Name:      us.Inner.GetMetadata().GetName(),
-		Namespace: us.Inner.GetMetadata().GetNamespace(),
-	}.ResourceName()
-}
-func (us ResourceWrapper[T]) Equals(in ResourceWrapper[T]) bool {
-	return proto.Equal(us.Inner, in.Inner)
-}
-
-func (us ResourceWrapper[T]) GetMetadata() *core.Metadata {
-	return us.Inner.GetMetadata()
-}
-
-var _ krt.ResourceNamer = UpstreamWrapper{}
-
 // UpstreamWrapper provides a keying function for Gloo's `v1.Upstream`
-type UpstreamWrapper = ResourceWrapper[*gloov1.Upstream]
+type UpstreamWrapper = krtcollections.ResourceWrapper[*gloov1.Upstream]
 
 type report struct {
 	reports.ReportMap
@@ -359,9 +332,6 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	finalUpstreams := krt.JoinCollection([]krt.Collection[UpstreamWrapper]{glooUpstreams, inMemUpstreams})
 
 	inputs := NewGlooK8sEndpointInputs(s.proxyTranslator.settings, s.istioClient, s.pods, services, finalUpstreams)
-
-	epClient := kclient.New[*corev1.Endpoints](s.istioClient)
-	kubeEndpoints := krt.WrapClient(epClient, krt.WithName("Endpoints"))
 
 	glooEndpoints := NewGlooK8sEndpoints(ctx, inputs)
 	clas := newEnvoyEndpoints(glooEndpoints)
@@ -465,8 +435,11 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		configMaps.Synced().HasSynced,
 		secrets.Synced().HasSynced,
 		services.Synced().HasSynced,
-		kubeEndpoints.Synced().HasSynced,
+		inputs.Endpoints.Synced().HasSynced,
+		inputs.Pods.Synced().HasSynced,
+		inputs.Upstreams.Synced().HasSynced,
 		glooEndpoints.Synced().HasSynced,
+		clas.Synced().HasSynced,
 		s.pods.Synced().HasSynced,
 		upstreams.Synced().HasSynced,
 		glooUpstreams.Synced().HasSynced,

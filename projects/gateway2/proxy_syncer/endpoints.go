@@ -113,7 +113,7 @@ func (c EndpointsForUpstream) Equals(in EndpointsForUpstream) bool {
 }
 
 func NewGlooK8sEndpoints(ctx context.Context, inputs EndpointsInputs) krt.Collection[EndpointsForUpstream] {
-	return krt.NewCollection(inputs.Upstreams, TransformUpstreamsBuilder(ctx, inputs), krt.WithName("K8sClusterLoadAssignment"))
+	return krt.NewCollection(inputs.Upstreams, TransformUpstreamsBuilder(ctx, inputs), krt.WithName("GlooK8sEndpoints"))
 }
 
 func TransformUpstreamsBuilder(ctx context.Context, inputs EndpointsInputs) func(kctx krt.HandlerContext, us UpstreamWrapper) *EndpointsForUpstream {
@@ -188,7 +188,7 @@ func TransformUpstreamsBuilder(ctx context.Context, inputs EndpointsInputs) func
 					}))
 					if maybePod != nil {
 						l = maybePod.Locality
-						podLabels = maybePod.PodLabels
+						podLabels = maybePod.AugmentedLabels
 						augmentedLabels = maybePod.AugmentedLabels
 					}
 				}

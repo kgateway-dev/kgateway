@@ -4,6 +4,8 @@ import (
 	"context"
 	"maps"
 
+	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"google.golang.org/protobuf/proto"
 	"istio.io/api/label"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"
@@ -11,6 +13,37 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
+
+type GlooResource interface {
+	proto.Message
+	interface {
+		GetMetadata() *core.Metadata
+	}
+}
+
+type ResourceWrapper[T GlooResource] struct {
+	Inner T
+}
+
+func (us ResourceWrapper[T]) ResourceName() string {
+	return krt.Named{
+		Name:      us.Inner.GetMetadata().GetName(),
+		Namespace: us.Inner.GetMetadata().GetNamespace(),
+	}.ResourceName()
+}
+
+func (us ResourceWrapper[T]) Equals(in ResourceWrapper[T]) bool {
+	return proto.Equal(us.Inner, in.Inner)
+}
+
+func (us ResourceWrapper[T]) GetMetadata() *core.Metadata {
+	return us.Inner.GetMetadata()
+}
+
+// equivalent of var _ Interface = Struct{} for generics
+func _genericTypeAssert[T GlooResource]() (krt.ResourceNamer, krt.Equaler[ResourceWrapper[T]]) {
+	return ResourceWrapper[T]{}, ResourceWrapper[T]{}
+}
 
 type NodeMetadata struct {
 	name   string
@@ -26,19 +59,22 @@ type PodLocality struct {
 func (c NodeMetadata) ResourceName() string {
 	return c.name
 }
+
 func (c NodeMetadata) Equals(in NodeMetadata) bool {
 	return c.name == in.name && maps.Equal(c.labels, in.labels)
 }
 
+var _ krt.ResourceNamer = NodeMetadata{}
+var _ krt.Equaler[NodeMetadata] = NodeMetadata{}
+
 type LocalityPod struct {
 	krt.Named
 	Locality        PodLocality
-	PodLabels       map[string]string
 	AugmentedLabels map[string]string
 }
 
 func (c LocalityPod) Equals(in LocalityPod) bool {
-	return c.Named == in.Named && c.Locality == in.Locality && maps.Equal(c.PodLabels, in.PodLabels) && maps.Equal(c.AugmentedLabels, in.AugmentedLabels)
+	return c.Named == in.Named && c.Locality == in.Locality && maps.Equal(c.AugmentedLabels, in.AugmentedLabels)
 }
 
 func newNodeCollection(istioClient kube.Client) krt.Collection[NodeMetadata] {
@@ -112,7 +148,6 @@ func augmentPodLabels(nodes krt.Collection[NodeMetadata]) func(kctx krt.HandlerC
 
 		return &LocalityPod{
 			Named:           krt.NewNamed(pod),
-			PodLabels:       pod.Labels,
 			AugmentedLabels: labels,
 			Locality:        l,
 		}

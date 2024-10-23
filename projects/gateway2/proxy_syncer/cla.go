@@ -53,14 +53,12 @@ func prioritize(ep EndpointsForUpstream) *envoy_config_endpoint_v3.ClusterLoadAs
 			}
 		}
 
-		endpoints := []*envoy_config_endpoint_v3.LocalityLbEndpoints{{
+		endpoint := &envoy_config_endpoint_v3.LocalityLbEndpoints{
 			LbEndpoints: slices.Map(eps, func(e EndpointWithMd) *envoy_config_endpoint_v3.LbEndpoint { return e.LbEndpoint }),
-		}}
-		for _, ep := range endpoints {
-			ep.Locality = l
+			Locality:    l,
 		}
 
-		cla.Endpoints = append(cla.Endpoints, endpoints...)
+		cla.Endpoints = append(cla.Endpoints, endpoint)
 	}
 
 	// In theory we want to run endpoint plugins here.

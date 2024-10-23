@@ -230,12 +230,11 @@ func getAddr(addr string) (*net.TCPAddr, error) {
 	return &net.TCPAddr{IP: ip, Port: port}, nil
 }
 
-func createKubeClient() istiokube.Client {
+func createKubeClient() (istiokube.Client, error) {
 	restCfg := istiokube.NewClientConfigForRestConfig(ctrl.GetConfigOrDie())
 	client, err := istiokube.NewClient(restCfg, "")
 	if err != nil {
-		// TODO move this init somewhere we can handle the err
-		panic(err)
+		return nil, err
 	}
 	istiokube.EnableCrdWatcher(client)
 	return client
@@ -371,7 +370,11 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 			// the reason being, is that the control plane server also has a global lifetime. the callbacks
 			// that we add to the control plane need a pod client, to get the pod labels of incoming clients.
 			// and hence, this needs a global lifetime too.
-			s.kubeClient = createKubeClient()
+			var err error
+			s.kubeClient, err = createKubeClient()
+			if err != nil {
+				return err
+			}
 			ctx := contextutils.WithLogger(context.Background(), "k8s")
 			go s.kubeClient.RunAndWait(ctx.Done())
 			// create agumented pods
