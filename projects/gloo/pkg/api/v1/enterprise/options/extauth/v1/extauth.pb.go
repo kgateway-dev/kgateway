@@ -3963,7 +3963,7 @@ type OpaServerAuth struct {
 	RuleName string `protobuf:"bytes,2,opt,name=rule_name,json=ruleName,proto3" json:"rule_name,omitempty"`
 	// The address of the OPA server to query, in the format `ADDRESS:PORT`.
 	// For OPA servers within the cluster, the address is the pod's service address,
-	// such as `default.svc.cluster.local:8181`. For OPA servers outside the cluster,
+	// such as `opa-svc.default.svc.cluster.local:8181`. For OPA servers outside the cluster,
 	// the server must be accessible to the cluster, such as through an ExternalService.
 	// If you do not have your own OPA server instance, omit this field.
 	// When the external auth service has the OPA server sidecar enabled, the OPA server
@@ -8964,7 +8964,7 @@ type ExtAuthConfig_OpaServerAuthConfig struct {
 	RuleName string `protobuf:"bytes,2,opt,name=rule_name,json=ruleName,proto3" json:"rule_name,omitempty"`
 	// The address of the OPA server to query, in the format `ADDRESS:PORT`.
 	// For OPA servers within the cluster, the address is the pod’s service address,
-	// such as `default.svc.cluster.local:8181`.
+	// such as `opa-svc.default.svc.cluster.local:8181`.
 	// For OPA servers outside the cluster, the server must be accessible to the cluster,
 	// such as through an ExternalService.
 	// If you do not have your own OPA server instance, omit this field.
