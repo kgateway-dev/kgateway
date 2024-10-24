@@ -14,6 +14,24 @@ import (
 	"github.com/solo-io/gloo/test/helpers"
 )
 
+// setupLBPluginTest sets up a test context with a virtual service that uses the provided load balancer config
+func setupLBPluginTest(testContext *e2e.TestContext, lbConfig *glooV1.LoadBalancerConfig) {
+	upstream := testContext.TestUpstream().Upstream
+	upstream.LoadBalancerConfig = lbConfig
+
+	customVS := helpers.NewVirtualServiceBuilder().
+		WithName("simple-lb").
+		WithNamespace(writeNamespace).
+		WithDomain("custom-domain.com").
+		WithRoutePrefixMatcher(e2e.DefaultRouteName, "/endpoint").
+		WithRouteActionToUpstream(e2e.DefaultRouteName, upstream).
+		Build()
+
+	testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
+		customVS,
+	}
+}
+
 var _ = FDescribe("Load Balancer Plugin", Label(), func() {
 	var (
 		testContext *e2e.TestContext
@@ -57,7 +75,7 @@ var _ = FDescribe("Load Balancer Plugin", Label(), func() {
 			}, "5s", ".5s").Should(Succeed())
 		})
 
-		It("should have expect envoy config", func() {
+		It("should have expected envoy config", func() {
 			Eventually(func(g Gomega) {
 				dump, err := testContext.EnvoyInstance().StructuredConfigDump()
 				g.Expect(err).NotTo(HaveOccurred())
@@ -85,7 +103,7 @@ var _ = FDescribe("Load Balancer Plugin", Label(), func() {
 			})
 		})
 
-		It("should have expect envoy config", func() {
+		It("should have expected envoy config", func() {
 			Eventually(func(g Gomega) {
 				dump, err := testContext.EnvoyInstance().StructuredConfigDump()
 				g.Expect(err).NotTo(HaveOccurred())
@@ -104,24 +122,6 @@ var _ = FDescribe("Load Balancer Plugin", Label(), func() {
 		XIt("closes connections on host set change", func() {})
 	})
 })
-
-// setupLBPluginTest sets up a test context with a virtual service that uses the provided load balancer config
-func setupLBPluginTest(testContext *e2e.TestContext, lbConfig *glooV1.LoadBalancerConfig) {
-	upstream := testContext.TestUpstream().Upstream
-	upstream.LoadBalancerConfig = lbConfig
-
-	customVS := helpers.NewVirtualServiceBuilder().
-		WithName("simple-lb").
-		WithNamespace(writeNamespace).
-		WithDomain("custom-domain.com").
-		WithRoutePrefixMatcher(e2e.DefaultRouteName, "/endpoint").
-		WithRouteActionToUpstream(e2e.DefaultRouteName, upstream).
-		Build()
-
-	testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
-		customVS,
-	}
-}
 
 // findDynamicActiveClusters finds the dynamic active clusters in the config dump
 func findDynamicActiveClusters(dump *envoy_admin_v3.ConfigDump) ([]*envoy_config_cluster_v3.Cluster, error) {
