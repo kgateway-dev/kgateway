@@ -15,7 +15,7 @@ if str(local("command -v " + helm_cmd + " || true", quiet = True)) == "":
 settings = {
     "helm_installation_name": "gloo-oss",
     "helm_installation_namespace": "gloo-system",
-    "helm_values_file": "./test/kube2e/helm/artifacts/helm.yaml",
+    "helm_values_files": ["./test/kubernetes/e2e/tests/manifests/common-recommendations.yaml"],
 }
 
 tilt_file = "./tilt-settings.yaml" if os.path.exists("./tilt-settings.yaml") else "./tilt-settings.json"
@@ -55,7 +55,9 @@ RUN chmod 777 ./$binary_name
 standard_entrypoint = "ENTRYPOINT /app/start.sh /app/$binary_name"
 debug_entrypoint = "ENTRYPOINT /app/start.sh /go/bin/dlv --listen=0.0.0.0:$debug_port --api-version=2 --headless=true --only-same-user=false --accept-multiclient --check-go-version=false exec /app/$binary_name"
 
-get_resources_cmd = "{0} -n {1} template {2} --include-crds install/helm/gloo/ --set license_key='abcd' --values={3}".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"), settings.get("helm_values_file"))
+get_resources_cmd = "{0} -n {1} template {2} --include-crds install/helm/gloo/ --set license_key='abcd'".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"))
+for f in settings.get("helm_values_files") :
+    get_resources_cmd = get_resources_cmd + " --values=" + f
 
 arch = str(local("make print-GOARCH", quiet = True)).strip()
 
@@ -194,7 +196,9 @@ def install_gloo():
     if not gloo_installed :
         install_helm_cmd = """
             kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml ;
-            {0} upgrade --install -n {1} --create-namespace {2} install/helm/gloo/ --set license_key='$GLOO_LICENSE_KEY' --set gloo.deployment.glooContainerSecurityContext.readOnlyRootFilesystem=false --values={3}""".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"), settings.get("helm_values_file"))
+            {0} upgrade --install -n {1} --create-namespace {2} install/helm/gloo/ --set license_key='$GLOO_LICENSE_KEY' --set gloo.deployment.glooContainerSecurityContext.readOnlyRootFilesystem=false""".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"))
+        for f in settings.get("helm_values_files") :
+            install_helm_cmd = install_helm_cmd + " --values=" + f
 
         local_resource(
             name = settings.get("helm_installation_name"),

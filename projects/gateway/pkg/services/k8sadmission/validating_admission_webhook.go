@@ -226,7 +226,7 @@ func NewGatewayValidationHandler(
 func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	logger := contextutils.LoggerFrom(wh.ctx)
 
-	logger.Infow("received validation request on webhook")
+	logger.Debug("received validation request on webhook")
 
 	b, _ := httputil.DumpRequest(r, true)
 	logger.Debugf("validation request dump:\n %s", string(b))
@@ -294,7 +294,7 @@ func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Req
 		http.Error(w, fmt.Sprintf("could not encode response: %v", err), http.StatusInternalServerError)
 		return
 	}
-	logger.Infof("ready to write response ...")
+	logger.Debug("ready to write response ...")
 	if _, err := w.Write(resp); err != nil {
 		logger.Errorf("Can't write response: %v", err)
 		http.Error(w, fmt.Sprintf("could not write response: %v", err), http.StatusInternalServerError)

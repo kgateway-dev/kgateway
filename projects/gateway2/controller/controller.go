@@ -80,6 +80,9 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 		controllerBuilder.watchVirtualHostOptions,
 		controllerBuilder.watchUpstreams,
 		controllerBuilder.watchServices,
+		controllerBuilder.watchEndpoints,
+		controllerBuilder.watchPods,
+		controllerBuilder.watchSecrets,
 		controllerBuilder.addIndexes,
 		controllerBuilder.addHttpLisOptIndexes,
 		controllerBuilder.addLisOptIndexes,
@@ -334,6 +337,24 @@ func (c *controllerBuilder) watchDirectResponses(_ context.Context) error {
 		Complete(reconcile.Func(c.reconciler.ReconcileDirectResponses))
 }
 
+func (c *controllerBuilder) watchPods(ctx context.Context) error {
+	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		For(&corev1.Pod{}).
+		Complete(reconcile.Func(c.reconciler.ReconcilePods))
+}
+
+func (c *controllerBuilder) watchEndpoints(ctx context.Context) error {
+	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		For(&corev1.Endpoints{}).
+		Complete(reconcile.Func(c.reconciler.ReconcileEndpoints))
+}
+
+func (c *controllerBuilder) watchSecrets(ctx context.Context) error {
+	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		For(&corev1.Secret{}).
+		Complete(reconcile.Func(c.reconciler.ReconcileSecrets))
+}
+
 type controllerReconciler struct {
 	cli    client.Client
 	scheme *runtime.Scheme
@@ -385,6 +406,24 @@ func (r *controllerReconciler) ReconcileUpstreams(ctx context.Context, req ctrl.
 func (r *controllerReconciler) ReconcileServices(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// eventually reconcile only effected listeners etc
 	// https://github.com/solo-io/gloo/issues/9997.
+	r.kick(ctx)
+	return ctrl.Result{}, nil
+}
+
+func (r *controllerReconciler) ReconcilePods(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// eventually reconcile only effected listeners etc
+	r.kick(ctx)
+	return ctrl.Result{}, nil
+}
+
+func (r *controllerReconciler) ReconcileEndpoints(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// eventually reconcile only effected listeners etc
+	r.kick(ctx)
+	return ctrl.Result{}, nil
+}
+
+func (r *controllerReconciler) ReconcileSecrets(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// eventually reconcile only effected listeners etc
 	r.kick(ctx)
 	return ctrl.Result{}, nil
 }

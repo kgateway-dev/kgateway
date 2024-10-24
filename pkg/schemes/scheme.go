@@ -18,8 +18,8 @@ import (
 // We share one SchemeBuilder as there's no harm in registering all I/O types internally.
 var SchemeBuilder = runtime.SchemeBuilder{
 	// K8s Gateway API resources
-	apiv1.AddToScheme,
-	apiv1beta1.AddToScheme,
+	apiv1.Install,
+	apiv1beta1.Install,
 
 	// Kubernetes Core resources
 	corev1.AddToScheme,

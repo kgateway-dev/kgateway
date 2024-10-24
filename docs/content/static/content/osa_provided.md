@@ -1,15 +1,15 @@
 Name|Version|License
 ---|---|---
-[semver/v3](https://github.com/Masterminds/semver)|v3.2.1|MIT License
+[semver/v3](https://github.com/Masterminds/semver)|v3.3.0|MIT License
 [Netflix/go-expect](https://github.com/Netflix/go-expect)|v0.0.0-20180928190340-9d1f4485533b|Apache License 2.0
 [ahmetb/gen-crd-api-reference-docs](https://github.com/ahmetb/gen-crd-api-reference-docs)|v0.3.1-0.20240214155107-6cf1ede4da61|Apache License 2.0
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License
 [aws/aws-sdk-go](https://github.com/aws/aws-sdk-go)|v1.34.9|Apache License 2.0
 [census-instrumentation/opencensus-proto](https://github.com/census-instrumentation/opencensus-proto)|v0.2.0|Apache License 2.0
-[xds/go](https://github.com/cncf/xds)|v0.0.0-20240423153145-555b57ec207b|Apache License 2.0
+[xds/go](https://github.com/cncf/xds)|v0.0.0-20240830210341-88aa3b3c978a|Apache License 2.0
 [cratonica/2goarray](https://github.com/cratonica/2goarray)|v0.0.0-20190331194516-514510793eaa|MIT License
-[envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.13.0|Apache License 2.0
+[envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.13.1-0.20240823165802-4363a624d376|Apache License 2.0
 [envoyproxy/protoc-gen-validate](https://github.com/envoyproxy/protoc-gen-validate)|v1.0.4|Apache License 2.0
 [form3tech-oss/jwt-go](https://github.com/form3tech-oss/jwt-go)|v3.2.5+incompatible|MIT License
 [fsnotify/fsnotify](https://github.com/fsnotify/fsnotify)|v1.7.0|BSD 3-clause "New" or "Revised" License
@@ -28,7 +28,7 @@ Name|Version|License
 [go-github/v32](https://github.com/google/go-github)|v32.0.0|BSD 3-clause "New" or "Revised" License
 [google/uuid](https://github.com/google/uuid)|v1.6.0|BSD 3-clause "New" or "Revised" License
 [gorilla/mux](https://github.com/gorilla/mux)|v1.8.1|BSD 3-clause "New" or "Revised" License
-[grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.3.0|Apache License 2.0
+[grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.4.0|Apache License 2.0
 [hinshun/vt10x](https://github.com/hinshun/vt10x)|v0.0.0-20180809195222-d55458df857c|MIT License
 [imdario/mergo](https://github.com/imdario/mergo)|v0.3.16|BSD 3-clause "New" or "Revised" License
 [inconshreveable/go-update](https://github.com/inconshreveable/go-update)|v0.0.0-20160112193335-8152e7eb6ccf|UNKNOWN
@@ -46,22 +46,23 @@ Name|Version|License
 [spf13/afero](https://github.com/spf13/afero)|v1.11.0|Apache License 2.0
 [spf13/cobra](https://github.com/spf13/cobra)|v1.8.1|Apache License 2.0
 [spf13/pflag](https://github.com/spf13/pflag)|v1.0.5|BSD 3-clause "New" or "Revised" License
-[spf13/viper](https://github.com/spf13/viper)|v1.8.1|MIT License
+[spf13/viper](https://github.com/spf13/viper)|v1.19.0|MIT License
 [stretchr/testify](https://github.com/stretchr/testify)|v1.9.0|MIT License
 [go.opencensus.io](https://go.opencensus.io)|v0.24.0|Apache License 2.0
 [go.uber.org/goleak](https://go.uber.org/goleak)|v1.3.0|MIT License
 [go.uber.org/multierr](https://go.uber.org/multierr)|v1.11.0|MIT License
-[go.uber.org/zap](https://go.uber.org/zap)|v1.26.0|MIT License
+[go.uber.org/zap](https://go.uber.org/zap)|v1.27.0|MIT License
 [x/crypto](https://golang.org/x/crypto)|v0.27.0|BSD 3-clause "New" or "Revised" License
 [x/exp](https://golang.org/x/exp)|v0.0.0-20240719175910-8a7402abbf56|BSD 3-clause "New" or "Revised" License
 [x/sync](https://golang.org/x/sync)|v0.8.0|BSD 3-clause "New" or "Revised" License
 [x/tools](https://golang.org/x/tools)|v0.24.0|BSD 3-clause "New" or "Revised" License
-[googleapis/api](https://google.golang.org/genproto/googleapis/api)|v0.0.0-20240528184218-531527333157|Apache License 2.0
-[googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20240701130421-f6361c86f094|Apache License 2.0
-[google.golang.org/grpc](https://google.golang.org/grpc)|v1.65.0|Apache License 2.0
+[googleapis/api](https://google.golang.org/genproto/googleapis/api)|v0.0.0-20240822170219-fc7c04adadcd|Apache License 2.0
+[googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20240903143218-8af14fe29dc1|Apache License 2.0
+[google.golang.org/grpc](https://google.golang.org/grpc)|v1.66.2|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.34.2|BSD 3-clause "New" or "Revised" License
 [AlecAivazis/survey.v1](https://gopkg.in/AlecAivazis/survey.v1)|v1.8.7|MIT License
-[helm/v3](https://helm.sh/helm/v3)|v3.14.2|Apache License 2.0
+[helm/v3](https://helm.sh/helm/v3)|v3.15.4|Apache License 2.0
+[istio.io/istio](https://istio.io/istio)|v0.0.0-20240903161425-b8197f455bcf|Apache License 2.0
 [k8s.io/api](https://k8s.io/api)|v0.31.1|Apache License 2.0
 [k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.31.1|Apache License 2.0
 [k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.31.1|Apache License 2.0
