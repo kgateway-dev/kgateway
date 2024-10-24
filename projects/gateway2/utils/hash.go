@@ -25,7 +25,7 @@ func HashMetadata(newhash func() hash.Hash64, md *envoy_config_core_v3.Metadata)
 		if err != nil {
 			panic(fmt.Errorf("failed to hash key: %w", err))
 		}
-		hashUint64(h, HashProtoStruct(newhash, value))
+		HashUint64(h, HashProtoStruct(newhash, value))
 		finalHash ^= h.Sum64()
 	}
 
@@ -63,7 +63,7 @@ func hashValue(newhash func() hash.Hash64, h hash.Hash, value *structpb.Value) e
 		return err
 	case *structpb.Value_NumberValue:
 		// Hash the number value
-		hashUint64(h, math.Float64bits(kind.NumberValue))
+		HashUint64(h, math.Float64bits(kind.NumberValue))
 	case *structpb.Value_StringValue:
 		// Hash the string value
 		_, err := h.Write([]byte(kind.StringValue))
@@ -78,7 +78,7 @@ func hashValue(newhash func() hash.Hash64, h hash.Hash, value *structpb.Value) e
 		return err
 	case *structpb.Value_StructValue:
 		// Recursively hash the struct value
-		hashUint64(h, HashProtoStruct(newhash, kind.StructValue))
+		HashUint64(h, HashProtoStruct(newhash, kind.StructValue))
 	case *structpb.Value_ListValue:
 		// Recursively hash each element of the list
 		for _, elem := range kind.ListValue.GetValues() {
@@ -92,13 +92,13 @@ func hashValue(newhash func() hash.Hash64, h hash.Hash, value *structpb.Value) e
 	return nil
 }
 
-func hashUint64(hasher io.Writer, value uint64) {
+func HashUint64(hasher io.Writer, value uint64) {
 	var bytes [8]byte
 	binary.NativeEndian.PutUint64(bytes[:], value)
 	hasher.Write(bytes[:])
 }
 
-func hashLabels(labels map[string]string) uint64 {
+func HashLabels(labels map[string]string) uint64 {
 	finalHash := uint64(0)
 	for k, v := range labels {
 		fnv := fnv.New64()

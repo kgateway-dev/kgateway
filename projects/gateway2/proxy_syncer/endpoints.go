@@ -12,8 +12,10 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
+	ggv2utils "github.com/solo-io/gloo/projects/gateway2/utils"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/go-utils/contextutils"
@@ -29,24 +31,23 @@ type EndpointMetadata struct {
 }
 
 type EndpointsInputs struct {
-	Upstreams      krt.Collection[UpstreamWrapper]
-	Endpoints      krt.Collection[*corev1.Endpoints]
-	Pods           krt.Collection[krtcollections.LocalityPod]
-	EnableAutoMtls bool
-	Services       krt.Collection[*corev1.Service]
+	Upstreams krt.Collection[UpstreamWrapper]
+	Endpoints krt.Collection[*corev1.Endpoints]
+	Pods      krt.Collection[krtcollections.LocalityPod]
+	Settings  krt.Singleton[glookubev1.Settings]
+	Services  krt.Collection[*corev1.Service]
 }
 
-func NewGlooK8sEndpointInputs(settings *v1.Settings, istioClient kube.Client, pods krt.Collection[krtcollections.LocalityPod], services krt.Collection[*corev1.Service], finalUpstreams krt.Collection[UpstreamWrapper]) EndpointsInputs {
+func NewGlooK8sEndpointInputs(settings krt.Singleton[glookubev1.Settings], istioClient kube.Client, pods krt.Collection[krtcollections.LocalityPod], services krt.Collection[*corev1.Service], finalUpstreams krt.Collection[UpstreamWrapper]) EndpointsInputs {
 	epClient := kclient.New[*corev1.Endpoints](istioClient)
 	kubeEndpoints := krt.WrapClient(epClient, krt.WithName("Endpoints"))
-	enableAutoMtls := settings.GetGloo().GetIstioOptions().GetEnableAutoMtls().GetValue()
 
 	return EndpointsInputs{
-		Upstreams:      finalUpstreams,
-		Endpoints:      kubeEndpoints,
-		Pods:           pods,
-		EnableAutoMtls: enableAutoMtls,
-		Services:       services,
+		Upstreams: finalUpstreams,
+		Endpoints: kubeEndpoints,
+		Pods:      pods,
+		Settings:  settings,
+		Services:  services,
 	}
 }
 
@@ -90,7 +91,7 @@ func (e *EndpointsForUpstream) Add(l krtcollections.PodLocality, emd EndpointWit
 	hasher.Write([]byte(l.Zone))
 	hasher.Write([]byte(l.Subzone))
 
-	hashUint64(hasher, hashLabels(emd.EndpointMd.Labels))
+	ggv2utils.HashUint64(hasher, ggv2utils.HashLabels(emd.EndpointMd.Labels))
 
 	var buffer [1024]byte
 	mo := proto.MarshalOptions{Deterministic: true}
@@ -129,7 +130,6 @@ func NewGlooK8sEndpoints(ctx context.Context, inputs EndpointsInputs) krt.Collec
 func TransformUpstreamsBuilder(ctx context.Context, inputs EndpointsInputs) func(kctx krt.HandlerContext, us UpstreamWrapper) *EndpointsForUpstream {
 	augmentedPods := inputs.Pods
 	kubeEndpoints := inputs.Endpoints
-	enableAutoMtls := inputs.EnableAutoMtls
 	services := inputs.Services
 
 	logger := contextutils.LoggerFrom(ctx).Desugar()
@@ -166,6 +166,9 @@ func TransformUpstreamsBuilder(ctx context.Context, inputs EndpointsInputs) func
 			return nil
 		}
 		eps := *maybeEps
+
+		settings := krt.FetchOne(kctx, inputs.Settings.AsCollection())
+		enableAutoMtls := settings.Spec.GetGloo().GetIstioOptions().GetEnableAutoMtls().GetValue()
 
 		ret := NewEndpointsForUpstream(us, logger)
 		for _, subset := range eps.Subsets {

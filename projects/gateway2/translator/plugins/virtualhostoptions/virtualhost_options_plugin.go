@@ -7,13 +7,14 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewaykubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/listenerutils"
@@ -33,11 +34,11 @@ var (
 )
 
 type plugin struct {
-	gwQueries          gwquery.GatewayQueries
-	vhOptQueries       vhoptquery.VirtualHostOptionQueries
-	classicStatusCache classicStatusCache // The lifecycle of this cache is that of the plugin with the assumption that plugins are rebuilt on every translation
-	vhOptionClient     sologatewayv1.VirtualHostOptionClient
-	statusReporter     reporter.StatusReporter
+	gwQueries                   gwquery.GatewayQueries
+	vhOptQueries                vhoptquery.VirtualHostOptionQueries
+	classicStatusCache          classicStatusCache // The lifecycle of this cache is that of the plugin with the assumption that plugins are rebuilt on every translation
+	virtualHostOptionCollection krt.Collection[*gatewaykubev1.VirtualHostOption]
+	statusReporter              reporter.StatusReporter
 }
 
 // holds the data structures needed to derive and report a classic GE status
@@ -74,15 +75,15 @@ func (c *classicStatusCache) getOrCreateEntry(key types.NamespacedName) *classic
 func NewPlugin(
 	gwQueries gwquery.GatewayQueries,
 	client client.Client,
-	vhOptionClient sologatewayv1.VirtualHostOptionClient,
+	virtualHostOptionCollection krt.Collection[*gatewaykubev1.VirtualHostOption],
 	statusReporter reporter.StatusReporter,
 ) *plugin {
 	return &plugin{
-		gwQueries:          gwQueries,
-		vhOptQueries:       vhoptquery.NewQuery(client),
-		vhOptionClient:     vhOptionClient,
-		statusReporter:     statusReporter,
-		classicStatusCache: make(map[types.NamespacedName]*classicStatus),
+		gwQueries:                   gwQueries,
+		vhOptQueries:                vhoptquery.NewQuery(client),
+		virtualHostOptionCollection: virtualHostOptionCollection,
+		statusReporter:              statusReporter,
+		classicStatusCache:          make(map[types.NamespacedName]*classicStatus),
 	}
 }
 
@@ -201,7 +202,11 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 	// Loop through vhostopts we processed and have a status for
 	for vhOptKey, status := range p.classicStatusCache {
 		// get the obj by namespacedName
-		vhOptObj, _ := p.vhOptionClient.Read(vhOptKey.Namespace, vhOptKey.Name, clients.ReadOpts{Ctx: ctx})
+		maybeVhOptObj := p.virtualHostOptionCollection.GetKey(krt.Key[*solokubev1.VirtualHostOption](krt.Named{Namespace: vhOptKey.Namespace, Name: vhOptKey.Name}.ResourceName()))
+		if maybeVhOptObj == nil {
+			continue
+		}
+		vhOptObj := &(*maybeVhOptObj).Spec
 
 		// mark this object to be processed
 		virtualHostOptionReport.Accept(vhOptObj)

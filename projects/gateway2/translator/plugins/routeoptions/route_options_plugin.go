@@ -7,15 +7,16 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewaykubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
@@ -50,26 +51,26 @@ type legacyStatus struct {
 type legacyStatusCache = map[types.NamespacedName]legacyStatus
 
 type plugin struct {
-	gwQueries         gwquery.GatewayQueries
-	rtOptQueries      rtoptquery.RouteOptionQueries
-	legacyStatusCache legacyStatusCache
-	routeOptionClient sologatewayv1.RouteOptionClient
-	statusReporter    reporter.StatusReporter
+	gwQueries             gwquery.GatewayQueries
+	rtOptQueries          rtoptquery.RouteOptionQueries
+	legacyStatusCache     legacyStatusCache
+	routeOptionCollection krt.Collection[*gatewaykubev1.RouteOption]
+	statusReporter        reporter.StatusReporter
 }
 
 func NewPlugin(
 	gwQueries gwquery.GatewayQueries,
 	client client.Client,
-	routeOptionClient sologatewayv1.RouteOptionClient,
+	routeOptionCollection krt.Collection[*gatewaykubev1.RouteOption],
 	statusReporter reporter.StatusReporter,
 ) *plugin {
 	legacyStatusCache := make(legacyStatusCache)
 	return &plugin{
-		gwQueries:         gwQueries,
-		rtOptQueries:      rtoptquery.NewQuery(client),
-		legacyStatusCache: legacyStatusCache,
-		routeOptionClient: routeOptionClient,
-		statusReporter:    statusReporter,
+		gwQueries:             gwQueries,
+		rtOptQueries:          rtoptquery.NewQuery(client),
+		legacyStatusCache:     legacyStatusCache,
+		routeOptionCollection: routeOptionCollection,
+		statusReporter:        statusReporter,
 	}
 }
 
@@ -135,8 +136,11 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 	routeOptionReport := make(reporter.ResourceReports)
 	for roKey, status := range p.legacyStatusCache {
 		// get the obj by namespacedName
-		roObj, _ := p.routeOptionClient.Read(roKey.Namespace, roKey.Name, clients.ReadOpts{Ctx: ctx})
-
+		mayberoObj := p.routeOptionCollection.GetKey(krt.Key[*solokubev1.RouteOption](krt.Named{Namespace: roKey.Namespace, Name: roKey.Name}.ResourceName()))
+		if mayberoObj == nil {
+			continue
+		}
+		roObj := &(*mayberoObj).Spec
 		// mark this object to be processed
 		routeOptionReport.Accept(roObj)
 
