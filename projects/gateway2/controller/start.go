@@ -66,14 +66,23 @@ type StartConfig struct {
 
 	Client istiokube.Client
 
-	Pods     krt.Collection[krtcollections.LocalityPod]
-	Settings krt.Singleton[glookubev1.Settings]
+	Pods            krt.Collection[krtcollections.LocalityPod]
+	InitialSettings *glookubev1.Settings
+	Settings        krt.Singleton[glookubev1.Settings]
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
 // It is intended to be run in a goroutine as the function will block until the supplied
 // context is cancelled
-func Start(ctx context.Context, cfg StartConfig) error {
+type ControllerBuilder struct {
+	proxySyncer     *proxy_syncer.ProxySyncer
+	inputChannels   *proxy_syncer.GatewayInputChannels
+	cfg             StartConfig
+	k8sGwExtensions ext.K8sGatewayExtensions
+	mgr             ctrl.Manager
+}
+
+func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuilder, error) {
 	var opts []zap.Opts
 	if cfg.Dev {
 		setupLog.Info("starting log in dev mode")
@@ -100,7 +109,7 @@ func Start(ctx context.Context, cfg StartConfig) error {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), mgrOpts)
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
-		return err
+		return nil, err
 	}
 
 	// TODO: replace this with something that checks that we have xds snapshot ready (or that we don't need one).
@@ -136,18 +145,15 @@ func Start(ctx context.Context, cfg StartConfig) error {
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to create k8s gw extensions")
-		return err
+		return nil, err
 	}
-
-	settings := cfg.Settings.Get()
-	integrationEnabled := settings.Spec.GetGloo().GetIstioOptions().GetEnableIntegration().GetValue()
 
 	// Create the proxy syncer for the Gateway API resources
 	proxySyncer := proxy_syncer.NewProxySyncer(
 		ctx,
 		cfg.Settings,
 		wellknown.GatewayControllerName,
-		setup.GetWriteNamespace(&settings.Spec),
+		setup.GetWriteNamespace(&cfg.InitialSettings.Spec),
 		inputChannels,
 		mgr,
 		cfg.Client,
@@ -157,35 +163,51 @@ func Start(ctx context.Context, cfg StartConfig) error {
 		cfg.SetupOpts.Cache,
 		cfg.SyncerExtensions,
 		cfg.GlooStatusReporter,
+		cfg.SetupOpts.ProxyReconcileQueue,
 	)
+	proxySyncer.Init(ctx)
 
 	if err := mgr.Add(proxySyncer); err != nil {
 		setupLog.Error(err, "unable to add proxySyncer runnable")
-		return err
+		return nil, err
 	}
 
-	xdsHost, xdsPort := cfg.SetupOpts.GetXdsAddress(ctx)
+	return &ControllerBuilder{
+		proxySyncer:     proxySyncer,
+		inputChannels:   inputChannels,
+		cfg:             cfg,
+		k8sGwExtensions: k8sGwExtensions,
+		mgr:             mgr,
+	}, nil
+}
+
+func (c *ControllerBuilder) Start(ctx context.Context) error {
+
+	xdsHost, xdsPort := c.cfg.SetupOpts.GetXdsAddress(ctx)
 	if xdsHost == "" {
 		return ctx.Err()
 	}
 
+	integrationEnabled := c.cfg.InitialSettings.Spec.GetGloo().GetIstioOptions().GetEnableIntegration().GetValue()
+
 	gwCfg := GatewayConfig{
-		Mgr:            mgr,
-		GWClasses:      sets.New(append(cfg.SetupOpts.ExtraGatewayClasses, wellknown.GatewayClassName)...),
+		Mgr:            c.mgr,
+		GWClasses:      sets.New(append(c.cfg.SetupOpts.ExtraGatewayClasses, wellknown.GatewayClassName)...),
 		ControllerName: wellknown.GatewayControllerName,
 		AutoProvision:  AutoProvision,
 		ControlPlane: deployer.ControlPlaneInfo{
 			XdsHost: xdsHost,
 			XdsPort: xdsPort,
 		},
+		// TODO pass in the settings so that the deloyer can register to it for changes.
 		IstioIntegrationEnabled: integrationEnabled,
-		Kick:                    inputChannels.Kick,
-		Extensions:              k8sGwExtensions,
+		Kick:                    c.inputChannels.Kick,
+		Extensions:              c.k8sGwExtensions,
 	}
 	if err := NewBaseGatewayController(ctx, gwCfg); err != nil {
 		setupLog.Error(err, "unable to create controller")
 		return err
 	}
 
-	return mgr.Start(ctx)
+	return c.mgr.Start(ctx)
 }

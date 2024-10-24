@@ -35,8 +35,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+)
+
+var (
+	settingsGVR = glookubev1.SchemeGroupVersion.WithResource("settings")
 )
 
 func createKubeClient() (istiokube.Client, error) {
@@ -49,53 +54,80 @@ func createKubeClient() (istiokube.Client, error) {
 	return client, nil
 }
 
+func getInitialSettings(ctx context.Context, c istiokube.Client, nns types.NamespacedName) *glookubev1.Settings {
+	// get initial settings
+	logger := contextutils.LoggerFrom(ctx)
+	logger.Infof("getting initial settings. gvr: %v", settingsGVR)
+
+	i, err := c.Dynamic().Resource(settingsGVR).Namespace(nns.Namespace).Get(ctx, nns.Name, metav1.GetOptions{})
+	if err != nil {
+		logger.DPanicf("failed to get initial settings: %v", err)
+		return nil
+	}
+	logger.Infof("got initial settings")
+
+	var empty glookubev1.Settings
+	out := &empty
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(i.UnstructuredContent(), out)
+	if err != nil {
+		logger.DPanic("failed converting unstructured into %T: %v", empty, i)
+		return nil
+	}
+	return out
+
+}
+
 func StartGGv2(ctx context.Context,
 	setupOpts *bootstrap.SetupOpts,
 	extensionsFactory extensions.K8sGatewayExtensionsFactory,
 	pluginRegistryFactory func(opts registry.PluginOpts) plugins.PluginRegistryFactory) error {
 	ctx = contextutils.WithLogger(ctx, "k8s")
 
+	logger := contextutils.LoggerFrom(ctx)
+	logger.Info("starting gloo gateway")
+
 	kubeClient, err := createKubeClient()
 	if err != nil {
 		return err
 	}
 
-	go kubeClient.RunAndWait(ctx.Done())
 	// create agumented pods
-	pods := krtcollections.NewPodsCollection(ctx, kubeClient)
+	setupNamespaceName := setuputils.SetupNamespaceName()
 
+	initialSettings := getInitialSettings(ctx, kubeClient, setupNamespaceName)
+	if initialSettings == nil {
+		return fmt.Errorf("initial settings not found")
+	}
+
+	logger.Info("creating collections")
+	pods := krtcollections.NewPodsCollection(ctx, kubeClient)
 	setting := proxy_syncer.SetupCollectionDynamic[glookubev1.Settings](
 		ctx,
 		kubeClient,
-		glookubev1.SchemeGroupVersion.WithResource("settings"),
+		settingsGVR,
 		krt.WithName("GlooSettings"))
 
-	setupNamespaceName := setuputils.SetupNamespaceName()
+	settingsSingle := krt.NewSingleton(func(ctx krt.HandlerContext) *glookubev1.Settings {
+		s := krt.FetchOne(ctx, setting,
+			krt.FilterObjectName(setupNamespaceName))
+		if s != nil {
+			return *s
+		}
+		return nil
+	}, krt.WithName("GlooSettingsSingleton"))
 
-	settingsSingle := krt.NewSingleton[glookubev1.Settings](
-		func(ctx krt.HandlerContext) *glookubev1.Settings {
-			s := krt.FetchOne(ctx, setting,
-				krt.FilterObjectName(setupNamespaceName))
-			if s != nil {
-				return *s
-			}
-			return nil
-		})
-
-	settingsSingle.AsCollection().Synced().WaitUntilSynced(ctx.Done())
+	kubeGwStatusReporter := NewGenericStatusReporter(kubeClient, defaults.KubeGatewayReporter)
 
 	serviceClient := kclient.New[*corev1.Service](kubeClient)
 	services := krt.WrapClient(serviceClient, krt.WithName("Services"))
 
+	glooReporter := NewGenericStatusReporter(kubeClient, defaults.GlooReporter)
 	pluginOpts := registry.PluginOpts{
 		Ctx:                     ctx,
 		SidecarOnGatewayEnabled: envutils.IsEnvTruthy(constants.IstioInjectionEnabled),
 		SvcCollection:           services,
 	}
-
-	kubeGwStatusReporter := NewGenericStatusReporter(kubeClient, defaults.KubeGatewayReporter)
-	glooReporter := NewGenericStatusReporter(kubeClient, defaults.GlooReporter)
-	return controller.Start(ctx, controller.StartConfig{
+	c, err := controller.NewControllerBuilder(ctx, controller.StartConfig{
 		ExtensionsFactory:    extensionsFactory,
 		SetupOpts:            setupOpts,
 		KubeGwStatusReporter: kubeGwStatusReporter,
@@ -103,10 +135,22 @@ func StartGGv2(ctx context.Context,
 		GlooStatusReporter:   glooReporter,
 		Client:               kubeClient,
 		Pods:                 pods,
+		InitialSettings:      initialSettings,
 		Settings:             settingsSingle,
 		// Useful for development purposes; not currently tied to any user-facing API
 		Dev: false,
 	})
+	if err != nil {
+		return err
+	}
+	logger.Info("starting controller")
+	/// no collections after this point
+
+	kubeClient.RunAndWait(ctx.Done())
+
+	setting.Synced().WaitUntilSynced(ctx.Done())
+
+	return c.Start(ctx)
 }
 
 type genericStatusReporter struct {
@@ -180,9 +224,10 @@ func (g *genericStatusReporter) WriteReports(ctx context.Context, resourceErrs r
 }
 
 func (g *genericStatusReporter) attemptUpdateStatus(ctx context.Context, resourceToWrite resources.InputResource, statusToWrite *core.Status) error {
-	crd, ok := kindToCrd[resources.Kind(resourceToWrite)]
+	key := resources.Kind(resourceToWrite)
+	crd, ok := kindToCrd[key]
 	if !ok {
-		err := fmt.Errorf("no crd found for kind %v", resources.Kind(resourceToWrite))
+		err := fmt.Errorf("no crd found for kind %v", key)
 		contextutils.LoggerFrom(ctx).DPanic(err)
 		return err
 	}
@@ -203,7 +248,7 @@ var _ reporter.StatusReporter = &genericStatusReporter{}
 var kindToCrd = map[string]crd.Crd{}
 
 func add(crd crd.Crd, resourceType resources.InputResource) {
-	skKind := resources.Kind(new(gateway.RouteOption))
+	skKind := resources.Kind(resourceType)
 	kindToCrd[skKind] = crd
 }
 
