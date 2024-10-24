@@ -59,7 +59,7 @@ type LoadBalancerConfig struct {
 	// same upstream host.
 	// Disruptions can result in the the host set to change for a subset of proxies causing connections
 	// to no longer be routed consistently.
-	// Enabling this feature will help ensure that clients reconnect after recovery and are routed consistently.
+	// Enabling this feature will help ensure that clients reconnect after recovery and are routed consistently again.
 	CloseConnectionsOnHostSetChange bool `protobuf:"varint,10,opt,name=close_connections_on_host_set_change,json=closeConnectionsOnHostSetChange,proto3" json:"close_connections_on_host_set_change,omitempty"`
 }
 
