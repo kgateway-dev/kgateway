@@ -325,9 +325,11 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	// helper collection to map from the runtime.Object Upstream representation to the gloov1.Upstream wrapper
 	glooUpstreams := krt.NewCollection(upstreams, func(kctx krt.HandlerContext, u *glookubev1.Upstream) *upstream {
 		glooUs := &u.Spec
-		glooUs.Metadata = &core.Metadata{}
-		glooUs.GetMetadata().Name = u.GetName()
-		glooUs.GetMetadata().Namespace = u.GetNamespace()
+		md := core.Metadata{
+			Name:      u.GetName(),
+			Namespace: u.GetNamespace(),
+		}
+		glooUs.SetMetadata(&md)
 		us := &upstream{glooUs}
 		return us
 	}, krt.WithName("GlooUpstreams"))
@@ -448,6 +450,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		latestReport = o.Latest().ReportMap
 	})
 
+	// TODO: shouldnt this come after the wait for cache sync...?
 	// kick off the istio informers
 	s.istioClient.RunAndWait(ctx.Done())
 
@@ -623,7 +626,14 @@ func (s *ProxySyncer) translateProxy(
 
 	acfgs := make([]*extauthv1.AuthConfig, 0, len(authcfgs))
 	for _, kac := range authcfgs {
-		acfgs = append(acfgs, &kac.Spec)
+		gac := &kac.Spec
+		// only setting Name & Namespace, all we need initially; alternatively, see kubeutils.FromKubeMeta(...)
+		md := core.Metadata{
+			Name:      kac.GetName(),
+			Namespace: kac.GetNamespace(),
+		}
+		gac.SetMetadata(&md)
+		acfgs = append(acfgs, gac)
 	}
 	latestSnap.AuthConfigs = acfgs
 
