@@ -83,7 +83,7 @@ var _ = FDescribe("Load Balancer Plugin", Label(), func() {
 				dacs, err := findDynamicActiveClusters(dump)
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(dacs).NotTo(BeEmpty())
-				g.Expect(len(dacs)).To(Equal(1))
+				g.Expect(dacs).To(HaveLen(1))
 
 				g.Expect(dacs[0].LbPolicy).To(Equal(envoy_config_cluster_v3.Cluster_MAGLEV))
 				g.Expect(dacs[0].CommonLbConfig).To(BeNil())
@@ -111,7 +111,7 @@ var _ = FDescribe("Load Balancer Plugin", Label(), func() {
 				dacs, err := findDynamicActiveClusters(dump)
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(dacs).NotTo(BeEmpty())
-				g.Expect(len(dacs)).To(Equal(1))
+				g.Expect(dacs).To(HaveLen(1))
 
 				g.Expect(dacs[0].LbPolicy).To(Equal(envoy_config_cluster_v3.Cluster_MAGLEV))
 				g.Expect(dacs[0].CommonLbConfig).ToNot(BeNil())
