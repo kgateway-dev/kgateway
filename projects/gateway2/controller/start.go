@@ -7,6 +7,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/config"
 
 	glooschemes "github.com/solo-io/gloo/pkg/schemes"
+	"github.com/solo-io/go-utils/contextutils"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -182,11 +183,14 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 }
 
 func (c *ControllerBuilder) Start(ctx context.Context) error {
-
+	logger := contextutils.LoggerFrom(ctx)
+	logger.Info("starting gateway controller")
 	xdsHost, xdsPort := c.cfg.SetupOpts.GetXdsAddress(ctx)
 	if xdsHost == "" {
 		return ctx.Err()
 	}
+
+	logger.Info("got xds address for deployer")
 
 	integrationEnabled := c.cfg.InitialSettings.Spec.GetGloo().GetIstioOptions().GetEnableIntegration().GetValue()
 

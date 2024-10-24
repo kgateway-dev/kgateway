@@ -99,7 +99,7 @@ func StartGGv2(ctx context.Context,
 		return fmt.Errorf("initial settings not found")
 	}
 
-	logger.Info("creating collections")
+	logger.Info("creating krt collections")
 	pods := krtcollections.NewPodsCollection(ctx, kubeClient)
 	setting := proxy_syncer.SetupCollectionDynamic[glookubev1.Settings](
 		ctx,
@@ -116,10 +116,11 @@ func StartGGv2(ctx context.Context,
 		return nil
 	}, krt.WithName("GlooSettingsSingleton"))
 
-	kubeGwStatusReporter := NewGenericStatusReporter(kubeClient, defaults.KubeGatewayReporter)
-
 	serviceClient := kclient.New[*corev1.Service](kubeClient)
 	services := krt.WrapClient(serviceClient, krt.WithName("Services"))
+
+	logger.Info("creating reporter")
+	kubeGwStatusReporter := NewGenericStatusReporter(kubeClient, defaults.KubeGatewayReporter)
 
 	glooReporter := NewGenericStatusReporter(kubeClient, defaults.GlooReporter)
 	pluginOpts := registry.PluginOpts{
@@ -127,6 +128,7 @@ func StartGGv2(ctx context.Context,
 		SidecarOnGatewayEnabled: envutils.IsEnvTruthy(constants.IstioInjectionEnabled),
 		SvcCollection:           services,
 	}
+	logger.Info("initializing controller")
 	c, err := controller.NewControllerBuilder(ctx, controller.StartConfig{
 		ExtensionsFactory:    extensionsFactory,
 		SetupOpts:            setupOpts,
@@ -143,13 +145,13 @@ func StartGGv2(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	logger.Info("starting controller")
 	/// no collections after this point
 
+	logger.Info("waiting for cache sync")
 	kubeClient.RunAndWait(ctx.Done())
-
 	setting.Synced().WaitUntilSynced(ctx.Done())
 
+	logger.Info("starting controller")
 	return c.Start(ctx)
 }
 

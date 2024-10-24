@@ -419,6 +419,7 @@ func (s *ProxySyncer) Init(ctx context.Context) error {
 
 func (s *ProxySyncer) Start(ctx context.Context) error {
 	logger := contextutils.LoggerFrom(ctx)
+	logger.Infof("starting %s Proxy Syncer", s.controllerName)
 	// latestReport will be constantly updated to contain the merged status report for Kube Gateway status
 	// when timer ticks, we will use the state of the mergedReports at that point in time to sync the status to k8s
 	var latestReport reports.ReportMap
@@ -430,6 +431,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		}
 		latestReport = o.Latest().ReportMap
 	})
+	logger.Infof("waiting for cache to sync")
 
 	// wait for krt collections to sync
 	s.istioClient.WaitForCacheSync(
@@ -443,6 +445,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		return errors.New("kube gateway sync loop waiting for all caches to sync failed")
 	}
 
+	logger.Infof("caches warm!")
 	timer := time.NewTicker(time.Second * 1)
 	var needsProxyRecompute = false
 	for {
@@ -495,11 +498,12 @@ func (s *ProxySyncer) buildProxy(ctx context.Context, gw *gwv1.Gateway) *glooPro
 		return nil
 	}
 	proxy := gatewayTranslator.TranslateProxy(ctx, gw, s.writeNamespace, r)
-	if proxy != nil {
-		translatedGateways = append(translatedGateways, gwplugins.TranslatedGateway{
-			Gateway: *gw,
-		})
+	if proxy == nil {
+		return nil
 	}
+	translatedGateways = append(translatedGateways, gwplugins.TranslatedGateway{
+		Gateway: *gw,
+	})
 
 	duration := stopwatch.Stop(ctx)
 	contextutils.LoggerFrom(ctx).Debugf("translated proxy %s/%s in %s", proxy.GetMetadata().GetNamespace(), proxy.GetMetadata().GetName(), duration.String())

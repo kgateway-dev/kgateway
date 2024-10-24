@@ -63,9 +63,6 @@ func NewPodsCollection(ctx context.Context, istioClient kube.Client) krt.Collect
 	podClient := kclient.New[*corev1.Pod](istioClient)
 	pods := krt.WrapClient(podClient, krt.WithName("Pods"))
 	nodes := newNodeCollection(istioClient)
-	pods.Synced().WaitUntilSynced(ctx.Done())
-	nodes.Synced().WaitUntilSynced(ctx.Done())
-
 	return NewLocalityPodsCollection(nodes, pods)
 }
 
