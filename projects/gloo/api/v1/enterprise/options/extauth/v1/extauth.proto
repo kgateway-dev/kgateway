@@ -1295,7 +1295,7 @@ message ApiKeySecret {
 // Enforce Open Policy Agent (OPA) policies through an OPA engine
 // that is built into the Gloo external auth server.
 // 
-// For larger scale operations and more capabilities like bundling,
+// For larger scale operations and more capabilities like bundling or caching,
 // you might run the OPA engine as a sidecar or bring your own server
 // by using the OpaServerAuth setting instead.
 message OpaAuth {
@@ -1339,7 +1339,7 @@ message OpaAuthOptions {
 
 // Enforce Open Policy Agent (OPA) policies through an OPA sidecar 
 // to the the Gloo external auth server, or by bringing your own OPA server.
-// This way, you can use OPA at scale and with additional capabilities, such as bundling.
+// This way, you can use OPA at scale and with additional capabilities, such as bundling or caching.
 //
 // For smaller operations or quick tests, you might use the OpaAuth setting instead.
 message OpaServerAuth {
@@ -1358,7 +1358,7 @@ message OpaServerAuth {
     // the server must be accessible to the cluster, such as through an ExternalService.
     // If you do not have your own OPA server instance, omit this field.
     // When the external auth service has the OPA server sidecar enabled, the OPA server
-    // sidecar will be used instead.
+    // sidecar will be used instead, with an address such as `http://localhost:8181`.
     string server_addr = 3;
 
     // Additional options for OPA Auth configuration.
@@ -2151,9 +2151,7 @@ message ExtAuthConfig {
     }
 
     // Configure the Gloo external auth server to use your own Open Policy Agent (OPA) server.
-    // This way, you can use extra capabilities such as bundling.
-    // If you don't want to bring your own server, you can use the the OpaAuthServer setting
-    // instead to run an OPA sidecar with the Gloo external auth server.
+    // This way, you can use extra capabilities such as bundling or caching.
     message OpaServerAuthConfig {
         
         // The package from your Rego policy bundle used to query the OPA data API.
@@ -2170,7 +2168,7 @@ message ExtAuthConfig {
         // such as through an ExternalService. 
         // If you do not have your own OPA server instance, omit this field. 
         // When the external auth service has the OPA server sidecar enabled, 
-        // the OPA server sidecar will be used instead.
+        // the OPA server sidecar will be used instead, with an address such as `http://localhost:8181`.
         string server_addr = 3;
 
         // Additional options for OPA Auth configuration.
