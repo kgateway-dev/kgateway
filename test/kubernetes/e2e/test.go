@@ -311,18 +311,8 @@ func (i *TestInstallation) PreFailHandler(ctx context.Context) {
 		"authconfigs.enterprise.gloo.solo.io",
 		"ratelimitconfigs.ratelimit.solo.io",
 	}
-	resourcesToGetYaml := []string{
-		"gateways.gateway.networking.k8s.io",
-		"httproutes.gateway.networking.k8s.io",
-	}
 	kubectlGetResourcesCmd := i.Actions.Kubectl().Command(ctx, "get", strings.Join(resourcesToGet, ","), "-A", "-owide")
 	_ = kubectlGetResourcesCmd.WithStdout(clusterStateFile).WithStderr(clusterStateFile).Run()
-	clusterStateFile.WriteString("\n")
-
-	// grab full yaml of resources we need to be able to inspect on a failure
-	kubectlGetYamlCmd := i.Actions.Kubectl().Command(ctx, "get", strings.Join(resourcesToGetYaml, ","), "-A", "-oyaml")
-	_ = kubectlGetYamlCmd.WithStdout(clusterStateFile).WithStderr(clusterStateFile).Run()
-
 	clusterStateFile.WriteString("\n")
 }
 
