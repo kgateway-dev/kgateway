@@ -870,6 +870,8 @@ func (m *AIPromptGuard_Regex) Clone() proto.Message {
 		}
 	}
 
+	target.Action = m.GetAction()
+
 	return target
 }
 

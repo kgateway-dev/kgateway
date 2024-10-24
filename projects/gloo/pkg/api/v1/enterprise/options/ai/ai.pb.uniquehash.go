@@ -1805,6 +1805,14 @@ func (m *AIPromptGuard_Regex) HashUnique(hasher hash.Hash64) (uint64, error) {
 
 	}
 
+	if _, err = hasher.Write([]byte("Action")); err != nil {
+		return 0, err
+	}
+	err = binary.Write(hasher, binary.LittleEndian, m.GetAction())
+	if err != nil {
+		return 0, err
+	}
+
 	return hasher.Sum64(), nil
 }
 

@@ -1487,6 +1487,10 @@ func (m *AIPromptGuard_Regex) Equal(that interface{}) bool {
 
 	}
 
+	if m.GetAction() != target.GetAction() {
+		return false
+	}
+
 	return true
 }
 

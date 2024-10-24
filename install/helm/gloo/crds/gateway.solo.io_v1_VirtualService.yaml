@@ -3211,6 +3211,9 @@ spec:
                                           type: object
                                         regex:
                                           properties:
+                                            action:
+                                              type: string
+                                              x-kubernetes-int-or-string: true
                                             builtins:
                                               items:
                                                 type: string
@@ -3250,6 +3253,9 @@ spec:
                                       properties:
                                         regex:
                                           properties:
+                                            action:
+                                              type: string
+                                              x-kubernetes-int-or-string: true
                                             builtins:
                                               items:
                                                 type: string

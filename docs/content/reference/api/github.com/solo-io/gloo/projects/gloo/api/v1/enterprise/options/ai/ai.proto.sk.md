@@ -42,6 +42,7 @@ weight: 5
 - [Regex](#regex)
 - [RegexMatch](#regexmatch)
 - [BuiltIn](#builtin)
+- [Action](#action)
 - [Webhook](#webhook)
 - [HeaderMatch](#headermatch)
 - [MatchType](#matchtype)
@@ -736,6 +737,7 @@ Regex settings for prompt guard
 ```yaml
 "matches": []ai.options.gloo.solo.io.AIPromptGuard.Regex.RegexMatch
 "builtins": []ai.options.gloo.solo.io.AIPromptGuard.Regex.BuiltIn
+"action": .ai.options.gloo.solo.io.AIPromptGuard.Regex.Action
 
 ```
 
@@ -743,6 +745,7 @@ Regex settings for prompt guard
 | ----- | ---- | ----------- | 
 | `matches` | [[]ai.options.gloo.solo.io.AIPromptGuard.Regex.RegexMatch](../ai.proto.sk/#regexmatch) | A list of Regex patterns to match against the response. All matches will be masked before being sent back to the client. matches and builtins are additive. |
 | `builtins` | [[]ai.options.gloo.solo.io.AIPromptGuard.Regex.BuiltIn](../ai.proto.sk/#builtin) | A list of built-in regexes to mask in the response. matches and builtins are additive. |
+| `action` | [.ai.options.gloo.solo.io.AIPromptGuard.Regex.Action](../ai.proto.sk/#action) | The action to take if the regex matches NOTE: This will only apply to request matches, response matches will always mask. |
 
 
 
@@ -777,6 +780,19 @@ Regex settings for prompt guard
 | `CREDIT_CARD` | Default REGEX for Credit Card Numbers |
 | `PHONE_NUMBER` | Default REGEX for Phone Numbers |
 | `EMAIL` | Default REGEX for Email Addresses |
+
+
+
+
+---
+### Action
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `MASK` | Mask the response if the regex matches |
+| `REJECT` | Reject the request if the regex matches |
 
 
 

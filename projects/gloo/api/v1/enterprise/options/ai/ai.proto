@@ -572,6 +572,17 @@ message AIPromptGuard {
     // A list of built-in regexes to mask in the response.
     // matches and builtins are additive.
     repeated BuiltIn builtins = 2;
+
+    enum Action {
+      // Mask the response if the regex matches
+      MASK = 0;
+      // Reject the request if the regex matches
+      REJECT = 1;
+    }
+
+    // The action to take if the regex matches
+    // NOTE: This will only apply to request matches, response matches will always mask
+    Action action = 3;
   }
 
   // Webhook settings for prompt guard
