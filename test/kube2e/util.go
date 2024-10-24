@@ -74,6 +74,8 @@ func EventuallyReachesConsistentState(installNamespace string) {
 	}
 
 	// Gloo components are configured to log to the Info level by default
+	// Note that for new style e2e tests (i.e. package `test/kubernetes`) we run them with debug logging
+	// so failures can be appropriately triaged after the fact
 	logLevelAssertion := assertions.LogLevelAssertion(zapcore.InfoLevel)
 
 	// The emitter at some point should stabilize and not continue to increase the number of snapshots produced
