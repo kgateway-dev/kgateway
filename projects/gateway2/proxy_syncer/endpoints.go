@@ -148,6 +148,7 @@ func TransformUpstreamsBuilder(ctx context.Context, inputs EndpointsInputs) func
 		kubeUpstream, ok := us.Inner.GetUpstreamType().(*v1.Upstream_Kube)
 		// only care about kube upstreams
 		if !ok {
+			logger.Debug("not kube upstream")
 			return nil
 		}
 		spec := kubeUpstream.Kube
@@ -163,6 +164,7 @@ func TransformUpstreamsBuilder(ctx context.Context, inputs EndpointsInputs) func
 		}))
 		if maybeEps == nil {
 			warnsToLog = append(warnsToLog, fmt.Sprintf("endpoints not found for service %v", spec.GetServiceName()))
+			logger.Debug("endpoints not found for service")
 			return nil
 		}
 		eps := *maybeEps
@@ -215,6 +217,7 @@ func TransformUpstreamsBuilder(ctx context.Context, inputs EndpointsInputs) func
 				})
 			}
 		}
+		logger.Debug("created endpoint", zap.Int("numAddresses", len(ret.LbEps)))
 		return ret
 	}
 }

@@ -6,11 +6,13 @@ import (
 
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	errors "github.com/rotisserie/eris"
+	"go.uber.org/zap"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/solo-io/go-utils/contextutils"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -103,6 +105,9 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *cl
 			}
 		}
 	}
+
+	logger := contextutils.LoggerFrom(params.Ctx)
+	logger.Debug("service does not exist", zap.String("upstream", upstreamRef.String()), zap.String("service", kube.Kube.GetServiceName()), zap.String("namespace", kube.Kube.GetServiceNamespace()))
 
 	return errors.Errorf("Upstream %s references the service '%s' which does not exist in namespace '%s'",
 		upstreamRef.String(),

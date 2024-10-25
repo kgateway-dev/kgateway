@@ -147,7 +147,7 @@ func Plugins(opts PluginOpts) []plugins.Plugin {
 		istio_automtls.NewPlugin(opts.SidecarOnGatewayEnabled),
 	)
 
-	if opts.KubeClient != nil {
+	if opts.KubeClient != nil || opts.SvcCollection != nil {
 		glooPlugins = append(glooPlugins, kubernetes.NewPlugin(opts.KubeClient, opts.KubeCoreCache, opts.SvcCollection))
 	}
 	if opts.Consul.ConsulWatcher != nil {

@@ -623,6 +623,8 @@ func (s *ProxySyncer) buildXdsSnapshot(
 	clustersVersion := envoySnap.Clusters.Version
 	envoySnap.Endpoints = envoycache.NewResources(fmt.Sprintf("%v-%v", clustersVersion, endpointsVersion), endpointsProto)
 
+	logger.Debugf("added endpoints to snapshot %s (%v listeners, %v clusters, %v routes, %v endpoints)",
+		proxy.ResourceName(), len(envoySnap.Listeners.Items), len(envoySnap.Clusters.Items), len(envoySnap.Routes.Items), len(envoySnap.Endpoints.Items))
 	out := xdsSnapWrapper{
 		snap:            envoySnap,
 		proxyKey:        proxy.ResourceName(),
