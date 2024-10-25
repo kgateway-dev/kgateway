@@ -1,8 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/gloo/issues/9505
-    description: >-
-      Allow setting the Envoy LB policy to close connections when the upstream host set changes.
-      This is useful when using Ring Hash or Maglev load balancing policies and helps ensure
-      rebalancing when recovering from disruptions. This feature is disabled by default.
-    resolvesIssue: false
