@@ -1,9 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/6341
-    resolvesIssue: false
-    description: >-
-        Add dynamic_metadata_from_claims to internal AccessTokenValidationConfig interface.
-        Add ServerDefaultApiKeyStorage to internal ApiKeyAuthConfig storage_backends.
-        These changes are to support parity with existing GME functionality.
-
