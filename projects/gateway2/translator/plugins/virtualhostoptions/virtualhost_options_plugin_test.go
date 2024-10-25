@@ -197,7 +197,7 @@ var _ = Describe("VirtualHostOptions Plugin", func() {
 			})
 		})
 
-		When("VirtualHostOptions does not exist", func() {
+		When("There is an error reading the VirtualHostOptions", func() {
 			It("errors out", func() {
 				plugin.ApplyListenerPlugin(ctx, listenerCtx, outputListener)
 
@@ -215,7 +215,7 @@ var _ = Describe("VirtualHostOptions Plugin", func() {
 
 				err := plugin.ApplyStatusPlugin(ctx, statusCtx)
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(ContainSubstring("default.policy does not exist")))
+				Expect(err).To(MatchError(ContainSubstring("error reading VirtualHostOption")))
 			})
 		})
 	})

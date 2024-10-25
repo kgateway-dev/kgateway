@@ -259,7 +259,7 @@ var _ = Describe("RouteOptionsPlugin", func() {
 			})
 		})
 
-		When("RouteOptions does not exist", func() {
+		When("There is an error reading the RouteOptions", func() {
 			It("errors out", func() {
 				deps := []client.Object{attachedRouteOption()}
 				fakeClient := testutils.BuildIndexedFakeClient(deps, gwquery.IterateIndices, rtoptquery.IterateIndices)
@@ -295,7 +295,7 @@ var _ = Describe("RouteOptionsPlugin", func() {
 
 				err := plugin.ApplyStatusPlugin(ctx, &statusCtx)
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(ContainSubstring("default.policy does not exist")))
+				Expect(err).To(MatchError(ContainSubstring("error reading RouteOption policy")))
 			})
 		})
 
