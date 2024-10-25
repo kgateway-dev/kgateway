@@ -39,8 +39,12 @@ else
   OS=linux
 fi
 
-# TODO (celsosantos): Add ARM64 binaries support
-GOARCH=amd64
+arch=$(uname -m)
+if [ "$arch" = "aarch64" ] || [ "$arch" = "arm64" ]; then
+  GOARCH=arm64
+else
+  GOARCH=amd64
+fi
 
 for gloo_version in $GLOO_VERSIONS; do
 
