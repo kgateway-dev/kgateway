@@ -1727,8 +1727,12 @@ DEPRECATED: use ApiKey
 ### OpaAuth
 
  
-Enforce Open Policy Agent (OPA) policies in Gloo Edge environments.
-For Gloo Platform environments, use OpaServerAuth instead.
+Enforce Open Policy Agent (OPA) policies through an OPA engine
+that is built into the Gloo external auth server.
+
+For larger scale operations and more capabilities like bundling or caching,
+you might run the OPA engine as a sidecar or bring your own server
+by using the OpaServerAuth setting instead.
 
 ```yaml
 "modules": []core.solo.io.ResourceRef
@@ -1769,8 +1773,11 @@ For Gloo Platform environments, use OpaServerAuth instead.
 ### OpaServerAuth
 
  
-Enforce Open Policy Agent (OPA) policies through an OPA sidecar as part of the external
-auth server in Gloo Platform environments. For Gloo Edge environments, use OpaAuth instead.
+Enforce Open Policy Agent (OPA) policies through an OPA sidecar 
+to the the Gloo external auth server, or by bringing your own OPA server.
+This way, you can use OPA at scale and with additional capabilities, such as bundling or caching.
+
+For smaller operations or quick tests, you might use the OpaAuth setting instead.
 
 ```yaml
 "package": string
@@ -1784,7 +1791,7 @@ auth server in Gloo Platform environments. For Gloo Edge environments, use OpaAu
 | ----- | ---- | ----------- | 
 | `package` | `string` | The package from your Rego policy bundle used to query the OPA data API. +kubebuilder:validation:Required +kubebuilder:validation:MinLength=1. |
 | `ruleName` | `string` | The rule in your Rego policy bundle used to query the OPA data API. Supports querying subfields with a `/`. For more information, see the [OPA docs for the Data API](https://www.openpolicyagent.org/docs/latest/rest-api/#data-api). |
-| `serverAddr` | `string` | The address of the OPA server to query, in the format `ADDRESS:PORT`. For OPA servers within the cluster, the address is the pod's service address, such as `default.svc.cluster.local:8181`. For OPA servers outside the cluster, the server must be accessible to the cluster, such as through an ExternalService. If you do not have your own OPA server instance, omit this field. When the external auth service has the OPA server sidecar enabled, the OPA server sidecar will be used instead. |
+| `serverAddr` | `string` | The address of the OPA server to query, in the format `ADDRESS:PORT`. For OPA servers within the cluster, the address is the pod's service address, such as `opa-svc.default.svc.cluster.local:8181`. For OPA servers outside the cluster, the server must be accessible to the cluster, such as through an ExternalService. If you do not have your own OPA server instance, omit this field. When the external auth service has the OPA server sidecar enabled, the OPA server sidecar will be used instead, with an address such as `http://localhost:8181`. |
 | `options` | [.enterprise.gloo.solo.io.OpaAuthOptions](../extauth.proto.sk/#opaauthoptions) | Additional options for OPA Auth configuration. |
 
 
@@ -2760,7 +2767,8 @@ These values will be encoded in a basic auth header in order to authenticate the
 ### OpaServerAuthConfig
 
  
-Enforce Open Policy Agent (OPA) policies through an OPA sidecar as part of the external auth server in Gloo Platform environments. For Gloo Edge environments, use OpaAuth instead.
+Configure the Gloo external auth server to use your own Open Policy Agent (OPA) server.
+This way, you can use extra capabilities such as bundling or caching.
 
 ```yaml
 "package": string
@@ -2772,10 +2780,10 @@ Enforce Open Policy Agent (OPA) policies through an OPA sidecar as part of the e
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `package` | `string` |  |
-| `ruleName` | `string` |  |
-| `serverAddr` | `string` |  |
-| `options` | [.enterprise.gloo.solo.io.OpaAuthOptions](../extauth.proto.sk/#opaauthoptions) |  |
+| `package` | `string` | The package from your Rego policy bundle used to query the OPA data API. |
+| `ruleName` | `string` | The rule in your Rego policy bundle used to query the OPA data API. Supports querying subfields with a `/`. For more information, see the [OPA docs for the Data API](https://www.openpolicyagent.org/docs/latest/rest-api/#data-api). |
+| `serverAddr` | `string` | The address of the OPA server to query, in the format `ADDRESS:PORT`. For OPA servers within the cluster, the address is the pod’s service address, such as `opa-svc.default.svc.cluster.local:8181`. For OPA servers outside the cluster, the server must be accessible to the cluster, such as through an ExternalService. If you do not have your own OPA server instance, omit this field. When the external auth service has the OPA server sidecar enabled, the OPA server sidecar will be used instead, with an address such as `http://localhost:8181`. |
+| `options` | [.enterprise.gloo.solo.io.OpaAuthOptions](../extauth.proto.sk/#opaauthoptions) | Additional options for OPA Auth configuration. |
 
 
 

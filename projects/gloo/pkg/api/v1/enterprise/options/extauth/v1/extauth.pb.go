@@ -3795,8 +3795,12 @@ func (x *ApiKeySecret) GetMetadata() map[string]string {
 	return nil
 }
 
-// Enforce Open Policy Agent (OPA) policies in Gloo Edge environments.
-// For Gloo Platform environments, use OpaServerAuth instead.
+// Enforce Open Policy Agent (OPA) policies through an OPA engine
+// that is built into the Gloo external auth server.
+//
+// For larger scale operations and more capabilities like bundling or caching,
+// you might run the OPA engine as a sidecar or bring your own server
+// by using the OpaServerAuth setting instead.
 type OpaAuth struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -3940,8 +3944,11 @@ func (x *OpaAuthOptions) GetReturnDecisionReason() bool {
 	return false
 }
 
-// Enforce Open Policy Agent (OPA) policies through an OPA sidecar as part of the external
-// auth server in Gloo Platform environments. For Gloo Edge environments, use OpaAuth instead.
+// Enforce Open Policy Agent (OPA) policies through an OPA sidecar
+// to the the Gloo external auth server, or by bringing your own OPA server.
+// This way, you can use OPA at scale and with additional capabilities, such as bundling or caching.
+//
+// For smaller operations or quick tests, you might use the OpaAuth setting instead.
 type OpaServerAuth struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -3956,11 +3963,11 @@ type OpaServerAuth struct {
 	RuleName string `protobuf:"bytes,2,opt,name=rule_name,json=ruleName,proto3" json:"rule_name,omitempty"`
 	// The address of the OPA server to query, in the format `ADDRESS:PORT`.
 	// For OPA servers within the cluster, the address is the pod's service address,
-	// such as `default.svc.cluster.local:8181`. For OPA servers outside the cluster,
+	// such as `opa-svc.default.svc.cluster.local:8181`. For OPA servers outside the cluster,
 	// the server must be accessible to the cluster, such as through an ExternalService.
 	// If you do not have your own OPA server instance, omit this field.
 	// When the external auth service has the OPA server sidecar enabled, the OPA server
-	// sidecar will be used instead.
+	// sidecar will be used instead, with an address such as `http://localhost:8181`.
 	ServerAddr string `protobuf:"bytes,3,opt,name=server_addr,json=serverAddr,proto3" json:"server_addr,omitempty"`
 	// Additional options for OPA Auth configuration.
 	Options *OpaAuthOptions `protobuf:"bytes,4,opt,name=options,proto3" json:"options,omitempty"`
@@ -8943,16 +8950,29 @@ func (x *ExtAuthConfig_OpaAuthConfig) GetOptions() *OpaAuthOptions {
 	return nil
 }
 
-// Enforce Open Policy Agent (OPA) policies through an OPA sidecar as part of the external auth server in Gloo Platform environments. For Gloo Edge environments, use OpaAuth instead.
+// Configure the Gloo external auth server to use your own Open Policy Agent (OPA) server.
+// This way, you can use extra capabilities such as bundling or caching.
 type ExtAuthConfig_OpaServerAuthConfig struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Package    string          `protobuf:"bytes,1,opt,name=package,proto3" json:"package,omitempty"`
-	RuleName   string          `protobuf:"bytes,2,opt,name=rule_name,json=ruleName,proto3" json:"rule_name,omitempty"`
-	ServerAddr string          `protobuf:"bytes,3,opt,name=server_addr,json=serverAddr,proto3" json:"server_addr,omitempty"`
-	Options    *OpaAuthOptions `protobuf:"bytes,4,opt,name=options,proto3" json:"options,omitempty"`
+	// The package from your Rego policy bundle used to query the OPA data API.
+	Package string `protobuf:"bytes,1,opt,name=package,proto3" json:"package,omitempty"`
+	// The rule in your Rego policy bundle used to query the OPA data API. Supports querying subfields with a `/`.
+	// For more information, see the [OPA docs for the Data API](https://www.openpolicyagent.org/docs/latest/rest-api/#data-api).
+	RuleName string `protobuf:"bytes,2,opt,name=rule_name,json=ruleName,proto3" json:"rule_name,omitempty"`
+	// The address of the OPA server to query, in the format `ADDRESS:PORT`.
+	// For OPA servers within the cluster, the address is the pod’s service address,
+	// such as `opa-svc.default.svc.cluster.local:8181`.
+	// For OPA servers outside the cluster, the server must be accessible to the cluster,
+	// such as through an ExternalService.
+	// If you do not have your own OPA server instance, omit this field.
+	// When the external auth service has the OPA server sidecar enabled,
+	// the OPA server sidecar will be used instead, with an address such as `http://localhost:8181`.
+	ServerAddr string `protobuf:"bytes,3,opt,name=server_addr,json=serverAddr,proto3" json:"server_addr,omitempty"`
+	// Additional options for OPA Auth configuration.
+	Options *OpaAuthOptions `protobuf:"bytes,4,opt,name=options,proto3" json:"options,omitempty"`
 }
 
 func (x *ExtAuthConfig_OpaServerAuthConfig) Reset() {
