@@ -3,10 +3,7 @@ package ai.options.gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai";
 
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
-import "google/protobuf/wrappers.proto";
 import "google/protobuf/struct.proto";
-import "google/protobuf/duration.proto";
-import "google/protobuf/empty.proto";
 import "extproto/ext.proto";
 option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
