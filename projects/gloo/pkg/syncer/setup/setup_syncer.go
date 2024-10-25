@@ -13,10 +13,10 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/pkg/utils/statsutils/metrics"
+	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 
 	"github.com/golang/protobuf/ptypes/duration"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -168,9 +168,8 @@ type setupSyncer struct {
 	callbacks                xdsserver.Callbacks
 }
 
-func NewControlPlane(ctx context.Context, grpcServer *grpc.Server, bindAddr net.Addr, kubeControlPlaneCfg bootstrap.KubernetesControlPlaneConfig,
+func NewControlPlane(ctx context.Context, snapshotCache cache.SnapshotCache, grpcServer *grpc.Server, bindAddr net.Addr, kubeControlPlaneCfg bootstrap.KubernetesControlPlaneConfig,
 	callbacks xdsserver.Callbacks, start bool) bootstrap.ControlPlane {
-	snapshotCache := xds.NewAdsSnapshotCache(ctx)
 	xdsServer := server.NewServer(ctx, snapshotCache, callbacks)
 	reflection.Register(grpcServer)
 
@@ -397,7 +396,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		if s.extensions != nil {
 			callbacks = s.extensions.XdsCallbacks
 		}
-		s.controlPlane = NewControlPlane(ctx, s.makeGrpcServer(ctx), xdsTcpAddress,
+		s.controlPlane = NewControlPlane(ctx, s.setupOpts.Cache, s.makeGrpcServer(ctx), xdsTcpAddress,
 			bootstrap.KubernetesControlPlaneConfig{XdsHost: xdsHost, XdsPort: xdsPort}, callbacks, true)
 
 		s.setupOpts.SetXdsAddress(xdsHost, xdsPort)

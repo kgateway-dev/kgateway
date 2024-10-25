@@ -738,8 +738,10 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMa
 				logger.Info("error getting gw", err.Error())
 				return err
 			}
+			gwStatusWithoutAddress := gw.Status
+			gwStatusWithoutAddress.Addresses = nil
 			if status := rm.BuildGWStatus(ctx, gw); status != nil {
-				if !isGatewayStatusEqual(&gw.Status, status) {
+				if !isGatewayStatusEqual(&gwStatusWithoutAddress, status) {
 					gw.Status = *status
 					if err := s.mgr.GetClient().Status().Patch(ctx, &gw, client.Merge); err != nil {
 						logger.Error(err)
