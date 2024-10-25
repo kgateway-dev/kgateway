@@ -19,7 +19,7 @@ Gloo Gateway Enterprise offers `n-3` patching support for bug and critical secur
 
 {{% notice note %}}`†` **Istio versions**: Istio must run on a compatible version of Kubernetes. For example, Istio 1.22 is tested, but not supported, on Kubernetes 1.26. For more information, see the [Istio docs](https://istio.io/latest/docs/releases/supported-releases/). If you want hardened `n-4` versions of Istio for particular requirements such as FIPS, consider using [Gloo Mesh Enterprise](https://www.solo.io/products/gloo-mesh/), which includes ingress gateway and service mesh components.
 
-Also, note that Waypoint support requires at minimum Istio version 1.22 (though 1.23 or greater is recommended). {{% /notice %}}
+Also, note that support for Waypoints requires Istio version 1.22 at a minimum. However, it is recommended to use Istio version 1.23 or greater. {{% /notice %}}
 
 
 <!--TO FIND VERSIONS
