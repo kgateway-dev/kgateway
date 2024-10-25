@@ -20,6 +20,7 @@ import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/listener_options.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/route_configuration_options.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl/ssl.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/subset.proto";
