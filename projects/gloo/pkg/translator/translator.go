@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -85,6 +86,9 @@ func (t *translatorInstance) Translate(
 	defer t.lock.Unlock()
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")
 	defer span.End()
+	stopwatch := statsutils.NewTranslatorStopWatch("EdgeSnapshotTranslator")
+	stopwatch.Start()
+	defer stopwatch.Stop(ctx)
 	params.Ctx = contextutils.WithLogger(ctx, "translator")
 
 	// re-initialize plugins on each loop, this is done for 2 reasons:
