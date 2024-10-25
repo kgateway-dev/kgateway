@@ -188,10 +188,11 @@ type RouteTable struct {
 
 	// The list of routes for the route table
 	Routes []*Route `protobuf:"bytes,1,rep,name=routes,proto3" json:"routes,omitempty"`
-	// When a delegated route defines a `RouteTableSelector` that matches multiple route tables, Gloo will inspect this
-	// field to determine the order in which the route tables are to be evaluated. This determines the order in which
+	// When a delegated route in a VirtualService or RouteTable defines a `RouteTableSelector` that matches
+	// multiple route tables, Gloo will inspect this field to determine the order in which
+	// the route tables are to be evaluated. This determines the order in which
 	// the routes will appear on the final `Proxy` resource. The field is optional; if no value is specified, the weight
-	// defaults to 0 (zero).
+	// defaults to 0 (zero). Note that this field is ignored if it is not used in a route delegation scenario.
 	//
 	// Gloo will process the route tables matched by a selector in ascending order by weight and collect the routes of
 	// each route table in the order they are defined. If multiple route tables define the same weight, Gloo will sort the
