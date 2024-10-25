@@ -49,13 +49,14 @@ func (s *SetupOpts) SetXdsAddress(XdsHost string,
 	s.setXdsOnce.Do(func() {
 		s.xdsHost = XdsHost
 		s.xdsPort = XdsPort
-		close(s.xdsSet)
+		if s.xdsSet != nil {
+			close(s.xdsSet)
+		}
 	})
 }
 func (s *SetupOpts) GetXdsAddress(ctx context.Context) (string, int32) {
 	select {
 	case <-s.xdsSet:
-
 		return s.xdsHost, s.xdsPort
 	case <-ctx.Done():
 		return "", 0
