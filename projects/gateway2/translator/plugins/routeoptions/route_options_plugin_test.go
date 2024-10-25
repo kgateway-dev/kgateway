@@ -259,6 +259,46 @@ var _ = Describe("RouteOptionsPlugin", func() {
 			})
 		})
 
+		When("RouteOptions does not exist", func() {
+			It("errors out", func() {
+				deps := []client.Object{attachedRouteOption()}
+				fakeClient := testutils.BuildIndexedFakeClient(deps, gwquery.IterateIndices, rtoptquery.IterateIndices)
+				gwQueries := testutils.BuildGatewayQueriesWithClient(fakeClient)
+				plugin := NewPlugin(gwQueries, fakeClient, routeOptionClient, statusReporter)
+
+				ctx := context.Background()
+				routeCtx := &plugins.RouteContext{
+					Route: &gwv1.HTTPRoute{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "route",
+							Namespace: "default",
+						},
+					},
+				}
+
+				outputRoute := &v1.Route{
+					Options: &v1.RouteOptions{},
+				}
+				plugin.ApplyRoutePlugin(ctx, routeCtx, outputRoute)
+
+				statusCtx := plugins.StatusContext{
+					ProxiesWithReports: []translatorutils.ProxyWithReports{
+						{
+							Proxy: &v1.Proxy{},
+							Reports: translatorutils.TranslationReports{
+								ProxyReport:     &validation.ProxyReport{},
+								ResourceReports: reporter.ResourceReports{},
+							},
+						},
+					},
+				}
+
+				err := plugin.ApplyStatusPlugin(ctx, &statusCtx)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(ContainSubstring("default.policy does not exist")))
+			})
+		})
+
 		When("Two RouteOptions are attached correctly with different creation timestamps", func() {
 			It("correctly adds faultinjection from the earliest created object", func() {
 				routeOptionClient.Write(attachedInternal(), clients.WriteOpts{})

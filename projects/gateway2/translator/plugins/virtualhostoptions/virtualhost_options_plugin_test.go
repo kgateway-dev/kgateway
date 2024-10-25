@@ -17,7 +17,9 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/utils"
 	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
+	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
@@ -192,6 +194,28 @@ var _ = Describe("VirtualHostOptions Plugin", func() {
 				for _, vh := range outputListener.GetAggregateListener().HttpResources.VirtualHosts {
 					Expect(vh.GetOptions()).To(BeNil())
 				}
+			})
+		})
+
+		When("VirtualHostOptions does not exist", func() {
+			It("errors out", func() {
+				plugin.ApplyListenerPlugin(ctx, listenerCtx, outputListener)
+
+				statusCtx := &plugins.StatusContext{
+					ProxiesWithReports: []translatorutils.ProxyWithReports{
+						{
+							Proxy: &v1.Proxy{},
+							Reports: translatorutils.TranslationReports{
+								ProxyReport:     &validation.ProxyReport{},
+								ResourceReports: reporter.ResourceReports{},
+							},
+						},
+					},
+				}
+
+				err := plugin.ApplyStatusPlugin(ctx, statusCtx)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(ContainSubstring("default.policy does not exist")))
 			})
 		})
 	})
