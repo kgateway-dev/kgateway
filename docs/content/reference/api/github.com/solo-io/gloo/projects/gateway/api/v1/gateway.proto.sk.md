@@ -83,7 +83,7 @@ and the routing configuration to upstreams that are reachable via a specific por
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `tcpHosts` | [[]gloo.solo.io.TcpHost](../../../../gloo/api/v1/proxy.proto.sk/#tcphost) | TCP hosts that the gateway can route to. |
-| `options` | [.gloo.solo.io.TcpListenerOptions](../../../../gloo/api/v1/options.proto.sk/#tcplisteneroptions) | TCP Gateway configuration. |
+| `options` | [.gloo.solo.io.TcpListenerOptions](../../../../gloo/api/v1/tcp_listener_options.proto.sk/#tcplisteneroptions) | TCP Gateway configuration. |
 
 
 
