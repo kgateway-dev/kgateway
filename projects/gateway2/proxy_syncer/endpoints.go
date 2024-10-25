@@ -34,6 +34,16 @@ type EndpointsSettings struct {
 	EnableAutoMtls bool
 }
 
+var _ krt.ResourceNamer = EndpointsSettings{}
+var _ krt.Equaler[EndpointsSettings] = EndpointsSettings{}
+
+func (p EndpointsSettings) Equals(in EndpointsSettings) bool {
+	return p == in
+}
+func (p EndpointsSettings) ResourceName() string {
+	return "endpoints-settings"
+}
+
 type EndpointsInputs struct {
 	Upstreams         krt.Collection[UpstreamWrapper]
 	Endpoints         krt.Collection[*corev1.Endpoints]
