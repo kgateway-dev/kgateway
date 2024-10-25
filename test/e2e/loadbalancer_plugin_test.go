@@ -113,7 +113,7 @@ var _ = FDescribe("Load Balancer Plugin", Label(), func() {
 				g.Expect(dacs).NotTo(BeEmpty())
 				g.Expect(dacs).To(HaveLen(1))
 
-				g.Expect(dacs[0].LbPolicy).To(Equal(envoy_config_cluster_v3.Cluster_MAGLEV))
+				g.Expect(dacs[0].LbPolicy).To(Equal(envoy_config_cluster_v3.Cluster_MAGLEV), dacs[0])
 				g.Expect(dacs[0].CommonLbConfig).ToNot(BeNil())
 				g.Expect(dacs[0].CommonLbConfig.CloseConnectionsOnHostSetChange).To(BeTrue())
 			}, "5s", ".5s").Should(Succeed())
