@@ -1,6 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  issueLink: https://github.com/solo-io/solo-projects/issues/7036
-  resolvesIssue: false
-  description: >-
-    Fix krt syncer not correctly setting AuthConfig metadata
