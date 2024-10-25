@@ -4,3 +4,4 @@ changelog:
       Clarify that Waypoint support requires Istio version 1.22 or greater
 
       skipCI-kube-tests:true
+      skipCI-storybook-tests:true
