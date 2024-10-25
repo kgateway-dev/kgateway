@@ -206,17 +206,22 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 		if maybeVhOptObj == nil {
 			continue
 		}
-		vhOptObj := &(*maybeVhOptObj).Spec
+
+		vhOptObj := **maybeVhOptObj
+		vhOptObj.Spec.Metadata = &core.Metadata{}
+		vhOptObj.Spec.GetMetadata().Name = vhOptObj.GetName()
+		vhOptObj.Spec.GetMetadata().Namespace = vhOptObj.GetNamespace()
+		vhOptObjSk := &vhOptObj.Spec
 
 		// mark this object to be processed
-		virtualHostOptionReport.Accept(vhOptObj)
+		virtualHostOptionReport.Accept(vhOptObjSk)
 
 		// add any virtualHost errors for this obj
 		for _, rerr := range status.virtualHostErrors {
-			virtualHostOptionReport.AddError(vhOptObj, eris.New(rerr.GetReason()))
+			virtualHostOptionReport.AddError(vhOptObjSk, eris.New(rerr.GetReason()))
 		}
 
-		virtualHostOptionReport.AddWarnings(vhOptObj, status.warnings...)
+		virtualHostOptionReport.AddWarnings(vhOptObjSk, status.warnings...)
 
 		// actually write out the reports!
 		err := p.statusReporter.WriteReports(ctx, virtualHostOptionReport, status.subresourceStatus)

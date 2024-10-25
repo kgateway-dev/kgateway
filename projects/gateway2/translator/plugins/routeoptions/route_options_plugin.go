@@ -9,6 +9,7 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"go.uber.org/zap"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -105,6 +106,7 @@ func (p *plugin) ApplyRoutePlugin(
 }
 
 func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.StatusContext) error {
+	logger := contextutils.LoggerFrom(ctx).Desugar()
 	// gather all RouteOptions we need to report status for
 	for _, proxyWithReport := range statusCtx.ProxiesWithReports {
 		// get proxy status to use for RouteOption status
@@ -140,13 +142,20 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 		if mayberoObj == nil {
 			continue
 		}
-		roObj := &(*mayberoObj).Spec
+		roObj := **mayberoObj
+		roObj.Spec.Metadata = &core.Metadata{}
+		roObj.Spec.GetMetadata().Name = roObj.GetName()
+		roObj.Spec.GetMetadata().Namespace = roObj.GetNamespace()
+		roObjSk := &roObj.Spec
+
 		// mark this object to be processed
-		routeOptionReport.Accept(roObj)
+		routeOptionReport.Accept(roObjSk)
 
 		// add any route errors for this obj
-		for _, rerr := range status.routeErrors {
-			routeOptionReport.AddError(roObj, errors.New(rerr.GetReason()))
+		for i, rerr := range status.routeErrors {
+			rErr := errors.New(rerr.GetReason())
+			logger.Debug("adding error to RouteOption status", zap.Stringer("RouteOption", roKey), zap.Error(rErr), zap.Int("routeErrorIndex", i))
+			routeOptionReport.AddError(roObjSk, rErr)
 		}
 
 		// actually write out the reports!
