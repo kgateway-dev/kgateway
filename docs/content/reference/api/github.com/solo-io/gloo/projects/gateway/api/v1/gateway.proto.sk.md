@@ -56,7 +56,7 @@ and the routing configuration to upstreams that are reachable via a specific por
 | `ssl` | `bool` | if set to false, only use virtual services without ssl configured. if set to true, only use virtual services with ssl configured. this field is ignored if GatewayType is HybridGateway. |
 | `bindAddress` | `string` | the bind address the gateway should serve traffic on. |
 | `bindPort` | `int` | bind ports must not conflict across gateways for a single proxy. |
-| `options` | [.gloo.solo.io.ListenerOptions](../../../../gloo/api/v1/options.proto.sk/#listeneroptions) | top level optional configuration for all routes on the gateway. |
+| `options` | [.gloo.solo.io.ListenerOptions](../../../../gloo/api/v1/listener_options.proto.sk/#listeneroptions) | top level optional configuration for all routes on the gateway. |
 | `namespacedStatuses` | [.core.solo.io.NamespacedStatuses](../../../../../../solo-kit/api/v1/status.proto.sk/#namespacedstatuses) | NamespacedStatuses indicates the validation status of this resource. NamespacedStatuses is read-only by clients, and set by gateway during validation. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 | `useProxyProto` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable ProxyProtocol support for this listener. Deprecated: prefer setting the listener option. If configured, the listener option (filter config) overrides any setting here. |

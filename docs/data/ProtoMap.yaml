@@ -777,7 +777,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/version/version.proto.sk/#ClientVersion
     package: gloo.solo.io
   gloo.solo.io.ConnectionBalanceConfig:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#ConnectionBalanceConfig
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/listener_options.proto.sk/#ConnectionBalanceConfig
     package: gloo.solo.io
   gloo.solo.io.ConnectionConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/connection.proto.sk/#ConnectionConfig
@@ -882,7 +882,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#Listener
     package: gloo.solo.io
   gloo.solo.io.ListenerOptions:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#ListenerOptions
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/listener_options.proto.sk/#ListenerOptions
     package: gloo.solo.io
   gloo.solo.io.ListenerReport:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#ListenerReport
