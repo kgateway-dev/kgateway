@@ -114,29 +114,6 @@ var (
 )
 
 // Clone function
-func (m *RouteConfigurationOptions) Clone() proto.Message {
-	var target *RouteConfigurationOptions
-	if m == nil {
-		return target
-	}
-	target = &RouteConfigurationOptions{}
-
-	if h, ok := interface{}(m.GetMaxDirectResponseBodySizeBytes()).(clone.Cloner); ok {
-		target.MaxDirectResponseBodySizeBytes = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
-	} else {
-		target.MaxDirectResponseBodySizeBytes = proto.Clone(m.GetMaxDirectResponseBodySizeBytes()).(*google_golang_org_protobuf_types_known_wrapperspb.UInt32Value)
-	}
-
-	if h, ok := interface{}(m.GetMostSpecificHeaderMutationsWins()).(clone.Cloner); ok {
-		target.MostSpecificHeaderMutationsWins = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
-	} else {
-		target.MostSpecificHeaderMutationsWins = proto.Clone(m.GetMostSpecificHeaderMutationsWins()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
-	}
-
-	return target
-}
-
-// Clone function
 func (m *HttpListenerOptions) Clone() proto.Message {
 	var target *HttpListenerOptions
 	if m == nil {

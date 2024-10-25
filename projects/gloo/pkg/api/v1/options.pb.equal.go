@@ -26,50 +26,6 @@ var (
 )
 
 // Equal function
-func (m *RouteConfigurationOptions) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*RouteConfigurationOptions)
-	if !ok {
-		that2, ok := that.(RouteConfigurationOptions)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if h, ok := interface{}(m.GetMaxDirectResponseBodySizeBytes()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetMaxDirectResponseBodySizeBytes()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetMaxDirectResponseBodySizeBytes(), target.GetMaxDirectResponseBodySizeBytes()) {
-			return false
-		}
-	}
-
-	if h, ok := interface{}(m.GetMostSpecificHeaderMutationsWins()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetMostSpecificHeaderMutationsWins()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetMostSpecificHeaderMutationsWins(), target.GetMostSpecificHeaderMutationsWins()) {
-			return false
-		}
-	}
-
-	return true
-}
-
-// Equal function
 func (m *HttpListenerOptions) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
