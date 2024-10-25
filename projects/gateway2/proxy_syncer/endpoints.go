@@ -30,24 +30,34 @@ type EndpointMetadata struct {
 	Labels map[string]string
 }
 
+type EndpointsSettings struct {
+	EnableAutoMtls bool
+}
+
 type EndpointsInputs struct {
-	Upstreams krt.Collection[UpstreamWrapper]
-	Endpoints krt.Collection[*corev1.Endpoints]
-	Pods      krt.Collection[krtcollections.LocalityPod]
-	Settings  krt.Singleton[glookubev1.Settings]
-	Services  krt.Collection[*corev1.Service]
+	Upstreams         krt.Collection[UpstreamWrapper]
+	Endpoints         krt.Collection[*corev1.Endpoints]
+	Pods              krt.Collection[krtcollections.LocalityPod]
+	EndpointsSettings krt.Singleton[EndpointsSettings]
+	Services          krt.Collection[*corev1.Service]
 }
 
 func NewGlooK8sEndpointInputs(settings krt.Singleton[glookubev1.Settings], istioClient kube.Client, pods krt.Collection[krtcollections.LocalityPod], services krt.Collection[*corev1.Service], finalUpstreams krt.Collection[UpstreamWrapper]) EndpointsInputs {
 	epClient := kclient.New[*corev1.Endpoints](istioClient)
 	kubeEndpoints := krt.WrapClient(epClient, krt.WithName("Endpoints"))
+	endpointSettings := krt.NewSingleton(func(ctx krt.HandlerContext) *EndpointsSettings {
+		settings := krt.FetchOne(ctx, settings.AsCollection())
+		return &EndpointsSettings{
+			EnableAutoMtls: settings.Spec.GetGloo().GetIstioOptions().GetEnableAutoMtls().GetValue(),
+		}
+	})
 
 	return EndpointsInputs{
-		Upstreams: finalUpstreams,
-		Endpoints: kubeEndpoints,
-		Pods:      pods,
-		Settings:  settings,
-		Services:  services,
+		Upstreams:         finalUpstreams,
+		Endpoints:         kubeEndpoints,
+		Pods:              pods,
+		EndpointsSettings: endpointSettings,
+		Services:          services,
 	}
 }
 
@@ -169,9 +179,8 @@ func TransformUpstreamsBuilder(ctx context.Context, inputs EndpointsInputs) func
 		}
 		eps := *maybeEps
 
-		settings := krt.FetchOne(kctx, inputs.Settings.AsCollection())
-		enableAutoMtls := settings.Spec.GetGloo().GetIstioOptions().GetEnableAutoMtls().GetValue()
-
+		settings := krt.FetchOne(kctx, inputs.EndpointsSettings.AsCollection())
+		enableAutoMtls := settings.EnableAutoMtls
 		ret := NewEndpointsForUpstream(us, logger)
 		for _, subset := range eps.Subsets {
 			port := findFirstPortInEndpointSubsets(subset, singlePortService, kubeServicePort)

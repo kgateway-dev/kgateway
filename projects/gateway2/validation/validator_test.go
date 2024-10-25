@@ -67,7 +67,7 @@ var _ = Describe("Kube Gateway API Policy Validation Helper", func() {
 			KubeClient:    kube,
 			KubeCoreCache: kubeCoreCache,
 		}
-		registeredPlugins := registry.Plugins(opts)
+		registeredPlugins := registry.Plugins(registry.FromBootstrap(opts))
 		routeReplacingSanitizer, _ := sanitizer.NewRouteReplacingSanitizer(settings.GetGloo().GetInvalidConfigPolicy())
 		xdsSanitizer := sanitizer.XdsSanitizers{
 			sanitizer.NewUpstreamRemovingSanitizer(),

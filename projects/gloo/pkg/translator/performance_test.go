@@ -65,7 +65,7 @@ var _ = Describe("Translation - Benchmarking Tests", decorators.Performance, Lab
 				ConsulWatcher: mock_consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
 			},
 		}
-		registeredPlugins := registry.Plugins(opts)
+		registeredPlugins := registry.Plugins(registry.FromBootstrap(opts))
 		pluginRegistry := registry.NewPluginRegistry(registeredPlugins)
 
 		translator = NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, pluginRegistry, EnvoyCacheResourcesListToFnvHash)

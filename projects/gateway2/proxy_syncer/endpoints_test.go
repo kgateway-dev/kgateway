@@ -560,12 +560,17 @@ func TestEndpoints(t *testing.T) {
 			nodes := krtcollections.NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
 			pods := krtcollections.NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock))
 			pods.Synced().WaitUntilSynced(context.Background().Done())
-			ei := EndpointsInputs{
-				Upstreams:      krttest.GetMockCollection[UpstreamWrapper](mock),
-				Endpoints:      krttest.GetMockCollection[*corev1.Endpoints](mock),
-				Pods:           pods,
+			es := EndpointsSettings{
 				EnableAutoMtls: false,
-				Services:       krttest.GetMockCollection[*corev1.Service](mock),
+			}
+			endpointSettings := krt.NewStatic(&es, true)
+
+			ei := EndpointsInputs{
+				Upstreams:         krttest.GetMockCollection[UpstreamWrapper](mock),
+				Endpoints:         krttest.GetMockCollection[*corev1.Endpoints](mock),
+				Pods:              pods,
+				EndpointsSettings: endpointSettings,
+				Services:          krttest.GetMockCollection[*corev1.Service](mock),
 			}
 
 			builder := TransformUpstreamsBuilder(context.Background(), ei)
