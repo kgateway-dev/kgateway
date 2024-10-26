@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5720
+    resolvesIssue: false
+    description: >-
+      Update comment for Envoy validation API since it is now implemented
+
+      skipCI-kube-tests:true
