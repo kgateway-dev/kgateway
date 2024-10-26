@@ -916,7 +916,8 @@ message GatewayOptions {
         // validation mode. This has an negative impact on the total translation throughput, but it
         // helps ensure the configuration will not be nacked when served to Envoy.
         //
-        // This feature is not yet implemented.
+        // This feature is disabled by default and is not recommended for production deployments unless
+        // the performance implications are well understood and acceptable.
         google.protobuf.BoolValue full_envoy_validation = 14;
     }
 
