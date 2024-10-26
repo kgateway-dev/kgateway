@@ -3501,7 +3501,8 @@ type GatewayOptions_ValidationOptions struct {
 	// validation mode. This has an negative impact on the total translation throughput, but it
 	// helps ensure the configuration will not be nacked when served to Envoy.
 	//
-	// This feature is not yet implemented.
+	// This feature is disabled by default and is not recommended for production deployments unless
+	// the performance implications are well understood and acceptable.
 	FullEnvoyValidation *wrapperspb.BoolValue `protobuf:"bytes,14,opt,name=full_envoy_validation,json=fullEnvoyValidation,proto3" json:"full_envoy_validation,omitempty"`
 }
 
