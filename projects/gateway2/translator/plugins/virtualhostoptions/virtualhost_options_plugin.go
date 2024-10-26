@@ -160,7 +160,25 @@ func optionsToStr(opts []*solokubev1.VirtualHostOption) string {
 	}
 	return strings.Join(resourceNames, ", ")
 }
+
 func (p *plugin) InitStatusPlugin(ctx context.Context, statusCtx *plugins.StatusContext) error {
+	for _, proxyWithReport := range statusCtx.ProxiesWithReports {
+		// now that we translate proxies one by one, we can't assume ApplyRoutePlugin is called before ApplyStatusPlugin for all proxies
+		// ApplyStatusPlugin should be come idempotent, as also now it gets applied outside of translation context.
+		// we need to track ownership separately. TODO: re-think this on monday
+
+		// for this specific proxy, get all the route errors and their associated RouteOption sources
+		virtualHostErrors := extractVirtualHostErrors(proxyWithReport.Reports.ProxyReport)
+		for vhKey := range virtualHostErrors {
+			cacheEntry := &classicStatus{
+				subresourceStatus: map[string]*core.Status{},
+				virtualHostErrors: []*validation.VirtualHostReport_Error{},
+				warnings:          []string{},
+			}
+			// init the cache
+			p.classicStatusCache[vhKey] = cacheEntry
+		}
+	}
 	return nil
 }
 
