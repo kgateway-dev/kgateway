@@ -463,7 +463,17 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 				s.syncRouteStatus(ctx, latestReport)
 			}()
 			go func() {
-				for _, snapWrap := range s.xdsSnapshots.List() {
+				// TODO: make sure this can't happen in parallel with itself from previous iteration
+				// we probably will re-work status anyway..
+				logger.Debug("syncing status plugins")
+				snaps := s.xdsSnapshots.List()
+				for _, snapWrap := range snaps {
+					var proxiesWithReports []translatorutils.ProxyWithReports
+					proxiesWithReports = append(proxiesWithReports, snapWrap.proxyWithReport)
+
+					initStatusPlugins(ctx, proxiesWithReports, snapWrap.pluginRegistry)
+				}
+				for _, snapWrap := range snaps {
 					err := s.proxyTranslator.syncXdsAndStatus(ctx, snapWrap.snap, snapWrap.proxyKey, snapWrap.fullReports)
 					if err != nil {
 						logger.Errorf("error while syncing proxy '%s': %s", snapWrap.proxyKey, err.Error())
@@ -679,6 +689,25 @@ func applyStatusPlugins(
 		if err != nil {
 			logger.Errorf("Error applying status plugin: %v", err)
 			continue
+		}
+	}
+}
+
+func initStatusPlugins(
+	ctx context.Context,
+	proxiesWithReports []translatorutils.ProxyWithReports,
+	registry registry.PluginRegistry,
+) {
+	ctx = contextutils.WithLogger(ctx, "k8sGatewayStatusPlugins")
+	logger := contextutils.LoggerFrom(ctx)
+
+	statusCtx := &gwplugins.StatusContext{
+		ProxiesWithReports: proxiesWithReports,
+	}
+	for _, plugin := range registry.GetStatusPlugins() {
+		err := plugin.InitStatusPlugin(ctx, statusCtx)
+		if err != nil {
+			logger.Errorf("Error applying init status plugin: %v", err)
 		}
 	}
 }

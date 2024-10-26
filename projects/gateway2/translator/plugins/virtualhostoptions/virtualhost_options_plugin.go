@@ -160,6 +160,9 @@ func optionsToStr(opts []*solokubev1.VirtualHostOption) string {
 	}
 	return strings.Join(resourceNames, ", ")
 }
+func (p *plugin) InitStatusPlugin(ctx context.Context, statusCtx *plugins.StatusContext) error {
+	return nil
+}
 
 // Add all statuses for processed VirtualHostOptions. These could come from the VHO itself or
 // or any VH to which it is attached.

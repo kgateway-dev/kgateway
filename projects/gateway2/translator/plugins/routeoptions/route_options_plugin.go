@@ -105,10 +105,35 @@ func (p *plugin) ApplyRoutePlugin(
 	return nil
 }
 
+func (p *plugin) InitStatusPlugin(ctx context.Context, statusCtx *plugins.StatusContext) error {
+	for _, proxyWithReport := range statusCtx.ProxiesWithReports {
+		// now that we translate proxies one by one, we can't assume ApplyRoutePlugin is called before ApplyStatusPlugin for all proxies
+		// ApplyStatusPlugin should be come idempotent, as also now it gets applied outside of translation context.
+		// we need to track ownership separately. TODO: re-think this on monday
+
+		// for this specific proxy, get all the route errors and their associated RouteOption sources
+		routeErrors := extractRouteErrors(proxyWithReport.Reports.ProxyReport)
+
+		for roKey := range routeErrors {
+
+			var newStatus legacyStatus
+			newStatus.subresourceStatus = make(map[string]*core.Status)
+
+			// update the cache
+			p.legacyStatusCache[roKey] = newStatus
+		}
+	}
+	return nil
+}
+
 func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.StatusContext) error {
 	logger := contextutils.LoggerFrom(ctx).Desugar()
 	// gather all RouteOptions we need to report status for
 	for _, proxyWithReport := range statusCtx.ProxiesWithReports {
+		// now that we translate proxies one by one, we can't assume ApplyRoutePlugin is called before ApplyStatusPlugin for all proxies
+		// ApplyStatusPlugin should be come idempotent, as also now it gets applied outside of translation context.
+		// we need to track ownership separately. TODO: re-think this on monday
+
 		// get proxy status to use for RouteOption status
 		proxyStatus := p.statusReporter.StatusFromReport(proxyWithReport.Reports.ResourceReports[proxyWithReport.Proxy], nil)
 
@@ -120,7 +145,7 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 			if !ok {
 				// we are processing an error that has a RouteOption source that we hadn't encountered until now
 				// this shouldn't happen
-				contextutils.LoggerFrom(ctx).DPanic("while trying to apply status for RouteOptions, we found a Route error sourced by an unknown RouteOption", "RouteOption", roKey)
+				logger.DPanic("while trying to apply status for RouteOptions, we found a Route error sourced by an unknown RouteOption", zap.Stringer("RouteOption", roKey))
 			}
 
 			// set the subresource status for this specific proxy on the RO
