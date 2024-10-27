@@ -70,9 +70,12 @@ type PluginOpts struct {
 	Secrets                 factory.ResourceClientFactory
 	SidecarOnGatewayEnabled bool
 	Consul                  bootstrap.Consul
-	KubeClient              k8skube.Interface
-	KubeCoreCache           corecache.KubeCoreCache
-	SvcCollection           krt.Collection[*corev1.Service]
+	// If plugins do NOT run in GGv2/KRT (i.e. in legacy edge), then we will this kube cache set.
+	KubeClient    k8skube.Interface
+	KubeCoreCache corecache.KubeCoreCache
+	// If plugins run in GGv2/KRT, then we will have these collections.
+	// it is currently used for the k8s plugin. in the future plugins may own their own collections.
+	SvcCollection krt.Collection[*corev1.Service]
 }
 
 func FromBootstrap(opts bootstrap.Opts) PluginOpts {

@@ -75,11 +75,7 @@ type ProxySyncer struct {
 	proxyTranslator ProxyTranslator
 	istioClient     kube.Client
 
-	// secret client needed to use existing kube secret -> gloo secret converters
-	// the only actually use is to do client.NewResource() to get a gloov1.Secret
-	// we can/should probably break this dependency entirely relatively easily
-	legacySecretClient *kubesecret.ResourceClient
-	pods               krt.Collection[krtcollections.LocalityPod]
+	pods krt.Collection[krtcollections.LocalityPod]
 
 	proxyReconcileQueue ggv2utils.AsyncQueue[gloov1.ProxyList]
 
@@ -130,18 +126,13 @@ func NewProxySyncer(
 ) *ProxySyncer {
 
 	return &ProxySyncer{
-		controllerName:  controllerName,
-		writeNamespace:  writeNamespace,
-		inputs:          inputs,
-		mgr:             mgr,
-		k8sGwExtensions: k8sGwExtensions,
-		proxyTranslator: NewProxyTranslator(translator, xdsCache, settings, syncerExtensions, glooReporter),
-		istioClient:     client,
-		legacySecretClient: &kubesecret.ResourceClient{
-			KubeCoreResourceClient: common.KubeCoreResourceClient{
-				ResourceType: &gloov1.Secret{},
-			},
-		},
+		controllerName:      controllerName,
+		writeNamespace:      writeNamespace,
+		inputs:              inputs,
+		mgr:                 mgr,
+		k8sGwExtensions:     k8sGwExtensions,
+		proxyTranslator:     NewProxyTranslator(translator, xdsCache, settings, syncerExtensions, glooReporter),
+		istioClient:         client,
 		pods:                pods,
 		proxyReconcileQueue: proxyReconcileQueue,
 	}
@@ -579,10 +570,18 @@ func (s *ProxySyncer) buildXdsSnapshot(
 	}
 	latestSnap.Artifacts = as
 
+	// secret client needed to use existing kube secret -> gloo secret converters
+	// the only actually use is to do client.NewResource() to get a gloov1.Secret
+	legacySecretClient := &kubesecret.ResourceClient{
+		KubeCoreResourceClient: common.KubeCoreResourceClient{
+			ResourceType: &gloov1.Secret{},
+		},
+	}
+
 	// this must be a solo-kit based kube secret client, we accept a panic if not
 	gs := make([]*gloov1.Secret, 0, len(secrets))
 	for _, i := range secrets {
-		secret, err := kubeconverters.GlooSecretConverterChain.FromKubeSecret(ctx, s.legacySecretClient, i)
+		secret, err := kubeconverters.GlooSecretConverterChain.FromKubeSecret(ctx, legacySecretClient, i)
 		if err != nil {
 			logger.Errorf(
 				"error while trying to convert kube secret %s to gloo secret: %s",

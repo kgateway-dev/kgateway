@@ -29,6 +29,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	uzap "go.uber.org/zap"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 )
@@ -185,12 +186,14 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 func (c *ControllerBuilder) Start(ctx context.Context) error {
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Info("starting gateway controller")
+	// GetXdsAddress waits for gloo-edge to populate the xds address of the server.
+	// in the future this logic may move here and be duplicated.
 	xdsHost, xdsPort := c.cfg.SetupOpts.GetXdsAddress(ctx)
 	if xdsHost == "" {
 		return ctx.Err()
 	}
 
-	logger.Info("got xds address for deployer")
+	logger.Infow("got xds address for deployer", uzap.String("xds_host", xdsHost), uzap.Int32("xds_port", xdsPort))
 
 	integrationEnabled := c.cfg.InitialSettings.Spec.GetGloo().GetIstioOptions().GetEnableIntegration().GetValue()
 

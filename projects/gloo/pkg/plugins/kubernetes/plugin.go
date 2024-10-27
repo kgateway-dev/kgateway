@@ -74,6 +74,9 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *cl
 	xds.SetEdsOnCluster(out, p.settings)
 	upstreamRef := in.GetMetadata().Ref()
 
+	// if we are in ggv2 / krt mode, we won't have the kubeCoreCache set.
+	// instead we will use the krt collection to fetch the service.
+	// in a future PR plugins will have access to krt context, so they can use fetch.
 	if p.svcCollection != nil {
 		// TODO: change this to fetch once we have krt context in plugins in a follow-up
 		if p.svcCollection.GetKey(krt.Key[*corev1.Service](krt.Named{

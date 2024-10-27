@@ -61,7 +61,7 @@ func getInitialSettings(ctx context.Context, c istiokube.Client, nns types.Names
 
 	i, err := c.Dynamic().Resource(settingsGVR).Namespace(nns.Namespace).Get(ctx, nns.Name, metav1.GetOptions{})
 	if err != nil {
-		logger.DPanicf("failed to get initial settings: %v", err)
+		logger.Panicf("failed to get initial settings: %v", err)
 		return nil
 	}
 	logger.Infof("got initial settings")
@@ -70,7 +70,7 @@ func getInitialSettings(ctx context.Context, c istiokube.Client, nns types.Names
 	out := &empty
 	err = runtime.DefaultUnstructuredConverter.FromUnstructured(i.UnstructuredContent(), out)
 	if err != nil {
-		logger.DPanic("failed converting unstructured into %T: %v", empty, i)
+		logger.Panicf("failed converting unstructured into %T: %v", empty, i)
 		return nil
 	}
 	return out

@@ -18,7 +18,7 @@ providers:
     live_reload_deps:
       - projects/gloo
     label: gloo
-    build_binary: make -B gloo
+    build_binary: GCFLAGS='all="-N -l"' make -B gloo
     binary_name: gloo-linux-$ARCH
     # debug_port: 50100
     port_forwards:
