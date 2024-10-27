@@ -108,12 +108,15 @@ message LoadBalancerConfig {
         google.protobuf.DoubleValue min_weight_percent = 3;
     }
 
-    // If set to true, the load balancer will close connections when the host set changes.
+    // If set to true, the load balancer will drain connections when the host set changes.
     //
-    // Ring Hash or Maglev can be used to ensure that groups of clients with the same key are routed to the
-    // same upstream host.
-    // Disruptions can result in the the host set to change for a subset of proxies causing connections
-    // to no longer be routed consistently.
-    // Enabling this feature will help ensure that clients reconnect after recovery and are routed consistently again.
+    // Ring Hash or Maglev can be used to ensure that clients with the same key 
+    // are routed to the same upstream host.
+    // Distruptions can cause new connections with the same key as existing connections
+    // to be routed to different hosts.
+    // Enabling this feature will cause the load balancer to drain existing connections
+    // when the host set changes, ensuring that new connections with the same key are
+    // consistently routed to the same host.
+    // Long-lived connections are not closed immediately, but will be drained over time.
     bool close_connections_on_host_set_change = 10;
 }
