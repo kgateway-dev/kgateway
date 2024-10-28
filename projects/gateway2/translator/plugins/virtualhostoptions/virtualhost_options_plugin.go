@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -30,6 +31,8 @@ import (
 var (
 	_ plugins.ListenerPlugin = &plugin{}
 	_ plugins.StatusPlugin   = &plugin{}
+
+	ReadingVirtualHostOptionErrStr = "error reading VirtualHostOption"
 )
 
 type plugin struct {
@@ -162,6 +165,7 @@ func optionsToStr(opts []*solokubev1.VirtualHostOption) string {
 
 // Add all statuses for processed VirtualHostOptions. These could come from the VHO itself or
 // or any VH to which it is attached.
+// It returns the aggregated errors reading the VirtualHostOptions if any.
 func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.StatusContext) error {
 	logger := contextutils.LoggerFrom(ctx)
 	// gather all VirtualHostOptions we need to report status for
@@ -199,9 +203,14 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 	}
 	virtualHostOptionReport := make(reporter.ResourceReports)
 	// Loop through vhostopts we processed and have a status for
+	var multierr *multierror.Error
 	for vhOptKey, status := range p.classicStatusCache {
 		// get the obj by namespacedName
-		vhOptObj, _ := p.vhOptionClient.Read(vhOptKey.Namespace, vhOptKey.Name, clients.ReadOpts{Ctx: ctx})
+		vhOptObj, err := p.vhOptionClient.Read(vhOptKey.Namespace, vhOptKey.Name, clients.ReadOpts{Ctx: ctx})
+		if err != nil {
+			multierr = multierror.Append(multierr, eris.Wrapf(err, "%s %s in namespace %s", ReadingVirtualHostOptionErrStr, vhOptKey.Name, vhOptKey.Namespace))
+			continue
+		}
 
 		// mark this object to be processed
 		virtualHostOptionReport.Accept(vhOptObj)
@@ -214,13 +223,14 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 		virtualHostOptionReport.AddWarnings(vhOptObj, status.warnings...)
 
 		// actually write out the reports!
-		err := p.statusReporter.WriteReports(ctx, virtualHostOptionReport, status.subresourceStatus)
+		err = p.statusReporter.WriteReports(ctx, virtualHostOptionReport, status.subresourceStatus)
 		if err != nil {
-			return eris.Wrap(err, "writing status report from VirtualHostOptionPlugin")
+			multierr = multierror.Append(multierr, eris.Wrap(err, "writing status report from VirtualHostOptionPlugin"))
+			continue
 		}
 
 	}
-	return nil
+	return multierr.ErrorOrNil()
 }
 
 // given a ProxyReport, extract and aggregate all VirtualHost errors that have VirtualHostOption source metadata

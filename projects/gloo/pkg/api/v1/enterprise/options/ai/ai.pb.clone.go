@@ -849,10 +849,14 @@ func (m *AIPromptGuard_Regex) Clone() proto.Message {
 	target = &AIPromptGuard_Regex{}
 
 	if m.GetMatches() != nil {
-		target.Matches = make([]string, len(m.GetMatches()))
+		target.Matches = make([]*AIPromptGuard_Regex_RegexMatch, len(m.GetMatches()))
 		for idx, v := range m.GetMatches() {
 
-			target.Matches[idx] = v
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Matches[idx] = h.Clone().(*AIPromptGuard_Regex_RegexMatch)
+			} else {
+				target.Matches[idx] = proto.Clone(v).(*AIPromptGuard_Regex_RegexMatch)
+			}
 
 		}
 	}
@@ -865,6 +869,8 @@ func (m *AIPromptGuard_Regex) Clone() proto.Message {
 
 		}
 	}
+
+	target.Action = m.GetAction()
 
 	return target
 }
@@ -881,14 +887,14 @@ func (m *AIPromptGuard_Webhook) Clone() proto.Message {
 
 	target.Port = m.GetPort()
 
-	if m.GetHeaders() != nil {
-		target.Headers = make([]*AIPromptGuard_Webhook_HeaderMatch, len(m.GetHeaders()))
-		for idx, v := range m.GetHeaders() {
+	if m.GetForwardHeaders() != nil {
+		target.ForwardHeaders = make([]*AIPromptGuard_Webhook_HeaderMatch, len(m.GetForwardHeaders()))
+		for idx, v := range m.GetForwardHeaders() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Headers[idx] = h.Clone().(*AIPromptGuard_Webhook_HeaderMatch)
+				target.ForwardHeaders[idx] = h.Clone().(*AIPromptGuard_Webhook_HeaderMatch)
 			} else {
-				target.Headers[idx] = proto.Clone(v).(*AIPromptGuard_Webhook_HeaderMatch)
+				target.ForwardHeaders[idx] = proto.Clone(v).(*AIPromptGuard_Webhook_HeaderMatch)
 			}
 
 		}
@@ -945,6 +951,21 @@ func (m *AIPromptGuard_Response) Clone() proto.Message {
 	} else {
 		target.Webhook = proto.Clone(m.GetWebhook()).(*AIPromptGuard_Webhook)
 	}
+
+	return target
+}
+
+// Clone function
+func (m *AIPromptGuard_Regex_RegexMatch) Clone() proto.Message {
+	var target *AIPromptGuard_Regex_RegexMatch
+	if m == nil {
+		return target
+	}
+	target = &AIPromptGuard_Regex_RegexMatch{}
+
+	target.Pattern = m.GetPattern()
+
+	target.Name = m.GetName()
 
 	return target
 }
