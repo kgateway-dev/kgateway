@@ -41,14 +41,14 @@ var _ = Describe("RouteWrappersTest", func() {
 		Entry(
 			"equal will return false",
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{defaultMatcher()},
 				},
 			},
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{defaultMatcher()},
 				},
 			},
@@ -57,8 +57,8 @@ var _ = Describe("RouteWrappersTest", func() {
 		Entry(
 			"Exact paths will take precedence over prefix",
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{
 						{
 							PathSpecifier: &matchers.Matcher_Prefix{
@@ -69,8 +69,8 @@ var _ = Describe("RouteWrappersTest", func() {
 				},
 			},
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{
 						{
 							PathSpecifier: &matchers.Matcher_Exact{
@@ -85,8 +85,8 @@ var _ = Describe("RouteWrappersTest", func() {
 		Entry(
 			"Exact paths will take precedence over Regex",
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{
 						{
 							PathSpecifier: &matchers.Matcher_Regex{
@@ -97,8 +97,8 @@ var _ = Describe("RouteWrappersTest", func() {
 				},
 			},
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{
 						{
 							PathSpecifier: &matchers.Matcher_Exact{
@@ -113,8 +113,8 @@ var _ = Describe("RouteWrappersTest", func() {
 		Entry(
 			"Regex paths will take precedence over Prefix",
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{
 						{
 							PathSpecifier: &matchers.Matcher_Regex{
@@ -125,8 +125,8 @@ var _ = Describe("RouteWrappersTest", func() {
 				},
 			},
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{
 						{
 							PathSpecifier: &matchers.Matcher_Prefix{
@@ -141,8 +141,8 @@ var _ = Describe("RouteWrappersTest", func() {
 		Entry(
 			"Regex paths will not take precedence over Regex regardless of their lengths",
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{
 						{
 							PathSpecifier: &matchers.Matcher_Regex{
@@ -153,8 +153,8 @@ var _ = Describe("RouteWrappersTest", func() {
 				},
 			},
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{
 						{
 							PathSpecifier: &matchers.Matcher_Regex{
@@ -169,8 +169,8 @@ var _ = Describe("RouteWrappersTest", func() {
 		Entry(
 			"Regex paths will not take precedence over Regex regardless of their lengths",
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{
 						{
 							PathSpecifier: &matchers.Matcher_Regex{
@@ -181,8 +181,8 @@ var _ = Describe("RouteWrappersTest", func() {
 				},
 			},
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{
 						{
 							PathSpecifier: &matchers.Matcher_Regex{
@@ -197,8 +197,8 @@ var _ = Describe("RouteWrappersTest", func() {
 		Entry(
 			"PrefixPaths check length",
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{
 						{
 							PathSpecifier: &matchers.Matcher_Prefix{
@@ -209,8 +209,8 @@ var _ = Describe("RouteWrappersTest", func() {
 				},
 			},
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{
 						{
 							PathSpecifier: &matchers.Matcher_Prefix{
@@ -225,14 +225,14 @@ var _ = Describe("RouteWrappersTest", func() {
 		Entry(
 			"matching paths will check method",
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{defaultMatcher()},
 				},
 			},
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{
 						{
 							PathSpecifier: &matchers.Matcher_Prefix{
@@ -248,14 +248,14 @@ var _ = Describe("RouteWrappersTest", func() {
 		Entry(
 			"matching paths and method will check headers",
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{defaultMatcher()},
 				},
 			},
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{
 						{
 							PathSpecifier: &matchers.Matcher_Prefix{
@@ -276,8 +276,8 @@ var _ = Describe("RouteWrappersTest", func() {
 		Entry(
 			"different name same ns",
 			&SortableRoute{
-				HttpRoute: defaultRtB(),
-				Route: &v1.Route{
+				RouteObject: defaultRtB(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{
 						{
 							PathSpecifier: &matchers.Matcher_Prefix{
@@ -294,8 +294,8 @@ var _ = Describe("RouteWrappersTest", func() {
 				},
 			},
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{
 						{
 							PathSpecifier: &matchers.Matcher_Prefix{
@@ -316,8 +316,8 @@ var _ = Describe("RouteWrappersTest", func() {
 		Entry(
 			"one has more headers",
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{
 						{
 							PathSpecifier: &matchers.Matcher_Prefix{
@@ -334,8 +334,8 @@ var _ = Describe("RouteWrappersTest", func() {
 				},
 			},
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{
 						{
 							PathSpecifier: &matchers.Matcher_Prefix{
@@ -360,9 +360,9 @@ var _ = Describe("RouteWrappersTest", func() {
 		Entry(
 			"one is higher more headers",
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Idx:       1,
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				Idx:         1,
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{
 						{
 							PathSpecifier: &matchers.Matcher_Prefix{
@@ -379,9 +379,9 @@ var _ = Describe("RouteWrappersTest", func() {
 				},
 			},
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Idx:       0,
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				Idx:         0,
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{
 						{
 							PathSpecifier: &matchers.Matcher_Prefix{
@@ -402,14 +402,14 @@ var _ = Describe("RouteWrappersTest", func() {
 		Entry(
 			"All else fails use query",
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{defaultMatcher()},
 				},
 			},
 			&SortableRoute{
-				HttpRoute: defaultRt(),
-				Route: &v1.Route{
+				RouteObject: defaultRt(),
+				GlooRoute: &v1.Route{
 					Matchers: []*matchers.Matcher{
 						{
 							PathSpecifier: &matchers.Matcher_Prefix{

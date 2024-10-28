@@ -46,6 +46,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
 	ggv2utils "github.com/solo-io/gloo/projects/gateway2/utils"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	kubeconverters "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
@@ -59,7 +60,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
+
+const gatewayV1A2Version = "v1alpha2"
 
 // ProxySyncer is responsible for translating Kubernetes Gateway CRs into Gloo Proxies
 // and syncing the proxyClient with the newly translated proxies.
@@ -214,11 +218,15 @@ func (p glooProxy) Equals(in glooProxy) bool {
 	if !maps.Equal(p.reportMap.Gateways, in.reportMap.Gateways) {
 		return false
 	}
-	if !maps.Equal(p.reportMap.Routes, in.reportMap.Routes) {
+	if !maps.Equal(p.reportMap.HTTPRoutes, in.reportMap.HTTPRoutes) {
+		return false
+	}
+	if !maps.Equal(p.reportMap.TCPRoutes, in.reportMap.TCPRoutes) {
 		return false
 	}
 	return true
 }
+
 func (p glooProxy) ResourceName() string {
 	return xds.SnapshotCacheKey(p.proxy)
 }
@@ -239,7 +247,10 @@ func (r report) Equals(in report) bool {
 	if !maps.Equal(r.ReportMap.Gateways, in.ReportMap.Gateways) {
 		return false
 	}
-	if !maps.Equal(r.ReportMap.Routes, in.ReportMap.Routes) {
+	if !maps.Equal(r.ReportMap.HTTPRoutes, in.ReportMap.HTTPRoutes) {
+		return false
+	}
+	if !maps.Equal(r.ReportMap.TCPRoutes, in.ReportMap.TCPRoutes) {
 		return false
 	}
 	return true
@@ -415,7 +426,7 @@ func (s *ProxySyncer) Init(ctx context.Context) error {
 		s.reconcileProxies(l)
 	})
 
-	// as proxies are created, they also contain a reportMap containing status for the Gateway and associated HTTPRoutes (really parentRefs)
+	// as proxies are created, they also contain a reportMap containing status for the Gateway and associated xRoutes (really parentRefs)
 	// here we will merge reports that are per-Proxy to a singleton Report used to persist to k8s on a timer
 	s.statusReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
 		proxies := krt.Fetch(kctx, glooProxies)
@@ -424,17 +435,30 @@ func (s *ProxySyncer) Init(ctx context.Context) error {
 			// 1. merge GW Reports for all Proxies' status reports
 			maps.Copy(merged.Gateways, p.reportMap.Gateways)
 
-			// 2. merge parentRefs into RouteReports
-			for rnn, rr := range p.reportMap.Routes {
+			// 2. merge httproute parentRefs into RouteReports
+			for rnn, rr := range p.reportMap.HTTPRoutes {
 				// if we haven't encountered this route, just copy it over completely
-				old := merged.Routes[rnn]
+				old := merged.HTTPRoutes[rnn]
 				if old == nil {
-					merged.Routes[rnn] = rr
+					merged.HTTPRoutes[rnn] = rr
 					continue
 				}
 				// else, let's merge our parentRefs into the existing map
 				// obsGen will stay as-is...
-				maps.Copy(p.reportMap.Routes[rnn].Parents, rr.Parents)
+				maps.Copy(p.reportMap.HTTPRoutes[rnn].Parents, rr.Parents)
+			}
+
+			// 3. merge tcproute parentRefs into RouteReports
+			for rnn, rr := range p.reportMap.TCPRoutes {
+				// if we haven't encountered this route, just copy it over completely
+				old := merged.TCPRoutes[rnn]
+				if old == nil {
+					merged.TCPRoutes[rnn] = rr
+					continue
+				}
+				// else, let's merge our parentRefs into the existing map
+				// obsGen will stay as-is...
+				maps.Copy(p.reportMap.TCPRoutes[rnn].Parents, rr.Parents)
 			}
 		}
 		return &report{merged}
@@ -792,41 +816,76 @@ func initStatusPlugins(
 func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
 	ctx = contextutils.WithLogger(ctx, "routeStatusSyncer")
 	logger := contextutils.LoggerFrom(ctx)
-	stopwatch := statsutils.NewTranslatorStopWatch("HTTPRouteStatusSyncer")
+	stopwatch := statsutils.NewTranslatorStopWatch("RouteStatusSyncer")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
-	// Sometimes the List returns stale (cached) httproutes, causing the status update to fail
-	// with "the object has been modified" errors. Therefore we try the status updates in a retry loop.
-	err := retry.Do(func() error {
-		for rnn := range rm.Routes {
-			route := gwv1.HTTPRoute{}
-			err := s.mgr.GetClient().Get(ctx, rnn, &route)
+	// Helper function to sync route status with retry
+	syncStatusWithRetry := func(routeType string, routeKey client.ObjectKey, getRouteFunc func() client.Object, statusUpdater func(route client.Object) error) error {
+		return retry.Do(func() error {
+			route := getRouteFunc()
+			err := s.mgr.GetClient().Get(ctx, routeKey, route)
 			if err != nil {
-				// log this at error level because this is not an expected error
-				logger.Error(err)
+				logger.Errorw(fmt.Sprintf("%s get failed", routeType), "error", err, "route", routeKey)
 				return err
 			}
-			if status := rm.BuildRouteStatus(ctx, route, s.controllerName); status != nil {
-				if !isHTTPRouteStatusEqual(&route.Status, status) {
-					route.Status = *status
-					if err := s.mgr.GetClient().Status().Update(ctx, &route); err != nil {
-						// log this as debug, since we will retry
-						logger.Debugw("httproute status update attempt failed", "error", err,
-							"httproute", fmt.Sprintf("%s.%s", route.GetNamespace(), route.GetName()))
-						return err
-					}
-				}
+			if err := statusUpdater(route); err != nil {
+				logger.Debugw(fmt.Sprintf("%s status update attempt failed", routeType), "error", err,
+					"route", fmt.Sprintf("%s.%s", routeKey.Namespace, routeKey.Name))
+				return err
 			}
+			return nil
+		},
+			retry.Attempts(5),
+			retry.Delay(100*time.Millisecond),
+			retry.DelayType(retry.BackOffDelay),
+		)
+	}
+
+	// Helper function to build route status and update if needed
+	buildAndUpdateStatus := func(route client.Object, routeType string) error {
+		var status *gwv1.RouteStatus
+
+		switch r := route.(type) {
+		case *gwv1.HTTPRoute:
+			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
+			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
+				return nil
+			}
+			r.Status.RouteStatus = *status
+		case *gwv1a2.TCPRoute:
+			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
+			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
+				return nil
+			}
+			r.Status.RouteStatus = *status
+		default:
+			logger.Warnw(fmt.Sprintf("unsupported route type for %s", routeType), "route", route)
+			return nil
 		}
-		return nil
-	},
-		retry.Attempts(5),
-		retry.Delay(100*time.Millisecond),
-		retry.DelayType(retry.BackOffDelay),
-	)
-	if err != nil {
-		logger.Errorw("all attempts failed at updating httproute statuses", "error", err)
+
+		// Update the status
+		return s.mgr.GetClient().Status().Update(ctx, route)
+	}
+
+	// Sync HTTPRoute statuses
+	for rnn := range rm.HTTPRoutes {
+		err := syncStatusWithRetry(wellknown.HTTPRouteKind, rnn, func() client.Object { return new(gwv1.HTTPRoute) }, func(route client.Object) error {
+			return buildAndUpdateStatus(route, wellknown.HTTPRouteKind)
+		})
+		if err != nil {
+			logger.Errorw("all attempts failed at updating HTTPRoute status", "error", err, "route", rnn)
+		}
+	}
+
+	// Sync TCPRoute statuses
+	for rnn := range rm.TCPRoutes {
+		err := syncStatusWithRetry(wellknown.TCPRouteKind, rnn, func() client.Object { return new(gwv1a2.TCPRoute) }, func(route client.Object) error {
+			return buildAndUpdateStatus(route, wellknown.TCPRouteKind)
+		})
+		if err != nil {
+			logger.Errorw("all attempts failed at updating TCPRoute status", "error", err, "route", rnn)
+		}
 	}
 }
 
@@ -913,7 +972,8 @@ func isGatewayStatusEqual(objA, objB *gwv1.GatewayStatus) bool {
 	return cmp.Equal(objA, objB, opts)
 }
 
-func isHTTPRouteStatusEqual(objA, objB *gwv1.HTTPRouteStatus) bool {
+// isRouteStatusEqual compares two RouteStatus objects directly
+func isRouteStatusEqual(objA, objB *gwv1.RouteStatus) bool {
 	return cmp.Equal(objA, objB, opts)
 }
 

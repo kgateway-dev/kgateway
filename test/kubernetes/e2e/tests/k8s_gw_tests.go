@@ -11,7 +11,8 @@ import (
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_delegation"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/route_options"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/services"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/services/httproute"
+	"github.com/solo-io/gloo/test/kubernetes/e2e/features/services/tcproute"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/upstreams"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/virtualhost_options"
 )
@@ -25,7 +26,8 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("RouteOptions", route_options.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("VirtualHostOptions", virtualhost_options.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Upstreams", upstreams.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("Services", services.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("HTTPRouteServices", httproute.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("TCPRouteServices", tcproute.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("HeadlessSvc", headless_svc.NewK8sGatewayHeadlessSvcSuite)
 	kubeGatewaySuiteRunner.Register("PortRouting", port_routing.NewK8sGatewayTestingSuite)
 	kubeGatewaySuiteRunner.Register("RouteDelegation", route_delegation.NewTestingSuite)

@@ -18,7 +18,7 @@ listeners:
               methods:
               - PUT
             options: {}
-            name: route-a-a-0-0
+            name: httproute-route-a-a-0-0
             routeAction:
               single:
                 kube:
@@ -29,7 +29,7 @@ listeners:
           - matchers:
             - regex: /a/a/2/.*
             options: {}
-            name: route-a-a-1-0
+            name: httproute-route-a-a-1-0
             routeAction:
               single:
                 kube:
@@ -46,7 +46,7 @@ listeners:
               - name: queryA
                 value: valA
             options: {}
-            name: route-a-a-2-0
+            name: httproute-route-a-a-2-0
             routeAction:
               single:
                 kube:
@@ -57,7 +57,7 @@ listeners:
           - matchers:
             - prefix: /a
             options: {}
-            name: route-b-a-0-0
+            name: httproute-route-b-a-0-0
             routeAction:
               single:
                 kube:
@@ -68,7 +68,7 @@ listeners:
           - matchers:
             - prefix: /
             options: {}
-            name: example-route-infra-0-0
+            name: httproute-example-route-infra-0-0
             routeAction:
               single:
                 kube:
@@ -92,7 +92,7 @@ listeners:
               - name: query1
                 value: val1
             options: {}
-            name: route-a-a-0-0
+            name: httproute-route-a-a-0-0
             routeAction:
               single:
                 kube:
@@ -111,7 +111,7 @@ listeners:
                 value: val1
               regex: /x/a/2/.*
             options: {}
-            name: route-a-a-1-0
+            name: httproute-route-a-a-1-0
             routeAction:
               single:
                 kube:
@@ -134,7 +134,7 @@ listeners:
               - name: queryA
                 value: valA
             options: {}
-            name: route-a-a-2-0
+            name: httproute-route-a-a-2-0
             routeAction:
               single:
                 kube:
@@ -153,7 +153,7 @@ listeners:
               - name: query1
                 value: val1
             options: {}
-            name: route-b-a-0-0
+            name: httproute-route-b-a-0-0
             routeAction:
               single:
                 kube:

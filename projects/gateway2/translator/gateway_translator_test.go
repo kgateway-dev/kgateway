@@ -6,12 +6,13 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/skv2/codegen/util"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/solo-io/gloo/projects/gateway2/reports"
 )
 
 type translatorTestCase struct {
@@ -123,7 +124,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				Name:      "example-gateway",
 			},
 			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				route := gwv1.HTTPRoute{
+				route := &gwv1.HTTPRoute{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "example-route",
 						Namespace: "default",
@@ -147,7 +148,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				Name:      "example-gateway",
 			},
 			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
-				route := gwv1.HTTPRoute{
+				route := &gwv1.HTTPRoute{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "example-route",
 						Namespace: "default",
@@ -169,6 +170,26 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "gw",
+			},
+		}),
+	Entry(
+		"tcp gateway with basic routing",
+		translatorTestCase{
+			inputFile:  "tcp-routing/basic.yaml",
+			outputFile: "tcp-routing/basic-proxy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}),
+	Entry(
+		"tcp gateway with multiple backend services",
+		translatorTestCase{
+			inputFile:  "tcp-routing/multi-backend.yaml",
+			outputFile: "tcp-routing/multi-backend-proxy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-tcp-gateway",
 			},
 		}),
 )

@@ -42,7 +42,7 @@ func (p *plugin) ApplyRoutePlugin(
 	if len(filters) > 1 {
 		// we don't support multiple extension ref filters on a single route.
 		errMsg := fmt.Sprintf("multiple DirectResponse extension refs found. expected 1, found %d", len(filters))
-		routeCtx.Reporter.SetCondition(reports.HTTPRouteCondition{
+		routeCtx.Reporter.SetCondition(reports.RouteCondition{
 			Type:    gwv1.RouteConditionAccepted,
 			Status:  metav1.ConditionFalse,
 			Reason:  gwv1.RouteReasonIncompatibleFilters,
@@ -53,10 +53,10 @@ func (p *plugin) ApplyRoutePlugin(
 	}
 
 	// verify the DR reference is valid and get the DR object from the cluster.
-	dr, err := utils.GetExtensionRefObj[*v1alpha1.DirectResponse](ctx, routeCtx.Route, p.gwQueries, filters[0].ExtensionRef)
+	dr, err := utils.GetExtensionRefObj[*v1alpha1.DirectResponse](ctx, routeCtx.HTTPRoute, p.gwQueries, filters[0].ExtensionRef)
 	if err != nil {
 		outputRoute.Action = ErrorResponseAction()
-		routeCtx.Reporter.SetCondition(reports.HTTPRouteCondition{
+		routeCtx.Reporter.SetCondition(reports.RouteCondition{
 			Type:    gwv1.RouteConditionResolvedRefs,
 			Status:  metav1.ConditionFalse,
 			Reason:  gwv1.RouteReasonBackendNotFound,
@@ -71,7 +71,7 @@ func (p *plugin) ApplyRoutePlugin(
 		// so we'll return an error. note: the direct response plugin runs after other route plugins
 		// that modify the output route (e.g. the redirect plugin), so this should be a rare case.
 		errMsg := fmt.Sprintf("DirectResponse cannot be applied to route with existing action: %T", outputRoute.GetAction())
-		routeCtx.Reporter.SetCondition(reports.HTTPRouteCondition{
+		routeCtx.Reporter.SetCondition(reports.RouteCondition{
 			Type:    gwv1.RouteConditionAccepted,
 			Status:  metav1.ConditionFalse,
 			Reason:  gwv1.RouteReasonIncompatibleFilters,

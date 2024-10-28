@@ -12,6 +12,7 @@ rules:
   resources:
   - gatewayclasses
   - gateways
+  - tcproutes
   - httproutes
   - referencegrants
   verbs: ["get", "list", "watch"]
@@ -44,6 +45,7 @@ rules:
   - gatewayclasses/status
   - gateways/status
   - httproutes/status
+  - tcproutes/status
   verbs: ["update", "patch"]
 - apiGroups:
   - apiextensions.k8s.io

@@ -20,7 +20,7 @@ listeners:
                 value: canary
               prefix: /
             options: {}
-            name: bar-route-default-0-0
+            name: httproute-bar-route-default-0-0
             routeAction:
               single:
                 kube:
@@ -31,7 +31,7 @@ listeners:
           - matchers:
             - prefix: /
             options: {}
-            name: bar-route-default-1-0
+            name: httproute-bar-route-default-1-0
             routeAction:
               single:
                 kube:
@@ -47,7 +47,7 @@ listeners:
           - matchers:
             - prefix: /
             options: {}
-            name: example-route-default-0-0
+            name: httproute-example-route-default-0-0
             routeAction:
               single:
                 kube:
@@ -63,7 +63,7 @@ listeners:
           - matchers:
             - prefix: /login
             options: {}
-            name: foo-route-default-0-0
+            name: httproute-foo-route-default-0-0
             routeAction:
               single:
                 kube:

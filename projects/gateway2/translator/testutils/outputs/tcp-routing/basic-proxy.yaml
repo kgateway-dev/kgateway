@@ -1,0 +1,24 @@
+---
+listeners:
+- name: tcp
+  bindAddress: "::"
+  bindPort: 8080
+  aggregateListener:
+    httpResources: {}
+    tcpListeners:
+      - tcpListener:
+          tcpHosts:
+            - name: example-tcp-route-rule-0
+              destination:
+                single:
+                  kube:
+                    ref:
+                      name: example-tcp-svc
+                      namespace: default
+                    port: 8080
+metadata:
+  labels:
+    created_by: gloo-kube-gateway-api
+    gateway_namespace: "default"
+  name: default-example-gateway
+  namespace: gloo-system

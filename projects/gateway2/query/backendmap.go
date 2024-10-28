@@ -4,6 +4,9 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
+// BackendMap is a generic type used to manage mappings of backends for Gateway API configurations.
+// It's designed to store and manage backend references, like services, and to associate those references
+// with either data (of a generic type T) or errors.
 type BackendMap[T any] struct {
 	items  map[backendRefKey]T
 	errors map[backendRefKey]error

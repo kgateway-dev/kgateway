@@ -34,7 +34,7 @@ func TestExtensionRef(t *testing.T) {
 	filters := utils.FindExtensionRefFilters(rtCtx.Rule, gk)
 	g.Expect(filters).ToNot(BeEmpty())
 
-	routeOption, err := utils.GetExtensionRefObj[*solokubev1.RouteOption](context.Background(), rtCtx.Route, queries, filters[0].ExtensionRef)
+	routeOption, err := utils.GetExtensionRefObj[*solokubev1.RouteOption](context.Background(), rtCtx.HTTPRoute, queries, filters[0].ExtensionRef)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(routeOption.Spec.GetOptions().GetFaults().GetAbort().GetPercentage()).To(BeEquivalentTo(1))
 }
@@ -52,11 +52,11 @@ func TestMultipleExtensionRef(t *testing.T) {
 	filters := utils.FindExtensionRefFilters(rtCtx.Rule, gk)
 	g.Expect(filters).ToNot(BeEmpty())
 
-	routeOption1, err := utils.GetExtensionRefObj[*solokubev1.RouteOption](context.Background(), rtCtx.Route, queries, filters[0].ExtensionRef)
+	routeOption1, err := utils.GetExtensionRefObj[*solokubev1.RouteOption](context.Background(), rtCtx.HTTPRoute, queries, filters[0].ExtensionRef)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(routeOption1.Spec.GetOptions().GetFaults().GetAbort().GetPercentage()).To(BeEquivalentTo(1))
 
-	routeOption2, err := utils.GetExtensionRefObj[*solokubev1.RouteOption](context.Background(), rtCtx.Route, queries, filters[1].ExtensionRef)
+	routeOption2, err := utils.GetExtensionRefObj[*solokubev1.RouteOption](context.Background(), rtCtx.HTTPRoute, queries, filters[1].ExtensionRef)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(routeOption2.Spec.GetOptions().GetFaults().GetAbort().GetPercentage()).To(BeEquivalentTo(2))
 }
@@ -74,7 +74,7 @@ func TestExtensionRefWrongObject(t *testing.T) {
 	filters := utils.FindExtensionRefFilters(rtCtx.Rule, gk)
 	g.Expect(filters).ToNot(BeEmpty())
 
-	_, err := utils.GetExtensionRefObj[*solokubev1.VirtualHostOption](context.Background(), rtCtx.Route, queries, filters[0].ExtensionRef)
+	_, err := utils.GetExtensionRefObj[*solokubev1.VirtualHostOption](context.Background(), rtCtx.HTTPRoute, queries, filters[0].ExtensionRef)
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(errors.Is(err, utils.ErrTypesNotEqual)).To(BeTrue())
 }
@@ -117,7 +117,7 @@ func routeOption2() *solokubev1.RouteOption {
 
 func routeContext() plugins.RouteContext {
 	return plugins.RouteContext{
-		Route: &gwv1.HTTPRoute{},
+		HTTPRoute: &gwv1.HTTPRoute{},
 		Rule: &gwv1.HTTPRouteRule{
 			Filters: []gwv1.HTTPRouteFilter{
 				{
@@ -135,7 +135,7 @@ func routeContext() plugins.RouteContext {
 
 func routeContextMultipleFilters() plugins.RouteContext {
 	return plugins.RouteContext{
-		Route: &gwv1.HTTPRoute{},
+		HTTPRoute: &gwv1.HTTPRoute{},
 		Rule: &gwv1.HTTPRouteRule{
 			Filters: []gwv1.HTTPRouteFilter{
 				{

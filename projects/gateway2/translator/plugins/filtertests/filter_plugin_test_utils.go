@@ -46,7 +46,7 @@ func assertExpectedRoute(
 	filters ...gwv1.HTTPRouteFilter,
 ) {
 	rtCtx := &plugins.RouteContext{
-		Route: &gwv1.HTTPRoute{},
+		HTTPRoute: &gwv1.HTTPRoute{},
 		Rule: &gwv1.HTTPRouteRule{
 			Filters: filters,
 		},
