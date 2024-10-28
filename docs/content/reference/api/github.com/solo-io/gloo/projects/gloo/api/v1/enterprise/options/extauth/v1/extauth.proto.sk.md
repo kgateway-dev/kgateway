@@ -96,7 +96,7 @@ weight: 5
 - [Response](#response)
 - [ExtAuthConfig](#extauthconfig)
 - [Azure](#azure)
-- [DefaultProvider](#defaultprovider)
+- [ClaimToHeader](#claimtoheader)
 - [BasicAuthInternal](#basicauthinternal)
 - [EncryptionType](#encryptiontype)
 - [Sha1](#sha1)
@@ -2158,17 +2158,23 @@ This way, you can enable distributed claims and caching for when users are membe
 
 
 ---
-### DefaultProvider
+### ClaimToHeader
 
  
-No-op, represents default OIDC distributed claims behavior
+Map a single claim from an OAuth2 or OIDC token to a header in the request to the upstream destination.
 
 ```yaml
+"claim": string
+"header": string
+"append": bool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
+| `claim` | `string` | The claim name from the token, such as `sub`. |
+| `header` | `string` | The header to copy the claim to, such as `x-sub`. |
+| `append` | `bool` | If the header exists, append the claim value to the header (true), or overwrite any existing value (false). The default behavior is to overwrite any existing value (false). |
 
 
 
@@ -2453,13 +2459,13 @@ Fields for private key JWT Client Authentication.
 Optional: Map a single claim from an OAuth2 access token to a header in the request to the upstream destination.
 
 ```yaml
-"claimsToHeaders": []enterprise.gloo.solo.io.ClaimToHeader
+"claimsToHeaders": []enterprise.gloo.solo.io.ExtAuthConfig.ClaimToHeader
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `claimsToHeaders` | [[]enterprise.gloo.solo.io.ClaimToHeader](../extauth.proto.sk/#claimtoheader) | A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination. |
+| `claimsToHeaders` | [[]enterprise.gloo.solo.io.ExtAuthConfig.ClaimToHeader](../extauth.proto.sk/#claimtoheader) | A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination. |
 
 
 
@@ -2471,13 +2477,13 @@ Optional: Map a single claim from an OAuth2 access token to a header in the requ
 Optional: Map a single claim from an OIDC identity token to a header in the request to the upstream destination.
 
 ```yaml
-"claimsToHeaders": []enterprise.gloo.solo.io.ClaimToHeader
+"claimsToHeaders": []enterprise.gloo.solo.io.ExtAuthConfig.ClaimToHeader
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `claimsToHeaders` | [[]enterprise.gloo.solo.io.ClaimToHeader](../extauth.proto.sk/#claimtoheader) | A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination. |
+| `claimsToHeaders` | [[]enterprise.gloo.solo.io.ExtAuthConfig.ClaimToHeader](../extauth.proto.sk/#claimtoheader) | A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination. |
 
 
 
@@ -2529,7 +2535,7 @@ For the moment this is just path, but we may want to configure things like iss/s
 "cacheTimeout": .google.protobuf.Duration
 "requiredScopes": .enterprise.gloo.solo.io.ExtAuthConfig.AccessTokenValidationConfig.ScopeList
 "dynamicMetadataFromClaims": map<string, string>
-"claimsToHeaders": []enterprise.gloo.solo.io.ClaimToHeader
+"claimsToHeaders": []enterprise.gloo.solo.io.ExtAuthConfig.ClaimToHeader
 "default": .enterprise.gloo.solo.io.ExtAuthConfig.AccessTokenValidationConfig.Default
 "azure": .enterprise.gloo.solo.io.ExtAuthConfig.Azure
 
@@ -2544,7 +2550,7 @@ For the moment this is just path, but we may want to configure things like iss/s
 | `cacheTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | How long the token introspection and userinfo endpoint response for a specific access token should be kept in the in-memory cache. The result will be invalidated at this timeout, or at "exp" time from the introspection result, whichever comes sooner. If omitted, defaults to 10 minutes. If zero, then no caching will be done. |
 | `requiredScopes` | [.enterprise.gloo.solo.io.ExtAuthConfig.AccessTokenValidationConfig.ScopeList](../extauth.proto.sk/#scopelist) | Require access token to have all of the scopes in the given list. This configuration applies to both opaque and JWT tokens. In the case of opaque tokens, this will check the scopes returned in the "scope" member of introspection response (as described in [Section 2.2 of RFC7662](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2). In case of JWTs the scopes to be validated are expected to be contained in the "scope" claim of the token in the form of a space-separated string. Omitting this field means that scope validation will be skipped. |
 | `dynamicMetadataFromClaims` | `map<string, string>` | Map of metadata key to claim. Ie: dynamic_metadata_from_claims: issuer: iss email: email When specified, the matching claims from the access token will be emitted as dynamic metadata. Note that metadata keys must be unique, and the claim names must be alphanumeric and use `-` or `_` as separators. Works when the access token is a JWT or when the access token is opaque, in which case the claims will refer to field in the response from the token introspection endpoint. The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`), and the structure of the claim value will be preserved in the metadata struct. |
-| `claimsToHeaders` | [[]enterprise.gloo.solo.io.ClaimToHeader](../extauth.proto.sk/#claimtoheader) |  |
+| `claimsToHeaders` | [[]enterprise.gloo.solo.io.ExtAuthConfig.ClaimToHeader](../extauth.proto.sk/#claimtoheader) |  |
 | `default` | [.enterprise.gloo.solo.io.ExtAuthConfig.AccessTokenValidationConfig.Default](../extauth.proto.sk/#default) |  Only one of `default` or `azure` can be set. |
 | `azure` | [.enterprise.gloo.solo.io.ExtAuthConfig.Azure](../extauth.proto.sk/#azure) |  Only one of `azure` or `default` can be set. |
 

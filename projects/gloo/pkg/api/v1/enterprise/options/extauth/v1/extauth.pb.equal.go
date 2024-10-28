@@ -5165,14 +5165,14 @@ func (m *ExtAuthConfig_Azure) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *ExtAuthConfig_DefaultProvider) Equal(that interface{}) bool {
+func (m *ExtAuthConfig_ClaimToHeader) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*ExtAuthConfig_DefaultProvider)
+	target, ok := that.(*ExtAuthConfig_ClaimToHeader)
 	if !ok {
-		that2, ok := that.(ExtAuthConfig_DefaultProvider)
+		that2, ok := that.(ExtAuthConfig_ClaimToHeader)
 		if ok {
 			target = &that2
 		} else {
@@ -5182,6 +5182,18 @@ func (m *ExtAuthConfig_DefaultProvider) Equal(that interface{}) bool {
 	if target == nil {
 		return m == nil
 	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetClaim(), target.GetClaim()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetHeader(), target.GetHeader()) != 0 {
+		return false
+	}
+
+	if m.GetAppend() != target.GetAppend() {
 		return false
 	}
 

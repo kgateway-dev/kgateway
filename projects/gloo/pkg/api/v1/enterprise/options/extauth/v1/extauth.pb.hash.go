@@ -5973,7 +5973,7 @@ func (m *ExtAuthConfig_Azure) Hash(hasher hash.Hash64) (uint64, error) {
 // Deprecated: due to hashing implemention only using field values. The omission
 // of the field name in the hash calculation can lead to hash collisions.
 // Prefer the HashUnique function instead.
-func (m *ExtAuthConfig_DefaultProvider) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *ExtAuthConfig_ClaimToHeader) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -5981,7 +5981,20 @@ func (m *ExtAuthConfig_DefaultProvider) Hash(hasher hash.Hash64) (uint64, error)
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ExtAuthConfig_DefaultProvider")); err != nil {
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ExtAuthConfig_ClaimToHeader")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetClaim())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetHeader())); err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetAppend())
+	if err != nil {
 		return 0, err
 	}
 
