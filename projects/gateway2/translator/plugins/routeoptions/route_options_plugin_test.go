@@ -42,6 +42,7 @@ var _ = Describe("RouteOptionsPlugin", func() {
 		cancel            context.CancelFunc
 		routeOptionClient sologatewayv1.RouteOptionClient
 		statusReporter    reporter.StatusReporter
+		statusCtx         *plugins.StatusContext
 	)
 
 	BeforeEach(func() {
@@ -256,6 +257,81 @@ var _ = Describe("RouteOptionsPlugin", func() {
 				robj, _ := routeOptionClient.Read("default", "policy", clients.ReadOpts{Ctx: ctx})
 				status := robj.GetNamespacedStatuses().Statuses["gloo-system"]
 				Expect(status.State).To(Equal(core.Status_Accepted))
+			})
+		})
+
+		Context("There is an error reading the RouteOptions", func() {
+			BeforeEach(func() {
+				statusCtx = &plugins.StatusContext{
+					ProxiesWithReports: []translatorutils.ProxyWithReports{
+						{
+							Proxy: &v1.Proxy{},
+							Reports: translatorutils.TranslationReports{
+								ProxyReport:     &validation.ProxyReport{},
+								ResourceReports: reporter.ResourceReports{},
+							},
+						},
+					},
+				}
+			})
+
+			When("The RouteOption has a TargetRef", func() {
+				It("errors out", func() {
+					deps := []client.Object{attachedRouteOption()}
+					fakeClient := testutils.BuildIndexedFakeClient(deps, gwquery.IterateIndices, rtoptquery.IterateIndices)
+					gwQueries := testutils.BuildGatewayQueriesWithClient(fakeClient)
+					plugin := NewPlugin(gwQueries, fakeClient, routeOptionClient, statusReporter)
+
+					ctx := context.Background()
+					routeCtx := &plugins.RouteContext{
+						Route: &gwv1.HTTPRoute{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      "route",
+								Namespace: "default",
+							},
+						},
+					}
+
+					outputRoute := &v1.Route{
+						Options: &v1.RouteOptions{},
+					}
+					plugin.ApplyRoutePlugin(ctx, routeCtx, outputRoute)
+
+					err := plugin.ApplyStatusPlugin(ctx, statusCtx)
+					Expect(err).To(MatchError(ContainSubstring(ReadingRouteOptionErrStr)))
+				})
+			})
+
+			When("The HTTPRoute has an ExtensionRef", func() {
+				It("errors out", func() {
+					deps := []client.Object{routeOption()}
+					fakeClient := testutils.BuildIndexedFakeClient(deps, gwquery.IterateIndices, rtoptquery.IterateIndices)
+					gwQueries := testutils.BuildGatewayQueriesWithClient(fakeClient)
+					plugin := NewPlugin(gwQueries, fakeClient, routeOptionClient, statusReporter)
+
+					rtCtx := &plugins.RouteContext{
+						Route: &gwv1.HTTPRoute{},
+						Rule: &gwv1.HTTPRouteRule{
+							Filters: []gwv1.HTTPRouteFilter{{
+								Type: gwv1.HTTPRouteFilterExtensionRef,
+								ExtensionRef: &gwv1.LocalObjectReference{
+									Group: gwv1.Group(sologatewayv1.RouteOptionGVK.Group),
+									Kind:  gwv1.Kind(sologatewayv1.RouteOptionGVK.Kind),
+									Name:  "filter-policy",
+								},
+							}},
+						},
+					}
+
+					outputRoute := &v1.Route{
+						Options: &v1.RouteOptions{},
+					}
+					plugin.ApplyRoutePlugin(context.Background(), rtCtx, outputRoute)
+
+					err := plugin.ApplyStatusPlugin(ctx, statusCtx)
+					Expect(err).To(MatchError(ContainSubstring(ReadingRouteOptionErrStr)))
+				})
+
 			})
 		})
 
