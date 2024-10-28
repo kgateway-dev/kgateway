@@ -1643,7 +1643,7 @@ message ExtAuthConfig {
     }
 
       // Map a single claim from an OAuth2 or OIDC token to a header in the request to the upstream destination.
-      message ClaimToHeader {
+    message ClaimToHeader {
         // The claim name from the token, such as `sub`.
         string claim = 1;
 
