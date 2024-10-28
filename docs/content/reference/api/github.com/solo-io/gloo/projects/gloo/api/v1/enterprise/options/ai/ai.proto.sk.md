@@ -40,7 +40,9 @@ weight: 5
 - [Message](#message)
 - [AIPromptGuard](#aipromptguard)
 - [Regex](#regex)
+- [RegexMatch](#regexmatch)
 - [BuiltIn](#builtin)
+- [Action](#action)
 - [Webhook](#webhook)
 - [HeaderMatch](#headermatch)
 - [MatchType](#matchtype)
@@ -733,15 +735,36 @@ Settings for the Prompt Guard feature
 Regex settings for prompt guard
 
 ```yaml
-"matches": []string
+"matches": []ai.options.gloo.solo.io.AIPromptGuard.Regex.RegexMatch
 "builtins": []ai.options.gloo.solo.io.AIPromptGuard.Regex.BuiltIn
+"action": .ai.options.gloo.solo.io.AIPromptGuard.Regex.Action
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `matches` | `[]string` | A list of Regex patterns to match against the response. All matches will be masked before being sent back to the client. matches and builtins are additive. |
+| `matches` | [[]ai.options.gloo.solo.io.AIPromptGuard.Regex.RegexMatch](../ai.proto.sk/#regexmatch) | A list of Regex patterns to match against the response. All matches will be masked before being sent back to the client. matches and builtins are additive. |
 | `builtins` | [[]ai.options.gloo.solo.io.AIPromptGuard.Regex.BuiltIn](../ai.proto.sk/#builtin) | A list of built-in regexes to mask in the response. matches and builtins are additive. |
+| `action` | [.ai.options.gloo.solo.io.AIPromptGuard.Regex.Action](../ai.proto.sk/#action) | The action to take if the regex matches NOTE: This will only apply to request matches, response matches will always mask. |
+
+
+
+
+---
+### RegexMatch
+
+
+
+```yaml
+"pattern": string
+"name": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `pattern` | `string` | The regex pattern to match against the response. |
+| `name` | `string` | An optional name for this match which can be used for debugging purposes. |
 
 
 
@@ -755,6 +778,21 @@ Regex settings for prompt guard
 | ----- | ----------- | 
 | `SSN` | Default REGEX for Social Security Numbers |
 | `CREDIT_CARD` | Default REGEX for Credit Card Numbers |
+| `PHONE_NUMBER` | Default REGEX for Phone Numbers |
+| `EMAIL` | Default REGEX for Email Addresses |
+
+
+
+
+---
+### Action
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `MASK` | Mask the response if the regex matches |
+| `REJECT` | Reject the request if the regex matches |
 
 
 
@@ -768,7 +806,7 @@ Webhook settings for prompt guard
 ```yaml
 "host": string
 "port": int
-"headers": []ai.options.gloo.solo.io.AIPromptGuard.Webhook.HeaderMatch
+"forwardHeaders": []ai.options.gloo.solo.io.AIPromptGuard.Webhook.HeaderMatch
 
 ```
 
@@ -776,7 +814,7 @@ Webhook settings for prompt guard
 | ----- | ---- | ----------- | 
 | `host` | `string` | Host to send the traffic to. |
 | `port` | `int` | Port to send the traffic to. |
-| `headers` | [[]ai.options.gloo.solo.io.AIPromptGuard.Webhook.HeaderMatch](../ai.proto.sk/#headermatch) | Headers to forward with the request. |
+| `forwardHeaders` | [[]ai.options.gloo.solo.io.AIPromptGuard.Webhook.HeaderMatch](../ai.proto.sk/#headermatch) | Headers to forward with the request. |
 
 
 
