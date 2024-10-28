@@ -266,6 +266,9 @@ apis:
   enterprise.gloo.solo.io.AutoMapFromMetadata:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#AutoMapFromMetadata
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.Azure:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#Azure
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.BackoffStrategy:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#BackoffStrategy
     package: enterprise.gloo.solo.io
