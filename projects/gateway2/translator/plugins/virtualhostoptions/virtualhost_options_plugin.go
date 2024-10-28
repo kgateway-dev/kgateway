@@ -163,6 +163,7 @@ func optionsToStr(opts []*solokubev1.VirtualHostOption) string {
 
 // Add all statuses for processed VirtualHostOptions. These could come from the VHO itself or
 // or any VH to which it is attached.
+// It returns the aggregated errors reading the VirtualHostOptions if any.
 func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.StatusContext) error {
 	logger := contextutils.LoggerFrom(ctx)
 	// gather all VirtualHostOptions we need to report status for
