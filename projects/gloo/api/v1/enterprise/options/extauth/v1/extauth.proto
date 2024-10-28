@@ -1280,6 +1280,9 @@ message AerospikeApiKeyStorage {
     map<string, string> label_selector = 17;
 }
 
+// When no storage backend is specified, the default storage backend defined in the extauth server is used.
+message ServerDefaultApiKeyStorage{}
+
 message ApiKey {
     // The string value of the API key.
     string api_key = 2;
@@ -1618,6 +1621,40 @@ This is an internal API used to share configuration between gloo-ee and extauth.
 rules about breaking changes still apply to ensure we do not get errors during upgrade and downgrade.
  */
 message ExtAuthConfig {
+    // For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
+    // This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
+    message Azure {
+        // The client ID for the ExtAuthService app that is registered in MS Entra,
+        // to access the Microsoft Graph API to retrieve distributed claims.
+        // This app is NOT the app that you want to configure external auth for.
+        string client_id = 1;
+
+        // The tenant ID represents the MS Entra organization ID where the ExtAuthService app is registered.
+        // This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`,
+        // depending on how your Azure account is provisioned.
+        string tenant_id = 2;
+
+        // The client secret of the ExtAuthService app that is registered with MS Entra to communicate with the MS Graph API.
+        string client_secret = 3 [(extproto.sensitive) = true];
+
+        // Redis connection details to cache MS Entera claims.
+        // This way, you avoid performance issues of accessing the Microsoft Graph API too many times.
+        // Note that this setting does NOT turn on Redis caching for the user session.
+        // To turn on Redis user session caching, use the `userSessionConfig` field.
+        RedisOptions claims_caching_options = 4;
+    }
+
+      // Map a single claim from an OAuth2 or OIDC token to a header in the request to the upstream destination.
+    message ClaimToHeader {
+        // The claim name from the token, such as `sub`.
+        string claim = 1;
+
+        // The header to copy the claim to, such as `x-sub`.
+        string header = 2;
+
+        // If the header exists, append the claim value to the header (true), or overwrite any existing value (false). The default behavior is to overwrite any existing value (false).
+        bool append = 3;
+    }
 
     // @solo-kit:resource.name
     // This is the identifier of the AuthConfig resource that this configuration is associated with.
@@ -1834,18 +1871,6 @@ message ExtAuthConfig {
         // Only one of client_secret or pk_jwt_client_authentication_config should be set. pk_jwt_client_authentication_config takes precedence.
         PkJwtClientAuthenticationConfig pk_jwt_client_authentication_config = 21;
 
-        // Map a single claim from an OAuth2 or OIDC token to a header in the request to the upstream destination.
-        message ClaimToHeader {
-            // The claim name from the token, such as `sub`.
-            string claim = 1;
-
-            // The header to copy the claim to, such as `x-sub`.
-            string header = 2;
-
-            // If the header exists, append the claim value to the header (true), or overwrite any existing value (false). The default behavior is to overwrite any existing value (false).
-            bool append = 3;
-        }
-
         // Optional: Configuration specific to the OAuth2 access token received and processed by the ext-auth-service.
         AccessToken access_token = 22;
 
@@ -1872,38 +1897,26 @@ message ExtAuthConfig {
         // No-op, represents default OIDC behavior
         message Default {}
 
-        // For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
-        // This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
-        message Azure {
-            // The client ID for the ExtAuthService app that is registered in MS Entra,
-            // to access the Microsoft Graph API to retrieve distributed claims.
-            // This app is NOT the app that you want to configure external auth for.
-            string client_id = 1;
-
-            // The tenant ID represents the MS Entra organization ID where the ExtAuthService app is registered.
-            // This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`,
-            // depending on how your Azure account is provisioned.
-            string tenant_id = 2;
-
-            // The client secret of the ExtAuthService app that is registered with MS Entra to communicate with the MS Graph API.
-            string client_secret = 3 [(extproto.sensitive) = true];
-
-            // Redis connection details to cache MS Entera claims.
-            // This way, you avoid performance issues of accessing the Microsoft Graph API too many times.
-            // Note that this setting does NOT turn on Redis caching for the user session.
-            // To turn on Redis user session caching, use the `userSessionConfig` field.
-            RedisOptions claims_caching_options = 4;
-        }
-
        // For the moment this is just path, but we may want to configure things like iss/sid validation
         message FrontChannelLogout {
             // Path to use for front channel logout. Should not be the same as logout or callback paths.
             string path=1;
         }
 
-    // Configuration for front channel logout. This is used to log out the user from multiple apps/clients associated with one OpenId Provider (OP).
-    // The path is registered with the OP and is called for each app/client that the user is logged into when the logout endpoint is called.
+        // Configuration for front channel logout. This is used to log out the user from multiple apps/clients associated with one OpenId Provider (OP).
+        // The path is registered with the OP and is called for each app/client that the user is logged into when the logout endpoint is called.
         FrontChannelLogout front_channel_logout = 28;
+
+
+        // Map of metadata key to claim. Ie:
+        // dynamic_metadata_from_claims:
+        //   issuer: iss
+        //   email: email
+        // When specified, the matching claims from the ID token will be emitted as dynamic metadata.
+        // Note that metadata keys must be unique, and the claim names must be alphanumeric and use `-` or `_` as separators.
+        // The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`),
+        // and the structure of the claim value will be preserved in the metadata struct.
+        map<string, string> dynamic_metadata_from_claims = 29;
     }
 
     message AccessTokenValidationConfig {
@@ -2032,6 +2045,27 @@ message ExtAuthConfig {
         message ScopeList {
             repeated string scope = 1;
         }
+
+        // Map of metadata key to claim. Ie:
+        // dynamic_metadata_from_claims:
+        //   issuer: iss
+        //   email: email
+        // When specified, the matching claims from the access token will be emitted as dynamic metadata.
+        // Note that metadata keys must be unique, and the claim names must be alphanumeric and use `-` or `_` as separators.
+        // Works when the access token is a JWT or when the access token is opaque, in which case the claims will refer to field in the response from the token introspection endpoint.
+        // The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`),
+        // and the structure of the claim value will be preserved in the metadata struct.
+        map<string, string> dynamic_metadata_from_claims = 7;
+
+        repeated ClaimToHeader claims_to_headers = 8;
+
+        oneof Provider {
+            Default default = 26;
+            Azure azure = 27;
+        }
+
+        // No-op, represents default OIDC behavior
+        message Default {}
     }
 
     message PlainOAuth2Config {
@@ -2140,11 +2174,12 @@ message ExtAuthConfig {
         oneof storage_backend {
             K8sSecretApiKeyStorage k8s_secret_apikey_storage = 4;
             AerospikeApiKeyStorage aerospike_apikey_storage = 5;
+            ServerDefaultApiKeyStorage server_default_apikey_storage = 7;
         }
 
-    // API key metadata may contain data is is invalid for a header, such as a newline. By default, this data will be validated
-    // in the data plane and mitigated in a way that provides a consistent experience for the user and visibility for the operator.
-    // This validation comes with a performance cost, and can be disabled by setting this field to `true`.
+        // API key metadata may contain data is is invalid for a header, such as a newline. By default, this data will be validated
+        // in the data plane and mitigated in a way that provides a consistent experience for the user and visibility for the operator.
+        // This validation comes with a performance cost, and can be disabled by setting this field to `true`.
         bool skip_metadata_validation = 6;
     }
 
