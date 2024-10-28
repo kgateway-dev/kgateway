@@ -1918,16 +1918,6 @@ func (m *AccessTokenValidation) Equal(that interface{}) bool {
 
 	}
 
-	if h, ok := interface{}(m.GetAzure()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetAzure()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetAzure(), target.GetAzure()) {
-			return false
-		}
-	}
-
 	switch m.ValidationType.(type) {
 
 	case *AccessTokenValidation_IntrospectionUrl:
@@ -1996,6 +1986,45 @@ func (m *AccessTokenValidation) Equal(that interface{}) bool {
 	default:
 		// m is nil but target is not nil
 		if m.ScopeValidation != target.ScopeValidation {
+			return false
+		}
+	}
+
+	switch m.Provider.(type) {
+
+	case *AccessTokenValidation_Default_:
+		if _, ok := target.Provider.(*AccessTokenValidation_Default_); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetDefault()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetDefault()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetDefault(), target.GetDefault()) {
+				return false
+			}
+		}
+
+	case *AccessTokenValidation_Azure:
+		if _, ok := target.Provider.(*AccessTokenValidation_Azure); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAzure()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAzure()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAzure(), target.GetAzure()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Provider != target.Provider {
 			return false
 		}
 	}
@@ -4584,6 +4613,30 @@ func (m *JwtValidation_LocalJwks) Equal(that interface{}) bool {
 	}
 
 	if strings.Compare(m.GetInlineString(), target.GetInlineString()) != 0 {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AccessTokenValidation_Default) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AccessTokenValidation_Default)
+	if !ok {
+		that2, ok := that.(AccessTokenValidation_Default)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
 		return false
 	}
 

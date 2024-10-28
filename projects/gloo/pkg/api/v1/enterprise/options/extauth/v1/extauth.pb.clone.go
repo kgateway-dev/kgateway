@@ -1140,12 +1140,6 @@ func (m *AccessTokenValidation) Clone() proto.Message {
 		}
 	}
 
-	if h, ok := interface{}(m.GetAzure()).(clone.Cloner); ok {
-		target.Azure = h.Clone().(*Azure)
-	} else {
-		target.Azure = proto.Clone(m.GetAzure()).(*Azure)
-	}
-
 	switch m.ValidationType.(type) {
 
 	case *AccessTokenValidation_IntrospectionUrl:
@@ -1191,6 +1185,34 @@ func (m *AccessTokenValidation) Clone() proto.Message {
 		} else {
 			target.ScopeValidation = &AccessTokenValidation_RequiredScopes{
 				RequiredScopes: proto.Clone(m.GetRequiredScopes()).(*AccessTokenValidation_ScopeList),
+			}
+		}
+
+	}
+
+	switch m.Provider.(type) {
+
+	case *AccessTokenValidation_Default_:
+
+		if h, ok := interface{}(m.GetDefault()).(clone.Cloner); ok {
+			target.Provider = &AccessTokenValidation_Default_{
+				Default: h.Clone().(*AccessTokenValidation_Default),
+			}
+		} else {
+			target.Provider = &AccessTokenValidation_Default_{
+				Default: proto.Clone(m.GetDefault()).(*AccessTokenValidation_Default),
+			}
+		}
+
+	case *AccessTokenValidation_Azure:
+
+		if h, ok := interface{}(m.GetAzure()).(clone.Cloner); ok {
+			target.Provider = &AccessTokenValidation_Azure{
+				Azure: h.Clone().(*Azure),
+			}
+		} else {
+			target.Provider = &AccessTokenValidation_Azure{
+				Azure: proto.Clone(m.GetAzure()).(*Azure),
 			}
 		}
 
@@ -2706,6 +2728,17 @@ func (m *JwtValidation_LocalJwks) Clone() proto.Message {
 	target = &JwtValidation_LocalJwks{}
 
 	target.InlineString = m.GetInlineString()
+
+	return target
+}
+
+// Clone function
+func (m *AccessTokenValidation_Default) Clone() proto.Message {
+	var target *AccessTokenValidation_Default
+	if m == nil {
+		return target
+	}
+	target = &AccessTokenValidation_Default{}
 
 	return target
 }
