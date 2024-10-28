@@ -214,8 +214,7 @@ var _ = Describe("VirtualHostOptions Plugin", func() {
 				}
 
 				err := plugin.ApplyStatusPlugin(ctx, statusCtx)
-				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(ContainSubstring("error reading VirtualHostOption")))
+				Expect(err).To(MatchError(ContainSubstring(ReadingVirtualHostOptionErrStr)))
 			})
 		})
 	})

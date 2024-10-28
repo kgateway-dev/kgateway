@@ -298,7 +298,7 @@ var _ = Describe("RouteOptionsPlugin", func() {
 					plugin.ApplyRoutePlugin(ctx, routeCtx, outputRoute)
 
 					err := plugin.ApplyStatusPlugin(ctx, statusCtx)
-					Expect(err).To(MatchError(ContainSubstring("error reading RouteOption")))
+					Expect(err).To(MatchError(ContainSubstring(ReadingRouteOptionErrStr)))
 				})
 			})
 
@@ -329,7 +329,7 @@ var _ = Describe("RouteOptionsPlugin", func() {
 					plugin.ApplyRoutePlugin(context.Background(), rtCtx, outputRoute)
 
 					err := plugin.ApplyStatusPlugin(ctx, statusCtx)
-					Expect(err).To(MatchError(ContainSubstring("error reading RouteOption")))
+					Expect(err).To(MatchError(ContainSubstring(ReadingRouteOptionErrStr)))
 				})
 
 			})

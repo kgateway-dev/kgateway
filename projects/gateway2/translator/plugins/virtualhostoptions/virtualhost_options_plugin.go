@@ -31,6 +31,8 @@ import (
 var (
 	_ plugins.ListenerPlugin = &plugin{}
 	_ plugins.StatusPlugin   = &plugin{}
+
+	ReadingVirtualHostOptionErrStr = "error reading VirtualHostOption"
 )
 
 type plugin struct {
@@ -206,7 +208,7 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 		// get the obj by namespacedName
 		vhOptObj, err := p.vhOptionClient.Read(vhOptKey.Namespace, vhOptKey.Name, clients.ReadOpts{Ctx: ctx})
 		if err != nil {
-			multierr = multierror.Append(multierr, eris.Wrapf(err, "error reading VirtualHostOption %s in namespace %s", vhOptKey.Name, vhOptKey.Namespace))
+			multierr = multierror.Append(multierr, eris.Wrapf(err, "%s %s in namespace %s", ReadingVirtualHostOptionErrStr, vhOptKey.Name, vhOptKey.Namespace))
 			continue
 		}
 

@@ -33,6 +33,8 @@ import (
 var (
 	_ plugins.RoutePlugin  = &plugin{}
 	_ plugins.StatusPlugin = &plugin{}
+
+	ReadingRouteOptionErrStr = "error reading RouteOption"
 )
 
 // holds the data structures needed to derive and report a classic GE status
@@ -140,7 +142,7 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 		// get the obj by namespacedName
 		roObj, err := p.routeOptionClient.Read(roKey.Namespace, roKey.Name, clients.ReadOpts{Ctx: ctx})
 		if err != nil {
-			multierr = multierror.Append(multierr, eris.Wrapf(err, "error reading RouteOption %s in namespace %s", roKey.Name, roKey.Namespace))
+			multierr = multierror.Append(multierr, eris.Wrapf(err, "%s %s in namespace %s", ReadingRouteOptionErrStr, roKey.Name, roKey.Namespace))
 			continue
 		}
 
