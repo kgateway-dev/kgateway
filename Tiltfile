@@ -53,11 +53,12 @@ RUN chmod 777 ./$binary_name
 """
 
 standard_entrypoint = "ENTRYPOINT /app/start.sh /app/$binary_name"
-debug_entrypoint = "ENTRYPOINT /app/start.sh /go/bin/dlv --listen=0.0.0.0:$debug_port --api-version=2 --headless=true --only-same-user=false --accept-multiclient --check-go-version=false exec /app/$binary_name"
+debug_entrypoint = "ENTRYPOINT /app/start.sh /go/bin/dlv --listen=0.0.0.0:$debug_port --api-version=2 --headless=true --only-same-user=false --accept-multiclient --check-go-version=false exec --continue /app/$binary_name"
 
-get_resources_cmd = "{0} -n {1} template {2} --include-crds install/helm/gloo/ --set license_key='abcd'".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"))
+get_resources_cmd = "{0} -n {1} template {2} --include-crds install/helm/gloo/ --set gloo.deployment.image.pullPolicy='Always' --set license_key='abcd'".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"))
 for f in settings.get("helm_values_files") :
     get_resources_cmd = get_resources_cmd + " --values=" + f
+get_resources_cmd = get_resources_cmd + " --set=gloo.deployment.livenessProbeEnabled=false"
 
 arch = str(local("make print-GOARCH", quiet = True)).strip()
 
@@ -195,11 +196,11 @@ def enable_providers():
 def install_gloo():
     if not gloo_installed :
         install_helm_cmd = """
-            kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml ;
-            {0} upgrade --install -n {1} --create-namespace {2} install/helm/gloo/ --set license_key='$GLOO_LICENSE_KEY' --set gloo.deployment.glooContainerSecurityContext.readOnlyRootFilesystem=false""".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"))
+            kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null || {{ kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/standard-install.yaml; }} ;
+            {0} upgrade --install -n {1} --create-namespace {2} install/helm/gloo/ --set gloo.deployment.image.pullPolicy='Always' --set license_key='$GLOO_LICENSE_KEY' --set gloo.deployment.glooContainerSecurityContext.readOnlyRootFilesystem=false""".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"))
         for f in settings.get("helm_values_files") :
             install_helm_cmd = install_helm_cmd + " --values=" + f
-
+        install_helm_cmd = install_helm_cmd + " --set=gloo.deployment.livenessProbeEnabled=false"
         local_resource(
             name = settings.get("helm_installation_name"),
             cmd = ["bash", "-c", install_helm_cmd],
@@ -223,7 +224,13 @@ def validate_registry() :
     if not usingLocalRegistry:
         fail("default_registry is required when not using a local registry. Try running ./kind-install-for-gloo.sh")
 
+def install_metallb():
+    if not settings["metal_lb"]:
+        return
+    local("./ci/kind/setup-metalllb-on-kind.sh")
+
 validate_registry()
 install_gloo()
+install_metallb()
 if gloo_installed :
     enable_providers()

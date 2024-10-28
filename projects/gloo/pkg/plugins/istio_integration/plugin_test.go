@@ -80,7 +80,7 @@ var _ = Describe("Plugin", func() {
 		)
 
 		BeforeEach(func() {
-			istioPlugin = istio_integration.NewPlugin(ctx)
+			istioPlugin = istio_integration.NewPlugin()
 			initParams = plugins.InitParams{
 				Ctx: ctx,
 			}

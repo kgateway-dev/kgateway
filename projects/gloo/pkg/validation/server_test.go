@@ -80,7 +80,7 @@ var _ = Describe("Validation Server", func() {
 			KubeClient:    kube,
 			KubeCoreCache: kubeCoreCache,
 		}
-		registeredPlugins = registry.Plugins(opts)
+		registeredPlugins = registry.Plugins(registry.FromBootstrap(opts))
 
 		params = plugins.Params{
 			Ctx:      context.Background(),
@@ -703,7 +703,7 @@ var _ = Describe("Validation Server", func() {
 				KubeClient:    kube,
 				KubeCoreCache: kubeCoreCache,
 			}
-			registeredPlugins = registry.Plugins(opts)
+			registeredPlugins = registry.Plugins(registry.FromBootstrap(opts))
 
 			params = plugins.Params{
 				Ctx:      context.Background(),

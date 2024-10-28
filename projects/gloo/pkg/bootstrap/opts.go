@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"context"
 	"net"
+	"sync"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
 
@@ -19,10 +20,48 @@ import (
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
+	ggv2utils "github.com/solo-io/gloo/projects/gateway2/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 )
+
+type SetupOpts struct {
+	Cache               cache.SnapshotCache
+	ProxyReconcileQueue ggv2utils.AsyncQueue[v1.ProxyList]
+	ExtraGatewayClasses []string
+
+	xdsHost    string
+	xdsPort    int32
+	setXdsOnce sync.Once
+	xdsSet     chan struct{}
+}
+
+func NewSetupOpts(cache cache.SnapshotCache) *SetupOpts {
+	return &SetupOpts{
+		Cache:  cache,
+		xdsSet: make(chan struct{}),
+	}
+}
+
+func (s *SetupOpts) SetXdsAddress(XdsHost string,
+	XdsPort int32) {
+	s.setXdsOnce.Do(func() {
+		s.xdsHost = XdsHost
+		s.xdsPort = XdsPort
+		if s.xdsSet != nil {
+			close(s.xdsSet)
+		}
+	})
+}
+func (s *SetupOpts) GetXdsAddress(ctx context.Context) (string, int32) {
+	select {
+	case <-s.xdsSet:
+		return s.xdsHost, s.xdsPort
+	case <-ctx.Done():
+		return "", 0
+	}
+}
 
 type Opts struct {
 	WriteNamespace               string
@@ -56,12 +95,12 @@ type Opts struct {
 	ValidationOpts               *gwtranslator.ValidationOpts
 	ReadGatwaysFromAllNamespaces bool
 	GatewayControllerEnabled     bool
-	ExtraGatewayClasses          []string
 	ProxyCleanup                 func()
 
 	Identity leaderelector.Identity
 
-	GlooGateway GlooGateway
+	GlooGateway         GlooGateway
+	ProxyReconcileQueue ggv2utils.AsyncQueue[v1.ProxyList]
 }
 
 type IstioValues struct {

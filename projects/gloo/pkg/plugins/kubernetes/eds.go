@@ -84,6 +84,10 @@ func (pm *podMap) GetLabelsForIp(ip string, podName, podNamespace string) (map[s
 
 func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
 
+	if p.kubeCoreCache == nil {
+		return nil, nil, errors.Errorf("kube core cache is required for kubernetes endpoints discovery")
+	}
+
 	kubeFactory := func(namespaces []string) KubePluginSharedFactory {
 		return getInformerFactory(opts.Ctx, p.kube, namespaces)
 	}

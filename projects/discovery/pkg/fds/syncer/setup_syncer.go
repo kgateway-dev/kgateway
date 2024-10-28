@@ -24,7 +24,7 @@ type Extensions struct {
 }
 
 func NewSetupFunc() setuputils.SetupFunc {
-	return setup.NewSetupFuncWithRunAndExtensions(RunFDS, nil)
+	return setup.NewSetupFuncWithRunAndExtensions(RunFDS, nil, nil)
 }
 
 // NewSetupFuncWithExtensions used as extension point for external repo
@@ -32,7 +32,7 @@ func NewSetupFuncWithExtensions(extensions Extensions) setuputils.SetupFunc {
 	runWithExtensions := func(opts bootstrap.Opts) error {
 		return RunFDSWithExtensions(opts, extensions)
 	}
-	return setup.NewSetupFuncWithRunAndExtensions(runWithExtensions, nil)
+	return setup.NewSetupFuncWithRunAndExtensions(runWithExtensions, nil, nil)
 }
 
 func RunFDS(opts bootstrap.Opts) error {
@@ -86,7 +86,7 @@ func RunFDSWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	cache := v1.NewDiscoveryEmitter(upstreamClient, nsClient, secretClient)
 
 	var resolvers fds.Resolvers
-	for _, plug := range registry.Plugins(opts) {
+	for _, plug := range registry.Plugins(registry.FromBootstrap(opts)) {
 		resolver, ok := plug.(fds.Resolver)
 		if ok {
 			resolvers = append(resolvers, resolver)

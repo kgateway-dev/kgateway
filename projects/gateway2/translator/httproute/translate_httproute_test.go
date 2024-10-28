@@ -6,6 +6,7 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,6 +22,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
@@ -43,15 +45,12 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 		ctx        context.Context
 		gwListener gwv1.Listener
 
-		deps                  []client.Object
-		c                     client.Client
-		queries               query.GatewayQueries
-		resourceClientFactory *factory.MemoryResourceClientFactory
-		pluginRegistry        registry.PluginRegistry
-		routeOptionClient     sologatewayv1.RouteOptionClient
-		vhOptionClient        sologatewayv1.VirtualHostOptionClient
-		statusClient          resources.StatusClient
-		statusReporter        reporter.StatusReporter
+		deps           []client.Object
+		c              client.Client
+		queries        query.GatewayQueries
+		pluginRegistry registry.PluginRegistry
+		statusClient   resources.StatusClient
+		statusReporter reporter.StatusReporter
 	)
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
@@ -59,11 +58,11 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 		gwListener = gwv1.Listener{}
 		deps = []client.Object{}
 
-		resourceClientFactory = &factory.MemoryResourceClientFactory{
+		resourceClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
-		routeOptionClient, _ = sologatewayv1.NewRouteOptionClient(ctx, resourceClientFactory)
-		vhOptionClient, _ = sologatewayv1.NewVirtualHostOptionClient(ctx, resourceClientFactory)
+		routeOptionClient, _ := sologatewayv1.NewRouteOptionClient(ctx, resourceClientFactory)
+
 		statusClient = statusutils.GetStatusClientForNamespace(defaults.GlooSystem)
 		statusReporter = reporter.NewReporter(defaults.KubeGatewayReporter, statusClient, routeOptionClient.BaseClient())
 	})
@@ -83,11 +82,14 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 			httplisquery.IterateIndices,
 		)
 		queries = testutils.BuildGatewayQueriesWithClient(c)
+
+		routeOptionCollection := krt.NewStatic[*solokubev1.RouteOption](nil, true).AsCollection()
+		vhOptionCollection := krt.NewStatic[*solokubev1.VirtualHostOption](nil, true).AsCollection()
 		pluginRegistry = registry.NewPluginRegistry(registry.BuildPlugins(
 			queries,
 			c,
-			routeOptionClient,
-			vhOptionClient,
+			routeOptionCollection,
+			vhOptionCollection,
 			statusReporter,
 		))
 	})

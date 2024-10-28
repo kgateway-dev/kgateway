@@ -8,9 +8,11 @@ import (
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewaykubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
@@ -84,9 +86,10 @@ var _ = Describe("VirtualHostOptions Plugin", func() {
 			}
 
 			vhOptionClient, _ := sologatewayv1.NewVirtualHostOptionClient(ctx, resourceClientFactory)
+			vhOptionCollection := krt.NewStatic[*gatewaykubev1.VirtualHostOption](nil, true)
 			statusClient := statusutils.GetStatusClientForNamespace("gloo-system")
 			statusReporter := reporter.NewReporter(defaults.KubeGatewayReporter, statusClient, vhOptionClient.BaseClient())
-			plugin = NewPlugin(gwQueries, fakeClient, vhOptionClient, statusReporter)
+			plugin = NewPlugin(gwQueries, fakeClient, vhOptionCollection.AsCollection(), statusReporter)
 		})
 		When("outListener is not an AggregateListener", func() {
 			BeforeEach(func() {

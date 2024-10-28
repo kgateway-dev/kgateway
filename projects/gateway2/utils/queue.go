@@ -1,4 +1,4 @@
-package proxy_syncer
+package utils
 
 import (
 	"context"

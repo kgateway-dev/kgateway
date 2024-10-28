@@ -1,7 +1,7 @@
 package registry
 
 import (
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewaykubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/directresponse"
@@ -14,6 +14,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/urlrewrite"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"istio.io/istio/pkg/kube/krt"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -80,16 +81,16 @@ func NewPluginRegistry(allPlugins []plugins.Plugin) PluginRegistry {
 func BuildPlugins(
 	queries gwquery.GatewayQueries,
 	client client.Client,
-	routeOptionClient gatewayv1.RouteOptionClient,
-	vhostOptionClient gatewayv1.VirtualHostOptionClient,
+	routeOptionCollection krt.Collection[*gatewaykubev1.RouteOption],
+	virtualHostOptionCollection krt.Collection[*gatewaykubev1.VirtualHostOption],
 	statusReporter reporter.StatusReporter,
 ) []plugins.Plugin {
 	return []plugins.Plugin{
 		headermodifier.NewPlugin(),
 		mirror.NewPlugin(queries),
 		redirect.NewPlugin(),
-		routeoptions.NewPlugin(queries, client, routeOptionClient, statusReporter),
-		virtualhostoptions.NewPlugin(queries, client, vhostOptionClient, statusReporter),
+		routeoptions.NewPlugin(queries, client, routeOptionCollection, statusReporter),
+		virtualhostoptions.NewPlugin(queries, client, virtualHostOptionCollection, statusReporter),
 		httplisteneroptions.NewPlugin(queries, client),
 		listeneroptions.NewPlugin(queries, client),
 		urlrewrite.NewPlugin(),

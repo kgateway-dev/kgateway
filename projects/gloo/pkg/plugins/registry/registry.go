@@ -56,16 +56,50 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/virtualhost"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"istio.io/istio/pkg/kube/krt"
+	corev1 "k8s.io/api/core/v1"
+	k8skube "k8s.io/client-go/kubernetes"
 )
 
 var _ plugins.PluginRegistry = new(pluginRegistry)
 
-func Plugins(opts bootstrap.Opts) []plugins.Plugin {
+type PluginOpts struct {
+	Ctx                     context.Context
+	Secrets                 factory.ResourceClientFactory
+	SidecarOnGatewayEnabled bool
+	Consul                  bootstrap.Consul
+	// If plugins do NOT run in GGv2/KRT (i.e. in legacy edge), then we will this kube cache set.
+	KubeClient    k8skube.Interface
+	KubeCoreCache corecache.KubeCoreCache
+	// If plugins run in GGv2/KRT, then we will have these collections.
+	// it is currently used for the k8s plugin. in the future plugins may own their own collections.
+	SvcCollection krt.Collection[*corev1.Service]
+}
+
+func FromBootstrap(opts bootstrap.Opts) PluginOpts {
+	return PluginOpts{
+		Ctx:                     opts.WatchOpts.Ctx,
+		Secrets:                 opts.Secrets,
+		SidecarOnGatewayEnabled: opts.GlooGateway.IstioValues.SidecarOnGatewayEnabled,
+		Consul:                  opts.Consul,
+		KubeClient:              opts.KubeClient,
+		KubeCoreCache:           opts.KubeCoreCache,
+	}
+}
+
+func Plugins(opts PluginOpts) []plugins.Plugin {
 	var glooPlugins []plugins.Plugin
 
-	ec2Plugin, err := ec2.NewPlugin(opts.WatchOpts.Ctx, opts.Secrets)
-	if err != nil {
-		contextutils.LoggerFrom(opts.WatchOpts.Ctx).Errorf("Failed to create ec2 Plugin %+v", err)
+	// TODO: bring ec2 plugin back in a follow-up
+	var ec2Plugin plugins.Plugin
+	var err error
+	if opts.Secrets != nil {
+		ec2Plugin, err = ec2.NewPlugin(opts.Ctx, opts.Secrets)
+		if err != nil {
+			contextutils.LoggerFrom(opts.Ctx).Errorf("Failed to create ec2 Plugin %+v", err)
+		}
 	}
 
 	glooPlugins = append(glooPlugins,
@@ -90,7 +124,11 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 		cors.NewPlugin(),
 		linkerd.NewPlugin(),
 		stats.NewPlugin(),
-		ec2Plugin,
+	)
+	if ec2Plugin != nil {
+		glooPlugins = append(glooPlugins, ec2Plugin)
+	}
+	glooPlugins = append(glooPlugins,
 		tracing.NewPlugin(),
 		shadowing.NewPlugin(),
 		headers.NewPlugin(),
@@ -109,11 +147,11 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 		dynamic_forward_proxy.NewPlugin(),
 		deprecated_cipher_passthrough.NewPlugin(),
 		local_ratelimit.NewPlugin(),
-		istio_automtls.NewPlugin(opts.GlooGateway.IstioValues.SidecarOnGatewayEnabled),
+		istio_automtls.NewPlugin(opts.SidecarOnGatewayEnabled),
 	)
 
-	if opts.KubeClient != nil {
-		glooPlugins = append(glooPlugins, kubernetes.NewPlugin(opts.KubeClient, opts.KubeCoreCache))
+	if opts.KubeClient != nil || opts.SvcCollection != nil {
+		glooPlugins = append(glooPlugins, kubernetes.NewPlugin(opts.KubeClient, opts.KubeCoreCache, opts.SvcCollection))
 	}
 	if opts.Consul.ConsulWatcher != nil {
 		glooPlugins = append(glooPlugins, consul.NewPlugin(opts.Consul.ConsulWatcher, consul.NewConsulDnsResolver(opts.Consul.DnsServer), opts.Consul.DnsPollingInterval))
@@ -121,13 +159,13 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 	lookupResult, found := os.LookupEnv(constants.IstioInjectionEnabled)
 	istioEnabled := found && strings.ToLower(lookupResult) == "true"
 	if istioEnabled {
-		istioPlugin := istio_integration.NewPlugin(opts.WatchOpts.Ctx)
+		istioPlugin := istio_integration.NewPlugin()
 		glooPlugins = append(glooPlugins, istioPlugin)
 	}
 	return glooPlugins
 }
 
-func GetPluginRegistryFactory(opts bootstrap.Opts) plugins.PluginRegistryFactory {
+func GetPluginRegistryFactory(opts PluginOpts) plugins.PluginRegistryFactory {
 	return func(ctx context.Context) plugins.PluginRegistry {
 		availablePlugins := Plugins(opts)
 

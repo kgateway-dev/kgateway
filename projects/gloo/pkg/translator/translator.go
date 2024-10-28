@@ -200,7 +200,7 @@ ClusterLoop:
 		}
 		// get upstream that generated this cluster
 		upstream := clusterToUpstreamMap[c]
-		endpointClusterName, err := getEndpointClusterName(c.GetName(), upstream)
+		endpointClusterName, err := GetEndpointClusterName(c.GetName(), upstream)
 		if err != nil {
 			reports.AddError(upstream, errors.Wrapf(err, "could not marshal upstream to JSON"))
 		}
@@ -397,7 +397,7 @@ func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) 
 	return envoycache.NewResources(fmt.Sprintf("%v", routesVersion), routesProto)
 }
 
-func getEndpointClusterName(clusterName string, upstream *v1.Upstream) (string, error) {
+func GetEndpointClusterName(clusterName string, upstream *v1.Upstream) (string, error) {
 	hash, err := upstream.Hash(nil)
 	if err != nil {
 		return "", err

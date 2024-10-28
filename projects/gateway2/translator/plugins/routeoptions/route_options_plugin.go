@@ -9,9 +9,10 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"go.uber.org/zap"
+	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -54,26 +55,26 @@ type legacyStatus struct {
 type legacyStatusCache = map[types.NamespacedName]legacyStatus
 
 type plugin struct {
-	gwQueries         gwquery.GatewayQueries
-	rtOptQueries      rtoptquery.RouteOptionQueries
-	legacyStatusCache legacyStatusCache
-	routeOptionClient sologatewayv1.RouteOptionClient
-	statusReporter    reporter.StatusReporter
+	gwQueries             gwquery.GatewayQueries
+	rtOptQueries          rtoptquery.RouteOptionQueries
+	legacyStatusCache     legacyStatusCache
+	routeOptionCollection krt.Collection[*solokubev1.RouteOption]
+	statusReporter        reporter.StatusReporter
 }
 
 func NewPlugin(
 	gwQueries gwquery.GatewayQueries,
 	client client.Client,
-	routeOptionClient sologatewayv1.RouteOptionClient,
+	routeOptionCollection krt.Collection[*solokubev1.RouteOption],
 	statusReporter reporter.StatusReporter,
 ) *plugin {
 	legacyStatusCache := make(legacyStatusCache)
 	return &plugin{
-		gwQueries:         gwQueries,
-		rtOptQueries:      rtoptquery.NewQuery(client),
-		legacyStatusCache: legacyStatusCache,
-		routeOptionClient: routeOptionClient,
-		statusReporter:    statusReporter,
+		gwQueries:             gwQueries,
+		rtOptQueries:          rtoptquery.NewQuery(client),
+		legacyStatusCache:     legacyStatusCache,
+		routeOptionCollection: routeOptionCollection,
+		statusReporter:        statusReporter,
 	}
 }
 
@@ -107,9 +108,35 @@ func (p *plugin) ApplyRoutePlugin(
 	return nil
 }
 
+func (p *plugin) InitStatusPlugin(ctx context.Context, statusCtx *plugins.StatusContext) error {
+	for _, proxyWithReport := range statusCtx.ProxiesWithReports {
+		// now that we translate proxies one by one, we can't assume ApplyRoutePlugin is called before ApplyStatusPlugin for all proxies
+		// ApplyStatusPlugin should be come idempotent, as also now it gets applied outside of translation context.
+		// we need to track ownership separately. TODO: re-think this on monday
+
+		// for this specific proxy, get all the route errors and their associated RouteOption sources
+		routeErrors := extractRouteErrors(proxyWithReport.Reports.ProxyReport)
+
+		for roKey := range routeErrors {
+
+			var newStatus legacyStatus
+			newStatus.subresourceStatus = make(map[string]*core.Status)
+
+			// update the cache
+			p.legacyStatusCache[roKey] = newStatus
+		}
+	}
+	return nil
+}
+
 func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.StatusContext) error {
+	logger := contextutils.LoggerFrom(ctx).Desugar()
 	// gather all RouteOptions we need to report status for
 	for _, proxyWithReport := range statusCtx.ProxiesWithReports {
+		// now that we translate proxies one by one, we can't assume ApplyRoutePlugin is called before ApplyStatusPlugin for all proxies
+		// ApplyStatusPlugin should be come idempotent, as also now it gets applied outside of translation context.
+		// we need to track ownership separately. TODO: re-think this on monday
+
 		// get proxy status to use for RouteOption status
 		proxyStatus := p.statusReporter.StatusFromReport(proxyWithReport.Reports.ResourceReports[proxyWithReport.Proxy], nil)
 
@@ -121,7 +148,7 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 			if !ok {
 				// we are processing an error that has a RouteOption source that we hadn't encountered until now
 				// this shouldn't happen
-				contextutils.LoggerFrom(ctx).DPanic("while trying to apply status for RouteOptions, we found a Route error sourced by an unknown RouteOption", "RouteOption", roKey)
+				logger.DPanic("while trying to apply status for RouteOptions, we found a Route error sourced by an unknown RouteOption", zap.Stringer("RouteOption", roKey))
 			}
 
 			// set the subresource status for this specific proxy on the RO
@@ -140,22 +167,30 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 	var multierr *multierror.Error
 	for roKey, status := range p.legacyStatusCache {
 		// get the obj by namespacedName
-		roObj, err := p.routeOptionClient.Read(roKey.Namespace, roKey.Name, clients.ReadOpts{Ctx: ctx})
-		if err != nil {
+		mayberoObj := p.routeOptionCollection.GetKey(krt.Key[*solokubev1.RouteOption](krt.Named{Namespace: roKey.Namespace, Name: roKey.Name}.ResourceName()))
+		if mayberoObj == nil {
+			err := errors.New("RouteOption not found")
 			multierr = multierror.Append(multierr, eris.Wrapf(err, "%s %s in namespace %s", ReadingRouteOptionErrStr, roKey.Name, roKey.Namespace))
 			continue
 		}
+		roObj := **mayberoObj
+		roObj.Spec.Metadata = &core.Metadata{}
+		roObj.Spec.GetMetadata().Name = roObj.GetName()
+		roObj.Spec.GetMetadata().Namespace = roObj.GetNamespace()
+		roObjSk := &roObj.Spec
 
 		// mark this object to be processed
-		routeOptionReport.Accept(roObj)
+		routeOptionReport.Accept(roObjSk)
 
 		// add any route errors for this obj
-		for _, rerr := range status.routeErrors {
-			routeOptionReport.AddError(roObj, errors.New(rerr.GetReason()))
+		for i, rerr := range status.routeErrors {
+			rErr := errors.New(rerr.GetReason())
+			logger.Debug("adding error to RouteOption status", zap.Stringer("RouteOption", roKey), zap.Error(rErr), zap.Int("routeErrorIndex", i))
+			routeOptionReport.AddError(roObjSk, rErr)
 		}
 
 		// actually write out the reports!
-		err = p.statusReporter.WriteReports(ctx, routeOptionReport, status.subresourceStatus)
+		err := p.statusReporter.WriteReports(ctx, routeOptionReport, status.subresourceStatus)
 		if err != nil {
 			multierr = multierror.Append(multierr, fmt.Errorf("error writing status report from RouteOptionPlugin: %w", err))
 			continue
