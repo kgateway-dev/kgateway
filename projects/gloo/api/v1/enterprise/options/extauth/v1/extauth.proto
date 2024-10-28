@@ -629,6 +629,8 @@ message ClaimToHeader {
     bool append = 3;
 }
 
+// For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
+// This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
 message Azure {
     // The client ID for the ExtAuthService app that is registered in MS Entra,
     // to access the Microsoft Graph API to retrieve distributed claims.

@@ -1034,7 +1034,9 @@ Map a single claim from an OAuth2 or OIDC token to a header in the request to th
 ---
 ### Azure
 
-
+ 
+For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
+This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
 
 ```yaml
 "clientId": string
