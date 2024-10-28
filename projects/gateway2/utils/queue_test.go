@@ -1,11 +1,11 @@
-package proxy_syncer_test
+package utils_test
 
 import (
 	"context"
 	"testing"
 
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
+	. "github.com/solo-io/gloo/projects/gateway2/utils"
 )
 
 type testType struct {
@@ -14,7 +14,7 @@ type testType struct {
 
 func TestDropItems(t *testing.T) {
 	g := NewWithT(t)
-	q := proxy_syncer.NewAsyncQueue[testType]()
+	q := NewAsyncQueue[testType]()
 	zero := testType{idx: 0}
 	one := testType{idx: 1}
 	q.Enqueue(zero)
@@ -27,7 +27,7 @@ func TestDropItems(t *testing.T) {
 func TestReturnNone(t *testing.T) {
 	g := NewWithT(t)
 	ctx, cancel := context.WithCancel(context.Background())
-	q := proxy_syncer.NewAsyncQueue[testType]()
+	q := NewAsyncQueue[testType]()
 	zero := testType{idx: 0}
 	q.Enqueue(zero)
 	next, err := q.Dequeue(ctx)

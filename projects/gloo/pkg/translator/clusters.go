@@ -26,6 +26,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"go.opencensus.io/trace"
+	"go.uber.org/zap"
 	_structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -64,15 +65,18 @@ func (t *translatorInstance) computeCluster(
 	reports reporter.ResourceReports,
 	shouldEnforceNamespaceMatch bool,
 ) *envoy_config_cluster_v3.Cluster {
+	logger := contextutils.LoggerFrom(params.Ctx)
 	params.Ctx = contextutils.WithLogger(params.Ctx, upstream.GetMetadata().GetName())
 	out := t.initializeCluster(upstream, upstreamRefKeyToEndpoints, reports, &params.Snapshot.Secrets, shouldEnforceNamespaceMatch)
 
 	for _, plugin := range t.pluginRegistry.GetUpstreamPlugins() {
 		if err := plugin.ProcessUpstream(params, upstream, out); err != nil {
+			logger.Debug("Error processing upstream", zap.String("upstream", upstream.GetMetadata().Ref().String()), zap.Error(err), zap.String("plugin", plugin.Name()))
 			reports.AddError(upstream, err)
 		}
 	}
 	if err := validateCluster(out); err != nil {
+		logger.Debug("Error validating cluster ", zap.String("upstream", upstream.GetMetadata().Ref().String()), zap.Error(err))
 		reports.AddError(upstream, eris.Wrap(err, "cluster was configured improperly by one or more plugins"))
 	}
 	return out

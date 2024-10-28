@@ -26,6 +26,9 @@ func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace stri
 	if len(watchNamespaces) == 0 {
 		watchNamespaces = []string{metav1.NamespaceAll}
 	}
+	if p.kubeCoreCache == nil {
+		return nil, nil, errors.Errorf("kube core cache is required for kubernetes upstream discovery")
+	}
 
 	ctx := contextutils.WithLogger(opts.Ctx, "kube-uds")
 	logger := contextutils.LoggerFrom(ctx)

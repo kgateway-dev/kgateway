@@ -9,19 +9,21 @@ enabled_providers:
   - gloo
   - gateway-proxy
 
-providers :
+metal_lb: false
+
+providers:
   gloo:
     context: _output/projects/gloo
     image: quay.io/solo-io/gloo
     live_reload_deps:
       - projects/gloo
     label: gloo
-    build_binary: make -B gloo
+    build_binary: GCFLAGS='all="-N -l"' make -B gloo
     binary_name: gloo-linux-$ARCH
     # debug_port: 50100
     port_forwards:
       - 9091
-    #   - 50100
+    #  - 50100
   gateway-proxy:
     context: _output/gateway-proxy
     image: quay.io/solo-io/gloo-envoy-wrapper

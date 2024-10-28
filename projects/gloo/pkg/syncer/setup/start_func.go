@@ -5,22 +5,13 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/servers/admin"
 	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
-	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/go-utils/stats"
 
 	"golang.org/x/sync/errgroup"
 
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
-	gateway "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gateway2/controller"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
 // StartFunc represents a function that will be called with the initialized bootstrap.Opts
@@ -53,47 +44,6 @@ func ExecuteAsynchronousStartFuncs(
 	}
 
 	contextutils.LoggerFrom(ctx).Debug("main goroutines successfully started")
-}
-
-// K8sGatewayControllerStartFunc returns a StartFunc to run the k8s Gateway controller
-func K8sGatewayControllerStartFunc(
-	proxyClient v1.ProxyClient,
-	authConfigClient extauthv1.AuthConfigClient,
-	routeOptionClient gateway.RouteOptionClient,
-	vhOptionClient gateway.VirtualHostOptionClient,
-	upstreamClient v1.UpstreamClient,
-	secretClient v1.SecretClient,
-	statusClient resources.StatusClient,
-	translator translator.Translator,
-	syncerExtensions []syncer.TranslatorSyncerExtension,
-	glooReporter reporter.StatusReporter,
-) StartFunc {
-	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
-		kubeGwStatusReporter := reporter.NewReporter(
-			defaults.KubeGatewayReporter,
-			statusClient,
-			routeOptionClient.BaseClient(),
-			vhOptionClient.BaseClient(),
-			proxyClient.BaseClient(),
-			upstreamClient.BaseClient(),
-		)
-		return controller.Start(ctx, controller.StartConfig{
-			ExtensionsFactory:         extensions.K8sGatewayExtensionsFactory,
-			GlooPluginRegistryFactory: extensions.PluginRegistryFactory,
-			Opts:                      opts,
-			ProxyClient:               proxyClient,
-			AuthConfigClient:          authConfigClient,
-			RouteOptionClient:         routeOptionClient,
-			VirtualHostOptionClient:   vhOptionClient,
-			SecretClient:              secretClient,
-			KubeGwStatusReporter:      kubeGwStatusReporter,
-			Translator:                translator,
-			SyncerExtensions:          syncerExtensions,
-			GlooStatusReporter:        glooReporter,
-			// Useful for development purposes; not currently tied to any user-facing API
-			Dev: false,
-		})
-	}
 }
 
 // AdminServerStartFunc returns the setup.StartFunc for the Admin Server
