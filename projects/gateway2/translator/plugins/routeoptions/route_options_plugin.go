@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/hashicorp/go-multierror"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -31,6 +33,8 @@ import (
 var (
 	_ plugins.RoutePlugin  = &plugin{}
 	_ plugins.StatusPlugin = &plugin{}
+
+	ReadingRouteOptionErrStr = "error reading RouteOption"
 )
 
 // holds the data structures needed to derive and report a classic GE status
@@ -133,9 +137,14 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 		}
 	}
 	routeOptionReport := make(reporter.ResourceReports)
+	var multierr *multierror.Error
 	for roKey, status := range p.legacyStatusCache {
 		// get the obj by namespacedName
-		roObj, _ := p.routeOptionClient.Read(roKey.Namespace, roKey.Name, clients.ReadOpts{Ctx: ctx})
+		roObj, err := p.routeOptionClient.Read(roKey.Namespace, roKey.Name, clients.ReadOpts{Ctx: ctx})
+		if err != nil {
+			multierr = multierror.Append(multierr, eris.Wrapf(err, "%s %s in namespace %s", ReadingRouteOptionErrStr, roKey.Name, roKey.Namespace))
+			continue
+		}
 
 		// mark this object to be processed
 		routeOptionReport.Accept(roObj)
@@ -146,12 +155,13 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 		}
 
 		// actually write out the reports!
-		err := p.statusReporter.WriteReports(ctx, routeOptionReport, status.subresourceStatus)
+		err = p.statusReporter.WriteReports(ctx, routeOptionReport, status.subresourceStatus)
 		if err != nil {
-			return fmt.Errorf("error writing status report from RouteOptionPlugin: %w", err)
+			multierr = multierror.Append(multierr, fmt.Errorf("error writing status report from RouteOptionPlugin: %w", err))
+			continue
 		}
 	}
-	return nil
+	return multierr.ErrorOrNil()
 }
 
 // tracks the attachment of a RouteOption so we know which RouteOptions to report status for
