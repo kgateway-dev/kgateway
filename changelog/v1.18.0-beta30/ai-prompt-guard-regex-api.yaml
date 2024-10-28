@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Modify the AI Prompt Guard regex API to allow for more flexible matching.
+    issueLink: https://github.com/solo-io/solo-projects/issues/7073
+    resolvesIssue: false
