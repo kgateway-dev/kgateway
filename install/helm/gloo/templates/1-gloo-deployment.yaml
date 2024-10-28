@@ -244,6 +244,7 @@ spec:
         {{- if .Values.kubeGateway.portal.enabled }}
           - name: GG_PORTAL_PLUGIN
             value: "true"
+        {{- end}}
         {{- if .Values.gloo.splitLogOutput }}
           - name: SPLIT_LOG_OUTPUT
             value: "true"
