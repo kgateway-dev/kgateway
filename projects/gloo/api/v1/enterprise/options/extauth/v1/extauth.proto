@@ -1615,6 +1615,28 @@ This is an internal API used to share configuration between gloo-ee and extauth.
 rules about breaking changes still apply to ensure we do not get errors during upgrade and downgrade.
  */
 message ExtAuthConfig {
+    // For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
+    // This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
+    message Azure {
+        // The client ID for the ExtAuthService app that is registered in MS Entra,
+        // to access the Microsoft Graph API to retrieve distributed claims.
+        // This app is NOT the app that you want to configure external auth for.
+        string client_id = 1;
+
+        // The tenant ID represents the MS Entra organization ID where the ExtAuthService app is registered.
+        // This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`,
+        // depending on how your Azure account is provisioned.
+        string tenant_id = 2;
+
+        // The client secret of the ExtAuthService app that is registered with MS Entra to communicate with the MS Graph API.
+        string client_secret = 3 [(extproto.sensitive) = true];
+
+        // Redis connection details to cache MS Entera claims.
+        // This way, you avoid performance issues of accessing the Microsoft Graph API too many times.
+        // Note that this setting does NOT turn on Redis caching for the user session.
+        // To turn on Redis user session caching, use the `userSessionConfig` field.
+        RedisOptions claims_caching_options = 4;
+    }
 
     // @solo-kit:resource.name
     // This is the identifier of the AuthConfig resource that this configuration is associated with.
@@ -1831,18 +1853,6 @@ message ExtAuthConfig {
         // Only one of client_secret or pk_jwt_client_authentication_config should be set. pk_jwt_client_authentication_config takes precedence.
         PkJwtClientAuthenticationConfig pk_jwt_client_authentication_config = 21;
 
-        // Map a single claim from an OAuth2 or OIDC token to a header in the request to the upstream destination.
-        message ClaimToHeader {
-            // The claim name from the token, such as `sub`.
-            string claim = 1;
-
-            // The header to copy the claim to, such as `x-sub`.
-            string header = 2;
-
-            // If the header exists, append the claim value to the header (true), or overwrite any existing value (false). The default behavior is to overwrite any existing value (false).
-            bool append = 3;
-        }
-
         // Optional: Configuration specific to the OAuth2 access token received and processed by the ext-auth-service.
         AccessToken access_token = 22;
 
@@ -1868,29 +1878,6 @@ message ExtAuthConfig {
 
         // No-op, represents default OIDC behavior
         message Default {}
-
-        // For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
-        // This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
-        message Azure {
-            // The client ID for the ExtAuthService app that is registered in MS Entra,
-            // to access the Microsoft Graph API to retrieve distributed claims.
-            // This app is NOT the app that you want to configure external auth for.
-            string client_id = 1;
-
-            // The tenant ID represents the MS Entra organization ID where the ExtAuthService app is registered.
-            // This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`,
-            // depending on how your Azure account is provisioned.
-            string tenant_id = 2;
-
-            // The client secret of the ExtAuthService app that is registered with MS Entra to communicate with the MS Graph API.
-            string client_secret = 3 [(extproto.sensitive) = true];
-
-            // Redis connection details to cache MS Entera claims.
-            // This way, you avoid performance issues of accessing the Microsoft Graph API too many times.
-            // Note that this setting does NOT turn on Redis caching for the user session.
-            // To turn on Redis user session caching, use the `userSessionConfig` field.
-            RedisOptions claims_caching_options = 4;
-        }
 
        // For the moment this is just path, but we may want to configure things like iss/sid validation
         message FrontChannelLogout {

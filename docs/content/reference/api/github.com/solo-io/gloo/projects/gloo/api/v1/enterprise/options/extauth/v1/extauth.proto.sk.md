@@ -94,6 +94,7 @@ weight: 5
 - [Request](#request)
 - [Response](#response)
 - [ExtAuthConfig](#extauthconfig)
+- [Azure](#azure)
 - [BasicAuthInternal](#basicauthinternal)
 - [EncryptionType](#encryptiontype)
 - [Sha1](#sha1)
@@ -105,11 +106,9 @@ weight: 5
 - [CipherConfig](#cipherconfig)
 - [OidcAuthorizationCodeConfig](#oidcauthorizationcodeconfig)
 - [PkJwtClientAuthenticationConfig](#pkjwtclientauthenticationconfig)
-- [ClaimToHeader](#claimtoheader)
 - [AccessToken](#accesstoken)
 - [IdentityToken](#identitytoken)
 - [Default](#default)
-- [Azure](#azure)
 - [FrontChannelLogout](#frontchannellogout)
 - [AccessTokenValidationConfig](#accesstokenvalidationconfig)
 - [JwtValidation](#jwtvalidation)
@@ -2113,6 +2112,31 @@ rules about breaking changes still apply to ensure we do not get errors during u
 
 
 ---
+### Azure
+
+ 
+For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
+This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
+
+```yaml
+"clientId": string
+"tenantId": string
+"clientSecret": string
+"claimsCachingOptions": .enterprise.gloo.solo.io.RedisOptions
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `clientId` | `string` | The client ID for the ExtAuthService app that is registered in MS Entra, to access the Microsoft Graph API to retrieve distributed claims. This app is NOT the app that you want to configure external auth for. |
+| `tenantId` | `string` | The tenant ID represents the MS Entra organization ID where the ExtAuthService app is registered. This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`, depending on how your Azure account is provisioned. |
+| `clientSecret` | `string` | The client secret of the ExtAuthService app that is registered with MS Entra to communicate with the MS Graph API. |
+| `claimsCachingOptions` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) | Redis connection details to cache MS Entera claims. This way, you avoid performance issues of accessing the Microsoft Graph API too many times. Note that this setting does NOT turn on Redis caching for the user session. To turn on Redis user session caching, use the `userSessionConfig` field. |
+
+
+
+
+---
 ### BasicAuthInternal
 
  
@@ -2326,7 +2350,7 @@ Deprecated, prefer OAuth2Config
 "accessToken": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.AccessToken
 "identityToken": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.IdentityToken
 "default": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.Default
-"azure": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.Azure
+"azure": .enterprise.gloo.solo.io.ExtAuthConfig.Azure
 "frontChannelLogout": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.FrontChannelLogout
 "dynamicMetadataFromClaims": map<string, string>
 
@@ -2358,7 +2382,7 @@ Deprecated, prefer OAuth2Config
 | `accessToken` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.AccessToken](../extauth.proto.sk/#accesstoken) | Optional: Configuration specific to the OAuth2 access token received and processed by the ext-auth-service. |
 | `identityToken` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.IdentityToken](../extauth.proto.sk/#identitytoken) | Optional: Configuration specific to the OIDC identity token received and processed by the ext-auth-service. |
 | `default` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.Default](../extauth.proto.sk/#default) |  Only one of `default` or `azure` can be set. |
-| `azure` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.Azure](../extauth.proto.sk/#azure) |  Only one of `azure` or `default` can be set. |
+| `azure` | [.enterprise.gloo.solo.io.ExtAuthConfig.Azure](../extauth.proto.sk/#azure) |  Only one of `azure` or `default` can be set. |
 | `frontChannelLogout` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.FrontChannelLogout](../extauth.proto.sk/#frontchannellogout) | Configuration for front channel logout. This is used to log out the user from multiple apps/clients associated with one OpenId Provider (OP). The path is registered with the OP and is called for each app/client that the user is logged into when the logout endpoint is called. |
 | `dynamicMetadataFromClaims` | `map<string, string>` | Map of metadata key to claim. Ie: dynamic_metadata_from_claims: issuer: iss email: email When specified, the matching claims from the ID token will be emitted as dynamic metadata. Note that metadata keys must be unique, and the claim names must be alphanumeric and use `-` or `_` as separators. The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`), and the structure of the claim value will be preserved in the metadata struct. |
 
@@ -2386,41 +2410,19 @@ Fields for private key JWT Client Authentication.
 
 
 ---
-### ClaimToHeader
-
- 
-Map a single claim from an OAuth2 or OIDC token to a header in the request to the upstream destination.
-
-```yaml
-"claim": string
-"header": string
-"append": bool
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `claim` | `string` | The claim name from the token, such as `sub`. |
-| `header` | `string` | The header to copy the claim to, such as `x-sub`. |
-| `append` | `bool` | If the header exists, append the claim value to the header (true), or overwrite any existing value (false). The default behavior is to overwrite any existing value (false). |
-
-
-
-
----
 ### AccessToken
 
  
 Optional: Map a single claim from an OAuth2 access token to a header in the request to the upstream destination.
 
 ```yaml
-"claimsToHeaders": []enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.ClaimToHeader
+"claimsToHeaders": []enterprise.gloo.solo.io.ClaimToHeader
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `claimsToHeaders` | [[]enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.ClaimToHeader](../extauth.proto.sk/#claimtoheader) | A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination. |
+| `claimsToHeaders` | [[]enterprise.gloo.solo.io.ClaimToHeader](../extauth.proto.sk/#claimtoheader) | A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination. |
 
 
 
@@ -2432,13 +2434,13 @@ Optional: Map a single claim from an OAuth2 access token to a header in the requ
 Optional: Map a single claim from an OIDC identity token to a header in the request to the upstream destination.
 
 ```yaml
-"claimsToHeaders": []enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.ClaimToHeader
+"claimsToHeaders": []enterprise.gloo.solo.io.ClaimToHeader
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `claimsToHeaders` | [[]enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.ClaimToHeader](../extauth.proto.sk/#claimtoheader) | A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination. |
+| `claimsToHeaders` | [[]enterprise.gloo.solo.io.ClaimToHeader](../extauth.proto.sk/#claimtoheader) | A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination. |
 
 
 
@@ -2455,31 +2457,6 @@ No-op, represents default OIDC behavior
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-
-
-
-
----
-### Azure
-
- 
-For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
-This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
-
-```yaml
-"clientId": string
-"tenantId": string
-"clientSecret": string
-"claimsCachingOptions": .enterprise.gloo.solo.io.RedisOptions
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `clientId` | `string` | The client ID for the ExtAuthService app that is registered in MS Entra, to access the Microsoft Graph API to retrieve distributed claims. This app is NOT the app that you want to configure external auth for. |
-| `tenantId` | `string` | The tenant ID represents the MS Entra organization ID where the ExtAuthService app is registered. This tenant ID may or may not be the same as in the top level `OidcAuthorizationCodeConfig`, depending on how your Azure account is provisioned. |
-| `clientSecret` | `string` | The client secret of the ExtAuthService app that is registered with MS Entra to communicate with the MS Graph API. |
-| `claimsCachingOptions` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) | Redis connection details to cache MS Entera claims. This way, you avoid performance issues of accessing the Microsoft Graph API too many times. Note that this setting does NOT turn on Redis caching for the user session. To turn on Redis user session caching, use the `userSessionConfig` field. |
 
 
 
@@ -2516,7 +2493,7 @@ For the moment this is just path, but we may want to configure things like iss/s
 "requiredScopes": .enterprise.gloo.solo.io.ExtAuthConfig.AccessTokenValidationConfig.ScopeList
 "dynamicMetadataFromClaims": map<string, string>
 "claimsToHeaders": []enterprise.gloo.solo.io.ClaimToHeader
-"azure": .enterprise.gloo.solo.io.Azure
+"azure": .enterprise.gloo.solo.io.ExtAuthConfig.Azure
 
 ```
 
@@ -2530,7 +2507,7 @@ For the moment this is just path, but we may want to configure things like iss/s
 | `requiredScopes` | [.enterprise.gloo.solo.io.ExtAuthConfig.AccessTokenValidationConfig.ScopeList](../extauth.proto.sk/#scopelist) | Require access token to have all of the scopes in the given list. This configuration applies to both opaque and JWT tokens. In the case of opaque tokens, this will check the scopes returned in the "scope" member of introspection response (as described in [Section 2.2 of RFC7662](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2). In case of JWTs the scopes to be validated are expected to be contained in the "scope" claim of the token in the form of a space-separated string. Omitting this field means that scope validation will be skipped. |
 | `dynamicMetadataFromClaims` | `map<string, string>` | Map of metadata key to claim. Ie: dynamic_metadata_from_claims: issuer: iss email: email When specified, the matching claims from the access token will be emitted as dynamic metadata. Note that metadata keys must be unique, and the claim names must be alphanumeric and use `-` or `_` as separators. Works when the access token is a JWT or when the access token is opaque, in which case the claims will refer to field in the response from the token introspection endpoint. The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`), and the structure of the claim value will be preserved in the metadata struct. |
 | `claimsToHeaders` | [[]enterprise.gloo.solo.io.ClaimToHeader](../extauth.proto.sk/#claimtoheader) |  |
-| `azure` | [.enterprise.gloo.solo.io.Azure](../extauth.proto.sk/#azure) |  |
+| `azure` | [.enterprise.gloo.solo.io.ExtAuthConfig.Azure](../extauth.proto.sk/#azure) |  |
 
 
 
