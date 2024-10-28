@@ -1354,6 +1354,8 @@ spec:
                 type: object
               loadBalancerConfig:
                 properties:
+                  closeConnectionsOnHostSetChange:
+                    type: boolean
                   healthyPanicThreshold:
                     nullable: true
                     type: number

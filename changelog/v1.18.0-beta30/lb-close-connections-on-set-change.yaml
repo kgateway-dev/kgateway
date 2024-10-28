@@ -1,0 +1,12 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/9505
+    description: >-
+      Expose `close_connections_on_host_set_change` on `LoadBalancerConfig`.
+      Setting this value configures the Envoy LB policy to drain connections when the upstream host set changes.
+      This is useful when using Ring Hash or Maglev load balancing policies and helps ensure
+      rebalancing when recovering from disruptions.
+      Connections are not immediately closed and are allowed to drain.
+      This feature is disabled by default.
+      (https://github.com/solo-io/gloo/issues/9505)
+    resolvesIssue: false
