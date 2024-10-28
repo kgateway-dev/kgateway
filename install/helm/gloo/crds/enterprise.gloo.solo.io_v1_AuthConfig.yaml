@@ -355,6 +355,8 @@ spec:
                                     type: string
                                 type: object
                               type: array
+                            default:
+                              type: object
                             dynamicMetadataFromClaims:
                               additionalProperties:
                                 type: string

@@ -1092,9 +1092,13 @@ message AccessTokenValidation {
     // A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination
     repeated ClaimToHeader claims_to_headers = 8;
 
-    // For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
-    // This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
-    Azure azure = 9;
+    oneof Provider {
+        Default default = 9;
+        Azure azure = 10;
+    }
+
+    // No-op, represents default OIDC distributed claims behavior
+    message Default {}
 
     message ScopeList {
       repeated string scope = 1;
