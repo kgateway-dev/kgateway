@@ -1613,6 +1613,79 @@ func (m *ClaimToHeader) HashUnique(hasher hash.Hash64) (uint64, error) {
 // hashing field name and value pairs.
 // Replaces Hash due to original hashing implemention only using field values. The omission
 // of the field name in the hash calculation can lead to hash collisions.
+func (m *Azure) HashUnique(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.Azure")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte("ClientId")); err != nil {
+		return 0, err
+	}
+	if _, err = hasher.Write([]byte(m.GetClientId())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte("TenantId")); err != nil {
+		return 0, err
+	}
+	if _, err = hasher.Write([]byte(m.GetTenantId())); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetClientSecret()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("ClientSecret")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetClientSecret(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("ClientSecret")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetClaimsCachingOptions()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("ClaimsCachingOptions")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetClaimsCachingOptions(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("ClaimsCachingOptions")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// HashUnique function generates a hash of the object that is unique to the object by
+// hashing field name and value pairs.
+// Replaces Hash due to original hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
 func (m *OidcAuthorizationCode) HashUnique(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -2070,7 +2143,7 @@ func (m *OidcAuthorizationCode) HashUnique(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *OidcAuthorizationCode_Azure_:
+	case *OidcAuthorizationCode_Azure:
 
 		if h, ok := interface{}(m.GetAzure()).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("Azure")); err != nil {
@@ -2533,6 +2606,36 @@ func (m *AccessTokenValidation) HashUnique(hasher hash.Hash64) (uint64, error) {
 
 	}
 
+	if _, err = hasher.Write([]byte("ClaimsToHeaders")); err != nil {
+		return 0, err
+	}
+	for i, v := range m.GetClaimsToHeaders() {
+		if _, err = hasher.Write([]byte(strconv.Itoa(i))); err != nil {
+			return 0, err
+		}
+
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("v")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("v")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
 	switch m.ValidationType.(type) {
 
 	case *AccessTokenValidation_IntrospectionUrl:
@@ -2606,6 +2709,54 @@ func (m *AccessTokenValidation) HashUnique(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			} else {
 				if _, err = hasher.Write([]byte("RequiredScopes")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	switch m.Provider.(type) {
+
+	case *AccessTokenValidation_Default_:
+
+		if h, ok := interface{}(m.GetDefault()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Default")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetDefault(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Default")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *AccessTokenValidation_Azure:
+
+		if h, ok := interface{}(m.GetAzure()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Azure")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetAzure(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Azure")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
@@ -3165,6 +3316,25 @@ func (m *AerospikeApiKeyStorage) HashUnique(hasher hash.Hash64) (uint64, error) 
 			return 0, err
 		}
 
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// HashUnique function generates a hash of the object that is unique to the object by
+// hashing field name and value pairs.
+// Replaces Hash due to original hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
+func (m *ServerDefaultApiKeyStorage) HashUnique(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ServerDefaultApiKeyStorage")); err != nil {
+		return 0, err
 	}
 
 	return hasher.Sum64(), nil
@@ -5782,79 +5952,6 @@ func (m *OidcAuthorizationCode_Default) HashUnique(hasher hash.Hash64) (uint64, 
 // hashing field name and value pairs.
 // Replaces Hash due to original hashing implemention only using field values. The omission
 // of the field name in the hash calculation can lead to hash collisions.
-func (m *OidcAuthorizationCode_Azure) HashUnique(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.OidcAuthorizationCode_Azure")); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte("ClientId")); err != nil {
-		return 0, err
-	}
-	if _, err = hasher.Write([]byte(m.GetClientId())); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte("TenantId")); err != nil {
-		return 0, err
-	}
-	if _, err = hasher.Write([]byte(m.GetTenantId())); err != nil {
-		return 0, err
-	}
-
-	if h, ok := interface{}(m.GetClientSecret()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("ClientSecret")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetClientSecret(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("ClientSecret")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
-	}
-
-	if h, ok := interface{}(m.GetClaimsCachingOptions()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("ClaimsCachingOptions")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetClaimsCachingOptions(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("ClaimsCachingOptions")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// HashUnique function generates a hash of the object that is unique to the object by
-// hashing field name and value pairs.
-// Replaces Hash due to original hashing implemention only using field values. The omission
-// of the field name in the hash calculation can lead to hash collisions.
 func (m *OidcAuthorizationCode_FrontChannelLogout) HashUnique(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -6061,6 +6158,25 @@ func (m *JwtValidation_LocalJwks) HashUnique(hasher hash.Hash64) (uint64, error)
 		return 0, err
 	}
 	if _, err = hasher.Write([]byte(m.GetInlineString())); err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// HashUnique function generates a hash of the object that is unique to the object by
+// hashing field name and value pairs.
+// Replaces Hash due to original hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
+func (m *AccessTokenValidation_Default) HashUnique(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.AccessTokenValidation_Default")); err != nil {
 		return 0, err
 	}
 
@@ -6561,6 +6677,107 @@ func (m *PassThroughHttp_Response) HashUnique(hasher hash.Hash64) (uint64, error
 			return 0, err
 		}
 
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// HashUnique function generates a hash of the object that is unique to the object by
+// hashing field name and value pairs.
+// Replaces Hash due to original hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
+func (m *ExtAuthConfig_Azure) HashUnique(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ExtAuthConfig_Azure")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte("ClientId")); err != nil {
+		return 0, err
+	}
+	if _, err = hasher.Write([]byte(m.GetClientId())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte("TenantId")); err != nil {
+		return 0, err
+	}
+	if _, err = hasher.Write([]byte(m.GetTenantId())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte("ClientSecret")); err != nil {
+		return 0, err
+	}
+	if _, err = hasher.Write([]byte(m.GetClientSecret())); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetClaimsCachingOptions()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("ClaimsCachingOptions")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetClaimsCachingOptions(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("ClaimsCachingOptions")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// HashUnique function generates a hash of the object that is unique to the object by
+// hashing field name and value pairs.
+// Replaces Hash due to original hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
+func (m *ExtAuthConfig_ClaimToHeader) HashUnique(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ExtAuthConfig_ClaimToHeader")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte("Claim")); err != nil {
+		return 0, err
+	}
+	if _, err = hasher.Write([]byte(m.GetClaim())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte("Header")); err != nil {
+		return 0, err
+	}
+	if _, err = hasher.Write([]byte(m.GetHeader())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte("Append")); err != nil {
+		return 0, err
+	}
+	err = binary.Write(hasher, binary.LittleEndian, m.GetAppend())
+	if err != nil {
+		return 0, err
 	}
 
 	return hasher.Sum64(), nil
@@ -7248,6 +7465,35 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) HashUnique(hasher hash.Hash6
 		}
 	}
 
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range m.GetDynamicMetadataFromClaims() {
+			innerHash.Reset()
+
+			if _, err = innerHash.Write([]byte("v")); err != nil {
+				return 0, err
+			}
+			if _, err = innerHash.Write([]byte(v)); err != nil {
+				return 0, err
+			}
+
+			if _, err = innerHash.Write([]byte("k")); err != nil {
+				return 0, err
+			}
+			if _, err = innerHash.Write([]byte(k)); err != nil {
+				return 0, err
+			}
+
+			result = result ^ innerHash.Sum64()
+		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+
+	}
+
 	switch m.Provider.(type) {
 
 	case *ExtAuthConfig_OidcAuthorizationCodeConfig_Default_:
@@ -7272,7 +7518,7 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) HashUnique(hasher hash.Hash6
 			}
 		}
 
-	case *ExtAuthConfig_OidcAuthorizationCodeConfig_Azure_:
+	case *ExtAuthConfig_OidcAuthorizationCodeConfig_Azure:
 
 		if h, ok := interface{}(m.GetAzure()).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("Azure")); err != nil {
@@ -7340,6 +7586,65 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig) HashUnique(hasher hash.Hash6
 				return 0, err
 			}
 		}
+	}
+
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range m.GetDynamicMetadataFromClaims() {
+			innerHash.Reset()
+
+			if _, err = innerHash.Write([]byte("v")); err != nil {
+				return 0, err
+			}
+			if _, err = innerHash.Write([]byte(v)); err != nil {
+				return 0, err
+			}
+
+			if _, err = innerHash.Write([]byte("k")); err != nil {
+				return 0, err
+			}
+			if _, err = innerHash.Write([]byte(k)); err != nil {
+				return 0, err
+			}
+
+			result = result ^ innerHash.Sum64()
+		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+
+	}
+
+	if _, err = hasher.Write([]byte("ClaimsToHeaders")); err != nil {
+		return 0, err
+	}
+	for i, v := range m.GetClaimsToHeaders() {
+		if _, err = hasher.Write([]byte(strconv.Itoa(i))); err != nil {
+			return 0, err
+		}
+
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("v")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("v")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
 	}
 
 	switch m.ValidationType.(type) {
@@ -7415,6 +7720,54 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig) HashUnique(hasher hash.Hash6
 				return 0, err
 			} else {
 				if _, err = hasher.Write([]byte("RequiredScopes")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	switch m.Provider.(type) {
+
+	case *ExtAuthConfig_AccessTokenValidationConfig_Default_:
+
+		if h, ok := interface{}(m.GetDefault()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Default")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetDefault(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Default")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *ExtAuthConfig_AccessTokenValidationConfig_Azure:
+
+		if h, ok := interface{}(m.GetAzure()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Azure")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetAzure(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Azure")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
@@ -7854,6 +8207,28 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig) HashUnique(hasher hash.Hash64) (uint64,
 				return 0, err
 			} else {
 				if _, err = hasher.Write([]byte("AerospikeApikeyStorage")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *ExtAuthConfig_ApiKeyAuthConfig_ServerDefaultApikeyStorage:
+
+		if h, ok := interface{}(m.GetServerDefaultApikeyStorage()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("ServerDefaultApikeyStorage")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetServerDefaultApikeyStorage(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("ServerDefaultApikeyStorage")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
@@ -8878,47 +9253,6 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_PkJwtClientAuthenticationConf
 // hashing field name and value pairs.
 // Replaces Hash due to original hashing implemention only using field values. The omission
 // of the field name in the hash calculation can lead to hash collisions.
-func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_ClaimToHeader) HashUnique(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ExtAuthConfig_OidcAuthorizationCodeConfig_ClaimToHeader")); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte("Claim")); err != nil {
-		return 0, err
-	}
-	if _, err = hasher.Write([]byte(m.GetClaim())); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte("Header")); err != nil {
-		return 0, err
-	}
-	if _, err = hasher.Write([]byte(m.GetHeader())); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte("Append")); err != nil {
-		return 0, err
-	}
-	err = binary.Write(hasher, binary.LittleEndian, m.GetAppend())
-	if err != nil {
-		return 0, err
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// HashUnique function generates a hash of the object that is unique to the object by
-// hashing field name and value pairs.
-// Replaces Hash due to original hashing implemention only using field values. The omission
-// of the field name in the hash calculation can lead to hash collisions.
 func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_AccessToken) HashUnique(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -9027,66 +9361,6 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_Default) HashUnique(hasher ha
 	var err error
 	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ExtAuthConfig_OidcAuthorizationCodeConfig_Default")); err != nil {
 		return 0, err
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// HashUnique function generates a hash of the object that is unique to the object by
-// hashing field name and value pairs.
-// Replaces Hash due to original hashing implemention only using field values. The omission
-// of the field name in the hash calculation can lead to hash collisions.
-func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_Azure) HashUnique(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ExtAuthConfig_OidcAuthorizationCodeConfig_Azure")); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte("ClientId")); err != nil {
-		return 0, err
-	}
-	if _, err = hasher.Write([]byte(m.GetClientId())); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte("TenantId")); err != nil {
-		return 0, err
-	}
-	if _, err = hasher.Write([]byte(m.GetTenantId())); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte("ClientSecret")); err != nil {
-		return 0, err
-	}
-	if _, err = hasher.Write([]byte(m.GetClientSecret())); err != nil {
-		return 0, err
-	}
-
-	if h, ok := interface{}(m.GetClaimsCachingOptions()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("ClaimsCachingOptions")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetClaimsCachingOptions(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("ClaimsCachingOptions")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
 	}
 
 	return hasher.Sum64(), nil
@@ -9270,6 +9544,25 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig_ScopeList) HashUnique(hasher 
 			return 0, err
 		}
 
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// HashUnique function generates a hash of the object that is unique to the object by
+// hashing field name and value pairs.
+// Replaces Hash due to original hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
+func (m *ExtAuthConfig_AccessTokenValidationConfig_Default) HashUnique(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ExtAuthConfig_AccessTokenValidationConfig_Default")); err != nil {
+		return 0, err
 	}
 
 	return hasher.Sum64(), nil
