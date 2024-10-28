@@ -117,6 +117,6 @@ message LoadBalancerConfig {
     // Enabling this feature will cause the load balancer to drain existing connections
     // when the host set changes, ensuring that new connections with the same key are
     // consistently routed to the same host.
-    // Long-lived connections are not closed immediately, but will be drained over time.
+    // Connections are not immediately closed, but are allowed to drain.
     bool close_connections_on_host_set_change = 10;
 }

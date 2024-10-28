@@ -57,12 +57,12 @@ type LoadBalancerConfig struct {
 	//
 	// Ring Hash or Maglev can be used to ensure that clients with the same key
 	// are routed to the same upstream host.
-	// Distruptions can cause new connections with the same key as existing conenctions
+	// Distruptions can cause new connections with the same key as existing connections
 	// to be routed to different hosts.
 	// Enabling this feature will cause the load balancer to drain existing connections
 	// when the host set changes, ensuring that new connections with the same key are
 	// consistently routed to the same host.
-	// Long-lived connections are not closed immediately, but will be drained over time.
+	// Connections are not immediately closed, but are allowed to drain.
 	CloseConnectionsOnHostSetChange bool `protobuf:"varint,10,opt,name=close_connections_on_host_set_change,json=closeConnectionsOnHostSetChange,proto3" json:"close_connections_on_host_set_change,omitempty"`
 }
 

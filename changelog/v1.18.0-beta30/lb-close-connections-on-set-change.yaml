@@ -4,6 +4,6 @@ changelog:
     description: >-
       Allow setting the Envoy LB policy to drain connections when the upstream host set changes.
       This is useful when using Ring Hash or Maglev load balancing policies and helps ensure
-      rebalancing when recovering from disruptions. Long-lived connections are not immediately
-      closed, but are allowed to drain. This feature is disabled by default.
+      rebalancing when recovering from disruptions. Connections are not immediately
+      closed and are allowed to drain. This feature is disabled by default.
     resolvesIssue: false
