@@ -318,6 +318,11 @@ type Gloo struct {
 type KubeGateway struct {
 	Enabled           *bool                               `json:"enabled,omitempty" desc:"Enable the Gloo Gateway Kubernetes Gateway API controller."`
 	GatewayParameters *GatewayParametersForGatewayClasses `json:"gatewayParameters,omitempty" desc:"Maps GatewayClasses to default GatewayParameters"`
+	Portal            *PortalParameters                   `json:"portal,omitempty" desc:"(Enterprise Only) Config to enable the Gloo Gateway Portal controller and web server."`
+}
+
+type PortalParameters struct {
+	Enabled *bool `json:"enabled,omitempty" desc:"Enable the Gloo Gateway Portal controller and web server."`
 }
 
 type GatewayParametersForGatewayClasses struct {
