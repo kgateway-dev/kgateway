@@ -2389,6 +2389,30 @@ func (m *AerospikeApiKeyStorage) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *ServerDefaultApiKeyStorage) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ServerDefaultApiKeyStorage)
+	if !ok {
+		that2, ok := that.(ServerDefaultApiKeyStorage)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
 func (m *ApiKey) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -5095,6 +5119,88 @@ func (m *PassThroughHttp_Response) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *ExtAuthConfig_Azure) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ExtAuthConfig_Azure)
+	if !ok {
+		that2, ok := that.(ExtAuthConfig_Azure)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetClientId(), target.GetClientId()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetTenantId(), target.GetTenantId()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetClientSecret(), target.GetClientSecret()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetClaimsCachingOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetClaimsCachingOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetClaimsCachingOptions(), target.GetClaimsCachingOptions()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ExtAuthConfig_ClaimToHeader) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ExtAuthConfig_ClaimToHeader)
+	if !ok {
+		that2, ok := that.(ExtAuthConfig_ClaimToHeader)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetClaim(), target.GetClaim()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetHeader(), target.GetHeader()) != 0 {
+		return false
+	}
+
+	if m.GetAppend() != target.GetAppend() {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
 func (m *ExtAuthConfig_BasicAuthInternal) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -5519,6 +5625,17 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Equal(that interface{}) bool
 		}
 	}
 
+	if len(m.GetDynamicMetadataFromClaims()) != len(target.GetDynamicMetadataFromClaims()) {
+		return false
+	}
+	for k, v := range m.GetDynamicMetadataFromClaims() {
+
+		if strings.Compare(v, target.GetDynamicMetadataFromClaims()[k]) != 0 {
+			return false
+		}
+
+	}
+
 	switch m.Provider.(type) {
 
 	case *ExtAuthConfig_OidcAuthorizationCodeConfig_Default_:
@@ -5536,8 +5653,8 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Equal(that interface{}) bool
 			}
 		}
 
-	case *ExtAuthConfig_OidcAuthorizationCodeConfig_Azure_:
-		if _, ok := target.Provider.(*ExtAuthConfig_OidcAuthorizationCodeConfig_Azure_); !ok {
+	case *ExtAuthConfig_OidcAuthorizationCodeConfig_Azure:
+		if _, ok := target.Provider.(*ExtAuthConfig_OidcAuthorizationCodeConfig_Azure); !ok {
 			return false
 		}
 
@@ -5594,6 +5711,34 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig) Equal(that interface{}) bool
 		if !proto.Equal(m.GetCacheTimeout(), target.GetCacheTimeout()) {
 			return false
 		}
+	}
+
+	if len(m.GetDynamicMetadataFromClaims()) != len(target.GetDynamicMetadataFromClaims()) {
+		return false
+	}
+	for k, v := range m.GetDynamicMetadataFromClaims() {
+
+		if strings.Compare(v, target.GetDynamicMetadataFromClaims()[k]) != 0 {
+			return false
+		}
+
+	}
+
+	if len(m.GetClaimsToHeaders()) != len(target.GetClaimsToHeaders()) {
+		return false
+	}
+	for idx, v := range m.GetClaimsToHeaders() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetClaimsToHeaders()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetClaimsToHeaders()[idx]) {
+				return false
+			}
+		}
+
 	}
 
 	switch m.ValidationType.(type) {
@@ -5664,6 +5809,45 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig) Equal(that interface{}) bool
 	default:
 		// m is nil but target is not nil
 		if m.ScopeValidation != target.ScopeValidation {
+			return false
+		}
+	}
+
+	switch m.Provider.(type) {
+
+	case *ExtAuthConfig_AccessTokenValidationConfig_Default_:
+		if _, ok := target.Provider.(*ExtAuthConfig_AccessTokenValidationConfig_Default_); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetDefault()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetDefault()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetDefault(), target.GetDefault()) {
+				return false
+			}
+		}
+
+	case *ExtAuthConfig_AccessTokenValidationConfig_Azure:
+		if _, ok := target.Provider.(*ExtAuthConfig_AccessTokenValidationConfig_Azure); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAzure()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAzure()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAzure(), target.GetAzure()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Provider != target.Provider {
 			return false
 		}
 	}
@@ -5947,6 +6131,21 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(m.GetAerospikeApikeyStorage(), target.GetAerospikeApikeyStorage()) {
+				return false
+			}
+		}
+
+	case *ExtAuthConfig_ApiKeyAuthConfig_ServerDefaultApikeyStorage:
+		if _, ok := target.StorageBackend.(*ExtAuthConfig_ApiKeyAuthConfig_ServerDefaultApikeyStorage); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetServerDefaultApikeyStorage()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetServerDefaultApikeyStorage()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetServerDefaultApikeyStorage(), target.GetServerDefaultApikeyStorage()) {
 				return false
 			}
 		}
@@ -6763,42 +6962,6 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_PkJwtClientAuthenticationConf
 }
 
 // Equal function
-func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_ClaimToHeader) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*ExtAuthConfig_OidcAuthorizationCodeConfig_ClaimToHeader)
-	if !ok {
-		that2, ok := that.(ExtAuthConfig_OidcAuthorizationCodeConfig_ClaimToHeader)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if strings.Compare(m.GetClaim(), target.GetClaim()) != 0 {
-		return false
-	}
-
-	if strings.Compare(m.GetHeader(), target.GetHeader()) != 0 {
-		return false
-	}
-
-	if m.GetAppend() != target.GetAppend() {
-		return false
-	}
-
-	return true
-}
-
-// Equal function
 func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_AccessToken) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -6899,52 +7062,6 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_Default) Equal(that interface
 		return m == nil
 	} else if m == nil {
 		return false
-	}
-
-	return true
-}
-
-// Equal function
-func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_Azure) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*ExtAuthConfig_OidcAuthorizationCodeConfig_Azure)
-	if !ok {
-		that2, ok := that.(ExtAuthConfig_OidcAuthorizationCodeConfig_Azure)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if strings.Compare(m.GetClientId(), target.GetClientId()) != 0 {
-		return false
-	}
-
-	if strings.Compare(m.GetTenantId(), target.GetTenantId()) != 0 {
-		return false
-	}
-
-	if strings.Compare(m.GetClientSecret(), target.GetClientSecret()) != 0 {
-		return false
-	}
-
-	if h, ok := interface{}(m.GetClaimsCachingOptions()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetClaimsCachingOptions()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetClaimsCachingOptions(), target.GetClaimsCachingOptions()) {
-			return false
-		}
 	}
 
 	return true
@@ -7115,6 +7232,30 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig_ScopeList) Equal(that interfa
 			return false
 		}
 
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ExtAuthConfig_AccessTokenValidationConfig_Default) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ExtAuthConfig_AccessTokenValidationConfig_Default)
+	if !ok {
+		that2, ok := that.(ExtAuthConfig_AccessTokenValidationConfig_Default)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
 	}
 
 	return true

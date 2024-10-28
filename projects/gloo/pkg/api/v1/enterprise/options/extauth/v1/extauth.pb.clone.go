@@ -1442,6 +1442,17 @@ func (m *AerospikeApiKeyStorage) Clone() proto.Message {
 }
 
 // Clone function
+func (m *ServerDefaultApiKeyStorage) Clone() proto.Message {
+	var target *ServerDefaultApiKeyStorage
+	if m == nil {
+		return target
+	}
+	target = &ServerDefaultApiKeyStorage{}
+
+	return target
+}
+
+// Clone function
 func (m *ApiKey) Clone() proto.Message {
 	var target *ApiKey
 	if m == nil {
@@ -2997,6 +3008,46 @@ func (m *PassThroughHttp_Response) Clone() proto.Message {
 }
 
 // Clone function
+func (m *ExtAuthConfig_Azure) Clone() proto.Message {
+	var target *ExtAuthConfig_Azure
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_Azure{}
+
+	target.ClientId = m.GetClientId()
+
+	target.TenantId = m.GetTenantId()
+
+	target.ClientSecret = m.GetClientSecret()
+
+	if h, ok := interface{}(m.GetClaimsCachingOptions()).(clone.Cloner); ok {
+		target.ClaimsCachingOptions = h.Clone().(*RedisOptions)
+	} else {
+		target.ClaimsCachingOptions = proto.Clone(m.GetClaimsCachingOptions()).(*RedisOptions)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ExtAuthConfig_ClaimToHeader) Clone() proto.Message {
+	var target *ExtAuthConfig_ClaimToHeader
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_ClaimToHeader{}
+
+	target.Claim = m.GetClaim()
+
+	target.Header = m.GetHeader()
+
+	target.Append = m.GetAppend()
+
+	return target
+}
+
+// Clone function
 func (m *ExtAuthConfig_BasicAuthInternal) Clone() proto.Message {
 	var target *ExtAuthConfig_BasicAuthInternal
 	if m == nil {
@@ -3248,6 +3299,15 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Clone() proto.Message {
 		target.FrontChannelLogout = proto.Clone(m.GetFrontChannelLogout()).(*ExtAuthConfig_OidcAuthorizationCodeConfig_FrontChannelLogout)
 	}
 
+	if m.GetDynamicMetadataFromClaims() != nil {
+		target.DynamicMetadataFromClaims = make(map[string]string, len(m.GetDynamicMetadataFromClaims()))
+		for k, v := range m.GetDynamicMetadataFromClaims() {
+
+			target.DynamicMetadataFromClaims[k] = v
+
+		}
+	}
+
 	switch m.Provider.(type) {
 
 	case *ExtAuthConfig_OidcAuthorizationCodeConfig_Default_:
@@ -3262,15 +3322,15 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Clone() proto.Message {
 			}
 		}
 
-	case *ExtAuthConfig_OidcAuthorizationCodeConfig_Azure_:
+	case *ExtAuthConfig_OidcAuthorizationCodeConfig_Azure:
 
 		if h, ok := interface{}(m.GetAzure()).(clone.Cloner); ok {
-			target.Provider = &ExtAuthConfig_OidcAuthorizationCodeConfig_Azure_{
-				Azure: h.Clone().(*ExtAuthConfig_OidcAuthorizationCodeConfig_Azure),
+			target.Provider = &ExtAuthConfig_OidcAuthorizationCodeConfig_Azure{
+				Azure: h.Clone().(*ExtAuthConfig_Azure),
 			}
 		} else {
-			target.Provider = &ExtAuthConfig_OidcAuthorizationCodeConfig_Azure_{
-				Azure: proto.Clone(m.GetAzure()).(*ExtAuthConfig_OidcAuthorizationCodeConfig_Azure),
+			target.Provider = &ExtAuthConfig_OidcAuthorizationCodeConfig_Azure{
+				Azure: proto.Clone(m.GetAzure()).(*ExtAuthConfig_Azure),
 			}
 		}
 
@@ -3293,6 +3353,28 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig) Clone() proto.Message {
 		target.CacheTimeout = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
 	} else {
 		target.CacheTimeout = proto.Clone(m.GetCacheTimeout()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
+	}
+
+	if m.GetDynamicMetadataFromClaims() != nil {
+		target.DynamicMetadataFromClaims = make(map[string]string, len(m.GetDynamicMetadataFromClaims()))
+		for k, v := range m.GetDynamicMetadataFromClaims() {
+
+			target.DynamicMetadataFromClaims[k] = v
+
+		}
+	}
+
+	if m.GetClaimsToHeaders() != nil {
+		target.ClaimsToHeaders = make([]*ExtAuthConfig_ClaimToHeader, len(m.GetClaimsToHeaders()))
+		for idx, v := range m.GetClaimsToHeaders() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ClaimsToHeaders[idx] = h.Clone().(*ExtAuthConfig_ClaimToHeader)
+			} else {
+				target.ClaimsToHeaders[idx] = proto.Clone(v).(*ExtAuthConfig_ClaimToHeader)
+			}
+
+		}
 	}
 
 	switch m.ValidationType.(type) {
@@ -3340,6 +3422,34 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig) Clone() proto.Message {
 		} else {
 			target.ScopeValidation = &ExtAuthConfig_AccessTokenValidationConfig_RequiredScopes{
 				RequiredScopes: proto.Clone(m.GetRequiredScopes()).(*ExtAuthConfig_AccessTokenValidationConfig_ScopeList),
+			}
+		}
+
+	}
+
+	switch m.Provider.(type) {
+
+	case *ExtAuthConfig_AccessTokenValidationConfig_Default_:
+
+		if h, ok := interface{}(m.GetDefault()).(clone.Cloner); ok {
+			target.Provider = &ExtAuthConfig_AccessTokenValidationConfig_Default_{
+				Default: h.Clone().(*ExtAuthConfig_AccessTokenValidationConfig_Default),
+			}
+		} else {
+			target.Provider = &ExtAuthConfig_AccessTokenValidationConfig_Default_{
+				Default: proto.Clone(m.GetDefault()).(*ExtAuthConfig_AccessTokenValidationConfig_Default),
+			}
+		}
+
+	case *ExtAuthConfig_AccessTokenValidationConfig_Azure:
+
+		if h, ok := interface{}(m.GetAzure()).(clone.Cloner); ok {
+			target.Provider = &ExtAuthConfig_AccessTokenValidationConfig_Azure{
+				Azure: h.Clone().(*ExtAuthConfig_Azure),
+			}
+		} else {
+			target.Provider = &ExtAuthConfig_AccessTokenValidationConfig_Azure{
+				Azure: proto.Clone(m.GetAzure()).(*ExtAuthConfig_Azure),
 			}
 		}
 
@@ -3524,6 +3634,18 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig) Clone() proto.Message {
 		} else {
 			target.StorageBackend = &ExtAuthConfig_ApiKeyAuthConfig_AerospikeApikeyStorage{
 				AerospikeApikeyStorage: proto.Clone(m.GetAerospikeApikeyStorage()).(*AerospikeApiKeyStorage),
+			}
+		}
+
+	case *ExtAuthConfig_ApiKeyAuthConfig_ServerDefaultApikeyStorage:
+
+		if h, ok := interface{}(m.GetServerDefaultApikeyStorage()).(clone.Cloner); ok {
+			target.StorageBackend = &ExtAuthConfig_ApiKeyAuthConfig_ServerDefaultApikeyStorage{
+				ServerDefaultApikeyStorage: h.Clone().(*ServerDefaultApiKeyStorage),
+			}
+		} else {
+			target.StorageBackend = &ExtAuthConfig_ApiKeyAuthConfig_ServerDefaultApikeyStorage{
+				ServerDefaultApikeyStorage: proto.Clone(m.GetServerDefaultApikeyStorage()).(*ServerDefaultApiKeyStorage),
 			}
 		}
 
@@ -4015,23 +4137,6 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_PkJwtClientAuthenticationConf
 }
 
 // Clone function
-func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_ClaimToHeader) Clone() proto.Message {
-	var target *ExtAuthConfig_OidcAuthorizationCodeConfig_ClaimToHeader
-	if m == nil {
-		return target
-	}
-	target = &ExtAuthConfig_OidcAuthorizationCodeConfig_ClaimToHeader{}
-
-	target.Claim = m.GetClaim()
-
-	target.Header = m.GetHeader()
-
-	target.Append = m.GetAppend()
-
-	return target
-}
-
-// Clone function
 func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_AccessToken) Clone() proto.Message {
 	var target *ExtAuthConfig_OidcAuthorizationCodeConfig_AccessToken
 	if m == nil {
@@ -4040,13 +4145,13 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_AccessToken) Clone() proto.Me
 	target = &ExtAuthConfig_OidcAuthorizationCodeConfig_AccessToken{}
 
 	if m.GetClaimsToHeaders() != nil {
-		target.ClaimsToHeaders = make([]*ExtAuthConfig_OidcAuthorizationCodeConfig_ClaimToHeader, len(m.GetClaimsToHeaders()))
+		target.ClaimsToHeaders = make([]*ExtAuthConfig_ClaimToHeader, len(m.GetClaimsToHeaders()))
 		for idx, v := range m.GetClaimsToHeaders() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.ClaimsToHeaders[idx] = h.Clone().(*ExtAuthConfig_OidcAuthorizationCodeConfig_ClaimToHeader)
+				target.ClaimsToHeaders[idx] = h.Clone().(*ExtAuthConfig_ClaimToHeader)
 			} else {
-				target.ClaimsToHeaders[idx] = proto.Clone(v).(*ExtAuthConfig_OidcAuthorizationCodeConfig_ClaimToHeader)
+				target.ClaimsToHeaders[idx] = proto.Clone(v).(*ExtAuthConfig_ClaimToHeader)
 			}
 
 		}
@@ -4064,13 +4169,13 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_IdentityToken) Clone() proto.
 	target = &ExtAuthConfig_OidcAuthorizationCodeConfig_IdentityToken{}
 
 	if m.GetClaimsToHeaders() != nil {
-		target.ClaimsToHeaders = make([]*ExtAuthConfig_OidcAuthorizationCodeConfig_ClaimToHeader, len(m.GetClaimsToHeaders()))
+		target.ClaimsToHeaders = make([]*ExtAuthConfig_ClaimToHeader, len(m.GetClaimsToHeaders()))
 		for idx, v := range m.GetClaimsToHeaders() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.ClaimsToHeaders[idx] = h.Clone().(*ExtAuthConfig_OidcAuthorizationCodeConfig_ClaimToHeader)
+				target.ClaimsToHeaders[idx] = h.Clone().(*ExtAuthConfig_ClaimToHeader)
 			} else {
-				target.ClaimsToHeaders[idx] = proto.Clone(v).(*ExtAuthConfig_OidcAuthorizationCodeConfig_ClaimToHeader)
+				target.ClaimsToHeaders[idx] = proto.Clone(v).(*ExtAuthConfig_ClaimToHeader)
 			}
 
 		}
@@ -4086,29 +4191,6 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_Default) Clone() proto.Messag
 		return target
 	}
 	target = &ExtAuthConfig_OidcAuthorizationCodeConfig_Default{}
-
-	return target
-}
-
-// Clone function
-func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_Azure) Clone() proto.Message {
-	var target *ExtAuthConfig_OidcAuthorizationCodeConfig_Azure
-	if m == nil {
-		return target
-	}
-	target = &ExtAuthConfig_OidcAuthorizationCodeConfig_Azure{}
-
-	target.ClientId = m.GetClientId()
-
-	target.TenantId = m.GetTenantId()
-
-	target.ClientSecret = m.GetClientSecret()
-
-	if h, ok := interface{}(m.GetClaimsCachingOptions()).(clone.Cloner); ok {
-		target.ClaimsCachingOptions = h.Clone().(*RedisOptions)
-	} else {
-		target.ClaimsCachingOptions = proto.Clone(m.GetClaimsCachingOptions()).(*RedisOptions)
-	}
 
 	return target
 }
@@ -4202,6 +4284,17 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig_ScopeList) Clone() proto.Mess
 
 		}
 	}
+
+	return target
+}
+
+// Clone function
+func (m *ExtAuthConfig_AccessTokenValidationConfig_Default) Clone() proto.Message {
+	var target *ExtAuthConfig_AccessTokenValidationConfig_Default
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_AccessTokenValidationConfig_Default{}
 
 	return target
 }

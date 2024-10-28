@@ -374,6 +374,9 @@ apis:
   enterprise.gloo.solo.io.SecretRefList:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#SecretRefList
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.ServerDefaultApiKeyStorage:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ServerDefaultApiKeyStorage
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.Settings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#Settings
     package: enterprise.gloo.solo.io
