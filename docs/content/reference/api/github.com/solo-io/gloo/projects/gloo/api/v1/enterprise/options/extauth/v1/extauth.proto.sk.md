@@ -96,6 +96,7 @@ weight: 5
 - [Response](#response)
 - [ExtAuthConfig](#extauthconfig)
 - [Azure](#azure)
+- [DefaultProvider](#defaultprovider)
 - [BasicAuthInternal](#basicauthinternal)
 - [EncryptionType](#encryptiontype)
 - [Sha1](#sha1)
@@ -117,6 +118,7 @@ weight: 5
 - [LocalJwks](#localjwks)
 - [IntrospectionValidation](#introspectionvalidation)
 - [ScopeList](#scopelist)
+- [Default](#default)
 - [PlainOAuth2Config](#plainoauth2config)
 - [OAuth2Config](#oauth2config)
 - [ApiKeyAuthConfig](#apikeyauthconfig)
@@ -2156,6 +2158,22 @@ This way, you can enable distributed claims and caching for when users are membe
 
 
 ---
+### DefaultProvider
+
+ 
+No-op, represents default OIDC distributed claims behavior
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+
+
+
+
+---
 ### BasicAuthInternal
 
  
@@ -2512,6 +2530,7 @@ For the moment this is just path, but we may want to configure things like iss/s
 "requiredScopes": .enterprise.gloo.solo.io.ExtAuthConfig.AccessTokenValidationConfig.ScopeList
 "dynamicMetadataFromClaims": map<string, string>
 "claimsToHeaders": []enterprise.gloo.solo.io.ClaimToHeader
+"default": .enterprise.gloo.solo.io.ExtAuthConfig.AccessTokenValidationConfig.Default
 "azure": .enterprise.gloo.solo.io.ExtAuthConfig.Azure
 
 ```
@@ -2526,7 +2545,8 @@ For the moment this is just path, but we may want to configure things like iss/s
 | `requiredScopes` | [.enterprise.gloo.solo.io.ExtAuthConfig.AccessTokenValidationConfig.ScopeList](../extauth.proto.sk/#scopelist) | Require access token to have all of the scopes in the given list. This configuration applies to both opaque and JWT tokens. In the case of opaque tokens, this will check the scopes returned in the "scope" member of introspection response (as described in [Section 2.2 of RFC7662](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2). In case of JWTs the scopes to be validated are expected to be contained in the "scope" claim of the token in the form of a space-separated string. Omitting this field means that scope validation will be skipped. |
 | `dynamicMetadataFromClaims` | `map<string, string>` | Map of metadata key to claim. Ie: dynamic_metadata_from_claims: issuer: iss email: email When specified, the matching claims from the access token will be emitted as dynamic metadata. Note that metadata keys must be unique, and the claim names must be alphanumeric and use `-` or `_` as separators. Works when the access token is a JWT or when the access token is opaque, in which case the claims will refer to field in the response from the token introspection endpoint. The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`), and the structure of the claim value will be preserved in the metadata struct. |
 | `claimsToHeaders` | [[]enterprise.gloo.solo.io.ClaimToHeader](../extauth.proto.sk/#claimtoheader) |  |
-| `azure` | [.enterprise.gloo.solo.io.ExtAuthConfig.Azure](../extauth.proto.sk/#azure) |  |
+| `default` | [.enterprise.gloo.solo.io.ExtAuthConfig.AccessTokenValidationConfig.Default](../extauth.proto.sk/#default) |  Only one of `default` or `azure` can be set. |
+| `azure` | [.enterprise.gloo.solo.io.ExtAuthConfig.Azure](../extauth.proto.sk/#azure) |  Only one of `azure` or `default` can be set. |
 
 
 
@@ -2650,6 +2670,22 @@ These values will be encoded in a basic auth header in order to authenticate the
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `scope` | `[]string` |  |
+
+
+
+
+---
+### Default
+
+ 
+No-op, represents default OIDC behavior
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
 
 
 

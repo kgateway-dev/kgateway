@@ -5165,6 +5165,30 @@ func (m *ExtAuthConfig_Azure) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *ExtAuthConfig_DefaultProvider) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ExtAuthConfig_DefaultProvider)
+	if !ok {
+		that2, ok := that.(ExtAuthConfig_DefaultProvider)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
 func (m *ExtAuthConfig_BasicAuthInternal) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -5705,16 +5729,6 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig) Equal(that interface{}) bool
 
 	}
 
-	if h, ok := interface{}(m.GetAzure()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetAzure()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetAzure(), target.GetAzure()) {
-			return false
-		}
-	}
-
 	switch m.ValidationType.(type) {
 
 	case *ExtAuthConfig_AccessTokenValidationConfig_IntrospectionUrl:
@@ -5783,6 +5797,45 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig) Equal(that interface{}) bool
 	default:
 		// m is nil but target is not nil
 		if m.ScopeValidation != target.ScopeValidation {
+			return false
+		}
+	}
+
+	switch m.Provider.(type) {
+
+	case *ExtAuthConfig_AccessTokenValidationConfig_Default_:
+		if _, ok := target.Provider.(*ExtAuthConfig_AccessTokenValidationConfig_Default_); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetDefault()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetDefault()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetDefault(), target.GetDefault()) {
+				return false
+			}
+		}
+
+	case *ExtAuthConfig_AccessTokenValidationConfig_Azure:
+		if _, ok := target.Provider.(*ExtAuthConfig_AccessTokenValidationConfig_Azure); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAzure()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAzure()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAzure(), target.GetAzure()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Provider != target.Provider {
 			return false
 		}
 	}
@@ -7167,6 +7220,30 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig_ScopeList) Equal(that interfa
 			return false
 		}
 
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ExtAuthConfig_AccessTokenValidationConfig_Default) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ExtAuthConfig_AccessTokenValidationConfig_Default)
+	if !ok {
+		that2, ok := that.(ExtAuthConfig_AccessTokenValidationConfig_Default)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
 	}
 
 	return true

@@ -1642,6 +1642,9 @@ message ExtAuthConfig {
         RedisOptions claims_caching_options = 4;
     }
 
+    // No-op, represents default OIDC distributed claims behavior
+    message DefaultProvider {}
+
     // @solo-kit:resource.name
     // This is the identifier of the AuthConfig resource that this configuration is associated with.
     // Any request to the external auth server includes an identifier that is matched against this field to determine
@@ -2045,7 +2048,13 @@ message ExtAuthConfig {
 
         repeated ClaimToHeader claims_to_headers = 8;
 
-        Azure azure = 9;
+        oneof Provider {
+            Default default = 26;
+            Azure azure = 27;
+        }
+
+        // No-op, represents default OIDC behavior
+        message Default {}
     }
 
     message PlainOAuth2Config {

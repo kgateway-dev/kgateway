@@ -3031,6 +3031,17 @@ func (m *ExtAuthConfig_Azure) Clone() proto.Message {
 }
 
 // Clone function
+func (m *ExtAuthConfig_DefaultProvider) Clone() proto.Message {
+	var target *ExtAuthConfig_DefaultProvider
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_DefaultProvider{}
+
+	return target
+}
+
+// Clone function
 func (m *ExtAuthConfig_BasicAuthInternal) Clone() proto.Message {
 	var target *ExtAuthConfig_BasicAuthInternal
 	if m == nil {
@@ -3360,12 +3371,6 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig) Clone() proto.Message {
 		}
 	}
 
-	if h, ok := interface{}(m.GetAzure()).(clone.Cloner); ok {
-		target.Azure = h.Clone().(*ExtAuthConfig_Azure)
-	} else {
-		target.Azure = proto.Clone(m.GetAzure()).(*ExtAuthConfig_Azure)
-	}
-
 	switch m.ValidationType.(type) {
 
 	case *ExtAuthConfig_AccessTokenValidationConfig_IntrospectionUrl:
@@ -3411,6 +3416,34 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig) Clone() proto.Message {
 		} else {
 			target.ScopeValidation = &ExtAuthConfig_AccessTokenValidationConfig_RequiredScopes{
 				RequiredScopes: proto.Clone(m.GetRequiredScopes()).(*ExtAuthConfig_AccessTokenValidationConfig_ScopeList),
+			}
+		}
+
+	}
+
+	switch m.Provider.(type) {
+
+	case *ExtAuthConfig_AccessTokenValidationConfig_Default_:
+
+		if h, ok := interface{}(m.GetDefault()).(clone.Cloner); ok {
+			target.Provider = &ExtAuthConfig_AccessTokenValidationConfig_Default_{
+				Default: h.Clone().(*ExtAuthConfig_AccessTokenValidationConfig_Default),
+			}
+		} else {
+			target.Provider = &ExtAuthConfig_AccessTokenValidationConfig_Default_{
+				Default: proto.Clone(m.GetDefault()).(*ExtAuthConfig_AccessTokenValidationConfig_Default),
+			}
+		}
+
+	case *ExtAuthConfig_AccessTokenValidationConfig_Azure:
+
+		if h, ok := interface{}(m.GetAzure()).(clone.Cloner); ok {
+			target.Provider = &ExtAuthConfig_AccessTokenValidationConfig_Azure{
+				Azure: h.Clone().(*ExtAuthConfig_Azure),
+			}
+		} else {
+			target.Provider = &ExtAuthConfig_AccessTokenValidationConfig_Azure{
+				Azure: proto.Clone(m.GetAzure()).(*ExtAuthConfig_Azure),
 			}
 		}
 
@@ -4245,6 +4278,17 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig_ScopeList) Clone() proto.Mess
 
 		}
 	}
+
+	return target
+}
+
+// Clone function
+func (m *ExtAuthConfig_AccessTokenValidationConfig_Default) Clone() proto.Message {
+	var target *ExtAuthConfig_AccessTokenValidationConfig_Default
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_AccessTokenValidationConfig_Default{}
 
 	return target
 }
