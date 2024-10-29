@@ -2,27 +2,29 @@ package deployer
 
 import (
 	"context"
+	"fmt"
 	"time"
 
-	"github.com/onsi/gomega/gstruct"
-	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
-	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-	testdefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
-	"k8s.io/utils/ptr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
+	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/onsi/gomega"
+	"github.com/onsi/gomega/gstruct"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	testdefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -73,6 +75,10 @@ func (s *testingSuite) SetupSuite() {
 		},
 		"TestSelfManagedGateway": {
 			selfManagedGateway,
+		},
+		"TestConfigureAwsLambda": {
+			testdefaults.NginxPodManifest,
+			gatewayWithoutParameters,
 		},
 	}
 	s.manifestObjects = map[string][]client.Object{
@@ -140,6 +146,16 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 		proxyDeployment.ObjectMeta,
 		serverInfoLogLevelAssertion(s.testInstallation, "debug", "connection:trace,upstream:debug"),
 		xdsClusterAssertion(s.testInstallation),
+	)
+}
+
+func (s *testingSuite) TestConfigureAwsLambda() {
+	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
+
+	s.testInstallation.Assertions.AssertEnvoyAdminApi(
+		s.ctx,
+		proxyDeployment.ObjectMeta,
+		awsStsClusterAssertion(s.testInstallation),
 	)
 }
 
@@ -294,6 +310,53 @@ func xdsClusterAssertion(testInstallation *e2e.TestInstallation) func(ctx contex
 			xdsPort, err := setup.GetNamespacedControlPlaneXdsPort(ctx, testInstallation.Metadata.InstallNamespace, testInstallation.ResourceClients.ServiceClient())
 			g.Expect(err).NotTo(gomega.HaveOccurred())
 			g.Expect(xdsSocketAddress.GetPortValue()).To(gomega.Equal(uint32(xdsPort)), "xds socket port points to gloo service, in installation namespace")
+		}).
+			WithContext(ctx).
+			WithTimeout(time.Second * 10).
+			WithPolling(time.Millisecond * 200).
+			Should(gomega.Succeed())
+	}
+}
+
+// awsStsClusterAssertion asserts that:
+// - if the installation is configured to use aws with service account creds, then the proxy contains an aws sts cluster with the expected sts uri
+// - if the installation is NOT configured to use aws with service account creds, then no aws sts cluster should exist on the proxy
+func awsStsClusterAssertion(testInstallation *e2e.TestInstallation) func(ctx context.Context, adminClient *admincli.Client) {
+	// get aws values from installation
+	awsOpts := testInstallation.Metadata.AwsOptions
+	shouldHaveStsCluster := awsOpts != nil && awsOpts.EnableServiceAccountCredentials
+	var expectedStsUri string
+	if shouldHaveStsCluster {
+		expectedStsUri = fmt.Sprintf("sts.%s.amazonaws.com", awsOpts.StsCredentialsRegion)
+	}
+
+	return func(ctx context.Context, adminClient *admincli.Client) {
+		testInstallation.Assertions.Gomega.Eventually(func(g gomega.Gomega) {
+			clusters, err := adminClient.GetStaticClusters(ctx)
+			g.Expect(err).NotTo(gomega.HaveOccurred(), "can get static clusters from config dump")
+
+			awsStsCluster, ok := clusters["aws_sts_cluster"]
+			if shouldHaveStsCluster {
+				g.Expect(ok).To(gomega.BeTrue(), "should contain cluster aws_sts_cluster")
+			} else {
+				g.Expect(ok).To(gomega.BeFalse(), "should not contain cluster aws_sts_cluster")
+				// nothing else to test, so return here
+				return
+			}
+
+			// check that transport socket has expected values
+			msg, err := utils.AnyToMessage(awsStsCluster.GetTransportSocket().GetTypedConfig())
+			g.Expect(err).NotTo(gomega.HaveOccurred())
+			tlsCtx, ok := msg.(*tlsv3.UpstreamTlsContext)
+			g.Expect(ok).To(gomega.BeTrue(), "should be able to get UpstreamTlsContext")
+			g.Expect(tlsCtx.GetSni()).To(gomega.Equal(expectedStsUri))
+
+			// check that load assignment has expected values
+			g.Expect(awsStsCluster.GetLoadAssignment().GetEndpoints()).To(gomega.HaveLen(1))
+			g.Expect(awsStsCluster.GetLoadAssignment().GetEndpoints()[0].GetLbEndpoints()).To(gomega.HaveLen(1))
+			socketAddr := awsStsCluster.GetLoadAssignment().GetEndpoints()[0].GetLbEndpoints()[0].GetEndpoint().GetAddress().GetSocketAddress()
+			g.Expect(socketAddr).NotTo(gomega.BeNil())
+			g.Expect(socketAddr.GetAddress()).To(gomega.Equal(expectedStsUri))
 		}).
 			WithContext(ctx).
 			WithTimeout(time.Second * 10).
