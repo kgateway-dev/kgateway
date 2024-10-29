@@ -1,7 +1,6 @@
 package istio_integration
 
 import (
-	"context"
 	"fmt"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -24,7 +23,7 @@ type plugin struct {
 	appendXForwardedHost bool
 }
 
-func NewPlugin(ctx context.Context) *plugin {
+func NewPlugin() *plugin {
 	return &plugin{}
 }
 

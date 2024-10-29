@@ -3,10 +3,7 @@ package ai.options.gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai";
 
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
-import "google/protobuf/wrappers.proto";
 import "google/protobuf/struct.proto";
-import "google/protobuf/duration.proto";
-import "google/protobuf/empty.proto";
 import "extproto/ext.proto";
 option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
@@ -553,14 +550,36 @@ message AIPromptGuard {
       SSN = 0;
       // Default REGEX for Credit Card Numbers
       CREDIT_CARD = 1;
+      // Default REGEX for Phone Numbers
+      PHONE_NUMBER = 2;
+      // Default REGEX for Email Addresses
+      EMAIL = 3;
+    }
+
+    message RegexMatch {
+      // The regex pattern to match against the response.
+      string pattern = 1;
+      // An optional name for this match which can be used for debugging purposes.
+      string name = 2;
     }
     // A list of Regex patterns to match against the response.
     // All matches will be masked before being sent back to the client.
     // matches and builtins are additive.
-    repeated string matches = 1;
+    repeated RegexMatch matches = 1;
     // A list of built-in regexes to mask in the response.
     // matches and builtins are additive.
     repeated BuiltIn builtins = 2;
+
+    enum Action {
+      // Mask the response if the regex matches
+      MASK = 0;
+      // Reject the request if the regex matches
+      REJECT = 1;
+    }
+
+    // The action to take if the regex matches
+    // NOTE: This will only apply to request matches, response matches will always mask
+    Action action = 3;
   }
 
   // Webhook settings for prompt guard
@@ -588,7 +607,7 @@ message AIPromptGuard {
       MatchType match_type = 2;
     }
     // Headers to forward with the request
-    repeated HeaderMatch headers = 3;
+    repeated HeaderMatch forwardHeaders = 3;
   }
 
 

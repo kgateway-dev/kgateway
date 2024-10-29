@@ -140,7 +140,7 @@ var _ = Describe("Translator", func() {
 				ConsulWatcher: mock_consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
 			},
 		}
-		registeredPlugins = registry.Plugins(opts)
+		registeredPlugins = registry.Plugins(registry.FromBootstrap(opts))
 
 		upName = &core.Metadata{
 			Name:      "test",
@@ -3012,7 +3012,7 @@ var _ = Describe("Translator", func() {
 							},
 						},
 					}
-					registeredPlugins = registry.Plugins(opts)
+					registeredPlugins = registry.Plugins(registry.FromBootstrap(opts))
 
 					pluginRegistry := registry.NewPluginRegistry(registeredPlugins)
 					translator = NewTranslatorWithHasher(
@@ -3049,7 +3049,7 @@ var _ = Describe("Translator", func() {
 							},
 						},
 					}
-					registeredPlugins = registry.Plugins(opts)
+					registeredPlugins = registry.Plugins(registry.FromBootstrap(opts))
 					pluginRegistry := registry.NewPluginRegistry(registeredPlugins)
 					translator = NewTranslatorWithHasher(
 						glooutils.NewSslConfigTranslator(),
@@ -3083,7 +3083,7 @@ var _ = Describe("Translator", func() {
 							},
 						},
 					}
-					registeredPlugins = registry.Plugins(opts)
+					registeredPlugins = registry.Plugins(registry.FromBootstrap(opts))
 					pluginRegistry := registry.NewPluginRegistry(registeredPlugins)
 					translator = NewTranslatorWithHasher(
 						glooutils.NewSslConfigTranslator(),

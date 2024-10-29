@@ -72,7 +72,7 @@ func RunUDS(opts bootstrap.Opts) error {
 		emit <- struct{}{}
 	}()
 
-	plugs := registry.Plugins(opts)
+	plugs := registry.Plugins(registry.FromBootstrap(opts))
 
 	var discoveryPlugins []discovery.DiscoveryPlugin
 	for _, plug := range plugs {

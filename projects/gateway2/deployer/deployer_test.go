@@ -16,7 +16,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	wellknownkube "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/wellknown"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/gloo/test/gomega/matchers"
@@ -234,8 +233,8 @@ var _ = Describe("Deployer", func() {
 			d, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, gwParams), &deployer.Inputs{
 				ControllerName: wellknown.GatewayControllerName,
 				Dev:            false,
-				ControlPlane: bootstrap.ControlPlane{
-					Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local", XdsPort: 1234,
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -288,8 +287,8 @@ var _ = Describe("Deployer", func() {
 			d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc, defaultGatewayParams()), &deployer.Inputs{
 				ControllerName: wellknown.GatewayControllerName,
 				Dev:            false,
-				ControlPlane: bootstrap.ControlPlane{
-					Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local", XdsPort: 1234,
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -311,8 +310,8 @@ var _ = Describe("Deployer", func() {
 			d1, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, defaultGatewayParams()), &deployer.Inputs{
 				ControllerName: wellknown.GatewayControllerName,
 				Dev:            false,
-				ControlPlane: bootstrap.ControlPlane{
-					Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local", XdsPort: 1234,
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -320,8 +319,8 @@ var _ = Describe("Deployer", func() {
 			d2, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, defaultGatewayParams()), &deployer.Inputs{
 				ControllerName: wellknown.GatewayControllerName,
 				Dev:            false,
-				ControlPlane: bootstrap.ControlPlane{
-					Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local", XdsPort: 1234,
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -404,16 +403,14 @@ var _ = Describe("Deployer", func() {
 				return &deployer.Inputs{
 					ControllerName: wellknown.GatewayControllerName,
 					Dev:            false,
-					ControlPlane: bootstrap.ControlPlane{
-						Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+					ControlPlane: deployer.ControlPlaneInfo{
+						XdsHost: "something.cluster.local", XdsPort: 1234,
 					},
 				}
 			}
 			istioEnabledDeployerInputs = func() *deployer.Inputs {
 				inp := defaultDeployerInputs()
-				inp.IstioValues = bootstrap.IstioValues{
-					IntegrationEnabled: true,
-				}
+				inp.IstioIntegrationEnabled = true
 				return inp
 			}
 			defaultGateway = func() *api.Gateway {

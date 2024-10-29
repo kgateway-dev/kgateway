@@ -6,7 +6,9 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"istio.io/istio/pkg/kube/krt"
 
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
@@ -24,6 +26,7 @@ import (
 // NOTE: Extensions are NOT actually synced here as use a NoOp snapshot when running the extension syncers.
 // The actual syncing of the extensions and the status of the extension resources (e.g. AuthConfigs, RLCs) is still handled by the legacy syncer.
 func (s *ProxyTranslator) buildXdsSnapshot(
+	kctx krt.HandlerContext,
 	ctx context.Context,
 	proxy *v1.Proxy,
 	snap *v1snap.ApiSnapshot,
@@ -49,15 +52,19 @@ func (s *ProxyTranslator) buildXdsSnapshot(
 	// the reason for this is because we need to set Upstream status even if no edge proxies are being translated
 	// here we Accept() upstreams in snap so we can report accepted status (without this we wouldn't report on positive case)
 	allReports.Accept(snap.Upstreams.AsInputResources()...)
+	ksettings := krt.FetchOne(kctx, s.settings.AsCollection())
+	settings := &ksettings.Spec
+
+	ctx = settingsutil.WithSettings(ctx, settings)
 
 	params := plugins.Params{
 		Ctx:      ctx,
-		Settings: s.settings,
+		Settings: settings,
 		Snapshot: snap,
 		Messages: map[*core.ResourceRef][]string{},
 	}
 
-	xdsSnapshot, reports, proxyReport := s.translator.Translate(params, proxy)
+	xdsSnapshot, reports, proxyReport := s.translator.NewTranslator(ctx, settings).Translate(params, proxy)
 
 	// Messages are aggregated during translation, and need to be added to reports
 	for _, messages := range params.Messages {
@@ -73,7 +80,7 @@ func (s *ProxyTranslator) buildXdsSnapshot(
 		// that is classic edge syncer's job [see: projects/gloo/pkg/syncer/translator_syncer.go#Sync(...)]
 		// all we care about is getting the reports, as our `Proxies` will get reports for errors/warns
 		// related to the extension processing
-		syncerExtension.Sync(ctx, snap, s.settings, s.noopSnapSetter, intermediateReports)
+		syncerExtension.Sync(ctx, snap, settings, s.noopSnapSetter, intermediateReports)
 		allReports.Merge(intermediateReports)
 	}
 

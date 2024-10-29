@@ -33,7 +33,6 @@ import (
 	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 )
 
 const (
@@ -49,8 +48,8 @@ type GatewayConfig struct {
 	AutoProvision  bool
 	Kick           func(ctx context.Context)
 
-	ControlPlane bootstrap.ControlPlane
-	IstioValues  bootstrap.IstioValues
+	ControlPlane            deployer.ControlPlaneInfo
+	IstioIntegrationEnabled bool
 
 	Extensions extensions.K8sGatewayExtensions
 }
@@ -163,12 +162,12 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	// setup a deployer
 	log := log.FromContext(ctx)
 
-	log.Info("creating deployer", "ctrlname", c.cfg.ControllerName, "server", c.cfg.ControlPlane.GetBindAddress(), "port", c.cfg.ControlPlane.GetBindPort())
+	log.Info("creating deployer", "ctrlname", c.cfg.ControllerName, "server", c.cfg.ControlPlane.XdsHost, "port", c.cfg.ControlPlane.XdsPort)
 	d, err := deployer.NewDeployer(c.cfg.Mgr.GetClient(), &deployer.Inputs{
-		ControllerName: c.cfg.ControllerName,
-		Dev:            c.cfg.Dev,
-		IstioValues:    c.cfg.IstioValues,
-		ControlPlane:   c.cfg.ControlPlane,
+		ControllerName:          c.cfg.ControllerName,
+		Dev:                     c.cfg.Dev,
+		IstioIntegrationEnabled: c.cfg.IstioIntegrationEnabled,
+		ControlPlane:            c.cfg.ControlPlane,
 	})
 	if err != nil {
 		return err

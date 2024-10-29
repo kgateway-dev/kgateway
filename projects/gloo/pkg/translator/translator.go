@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -85,6 +86,9 @@ func (t *translatorInstance) Translate(
 	defer t.lock.Unlock()
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")
 	defer span.End()
+	stopwatch := statsutils.NewTranslatorStopWatch("EdgeSnapshotTranslator")
+	stopwatch.Start()
+	defer stopwatch.Stop(ctx)
 	params.Ctx = contextutils.WithLogger(ctx, "translator")
 
 	// re-initialize plugins on each loop, this is done for 2 reasons:
@@ -196,7 +200,7 @@ ClusterLoop:
 		}
 		// get upstream that generated this cluster
 		upstream := clusterToUpstreamMap[c]
-		endpointClusterName, err := getEndpointClusterName(c.GetName(), upstream)
+		endpointClusterName, err := GetEndpointClusterName(c.GetName(), upstream)
 		if err != nil {
 			reports.AddError(upstream, errors.Wrapf(err, "could not marshal upstream to JSON"))
 		}
@@ -393,7 +397,7 @@ func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) 
 	return envoycache.NewResources(fmt.Sprintf("%v", routesVersion), routesProto)
 }
 
-func getEndpointClusterName(clusterName string, upstream *v1.Upstream) (string, error) {
+func GetEndpointClusterName(clusterName string, upstream *v1.Upstream) (string, error) {
 	hash, err := upstream.Hash(nil)
 	if err != nil {
 		return "", err

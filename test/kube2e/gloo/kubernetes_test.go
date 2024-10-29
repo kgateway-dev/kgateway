@@ -151,7 +151,7 @@ var _ = Describe("Kubernetes Plugin", func() {
 	})
 
 	It("uses json keys when serializing", func() {
-		plug := kubeplugin.NewPlugin(kubeClient, kubeCoreCache).(discovery.DiscoveryPlugin)
+		plug := kubeplugin.NewPlugin(kubeClient, kubeCoreCache, nil).(discovery.DiscoveryPlugin)
 		upstreams, errs, err := plug.DiscoverUpstreams([]string{svcNamespace}, svcNamespace, clients.WatchOpts{
 			Ctx:         context.TODO(),
 			RefreshRate: time.Second,
@@ -187,7 +187,7 @@ var _ = Describe("Kubernetes Plugin", func() {
 				},
 			}
 		}
-		plug := kubeplugin.NewPlugin(kubeClient, kubeCoreCache).(discovery.DiscoveryPlugin)
+		plug := kubeplugin.NewPlugin(kubeClient, kubeCoreCache, nil).(discovery.DiscoveryPlugin)
 		endpoints, errs, err := plug.WatchEndpoints(
 			"",
 			v1.UpstreamList{makeUpstream("a"), makeUpstream("b"), makeUpstream("c")},
