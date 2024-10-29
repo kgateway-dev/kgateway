@@ -1,0 +1,25 @@
+syntax = "proto3";
+package gloo.solo.io;
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
+
+import "extproto/ext.proto";
+option (extproto.equal_all) = true;
+option (extproto.hash_all) = true;
+option (extproto.clone_all) = true;
+
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/azure/azure.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/rest/rest.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc/grpc.proto";
+
+// Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination
+message DestinationSpec {
+    // Note to developers: new DestinationSpecs must be added to this oneof field
+    // to be usable by Gloo.
+    oneof destination_type {
+        aws.options.gloo.solo.io.DestinationSpec aws = 1;
+        azure.options.gloo.solo.io.DestinationSpec azure = 2;
+        rest.options.gloo.solo.io.DestinationSpec rest = 3;
+        grpc.options.gloo.solo.io.DestinationSpec grpc = 4;
+    }
+}
