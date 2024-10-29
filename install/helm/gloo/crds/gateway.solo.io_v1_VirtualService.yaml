@@ -3314,6 +3314,11 @@ spec:
                                               properties:
                                                 inline:
                                                   type: string
+                                                passthrough:
+                                                  properties:
+                                                    headerName:
+                                                      type: string
+                                                  type: object
                                                 secretRef:
                                                   properties:
                                                     name:
@@ -3333,6 +3338,11 @@ spec:
                                               properties:
                                                 inline:
                                                   type: string
+                                                passthrough:
+                                                  properties:
+                                                    headerName:
+                                                      type: string
+                                                  type: object
                                                 secretRef:
                                                   properties:
                                                     name:
@@ -3386,6 +3396,11 @@ spec:
                                               properties:
                                                 inline:
                                                   type: string
+                                                passthrough:
+                                                  properties:
+                                                    headerName:
+                                                      type: string
+                                                  type: object
                                                 secretRef:
                                                   properties:
                                                     name:
@@ -3405,6 +3420,11 @@ spec:
                                               properties:
                                                 inline:
                                                   type: string
+                                                passthrough:
+                                                  properties:
+                                                    headerName:
+                                                      type: string
+                                                  type: object
                                                 secretRef:
                                                   properties:
                                                     name:

@@ -57,6 +57,18 @@ func (m *SingleAuthToken) Clone() proto.Message {
 			}
 		}
 
+	case *SingleAuthToken_Passthrough_:
+
+		if h, ok := interface{}(m.GetPassthrough()).(clone.Cloner); ok {
+			target.AuthTokenSource = &SingleAuthToken_Passthrough_{
+				Passthrough: h.Clone().(*SingleAuthToken_Passthrough),
+			}
+		} else {
+			target.AuthTokenSource = &SingleAuthToken_Passthrough_{
+				Passthrough: proto.Clone(m.GetPassthrough()).(*SingleAuthToken_Passthrough),
+			}
+		}
+
 	}
 
 	return target
@@ -382,6 +394,19 @@ func (m *AIPromptGuard) Clone() proto.Message {
 	} else {
 		target.Response = proto.Clone(m.GetResponse()).(*AIPromptGuard_Response)
 	}
+
+	return target
+}
+
+// Clone function
+func (m *SingleAuthToken_Passthrough) Clone() proto.Message {
+	var target *SingleAuthToken_Passthrough
+	if m == nil {
+		return target
+	}
+	target = &SingleAuthToken_Passthrough{}
+
+	target.HeaderName = m.GetHeaderName()
 
 	return target
 }

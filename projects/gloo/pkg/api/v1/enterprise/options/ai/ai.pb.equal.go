@@ -72,6 +72,21 @@ func (m *SingleAuthToken) Equal(that interface{}) bool {
 			}
 		}
 
+	case *SingleAuthToken_Passthrough_:
+		if _, ok := target.AuthTokenSource.(*SingleAuthToken_Passthrough_); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetPassthrough()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetPassthrough()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetPassthrough(), target.GetPassthrough()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.AuthTokenSource != target.AuthTokenSource {
@@ -624,6 +639,34 @@ func (m *AIPromptGuard) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetResponse(), target.GetResponse()) {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *SingleAuthToken_Passthrough) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*SingleAuthToken_Passthrough)
+	if !ok {
+		that2, ok := that.(SingleAuthToken_Passthrough)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetHeaderName(), target.GetHeaderName()) != 0 {
+		return false
 	}
 
 	return true
