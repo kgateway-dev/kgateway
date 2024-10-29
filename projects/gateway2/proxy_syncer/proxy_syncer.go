@@ -290,7 +290,6 @@ func (s *ProxySyncer) Init(ctx context.Context) error {
 			Namespace: u.GetNamespace(),
 		}
 		glooUs.SetMetadata(&md)
-		glooUs.GetMetadata().Namespace = u.GetNamespace()
 		us := &UpstreamWrapper{Inner: glooUs}
 		return us
 	}, krt.WithName("GlooUpstreams"))
