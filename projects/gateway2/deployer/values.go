@@ -58,6 +58,9 @@ type helmGateway struct {
 
 	// AI extension values
 	AIExtension *helmAIExtension `json:"aiExtension,omitempty"`
+
+	// AWS values
+	Aws *helmAws `json:"aws,omitempty"`
 }
 
 // helmPort represents a Gateway Listener port
@@ -145,4 +148,10 @@ type helmAIExtension struct {
 	Env             []*corev1.EnvVar             `json:"env,omitempty"`
 	Ports           []*corev1.ContainerPort      `json:"ports,omitempty"`
 	Stats           []byte                       `json:"stats,omitempty"`
+}
+
+type helmAws struct {
+	EnableServiceAccountCredentials *bool   `json:"enableServiceAccountCredentials,omitempty"`
+	StsClusterName                  *string `json:"stsClusterName,omitempty"`
+	StsUri                          *string `json:"stsUri,omitempty"`
 }

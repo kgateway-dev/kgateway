@@ -114,6 +114,46 @@ var _ = Describe("Deployer", func() {
 	var (
 		d *deployer.Deployer
 
+		defaultGatewayClass = func() *api.GatewayClass {
+			return &api.GatewayClass{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: wellknown.GatewayClassName,
+				},
+				Spec: api.GatewayClassSpec{
+					ControllerName: wellknown.GatewayControllerName,
+					ParametersRef: &api.ParametersReference{
+						Group:     gw2_v1alpha1.Group,
+						Kind:      gw2_v1alpha1.GatewayParametersKind,
+						Name:      wellknown.DefaultGatewayParametersName,
+						Namespace: ptr.To(api.Namespace(defaultNamespace)),
+					},
+				},
+			}
+		}
+
+		defaultGateway = func() *api.Gateway {
+			return &api.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: defaultNamespace,
+					UID:       "1235",
+				},
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Gateway",
+					APIVersion: "gateway.solo.io/v1beta1",
+				},
+				Spec: api.GatewaySpec{
+					GatewayClassName: wellknown.GatewayClassName,
+					Listeners: []api.Listener{
+						{
+							Name: "listener-1",
+							Port: 80,
+						},
+					},
+				},
+			}
+		}
+
 		// Note that this is NOT meant to reflect the actual defaults defined in install/helm/gloo/templates/43-gatewayparameters.yaml
 		defaultGatewayParams = func() *gw2_v1alpha1.GatewayParameters {
 			return &gw2_v1alpha1.GatewayParameters{
@@ -181,6 +221,11 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 		}
+
+		defaultDeploymentName     = proxyName(defaultGateway().Name)
+		defaultConfigMapName      = defaultDeploymentName
+		defaultServiceName        = defaultDeploymentName
+		defaultServiceAccountName = defaultDeploymentName
 
 		selfManagedGatewayParam = func(name string) *gw2_v1alpha1.GatewayParameters {
 			return &gw2_v1alpha1.GatewayParameters{
@@ -265,23 +310,98 @@ var _ = Describe("Deployer", func() {
 		})
 	})
 
+	Context("aws options", func() {
+		stsClusterName := "my_sts_cluster"
+		stsUri := "sts.cluster.uri"
+
+		It("passes through aws sts values from settings", func() {
+			d, err := deployer.NewDeployer(newFakeClientWithObjs(defaultGatewayClass(), defaultGatewayParams()), &deployer.Inputs{
+				ControllerName: wellknown.GatewayControllerName,
+				Dev:            false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local", XdsPort: 1234,
+				},
+				Aws: &deployer.AwsInfo{
+					EnableServiceAccountCredentials: true,
+					StsClusterName:                  stsClusterName,
+					StsUri:                          stsUri,
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			// run deployer and get the ConfigMap that was created
+			var objs clientObjects
+			objs, err = d.GetObjsToDeploy(context.Background(), defaultGateway())
+			Expect(err).NotTo(HaveOccurred())
+
+			cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
+			Expect(cm).ToNot(BeNil())
+			envoyYaml := cm.Data["envoy.yaml"]
+
+			// check AWS-specific configmap values
+			Expect(envoyYaml).To(ContainSubstring(fmt.Sprintf("cluster_name: %s", stsClusterName)))
+			Expect(envoyYaml).To(ContainSubstring(fmt.Sprintf("sni: %s", stsUri)))
+		})
+
+		It("does not configure aws sts cluster when aws options not set", func() {
+			d, err := deployer.NewDeployer(newFakeClientWithObjs(defaultGatewayClass(), defaultGatewayParams()), &deployer.Inputs{
+				ControllerName: wellknown.GatewayControllerName,
+				Dev:            false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local", XdsPort: 1234,
+				},
+				Aws: nil,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			// run deployer and get the ConfigMap that was created
+			var objs clientObjects
+			objs, err = d.GetObjsToDeploy(context.Background(), defaultGateway())
+			Expect(err).NotTo(HaveOccurred())
+
+			cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
+			Expect(cm).ToNot(BeNil())
+			envoyYaml := cm.Data["envoy.yaml"]
+
+			// sts cluster should not have been created
+			Expect(envoyYaml).NotTo(ContainSubstring(stsClusterName))
+			Expect(envoyYaml).NotTo(ContainSubstring(stsUri))
+		})
+
+		It("does not configure aws sts cluster when service account credentials not enabled", func() {
+			d, err := deployer.NewDeployer(newFakeClientWithObjs(defaultGatewayClass(), defaultGatewayParams()), &deployer.Inputs{
+				ControllerName: wellknown.GatewayControllerName,
+				Dev:            false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local", XdsPort: 1234,
+				},
+				Aws: &deployer.AwsInfo{
+					EnableServiceAccountCredentials: false,
+					StsClusterName:                  stsClusterName,
+					StsUri:                          stsUri,
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			// run deployer and get the ConfigMap that was created
+			var objs clientObjects
+			objs, err = d.GetObjsToDeploy(context.Background(), defaultGateway())
+			Expect(err).NotTo(HaveOccurred())
+
+			cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
+			Expect(cm).ToNot(BeNil())
+			envoyYaml := cm.Data["envoy.yaml"]
+
+			// sts cluster should not have been created
+			Expect(envoyYaml).NotTo(ContainSubstring(stsClusterName))
+			Expect(envoyYaml).NotTo(ContainSubstring(stsUri))
+		})
+	})
+
 	Context("special cases", func() {
 		var gwc *api.GatewayClass
 		BeforeEach(func() {
-			gwc = &api.GatewayClass{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: wellknown.GatewayClassName,
-				},
-				Spec: api.GatewayClassSpec{
-					ControllerName: wellknown.GatewayControllerName,
-					ParametersRef: &api.ParametersReference{
-						Group:     gw2_v1alpha1.Group,
-						Kind:      gw2_v1alpha1.GatewayParametersKind,
-						Name:      wellknown.DefaultGatewayParametersName,
-						Namespace: ptr.To(api.Namespace(defaultNamespace)),
-					},
-				},
-			}
+			gwc = defaultGatewayClass()
 			var err error
 
 			d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc, defaultGatewayParams()), &deployer.Inputs{
@@ -413,45 +533,7 @@ var _ = Describe("Deployer", func() {
 				inp.IstioIntegrationEnabled = true
 				return inp
 			}
-			defaultGateway = func() *api.Gateway {
-				return &api.Gateway{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "foo",
-						Namespace: defaultNamespace,
-						UID:       "1235",
-					},
-					TypeMeta: metav1.TypeMeta{
-						Kind:       "Gateway",
-						APIVersion: "gateway.solo.io/v1beta1",
-					},
-					Spec: api.GatewaySpec{
-						GatewayClassName: wellknown.GatewayClassName,
-						Listeners: []api.Listener{
-							{
-								Name: "listener-1",
-								Port: 80,
-							},
-						},
-					},
-				}
-			}
-			defaultGatewayClass = func() *api.GatewayClass {
-				return &api.GatewayClass{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name: wellknown.GatewayClassName,
-					},
-					Spec: api.GatewayClassSpec{
-						ControllerName: wellknown.GatewayControllerName,
-						ParametersRef: &api.ParametersReference{
-							Group:     gw2_v1alpha1.Group,
-							Kind:      gw2_v1alpha1.GatewayParametersKind,
-							Name:      wellknown.DefaultGatewayParametersName,
-							Namespace: ptr.To(api.Namespace(defaultNamespace)),
-						},
-					},
-				}
-			}
+
 			defaultGatewayParamsOverride = func() *gw2_v1alpha1.GatewayParameters {
 				return &gw2_v1alpha1.GatewayParameters{
 					TypeMeta: metav1.TypeMeta{
@@ -682,10 +764,6 @@ var _ = Describe("Deployer", func() {
 					gwc:        defaultGatewayClass(),
 				}
 			}
-			defaultDeploymentName     = proxyName(defaultGateway().Name)
-			defaultConfigMapName      = defaultDeploymentName
-			defaultServiceName        = defaultDeploymentName
-			defaultServiceAccountName = defaultDeploymentName
 
 			validateGatewayParametersPropagation = func(objs clientObjects, gwp *gw2_v1alpha1.GatewayParameters) error {
 				expectedGwp := gwp.Spec.Kube
