@@ -49,6 +49,9 @@ gateway:
 
 # Configuration for the Gloo pod
 gloo:
+  # we need to be able to troubleshoot failures using logs; when users encounter problems enabling debug logging is
+  # a very early step in the troubleshooting process
+  logLevel: debug
   deployment:
     livenessProbeEnabled: true
     customEnv:

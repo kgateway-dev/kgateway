@@ -40,8 +40,9 @@ func (p *Provider) EventuallyGlooReachesConsistentState(installNamespace string)
 		TargetPort:        stats.DefaultPort,
 	}
 
-	// Gloo components are configured to log to the Info level by default
-	logLevelAssertion := assertions.LogLevelAssertion(zapcore.InfoLevel)
+	// Gloo components are configured to log to the Info level by default but for these e2e tests we explicitly enable debug logging
+	// This is done so we can triage failures after the fact and matches the process users will take to troubleshoot
+	logLevelAssertion := assertions.LogLevelAssertion(zapcore.DebugLevel)
 
 	// The emitter at some point should stabilize and not continue to increase the number of snapshots produced
 	// We choose 4 here as a bit of a magic number, but we feel comfortable that if 4 consecutive polls of the metrics
