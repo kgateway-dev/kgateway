@@ -269,7 +269,7 @@ spec:
                                         type: string
                                       projectId:
                                         type: string
-                                      provider:
+                                      publisher:
                                         type: string
                                         x-kubernetes-int-or-string: true
                                     type: object
@@ -326,7 +326,7 @@ spec:
                         type: string
                       projectId:
                         type: string
-                      provider:
+                      publisher:
                         type: string
                         x-kubernetes-int-or-string: true
                     type: object

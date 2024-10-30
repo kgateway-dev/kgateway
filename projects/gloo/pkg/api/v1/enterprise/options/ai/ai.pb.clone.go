@@ -518,7 +518,7 @@ func (m *UpstreamSpec_VertexAI) Clone() proto.Message {
 
 	target.Location = m.GetLocation()
 
-	target.Provider = m.GetProvider()
+	target.Publisher = m.GetPublisher()
 
 	switch m.AuthTokenSource.(type) {
 

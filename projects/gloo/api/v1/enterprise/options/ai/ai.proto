@@ -168,13 +168,13 @@ message UpstreamSpec {
     // https://{LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/{PROJECT_ID}/locations/{LOCATION}/publishers/{PROVIDER}/<model-path>
     string location = 5;
 
-    enum Provider {
-      GEMINI = 0;
+    enum Publisher {
+      GOOGLE = 0;
     }
 
-    // The type of model publishers to use, currently only Google's Gemini is supported in
-    // https://{LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/{PROJECT_ID}/locations/{LOCATION}/publishers/{PROVIDER}/<model-path>
-    Provider provider = 6;
+    // The type of model publishers to use, currently only Google is supported in
+    // https://{LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/{PROJECT_ID}/locations/{LOCATION}/publishers/{PUBLISHER}/<model-path>
+    Publisher publisher = 6;
   }
 
   // Settings for the Mistral API

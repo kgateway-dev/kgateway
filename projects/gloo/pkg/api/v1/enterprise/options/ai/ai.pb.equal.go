@@ -877,7 +877,7 @@ func (m *UpstreamSpec_VertexAI) Equal(that interface{}) bool {
 		return false
 	}
 
-	if m.GetProvider() != target.GetProvider() {
+	if m.GetPublisher() != target.GetPublisher() {
 		return false
 	}
 
