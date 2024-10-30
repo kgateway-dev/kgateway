@@ -283,7 +283,7 @@ Settings for the Vertex AI API
 
 | Name | Description |
 | ----- | ----------- | 
-| `Gemini` |  |
+| `GEMINI` |  |
 
 
 

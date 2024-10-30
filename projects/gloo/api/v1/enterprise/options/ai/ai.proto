@@ -169,7 +169,7 @@ message UpstreamSpec {
     string location = 5;
 
     enum Provider {
-      Gemini = 0;
+      GEMINI = 0;
     }
 
     // The type of model publishers to use, currently only Google's Gemini is supported in
