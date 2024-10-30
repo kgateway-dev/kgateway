@@ -354,7 +354,9 @@ type ProvisionedDeployment struct {
 }
 
 type ProvisionedService struct {
-	Type *string `json:"type,omitempty" desc:"K8s service type. If set to null, a default of LoadBalancer will be imposed."`
+	Type             *string           `json:"type,omitempty" desc:"K8s service type. If set to null, a default of LoadBalancer will be imposed."`
+	ExtraLabels      map[string]string `json:"extraLabels,omitempty" desc:"Extra labels to add to the service."`
+	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty" desc:"Extra annotations to add to the service."`
 }
 
 type ProvisionedServiceAccount struct {

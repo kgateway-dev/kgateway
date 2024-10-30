@@ -41,6 +41,11 @@ spec:
         pod-label-key: pod-label-val
       extraAnnotations:
         pod-anno-key: pod-anno-val
+    service:
+      extraLabels:
+        svc-label-key: svc-label-val
+      extraAnnotations:
+        svc-anno-key: svc-anno-val
     serviceAccount:
       extraLabels:
         sa-label-key: sa-label-val
