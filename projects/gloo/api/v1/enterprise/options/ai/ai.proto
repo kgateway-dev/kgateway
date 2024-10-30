@@ -143,9 +143,36 @@ message UpstreamSpec {
     // The version of the API to use
     // This value can be found https://generativelanguage.googleapis.com/{api_version}/models/{model}:generateContent?key={api_key}
     string api_version = 3;
+  }
 
-    // Whether to use the Vertex AI API for Gemini Models. Defaults to true.
-    google.protobuf.BoolValue vertex_ai = 4;
+  // Settings for the Vertex AI API
+  message VertexAI {
+    // Auth Token to use for the Gemini API
+    // This token will be placed into the `key` header
+    oneof auth_token_source {
+      // Auth Token to use for the Vertex AI API
+      // This token will be placed into the `Authorization: Bearer ` header
+      SingleAuthToken auth_token = 1;
+      // TODO: use oauth
+    }
+
+    // The model name to use
+    // This value can be found https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
+    string model = 2;
+    // The version of the API to use
+    // This value can be found https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
+    string api_version = 3;
+    // Google Cloud Project ID. https://${LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/${PROJECT_ID}/locations/${LOCATION}/<model-path>
+    string project_id = 4;
+    // Location of the project https://${LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/${PROJECT_ID}/locations/${LOCATION}/<model-path>
+    string location = 5;
+
+    enum ModelType {
+      Gemini = 0;
+    }
+
+    // The type of model to use, currently only Gemini is supported
+    ModelType model_type = 6;
   }
 
   // Settings for the Mistral API
@@ -396,7 +423,7 @@ message RouteSettings {
     CHAT_STREAMING = 1;
   }
 
-  // The type of route this is, currently only CHAT is supported
+  // The type of route this is, currently only CHAT and CHAT_STREAMING are supported
   RouteType route_type = 6;
 }
 

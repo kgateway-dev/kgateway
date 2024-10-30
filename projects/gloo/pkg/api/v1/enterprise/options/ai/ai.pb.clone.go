@@ -16,8 +16,6 @@ import (
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	google_golang_org_protobuf_types_known_structpb "google.golang.org/protobuf/types/known/structpb"
-
-	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -473,12 +471,6 @@ func (m *UpstreamSpec_Gemini) Clone() proto.Message {
 
 	target.ApiVersion = m.GetApiVersion()
 
-	if h, ok := interface{}(m.GetVertexAi()).(clone.Cloner); ok {
-		target.VertexAi = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
-	} else {
-		target.VertexAi = proto.Clone(m.GetVertexAi()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
-	}
-
 	switch m.AuthTokenSource.(type) {
 
 	case *UpstreamSpec_Gemini_AuthToken:
@@ -489,6 +481,43 @@ func (m *UpstreamSpec_Gemini) Clone() proto.Message {
 			}
 		} else {
 			target.AuthTokenSource = &UpstreamSpec_Gemini_AuthToken{
+				AuthToken: proto.Clone(m.GetAuthToken()).(*SingleAuthToken),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *UpstreamSpec_VertexAI) Clone() proto.Message {
+	var target *UpstreamSpec_VertexAI
+	if m == nil {
+		return target
+	}
+	target = &UpstreamSpec_VertexAI{}
+
+	target.Model = m.GetModel()
+
+	target.ApiVersion = m.GetApiVersion()
+
+	target.ProjectId = m.GetProjectId()
+
+	target.Location = m.GetLocation()
+
+	target.ModelType = m.GetModelType()
+
+	switch m.AuthTokenSource.(type) {
+
+	case *UpstreamSpec_VertexAI_AuthToken:
+
+		if h, ok := interface{}(m.GetAuthToken()).(clone.Cloner); ok {
+			target.AuthTokenSource = &UpstreamSpec_VertexAI_AuthToken{
+				AuthToken: h.Clone().(*SingleAuthToken),
+			}
+		} else {
+			target.AuthTokenSource = &UpstreamSpec_VertexAI_AuthToken{
 				AuthToken: proto.Clone(m.GetAuthToken()).(*SingleAuthToken),
 			}
 		}

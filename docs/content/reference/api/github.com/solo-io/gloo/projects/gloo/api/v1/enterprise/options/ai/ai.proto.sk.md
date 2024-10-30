@@ -17,6 +17,8 @@ weight: 5
 - [OpenAI](#openai)
 - [AzureOpenAI](#azureopenai)
 - [Gemini](#gemini)
+- [VertexAI](#vertexai)
+- [ModelType](#modeltype)
 - [Mistral](#mistral)
 - [Anthropic](#anthropic)
 - [MultiPool](#multipool)
@@ -232,7 +234,6 @@ Settings for the Gemini API
 "authToken": .ai.options.gloo.solo.io.SingleAuthToken
 "model": string
 "apiVersion": string
-"vertexAi": .google.protobuf.BoolValue
 
 ```
 
@@ -241,7 +242,46 @@ Settings for the Gemini API
 | `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the Gemini API This token will be placed into the `key` header. |
 | `model` | `string` | The model name to use This value can be found https://generativelanguage.googleapis.com/{version}/models/{model}:generateContent?key={api_key}. |
 | `apiVersion` | `string` | The version of the API to use This value can be found https://generativelanguage.googleapis.com/{api_version}/models/{model}:generateContent?key={api_key}. |
-| `vertexAi` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether to use the Vertex AI API for Gemini Models. Defaults to true. |
+
+
+
+
+---
+### VertexAI
+
+ 
+Settings for the Vertex AI API
+
+```yaml
+"authToken": .ai.options.gloo.solo.io.SingleAuthToken
+"model": string
+"apiVersion": string
+"projectId": string
+"location": string
+"modelType": .ai.options.gloo.solo.io.UpstreamSpec.VertexAI.ModelType
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the Vertex AI API This token will be placed into the `Authorization: Bearer ` header. |
+| `model` | `string` | The model name to use This value can be found https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models. |
+| `apiVersion` | `string` | The version of the API to use This value can be found https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models. |
+| `projectId` | `string` | Google Cloud Project ID. https://${LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/${PROJECT_ID}/locations/${LOCATION}/<model-path>. |
+| `location` | `string` | Location of the project https://${LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/${PROJECT_ID}/locations/${LOCATION}/<model-path>. |
+| `modelType` | [.ai.options.gloo.solo.io.UpstreamSpec.VertexAI.ModelType](../ai.proto.sk/#modeltype) | The type of model to use, currently only Gemini is supported. |
+
+
+
+
+---
+### ModelType
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `Gemini` |  |
 
 
 
@@ -411,7 +451,7 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 | `rag` | [.ai.options.gloo.solo.io.RAG](../ai.proto.sk/#rag) | Retrieval Augmented Generation. https://research.ibm.com/blog/retrieval-augmented-generation-RAG Retrieval Augmented Generation is a process by which you "augment" the information a model has access to by providing it with a set of documents to use as context. This can be used to improve the quality of the generated text. Important Note: The same embedding mechanism must be used for the prompt which was used for the initial creation of the context documents. Example using postgres for storage and OpenAI for embedding: ``` rag: datastore: postgres: connectionString: postgresql+psycopg://gloo:gloo@172.17.0.1:6024/gloo collectionName: default embedding: openai: authToken: secretRef: name: openai-secret namespace: gloo-system ```. |
 | `semanticCache` | [.ai.options.gloo.solo.io.SemanticCache](../ai.proto.sk/#semanticcache) | Semantic caching configuration Semantic caching allows you to cache previous model responses in order to provide faster responses to similar requests in the future. Results will vary depending on the embedding mechanism used, as well as the similarity threshold set. Example using Redis for storage and OpenAI for embedding: ``` semanticCache: datastore: redis: connectionString: redis://172.17.0.1:6379 embedding: openai: authToken: secretRef: name: openai-secret namespace: gloo-system ```. |
 | `defaults` | [[]ai.options.gloo.solo.io.FieldDefault](../ai.proto.sk/#fielddefault) | A list of defaults to be merged with the user input fields. These will NOT override the user input fields unless override is explicitly set to true. Some examples include setting the temperature, max_tokens, etc. Example overriding system field for Anthropic: ``` # Anthropic doesn't support a system chat type defaults: - field: "system" value: "answer all questions in french" ``` Example setting the temperature and max_tokens, overriding max_tokens: ``` defaults: - field: "temperature" value: 0.5 - field: "max_tokens" value: 100 ```. |
-| `routeType` | [.ai.options.gloo.solo.io.RouteSettings.RouteType](../ai.proto.sk/#routetype) | The type of route this is, currently only CHAT is supported. |
+| `routeType` | [.ai.options.gloo.solo.io.RouteSettings.RouteType](../ai.proto.sk/#routetype) | The type of route this is, currently only CHAT and CHAT_STREAMING are supported. |
 
 
 

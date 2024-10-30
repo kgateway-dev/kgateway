@@ -798,20 +798,78 @@ func (m *UpstreamSpec_Gemini) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetVertexAi()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetVertexAi()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetVertexAi(), target.GetVertexAi()) {
-			return false
-		}
-	}
-
 	switch m.AuthTokenSource.(type) {
 
 	case *UpstreamSpec_Gemini_AuthToken:
 		if _, ok := target.AuthTokenSource.(*UpstreamSpec_Gemini_AuthToken); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAuthToken()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAuthToken()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAuthToken(), target.GetAuthToken()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.AuthTokenSource != target.AuthTokenSource {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *UpstreamSpec_VertexAI) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*UpstreamSpec_VertexAI)
+	if !ok {
+		that2, ok := that.(UpstreamSpec_VertexAI)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetModel(), target.GetModel()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetApiVersion(), target.GetApiVersion()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetProjectId(), target.GetProjectId()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetLocation(), target.GetLocation()) != 0 {
+		return false
+	}
+
+	if m.GetModelType() != target.GetModelType() {
+		return false
+	}
+
+	switch m.AuthTokenSource.(type) {
+
+	case *UpstreamSpec_VertexAI_AuthToken:
+		if _, ok := target.AuthTokenSource.(*UpstreamSpec_VertexAI_AuthToken); !ok {
 			return false
 		}
 
