@@ -147,7 +147,7 @@ message UpstreamSpec {
 
   // Settings for the Vertex AI API
   message VertexAI {
-    // Auth Token to use for the Gemini API
+    // Auth Token to use for the  Vertex AI API
     // This token will be placed into the `key` header
     oneof auth_token_source {
       // Auth Token to use for the Vertex AI API

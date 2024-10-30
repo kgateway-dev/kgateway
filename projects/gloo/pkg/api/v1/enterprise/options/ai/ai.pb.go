@@ -1548,7 +1548,7 @@ type UpstreamSpec_VertexAI struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Auth Token to use for the Gemini API
+	// Auth Token to use for the  Vertex AI API
 	// This token will be placed into the `key` header
 	//
 	// Types that are assignable to AuthTokenSource:
