@@ -1,7 +1,6 @@
 package test
 
 import (
-	"encoding/json"
 	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -66,14 +65,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 				testManifest.Expect("ClusterRoleBinding", "", deployerRbacName+"-binding").NotTo(BeNil())
 			})
 			It("renders default GatewayParameters", func() {
-				gwpUnstructured := testManifest.ExpectCustomResource("GatewayParameters", namespace, wellknown.DefaultGatewayParametersName)
-				Expect(gwpUnstructured).NotTo(BeNil())
-
-				var gwp v1alpha1.GatewayParameters
-				b, err := gwpUnstructured.MarshalJSON()
-				Expect(err).ToNot(HaveOccurred())
-				err = json.Unmarshal(b, &gwp)
-				Expect(err).ToNot(HaveOccurred())
+				gwp := getDefaultGatewayParameters(testManifest)
 
 				gwpKube := gwp.Spec.Kube
 				Expect(gwpKube).ToNot(BeNil())
@@ -194,14 +186,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					valuesArgs = append(valuesArgs, extraValuesArgs...)
 				})
 				It("passes overrides to default GatewayParameters with Istio container", func() {
-					gwpUnstructured := testManifest.ExpectCustomResource("GatewayParameters", namespace, wellknown.DefaultGatewayParametersName)
-					Expect(gwpUnstructured).NotTo(BeNil())
-
-					var gwp v1alpha1.GatewayParameters
-					b, err := gwpUnstructured.MarshalJSON()
-					Expect(err).ToNot(HaveOccurred())
-					err = json.Unmarshal(b, &gwp)
-					Expect(err).ToNot(HaveOccurred())
+					gwp := getDefaultGatewayParameters(testManifest)
 
 					gwpKube := gwp.Spec.Kube
 					Expect(gwpKube).ToNot(BeNil())
@@ -309,14 +294,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					valuesArgs = append(valuesArgs, extraValuesArgs...)
 				})
 				It("passes overrides to default GatewayParameters with custom sidecar", func() {
-					gwpUnstructured := testManifest.ExpectCustomResource("GatewayParameters", namespace, wellknown.DefaultGatewayParametersName)
-					Expect(gwpUnstructured).NotTo(BeNil())
-
-					var gwp v1alpha1.GatewayParameters
-					b, err := gwpUnstructured.MarshalJSON()
-					Expect(err).ToNot(HaveOccurred())
-					err = json.Unmarshal(b, &gwp)
-					Expect(err).ToNot(HaveOccurred())
+					gwp := getDefaultGatewayParameters(testManifest)
 
 					gwpKube := gwp.Spec.Kube
 					Expect(gwpKube).ToNot(BeNil())
@@ -351,12 +329,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					// Updated values so need to re-render
 					prepareHelmManifest(namespace, glootestutils.HelmValues{ValuesArgs: valuesArgs})
 
-					gwpUnstructured := testManifest.ExpectCustomResource("GatewayParameters", namespace, wellknown.DefaultGatewayParametersName)
-					obj, err := kuberesource.ConvertUnstructured(gwpUnstructured)
-					Expect(err).NotTo(HaveOccurred())
-
-					gwp, ok := obj.(*v1alpha1.GatewayParameters)
-					Expect(ok).To(BeTrue())
+					gwp := getDefaultGatewayParameters(testManifest)
 
 					gwpKube := gwp.Spec.Kube
 					Expect(gwpKube).ToNot(BeNil())
@@ -404,3 +377,13 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 	}
 	runTests(allTests)
 })
+
+func getDefaultGatewayParameters(t TestManifest) *v1alpha1.GatewayParameters {
+	gwpUnstructured := t.ExpectCustomResource("GatewayParameters", namespace, wellknown.DefaultGatewayParametersName)
+	obj, err := kuberesource.ConvertUnstructured(gwpUnstructured)
+	Expect(err).NotTo(HaveOccurred())
+
+	gwp, ok := obj.(*v1alpha1.GatewayParameters)
+	Expect(ok).To(BeTrue())
+	return gwp
+}

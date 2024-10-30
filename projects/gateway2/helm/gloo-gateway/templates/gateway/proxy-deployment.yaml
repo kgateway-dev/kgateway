@@ -542,6 +542,26 @@ data:
                         address: 127.0.0.1
                         port_value: 8234
         {{- end }} {{/* if $gateway.istio.enabled */}}
+        {{- if ($gateway.aws).enableServiceAccountCredentials }}
+        - name: {{ $gateway.aws.stsClusterName }}
+          connect_timeout: 5.000s
+          type: LOGICAL_DNS
+          lb_policy: ROUND_ROBIN
+          transport_socket:
+            name: envoy.transport_sockets.tls
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+              sni: {{ $gateway.aws.stsUri }}
+          load_assignment:
+            cluster_name: {{ $gateway.aws.stsClusterName }}
+            endpoints:
+            - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      port_value: 443
+                      address: {{ $gateway.aws.stsUri }}
+        {{- end}} {{- /* if ($gateway.aws).enableServiceAccountCredentials */}}
     dynamic_resources:
       ads_config:
         transport_api_version: V3
