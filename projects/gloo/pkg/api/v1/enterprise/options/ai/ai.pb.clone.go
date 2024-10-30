@@ -673,6 +673,18 @@ func (m *UpstreamSpec_MultiPool_Backend) Clone() proto.Message {
 			}
 		}
 
+	case *UpstreamSpec_MultiPool_Backend_VertexAi:
+
+		if h, ok := interface{}(m.GetVertexAi()).(clone.Cloner); ok {
+			target.Llm = &UpstreamSpec_MultiPool_Backend_VertexAi{
+				VertexAi: h.Clone().(*UpstreamSpec_VertexAI),
+			}
+		} else {
+			target.Llm = &UpstreamSpec_MultiPool_Backend_VertexAi{
+				VertexAi: proto.Clone(m.GetVertexAi()).(*UpstreamSpec_VertexAI),
+			}
+		}
+
 	}
 
 	return target

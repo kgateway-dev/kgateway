@@ -387,16 +387,18 @@ priority: 2
 "anthropic": .ai.options.gloo.solo.io.UpstreamSpec.Anthropic
 "azureOpenai": .ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI
 "gemini": .ai.options.gloo.solo.io.UpstreamSpec.Gemini
+"vertexAi": .ai.options.gloo.solo.io.UpstreamSpec.VertexAI
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `openai` | [.ai.options.gloo.solo.io.UpstreamSpec.OpenAI](../ai.proto.sk/#openai) | OpenAI upstream. Only one of `openai`, `mistral`, `anthropic`, `azureOpenai`, or `gemini` can be set. |
-| `mistral` | [.ai.options.gloo.solo.io.UpstreamSpec.Mistral](../ai.proto.sk/#mistral) | Mistral upstream. Only one of `mistral`, `openai`, `anthropic`, `azureOpenai`, or `gemini` can be set. |
-| `anthropic` | [.ai.options.gloo.solo.io.UpstreamSpec.Anthropic](../ai.proto.sk/#anthropic) | Anthropic upstream. Only one of `anthropic`, `openai`, `mistral`, `azureOpenai`, or `gemini` can be set. |
-| `azureOpenai` | [.ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI upstream. Only one of `azureOpenai`, `openai`, `mistral`, `anthropic`, or `gemini` can be set. |
-| `gemini` | [.ai.options.gloo.solo.io.UpstreamSpec.Gemini](../ai.proto.sk/#gemini) | Gemini upstream. Only one of `gemini`, `openai`, `mistral`, `anthropic`, or `azureOpenai` can be set. |
+| `openai` | [.ai.options.gloo.solo.io.UpstreamSpec.OpenAI](../ai.proto.sk/#openai) | OpenAI upstream. Only one of `openai`, `mistral`, `anthropic`, `azureOpenai`, `gemini`, or `vertexAi` can be set. |
+| `mistral` | [.ai.options.gloo.solo.io.UpstreamSpec.Mistral](../ai.proto.sk/#mistral) | Mistral upstream. Only one of `mistral`, `openai`, `anthropic`, `azureOpenai`, `gemini`, or `vertexAi` can be set. |
+| `anthropic` | [.ai.options.gloo.solo.io.UpstreamSpec.Anthropic](../ai.proto.sk/#anthropic) | Anthropic upstream. Only one of `anthropic`, `openai`, `mistral`, `azureOpenai`, `gemini`, or `vertexAi` can be set. |
+| `azureOpenai` | [.ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI upstream. Only one of `azureOpenai`, `openai`, `mistral`, `anthropic`, `gemini`, or `vertexAi` can be set. |
+| `gemini` | [.ai.options.gloo.solo.io.UpstreamSpec.Gemini](../ai.proto.sk/#gemini) | Gemini upstream. Only one of `gemini`, `openai`, `mistral`, `anthropic`, `azureOpenai`, or `vertexAi` can be set. |
+| `vertexAi` | [.ai.options.gloo.solo.io.UpstreamSpec.VertexAI](../ai.proto.sk/#vertexai) | Vertex AI upstream. Only one of `vertexAi`, `openai`, `mistral`, `anthropic`, `azureOpenai`, or `gemini` can be set. |
 
 
 

@@ -254,6 +254,8 @@ message UpstreamSpec {
         AzureOpenAI azure_openai = 4;
         // Gemini upstream
         Gemini gemini = 5;
+        // Vertex AI upstream
+        VertexAI vertex_ai = 6;
       }
     }
 
