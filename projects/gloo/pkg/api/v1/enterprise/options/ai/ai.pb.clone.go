@@ -144,6 +144,18 @@ func (m *UpstreamSpec) Clone() proto.Message {
 			}
 		}
 
+	case *UpstreamSpec_VertexAi:
+
+		if h, ok := interface{}(m.GetVertexAi()).(clone.Cloner); ok {
+			target.Llm = &UpstreamSpec_VertexAi{
+				VertexAi: h.Clone().(*UpstreamSpec_VertexAI),
+			}
+		} else {
+			target.Llm = &UpstreamSpec_VertexAi{
+				VertexAi: proto.Clone(m.GetVertexAi()).(*UpstreamSpec_VertexAI),
+			}
+		}
+
 	}
 
 	return target

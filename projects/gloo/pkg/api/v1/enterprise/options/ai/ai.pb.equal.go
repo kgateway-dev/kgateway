@@ -195,6 +195,21 @@ func (m *UpstreamSpec) Equal(that interface{}) bool {
 			}
 		}
 
+	case *UpstreamSpec_VertexAi:
+		if _, ok := target.Llm.(*UpstreamSpec_VertexAi); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetVertexAi()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetVertexAi()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetVertexAi(), target.GetVertexAi()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.Llm != target.Llm {

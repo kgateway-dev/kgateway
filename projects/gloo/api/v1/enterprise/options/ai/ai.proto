@@ -283,6 +283,8 @@ message UpstreamSpec {
     MultiPool multi = 5;
     // Gemini upstream
     Gemini gemini = 6;
+    // Vertex AI upstream
+    VertexAI vertex_ai = 7;
   }
 }
 
