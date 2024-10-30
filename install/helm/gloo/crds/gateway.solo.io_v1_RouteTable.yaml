@@ -190,6 +190,8 @@ spec:
                                           minimum: 0
                                           type: integer
                                       type: object
+                                    moderation:
+                                      type: object
                                     regex:
                                       properties:
                                         action:

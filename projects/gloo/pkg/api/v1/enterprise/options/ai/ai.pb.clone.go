@@ -929,6 +929,17 @@ func (m *AIPromptGuard_Webhook) Clone() proto.Message {
 }
 
 // Clone function
+func (m *AIPromptGuard_Moderation) Clone() proto.Message {
+	var target *AIPromptGuard_Moderation
+	if m == nil {
+		return target
+	}
+	target = &AIPromptGuard_Moderation{}
+
+	return target
+}
+
+// Clone function
 func (m *AIPromptGuard_Request) Clone() proto.Message {
 	var target *AIPromptGuard_Request
 	if m == nil {
@@ -952,6 +963,12 @@ func (m *AIPromptGuard_Request) Clone() proto.Message {
 		target.Webhook = h.Clone().(*AIPromptGuard_Webhook)
 	} else {
 		target.Webhook = proto.Clone(m.GetWebhook()).(*AIPromptGuard_Webhook)
+	}
+
+	if h, ok := interface{}(m.GetModeration()).(clone.Cloner); ok {
+		target.Moderation = h.Clone().(*AIPromptGuard_Moderation)
+	} else {
+		target.Moderation = proto.Clone(m.GetModeration()).(*AIPromptGuard_Moderation)
 	}
 
 	return target
@@ -1006,6 +1023,33 @@ func (m *AIPromptGuard_Webhook_HeaderMatch) Clone() proto.Message {
 	target.Key = m.GetKey()
 
 	target.MatchType = m.GetMatchType()
+
+	return target
+}
+
+// Clone function
+func (m *AIPromptGuard_Moderation_OpenAI) Clone() proto.Message {
+	var target *AIPromptGuard_Moderation_OpenAI
+	if m == nil {
+		return target
+	}
+	target = &AIPromptGuard_Moderation_OpenAI{}
+
+	switch m.AuthTokenSource.(type) {
+
+	case *AIPromptGuard_Moderation_OpenAI_AuthToken:
+
+		if h, ok := interface{}(m.GetAuthToken()).(clone.Cloner); ok {
+			target.AuthTokenSource = &AIPromptGuard_Moderation_OpenAI_AuthToken{
+				AuthToken: h.Clone().(*SingleAuthToken),
+			}
+		} else {
+			target.AuthTokenSource = &AIPromptGuard_Moderation_OpenAI_AuthToken{
+				AuthToken: proto.Clone(m.GetAuthToken()).(*SingleAuthToken),
+			}
+		}
+
+	}
 
 	return target
 }

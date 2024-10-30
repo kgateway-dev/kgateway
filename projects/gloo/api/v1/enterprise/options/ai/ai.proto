@@ -623,6 +623,17 @@ message AIPromptGuard {
     repeated HeaderMatch forwardHeaders = 3;
   }
 
+  message Moderation {
+      // OpenAI Moderation
+      message OpenAI {
+        oneof auth_token_source {
+          SingleAuthToken auth_token = 1;
+          // re-use the token from the backend
+          // google.protobuf.Empty inherit_backend_token = 3;
+        }
+      }
+  }
+
 
   // Request settings for Prompt Guard
   message Request {
@@ -645,6 +656,9 @@ message AIPromptGuard {
 
     // Webhook request guard
     Webhook webhook = 3;
+
+    // Moderation settings
+    Moderation moderation = 4;
   }
 
   // Request settings for Prompt Guard

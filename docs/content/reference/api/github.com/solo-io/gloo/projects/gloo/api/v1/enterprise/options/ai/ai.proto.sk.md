@@ -47,6 +47,8 @@ weight: 5
 - [Webhook](#webhook)
 - [HeaderMatch](#headermatch)
 - [MatchType](#matchtype)
+- [Moderation](#moderation)
+- [OpenAI](#openai)
 - [Request](#request)
 - [CustomResponse](#customresponse)
 - [Response](#response)
@@ -875,6 +877,39 @@ Webhook settings for prompt guard
 
 
 ---
+### Moderation
+
+
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+
+
+
+
+---
+### OpenAI
+
+ 
+OpenAI Moderation
+
+```yaml
+"authToken": .ai.options.gloo.solo.io.SingleAuthToken
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) |  |
+
+
+
+
+---
 ### Request
 
  
@@ -884,6 +919,7 @@ Request settings for Prompt Guard
 "customResponse": .ai.options.gloo.solo.io.AIPromptGuard.Request.CustomResponse
 "regex": .ai.options.gloo.solo.io.AIPromptGuard.Regex
 "webhook": .ai.options.gloo.solo.io.AIPromptGuard.Webhook
+"moderation": .ai.options.gloo.solo.io.AIPromptGuard.Moderation
 
 ```
 
@@ -892,6 +928,7 @@ Request settings for Prompt Guard
 | `customResponse` | [.ai.options.gloo.solo.io.AIPromptGuard.Request.CustomResponse](../ai.proto.sk/#customresponse) | Custom response message to send back to the client. If not specified, the following default message will be used: "The request was rejected due to inappropriate content". |
 | `regex` | [.ai.options.gloo.solo.io.AIPromptGuard.Regex](../ai.proto.sk/#regex) | Regex request guard. |
 | `webhook` | [.ai.options.gloo.solo.io.AIPromptGuard.Webhook](../ai.proto.sk/#webhook) | Webhook request guard. |
+| `moderation` | [.ai.options.gloo.solo.io.AIPromptGuard.Moderation](../ai.proto.sk/#moderation) | Moderation settings. |
 
 
 
