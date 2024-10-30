@@ -50,6 +50,7 @@ type GatewayConfig struct {
 
 	ControlPlane            deployer.ControlPlaneInfo
 	IstioIntegrationEnabled bool
+	Aws                     *deployer.AwsInfo
 
 	Extensions extensions.K8sGatewayExtensions
 }
@@ -168,6 +169,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		Dev:                     c.cfg.Dev,
 		IstioIntegrationEnabled: c.cfg.IstioIntegrationEnabled,
 		ControlPlane:            c.cfg.ControlPlane,
+		Aws:                     c.cfg.Aws,
 	})
 	if err != nil {
 		return err
