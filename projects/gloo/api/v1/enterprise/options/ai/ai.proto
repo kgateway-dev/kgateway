@@ -143,6 +143,9 @@ message UpstreamSpec {
     // The version of the API to use
     // This value can be found https://generativelanguage.googleapis.com/{api_version}/models/{model}:generateContent?key={api_key}
     string api_version = 3;
+
+    // Whether to use the Vertex AI API for Gemini Models. Defaults to true.
+    google.protobuf.BoolValue vertex_ai = 4;
   }
 
   // Settings for the Mistral API
@@ -450,31 +453,11 @@ message Embedding {
     string deployment_name = 4;
   }
 
-  message Gemini {
-    // Auth Token to use for the Gemini API
-    // This token will be placed into the `key` header
-    oneof auth_token_source {
-      // Auth Token to use for the Gemini API
-      // This token will be placed into the `key` header
-      SingleAuthToken auth_token = 1;
-      // TODO: use oauth
-    }
-
-    // The model name to use
-    // This value can be found https://generativelanguage.googleapis.com/{version}/models/{model}:generateContent?key={api_key}
-    string model = 2;
-    // The version of the API to use
-    // This value can be found https://generativelanguage.googleapis.com/{api_version}/models/{model}:generateContent?key={api_key}
-    string api_version = 3;
-  }
-
   oneof embedding {
     // OpenAI embedding
     OpenAI openai = 1;
     // Azure OpenAI embedding
     AzureOpenAI azure_openai = 2;
-    // Gemini embedding
-    Gemini gemini = 3;
   }
 }
 

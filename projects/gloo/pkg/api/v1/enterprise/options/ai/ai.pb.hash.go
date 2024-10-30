@@ -502,28 +502,6 @@ func (m *Embedding) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *Embedding_Gemini_:
-
-		if h, ok := interface{}(m.GetGemini()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("Gemini")); err != nil {
-				return 0, err
-			}
-			if _, err = h.Hash(hasher); err != nil {
-				return 0, err
-			}
-		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetGemini(), nil); err != nil {
-				return 0, err
-			} else {
-				if _, err = hasher.Write([]byte("Gemini")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-					return 0, err
-				}
-			}
-		}
-
 	}
 
 	return hasher.Sum64(), nil
@@ -965,6 +943,26 @@ func (m *UpstreamSpec_Gemini) Hash(hasher hash.Hash64) (uint64, error) {
 
 	if _, err = hasher.Write([]byte(m.GetApiVersion())); err != nil {
 		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetVertexAi()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("VertexAi")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetVertexAi(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("VertexAi")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	switch m.AuthTokenSource.(type) {
@@ -1428,60 +1426,6 @@ func (m *Embedding_AzureOpenAI) Hash(hasher hash.Hash64) (uint64, error) {
 	switch m.AuthTokenSource.(type) {
 
 	case *Embedding_AzureOpenAI_AuthToken:
-
-		if h, ok := interface{}(m.GetAuthToken()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("AuthToken")); err != nil {
-				return 0, err
-			}
-			if _, err = h.Hash(hasher); err != nil {
-				return 0, err
-			}
-		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetAuthToken(), nil); err != nil {
-				return 0, err
-			} else {
-				if _, err = hasher.Write([]byte("AuthToken")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-					return 0, err
-				}
-			}
-		}
-
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// Hash function
-//
-// Deprecated: due to hashing implemention only using field values. The omission
-// of the field name in the hash calculation can lead to hash collisions.
-// Prefer the HashUnique function instead.
-func (m *Embedding_Gemini) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.Embedding_Gemini")); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte(m.GetModel())); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte(m.GetApiVersion())); err != nil {
-		return 0, err
-	}
-
-	switch m.AuthTokenSource.(type) {
-
-	case *Embedding_Gemini_AuthToken:
 
 		if h, ok := interface{}(m.GetAuthToken()).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("AuthToken")); err != nil {

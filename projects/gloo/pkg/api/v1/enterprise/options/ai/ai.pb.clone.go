@@ -16,6 +16,8 @@ import (
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	google_golang_org_protobuf_types_known_structpb "google.golang.org/protobuf/types/known/structpb"
+
+	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // ensure the imports are used
@@ -269,18 +271,6 @@ func (m *Embedding) Clone() proto.Message {
 			}
 		}
 
-	case *Embedding_Gemini_:
-
-		if h, ok := interface{}(m.GetGemini()).(clone.Cloner); ok {
-			target.Embedding = &Embedding_Gemini_{
-				Gemini: h.Clone().(*Embedding_Gemini),
-			}
-		} else {
-			target.Embedding = &Embedding_Gemini_{
-				Gemini: proto.Clone(m.GetGemini()).(*Embedding_Gemini),
-			}
-		}
-
 	}
 
 	return target
@@ -482,6 +472,12 @@ func (m *UpstreamSpec_Gemini) Clone() proto.Message {
 	target.Model = m.GetModel()
 
 	target.ApiVersion = m.GetApiVersion()
+
+	if h, ok := interface{}(m.GetVertexAi()).(clone.Cloner); ok {
+		target.VertexAi = h.Clone().(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
+	} else {
+		target.VertexAi = proto.Clone(m.GetVertexAi()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
+	}
 
 	switch m.AuthTokenSource.(type) {
 
@@ -728,37 +724,6 @@ func (m *Embedding_AzureOpenAI) Clone() proto.Message {
 			}
 		} else {
 			target.AuthTokenSource = &Embedding_AzureOpenAI_AuthToken{
-				AuthToken: proto.Clone(m.GetAuthToken()).(*SingleAuthToken),
-			}
-		}
-
-	}
-
-	return target
-}
-
-// Clone function
-func (m *Embedding_Gemini) Clone() proto.Message {
-	var target *Embedding_Gemini
-	if m == nil {
-		return target
-	}
-	target = &Embedding_Gemini{}
-
-	target.Model = m.GetModel()
-
-	target.ApiVersion = m.GetApiVersion()
-
-	switch m.AuthTokenSource.(type) {
-
-	case *Embedding_Gemini_AuthToken:
-
-		if h, ok := interface{}(m.GetAuthToken()).(clone.Cloner); ok {
-			target.AuthTokenSource = &Embedding_Gemini_AuthToken{
-				AuthToken: h.Clone().(*SingleAuthToken),
-			}
-		} else {
-			target.AuthTokenSource = &Embedding_Gemini_AuthToken{
 				AuthToken: proto.Clone(m.GetAuthToken()).(*SingleAuthToken),
 			}
 		}

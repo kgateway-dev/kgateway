@@ -92,6 +92,9 @@ spec:
                         type: object
                       model:
                         type: string
+                      vertexAi:
+                        nullable: true
+                        type: boolean
                     type: object
                   mistral:
                     properties:
@@ -194,6 +197,9 @@ spec:
                                         type: object
                                       model:
                                         type: string
+                                      vertexAi:
+                                        nullable: true
+                                        type: boolean
                                     type: object
                                   mistral:
                                     properties:

@@ -29,7 +29,6 @@ weight: 5
 - [Embedding](#embedding)
 - [OpenAI](#openai)
 - [AzureOpenAI](#azureopenai)
-- [Gemini](#gemini)
 - [SemanticCache](#semanticcache)
 - [Redis](#redis)
 - [Weaviate](#weaviate)
@@ -233,6 +232,7 @@ Settings for the Gemini API
 "authToken": .ai.options.gloo.solo.io.SingleAuthToken
 "model": string
 "apiVersion": string
+"vertexAi": .google.protobuf.BoolValue
 
 ```
 
@@ -241,6 +241,7 @@ Settings for the Gemini API
 | `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the Gemini API This token will be placed into the `key` header. |
 | `model` | `string` | The model name to use This value can be found https://generativelanguage.googleapis.com/{version}/models/{model}:generateContent?key={api_key}. |
 | `apiVersion` | `string` | The version of the API to use This value can be found https://generativelanguage.googleapis.com/{api_version}/models/{model}:generateContent?key={api_key}. |
+| `vertexAi` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether to use the Vertex AI API for Gemini Models. Defaults to true. |
 
 
 
@@ -476,15 +477,13 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 ```yaml
 "openai": .ai.options.gloo.solo.io.Embedding.OpenAI
 "azureOpenai": .ai.options.gloo.solo.io.Embedding.AzureOpenAI
-"gemini": .ai.options.gloo.solo.io.Embedding.Gemini
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `openai` | [.ai.options.gloo.solo.io.Embedding.OpenAI](../ai.proto.sk/#openai) | OpenAI embedding. Only one of `openai`, `azureOpenai`, or `gemini` can be set. |
-| `azureOpenai` | [.ai.options.gloo.solo.io.Embedding.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI embedding. Only one of `azureOpenai`, `openai`, or `gemini` can be set. |
-| `gemini` | [.ai.options.gloo.solo.io.Embedding.Gemini](../ai.proto.sk/#gemini) | Gemini embedding. Only one of `gemini`, `openai`, or `azureOpenai` can be set. |
+| `openai` | [.ai.options.gloo.solo.io.Embedding.OpenAI](../ai.proto.sk/#openai) | OpenAI embedding. Only one of `openai` or `azureOpenai` can be set. |
+| `azureOpenai` | [.ai.options.gloo.solo.io.Embedding.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI embedding. Only one of `azureOpenai` or `openai` can be set. |
 
 
 
@@ -527,27 +526,6 @@ Azure OpenAI embedding
 | `apiVersion` | `string` | The version of the API to use This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}. |
 | `endpoint` | `string` | The endpoint to use This should be the endpoint to the Azure OpenAI API, e.g. https://my-endpoint.openai.azure.com If the scheme isn't included it will be added. This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}. |
 | `deploymentName` | `string` | The deployment/model name to use This value can be found https://{endpoint}/openai/deployments/{deployment_name}/chat/completions?api-version={api_version}. |
-
-
-
-
----
-### Gemini
-
-
-
-```yaml
-"authToken": .ai.options.gloo.solo.io.SingleAuthToken
-"model": string
-"apiVersion": string
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the Gemini API This token will be placed into the `key` header. |
-| `model` | `string` | The model name to use This value can be found https://generativelanguage.googleapis.com/{version}/models/{model}:generateContent?key={api_key}. |
-| `apiVersion` | `string` | The version of the API to use This value can be found https://generativelanguage.googleapis.com/{api_version}/models/{model}:generateContent?key={api_key}. |
 
 
 
