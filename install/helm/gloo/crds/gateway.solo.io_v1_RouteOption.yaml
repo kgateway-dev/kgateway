@@ -182,6 +182,25 @@ spec:
                                   endpoint:
                                     type: string
                                 type: object
+                              gemini:
+                                properties:
+                                  apiVersion:
+                                    type: string
+                                  authToken:
+                                    properties:
+                                      inline:
+                                        type: string
+                                      secretRef:
+                                        properties:
+                                          name:
+                                            type: string
+                                          namespace:
+                                            type: string
+                                        type: object
+                                    type: object
+                                  model:
+                                    type: string
+                                type: object
                               openai:
                                 properties:
                                   authToken:
@@ -252,6 +271,25 @@ spec:
                                   deploymentName:
                                     type: string
                                   endpoint:
+                                    type: string
+                                type: object
+                              gemini:
+                                properties:
+                                  apiVersion:
+                                    type: string
+                                  authToken:
+                                    properties:
+                                      inline:
+                                        type: string
+                                      secretRef:
+                                        properties:
+                                          name:
+                                            type: string
+                                          namespace:
+                                            type: string
+                                        type: object
+                                    type: object
+                                  model:
                                     type: string
                                 type: object
                               openai:

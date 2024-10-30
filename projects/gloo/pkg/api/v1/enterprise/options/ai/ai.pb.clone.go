@@ -269,6 +269,18 @@ func (m *Embedding) Clone() proto.Message {
 			}
 		}
 
+	case *Embedding_Gemini_:
+
+		if h, ok := interface{}(m.GetGemini()).(clone.Cloner); ok {
+			target.Embedding = &Embedding_Gemini_{
+				Gemini: h.Clone().(*Embedding_Gemini),
+			}
+		} else {
+			target.Embedding = &Embedding_Gemini_{
+				Gemini: proto.Clone(m.GetGemini()).(*Embedding_Gemini),
+			}
+		}
+
 	}
 
 	return target
@@ -716,6 +728,37 @@ func (m *Embedding_AzureOpenAI) Clone() proto.Message {
 			}
 		} else {
 			target.AuthTokenSource = &Embedding_AzureOpenAI_AuthToken{
+				AuthToken: proto.Clone(m.GetAuthToken()).(*SingleAuthToken),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *Embedding_Gemini) Clone() proto.Message {
+	var target *Embedding_Gemini
+	if m == nil {
+		return target
+	}
+	target = &Embedding_Gemini{}
+
+	target.Model = m.GetModel()
+
+	target.ApiVersion = m.GetApiVersion()
+
+	switch m.AuthTokenSource.(type) {
+
+	case *Embedding_Gemini_AuthToken:
+
+		if h, ok := interface{}(m.GetAuthToken()).(clone.Cloner); ok {
+			target.AuthTokenSource = &Embedding_Gemini_AuthToken{
+				AuthToken: h.Clone().(*SingleAuthToken),
+			}
+		} else {
+			target.AuthTokenSource = &Embedding_Gemini_AuthToken{
 				AuthToken: proto.Clone(m.GetAuthToken()).(*SingleAuthToken),
 			}
 		}
