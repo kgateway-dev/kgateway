@@ -1097,10 +1097,10 @@ func (m *UpstreamSpec_VertexAI) HashUnique(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte("ModelType")); err != nil {
+	if _, err = hasher.Write([]byte("Provider")); err != nil {
 		return 0, err
 	}
-	err = binary.Write(hasher, binary.LittleEndian, m.GetModelType())
+	err = binary.Write(hasher, binary.LittleEndian, m.GetProvider())
 	if err != nil {
 		return 0, err
 	}

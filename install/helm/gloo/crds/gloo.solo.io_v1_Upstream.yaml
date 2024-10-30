@@ -267,11 +267,11 @@ spec:
                                         type: string
                                       model:
                                         type: string
-                                      modelType:
-                                        type: string
-                                        x-kubernetes-int-or-string: true
                                       projectId:
                                         type: string
+                                      provider:
+                                        type: string
+                                        x-kubernetes-int-or-string: true
                                     type: object
                                 type: object
                               type: array
@@ -324,11 +324,11 @@ spec:
                         type: string
                       model:
                         type: string
-                      modelType:
-                        type: string
-                        x-kubernetes-int-or-string: true
                       projectId:
                         type: string
+                      provider:
+                        type: string
+                        x-kubernetes-int-or-string: true
                     type: object
                 type: object
               aws:

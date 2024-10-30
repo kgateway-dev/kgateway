@@ -159,20 +159,22 @@ message UpstreamSpec {
     // The model name to use
     // This value can be found https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
     string model = 2;
-    // The version of the API to use
-    // This value can be found https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
+    // The version of the API to use. See https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models for supported models for specific publishers.
     string api_version = 3;
-    // Google Cloud Project ID. https://${LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/${PROJECT_ID}/locations/${LOCATION}/<model-path>
+    // Google Cloud Project ID in
+    // https://{LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/{PROJECT_ID}/locations/{LOCATION}/publishers/{PROVIDER}/<model-path>
     string project_id = 4;
-    // Location of the project https://${LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/${PROJECT_ID}/locations/${LOCATION}/<model-path>
+    // Location of the project in
+    // https://{LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/{PROJECT_ID}/locations/{LOCATION}/publishers/{PROVIDER}/<model-path>
     string location = 5;
 
-    enum ModelType {
+    enum Provider {
       Gemini = 0;
     }
 
-    // The type of model to use, currently only Gemini is supported
-    ModelType model_type = 6;
+    // The type of model publishers to use, currently only Google's Gemini is supported in
+    // https://{LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/{PROJECT_ID}/locations/{LOCATION}/publishers/{PROVIDER}/<model-path>
+    Provider provider = 6;
   }
 
   // Settings for the Mistral API

@@ -18,7 +18,7 @@ weight: 5
 - [AzureOpenAI](#azureopenai)
 - [Gemini](#gemini)
 - [VertexAI](#vertexai)
-- [ModelType](#modeltype)
+- [Provider](#provider)
 - [Mistral](#mistral)
 - [Anthropic](#anthropic)
 - [MultiPool](#multipool)
@@ -260,7 +260,7 @@ Settings for the Vertex AI API
 "apiVersion": string
 "projectId": string
 "location": string
-"modelType": .ai.options.gloo.solo.io.UpstreamSpec.VertexAI.ModelType
+"provider": .ai.options.gloo.solo.io.UpstreamSpec.VertexAI.Provider
 
 ```
 
@@ -268,16 +268,16 @@ Settings for the Vertex AI API
 | ----- | ---- | ----------- | 
 | `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the Vertex AI API This token will be placed into the `Authorization: Bearer ` header. |
 | `model` | `string` | The model name to use This value can be found https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models. |
-| `apiVersion` | `string` | The version of the API to use This value can be found https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models. |
-| `projectId` | `string` | Google Cloud Project ID. https://${LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/${PROJECT_ID}/locations/${LOCATION}/<model-path>. |
-| `location` | `string` | Location of the project https://${LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/${PROJECT_ID}/locations/${LOCATION}/<model-path>. |
-| `modelType` | [.ai.options.gloo.solo.io.UpstreamSpec.VertexAI.ModelType](../ai.proto.sk/#modeltype) | The type of model to use, currently only Gemini is supported. |
+| `apiVersion` | `string` | The version of the API to use. See https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models for supported models for specific publishers. |
+| `projectId` | `string` | Google Cloud Project ID in https://{LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/{PROJECT_ID}/locations/{LOCATION}/publishers/{PROVIDER}/<model-path>. |
+| `location` | `string` | Location of the project in https://{LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/{PROJECT_ID}/locations/{LOCATION}/publishers/{PROVIDER}/<model-path>. |
+| `provider` | [.ai.options.gloo.solo.io.UpstreamSpec.VertexAI.Provider](../ai.proto.sk/#provider) | The type of model publishers to use, currently only Google's Gemini is supported in https://{LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/{PROJECT_ID}/locations/{LOCATION}/publishers/{PROVIDER}/<model-path>. |
 
 
 
 
 ---
-### ModelType
+### Provider
 
 
 
