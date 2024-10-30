@@ -197,6 +197,24 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 
 	integrationEnabled := c.cfg.InitialSettings.Spec.GetGloo().GetIstioOptions().GetEnableIntegration().GetValue()
 
+	// copy over relevant aws options (if any) from Settings
+	var awsInfo *deployer.AwsInfo
+	awsOpts := c.cfg.InitialSettings.Spec.GetGloo().GetAwsOptions()
+	if awsOpts != nil {
+		credOpts := awsOpts.GetServiceAccountCredentials()
+		if credOpts != nil {
+			awsInfo = &deployer.AwsInfo{
+				EnableServiceAccountCredentials: true,
+				StsClusterName:                  credOpts.GetCluster(),
+				StsUri:                          credOpts.GetUri(),
+			}
+		} else {
+			awsInfo = &deployer.AwsInfo{
+				EnableServiceAccountCredentials: false,
+			}
+		}
+	}
+
 	gwCfg := GatewayConfig{
 		Mgr:            c.mgr,
 		GWClasses:      sets.New(append(c.cfg.SetupOpts.ExtraGatewayClasses, wellknown.GatewayClassName)...),
@@ -208,6 +226,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 		},
 		// TODO pass in the settings so that the deloyer can register to it for changes.
 		IstioIntegrationEnabled: integrationEnabled,
+		Aws:                     awsInfo,
 		Kick:                    c.inputChannels.Kick,
 		Extensions:              c.k8sGwExtensions,
 	}
