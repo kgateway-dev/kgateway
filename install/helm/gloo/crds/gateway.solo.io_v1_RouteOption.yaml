@@ -188,9 +188,6 @@ spec:
                                       inline:
                                         type: string
                                       passthrough:
-                                        properties:
-                                          headerName:
-                                            type: string
                                         type: object
                                       secretRef:
                                         properties:
@@ -212,9 +209,6 @@ spec:
                                       inline:
                                         type: string
                                       passthrough:
-                                        properties:
-                                          headerName:
-                                            type: string
                                         type: object
                                       secretRef:
                                         properties:
@@ -270,9 +264,6 @@ spec:
                                       inline:
                                         type: string
                                       passthrough:
-                                        properties:
-                                          headerName:
-                                            type: string
                                         type: object
                                       secretRef:
                                         properties:
@@ -294,9 +285,6 @@ spec:
                                       inline:
                                         type: string
                                       passthrough:
-                                        properties:
-                                          headerName:
-                                            type: string
                                         type: object
                                       secretRef:
                                         properties:

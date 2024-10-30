@@ -406,8 +406,6 @@ func (m *SingleAuthToken_Passthrough) Clone() proto.Message {
 	}
 	target = &SingleAuthToken_Passthrough{}
 
-	target.HeaderName = m.GetHeaderName()
-
 	return target
 }
 

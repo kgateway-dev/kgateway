@@ -665,10 +665,6 @@ func (m *SingleAuthToken_Passthrough) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetHeaderName(), target.GetHeaderName()) != 0 {
-		return false
-	}
-
 	return true
 }
 

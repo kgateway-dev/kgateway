@@ -844,13 +844,6 @@ func (m *SingleAuthToken_Passthrough) HashUnique(hasher hash.Hash64) (uint64, er
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte("HeaderName")); err != nil {
-		return 0, err
-	}
-	if _, err = hasher.Write([]byte(m.GetHeaderName())); err != nil {
-		return 0, err
-	}
-
 	return hasher.Sum64(), nil
 }
 

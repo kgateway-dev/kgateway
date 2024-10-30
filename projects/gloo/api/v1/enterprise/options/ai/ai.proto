@@ -12,9 +12,7 @@ option (extproto.clone_all) = true;
 message SingleAuthToken {
 
   message Passthrough {
-    // Name of the header the token is in. If not set
-    // Authorization will be used.
-    string header_name = 1;
+    // Use a message to allow for future expansion
   }
 
   oneof auth_token_source {
@@ -27,6 +25,7 @@ message SingleAuthToken {
     // early in the request lifecycle. This option is useful for 
     // backends which have federated identity setup and can re-use
     // the token from the client.
+    // Currently this token must exist in the `Authorization` header
     Passthrough passthrough = 3;
   }
 }
