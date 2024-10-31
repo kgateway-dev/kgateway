@@ -3,12 +3,15 @@ package extensions
 import (
 	"context"
 
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewaykubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	extauthkubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1/kube/apis/enterprise.gloo.solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	istiokube "istio.io/istio/pkg/kube"
+	"istio.io/istio/pkg/kube/krt"
+
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -26,12 +29,13 @@ type K8sGatewayExtensions interface {
 
 // K8sGatewayExtensionsFactoryParameters contains the parameters required to start Gloo K8s Gateway Extensions (including Translator Plugins)
 type K8sGatewayExtensionsFactoryParameters struct {
-	Mgr                     controllerruntime.Manager
-	AuthConfigClient        v1.AuthConfigClient
-	RouteOptionClient       gatewayv1.RouteOptionClient
-	VirtualHostOptionClient gatewayv1.VirtualHostOptionClient
-	StatusReporter          reporter.StatusReporter
-	KickXds                 func(ctx context.Context)
+	Mgr                         controllerruntime.Manager
+	IstioClient                 istiokube.Client
+	AuthConfigCollection        krt.Collection[*extauthkubev1.AuthConfig]
+	RouteOptionCollection       krt.Collection[*gatewaykubev1.RouteOption]
+	VirtualHostOptionCollection krt.Collection[*gatewaykubev1.VirtualHostOption]
+	StatusReporter              reporter.StatusReporter
+	KickXds                     func(ctx context.Context)
 }
 
 // K8sGatewayExtensionsFactory returns an extensions.K8sGatewayExtensions
@@ -51,22 +55,22 @@ func NewK8sGatewayExtensions(
 	)
 
 	return &k8sGatewayExtensions{
-		mgr:                     params.Mgr,
-		routeOptionClient:       params.RouteOptionClient,
-		virtualHostOptionClient: params.VirtualHostOptionClient,
-		statusReporter:          params.StatusReporter,
-		queries:                 queries,
+		mgr:                         params.Mgr,
+		routeOptionCollection:       params.RouteOptionCollection,
+		virtualHostOptionCollection: params.VirtualHostOptionCollection,
+		statusReporter:              params.StatusReporter,
+		queries:                     queries,
 	}, nil
 }
 
 type k8sGatewayExtensions struct {
-	mgr                     controllerruntime.Manager
-	routeOptionClient       gatewayv1.RouteOptionClient
-	virtualHostOptionClient gatewayv1.VirtualHostOptionClient
-	statusReporter          reporter.StatusReporter
-	translator              translator.K8sGwTranslator
-	pluginRegistry          registry.PluginRegistry
-	queries                 query.GatewayQueries
+	mgr                         controllerruntime.Manager
+	routeOptionCollection       krt.Collection[*gatewaykubev1.RouteOption]
+	virtualHostOptionCollection krt.Collection[*gatewaykubev1.VirtualHostOption]
+	statusReporter              reporter.StatusReporter
+	translator                  translator.K8sGwTranslator
+	pluginRegistry              registry.PluginRegistry
+	queries                     query.GatewayQueries
 }
 
 func (e *k8sGatewayExtensions) GetTranslator(_ context.Context, _ *apiv1.Gateway, pluginRegistry registry.PluginRegistry) translator.K8sGwTranslator {
@@ -77,8 +81,8 @@ func (e *k8sGatewayExtensions) CreatePluginRegistry(_ context.Context) registry.
 	plugins := registry.BuildPlugins(
 		e.queries,
 		e.mgr.GetClient(),
-		e.routeOptionClient,
-		e.virtualHostOptionClient,
+		e.routeOptionCollection,
+		e.virtualHostOptionCollection,
 		e.statusReporter,
 	)
 	return registry.NewPluginRegistry(plugins)

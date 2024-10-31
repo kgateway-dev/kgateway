@@ -129,7 +129,7 @@ var _ = Describe("Hashing Benchmarks", decorators.Performance, Label(labels.Perf
 				Secrets:   memoryClientFactory,
 				Upstreams: memoryClientFactory,
 			}
-			registeredPlugins = registry.Plugins(opts)
+			registeredPlugins = registry.Plugins(registry.FromBootstrap(opts))
 
 			upName = &core.Metadata{
 				Name:      "kube-svc:default-helloworld-1-xvgfm-q2ktv-9090",

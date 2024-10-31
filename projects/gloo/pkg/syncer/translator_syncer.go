@@ -7,6 +7,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/statsutils/metrics"
 	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
@@ -18,14 +19,11 @@ import (
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	gwsyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
-	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
-
-type OnProxiesTranslatedFn func(ctx context.Context, proxiesWithReports []translatorutils.ProxyWithReports)
 
 type translatorSyncer struct {
 	translator translator.Translator
@@ -50,9 +48,6 @@ type translatorSyncer struct {
 	snapshotHistory iosnapshot.History
 
 	statusSyncer *statusSyncer
-
-	// callback after proxy translation
-	onProxyTranslated OnProxiesTranslatedFn
 }
 
 type statusSyncer struct {
@@ -81,7 +76,6 @@ func NewTranslatorSyncer(
 	proxyClient v1.ProxyClient,
 	writeNamespace string,
 	identity leaderelector.Identity,
-	onProxyTranslated OnProxiesTranslatedFn,
 	snapshotHistory iosnapshot.History,
 ) v1snap.ApiSyncer {
 	s := &translatorSyncer{
@@ -102,8 +96,7 @@ func NewTranslatorSyncer(
 			leaderStartupAction: leaderelector.NewLeaderStartupAction(identity),
 			reportsLock:         sync.RWMutex{},
 		},
-		onProxyTranslated: onProxyTranslated,
-		snapshotHistory:   snapshotHistory,
+		snapshotHistory: snapshotHistory,
 	}
 	if devMode {
 		// TODO(ilackarms): move this somewhere else?
@@ -118,7 +111,6 @@ func NewTranslatorSyncer(
 
 func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) error {
 	logger := contextutils.LoggerFrom(ctx)
-	reports := make(reporter.ResourceReports)
 	var multiErr *multierror.Error
 
 	// If gateway controller is enabled, run the gateway translation to generate proxies.
@@ -130,16 +122,28 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 		}
 	}
 
+	// Reports used to aggregate results from xds and extension translation.
+	// Will contain reports for `Gloo` components (i.e. Proxies, Upstreams, AuthConfigs, etc.)
+	reports := make(reporter.ResourceReports)
+
 	// Execute the EnvoySyncer
-	// This will update the xDS SnapshotCache for each entry that corresponds to a Proxy in the API Snapshot
+	// This will update the xDS SnapshotCache for each entry that corresponds to a non-kube gw Proxy in the API Snapshot
 	s.syncEnvoy(ctx, snap, reports)
 
 	// Execute the SyncerExtensions
 	// Each of these are responsible for updating a single entry in the SnapshotCache
 	s.syncExtensions(ctx, snap, reports)
 
-	// Update resource status metrics
+	// Update resource status metrics and filter out kube gateway proxies
+	filteredReports := make(reporter.ResourceReports)
 	for resource, report := range reports {
+		if proxy, ok := resource.(*v1.Proxy); ok {
+			// if this is a proxy report for kube gw, skip it
+			if utils.GetTranslatorValue(proxy.GetMetadata()) == utils.GatewayApiProxyValue {
+				continue
+			}
+		}
+		filteredReports[resource] = report
 		status := s.reporter.StatusFromReport(report, nil)
 		s.statusMetrics.SetResourceStatus(ctx, resource, status)
 	}
@@ -150,7 +154,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 	}
 
 	s.statusSyncer.reportsLock.Lock()
-	s.statusSyncer.latestReports = reports
+	s.statusSyncer.latestReports = filteredReports
 	s.statusSyncer.reportsLock.Unlock()
 	s.statusSyncer.forceSync()
 
@@ -167,6 +171,8 @@ func (s *translatorSyncer) syncExtensions(ctx context.Context, snap *v1snap.ApiS
 	}
 }
 
+// translateProxies will call the gatewaySyncer to translate Proxies for the Gateways in the provided snapshot.
+// It will then use the proxyClient to List() Proxies and *mutate the snapshot* to add those Proxies.
 func (s *translatorSyncer) translateProxies(ctx context.Context, snap *v1snap.ApiSnapshot) error {
 	var multiErr *multierror.Error
 	err := s.gatewaySyncer.Sync(ctx, snap)

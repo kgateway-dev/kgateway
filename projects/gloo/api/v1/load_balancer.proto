@@ -107,4 +107,16 @@ message LoadBalancerConfig {
         // If not specified, the default is 10%.
         google.protobuf.DoubleValue min_weight_percent = 3;
     }
+
+    // If set to true, the load balancer will drain connections when the host set changes.
+    //
+    // Ring Hash or Maglev can be used to ensure that clients with the same key 
+    // are routed to the same upstream host.
+    // Distruptions can cause new connections with the same key as existing connections
+    // to be routed to different hosts.
+    // Enabling this feature will cause the load balancer to drain existing connections
+    // when the host set changes, ensuring that new connections with the same key are
+    // consistently routed to the same host.
+    // Connections are not immediately closed, but are allowed to drain.
+    bool close_connections_on_host_set_change = 10;
 }

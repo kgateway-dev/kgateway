@@ -13,9 +13,10 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/pkg/utils/statsutils/metrics"
-	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
+	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 
 	"github.com/golang/protobuf/ptypes/duration"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -27,6 +28,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/protobuf/proto"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -43,6 +45,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	"github.com/solo-io/gloo/pkg/utils/channelutils"
@@ -58,9 +61,10 @@ import (
 	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gwvalidation "github.com/solo-io/gloo/projects/gateway/pkg/validation"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
-	"github.com/solo-io/gloo/projects/gateway2/status"
+	ggv2utils "github.com/solo-io/gloo/projects/gateway2/utils"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	rlv1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
@@ -82,7 +86,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
-	sslutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 )
@@ -94,27 +97,31 @@ var AllowWarnings = true
 
 type RunFunc func(opts bootstrap.Opts) error
 
-func NewSetupFunc() setuputils.SetupFunc {
-	return NewSetupFuncWithRunAndExtensions(RunGloo, nil)
+func NewSetupFunc(setupOpts *bootstrap.SetupOpts) setuputils.SetupFunc {
+	return NewSetupFuncWithRunAndExtensions(RunGloo, setupOpts, nil)
 }
 
 // used outside of this repo
 //
 //goland:noinspection GoUnusedExportedFunction
-func NewSetupFuncWithExtensions(extensions Extensions) setuputils.SetupFunc {
+func NewSetupFuncWithExtensions(setupOpts *bootstrap.SetupOpts, extensions Extensions) setuputils.SetupFunc {
 	runWithExtensions := func(opts bootstrap.Opts) error {
 		return RunGlooWithExtensions(opts, extensions)
 	}
-	return NewSetupFuncWithRunAndExtensions(runWithExtensions, &extensions)
+	return NewSetupFuncWithRunAndExtensions(runWithExtensions, setupOpts, &extensions)
 }
 
 // for use by UDS, FDS, other v1.SetupSyncers
 func NewSetupFuncWithRun(runFunc RunFunc) setuputils.SetupFunc {
-	return NewSetupFuncWithRunAndExtensions(runFunc, nil)
+	return NewSetupFuncWithRunAndExtensions(runFunc, &bootstrap.SetupOpts{}, nil)
 }
 
 // Called directly by GlooEE
-func NewSetupFuncWithRunAndExtensions(runFunc RunFunc, extensions *Extensions) setuputils.SetupFunc {
+func NewSetupFuncWithRunAndExtensions(runFunc RunFunc, setupOpts *bootstrap.SetupOpts, extensions *Extensions) setuputils.SetupFunc {
+	if setupOpts == nil {
+		setupOpts = &bootstrap.SetupOpts{}
+	}
+
 	s := &setupSyncer{
 		extensions: extensions,
 		makeGrpcServer: func(ctx context.Context, options ...grpc.ServerOption) *grpc.Server {
@@ -132,7 +139,8 @@ func NewSetupFuncWithRunAndExtensions(runFunc RunFunc, extensions *Extensions) s
 			serverOpts = append(serverOpts, options...)
 			return grpc.NewServer(serverOpts...)
 		},
-		runFunc: runFunc,
+		runFunc:   runFunc,
+		setupOpts: setupOpts,
 	}
 	return s.Setup
 }
@@ -148,6 +156,7 @@ type grpcServer struct {
 type setupSyncer struct {
 	extensions               *Extensions
 	runFunc                  RunFunc
+	setupOpts                *bootstrap.SetupOpts
 	makeGrpcServer           func(ctx context.Context, options ...grpc.ServerOption) *grpc.Server
 	previousXdsServer        grpcServer
 	previousControlPlane     bootstrap.ControlPlane
@@ -159,9 +168,8 @@ type setupSyncer struct {
 	callbacks                xdsserver.Callbacks
 }
 
-func NewControlPlane(ctx context.Context, grpcServer *grpc.Server, bindAddr net.Addr, kubeControlPlaneCfg bootstrap.KubernetesControlPlaneConfig,
+func NewControlPlane(ctx context.Context, snapshotCache cache.SnapshotCache, grpcServer *grpc.Server, bindAddr net.Addr, kubeControlPlaneCfg bootstrap.KubernetesControlPlaneConfig,
 	callbacks xdsserver.Callbacks, start bool) bootstrap.ControlPlane {
-	snapshotCache := xds.NewAdsSnapshotCache(ctx)
 	xdsServer := server.NewServer(ctx, snapshotCache, callbacks)
 	reflection.Register(grpcServer)
 
@@ -223,6 +231,13 @@ func getAddr(addr string) (*net.TCPAddr, error) {
 
 	return &net.TCPAddr{IP: ip, Port: port}, nil
 }
+func GetWriteNamespace(settings *v1.Settings) string {
+	writeNamespace := settings.GetDiscoveryNamespace()
+	if writeNamespace == "" {
+		writeNamespace = defaults.GlooSystem
+	}
+	return writeNamespace
+}
 
 // Setup constructs bootstrap options based on settings and other input, and calls the runFunc with these options.
 func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, memCache memory.InMemoryResourceCache, settings *v1.Settings, identity leaderelector.Identity) error {
@@ -257,10 +272,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		refreshRate = prototime.DurationFromProto(settings.GetRefreshRate())
 	}
 
-	writeNamespace := settings.GetDiscoveryNamespace()
-	if writeNamespace == "" {
-		writeNamespace = defaults.GlooSystem
-	}
+	writeNamespace := GetWriteNamespace(settings)
 	watchNamespaces := namespaces.ProcessWatchNamespaces(settingsutil.GetNamespacesToWatch(settings), writeNamespace)
 
 	consulClient, err := bootstrap_clients.ConsulClientForSettings(ctx, settings)
@@ -305,7 +317,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	}
 
 	var clientset kubernetes.Interface
-	opts, err := constructOpts(ctx,
+	opts, err := constructOpts(ctx, s.setupOpts,
 		constructOptsParams{
 			clientset:          &clientset,
 			kubeCache:          kubeCache,
@@ -384,8 +396,11 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		if s.extensions != nil {
 			callbacks = s.extensions.XdsCallbacks
 		}
-		s.controlPlane = NewControlPlane(ctx, s.makeGrpcServer(ctx), xdsTcpAddress,
+		s.controlPlane = NewControlPlane(ctx, s.setupOpts.Cache, s.makeGrpcServer(ctx), xdsTcpAddress,
 			bootstrap.KubernetesControlPlaneConfig{XdsHost: xdsHost, XdsPort: xdsPort}, callbacks, true)
+
+		s.setupOpts.SetXdsAddress(xdsHost, xdsPort)
+
 		s.previousXdsServer.cancel = cancel
 		s.previousXdsServer.addr = xdsBindAddr
 		s.previousControlPlane.Kube.XdsHost = xdsHost
@@ -461,7 +476,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 func RunGloo(opts bootstrap.Opts) error {
 	glooExtensions := Extensions{
 		K8sGatewayExtensionsFactory: extensions.NewK8sGatewayExtensions,
-		PluginRegistryFactory:       registry.GetPluginRegistryFactory(opts),
+		PluginRegistryFactory:       registry.GetPluginRegistryFactory(registry.FromBootstrap(opts)),
 		SyncerExtensions: []syncer.TranslatorSyncerExtensionFactory{
 			ratelimitExt.NewTranslatorSyncerExtension,
 			extauthExt.NewTranslatorSyncerExtension,
@@ -652,8 +667,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	// MARK: build and run EDS loop
 	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, statusClient, discoveryPlugins)
 	edsSync := discovery.NewEdsSyncer(disc, discovery.Opts{}, watchOpts.RefreshRate)
-	discoveryCache := v1.NewEdsEmitter(hybridUsClient)
-	edsEventLoop := v1.NewEdsEventLoop(discoveryCache, edsSync)
+	edsEmitter := v1.NewEdsEmitter(hybridUsClient)
+	edsEventLoop := v1.NewEdsEventLoop(edsEmitter, edsSync)
 	edsErrs, err := edsEventLoop.Run(opts.WatchNamespaces, watchOpts)
 	if err != nil {
 		return err
@@ -781,12 +796,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 
 	// MARK: build gloo translator
-	sharedTranslator := translator.NewTranslatorWithHasher(
-		sslutils.NewSslConfigTranslator(),
-		opts.Settings,
-		extensions.PluginRegistryFactory(watchOpts.Ctx),
-		resourceHasher,
-	)
+	sharedTranslator := TranslatorFactory{PluginRegistry: extensions.PluginRegistryFactory}.NewTranslator(watchOpts.Ctx,
+		opts.Settings)
 	routeReplacingSanitizer, err := sanitizer.NewRouteReplacingSanitizer(opts.Settings.GetGloo().GetInvalidConfigPolicy())
 	if err != nil {
 		return err
@@ -893,24 +904,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	startFuncs["admin-server"] = AdminServerStartFunc(snapshotHistory)
 
-	var (
-		gwv2StatusSyncer       status.GatewayStatusSyncer
-		gwv2StatusSyncCallback syncer.OnProxiesTranslatedFn
-	)
-	// MARK: build k8s gw start func
-	if opts.GlooGateway.EnableK8sGatewayController {
-		gwv2StatusSyncer = status.NewStatusSyncerFactory()
-		gwv2StatusSyncCallback = gwv2StatusSyncer.HandleProxyReports
-
-		// Share proxyClient and status syncer with the gateway controller
-		startFuncs["k8s-gateway-controller"] = K8sGatewayControllerStartFunc(
-			proxyClient,
-			gwv2StatusSyncer.QueueStatusForProxies,
-			authConfigClient,
-			routeOptionClient,
-			virtualHostOptionClient,
-			statusClient,
-		)
+	if opts.ProxyReconcileQueue != nil {
+		go runQueue(watchOpts.Ctx, opts.ProxyReconcileQueue, opts.WriteNamespace, proxyClient)
 	}
 
 	// MARK: build translator syncer
@@ -931,12 +926,11 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		proxyClient,
 		opts.WriteNamespace,
 		opts.Identity,
-		gwv2StatusSyncCallback,
 		snapshotHistory,
 	)
 
 	// MARK: build & run api snap loop
-	apiCache := v1snap.NewApiEmitterWithEmit(
+	apiEmitter := v1snap.NewApiEmitterWithEmit(
 		artifactClient,
 		endpointClient,
 		proxyClient,
@@ -955,6 +949,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		graphqlApiClient,
 		extensions.ApiEmitterChannel,
 	)
+
 	syncers := v1snap.ApiSyncers{
 		validator,
 		translationSync,
@@ -962,7 +957,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	if opts.GatewayControllerEnabled {
 		syncers = append(syncers, gwValidationSyncer)
 	}
-	apiEventLoop := v1snap.NewApiEventLoop(apiCache, syncers)
+
+	apiEventLoop := v1snap.NewApiEventLoop(apiEmitter, syncers)
 	apiEventLoopErrs, err := apiEventLoop.Run(opts.WatchNamespaces, watchOpts)
 	if err != nil {
 		return err
@@ -1129,13 +1125,14 @@ type constructOptsParams struct {
 }
 
 // constructs bootstrap opts from settings
-func constructOpts(ctx context.Context, params constructOptsParams) (bootstrap.Opts, error) {
+func constructOpts(ctx context.Context, setup *bootstrap.SetupOpts, params constructOptsParams) (bootstrap.Opts, error) {
 
 	var (
 		cfg           *rest.Config
 		kubeCoreCache corecache.KubeCoreCache
 	)
 
+	// MARK: build client factories
 	factoryParams := bootstrap_clients.NewConfigFactoryParams(
 		params.settings,
 		params.memCache,
@@ -1346,6 +1343,7 @@ func constructOpts(ctx context.Context, params constructOptsParams) (bootstrap.O
 		GatewayControllerEnabled:     gatewayMode,
 		ProxyCleanup:                 proxyCleanup,
 		GlooGateway:                  constructGlooGatewayBootstrapOpts(params.settings),
+		ProxyReconcileQueue:          setup.ProxyReconcileQueue,
 	}, nil
 }
 
@@ -1367,4 +1365,41 @@ func constructIstioBootstrapOpts(settings *v1.Settings) bootstrap.IstioValues {
 	}
 
 	return istioValues
+}
+
+func runQueue(ctx context.Context, proxyReconcileQueue ggv2utils.AsyncQueue[gloov1.ProxyList], writeNamespace string, proxyClient gloov1.ProxyClient) {
+	var kubeGatewayProxyLabels = map[string]string{
+		// the proxy type key/value must stay in sync with the one defined in projects/gateway2/translator/gateway_translator.go
+		utils.ProxyTypeKey: utils.GatewayApiProxyValue,
+	}
+	proxyReconciler := gloov1.NewProxyReconciler(proxyClient, statusutils.NewNoOpStatusClient())
+	for {
+		proxyList, err := proxyReconcileQueue.Dequeue(ctx)
+		if err != nil {
+			return
+		}
+		ctx = contextutils.WithLogger(ctx, "proxyCache")
+		logger := contextutils.LoggerFrom(ctx)
+
+		// Proxy CR is located in the writeNamespace, which may be different from the originating Gateway CR
+		err = proxyReconciler.Reconcile(
+			writeNamespace,
+			proxyList,
+			func(original, desired *gloov1.Proxy) (bool, error) {
+				// only reconcile if proxies are not equal
+				// we reconcile so ggv2 proxies can be used in extension syncing and debug snap storage
+				return !proto.Equal(original, desired), nil
+			},
+			clients.ListOpts{
+				Ctx:      ctx,
+				Selector: kubeGatewayProxyLabels,
+			})
+		if err != nil {
+			// A write error to our cache should not impact translation
+			// We will emit a message, and continue
+			logger.Error(err)
+		}
+
+	}
+
 }

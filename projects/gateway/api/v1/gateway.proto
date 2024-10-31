@@ -17,7 +17,9 @@ import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 import "github.com/solo-io/gloo/projects/gateway/api/v1/http_gateway.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/listener_options.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/tcp_listener_options.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/route_configuration_options.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/hcm/hcm.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl/ssl.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/core/selectors/selectors.proto";

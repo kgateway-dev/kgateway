@@ -10,7 +10,7 @@ option (extproto.clone_all) = true;
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/http_listener_options.proto";
 
 message HttpGateway {
   // Names & namespace refs of the virtual services which contain the actual routes for the gateway.
