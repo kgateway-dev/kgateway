@@ -880,11 +880,13 @@ Webhook settings for prompt guard
 
 
 ```yaml
+"openai": .ai.options.gloo.solo.io.AIPromptGuard.Moderation.OpenAI
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
+| `openai` | [.ai.options.gloo.solo.io.AIPromptGuard.Moderation.OpenAI](../ai.proto.sk/#openai) | OpenAI moderation. |
 
 
 
@@ -896,12 +898,14 @@ Webhook settings for prompt guard
 OpenAI Moderation
 
 ```yaml
+"model": string
 "authToken": .ai.options.gloo.solo.io.SingleAuthToken
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
+| `model` | `string` | The name of the moderation model to use, will default to: `omni-moderation-latest`. |
 | `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) |  |
 
 

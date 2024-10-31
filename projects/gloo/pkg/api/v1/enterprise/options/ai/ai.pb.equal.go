@@ -1603,6 +1603,30 @@ func (m *AIPromptGuard_Moderation) Equal(that interface{}) bool {
 		return false
 	}
 
+	switch m.Moderation.(type) {
+
+	case *AIPromptGuard_Moderation_Openai:
+		if _, ok := target.Moderation.(*AIPromptGuard_Moderation_Openai); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetOpenai()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetOpenai()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetOpenai(), target.GetOpenai()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Moderation != target.Moderation {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -1796,6 +1820,10 @@ func (m *AIPromptGuard_Moderation_OpenAI) Equal(that interface{}) bool {
 	if target == nil {
 		return m == nil
 	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetModel(), target.GetModel()) != 0 {
 		return false
 	}
 

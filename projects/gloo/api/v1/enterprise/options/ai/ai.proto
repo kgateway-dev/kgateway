@@ -625,11 +625,19 @@ message AIPromptGuard {
   message Moderation {
       // OpenAI Moderation
       message OpenAI {
+        // The name of the moderation model to use, will default to: `omni-moderation-latest`
+        string model = 1;
+
         oneof auth_token_source {
-          SingleAuthToken auth_token = 1;
+          SingleAuthToken auth_token = 2;
           // re-use the token from the backend
           // google.protobuf.Empty inherit_backend_token = 3;
         }
+      }
+
+      oneof moderation {
+        // OpenAI moderation
+        OpenAI openai = 1;
       }
   }
 

@@ -934,6 +934,22 @@ func (m *AIPromptGuard_Moderation) Clone() proto.Message {
 	}
 	target = &AIPromptGuard_Moderation{}
 
+	switch m.Moderation.(type) {
+
+	case *AIPromptGuard_Moderation_Openai:
+
+		if h, ok := interface{}(m.GetOpenai()).(clone.Cloner); ok {
+			target.Moderation = &AIPromptGuard_Moderation_Openai{
+				Openai: h.Clone().(*AIPromptGuard_Moderation_OpenAI),
+			}
+		} else {
+			target.Moderation = &AIPromptGuard_Moderation_Openai{
+				Openai: proto.Clone(m.GetOpenai()).(*AIPromptGuard_Moderation_OpenAI),
+			}
+		}
+
+	}
+
 	return target
 }
 
@@ -1032,6 +1048,8 @@ func (m *AIPromptGuard_Moderation_OpenAI) Clone() proto.Message {
 		return target
 	}
 	target = &AIPromptGuard_Moderation_OpenAI{}
+
+	target.Model = m.GetModel()
 
 	switch m.AuthTokenSource.(type) {
 

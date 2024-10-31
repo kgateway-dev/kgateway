@@ -1812,6 +1812,32 @@ func (m *AIPromptGuard_Moderation) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	switch m.Moderation.(type) {
+
+	case *AIPromptGuard_Moderation_Openai:
+
+		if h, ok := interface{}(m.GetOpenai()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Openai")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetOpenai(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Openai")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
 	return hasher.Sum64(), nil
 }
 
@@ -2046,6 +2072,10 @@ func (m *AIPromptGuard_Moderation_OpenAI) Hash(hasher hash.Hash64) (uint64, erro
 	}
 	var err error
 	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Moderation_OpenAI")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetModel())); err != nil {
 		return 0, err
 	}
 
