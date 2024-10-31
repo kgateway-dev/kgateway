@@ -6,6 +6,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
@@ -14,6 +15,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -52,9 +54,12 @@ func (t *translator) TranslateProxy(
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
+	ctx = contextutils.WithLogger(ctx, "k8s-gateway-translator")
+	logger := contextutils.LoggerFrom(ctx)
 	routesForGw, err := t.queries.GetRoutesForGateway(ctx, gateway)
 	if err != nil {
-		// TODO(ilackarms): fill in the specific error / validation
+		logger.Errorf("err getting routes for gw '%s': %v", client.ObjectKeyFromObject(gateway), err)
+		// TODO: decide how/if to report this error on Gateway
 		// reporter.Gateway(gateway).Err(err.Error())
 		return nil
 	}

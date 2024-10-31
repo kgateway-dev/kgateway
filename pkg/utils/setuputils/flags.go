@@ -6,6 +6,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 const (
@@ -17,6 +18,13 @@ var (
 	setupName      string
 	setupDir       string
 )
+
+func SetupNamespaceName() types.NamespacedName {
+	return types.NamespacedName{
+		Namespace: setupNamespace,
+		Name:      setupName,
+	}
+}
 
 // TODO (ilackarms): move to a flags package
 func init() {

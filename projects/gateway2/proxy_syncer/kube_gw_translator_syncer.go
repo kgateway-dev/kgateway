@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"istio.io/istio/pkg/kube/krt"
 
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -24,19 +26,23 @@ import (
 // NOTE: Extensions are NOT actually synced here as use a NoOp snapshot when running the extension syncers.
 // The actual syncing of the extensions and the status of the extension resources (e.g. AuthConfigs, RLCs) is still handled by the legacy syncer.
 func (s *ProxyTranslator) buildXdsSnapshot(
+	kctx krt.HandlerContext,
 	ctx context.Context,
 	proxy *v1.Proxy,
 	snap *v1snap.ApiSnapshot,
 ) (cache.Snapshot, reporter.ResourceReports, *validation.ProxyReport) {
 	metaKey := xds.SnapshotCacheKey(proxy)
-
 	ctx = contextutils.WithLogger(ctx, "kube-gateway-xds-snapshot")
 	logger := contextutils.LoggerFrom(ctx).With("proxy", metaKey)
-
 	logger.Infof("build xds snapshot for proxy %v (%d upstreams, %d endpoints, %d secrets, %d artifacts, %d auth configs, %d rate limit configs)",
 		metaKey, len(snap.Upstreams), len(snap.Endpoints), len(snap.Secrets), len(snap.Artifacts), len(snap.AuthConfigs), len(snap.Ratelimitconfigs))
-	snapHash := hashutils.MustHash(snap)
-	defer logger.Infof("end sync %v", snapHash)
+
+	stopwatch := statsutils.NewTranslatorStopWatch("translate-proxy-to-xds")
+	stopwatch.Start()
+	defer func() {
+		duration := stopwatch.Stop(ctx)
+		logger.Debugf("translated proxy %s to xds in %s", metaKey, duration.String())
+	}()
 
 	// Reports used to aggregate results from xds and extension translation.
 	// Will contain reports only `Gloo` components (i.e. Proxies, Upstreams, AuthConfigs, etc.)
@@ -46,15 +52,19 @@ func (s *ProxyTranslator) buildXdsSnapshot(
 	// the reason for this is because we need to set Upstream status even if no edge proxies are being translated
 	// here we Accept() upstreams in snap so we can report accepted status (without this we wouldn't report on positive case)
 	allReports.Accept(snap.Upstreams.AsInputResources()...)
+	ksettings := krt.FetchOne(kctx, s.settings.AsCollection())
+	settings := &ksettings.Spec
+
+	ctx = settingsutil.WithSettings(ctx, settings)
 
 	params := plugins.Params{
 		Ctx:      ctx,
-		Settings: s.settings,
+		Settings: settings,
 		Snapshot: snap,
 		Messages: map[*core.ResourceRef][]string{},
 	}
 
-	xdsSnapshot, reports, proxyReport := s.translator.Translate(params, proxy)
+	xdsSnapshot, reports, proxyReport := s.translator.NewTranslator(ctx, settings).Translate(params, proxy)
 
 	// Messages are aggregated during translation, and need to be added to reports
 	for _, messages := range params.Messages {
@@ -70,7 +80,7 @@ func (s *ProxyTranslator) buildXdsSnapshot(
 		// that is classic edge syncer's job [see: projects/gloo/pkg/syncer/translator_syncer.go#Sync(...)]
 		// all we care about is getting the reports, as our `Proxies` will get reports for errors/warns
 		// related to the extension processing
-		syncerExtension.Sync(ctx, snap, s.settings, s.noopSnapSetter, intermediateReports)
+		syncerExtension.Sync(ctx, snap, settings, s.noopSnapSetter, intermediateReports)
 		allReports.Merge(intermediateReports)
 	}
 
@@ -87,7 +97,12 @@ func (s *ProxyTranslator) syncXdsAndStatus(
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Infof("begin kube gw sync for proxy %s (%v listeners, %v clusters, %v routes, %v endpoints)",
 		proxyKey, len(snap.Listeners.Items), len(snap.Clusters.Items), len(snap.Routes.Items), len(snap.Endpoints.Items))
-	defer logger.Infof("end kube gw sync for proxy %s", proxyKey)
+	stopwatch := statsutils.NewTranslatorStopWatch("sync-xds-and-gloo-status")
+	stopwatch.Start()
+	defer func() {
+		duration := stopwatch.Stop(ctx)
+		logger.Infof("end kube gw sync for proxy %s in %s", proxyKey, duration.String())
+	}()
 
 	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
 	// string if we're not even going to log it anyway

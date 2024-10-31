@@ -102,7 +102,11 @@ type StatusContext struct {
 // Plugin that recieves proxy reports post-xds translation to handle any status reporting necessary
 type StatusPlugin interface {
 	Plugin
-
+	//TODO: tmp fix
+	InitStatusPlugin(
+		ctx context.Context,
+		statusCtx *StatusContext,
+	) error
 	ApplyStatusPlugin(
 		ctx context.Context,
 		statusCtx *StatusContext,
