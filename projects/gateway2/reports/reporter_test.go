@@ -3,7 +3,6 @@ package reports_test
 import (
 	"context"
 	"fmt"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -221,10 +220,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 
 				resolvedRefs = meta.FindStatusCondition(status.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
 				newTransitionTime := resolvedRefs.LastTransitionTime
-
-				// Use a comparison that accounts for minor precision differences in the transition times
-				Expect(newTransitionTime.Time).To(BeTemporally("~", oldTransitionTime.Time, time.Millisecond),
-					"Expected LastTransitionTime to not change significantly")
+				Expect(newTransitionTime).To(Equal(oldTransitionTime))
 			},
 			Entry("regular httproute", httpRoute()),
 			Entry("delegatee route", delegateeRoute()),

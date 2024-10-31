@@ -2,7 +2,6 @@ package httproute_test
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
@@ -189,7 +188,6 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				routes := httproute.TranslateGatewayHTTPRouteRules(ctx, pluginRegistry, gwListener, routeInfo, parentRefReporter, baseReporter)
 
 				Expect(routes).To(HaveLen(1))
-				fmt.Printf("route name: %s", routes[0].Name)
 				Expect(routes[0].Name).To(Equal("httproute-foo-httproute-bar-0-0"))
 				Expect(routes[0].Matchers).To(HaveLen(1))
 				Expect(routes[0].GetAction()).To(BeEquivalentTo(&v1.Route_RouteAction{

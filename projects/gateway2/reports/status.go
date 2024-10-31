@@ -87,20 +87,22 @@ func (r *ReportMap) BuildRouteStatus(ctx context.Context, obj client.Object, cNa
 	// However, for delegatee (child) routes, the parentRefs field is optional and such routes
 	// may not specify it. In this case, we infer the parentRefs form the RouteReport
 	// corresponding to the delegatee (child) route as the route's report is associated to a parentRef.
+	var existingStatus gwv1.RouteStatus
 	var parentRefs []gwv1.ParentReference
 	switch route := obj.(type) {
 	case *gwv1.HTTPRoute:
+		existingStatus = route.Status.RouteStatus
 		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
 		if len(parentRefs) == 0 {
 			parentRefs = append(parentRefs, routeReport.parentRefs()...)
 		}
 	case *gwv1a2.TCPRoute:
+		existingStatus = route.Status.RouteStatus
 		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
 		if len(parentRefs) == 0 {
 			parentRefs = append(parentRefs, routeReport.parentRefs()...)
 		}
 	default:
-		// Unsupported route type
 		contextutils.LoggerFrom(ctx).Error(fmt.Errorf("unsupported route type %T", obj), "failed to build route status")
 		return nil
 	}
@@ -108,17 +110,16 @@ func (r *ReportMap) BuildRouteStatus(ctx context.Context, obj client.Object, cNa
 	// Process the parent references to build the RouteParentStatus
 	routeStatus := gwv1.RouteStatus{}
 	for _, parentRef := range parentRefs {
-		fmt.Printf("BuildRouteStatus() parentRef: %+v", parentRef)
 		parentStatusReport := routeReport.parentRef(&parentRef)
 		addMissingParentRefConditions(parentStatusReport)
 
 		// Get the status of the current parentRef conditions if they exist
 		var currentParentRefConditions []metav1.Condition
-		currentParentRefIdx := slices.IndexFunc(routeStatus.Parents, func(s gwv1.RouteParentStatus) bool {
+		currentParentRefIdx := slices.IndexFunc(existingStatus.Parents, func(s gwv1.RouteParentStatus) bool {
 			return reflect.DeepEqual(s.ParentRef, parentRef)
 		})
 		if currentParentRefIdx != -1 {
-			currentParentRefConditions = routeStatus.Parents[currentParentRefIdx].Conditions
+			currentParentRefConditions = existingStatus.Parents[currentParentRefIdx].Conditions
 		}
 
 		finalConditions := make([]metav1.Condition, 0, len(parentStatusReport.Conditions))
