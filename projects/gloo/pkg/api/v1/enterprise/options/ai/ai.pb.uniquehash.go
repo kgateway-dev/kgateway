@@ -1097,6 +1097,13 @@ func (m *UpstreamSpec_VertexAI) HashUnique(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	if _, err = hasher.Write([]byte("ModelPath")); err != nil {
+		return 0, err
+	}
+	if _, err = hasher.Write([]byte(m.GetModelPath())); err != nil {
+		return 0, err
+	}
+
 	if _, err = hasher.Write([]byte("Publisher")); err != nil {
 		return 0, err
 	}

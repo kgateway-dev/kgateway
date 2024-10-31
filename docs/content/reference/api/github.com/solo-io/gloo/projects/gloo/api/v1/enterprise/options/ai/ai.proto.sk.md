@@ -260,6 +260,7 @@ Settings for the Vertex AI API
 "apiVersion": string
 "projectId": string
 "location": string
+"modelPath": string
 "publisher": .ai.options.gloo.solo.io.UpstreamSpec.VertexAI.Publisher
 
 ```
@@ -271,6 +272,7 @@ Settings for the Vertex AI API
 | `apiVersion` | `string` | The version of the API to use. See https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models for supported models for specific publishers. |
 | `projectId` | `string` | Google Cloud Project ID in https://{LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/{PROJECT_ID}/locations/{LOCATION}/publishers/{PROVIDER}/<model-path>. |
 | `location` | `string` | Location of the project in https://{LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/{PROJECT_ID}/locations/{LOCATION}/publishers/{PROVIDER}/<model-path>. |
+| `modelPath` | `string` | Model path (optional). Defaults to Gemini model path (generateContent). |
 | `publisher` | [.ai.options.gloo.solo.io.UpstreamSpec.VertexAI.Publisher](../ai.proto.sk/#publisher) | The type of model publishers to use, currently only Google is supported in https://{LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/{PROJECT_ID}/locations/{LOCATION}/publishers/{PUBLISHER}/<model-path>. |
 
 

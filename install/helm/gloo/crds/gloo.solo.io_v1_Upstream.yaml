@@ -267,6 +267,8 @@ spec:
                                         type: string
                                       model:
                                         type: string
+                                      modelPath:
+                                        type: string
                                       projectId:
                                         type: string
                                       publisher:
@@ -323,6 +325,8 @@ spec:
                       location:
                         type: string
                       model:
+                        type: string
+                      modelPath:
                         type: string
                       projectId:
                         type: string

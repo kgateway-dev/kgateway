@@ -877,6 +877,10 @@ func (m *UpstreamSpec_VertexAI) Equal(that interface{}) bool {
 		return false
 	}
 
+	if strings.Compare(m.GetModelPath(), target.GetModelPath()) != 0 {
+		return false
+	}
+
 	if m.GetPublisher() != target.GetPublisher() {
 		return false
 	}

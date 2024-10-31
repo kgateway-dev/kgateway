@@ -167,6 +167,8 @@ message UpstreamSpec {
     // Location of the project in
     // https://{LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/{PROJECT_ID}/locations/{LOCATION}/publishers/{PROVIDER}/<model-path>
     string location = 5;
+    // Model path (optional). Defaults to Gemini model path (generateContent)
+    string model_path = 6;
 
     enum Publisher {
       GOOGLE = 0;
@@ -174,7 +176,7 @@ message UpstreamSpec {
 
     // The type of model publishers to use, currently only Google is supported in
     // https://{LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/{PROJECT_ID}/locations/{LOCATION}/publishers/{PUBLISHER}/<model-path>
-    Publisher publisher = 6;
+    Publisher publisher = 7;
   }
 
   // Settings for the Mistral API
