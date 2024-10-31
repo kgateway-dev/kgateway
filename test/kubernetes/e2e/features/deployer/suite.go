@@ -87,6 +87,17 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 	s.testInstallation.Assertions.Gomega.Expect(sa.GetAnnotations()).To(
 		gomega.HaveKeyWithValue("sa-anno-key", "sa-anno-val"))
 
+	// check that the labels and annotations got passed through from GatewayParameters to the Service
+	svc := &corev1.Service{}
+	err = s.testInstallation.ClusterContext.Client.Get(s.ctx,
+		types.NamespacedName{Name: glooProxyObjectMeta.Name, Namespace: glooProxyObjectMeta.Namespace},
+		svc)
+	s.Require().NoError(err)
+	s.testInstallation.Assertions.Gomega.Expect(svc.GetLabels()).To(
+		gomega.HaveKeyWithValue("svc-label-key", "svc-label-val"))
+	s.testInstallation.Assertions.Gomega.Expect(svc.GetAnnotations()).To(
+		gomega.HaveKeyWithValue("svc-anno-key", "svc-anno-val"))
+
 	// We assert that we can port-forward requests to the proxy deployment, and then execute requests against the server
 	if s.testInstallation.RuntimeContext.RunSource == runtime.LocalDevelopment {
 		// There are failures when opening port-forwards to the Envoy Admin API in CI
