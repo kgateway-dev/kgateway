@@ -15,9 +15,11 @@ import (
 )
 
 var (
-	gatewayAndClientManifest = filepath.Join(util.MustGetThisDir(), "testdata", "gateway-and-client.yaml")
-	backendServiceManifest   = filepath.Join(util.MustGetThisDir(), "testdata", "backend-service.yaml")
-	tcpRouteManifest         = filepath.Join(util.MustGetThisDir(), "testdata", "tcproute.yaml")
+	multiListenerGatewayAndClientManifest  = filepath.Join(util.MustGetThisDir(), "testdata", "multi-listener-gateway-and-client.yaml")
+	multiBackendServiceManifest            = filepath.Join(util.MustGetThisDir(), "testdata", "multi-backend-service.yaml")
+	multiTcpRouteManifest                  = filepath.Join(util.MustGetThisDir(), "testdata", "multi-tcproute.yaml")
+	singleListenerGatewayAndClientManifest = filepath.Join(util.MustGetThisDir(), "testdata", "single-listener-gateway-and-client.yaml")
+	singleTcpRouteManifest                 = filepath.Join(util.MustGetThisDir(), "testdata", "single-tcproute.yaml")
 
 	// Proxy resource to be translated
 	glooProxyObjectMeta = metav1.ObjectMeta{

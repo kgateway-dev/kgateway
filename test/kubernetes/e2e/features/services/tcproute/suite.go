@@ -29,24 +29,63 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-func (s *testingSuite) TestConfigureTCPRouteBackingDestinationsWithService() {
+func (s *testingSuite) TestConfigureTCPRouteBackingDestinationsWithSingleService() {
 	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, tcpRouteManifest)
+		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, singleTcpRouteManifest)
 		s.NoError(err, "can delete manifest")
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, backendServiceManifest)
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, multiBackendServiceManifest)
 		s.NoError(err, "can delete manifest")
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, gatewayAndClientManifest)
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, singleListenerGatewayAndClientManifest)
 		s.NoError(err, "can delete manifest")
 		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
 	})
 
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, gatewayAndClientManifest)
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, singleListenerGatewayAndClientManifest)
 	s.Assert().NoError(err, "can apply gateway and client manifest")
 
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, backendServiceManifest)
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, multiBackendServiceManifest)
 	s.Assert().NoError(err, "can apply backend service manifest")
 
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, tcpRouteManifest)
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, singleTcpRouteManifest)
+	s.Assert().NoError(err, "can apply tcproute manifest")
+
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPort(8088),
+		},
+		expectedTcpFooSvcResp)
+	s.testInstallation.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
+			curl.WithPort(8088),
+		},
+		expectedTcpBarSvcResp)
+}
+
+func (s *testingSuite) TestConfigureTCPRouteBackingDestinationsWithMultiService() {
+	s.T().Cleanup(func() {
+		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, multiTcpRouteManifest)
+		s.NoError(err, "can delete manifest")
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, multiBackendServiceManifest)
+		s.NoError(err, "can delete manifest")
+		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, multiListenerGatewayAndClientManifest)
+		s.NoError(err, "can delete manifest")
+		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
+	})
+
+	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, multiListenerGatewayAndClientManifest)
+	s.Assert().NoError(err, "can apply gateway and client manifest")
+
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, multiBackendServiceManifest)
+	s.Assert().NoError(err, "can apply backend service manifest")
+
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, multiTcpRouteManifest)
 	s.Assert().NoError(err, "can apply tcproute manifest")
 
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
