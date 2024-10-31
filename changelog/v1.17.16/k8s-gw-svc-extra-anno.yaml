@@ -1,5 +1,5 @@
 changelog:
-  - type: NEW_FEATURE
+  - type: FIX
     issueLink: https://github.com/solo-io/solo-projects/issues/6846
     resolvesIssue: false
     description: >-
@@ -8,3 +8,10 @@ changelog:
       `spec.kube.serviceAccount.extraAnnotations`. These values can also be set on the default GatewayParameters
       during install/upgrade using the Helm values `kubeGateway.gatewayParameters.glooGateway.serviceAccount.extraLabels`
       and `kubeGateway.gatewayParameters.glooGateway.serviceAccount.extraAnnotations`.
+  - type: HELM
+    issueLink: https://github.com/solo-io/solo-projects/issues/7090
+    resolvesIssue: false
+    description: >-
+      Expose new Helm values `kubeGateway.gatewayParameters.glooGateway.service.extraLabels` and
+      `kubeGateway.gatewayParameters.glooGateway.service.extraAnnotations` to set extra labels and
+      extra annotations on the default GatewayParameters.

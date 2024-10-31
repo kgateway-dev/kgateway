@@ -1,8 +1,0 @@
-changelog:
-  - type: HELM
-    issueLink: https://github.com/solo-io/solo-projects/issues/7090
-    resolvesIssue: false
-    description: >-
-      Expose new Helm values `kubeGateway.gatewayParameters.glooGateway.service.extraLabels` and
-      `kubeGateway.gatewayParameters.glooGateway.service.extraAnnotations` to set extra labels and
-      extra annotations on the default GatewayParameters.
