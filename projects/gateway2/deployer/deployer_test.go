@@ -199,6 +199,9 @@ var _ = Describe("Deployer", func() {
 						Service: &gw2_v1alpha1.Service{
 							Type:      ptr.To(corev1.ServiceTypeClusterIP),
 							ClusterIP: ptr.To("99.99.99.99"),
+							ExtraLabels: map[string]string{
+								"foo-label": "bar-label",
+							},
 							ExtraAnnotations: map[string]string{
 								"foo": "bar",
 							},
@@ -578,6 +581,9 @@ var _ = Describe("Deployer", func() {
 							Service: &gw2_v1alpha1.Service{
 								Type:      ptr.To(corev1.ServiceTypeClusterIP),
 								ClusterIP: ptr.To("99.99.99.99"),
+								ExtraLabels: map[string]string{
+									"override-foo-label": "override-bar-label",
+								},
 								ExtraAnnotations: map[string]string{
 									"override-foo": "override-bar",
 								},
@@ -640,6 +646,10 @@ var _ = Describe("Deployer", func() {
 							Service: &gw2_v1alpha1.Service{
 								Type:      ptr.To(corev1.ServiceTypeClusterIP),
 								ClusterIP: ptr.To("99.99.99.99"),
+								ExtraLabels: map[string]string{
+									"foo-label":          "bar-label",
+									"override-foo-label": "override-bar-label",
+								},
 								ExtraAnnotations: map[string]string{
 									"foo":          "bar",
 									"override-foo": "override-bar",
@@ -793,7 +803,9 @@ var _ = Describe("Deployer", func() {
 				svc := objs.findService(defaultNamespace, defaultServiceName)
 				Expect(svc).ToNot(BeNil())
 				Expect(svc.GetAnnotations()).ToNot(BeNil())
-				Expect(svc.Annotations).To(matchers.ContainMapElements(expectedGwp.Service.ExtraAnnotations))
+				Expect(svc.GetAnnotations()).To(matchers.ContainMapElements(expectedGwp.Service.ExtraAnnotations))
+				Expect(svc.GetLabels()).ToNot(BeNil())
+				Expect(svc.GetLabels()).To(matchers.ContainMapElements(expectedGwp.Service.ExtraLabels))
 				Expect(svc.Spec.Type).To(Equal(*expectedGwp.Service.Type))
 				Expect(svc.Spec.ClusterIP).To(Equal(*expectedGwp.Service.ClusterIP))
 
@@ -907,7 +919,9 @@ var _ = Describe("Deployer", func() {
 			svc := objs.findService(defaultNamespace, defaultServiceName)
 			Expect(svc).ToNot(BeNil())
 			Expect(svc.GetAnnotations()).ToNot(BeNil())
-			Expect(svc.Annotations).To(matchers.ContainMapElements(expectedGwp.Service.ExtraAnnotations))
+			Expect(svc.GetAnnotations()).To(matchers.ContainMapElements(expectedGwp.Service.ExtraAnnotations))
+			Expect(svc.GetLabels()).ToNot(BeNil())
+			Expect(svc.GetLabels()).To(matchers.ContainMapElements(expectedGwp.Service.ExtraLabels))
 			Expect(svc.Spec.Type).To(Equal(*expectedGwp.Service.Type))
 			Expect(svc.Spec.ClusterIP).To(Equal(*expectedGwp.Service.ClusterIP))
 

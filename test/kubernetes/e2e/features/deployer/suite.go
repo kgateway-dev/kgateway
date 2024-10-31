@@ -130,6 +130,17 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 	s.testInstallation.Assertions.Gomega.Expect(sa.GetAnnotations()).To(
 		gomega.HaveKeyWithValue("sa-anno-key", "sa-anno-val"))
 
+	// check that the labels and annotations got passed through from GatewayParameters to the Service
+	svc := &corev1.Service{}
+	err = s.testInstallation.ClusterContext.Client.Get(s.ctx,
+		types.NamespacedName{Name: glooProxyObjectMeta.Name, Namespace: glooProxyObjectMeta.Namespace},
+		svc)
+	s.Require().NoError(err)
+	s.testInstallation.Assertions.Gomega.Expect(svc.GetLabels()).To(
+		gomega.HaveKeyWithValue("svc-label-key", "svc-label-val"))
+	s.testInstallation.Assertions.Gomega.Expect(svc.GetAnnotations()).To(
+		gomega.HaveKeyWithValue("svc-anno-key", "svc-anno-val"))
+
 	// Update the Gateway to use the custom GatewayParameters
 	gwName := types.NamespacedName{Name: gw.Name, Namespace: gw.Namespace}
 	err = s.testInstallation.ClusterContext.Client.Get(s.ctx, gwName, gw)
