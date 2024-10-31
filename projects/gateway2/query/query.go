@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/solo-io/go-utils/contextutils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -212,7 +211,8 @@ func getParentRefsForGw(gw *apiv1.Gateway, obj client.Object) []apiv1.ParentRefe
 			}
 		}
 	default:
-		contextutils.LoggerFrom(context.TODO()).Warnf("Unsupported route type: %T", obj)
+		// Unsupported route type
+		return ret
 	}
 
 	return ret

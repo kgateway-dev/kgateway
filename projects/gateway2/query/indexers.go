@@ -1,10 +1,8 @@
 package query
 
 import (
-	"context"
 	"errors"
 
-	"github.com/solo-io/go-utils/contextutils"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -81,7 +79,8 @@ func indexerByObjType(obj client.Object) []string {
 			}
 		}
 	default:
-		contextutils.LoggerFrom(context.TODO()).Warnf("Unsupported route type: %T", obj)
+		// Unsupported route type
+		return results
 	}
 
 	return results

@@ -59,6 +59,8 @@ func (t *translator) TranslateProxy(
 	routesForGw, err := t.queries.GetRoutesForGateway(ctx, gateway)
 	if err != nil {
 		logger.Errorf("failed to get routes for gateway %s: %v", client.ObjectKeyFromObject(gateway), err)
+		// TODO: decide how/if to report this error on Gateway
+		// reporter.Gateway(gateway).Err(err.Error())
 		return nil
 	}
 
