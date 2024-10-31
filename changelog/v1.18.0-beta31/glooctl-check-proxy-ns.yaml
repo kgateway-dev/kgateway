@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/9935
+    resolvesIssue: false
+    description: >-
+      Fix `glooctl check` so that it only checks Proxies in the write namespace (where all proxies are written), instead of checking in each of the watch namespaces.
