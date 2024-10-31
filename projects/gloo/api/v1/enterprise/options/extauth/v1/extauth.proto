@@ -50,7 +50,7 @@ message AuthConfig {
             OAuth oauth = 2 [deprecated = true];
             OAuth2 oauth2 = 8;
             ApiKeyAuth api_key_auth = 4;
-            AuthPlugin plugin_auth = 5;
+            AuthPlugin plugin_auth = 5 [deprecated = true];
             OpaAuth opa_auth = 6;
             Ldap ldap = 7;
             // This is a "dummy" extauth service which can be used to support multiple auth mechanisms with JWT authentication.
@@ -247,6 +247,7 @@ message CustomAuth {
     string name = 2;
 }
 
+// Deprecated: Prefer PassThroughAuth
 message AuthPlugin {
     // Name of the plugin
     string name = 1;
@@ -2293,7 +2294,7 @@ message ExtAuthConfig {
             BasicAuth basic_auth = 4;
             BasicAuthInternal basic_auth_internal = 17;
             ApiKeyAuthConfig api_key_auth = 5;
-            AuthPlugin plugin_auth = 6;
+            AuthPlugin plugin_auth = 6 [deprecated = true];
             OpaAuthConfig opa_auth = 7;
             Ldap ldap = 8 [deprecated = true];
             // Used for LDAP configurations that need service account credentials saved in a secret.

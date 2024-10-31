@@ -414,7 +414,8 @@ This is used with custom auth servers.
 ---
 ### AuthPlugin
 
-
+ 
+Deprecated: Prefer PassThroughAuth
 
 ```yaml
 "name": string
