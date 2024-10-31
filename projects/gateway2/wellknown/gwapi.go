@@ -31,13 +31,9 @@ const (
 
 	// Kind strings for Gateway API list types
 	HTTPRouteListKind      = "HTTPRouteList"
-	TCPRouteListKind       = "TCPRouteList"
 	GatewayListKind        = "GatewayList"
 	GatewayClassListKind   = "GatewayClassList"
 	ReferenceGrantListKind = "ReferenceGrantList"
-
-	// Gateway API CRD names
-	TCPRoutesCRD = "tcproutes"
 )
 
 var (
@@ -55,11 +51,6 @@ var (
 		Group:   GatewayGroup,
 		Version: apiv1.GroupVersion.Version,
 		Kind:    HTTPRouteKind,
-	}
-	TCPRouteGVK = schema.GroupVersionKind{
-		Group:   GatewayGroup,
-		Version: apiv1alpha2.GroupVersion.Version,
-		Kind:    TCPRouteKind,
 	}
 	ReferenceGrantGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,

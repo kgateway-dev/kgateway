@@ -10,7 +10,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -48,13 +47,12 @@ func filterDelegatedChildren(
 		// make a copy; multiple parents can delegate to the same child so we can't modify a shared reference
 		clone := c.Clone()
 
-		childRoute, ok := clone.Object.(*gwv1.HTTPRoute)
+		child, ok := clone.Object.(*gwv1.HTTPRoute)
 		if !ok {
-			// TODO (danehans): Log error
 			continue
 		}
 
-		inheritMatcher := shouldInheritMatcher(childRoute)
+		inheritMatcher := shouldInheritMatcher(child)
 
 		// Check if the child route has a prefix that matches the parent.
 		// Only rules matching the parent prefix are considered.
@@ -64,7 +62,7 @@ func filterDelegatedChildren(
 		// in the child is not valid, then we discard it in the final child route
 		// returned by this function.
 		var validRules []gwv1.HTTPRouteRule
-		for i, rule := range childRoute.Spec.Rules {
+		for i, rule := range child.Spec.Rules {
 			var validMatches []gwv1.HTTPRouteMatch
 
 			// If the child route opts to inherit the parent's matcher and it does not specify its own matcher,
@@ -80,7 +78,7 @@ func filterDelegatedChildren(
 					// the parent's matcher with the child's.
 					mergeParentChildRouteMatch(&parentMatch, &match)
 					validMatches = append(validMatches, match)
-				} else if ok := isDelegatedRouteMatch(parentMatch, parentRef, match, childRoute.Namespace, childRoute.Spec.ParentRefs); ok {
+				} else if ok := isDelegatedRouteMatch(parentMatch, parentRef, match, child.Namespace, child.Spec.ParentRefs); ok {
 					// Non-inherited matcher delegation requires matching child matcher to parent matcher
 					// to delegate from the parent route to the child.
 					validMatches = append(validMatches, match)
@@ -88,17 +86,17 @@ func filterDelegatedChildren(
 			}
 
 			// Matchers in this rule match the parent route matcher, so consider the valid matchers on the child,
-			childRoute.Spec.Rules[i].Matches = validMatches
+			child.Spec.Rules[i].Matches = validMatches
 			// and discard rules on the child that do not match the parent route matcher.
 			if len(validMatches) > 0 {
-				validRule := childRoute.Spec.Rules[i]
+				validRule := child.Spec.Rules[i]
 				validRule.Matches = validMatches
 				validRules = append(validRules, validRule)
 			}
 		}
 		if len(validRules) > 0 {
-			childRoute.Spec.Rules = validRules
-			clone.Object = childRoute
+			child.Spec.Rules = validRules
+			clone.Object = child
 			selected = append(selected, clone)
 		}
 	}

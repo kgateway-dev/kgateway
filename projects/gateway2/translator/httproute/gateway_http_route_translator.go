@@ -47,7 +47,6 @@ func TranslateGatewayHTTPRouteRules(
 	// Only HTTPRoute types should be translated.
 	route, ok := routeInfo.Object.(*gwv1.HTTPRoute)
 	if !ok {
-		// TODO (danehans): Log error
 		return finalRoutes
 	}
 
@@ -78,9 +77,9 @@ func translateGatewayHTTPRouteRulesUtil(
 	hostnames []gwv1.Hostname,
 	delegationChain *list.List,
 ) {
+	// Only HTTPRoute types should be translated.
 	route, ok := routeInfo.Object.(*gwv1.HTTPRoute)
 	if !ok {
-		// TODO (danehans): Log error
 		return
 	}
 
@@ -134,11 +133,13 @@ func translateGatewayHTTPRouteRule(
 	delegationChain *list.List,
 ) []*v1.Route {
 	routes := make([]*v1.Route, len(rule.Matches))
+
+	// Only HTTPRoutes should be translated.
 	route, ok := gwroute.Object.(*gwv1.HTTPRoute)
 	if !ok {
-		// TODO (danehans): Log error
 		return routes
 	}
+
 	for idx, match := range rule.Matches {
 		match := match // pike
 		// HTTPRoute names are being introduced to upstream as part of https://github.com/kubernetes-sigs/gateway-api/issues/995

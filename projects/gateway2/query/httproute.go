@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
@@ -103,7 +105,8 @@ func (r *RouteInfo) Clone() *RouteInfo {
 	}
 }
 
-// UniqueRouteName returns a unique name for the route, based on the index of the route rule and route match.
+// UniqueRouteName returns a unique name for the route based on the route kind, name, namespace,
+// and the given indexes.
 func (r *RouteInfo) UniqueRouteName(ruleIdx, matchIdx int) string {
 	return fmt.Sprintf("%s-%s-%s-%d-%d", strings.ToLower(r.GetKind()), r.GetName(), r.GetNamespace(), ruleIdx, matchIdx)
 }
@@ -307,12 +310,12 @@ func (r *gatewayQueries) fetchChildRoutes(
 	var refChildren []gwv1.HTTPRoute
 	if string(backendRef.Name) == "" || string(backendRef.Name) == "*" {
 		// Handle wildcard references by listing all HTTPRoutes in the specified namespace
-		var rlist gwv1.HTTPRouteList
-		err := r.client.List(ctx, &rlist, client.InNamespace(delegatedNs))
+		var hrlist gwv1.HTTPRouteList
+		err := r.client.List(ctx, &hrlist, client.InNamespace(delegatedNs))
 		if err != nil {
 			return nil, err
 		}
-		refChildren = append(refChildren, rlist.Items...)
+		refChildren = append(refChildren, hrlist.Items...)
 	} else {
 		// Lookup a specific child route by its name
 		delegatedRef := types.NamespacedName{
@@ -342,10 +345,23 @@ func (r *gatewayQueries) GetRoutesForGateway(ctx context.Context, gw *gwv1.Gatew
 		Name:      gw.Name,
 	}
 
-	// TODO (danehans): Use the discovery client to check if the tcproutes resource is available before appending to slice.
-	routeListTypes := []client.ObjectList{
-		&gwv1.HTTPRouteList{},
-		&gwv1a2.TCPRouteList{},
+	// Check if the required Gateway API CRDs exists before adding TCPRouteList
+	routeListTypes := []client.ObjectList{}
+	routeCRDs := map[string]client.ObjectList{
+		"httproutes.gateway.networking.k8s.io": &gwv1.HTTPRouteList{},
+		"tcproutes.gateway.networking.k8s.io":  &gwv1a2.TCPRouteList{},
+	}
+
+	for crdName, routeListType := range routeCRDs {
+		if err := r.isCRDInstalled(ctx, crdName); err != nil {
+			if errors.IsNotFound(err) {
+				fmt.Printf("%s CRD not found; skipping\n", crdName)
+				continue
+			} else {
+				return nil, fmt.Errorf("error checking for %s CRD: %w", crdName, err)
+			}
+		}
+		routeListTypes = append(routeListTypes, routeListType)
 	}
 
 	var routes []client.Object
@@ -353,6 +369,11 @@ func (r *gatewayQueries) GetRoutesForGateway(ctx context.Context, gw *gwv1.Gatew
 		if err := fetchRoutes(ctx, r, routeList, nns, &routes); err != nil {
 			return nil, err
 		}
+	}
+
+	if len(routeListTypes) == 0 {
+		// Handle the case where no route types are added returning an empty result.
+		return NewRoutesForGwResult(), nil
 	}
 
 	// Process each route
@@ -475,6 +496,15 @@ func (r *gatewayQueries) processRoute(ctx context.Context, gw *gwv1.Gateway, rou
 	}
 
 	return nil
+}
+
+func (r *gatewayQueries) isCRDInstalled(ctx context.Context, crdName string) error {
+	if r.requiredCRDsExist != nil && *r.requiredCRDsExist {
+		// Simulate that the CRDs exist for testing
+		return nil
+	}
+	crd := &apiextensionsv1.CustomResourceDefinition{}
+	return r.client.Get(ctx, client.ObjectKey{Name: crdName}, crd)
 }
 
 // isKindAllowed is a helper function to check if a kind is allowed.

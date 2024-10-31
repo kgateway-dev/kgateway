@@ -67,8 +67,8 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) *gwv1.Ga
 
 // BuildRouteStatus returns a newly constructed and fully defined RouteStatus for the supplied route object
 // according to the state of the ReportMap. If the ReportMap does not have a RouteReport for the given route,
-// e.g. because it did not encounter the route during translation, or the object is an unsupported route type,
-// nil is returned. The following object types are supported:
+// e.g. because it did not encounter the route during translation, or the object is an unsupported route kind,
+// nil is returned. The following route kinds are supported:
 //
 // * HTTPRoute
 // * TCPRoute

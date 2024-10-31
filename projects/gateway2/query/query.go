@@ -156,13 +156,15 @@ func NewRoutesForGwResult() *RoutesForGwResult {
 	}
 }
 
-func NewData(c client.Client, scheme *runtime.Scheme) GatewayQueries {
-	return &gatewayQueries{c, scheme}
+func NewData(c client.Client, scheme *runtime.Scheme, reqCRDsExist *bool) GatewayQueries {
+	return &gatewayQueries{c, scheme, reqCRDsExist}
 }
 
 type gatewayQueries struct {
 	client client.Client
 	scheme *runtime.Scheme
+	// Cache whether the required Gateway API CRDs are installed.
+	requiredCRDsExist *bool
 }
 
 func (r *gatewayQueries) referenceAllowed(ctx context.Context, from metav1.GroupKind, fromns string, to metav1.GroupKind, tons, toname string) (bool, error) {

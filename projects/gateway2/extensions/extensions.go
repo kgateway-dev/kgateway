@@ -49,9 +49,12 @@ func NewK8sGatewayExtensions(
 	_ context.Context,
 	params K8sGatewayExtensionsFactoryParameters,
 ) (K8sGatewayExtensions, error) {
+	crdsExist := false
+
 	queries := query.NewData(
 		params.Mgr.GetClient(),
 		params.Mgr.GetScheme(),
+		&crdsExist,
 	)
 
 	return &k8sGatewayExtensions{

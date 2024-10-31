@@ -25,8 +25,9 @@ import (
 
 var _ = Describe("Query", func() {
 	var (
-		scheme  *runtime.Scheme
-		builder *fake.ClientBuilder
+		scheme       *runtime.Scheme
+		builder      *fake.ClientBuilder
+		reqCRDsExist = true
 	)
 
 	tofrom := func(o client.Object) query.From {
@@ -46,7 +47,7 @@ var _ = Describe("Query", func() {
 		It("should get service from same namespace", func() {
 			fakeClient := fake.NewFakeClient(svc("default"))
 
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			ref := &apiv1.BackendObjectReference{
 				Name: "foo",
 			}
@@ -61,7 +62,7 @@ var _ = Describe("Query", func() {
 		It("should get service from different ns if we have a ref grant", func() {
 			rg := refGrant()
 			fakeClient := builder.WithObjects(svc("default2"), rg).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			ref := &apiv1.BackendObjectReference{
 				Name:      "foo",
 				Namespace: nsptr("default2"),
@@ -77,7 +78,7 @@ var _ = Describe("Query", func() {
 		It("should fail with service not found if we have a ref grant", func() {
 			rg := refGrant()
 			fakeClient := builder.WithObjects(rg).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			ref := &apiv1.BackendObjectReference{
 				Name:      "foo",
 				Namespace: nsptr("default2"),
@@ -120,7 +121,7 @@ var _ = Describe("Query", func() {
 			}
 			fakeClient := builder.WithObjects(rg, svc("default2")).Build()
 
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			backend, err := gq.GetBackendForRef(context.Background(), tofrom(httpRoute()), ref)
 			Expect(err).To(MatchError(query.ErrMissingReferenceGrant))
 			Expect(backend).To(BeNil())
@@ -128,7 +129,7 @@ var _ = Describe("Query", func() {
 
 		It("should fail getting a service with no ref grant", func() {
 			fakeClient := builder.WithObjects(svc("default3")).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			ref := &apiv1.BackendObjectReference{
 				Name:      "foo",
 				Namespace: nsptr("default3"),
@@ -143,7 +144,7 @@ var _ = Describe("Query", func() {
 			rg := refGrant()
 			fakeClient := builder.WithObjects(svc("default3"), rg).Build()
 
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			ref := &apiv1.BackendObjectReference{
 				Name:      "foo",
 				Namespace: nsptr("default3"),
@@ -158,7 +159,7 @@ var _ = Describe("Query", func() {
 		It("should get secret from different ns if we have a ref grant", func() {
 			rg := refGrantSecret()
 			fakeClient := builder.WithObjects(secret("default2"), rg).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			ref := apiv1.SecretObjectReference{
 				Name:      "foo",
 				Namespace: nsptr("default2"),
@@ -188,7 +189,7 @@ var _ = Describe("Query", func() {
 			}
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -221,7 +222,7 @@ var _ = Describe("Query", func() {
 			}
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -251,7 +252,7 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -282,7 +283,7 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -312,7 +313,7 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -345,7 +346,7 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -376,7 +377,7 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -410,7 +411,7 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -444,7 +445,7 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -474,7 +475,7 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -512,7 +513,7 @@ var _ = Describe("Query", func() {
 				})
 
 				fakeClient := builder.WithObjects(hr).Build()
-				gq := query.NewData(fakeClient, scheme)
+				gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 				routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 				Expect(err).NotTo(HaveOccurred())
@@ -566,7 +567,7 @@ var _ = Describe("Query", func() {
 			}
 
 			fakeClient := builder.WithObjects(tcpRoute).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			routes, err := gq.GetRoutesForGateway(context.Background(), gw)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -601,7 +602,7 @@ var _ = Describe("Query", func() {
 			}
 
 			fakeClient := builder.WithObjects(tcpRoute).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			routes, err := gq.GetRoutesForGateway(context.Background(), gw)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -638,7 +639,7 @@ var _ = Describe("Query", func() {
 			}
 
 			fakeClient := builder.WithObjects(tcpRoute).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			routes, err := gq.GetRoutesForGateway(context.Background(), gw)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -672,7 +673,7 @@ var _ = Describe("Query", func() {
 			}
 
 			fakeClient := builder.WithObjects(tcpRoute).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 
 			routes, err := gq.GetRoutesForGateway(context.Background(), gw)
 			Expect(err).NotTo(HaveOccurred())
@@ -711,7 +712,7 @@ var _ = Describe("Query", func() {
 			}
 
 			fakeClient := builder.WithObjects(tcpRoute).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 
 			routes, err := gq.GetRoutesForGateway(context.Background(), gw)
 			Expect(err).NotTo(HaveOccurred())
