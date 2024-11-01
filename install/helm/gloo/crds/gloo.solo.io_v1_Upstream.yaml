@@ -31,6 +31,8 @@ spec:
                         properties:
                           inline:
                             type: string
+                          passthrough:
+                            type: object
                           secretRef:
                             properties:
                               name:
@@ -61,6 +63,8 @@ spec:
                         properties:
                           inline:
                             type: string
+                          passthrough:
+                            type: object
                           secretRef:
                             properties:
                               name:
@@ -82,6 +86,8 @@ spec:
                         properties:
                           inline:
                             type: string
+                          passthrough:
+                            type: object
                           secretRef:
                             properties:
                               name:
@@ -99,6 +105,8 @@ spec:
                         properties:
                           inline:
                             type: string
+                          passthrough:
+                            type: object
                           secretRef:
                             properties:
                               name:
@@ -133,6 +141,8 @@ spec:
                                         properties:
                                           inline:
                                             type: string
+                                          passthrough:
+                                            type: object
                                           secretRef:
                                             properties:
                                               name:
@@ -163,6 +173,8 @@ spec:
                                         properties:
                                           inline:
                                             type: string
+                                          passthrough:
+                                            type: object
                                           secretRef:
                                             properties:
                                               name:
@@ -184,6 +196,8 @@ spec:
                                         properties:
                                           inline:
                                             type: string
+                                          passthrough:
+                                            type: object
                                           secretRef:
                                             properties:
                                               name:
@@ -201,6 +215,8 @@ spec:
                                         properties:
                                           inline:
                                             type: string
+                                          passthrough:
+                                            type: object
                                           secretRef:
                                             properties:
                                               name:
@@ -227,6 +243,8 @@ spec:
                                         properties:
                                           inline:
                                             type: string
+                                          passthrough:
+                                            type: object
                                           secretRef:
                                             properties:
                                               name:
@@ -255,6 +273,8 @@ spec:
                                         properties:
                                           inline:
                                             type: string
+                                          passthrough:
+                                            type: object
                                           secretRef:
                                             properties:
                                               name:
@@ -286,6 +306,8 @@ spec:
                         properties:
                           inline:
                             type: string
+                          passthrough:
+                            type: object
                           secretRef:
                             properties:
                               name:
@@ -314,6 +336,8 @@ spec:
                         properties:
                           inline:
                             type: string
+                          passthrough:
+                            type: object
                           secretRef:
                             properties:
                               name:
