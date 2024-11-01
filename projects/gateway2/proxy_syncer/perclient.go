@@ -18,6 +18,7 @@ func snapshotPerClient(l *zap.Logger, uccCol krt.Collection[krtcollections.Uniql
 	xdsSnapshotsForUcc := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc krtcollections.UniqlyConnectedClient) *xdsSnapWrapper {
 		maybeMostlySnap := krt.FetchOne(kctx, mostXdsSnapshots, krt.FilterKey(ucc.Role))
 		if maybeMostlySnap == nil {
+			l.Debug("snapshotPerClient - snapshot missing", zap.String("proxyKey", ucc.Role))
 			return nil
 		}
 		genericSnap := maybeMostlySnap.snap
