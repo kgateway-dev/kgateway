@@ -145,6 +145,18 @@ func getIstioValues(istioIntegrationEnabled bool, istioConfig *v1alpha1.IstioInt
 	}
 }
 
+// Converts AwsInfo (which come from Settings values) into aws helm values
+func getAwsValues(awsInfo *AwsInfo) *helmAws {
+	if awsInfo != nil {
+		return &helmAws{
+			EnableServiceAccountCredentials: &awsInfo.EnableServiceAccountCredentials,
+			StsClusterName:                  &awsInfo.StsClusterName,
+			StsUri:                          &awsInfo.StsUri,
+		}
+	}
+	return nil
+}
+
 // Get the image values for the envoy container in the proxy deployment.
 func getImageValues(image *v1alpha1.Image) *helmImage {
 	if image == nil {

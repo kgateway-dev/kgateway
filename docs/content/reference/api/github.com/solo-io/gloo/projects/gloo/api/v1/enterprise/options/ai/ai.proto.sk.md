@@ -17,6 +17,8 @@ weight: 5
 - [OpenAI](#openai)
 - [AzureOpenAI](#azureopenai)
 - [Gemini](#gemini)
+- [VertexAI](#vertexai)
+- [Publisher](#publisher)
 - [Mistral](#mistral)
 - [Anthropic](#anthropic)
 - [MultiPool](#multipool)
@@ -143,17 +145,19 @@ port: 443 # Port is optional and will default to 443 for HTTPS
 "azureOpenai": .ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI
 "multi": .ai.options.gloo.solo.io.UpstreamSpec.MultiPool
 "gemini": .ai.options.gloo.solo.io.UpstreamSpec.Gemini
+"vertexAi": .ai.options.gloo.solo.io.UpstreamSpec.VertexAI
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `openai` | [.ai.options.gloo.solo.io.UpstreamSpec.OpenAI](../ai.proto.sk/#openai) | OpenAI upstream. Only one of `openai`, `mistral`, `anthropic`, `azureOpenai`, `multi`, or `gemini` can be set. |
-| `mistral` | [.ai.options.gloo.solo.io.UpstreamSpec.Mistral](../ai.proto.sk/#mistral) | Mistral upstream. Only one of `mistral`, `openai`, `anthropic`, `azureOpenai`, `multi`, or `gemini` can be set. |
-| `anthropic` | [.ai.options.gloo.solo.io.UpstreamSpec.Anthropic](../ai.proto.sk/#anthropic) | Anthropic upstream. Only one of `anthropic`, `openai`, `mistral`, `azureOpenai`, `multi`, or `gemini` can be set. |
-| `azureOpenai` | [.ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI upstream. Only one of `azureOpenai`, `openai`, `mistral`, `anthropic`, `multi`, or `gemini` can be set. |
-| `multi` | [.ai.options.gloo.solo.io.UpstreamSpec.MultiPool](../ai.proto.sk/#multipool) | multi upstream. Only one of `multi`, `openai`, `mistral`, `anthropic`, `azureOpenai`, or `gemini` can be set. |
-| `gemini` | [.ai.options.gloo.solo.io.UpstreamSpec.Gemini](../ai.proto.sk/#gemini) | Gemini upstream. Only one of `gemini`, `openai`, `mistral`, `anthropic`, `azureOpenai`, or `multi` can be set. |
+| `openai` | [.ai.options.gloo.solo.io.UpstreamSpec.OpenAI](../ai.proto.sk/#openai) | OpenAI upstream. Only one of `openai`, `mistral`, `anthropic`, `azureOpenai`, `multi`, `gemini`, or `vertexAi` can be set. |
+| `mistral` | [.ai.options.gloo.solo.io.UpstreamSpec.Mistral](../ai.proto.sk/#mistral) | Mistral upstream. Only one of `mistral`, `openai`, `anthropic`, `azureOpenai`, `multi`, `gemini`, or `vertexAi` can be set. |
+| `anthropic` | [.ai.options.gloo.solo.io.UpstreamSpec.Anthropic](../ai.proto.sk/#anthropic) | Anthropic upstream. Only one of `anthropic`, `openai`, `mistral`, `azureOpenai`, `multi`, `gemini`, or `vertexAi` can be set. |
+| `azureOpenai` | [.ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI upstream. Only one of `azureOpenai`, `openai`, `mistral`, `anthropic`, `multi`, `gemini`, or `vertexAi` can be set. |
+| `multi` | [.ai.options.gloo.solo.io.UpstreamSpec.MultiPool](../ai.proto.sk/#multipool) | multi upstream. Only one of `multi`, `openai`, `mistral`, `anthropic`, `azureOpenai`, `gemini`, or `vertexAi` can be set. |
+| `gemini` | [.ai.options.gloo.solo.io.UpstreamSpec.Gemini](../ai.proto.sk/#gemini) | Gemini upstream. Only one of `gemini`, `openai`, `mistral`, `anthropic`, `azureOpenai`, `multi`, or `vertexAi` can be set. |
+| `vertexAi` | [.ai.options.gloo.solo.io.UpstreamSpec.VertexAI](../ai.proto.sk/#vertexai) | Vertex AI upstream. Only one of `vertexAi`, `openai`, `mistral`, `anthropic`, `azureOpenai`, `multi`, or `gemini` can be set. |
 
 
 
@@ -242,6 +246,48 @@ Settings for the Gemini API
 | `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the Gemini API This token will be placed into the `key` header. |
 | `model` | `string` | The model name to use This value can be found https://generativelanguage.googleapis.com/{version}/models/{model}:generateContent?key={api_key}. |
 | `apiVersion` | `string` | The version of the API to use This value can be found https://generativelanguage.googleapis.com/{api_version}/models/{model}:generateContent?key={api_key}. |
+
+
+
+
+---
+### VertexAI
+
+ 
+Settings for the Vertex AI API
+
+```yaml
+"authToken": .ai.options.gloo.solo.io.SingleAuthToken
+"model": string
+"apiVersion": string
+"projectId": string
+"location": string
+"modelPath": string
+"publisher": .ai.options.gloo.solo.io.UpstreamSpec.VertexAI.Publisher
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `authToken` | [.ai.options.gloo.solo.io.SingleAuthToken](../ai.proto.sk/#singleauthtoken) | Auth Token to use for the Vertex AI API This token will be placed into the `Authorization: Bearer ` header. |
+| `model` | `string` | The model name to use This value can be found https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models. |
+| `apiVersion` | `string` | The version of the API to use. See https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models for supported models for specific publishers. |
+| `projectId` | `string` | Google Cloud Project ID in https://{LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/{PROJECT_ID}/locations/{LOCATION}/publishers/{PROVIDER}/<model-path>. |
+| `location` | `string` | Location of the project in https://{LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/{PROJECT_ID}/locations/{LOCATION}/publishers/{PROVIDER}/<model-path>. |
+| `modelPath` | `string` | Model path (optional). Defaults to Gemini model path (generateContent). |
+| `publisher` | [.ai.options.gloo.solo.io.UpstreamSpec.VertexAI.Publisher](../ai.proto.sk/#publisher) | The type of model publishers to use, currently only Google is supported in https://{LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/{PROJECT_ID}/locations/{LOCATION}/publishers/{PUBLISHER}/<model-path>. |
+
+
+
+
+---
+### Publisher
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `GOOGLE` |  |
 
 
 
@@ -347,16 +393,18 @@ priority: 2
 "anthropic": .ai.options.gloo.solo.io.UpstreamSpec.Anthropic
 "azureOpenai": .ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI
 "gemini": .ai.options.gloo.solo.io.UpstreamSpec.Gemini
+"vertexAi": .ai.options.gloo.solo.io.UpstreamSpec.VertexAI
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `openai` | [.ai.options.gloo.solo.io.UpstreamSpec.OpenAI](../ai.proto.sk/#openai) | OpenAI upstream. Only one of `openai`, `mistral`, `anthropic`, `azureOpenai`, or `gemini` can be set. |
-| `mistral` | [.ai.options.gloo.solo.io.UpstreamSpec.Mistral](../ai.proto.sk/#mistral) | Mistral upstream. Only one of `mistral`, `openai`, `anthropic`, `azureOpenai`, or `gemini` can be set. |
-| `anthropic` | [.ai.options.gloo.solo.io.UpstreamSpec.Anthropic](../ai.proto.sk/#anthropic) | Anthropic upstream. Only one of `anthropic`, `openai`, `mistral`, `azureOpenai`, or `gemini` can be set. |
-| `azureOpenai` | [.ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI upstream. Only one of `azureOpenai`, `openai`, `mistral`, `anthropic`, or `gemini` can be set. |
-| `gemini` | [.ai.options.gloo.solo.io.UpstreamSpec.Gemini](../ai.proto.sk/#gemini) | Gemini upstream. Only one of `gemini`, `openai`, `mistral`, `anthropic`, or `azureOpenai` can be set. |
+| `openai` | [.ai.options.gloo.solo.io.UpstreamSpec.OpenAI](../ai.proto.sk/#openai) | OpenAI upstream. Only one of `openai`, `mistral`, `anthropic`, `azureOpenai`, `gemini`, or `vertexAi` can be set. |
+| `mistral` | [.ai.options.gloo.solo.io.UpstreamSpec.Mistral](../ai.proto.sk/#mistral) | Mistral upstream. Only one of `mistral`, `openai`, `anthropic`, `azureOpenai`, `gemini`, or `vertexAi` can be set. |
+| `anthropic` | [.ai.options.gloo.solo.io.UpstreamSpec.Anthropic](../ai.proto.sk/#anthropic) | Anthropic upstream. Only one of `anthropic`, `openai`, `mistral`, `azureOpenai`, `gemini`, or `vertexAi` can be set. |
+| `azureOpenai` | [.ai.options.gloo.solo.io.UpstreamSpec.AzureOpenAI](../ai.proto.sk/#azureopenai) | Azure OpenAI upstream. Only one of `azureOpenai`, `openai`, `mistral`, `anthropic`, `gemini`, or `vertexAi` can be set. |
+| `gemini` | [.ai.options.gloo.solo.io.UpstreamSpec.Gemini](../ai.proto.sk/#gemini) | Gemini upstream. Only one of `gemini`, `openai`, `mistral`, `anthropic`, `azureOpenai`, or `vertexAi` can be set. |
+| `vertexAi` | [.ai.options.gloo.solo.io.UpstreamSpec.VertexAI](../ai.proto.sk/#vertexai) | Vertex AI upstream. Only one of `vertexAi`, `openai`, `mistral`, `anthropic`, `azureOpenai`, or `gemini` can be set. |
 
 
 
@@ -411,7 +459,7 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 | `rag` | [.ai.options.gloo.solo.io.RAG](../ai.proto.sk/#rag) | Retrieval Augmented Generation. https://research.ibm.com/blog/retrieval-augmented-generation-RAG Retrieval Augmented Generation is a process by which you "augment" the information a model has access to by providing it with a set of documents to use as context. This can be used to improve the quality of the generated text. Important Note: The same embedding mechanism must be used for the prompt which was used for the initial creation of the context documents. Example using postgres for storage and OpenAI for embedding: ``` rag: datastore: postgres: connectionString: postgresql+psycopg://gloo:gloo@172.17.0.1:6024/gloo collectionName: default embedding: openai: authToken: secretRef: name: openai-secret namespace: gloo-system ```. |
 | `semanticCache` | [.ai.options.gloo.solo.io.SemanticCache](../ai.proto.sk/#semanticcache) | Semantic caching configuration Semantic caching allows you to cache previous model responses in order to provide faster responses to similar requests in the future. Results will vary depending on the embedding mechanism used, as well as the similarity threshold set. Example using Redis for storage and OpenAI for embedding: ``` semanticCache: datastore: redis: connectionString: redis://172.17.0.1:6379 embedding: openai: authToken: secretRef: name: openai-secret namespace: gloo-system ```. |
 | `defaults` | [[]ai.options.gloo.solo.io.FieldDefault](../ai.proto.sk/#fielddefault) | A list of defaults to be merged with the user input fields. These will NOT override the user input fields unless override is explicitly set to true. Some examples include setting the temperature, max_tokens, etc. Example overriding system field for Anthropic: ``` # Anthropic doesn't support a system chat type defaults: - field: "system" value: "answer all questions in french" ``` Example setting the temperature and max_tokens, overriding max_tokens: ``` defaults: - field: "temperature" value: 0.5 - field: "max_tokens" value: 100 ```. |
-| `routeType` | [.ai.options.gloo.solo.io.RouteSettings.RouteType](../ai.proto.sk/#routetype) | The type of route this is, currently only CHAT is supported. |
+| `routeType` | [.ai.options.gloo.solo.io.RouteSettings.RouteType](../ai.proto.sk/#routetype) | The type of route this is, currently only CHAT and CHAT_STREAMING are supported. |
 
 
 
@@ -424,6 +472,7 @@ NOTE: These settings may only be applied to a route which uses an LLMProvider ba
 | Name | Description |
 | ----- | ----------- | 
 | `CHAT` |  |
+| `CHAT_STREAMING` |  |
 
 
 

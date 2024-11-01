@@ -144,6 +144,18 @@ func (m *UpstreamSpec) Clone() proto.Message {
 			}
 		}
 
+	case *UpstreamSpec_VertexAi:
+
+		if h, ok := interface{}(m.GetVertexAi()).(clone.Cloner); ok {
+			target.Llm = &UpstreamSpec_VertexAi{
+				VertexAi: h.Clone().(*UpstreamSpec_VertexAI),
+			}
+		} else {
+			target.Llm = &UpstreamSpec_VertexAi{
+				VertexAi: proto.Clone(m.GetVertexAi()).(*UpstreamSpec_VertexAI),
+			}
+		}
+
 	}
 
 	return target
@@ -491,6 +503,45 @@ func (m *UpstreamSpec_Gemini) Clone() proto.Message {
 }
 
 // Clone function
+func (m *UpstreamSpec_VertexAI) Clone() proto.Message {
+	var target *UpstreamSpec_VertexAI
+	if m == nil {
+		return target
+	}
+	target = &UpstreamSpec_VertexAI{}
+
+	target.Model = m.GetModel()
+
+	target.ApiVersion = m.GetApiVersion()
+
+	target.ProjectId = m.GetProjectId()
+
+	target.Location = m.GetLocation()
+
+	target.ModelPath = m.GetModelPath()
+
+	target.Publisher = m.GetPublisher()
+
+	switch m.AuthTokenSource.(type) {
+
+	case *UpstreamSpec_VertexAI_AuthToken:
+
+		if h, ok := interface{}(m.GetAuthToken()).(clone.Cloner); ok {
+			target.AuthTokenSource = &UpstreamSpec_VertexAI_AuthToken{
+				AuthToken: h.Clone().(*SingleAuthToken),
+			}
+		} else {
+			target.AuthTokenSource = &UpstreamSpec_VertexAI_AuthToken{
+				AuthToken: proto.Clone(m.GetAuthToken()).(*SingleAuthToken),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
 func (m *UpstreamSpec_Mistral) Clone() proto.Message {
 	var target *UpstreamSpec_Mistral
 	if m == nil {
@@ -633,6 +684,18 @@ func (m *UpstreamSpec_MultiPool_Backend) Clone() proto.Message {
 		} else {
 			target.Llm = &UpstreamSpec_MultiPool_Backend_Gemini{
 				Gemini: proto.Clone(m.GetGemini()).(*UpstreamSpec_Gemini),
+			}
+		}
+
+	case *UpstreamSpec_MultiPool_Backend_VertexAi:
+
+		if h, ok := interface{}(m.GetVertexAi()).(clone.Cloner); ok {
+			target.Llm = &UpstreamSpec_MultiPool_Backend_VertexAi{
+				VertexAi: h.Clone().(*UpstreamSpec_VertexAI),
+			}
+		} else {
+			target.Llm = &UpstreamSpec_MultiPool_Backend_VertexAi{
+				VertexAi: proto.Clone(m.GetVertexAi()).(*UpstreamSpec_VertexAI),
 			}
 		}
 
