@@ -190,6 +190,28 @@ spec:
                                           minimum: 0
                                           type: integer
                                       type: object
+                                    moderation:
+                                      properties:
+                                        openai:
+                                          properties:
+                                            authToken:
+                                              properties:
+                                                inline:
+                                                  type: string
+                                                passthrough:
+                                                  type: object
+                                                secretRef:
+                                                  properties:
+                                                    name:
+                                                      type: string
+                                                    namespace:
+                                                      type: string
+                                                  type: object
+                                              type: object
+                                            model:
+                                              type: string
+                                          type: object
+                                      type: object
                                     regex:
                                       properties:
                                         action:
@@ -295,6 +317,8 @@ spec:
                                           properties:
                                             inline:
                                               type: string
+                                            passthrough:
+                                              type: object
                                             secretRef:
                                               properties:
                                                 name:
@@ -314,6 +338,8 @@ spec:
                                           properties:
                                             inline:
                                               type: string
+                                            passthrough:
+                                              type: object
                                             secretRef:
                                               properties:
                                                 name:
@@ -367,6 +393,8 @@ spec:
                                           properties:
                                             inline:
                                               type: string
+                                            passthrough:
+                                              type: object
                                             secretRef:
                                               properties:
                                                 name:
@@ -386,6 +414,8 @@ spec:
                                           properties:
                                             inline:
                                               type: string
+                                            passthrough:
+                                              type: object
                                             secretRef:
                                               properties:
                                                 name:
