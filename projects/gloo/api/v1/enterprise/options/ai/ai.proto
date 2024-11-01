@@ -142,6 +142,40 @@ message UpstreamSpec {
     string api_version = 3;
   }
 
+  // Settings for the Vertex AI API
+  message VertexAI {
+    // Auth Token to use for the  Vertex AI API
+    // This token will be placed into the `key` header
+    oneof auth_token_source {
+      // Auth Token to use for the Vertex AI API
+      // This token will be placed into the `Authorization: Bearer ` header
+      SingleAuthToken auth_token = 1;
+      // TODO: use oauth
+    }
+
+    // The model name to use
+    // This value can be found https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models
+    string model = 2;
+    // The version of the API to use. See https://cloud.google.com/vertex-ai/generative-ai/docs/learn/models for supported models for specific publishers.
+    string api_version = 3;
+    // Google Cloud Project ID in
+    // https://{LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/{PROJECT_ID}/locations/{LOCATION}/publishers/{PROVIDER}/<model-path>
+    string project_id = 4;
+    // Location of the project in
+    // https://{LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/{PROJECT_ID}/locations/{LOCATION}/publishers/{PROVIDER}/<model-path>
+    string location = 5;
+    // Model path (optional). Defaults to Gemini model path (generateContent)
+    string model_path = 6;
+
+    enum Publisher {
+      GOOGLE = 0;
+    }
+
+    // The type of model publishers to use, currently only Google is supported in
+    // https://{LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/{PROJECT_ID}/locations/{LOCATION}/publishers/{PUBLISHER}/<model-path>
+    Publisher publisher = 7;
+  }
+
   // Settings for the Mistral API
   message Mistral {
     // Auth Token to use for the Mistral API.
@@ -221,6 +255,8 @@ message UpstreamSpec {
         AzureOpenAI azure_openai = 4;
         // Gemini upstream
         Gemini gemini = 5;
+        // Vertex AI upstream
+        VertexAI vertex_ai = 6;
       }
     }
 
@@ -248,6 +284,8 @@ message UpstreamSpec {
     MultiPool multi = 5;
     // Gemini upstream
     Gemini gemini = 6;
+    // Vertex AI upstream
+    VertexAI vertex_ai = 7;
   }
 }
 
@@ -387,9 +425,10 @@ message RouteSettings {
 
   enum RouteType {
     CHAT = 0;
+    CHAT_STREAMING = 1;
   }
 
-  // The type of route this is, currently only CHAT is supported
+  // The type of route this is, currently only CHAT and CHAT_STREAMING are supported
   RouteType route_type = 6;
 }
 
