@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Adds new Portal enablement helm value to simplify enabling the Developer Portal in Gloo Gateway. (`gloo.kubeGateway.portal.enabled`)
+    issueLink: https://github.com/solo-io/solo-projects/issues/6470
+    resolvesIssue: false
