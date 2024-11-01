@@ -57,6 +57,8 @@ kubeGateway:
         routePrefixRewrite: "/stats/prometheus"
         enableStatsRoute: true
         statsRoutePrefixRewrite: "/stats"
+  portal:
+    enabled: false
 
 settings:
   # if this is set to false, default settings will be created by pods upon boot
