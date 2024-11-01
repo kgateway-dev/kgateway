@@ -265,6 +265,36 @@ spec:
                                       model:
                                         type: string
                                     type: object
+                                  vertexAi:
+                                    properties:
+                                      apiVersion:
+                                        type: string
+                                      authToken:
+                                        properties:
+                                          inline:
+                                            type: string
+                                          passthrough:
+                                            type: object
+                                          secretRef:
+                                            properties:
+                                              name:
+                                                type: string
+                                              namespace:
+                                                type: string
+                                            type: object
+                                        type: object
+                                      location:
+                                        type: string
+                                      model:
+                                        type: string
+                                      modelPath:
+                                        type: string
+                                      projectId:
+                                        type: string
+                                      publisher:
+                                        type: string
+                                        x-kubernetes-int-or-string: true
+                                    type: object
                                 type: object
                               type: array
                           type: object
@@ -297,6 +327,36 @@ spec:
                         type: object
                       model:
                         type: string
+                    type: object
+                  vertexAi:
+                    properties:
+                      apiVersion:
+                        type: string
+                      authToken:
+                        properties:
+                          inline:
+                            type: string
+                          passthrough:
+                            type: object
+                          secretRef:
+                            properties:
+                              name:
+                                type: string
+                              namespace:
+                                type: string
+                            type: object
+                        type: object
+                      location:
+                        type: string
+                      model:
+                        type: string
+                      modelPath:
+                        type: string
+                      projectId:
+                        type: string
+                      publisher:
+                        type: string
+                        x-kubernetes-int-or-string: true
                     type: object
                 type: object
               aws:
