@@ -1,6 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/gloo/pull/10251
-    resolvesIssue: false
-    description: >-
-      Initial support for Istio's DestinationRule resource for purposes of failover.
