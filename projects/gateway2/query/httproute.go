@@ -201,7 +201,6 @@ func (r *gatewayQueries) allowedRoutes(gw *gwv1.Gateway, l *gwv1.Listener) (func
 
 func (r *gatewayQueries) resolveRouteBackends(ctx context.Context, obj client.Object) BackendMap[client.Object] {
 	out := NewBackendMap[client.Object]()
-
 	processBackendRefs := func(refs []gwv1.BackendObjectReference) {
 		for _, backendRef := range refs {
 			refObj, err := r.GetBackendForRef(ctx, r.ObjToFrom(obj), &backendRef)
@@ -301,7 +300,6 @@ func (r *gatewayQueries) fetchChildRoutes(
 	if !backendref.RefIsHTTPRoute(backendRef.BackendObjectReference) {
 		return nil, nil
 	}
-
 	// Use the namespace specified in the backend reference if available
 	if backendRef.Namespace != nil {
 		delegatedNs = string(*backendRef.Namespace)
@@ -322,7 +320,6 @@ func (r *gatewayQueries) fetchChildRoutes(
 			Namespace: delegatedNs,
 			Name:      string(backendRef.Name),
 		}
-
 		child := &gwv1.HTTPRoute{}
 		err := r.client.Get(ctx, delegatedRef, child)
 		if err != nil {
@@ -330,7 +327,6 @@ func (r *gatewayQueries) fetchChildRoutes(
 		}
 		refChildren = append(refChildren, *child)
 	}
-
 	// Check if no child routes were resolved and log an error if needed
 	if len(refChildren) == 0 {
 		return nil, ErrUnresolvedReference
@@ -345,7 +341,7 @@ func (r *gatewayQueries) GetRoutesForGateway(ctx context.Context, gw *gwv1.Gatew
 		Name:      gw.Name,
 	}
 
-	// Check if the required Gateway API CRDs exists before adding TCPRouteList
+	// Check if the required Gateway API CRDs exists
 	routeListTypes := []client.ObjectList{}
 	routeCRDs := map[string]client.ObjectList{
 		"httproutes.gateway.networking.k8s.io": &gwv1.HTTPRouteList{},
@@ -364,16 +360,16 @@ func (r *gatewayQueries) GetRoutesForGateway(ctx context.Context, gw *gwv1.Gatew
 		routeListTypes = append(routeListTypes, routeListType)
 	}
 
+	if len(routeListTypes) == 0 {
+		// Handle the case where no route types are added returning an empty result.
+		return NewRoutesForGwResult(), nil
+	}
+
 	var routes []client.Object
 	for _, routeList := range routeListTypes {
 		if err := fetchRoutes(ctx, r, routeList, nns, &routes); err != nil {
 			return nil, err
 		}
-	}
-
-	if len(routeListTypes) == 0 {
-		// Handle the case where no route types are added returning an empty result.
-		return NewRoutesForGwResult(), nil
 	}
 
 	// Process each route

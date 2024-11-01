@@ -71,7 +71,8 @@ func flattenDelegatedRoutes(
 	for _, child := range children {
 		childRoute, ok := child.Object.(*gwv1.HTTPRoute)
 		if !ok {
-			// TODO (danehans): Log error
+			msg := fmt.Sprintf("ignoring unsupported child route type %T for parent httproute %v", child.Object, parentRef)
+			contextutils.LoggerFrom(ctx).Warn(msg)
 			continue
 		}
 		childRef := types.NamespacedName{Namespace: childRoute.Namespace, Name: childRoute.Name}
