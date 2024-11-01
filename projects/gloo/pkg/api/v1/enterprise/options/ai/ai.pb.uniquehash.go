@@ -76,6 +76,28 @@ func (m *SingleAuthToken) HashUnique(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
+	case *SingleAuthToken_Passthrough_:
+
+		if h, ok := interface{}(m.GetPassthrough()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Passthrough")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetPassthrough(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Passthrough")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
 	}
 
 	return hasher.Sum64(), nil
@@ -823,6 +845,25 @@ func (m *AIPromptGuard) HashUnique(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			}
 		}
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// HashUnique function generates a hash of the object that is unique to the object by
+// hashing field name and value pairs.
+// Replaces Hash due to original hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
+func (m *SingleAuthToken_Passthrough) HashUnique(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.SingleAuthToken_Passthrough")); err != nil {
+		return 0, err
 	}
 
 	return hasher.Sum64(), nil
@@ -2016,6 +2057,51 @@ func (m *AIPromptGuard_Webhook) HashUnique(hasher hash.Hash64) (uint64, error) {
 // hashing field name and value pairs.
 // Replaces Hash due to original hashing implemention only using field values. The omission
 // of the field name in the hash calculation can lead to hash collisions.
+func (m *AIPromptGuard_Moderation) HashUnique(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Moderation")); err != nil {
+		return 0, err
+	}
+
+	switch m.Moderation.(type) {
+
+	case *AIPromptGuard_Moderation_Openai:
+
+		if h, ok := interface{}(m.GetOpenai()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Openai")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetOpenai(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Openai")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// HashUnique function generates a hash of the object that is unique to the object by
+// hashing field name and value pairs.
+// Replaces Hash due to original hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
 func (m *AIPromptGuard_Request) HashUnique(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -2080,6 +2166,26 @@ func (m *AIPromptGuard_Request) HashUnique(hasher hash.Hash64) (uint64, error) {
 			return 0, err
 		} else {
 			if _, err = hasher.Write([]byte("Webhook")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetModeration()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Moderation")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetModeration(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Moderation")); err != nil {
 				return 0, err
 			}
 			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
@@ -2212,6 +2318,58 @@ func (m *AIPromptGuard_Webhook_HeaderMatch) HashUnique(hasher hash.Hash64) (uint
 	err = binary.Write(hasher, binary.LittleEndian, m.GetMatchType())
 	if err != nil {
 		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// HashUnique function generates a hash of the object that is unique to the object by
+// hashing field name and value pairs.
+// Replaces Hash due to original hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
+func (m *AIPromptGuard_Moderation_OpenAI) HashUnique(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Moderation_OpenAI")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte("Model")); err != nil {
+		return 0, err
+	}
+	if _, err = hasher.Write([]byte(m.GetModel())); err != nil {
+		return 0, err
+	}
+
+	switch m.AuthTokenSource.(type) {
+
+	case *AIPromptGuard_Moderation_OpenAI_AuthToken:
+
+		if h, ok := interface{}(m.GetAuthToken()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("AuthToken")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetAuthToken(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("AuthToken")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
 	}
 
 	return hasher.Sum64(), nil
