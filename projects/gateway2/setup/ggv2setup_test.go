@@ -539,6 +539,7 @@ func (x *xdsFetcher) getclusters(t *testing.T, ctx context.Context) []*envoyclus
 	if err != nil {
 		t.Fatalf("failed to get eds client: %v", err)
 	}
+	defer epcli.CloseSend()
 	epcli.Send(x.dr)
 	dresp, err := epcli.Recv()
 	if err != nil {
@@ -592,6 +593,7 @@ func (x *xdsFetcher) getlisteners(t *testing.T, ctx context.Context) []*envoylis
 	if err != nil {
 		t.Fatalf("failed to get eds client: %v", err)
 	}
+	defer epcli.CloseSend()
 	epcli.Send(x.dr)
 	dresp, err := epcli.Recv()
 	if err != nil {
@@ -619,6 +621,7 @@ func (x *xdsFetcher) getendpoints(t *testing.T, ctx context.Context, clusterServ
 	if err != nil {
 		t.Fatalf("failed to get eds client: %v", err)
 	}
+	defer epcli.CloseSend()
 	dr := proto.Clone(x.dr).(*discovery_v3.DiscoveryRequest)
 	dr.ResourceNames = clusterServiceNames
 	epcli.Send(dr)
@@ -651,6 +654,7 @@ func (x *xdsFetcher) getroutes(t *testing.T, ctx context.Context, rosourceNames 
 	if err != nil {
 		t.Fatalf("failed to get eds client: %v", err)
 	}
+	defer epcli.CloseSend()
 	dr := proto.Clone(x.dr).(*discovery_v3.DiscoveryRequest)
 	dr.ResourceNames = rosourceNames
 	epcli.Send(dr)

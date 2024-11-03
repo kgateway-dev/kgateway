@@ -1,4 +1,53 @@
 clusters:
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+    serviceName: kube-svc:default-kubernetes-443_default-8057429479812104425
+  metadata: {}
+  name: kube-svc:default-kubernetes-443_default
+  transportSocketMatches:
+  - match:
+      tlsMode: istio
+    name: tlsMode-istio
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - istio
+          tlsCertificateSdsSecretConfigs:
+          - name: istio_server_cert
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: gateway_proxy_sds
+                setNodeOnFirstMessageOnly: true
+                transportApiVersion: V3
+              resourceApiVersion: V3
+          tlsParams: {}
+          validationContextSdsSecretConfig:
+            name: istio_validation_context
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: gateway_proxy_sds
+                setNodeOnFirstMessageOnly: true
+                transportApiVersion: V3
+              resourceApiVersion: V3
+  - match: {}
+    name: tlsMode-disabled
+    transportSocket:
+      name: envoy.transport_sockets.raw_buffer
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
+  type: EDS
 - commonLbConfig:
     healthyPanicThreshold: {}
   connectTimeout: 5s
@@ -54,55 +103,6 @@ clusters:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
   type: EDS
-- connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-    serviceName: kube-svc:default-kubernetes-443_default-8057429479812104425
-  metadata: {}
-  name: kube-svc:default-kubernetes-443_default
-  transportSocketMatches:
-  - match:
-      tlsMode: istio
-    name: tlsMode-istio
-    transportSocket:
-      name: envoy.transport_sockets.tls
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        commonTlsContext:
-          alpnProtocols:
-          - istio
-          tlsCertificateSdsSecretConfigs:
-          - name: istio_server_cert
-            sdsConfig:
-              apiConfigSource:
-                apiType: GRPC
-                grpcServices:
-                - envoyGrpc:
-                    clusterName: gateway_proxy_sds
-                setNodeOnFirstMessageOnly: true
-                transportApiVersion: V3
-              resourceApiVersion: V3
-          tlsParams: {}
-          validationContextSdsSecretConfig:
-            name: istio_validation_context
-            sdsConfig:
-              apiConfigSource:
-                apiType: GRPC
-                grpcServices:
-                - envoyGrpc:
-                    clusterName: gateway_proxy_sds
-                setNodeOnFirstMessageOnly: true
-                transportApiVersion: V3
-              resourceApiVersion: V3
-  - match: {}
-    name: tlsMode-disabled
-    transportSocket:
-      name: envoy.transport_sockets.raw_buffer
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
-  type: EDS
 endpoints:
 - clusterName: kube-svc:default-reviews-8000_default-7955639536074288368
   endpoints:
@@ -110,7 +110,7 @@ endpoints:
     - endpoint:
         address:
           socketAddress:
-            address: 10.244.1.14
+            address: 10.244.1.11
             portValue: 8080
       loadBalancingWeight: 1
     loadBalancingWeight: 1
@@ -122,7 +122,20 @@ endpoints:
     - endpoint:
         address:
           socketAddress:
-            address: 10.244.2.11
+            address: 10.244.2.14
+            portValue: 8080
+      loadBalancingWeight: 1
+    loadBalancingWeight: 1
+    locality:
+      region: r1
+      subZone: r1z2s4
+      zone: r1z2
+    priority: 1
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
+            address: 10.244.3.3
             portValue: 8080
       loadBalancingWeight: 1
     loadBalancingWeight: 1
@@ -131,6 +144,19 @@ endpoints:
       subZone: r1z3s4
       zone: r1z3
     priority: 2
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
+            address: 10.244.4.4
+            portValue: 8080
+      loadBalancingWeight: 1
+    loadBalancingWeight: 1
+    locality:
+      region: r2
+      subZone: r2z1s1
+      zone: r2z1
+    priority: 3
 listeners:
 - address:
     socketAddress:
