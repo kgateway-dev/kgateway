@@ -1,7 +1,6 @@
 package setup_test
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -23,7 +22,9 @@ import (
 	envoy_service_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/service/cluster/v3"
 	envoy_service_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/service/listener/v3"
 	envoy_service_route_v3 "github.com/envoyproxy/go-control-plane/envoy/service/route/v3"
-	"github.com/golang/protobuf/jsonpb"
+	jsonpb "google.golang.org/protobuf/encoding/protojson"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_service_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/service/endpoint/v3"
@@ -96,7 +97,7 @@ func NewTestLogger(t *testing.T) *zap.Logger {
 }
 
 func TestSomething(t *testing.T) {
-	os.Setenv("POD_NAMESPACE", "default")
+	os.Setenv("POD_NAMESPACE", "gwtest")
 	testEnv := &envtest.Environment{
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "crds"),
@@ -182,6 +183,12 @@ func TestSomething(t *testing.T) {
 	// "ggv2 not initialized" error
 	time.Sleep(time.Second)
 
+	// create the test ns
+	_, err = client.Kube().CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "gwtest"}}, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatalf("failed to create namespace: %v", err)
+	}
+
 	// liste all yamls in test data
 	files, err := os.ReadDir("testdata")
 	if err != nil {
@@ -191,8 +198,12 @@ func TestSomething(t *testing.T) {
 		if strings.HasSuffix(f.Name(), ".yaml") && !strings.HasSuffix(f.Name(), "-out.yaml") {
 			fullpath := filepath.Join("testdata", f.Name())
 			t.Run(f.Name(), func(t *testing.T) {
-				t.Parallel()
+				//sadly tests can't run yet in parallel, as ggv2 will add all the k8s services as clusters. this means
+				// that we get test pollution.
+				// once we change it to only include the ones in the proxy, we can re-enable this
+				//				t.Parallel()
 				testScenario(t, ctx, client, xdsPort, fullpath)
+
 			})
 		}
 	}
@@ -228,10 +239,14 @@ func testScenario(t *testing.T, ctx context.Context, client istiokube.CLIClient,
 	}
 	testyaml := strings.ReplaceAll(string(testyamlbytes), gwname, testgwname)
 
-	err = client.ApplyYAMLContents("default", testyaml)
+	yamlfile := filepath.Join(t.TempDir(), "test.yaml")
+	os.WriteFile(yamlfile, []byte(testyaml), 0644)
+
+	err = client.ApplyYAMLFiles("gwtest", yamlfile)
 	if err != nil {
 		t.Fatalf("failed to apply yaml: %v", err)
 	}
+	defer client.DeleteYAMLFiles("gwtest", yamlfile)
 	// make sure all yamls reached the control plane
 	time.Sleep(time.Second)
 
@@ -262,9 +277,9 @@ func getXdsDump(t *testing.T, ctx context.Context, xdsPort int, gwname string) x
 	f := xdsFetcher{
 		conn: conn,
 		dr: &discovery_v3.DiscoveryRequest{Node: &envoycore.Node{
-			Id: "gateway.default",
+			Id: "gateway.gwtest",
 			Metadata: &structpb.Struct{
-				Fields: map[string]*structpb.Value{"role": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("gloo-kube-gateway-api~%s~%s-%s", "default", "default", gwname)}}}},
+				Fields: map[string]*structpb.Value{"role": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("gloo-kube-gateway-api~%s~%s-%s", "gwtest", "gwtest", gwname)}}}},
 		}},
 	}
 	clusters := f.getclusters(t, ctx)
@@ -404,7 +419,7 @@ func flattenendpoints(v *envoyendpoint.ClusterLoadAssignment) []*envoyendpoint.L
 }
 
 func (x *xdsDump) FromYaml(ya []byte) error {
-	var ju jsonpb.Unmarshaler
+	var ju jsonpb.UnmarshalOptions
 
 	ya, err := yaml.YAMLToJSON(ya)
 	if err != nil {
@@ -422,7 +437,7 @@ func (x *xdsDump) FromYaml(ya []byte) error {
 			return err
 		}
 		var cluster envoycluster.Cluster
-		ju.Unmarshal(bytes.NewReader(jb), &cluster)
+		ju.Unmarshal(jb, &cluster)
 		x.Clusters = append(x.Clusters, &cluster)
 	}
 	for _, c := range jsonM["endpoints"] {
@@ -431,7 +446,7 @@ func (x *xdsDump) FromYaml(ya []byte) error {
 			return err
 		}
 		var r envoyendpoint.ClusterLoadAssignment
-		ju.Unmarshal(bytes.NewReader(jb), &r)
+		ju.Unmarshal(jb, &r)
 		x.Endpoints = append(x.Endpoints, &r)
 	}
 	for _, c := range jsonM["listeners"] {
@@ -440,7 +455,7 @@ func (x *xdsDump) FromYaml(ya []byte) error {
 			return err
 		}
 		var r envoylistener.Listener
-		ju.Unmarshal(bytes.NewReader(jb), &r)
+		ju.Unmarshal(jb, &r)
 		x.Listeners = append(x.Listeners, &r)
 	}
 	for _, c := range jsonM["routes"] {
@@ -449,17 +464,17 @@ func (x *xdsDump) FromYaml(ya []byte) error {
 			return err
 		}
 		var r envoy_config_route_v3.RouteConfiguration
-		ju.Unmarshal(bytes.NewReader(jb), &r)
+		ju.Unmarshal(jb, &r)
 		x.Routes = append(x.Routes, &r)
 	}
 	return nil
 }
 
 func (x *xdsDump) ToYaml() ([]byte, error) {
-	var j jsonpb.Marshaler
+	var j jsonpb.MarshalOptions
 	jsonM := map[string][]any{}
 	for _, c := range x.Clusters {
-		s, err := j.MarshalToString(c)
+		s, err := j.Marshal(c)
 		if err != nil {
 			return nil, err
 		}
@@ -471,36 +486,36 @@ func (x *xdsDump) ToYaml() ([]byte, error) {
 		jsonM["clusters"] = append(jsonM["clusters"], roundtrip)
 	}
 	for _, c := range x.Listeners {
-		s, err := j.MarshalToString(c)
+		s, err := j.Marshal(c)
 		if err != nil {
 			return nil, err
 		}
 		var roundtrip any
-		err = json.Unmarshal([]byte(s), &roundtrip)
+		err = json.Unmarshal(s, &roundtrip)
 		if err != nil {
 			return nil, err
 		}
 		jsonM["listeners"] = append(jsonM["listeners"], roundtrip)
 	}
 	for _, c := range x.Endpoints {
-		s, err := j.MarshalToString(c)
+		s, err := j.Marshal(c)
 		if err != nil {
 			return nil, err
 		}
 		var roundtrip any
-		err = json.Unmarshal([]byte(s), &roundtrip)
+		err = json.Unmarshal(s, &roundtrip)
 		if err != nil {
 			return nil, err
 		}
 		jsonM["endpoints"] = append(jsonM["endpoints"], roundtrip)
 	}
 	for _, c := range x.Routes {
-		s, err := j.MarshalToString(c)
+		s, err := j.Marshal(c)
 		if err != nil {
 			return nil, err
 		}
 		var roundtrip any
-		err = json.Unmarshal([]byte(s), &roundtrip)
+		err = json.Unmarshal(s, &roundtrip)
 		if err != nil {
 			return nil, err
 		}

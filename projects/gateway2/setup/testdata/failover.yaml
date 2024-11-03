@@ -60,27 +60,27 @@ subsets:
     targetRef:
       kind: Pod
       name: reviews-1
-      namespace: default
+      namespace: gwtest
 #      uid: 5905470a-11c5-46d4-b8a9-45d59481da14
   - ip: 10.244.2.14
     nodeName: worker2
     targetRef:
       kind: Pod
       name: reviews-2
-      namespace: default
+      namespace: gwtest
 #      uid: 6c218fd8-1b6f-4c57-9ee2-108a6a8c84ea
   - ip: 10.244.3.3
     nodeName: worker3
     targetRef:
       kind: Pod
       name: reviews-3
-      namespace: default
+      namespace: gwtest
   - ip: 10.244.4.4
     nodeName: worker4
     targetRef:
       kind: Pod
       name: reviews-4
-      namespace: default
+      namespace: gwtest
   ports:
   - name: http
     port: 8080
@@ -105,7 +105,7 @@ kind: DestinationRule
 metadata:
   name: do-failover
 spec:
-  host: reviews.default.svc.cluster.local
+  host: reviews.gwtest.svc.cluster.local
   trafficPolicy:
     outlierDetection:
       consecutive5xxErrors: 7
@@ -117,30 +117,6 @@ spec:
         - "topology.kubernetes.io/region"
         - "topology.kubernetes.io/zone"
         - "topology.istio.io/subzone"
----
-apiVersion: v1
-kind: Node
-metadata:
-  labels:
-    beta.kubernetes.io/arch: amd64
-    beta.kubernetes.io/os: linux
-    kubernetes.io/arch: amd64
-    kubernetes.io/hostname: control-plane
-    kubernetes.io/os: linux
-    node-role.kubernetes.io/control-plane: ""
-    node.kubernetes.io/exclude-from-external-load-balancers: ""
-    topology.istio.io/subzone: r1z1s1
-    topology.kubernetes.io/region: r1
-    topology.kubernetes.io/zone: r1z1
-  name: control-plane
-spec:
-  podCIDR: 10.244.0.0/24
-  podCIDRs:
-  - 10.244.0.0/24
-  providerID: kind://docker/gloo-oss/control-plane
-  taints:
-  - effect: NoSchedule
-    key: node-role.kubernetes.io/control-plane
 ---
 apiVersion: v1
 kind: Node
