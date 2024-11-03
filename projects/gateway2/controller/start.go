@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 
+	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/config"
 
@@ -43,8 +44,9 @@ const (
 var setupLog = ctrl.Log.WithName("setup")
 
 type StartConfig struct {
-	Dev       bool
-	SetupOpts *bootstrap.SetupOpts
+	Dev        bool
+	SetupOpts  *bootstrap.SetupOpts
+	RestConfig *rest.Config
 	// ExtensionsFactory is the factory function which will return an extensions.K8sGatewayExtensions
 	// This is responsible for producing the extension points that this controller requires
 	ExtensionsFactory extensions.K8sGatewayExtensionsFactory
@@ -110,7 +112,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			SkipNameValidation: ptr.To(true),
 		},
 	}
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), mgrOpts)
+	mgr, err := ctrl.NewManager(cfg.RestConfig, mgrOpts)
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		return nil, err

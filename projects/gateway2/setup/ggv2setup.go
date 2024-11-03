@@ -38,6 +38,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -45,8 +46,8 @@ var (
 	settingsGVR = glookubev1.SchemeGroupVersion.WithResource("settings")
 )
 
-func createKubeClient() (istiokube.Client, error) {
-	restCfg := istiokube.NewClientConfigForRestConfig(ctrl.GetConfigOrDie())
+func createKubeClient(restConfig *rest.Config) (istiokube.Client, error) {
+	restCfg := istiokube.NewClientConfigForRestConfig(restConfig)
 	client, err := istiokube.NewClient(restCfg, "")
 	if err != nil {
 		return nil, err
@@ -83,20 +84,31 @@ func StartGGv2(ctx context.Context,
 	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
 	extensionsFactory extensions.K8sGatewayExtensionsFactory,
 	pluginRegistryFactory func(opts registry.PluginOpts) plugins.PluginRegistryFactory) error {
+
+	restConfig := ctrl.GetConfigOrDie()
+
+	return StartGGv2WithConfig(ctx, setupOpts, restConfig, uccBuilder, extensionsFactory, pluginRegistryFactory, setuputils.SetupNamespaceName())
+}
+
+func StartGGv2WithConfig(ctx context.Context,
+	setupOpts *bootstrap.SetupOpts,
+	restConfig *rest.Config,
+	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
+	extensionsFactory extensions.K8sGatewayExtensionsFactory,
+	pluginRegistryFactory func(opts registry.PluginOpts) plugins.PluginRegistryFactory,
+	settingsNns types.NamespacedName,
+) error {
 	ctx = contextutils.WithLogger(ctx, "k8s")
 
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Info("starting gloo gateway")
 
-	kubeClient, err := createKubeClient()
+	kubeClient, err := createKubeClient(restConfig)
 	if err != nil {
 		return err
 	}
 
-	// create agumented pods
-	setupNamespaceName := setuputils.SetupNamespaceName()
-
-	initialSettings := getInitialSettings(ctx, kubeClient, setupNamespaceName)
+	initialSettings := getInitialSettings(ctx, kubeClient, settingsNns)
 	if initialSettings == nil {
 		return fmt.Errorf("initial settings not found")
 	}
@@ -113,7 +125,7 @@ func StartGGv2(ctx context.Context,
 
 	settingsSingle := krt.NewSingleton(func(ctx krt.HandlerContext) *glookubev1.Settings {
 		s := krt.FetchOne(ctx, setting,
-			krt.FilterObjectName(setupNamespaceName))
+			krt.FilterObjectName(settingsNns))
 		if s != nil {
 			return *s
 		}
@@ -135,6 +147,7 @@ func StartGGv2(ctx context.Context,
 	logger.Info("initializing controller")
 	c, err := controller.NewControllerBuilder(ctx, controller.StartConfig{
 		ExtensionsFactory:    extensionsFactory,
+		RestConfig:           restConfig,
 		SetupOpts:            setupOpts,
 		KubeGwStatusReporter: kubeGwStatusReporter,
 		Translator:           setup.TranslatorFactory{PluginRegistry: pluginRegistryFactory(pluginOpts)},

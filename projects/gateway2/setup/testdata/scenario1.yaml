@@ -1,0 +1,230 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: reviews
+  labels:
+    app: reviews
+    service: reviews
+spec:
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8080
+  selector:
+    app: reviews
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  labels:
+    app: reviews
+    service: reviews
+  name: reviews
+subsets:
+- addresses:
+  - ip: 10.244.1.14
+    nodeName: gloo-oss-worker2
+    targetRef:
+      kind: Pod
+      name: reviews-1
+      namespace: default
+#      uid: 6c218fd8-1b6f-4c57-9ee2-108a6a8c84ea
+  - ip: 10.244.2.11
+    nodeName: gloo-oss-worker
+    targetRef:
+      kind: Pod
+      name: reviews-2
+      namespace: default
+#      uid: 5905470a-11c5-46d4-b8a9-45d59481da14
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+---
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: http
+spec:
+  gatewayClassName: gloo-gateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: http
+spec:
+  parentRefs:
+    - name: http
+  hostnames:
+    - "www.example.com"
+  rules:
+    - backendRefs:
+        - name: reviews
+          port: 8080
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: do-failover
+spec:
+  host: reviews.default.svc.cluster.local
+  trafficPolicy:
+    outlierDetection:
+      consecutive5xxErrors: 7
+      interval: 5m
+      baseEjectionTime: 15m
+    loadBalancer:
+      localityLbSetting:
+        failoverPriority:
+        - "topology.kubernetes.io/region"
+        - "topology.kubernetes.io/zone"
+        - "topology.istio.io/subzone"
+---
+apiVersion: v1
+kind: Node
+metadata:
+  labels:
+    beta.kubernetes.io/arch: amd64
+    beta.kubernetes.io/os: linux
+    kubernetes.io/arch: amd64
+    kubernetes.io/hostname: gloo-oss-control-plane
+    kubernetes.io/os: linux
+    node-role.kubernetes.io/control-plane: ""
+    node.kubernetes.io/exclude-from-external-load-balancers: ""
+    topology.istio.io/subzone: r1z1s1
+    topology.kubernetes.io/region: r1
+    topology.kubernetes.io/zone: r1z1
+  name: gloo-oss-control-plane
+spec:
+  podCIDR: 10.244.0.0/24
+  podCIDRs:
+  - 10.244.0.0/24
+  providerID: kind://docker/gloo-oss/gloo-oss-control-plane
+  taints:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/control-plane
+---
+apiVersion: v1
+kind: Node
+metadata:
+  labels:
+    beta.kubernetes.io/arch: amd64
+    beta.kubernetes.io/os: linux
+    kubernetes.io/arch: amd64
+    kubernetes.io/hostname: gloo-oss-worker
+    kubernetes.io/os: linux
+    topology.istio.io/subzone: r1z2s3
+    topology.kubernetes.io/region: r1
+    topology.kubernetes.io/zone: r1z2
+  name: gloo-oss-worker
+spec:
+  podCIDR: 10.244.2.0/24
+  podCIDRs:
+  - 10.244.2.0/24
+  providerID: kind://docker/gloo-oss/gloo-oss-worker
+---
+apiVersion: v1
+kind: Node
+metadata:
+  labels:
+    beta.kubernetes.io/arch: amd64
+    beta.kubernetes.io/os: linux
+    kubernetes.io/arch: amd64
+    kubernetes.io/hostname: gloo-oss-worker2
+    kubernetes.io/os: linux
+    topology.istio.io/subzone: r1z3s4
+    topology.kubernetes.io/region: r1
+    topology.kubernetes.io/zone: r1z3
+  name: gloo-oss-worker2
+spec:
+  podCIDR: 10.244.1.0/24
+  podCIDRs:
+  - 10.244.1.0/24
+  providerID: kind://docker/gloo-oss/gloo-oss-worker2
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: reviews
+    pod-template-hash: 6f5b775685
+  name: reviews-1
+spec:
+  containers:
+  - image: docker.io/istio/examples-bookinfo-reviews-v3:1.20.1
+    name: reviews
+    ports:
+    - containerPort: 8080
+      protocol: TCP
+  nodeName: gloo-oss-worker
+  serviceAccount: default
+  serviceAccountName: default
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: reviews
+    pod-template-hash: 6f5b775685
+  name: reviews-2
+spec:
+  containers:
+  - image: docker.io/istio/examples-bookinfo-reviews-v3:1.20.1
+    name: reviews
+    ports:
+    - containerPort: 8080
+      protocol: TCP
+  nodeName: gloo-oss-worker2
+  serviceAccount: default
+  serviceAccountName: default
+---
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  name: default
+spec:
+  discovery:
+    fdsMode: WHITELIST
+  discoveryNamespace: gloo-system
+  gateway:
+    enableGatewayController: true
+    isolateVirtualHostsBySslConfig: true
+    readGatewaysFromAllNamespaces: false
+    validation:
+      allowWarnings: true
+      alwaysAccept: false
+      disableTransformationValidation: false
+      fullEnvoyValidation: false
+      proxyValidationServerAddr: gloo:9988
+      serverEnabled: true
+      validationServerGrpcMaxSizeBytes: 104857600
+      warnMissingTlsSecret: true
+      warnRouteShortCircuiting: true
+  gloo:
+    disableKubernetesDestinations: false
+    disableProxyGarbageCollection: false
+    enableRestEds: false
+    invalidConfigPolicy:
+      invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators
+        should run `glooctl check` to find and fix config errors.
+      invalidRouteResponseCode: 404
+      replaceInvalidRoutes: true
+    istioOptions:
+      appendXForwardedHost: true
+      enableAutoMtls: true
+      enableIntegration: true
+    proxyDebugBindAddr: 0.0.0.0:9966
+    regexMaxProgramSize: 1024
+    restXdsBindAddr: 0.0.0.0:9976
+    xdsBindAddr: 0.0.0.0:9977
+  kubernetesArtifactSource: {}
+  kubernetesConfigSource: {}
+  kubernetesSecretSource: {}
+  refreshRate: 60s

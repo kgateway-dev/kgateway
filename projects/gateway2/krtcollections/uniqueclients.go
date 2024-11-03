@@ -254,7 +254,44 @@ func (x *callbacks) OnStreamResponse(_ int64, _ *envoy_service_discovery_v3.Disc
 
 // OnFetchRequest is called for each Fetch request. Returning an error will end processing of the
 // request and respond with an error.
-func (x *callbacks) OnFetchRequest(_ context.Context, _ *envoy_service_discovery_v3.DiscoveryRequest) error {
+func (x *callbacks) OnFetchRequest(ctx context.Context, r *envoy_service_discovery_v3.DiscoveryRequest) error {
+
+	role := r.GetNode().GetMetadata().GetFields()[xds.RoleKey].GetStringValue()
+	// as gloo-edge and ggv2 share a control plane, check that this collection only handles ggv2 clients
+	if !xds.IsKubeGatewayCacheKey(role) {
+		return nil
+	}
+	c := x.collection.Load()
+	if c == nil {
+		return errors.New("ggv2 not initialized")
+	}
+	return c.fetchRequest(ctx, r)
+}
+
+func (x *callbacksCollection) fetchRequest(ctx context.Context, r *envoy_service_discovery_v3.DiscoveryRequest) error {
+	var pod *LocalityPod
+	if r.GetNode() != nil {
+		return fmt.Errorf("node metadata is nil")
+	}
+	podRef := getRef(r.GetNode())
+	k := krt.Key[LocalityPod](krt.Named{Name: podRef.Name, Namespace: podRef.Namespace}.ResourceName())
+	pod = x.augmentedPods.GetKey(k)
+	ucc := newUniqlyConnectedClient(r.GetNode(), pod.Namespace, pod.AugmentedLabels, pod.Locality)
+
+	nodeMd := r.GetNode().GetMetadata()
+	if nodeMd == nil {
+		nodeMd = &structpb.Struct{}
+	}
+	if nodeMd.GetFields() == nil {
+		nodeMd.Fields = map[string]*structpb.Value{}
+	}
+
+	x.logger.Debug("augmenting role in node metadata", zap.String("resourceName", ucc.resourceName))
+	// NOTE: this changes the role to include the unique client. This is coupled
+	// with how the snapshot is inserted to the cache for the proxy - it needs to be done with
+	// the unique client resource name as well.
+	nodeMd.GetFields()[xds.RoleKey] = structpb.NewStringValue(ucc.resourceName)
+	r.GetNode().Metadata = nodeMd
 	return nil
 }
 
