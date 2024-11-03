@@ -1,3 +1,36 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: http-gw-for-test
+spec:
+  gatewayClassName: gloo-gateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+# needed for unique client set - xds requests will look like they are coming
+# from this pod
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: gateway
+  name: gateway
+spec:
+  containers:
+  - image: gateway
+    name: gateway
+    ports:
+    - containerPort: 8080
+      protocol: TCP
+  nodeName: gloo-oss-worker
+  serviceAccount: default
+  serviceAccountName: default
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -40,20 +73,6 @@ subsets:
   - name: http
     port: 8080
     protocol: TCP
----
-kind: Gateway
-apiVersion: gateway.networking.k8s.io/v1
-metadata:
-  name: http-gw-for-test
-spec:
-  gatewayClassName: gloo-gateway
-  listeners:
-  - protocol: HTTP
-    port: 8080
-    name: http
-    allowedRoutes:
-      namespaces:
-        from: All
 ---
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute

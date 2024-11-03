@@ -109,13 +109,12 @@ func TestSomething(t *testing.T) {
 		// web hook to add cluster ips to services
 	}
 	var wg sync.WaitGroup
-	defer wg.Wait()
+	t.Cleanup(wg.Wait)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	t.Cleanup(cancel)
 	logger := NewTestLogger(t)
-	defer logger.Sync()
+	t.Cleanup(func() { logger.Sync() })
 	//	t.Cleanup(func() { _ = logger.Sync() })
 	log.SetLogger(zapr.NewLogger(logger))
 
@@ -192,6 +191,7 @@ func TestSomething(t *testing.T) {
 		if strings.HasSuffix(f.Name(), ".yaml") && !strings.HasSuffix(f.Name(), "-out.yaml") {
 			fullpath := filepath.Join("testdata", f.Name())
 			t.Run(f.Name(), func(t *testing.T) {
+				t.Parallel()
 				testScenario(t, ctx, client, xdsPort, fullpath)
 			})
 		}
@@ -262,7 +262,7 @@ func getXdsDump(t *testing.T, ctx context.Context, xdsPort int, gwname string) x
 	f := xdsFetcher{
 		conn: conn,
 		dr: &discovery_v3.DiscoveryRequest{Node: &envoycore.Node{
-			Id: "reviews-1.default",
+			Id: "gateway.default",
 			Metadata: &structpb.Struct{
 				Fields: map[string]*structpb.Value{"role": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("gloo-kube-gateway-api~%s~%s-%s", "default", "default", gwname)}}}},
 		}},
