@@ -87,7 +87,9 @@ func NewTestLogger(t *testing.T) *zap.Logger {
 	core := zapcore.NewCore(
 		zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
 		zapcore.AddSync(writer),
-		zapcore.DebugLevel, // Adjust log level as needed
+		// Adjust log level as needed
+		// if a test assertion fails and logs or too noisy, change to zapcore.FatalLevel
+		zapcore.DebugLevel,
 	)
 
 	return zap.New(core, zap.AddCaller())
@@ -106,7 +108,6 @@ func TestSomething(t *testing.T) {
 		BinaryAssetsDirectory: getAssetsDir(t),
 		// web hook to add cluster ips to services
 	}
-
 	var wg sync.WaitGroup
 	defer wg.Wait()
 
@@ -132,28 +133,7 @@ func TestSomething(t *testing.T) {
 
 	// apply yaml to the cluster
 
-	f := "scenario1.yaml"
-	fext := filepath.Ext(f)
-	fpre := strings.TrimSuffix(f, fext)
-	fout := fpre + "-out" + fext
-	// read the out file
-	write := false
-	ya, err := os.ReadFile("testdata/" + fout)
-	// if not exist
-	if os.IsNotExist(err) {
-		write = true
-		err = nil
-	}
-	if err != nil {
-		t.Fatalf("failed to read file: %v", err)
-	}
-	var expectedXdsDump xdsDump
-	err = expectedXdsDump.FromYaml(ya)
-	if err != nil {
-		t.Fatalf("failed to read yaml: %v", err)
-	}
-
-	err = client.ApplyYAMLFiles("default", "testdata/"+f)
+	err = client.ApplyYAMLFiles("default", "testdata/setupyaml/setup.yaml")
 	if err != nil {
 		t.Fatalf("failed to apply yaml: %v", err)
 	}
@@ -185,12 +165,12 @@ func TestSomething(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := controlPlane.GrpcServer.Serve(lis); err != nil {
-			panic("xds grpc server failed to start")
-		}
+		controlPlane.GrpcServer.Serve(lis)
+		t.Log("grpc server stopped")
 	}()
 
 	setupOpts.ProxyReconcileQueue = ggv2utils.NewAsyncQueue[gloov1.ProxyList]()
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -199,22 +179,63 @@ func TestSomething(t *testing.T) {
 			types.NamespacedName{Name: "default", Namespace: "default"},
 		)
 	}()
-	// now create a gateway, node ,pod,
-
-	// now pretend to be the proxy
-
-	//	conn, err := grpc.NewClient(fmt.Sprintf("localhost:%d", xdsPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	//	if err != nil {
-	//		t.Fatalf("failed to connect to xds server: %v", err)
-	//	}
-
-	//give ggv2 time to initialize so we don't get
+	// give ggv2 time to initialize so we don't get
 	// "ggv2 not initialized" error
 	time.Sleep(time.Second)
 
-	dump := getXdsDump(t, ctx, xdsPort)
-	cla := getreviews(dump.Endpoints)
-	t.Log("got cla", cla)
+	// liste all yamls in test data
+	files, err := os.ReadDir("testdata")
+	if err != nil {
+		t.Fatalf("failed to read dir: %v", err)
+	}
+	for _, f := range files {
+		if strings.HasSuffix(f.Name(), ".yaml") && !strings.HasSuffix(f.Name(), "-out.yaml") {
+			fullpath := filepath.Join("testdata", f.Name())
+			t.Run(f.Name(), func(t *testing.T) {
+				testScenario(t, ctx, client, xdsPort, fullpath)
+			})
+		}
+	}
+
+	t.Log("DONE")
+}
+
+func testScenario(t *testing.T, ctx context.Context, client istiokube.CLIClient, xdsPort int, f string) {
+	fext := filepath.Ext(f)
+	fpre := strings.TrimSuffix(f, fext)
+	fout := fpre + "-out" + fext
+	// read the out file
+	write := false
+	ya, err := os.ReadFile(fout)
+	// if not exist
+	if os.IsNotExist(err) {
+		write = true
+		err = nil
+	}
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+	var expectedXdsDump xdsDump
+	err = expectedXdsDump.FromYaml(ya)
+	if err != nil {
+		t.Fatalf("failed to read yaml: %v", err)
+	}
+	const gwname = "http-gw-for-test"
+	testgwname := "http-" + filepath.Base(fpre)
+	testyamlbytes, err := os.ReadFile(f)
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+	testyaml := strings.ReplaceAll(string(testyamlbytes), gwname, testgwname)
+
+	err = client.ApplyYAMLContents("default", testyaml)
+	if err != nil {
+		t.Fatalf("failed to apply yaml: %v", err)
+	}
+	// make sure all yamls reached the control plane
+	time.Sleep(time.Second)
+
+	dump := getXdsDump(t, ctx, xdsPort, testgwname)
 
 	if write {
 		t.Logf("writing out file")
@@ -223,34 +244,30 @@ func TestSomething(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to serialize xdsDump: %v", err)
 		}
-		os.WriteFile("testdata/"+fout, d, 0644)
+		os.WriteFile(fout, d, 0644)
 		t.Fatal("wrote out file - nothing to test")
 		return
 	}
 	expectedXdsDump.Compare(t, dump)
-
-	if len(cla.Endpoints) != 2 {
-		t.Fatalf("expected 2 endpoints, got %v", len(cla.Endpoints))
-	}
+	fmt.Println("test done")
 }
 
-func getreviews(clas []*envoyendpoint.ClusterLoadAssignment) *envoyendpoint.ClusterLoadAssignment {
-	for _, cla := range clas {
-		if strings.Contains(cla.ClusterName, "reviews") {
-			return cla
-		}
-	}
-	return nil
-}
-
-func getXdsDump(t *testing.T, ctx context.Context, xdsPort int) xdsDump {
+func getXdsDump(t *testing.T, ctx context.Context, xdsPort int, gwname string) xdsDump {
 	conn, err := grpc.NewClient(fmt.Sprintf("localhost:%d", xdsPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Fatalf("failed to connect to xds server: %v", err)
 	}
 	defer conn.Close()
 
-	clusters := getclusters(t, ctx, conn)
+	f := xdsFetcher{
+		conn: conn,
+		dr: &discovery_v3.DiscoveryRequest{Node: &envoycore.Node{
+			Id: "reviews-1.default",
+			Metadata: &structpb.Struct{
+				Fields: map[string]*structpb.Value{"role": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("gloo-kube-gateway-api~%s~%s-%s", "default", "default", gwname)}}}},
+		}},
+	}
+	clusters := f.getclusters(t, ctx)
 	clusterServiceNames := slices.MapFilter(clusters, func(c *envoycluster.Cluster) *string {
 		if c.GetEdsClusterConfig() != nil {
 			if c.GetEdsClusterConfig().GetServiceName() != "" {
@@ -262,7 +279,7 @@ func getXdsDump(t *testing.T, ctx context.Context, xdsPort int) xdsDump {
 		return nil
 	})
 
-	listeners := getlisteners(t, ctx, conn)
+	listeners := f.getlisteners(t, ctx)
 	var routenames []string
 	for _, l := range listeners {
 		routenames = append(routenames, getroutesnames(l)...)
@@ -270,8 +287,8 @@ func getXdsDump(t *testing.T, ctx context.Context, xdsPort int) xdsDump {
 	return xdsDump{
 		Clusters:  clusters,
 		Listeners: listeners,
-		Endpoints: getendpoints(t, ctx, conn, clusterServiceNames),
-		Routes:    getroutes(t, ctx, conn, routenames),
+		Endpoints: f.getendpoints(t, ctx, clusterServiceNames),
+		Routes:    f.getroutes(t, ctx, routenames),
 	}
 }
 
@@ -284,17 +301,17 @@ type xdsDump struct {
 
 func (x *xdsDump) Compare(t *testing.T, other xdsDump) {
 	if len(x.Clusters) != len(other.Clusters) {
-		t.Fatalf("expected %v clusters, got %v", len(other.Clusters), len(x.Clusters))
+		t.Errorf("expected %v clusters, got %v", len(other.Clusters), len(x.Clusters))
 	}
 
 	if len(x.Listeners) != len(other.Listeners) {
-		t.Fatalf("expected %v listeners, got %v", len(other.Listeners), len(x.Listeners))
+		t.Errorf("expected %v listeners, got %v", len(other.Listeners), len(x.Listeners))
 	}
 	if len(x.Endpoints) != len(other.Endpoints) {
-		t.Fatalf("expected %v endpoints, got %v", len(other.Endpoints), len(x.Endpoints))
+		t.Errorf("expected %v endpoints, got %v", len(other.Endpoints), len(x.Endpoints))
 	}
 	if len(x.Routes) != len(other.Routes) {
-		t.Fatalf("expected %v routes, got %v", len(other.Routes), len(x.Routes))
+		t.Errorf("expected %v routes, got %v", len(other.Routes), len(x.Routes))
 	}
 
 	clusterset := map[string]*envoycluster.Cluster{}
@@ -304,10 +321,10 @@ func (x *xdsDump) Compare(t *testing.T, other xdsDump) {
 	for _, c := range other.Clusters {
 		otherc := clusterset[c.Name]
 		if otherc == nil {
-			t.Fatalf("cluster %v not found", c.Name)
+			t.Errorf("cluster %v not found", c.Name)
 		}
 		if !proto.Equal(c, otherc) {
-			t.Fatalf("cluster %v not equal", c.Name)
+			t.Errorf("cluster %v not equal", c.Name)
 		}
 	}
 	listenerset := map[string]*envoylistener.Listener{}
@@ -317,10 +334,10 @@ func (x *xdsDump) Compare(t *testing.T, other xdsDump) {
 	for _, c := range other.Listeners {
 		otherc := listenerset[c.Name]
 		if otherc == nil {
-			t.Fatalf("listener %v not found", c.Name)
+			t.Errorf("listener %v not found", c.Name)
 		}
 		if !proto.Equal(c, otherc) {
-			t.Fatalf("listener %v not equal", c.Name)
+			t.Errorf("listener %v not equal", c.Name)
 		}
 	}
 	routeset := map[string]*envoy_config_route_v3.RouteConfiguration{}
@@ -330,14 +347,13 @@ func (x *xdsDump) Compare(t *testing.T, other xdsDump) {
 	for _, c := range other.Routes {
 		otherc := routeset[c.Name]
 		if otherc == nil {
-			t.Fatalf("route %v not found", c.Name)
+			t.Errorf("route %v not found", c.Name)
 		}
 		if !proto.Equal(c, otherc) {
-			t.Fatalf("route %v not equal", c.Name)
+			t.Errorf("route %v not equal: %v vs %v", c.Name, c, otherc)
 		}
 	}
 
-	// note: with endpoints we might have order issues; so may need custom equals
 	epset := map[string]*envoyendpoint.ClusterLoadAssignment{}
 	for _, c := range x.Endpoints {
 		epset[c.ClusterName] = c
@@ -345,13 +361,46 @@ func (x *xdsDump) Compare(t *testing.T, other xdsDump) {
 	for _, c := range other.Endpoints {
 		otherc := epset[c.ClusterName]
 		if otherc == nil {
-			t.Fatalf("ep %v not found", c.ClusterName)
+			t.Errorf("ep %v not found", c.ClusterName)
+			continue
 		}
+		ep1 := flattenendpoints(c)
+		ep2 := flattenendpoints(otherc)
+		if !equalset(ep1, ep2) {
+			t.Errorf("ep list %v not equal: %v %v", c.ClusterName, ep1, ep2)
+		}
+		c.Endpoints = nil
+		otherc.Endpoints = nil
 		if !proto.Equal(c, otherc) {
-			t.Fatalf("ep %v not equal", c.ClusterName)
+			t.Errorf("ep %v not equal", c.ClusterName)
 		}
 	}
+}
 
+func equalset(a, b []*envoyendpoint.LocalityLbEndpoints) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for _, v := range a {
+		if slices.FindFunc(b, func(e *envoyendpoint.LocalityLbEndpoints) bool {
+			return proto.Equal(v, e)
+		}) == nil {
+			return false
+		}
+	}
+	return true
+}
+
+func flattenendpoints(v *envoyendpoint.ClusterLoadAssignment) []*envoyendpoint.LocalityLbEndpoints {
+	var flat []*envoyendpoint.LocalityLbEndpoints
+	for _, e := range v.Endpoints {
+		for _, l := range e.LbEndpoints {
+			flatbase := proto.Clone(e).(*envoyendpoint.LocalityLbEndpoints)
+			flatbase.LbEndpoints = []*envoyendpoint.LbEndpoint{l}
+			flat = append(flat, flatbase)
+		}
+	}
+	return flat
 }
 
 func (x *xdsDump) FromYaml(ya []byte) error {
@@ -471,18 +520,17 @@ func (x *xdsDump) ToYaml() ([]byte, error) {
 
 }
 
-func getclusters(t *testing.T, ctx context.Context, conn *grpc.ClientConn) []*envoycluster.Cluster {
+type xdsFetcher struct {
+	conn *grpc.ClientConn
+	dr   *discovery_v3.DiscoveryRequest
+}
+
+func (x *xdsFetcher) getclusters(t *testing.T, ctx context.Context) []*envoycluster.Cluster {
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 
-	dr := &discovery_v3.DiscoveryRequest{Node: &envoycore.Node{
-		Id: "reviews-1.default",
-		Metadata: &structpb.Struct{
-			Fields: map[string]*structpb.Value{"role": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("gloo-kube-gateway-api~%s~%s-%s", "default", "default", "http")}}}},
-	}}
-
-	cds := envoy_service_cluster_v3.NewClusterDiscoveryServiceClient(conn)
+	cds := envoy_service_cluster_v3.NewClusterDiscoveryServiceClient(x.conn)
 
 	//give ggv2 time to initialize so we don't get
 	// "ggv2 not initialized" error
@@ -491,7 +539,7 @@ func getclusters(t *testing.T, ctx context.Context, conn *grpc.ClientConn) []*en
 	if err != nil {
 		t.Fatalf("failed to get eds client: %v", err)
 	}
-	epcli.Send(dr)
+	epcli.Send(x.dr)
 	dresp, err := epcli.Recv()
 	if err != nil {
 		t.Fatalf("failed to get response from xds server: %v", err)
@@ -530,18 +578,12 @@ func getroutesnames(l *envoylistener.Listener) []string {
 	return routes
 }
 
-func getlisteners(t *testing.T, ctx context.Context, conn *grpc.ClientConn) []*envoylistener.Listener {
+func (x *xdsFetcher) getlisteners(t *testing.T, ctx context.Context) []*envoylistener.Listener {
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 
-	dr := &discovery_v3.DiscoveryRequest{Node: &envoycore.Node{
-		Id: "reviews-1.default",
-		Metadata: &structpb.Struct{
-			Fields: map[string]*structpb.Value{"role": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("gloo-kube-gateway-api~%s~%s-%s", "default", "default", "http")}}}},
-	}}
-
-	ds := envoy_service_listener_v3.NewListenerDiscoveryServiceClient(conn)
+	ds := envoy_service_listener_v3.NewListenerDiscoveryServiceClient(x.conn)
 
 	//give ggv2 time to initialize so we don't get
 	// "ggv2 not initialized" error
@@ -550,7 +592,7 @@ func getlisteners(t *testing.T, ctx context.Context, conn *grpc.ClientConn) []*e
 	if err != nil {
 		t.Fatalf("failed to get eds client: %v", err)
 	}
-	epcli.Send(dr)
+	epcli.Send(x.dr)
 	dresp, err := epcli.Recv()
 	if err != nil {
 		t.Fatalf("failed to get response from xds server: %v", err)
@@ -567,9 +609,9 @@ func getlisteners(t *testing.T, ctx context.Context, conn *grpc.ClientConn) []*e
 	return resources
 }
 
-func getendpoints(t *testing.T, ctx context.Context, conn *grpc.ClientConn, clusterServiceNames []string) []*envoyendpoint.ClusterLoadAssignment {
+func (x *xdsFetcher) getendpoints(t *testing.T, ctx context.Context, clusterServiceNames []string) []*envoyendpoint.ClusterLoadAssignment {
 
-	eds := envoy_service_endpoint_v3.NewEndpointDiscoveryServiceClient(conn)
+	eds := envoy_service_endpoint_v3.NewEndpointDiscoveryServiceClient(x.conn)
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 
@@ -577,13 +619,8 @@ func getendpoints(t *testing.T, ctx context.Context, conn *grpc.ClientConn, clus
 	if err != nil {
 		t.Fatalf("failed to get eds client: %v", err)
 	}
-	dr := &discovery_v3.DiscoveryRequest{Node: &envoycore.Node{
-		Id: "reviews-1.default",
-		Metadata: &structpb.Struct{
-			Fields: map[string]*structpb.Value{"role": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("gloo-kube-gateway-api~%s~%s-%s", "default", "default", "http")}}}},
-	},
-		ResourceNames: clusterServiceNames,
-	}
+	dr := proto.Clone(x.dr).(*discovery_v3.DiscoveryRequest)
+	dr.ResourceNames = clusterServiceNames
 	epcli.Send(dr)
 	dresp, err := epcli.Recv()
 	if err != nil {
@@ -596,14 +633,17 @@ func getendpoints(t *testing.T, ctx context.Context, conn *grpc.ClientConn, clus
 		if err := anyCluster.UnmarshalTo(&cla); err != nil {
 			t.Fatalf("failed to unmarshal cluster: %v", err)
 		}
-		clas = append(clas, &cla)
+		// remove kube endpoints, as with envtests we will get random ports, so we cant assert on them
+		if !strings.Contains(cla.ClusterName, "kube-svc:default-kubernetes") {
+			clas = append(clas, &cla)
+		}
 	}
 	return clas
 }
 
-func getroutes(t *testing.T, ctx context.Context, conn *grpc.ClientConn, rosourceNames []string) []*envoy_config_route_v3.RouteConfiguration {
+func (x *xdsFetcher) getroutes(t *testing.T, ctx context.Context, rosourceNames []string) []*envoy_config_route_v3.RouteConfiguration {
 
-	eds := envoy_service_route_v3.NewRouteDiscoveryServiceClient(conn)
+	eds := envoy_service_route_v3.NewRouteDiscoveryServiceClient(x.conn)
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 
@@ -611,13 +651,8 @@ func getroutes(t *testing.T, ctx context.Context, conn *grpc.ClientConn, rosourc
 	if err != nil {
 		t.Fatalf("failed to get eds client: %v", err)
 	}
-	dr := &discovery_v3.DiscoveryRequest{Node: &envoycore.Node{
-		Id: "reviews-1.default",
-		Metadata: &structpb.Struct{
-			Fields: map[string]*structpb.Value{"role": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("gloo-kube-gateway-api~%s~%s-%s", "default", "default", "http")}}}},
-	},
-		ResourceNames: rosourceNames,
-	}
+	dr := proto.Clone(x.dr).(*discovery_v3.DiscoveryRequest)
+	dr.ResourceNames = rosourceNames
 	epcli.Send(dr)
 	dresp, err := epcli.Recv()
 	if err != nil {

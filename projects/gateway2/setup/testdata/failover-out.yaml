@@ -104,17 +104,20 @@ clusters:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
   type: EDS
 endpoints:
-- clusterName: kube-svc:default-kubernetes-443_default-8057429479812104425
+- clusterName: kube-svc:default-reviews-8000_default-7955639536074288368
   endpoints:
   - lbEndpoints:
     - endpoint:
         address:
           socketAddress:
-            address: 192.168.2.191
-            portValue: 35131
+            address: 10.244.1.14
+            portValue: 8080
       loadBalancingWeight: 1
-- clusterName: kube-svc:default-reviews-8000_default-7955639536074288368
-  endpoints:
+    loadBalancingWeight: 1
+    locality:
+      region: r1
+      subZone: r1z2s3
+      zone: r1z2
   - lbEndpoints:
     - endpoint:
         address:
@@ -128,18 +131,6 @@ endpoints:
       subZone: r1z3s4
       zone: r1z3
     priority: 2
-  - lbEndpoints:
-    - endpoint:
-        address:
-          socketAddress:
-            address: 10.244.1.14
-            portValue: 8080
-      loadBalancingWeight: 1
-    loadBalancingWeight: 1
-    locality:
-      region: r1
-      subZone: r1z2s3
-      zone: r1z2
 listeners:
 - address:
     socketAddress:

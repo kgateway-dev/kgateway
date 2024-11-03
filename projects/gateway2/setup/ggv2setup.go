@@ -72,7 +72,7 @@ func getInitialSettings(ctx context.Context, c istiokube.Client, nns types.Names
 	out := &empty
 	err = runtime.DefaultUnstructuredConverter.FromUnstructured(i.UnstructuredContent(), out)
 	if err != nil {
-		logger.Panicf("failed converting unstructured into %T: %v", empty, i)
+		logger.Panicf("failed converting unstructured into settings: %v", i)
 		return nil
 	}
 	return out
