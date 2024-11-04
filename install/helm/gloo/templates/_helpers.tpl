@@ -386,3 +386,7 @@ app: gloo
 {{ toYaml . }}
 {{- end }}
 {{- end }}
+
+{{- define "gloo.extraDeploymentEnvVars" -}}
+{{/* Empty template to not cause issues rendering a non-existent template. Will be used in Enterprise to define env vars on Gloo's deployment. */}}
+{{- end }}
