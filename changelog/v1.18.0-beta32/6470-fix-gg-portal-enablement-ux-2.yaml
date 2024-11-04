@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Removes unused `gloo.kubeGateway.portal.enabled` helm value.
+  - type: NEW_FEATURE
+    description: Uses new defined variable in Gloo's deployment to handle extra environment variables. (`gloo.extraDeploymentEnvVars`)
+    issueLink: https://github.com/solo-io/solo-projects/issues/6470
+    resolvesIssue: false

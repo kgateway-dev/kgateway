@@ -241,10 +241,6 @@ spec:
           - name: GG_K8S_GW_CONTROLLER
             value: "true"
         {{- end }}{{/* if .Values.kubeGateway.enabled */}}
-        {{- if .Values.kubeGateway.portal.enabled }}
-          - name: GG_PORTAL_PLUGIN
-            value: "true"
-        {{- end}}
         {{- if .Values.gloo.splitLogOutput }}
           - name: SPLIT_LOG_OUTPUT
             value: "true"
@@ -273,6 +269,7 @@ spec:
           - name: HEADER_SECRET_REF_NS_MATCHES_US
             value: "true"
         {{- end}}
+{{- include "gloo.extraDeploymentEnvVars" . | nindent 8 }}
 {{- if not .Values.global.glooMtls.enabled }}
         readinessProbe:
           tcpSocket:
