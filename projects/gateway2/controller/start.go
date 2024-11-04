@@ -97,6 +97,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	ctrl.SetLogger(zap.New(opts...))
 
 	mgrOpts := ctrl.Options{
+		BaseContext:      func() context.Context { return ctx },
 		Scheme:           glooschemes.DefaultScheme(),
 		PprofBindAddress: "127.0.0.1:9099",
 		// if you change the port here, also change the port "health" in the helmchart.

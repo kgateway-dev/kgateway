@@ -96,7 +96,7 @@ func NewTestLogger(t *testing.T) *zap.Logger {
 	return zap.New(core, zap.AddCaller())
 }
 
-func TestSomething(t *testing.T) {
+func TestScenarios(t *testing.T) {
 	os.Setenv("POD_NAMESPACE", "gwtest")
 	testEnv := &envtest.Environment{
 		CRDDirectoryPaths: []string{
