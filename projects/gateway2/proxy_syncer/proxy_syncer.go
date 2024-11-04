@@ -36,7 +36,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/avast/retry-go/v4"
-	"github.com/golang/protobuf/proto"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/solo-io/gloo/pkg/utils/statsutils"
@@ -54,6 +53,7 @@ import (
 	kubeupstreams "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
 	"github.com/solo-io/go-utils/contextutils"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
+	"google.golang.org/protobuf/proto"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"

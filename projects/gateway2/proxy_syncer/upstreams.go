@@ -68,7 +68,16 @@ func NewPerClientEnvoyClusters(
 
 		for _, ucc := range uccs {
 			logger.Debug("applying destination rules for upstream", zap.String("ucc", ucc.ResourceName()))
-			upstream, name := applyDestRulesForUpstream(logger, kctx, destinationRulesIndex, ucc.Namespace, up, ucc)
+
+			hostname := ggv2utils.GetHostnameForUpstream(up.Inner)
+
+			destrule := destinationRulesIndex.FetchDestRulesFor(kctx, ucc.Namespace, hostname, ucc.Labels)
+
+			// if dest rules applies, translation will give the upstream a different name
+			// as the usptream hash will be different.
+			// save the original name so we can set it as the ServiceName on the cluster;
+			// this ensures that the name will match the ClusterLoadAssignment ClusterName.
+			upstream, name := ApplyDestRulesForUpstream(destrule, up.Inner)
 
 			latestSnap := &gloosnapshot.ApiSnapshot{}
 			latestSnap.Secrets = make([]*gloov1.Secret, 0, len(secrets))
@@ -123,19 +132,13 @@ func translate(ctx context.Context, settings *gloov1.Settings, translator setup.
 	return cluster, ggv2utils.HashProto(cluster)
 }
 
-func applyDestRulesForUpstream(logger *zap.Logger, kctx krt.HandlerContext, destinationRulesIndex DestinationRuleIndex, workloadNs string, u UpstreamWrapper, c krtcollections.UniqlyConnectedClient) (*gloov1.Upstream, string) {
-	// host that would match the dest rule from the endpoints.
-	// get the matching dest rule
-	// get the lb info from the dest rules and call prioritize
-	hostname := ggv2utils.GetHostnameForUpstream(u.Inner)
+func ApplyDestRulesForUpstream(destrule *DestinationRuleWrapper, u *gloov1.Upstream) (*gloov1.Upstream, string) {
 
-	destrule := destinationRulesIndex.FetchDestRulesFor(kctx, workloadNs, hostname, c.Labels)
 	if destrule != nil {
-
 		if outlier := destrule.Spec.GetTrafficPolicy().GetOutlierDetection(); outlier != nil {
-			name := getEndpointClusterName(u.Inner)
+			name := getEndpointClusterName(u)
 			// do not mutate the original upstream
-			up := *u.Inner
+			up := *u
 			out := &cluster.OutlierDetection{
 				Consecutive_5Xx:  outlier.GetConsecutive_5XxErrors(),
 				Interval:         outlier.GetInterval(),
@@ -176,5 +179,5 @@ func applyDestRulesForUpstream(logger *zap.Logger, kctx krt.HandlerContext, dest
 		}
 	}
 
-	return u.Inner, ""
+	return u, ""
 }

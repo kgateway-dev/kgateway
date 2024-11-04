@@ -115,8 +115,9 @@ func prioritizeWithLbInfo(logger *zap.Logger, ep EndpointsForUpstream, lbInfo Lo
 			applyLocalityFailover(&proxyLocality, cla, lbInfo.PriorityInfo.Failover)
 		}
 	}
-
-	logger.Debug("created cla", zap.String("cluster", cla.GetClusterName()), zap.Int("numAddresses", totalEndpoints))
+	if logger != nil {
+		logger.Debug("created cla", zap.String("cluster", cla.GetClusterName()), zap.Int("numAddresses", totalEndpoints))
+	}
 
 	// in theory we want to run endpoint plugins here.
 	// we only have one endpoint plugin, and it's not clear if it is in use. so

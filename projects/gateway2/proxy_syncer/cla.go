@@ -80,27 +80,27 @@ func prioritize(ep EndpointsForUpstream) *envoy_config_endpoint_v3.ClusterLoadAs
 	return cla
 }
 
-type uccWithEndpoints struct {
+type UccWithEndpoints struct {
 	Client        krtcollections.UniqlyConnectedClient
 	Endpoints     envoycache.Resource
 	EndpointsHash uint64
 	endpointsName string
 }
 
-func (c uccWithEndpoints) ResourceName() string {
+func (c UccWithEndpoints) ResourceName() string {
 	return fmt.Sprintf("%s/%s", c.Client.ResourceName(), c.endpointsName)
 }
 
-func (c uccWithEndpoints) Equals(in uccWithEndpoints) bool {
+func (c UccWithEndpoints) Equals(in UccWithEndpoints) bool {
 	return c.Client.Equals(in.Client) && c.EndpointsHash == in.EndpointsHash
 }
 
 type PerClientEnvoyEndpoints struct {
-	endpoints krt.Collection[uccWithEndpoints]
-	index     krt.Index[string, uccWithEndpoints]
+	endpoints krt.Collection[UccWithEndpoints]
+	index     krt.Index[string, UccWithEndpoints]
 }
 
-func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerContext, ucc krtcollections.UniqlyConnectedClient) []uccWithEndpoints {
+func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerContext, ucc krtcollections.UniqlyConnectedClient) []UccWithEndpoints {
 	return krt.Fetch(kctx, ie.endpoints, krt.FilterIndex(ie.index, ucc.ResourceName()))
 }
 
@@ -108,21 +108,17 @@ func NewPerClientEnvoyEndpoints(logger *zap.Logger, uccs krt.Collection[krtcolle
 	glooEndpoints krt.Collection[EndpointsForUpstream],
 	destinationRulesIndex DestinationRuleIndex) PerClientEnvoyEndpoints {
 
-	clas := krt.NewManyCollection(glooEndpoints, func(kctx krt.HandlerContext, ep EndpointsForUpstream) []uccWithEndpoints {
+	clas := krt.NewManyCollection(glooEndpoints, func(kctx krt.HandlerContext, ep EndpointsForUpstream) []UccWithEndpoints {
 		uccs := krt.Fetch(kctx, uccs)
-		uccWithEndpointsRet := make([]uccWithEndpoints, 0, len(uccs))
+		uccWithEndpointsRet := make([]UccWithEndpoints, 0, len(uccs))
 		for _, ucc := range uccs {
-			cla, additionalHash := applyDestRulesForHostnames(logger, kctx, destinationRulesIndex, ucc.Namespace, ep, ucc)
-			uccWithEndpointsRet = append(uccWithEndpointsRet, uccWithEndpoints{
-				Client:        ucc,
-				Endpoints:     resource.NewEnvoyResource(cla),
-				EndpointsHash: ep.lbEpsEqualityHash ^ additionalHash,
-				endpointsName: ep.ResourceName(),
-			})
+			destrule := destinationRulesIndex.FetchDestRulesFor(kctx, ucc.Namespace, ep.Hostname, ucc.Labels)
+			uccWithEp := PrioritizeEndpoints(logger, destrule, ep, ucc)
+			uccWithEndpointsRet = append(uccWithEndpointsRet, uccWithEp)
 		}
 		return uccWithEndpointsRet
 	})
-	idx := krt.NewIndex(clas, func(ucc uccWithEndpoints) []string {
+	idx := krt.NewIndex(clas, func(ucc UccWithEndpoints) []string {
 		return []string{ucc.Client.ResourceName()}
 	})
 
@@ -132,12 +128,7 @@ func NewPerClientEnvoyEndpoints(logger *zap.Logger, uccs krt.Collection[krtcolle
 	}
 }
 
-func applyDestRulesForHostnames(logger *zap.Logger, kctx krt.HandlerContext, destinationRulesIndex DestinationRuleIndex, workloadNs string, ep EndpointsForUpstream, c krtcollections.UniqlyConnectedClient) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64) {
-	// host that would match the dest rule from the endpoints.
-	// get the matching dest rule
-	// get the lb info from the dest rules and call prioritize
-
-	destrule := destinationRulesIndex.FetchDestRulesFor(kctx, workloadNs, ep.Hostname, c.Labels)
+func PrioritizeEndpoints(logger *zap.Logger, destrule *DestinationRuleWrapper, ep EndpointsForUpstream, ucc krtcollections.UniqlyConnectedClient) UccWithEndpoints {
 	var additionalHash uint64
 	var priorityInfo *PriorityInfo
 	if destrule != nil {
@@ -148,12 +139,18 @@ func applyDestRulesForHostnames(logger *zap.Logger, kctx krt.HandlerContext, des
 		additionalHash = hasher.Sum64()
 	}
 	lbInfo := LoadBalancingInfo{
-		PodLabels:    c.Labels,
-		PodLocality:  c.Locality,
+		PodLabels:    ucc.Labels,
+		PodLocality:  ucc.Locality,
 		PriorityInfo: priorityInfo,
 	}
 
-	return prioritizeWithLbInfo(logger, ep, lbInfo), additionalHash
+	cla := prioritizeWithLbInfo(logger, ep, lbInfo)
+	return UccWithEndpoints{
+		Client:        ucc,
+		Endpoints:     resource.NewEnvoyResource(cla),
+		EndpointsHash: ep.lbEpsEqualityHash ^ additionalHash,
+		endpointsName: ep.ResourceName(),
+	}
 }
 
 func getPriorityInfoFromDestrule(destrules DestinationRuleWrapper) *PriorityInfo {
