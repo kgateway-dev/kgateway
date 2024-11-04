@@ -292,8 +292,8 @@ func (this *EnvoySnapshot) Equal(that *EnvoySnapshot) bool {
 	if len(this.Endpoints.Items) != len(that.Endpoints.Items) || this.Endpoints.Version != that.Endpoints.Version {
 		return false
 	}
-	for key, thisVal := range this.Endpoints.Items {
-		thatVal, ok := that.Endpoints.Items[key]
+	for key, thisVal := range this.Listeners.Items {
+		thatVal, ok := that.Listeners.Items[key]
 		if !ok {
 			return false
 		}
