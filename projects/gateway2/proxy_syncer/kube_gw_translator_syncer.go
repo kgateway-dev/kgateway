@@ -103,6 +103,8 @@ func (s *ProxyTranslator) syncXds(
 
 	// if the snapshot is not consistent, make it so
 	// TODO: me may need to copy this to not change krt cache.
+	// TODO: this is also may not be needed now that envoy has
+	// a default initial fetch timeout
 	snap.MakeConsistent()
 	s.xdsCache.SetSnapshot(proxyKey, snap)
 

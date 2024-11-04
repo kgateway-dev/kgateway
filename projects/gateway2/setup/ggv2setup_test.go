@@ -129,16 +129,14 @@ func TestScenarios(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get init kube client: %v", err)
 	}
-	istiokube.EnableCrdWatcher(client)
 
-	// apply yaml to the cluster
-
+	// apply settings/gwclass to the cluster
 	err = client.ApplyYAMLFiles("default", "testdata/setupyaml/setup.yaml")
 	if err != nil {
 		t.Fatalf("failed to apply yaml: %v", err)
 	}
 
-	// get settings:
+	// setup xDS server:
 	uniqueClientCallbacks, builder := krtcollections.NewUniquelyConnectedClients()
 	setupOpts := bootstrap.NewSetupOpts(xds.NewAdsSnapshotCache(ctx), uniqueClientCallbacks)
 	addr := &net.TCPAddr{
@@ -169,6 +167,9 @@ func TestScenarios(t *testing.T) {
 		t.Log("grpc server stopped")
 	}()
 
+	// start ggv2
+	// (note: we don't have gloo-edge working, so nothing will reconcile the proxies.
+	// that's mostly ok, as we don't test the features that require these proxies in gloo-edge)
 	setupOpts.ProxyReconcileQueue = ggv2utils.NewAsyncQueue[gloov1.ProxyList]()
 
 	wg.Add(1)
@@ -181,6 +182,7 @@ func TestScenarios(t *testing.T) {
 	}()
 	// give ggv2 time to initialize so we don't get
 	// "ggv2 not initialized" error
+	// this means that it attaches the pod collection to the unique client set collection.
 	time.Sleep(time.Second)
 
 	// create the test ns
@@ -189,12 +191,13 @@ func TestScenarios(t *testing.T) {
 		t.Fatalf("failed to create namespace: %v", err)
 	}
 
-	// liste all yamls in test data
+	// list all yamls in test data
 	files, err := os.ReadDir("testdata")
 	if err != nil {
 		t.Fatalf("failed to read dir: %v", err)
 	}
 	for _, f := range files {
+		// run tests with the yaml files (but not -out.yaml files)/s
 		if strings.HasSuffix(f.Name(), ".yaml") && !strings.HasSuffix(f.Name(), "-out.yaml") {
 			fullpath := filepath.Join("testdata", f.Name())
 			t.Run(f.Name(), func(t *testing.T) {
@@ -237,6 +240,8 @@ func testScenario(t *testing.T, ctx context.Context, client istiokube.CLIClient,
 	if err != nil {
 		t.Fatalf("failed to read file: %v", err)
 	}
+	// change the gw name, so we could potentially run multiple tests in parallel (tough currently
+	// it has other issues, so we don't run them in parallel)
 	testyaml := strings.ReplaceAll(string(testyamlbytes), gwname, testgwname)
 
 	yamlfile := filepath.Join(t.TempDir(), "test.yaml")
@@ -261,7 +266,6 @@ func testScenario(t *testing.T, ctx context.Context, client istiokube.CLIClient,
 		}
 		os.WriteFile(fout, d, 0644)
 		t.Fatal("wrote out file - nothing to test")
-		return
 	}
 	expectedXdsDump.Compare(t, dump)
 	fmt.Println("test done")
@@ -384,11 +388,16 @@ func (x *xdsDump) Compare(t *testing.T, other xdsDump) {
 		if !equalset(ep1, ep2) {
 			t.Errorf("ep list %v not equal: %v %v", c.ClusterName, ep1, ep2)
 		}
+		ce := c.Endpoints
+		ocd := otherc.Endpoints
 		c.Endpoints = nil
 		otherc.Endpoints = nil
 		if !proto.Equal(c, otherc) {
 			t.Errorf("ep %v not equal", c.ClusterName)
 		}
+		c.Endpoints = ce
+		otherc.Endpoints = ocd
+
 	}
 }
 
@@ -419,8 +428,6 @@ func flattenendpoints(v *envoyendpoint.ClusterLoadAssignment) []*envoyendpoint.L
 }
 
 func (x *xdsDump) FromYaml(ya []byte) error {
-	var ju jsonpb.UnmarshalOptions
-
 	ya, err := yaml.YAMLToJSON(ya)
 	if err != nil {
 		return err
@@ -432,90 +439,77 @@ func (x *xdsDump) FromYaml(ya []byte) error {
 		return err
 	}
 	for _, c := range jsonM["clusters"] {
-		jb, err := json.Marshal(c)
+		r, err := anyJsonRoundTrip[envoycluster.Cluster](c)
 		if err != nil {
 			return err
 		}
-		var cluster envoycluster.Cluster
-		ju.Unmarshal(jb, &cluster)
-		x.Clusters = append(x.Clusters, &cluster)
+		x.Clusters = append(x.Clusters, r)
 	}
 	for _, c := range jsonM["endpoints"] {
-		jb, err := json.Marshal(c)
+		r, err := anyJsonRoundTrip[envoyendpoint.ClusterLoadAssignment](c)
 		if err != nil {
 			return err
 		}
-		var r envoyendpoint.ClusterLoadAssignment
-		ju.Unmarshal(jb, &r)
-		x.Endpoints = append(x.Endpoints, &r)
+		x.Endpoints = append(x.Endpoints, r)
 	}
 	for _, c := range jsonM["listeners"] {
-		jb, err := json.Marshal(c)
+		r, err := anyJsonRoundTrip[envoylistener.Listener](c)
 		if err != nil {
 			return err
 		}
-		var r envoylistener.Listener
-		ju.Unmarshal(jb, &r)
-		x.Listeners = append(x.Listeners, &r)
+		x.Listeners = append(x.Listeners, r)
 	}
 	for _, c := range jsonM["routes"] {
-		jb, err := json.Marshal(c)
+		r, err := anyJsonRoundTrip[envoy_config_route_v3.RouteConfiguration](c)
 		if err != nil {
 			return err
 		}
-		var r envoy_config_route_v3.RouteConfiguration
-		ju.Unmarshal(jb, &r)
-		x.Routes = append(x.Routes, &r)
+		x.Routes = append(x.Routes, r)
 	}
 	return nil
 }
 
+func anyJsonRoundTrip[T any, PT interface {
+	proto.Message
+	*T
+}](c any) (PT, error) {
+	var ju jsonpb.UnmarshalOptions
+	jb, err := json.Marshal(c)
+	var zero PT
+	if err != nil {
+		return zero, err
+	}
+	var r T
+	var pr PT = &r
+	err = ju.Unmarshal(jb, pr)
+	return pr, err
+}
+
 func (x *xdsDump) ToYaml() ([]byte, error) {
-	var j jsonpb.MarshalOptions
 	jsonM := map[string][]any{}
 	for _, c := range x.Clusters {
-		s, err := j.Marshal(c)
-		if err != nil {
-			return nil, err
-		}
-		var roundtrip any
-		err = json.Unmarshal([]byte(s), &roundtrip)
+		roundtrip, err := protoJsonRoundTrip(c)
 		if err != nil {
 			return nil, err
 		}
 		jsonM["clusters"] = append(jsonM["clusters"], roundtrip)
 	}
 	for _, c := range x.Listeners {
-		s, err := j.Marshal(c)
-		if err != nil {
-			return nil, err
-		}
-		var roundtrip any
-		err = json.Unmarshal(s, &roundtrip)
+		roundtrip, err := protoJsonRoundTrip(c)
 		if err != nil {
 			return nil, err
 		}
 		jsonM["listeners"] = append(jsonM["listeners"], roundtrip)
 	}
 	for _, c := range x.Endpoints {
-		s, err := j.Marshal(c)
-		if err != nil {
-			return nil, err
-		}
-		var roundtrip any
-		err = json.Unmarshal(s, &roundtrip)
+		roundtrip, err := protoJsonRoundTrip(c)
 		if err != nil {
 			return nil, err
 		}
 		jsonM["endpoints"] = append(jsonM["endpoints"], roundtrip)
 	}
 	for _, c := range x.Routes {
-		s, err := j.Marshal(c)
-		if err != nil {
-			return nil, err
-		}
-		var roundtrip any
-		err = json.Unmarshal(s, &roundtrip)
+		roundtrip, err := protoJsonRoundTrip(c)
 		if err != nil {
 			return nil, err
 		}
@@ -532,7 +526,20 @@ func (x *xdsDump) ToYaml() ([]byte, error) {
 		return nil, err
 	}
 	return ya, nil
+}
 
+func protoJsonRoundTrip(c proto.Message) (any, error) {
+	var j jsonpb.MarshalOptions
+	s, err := j.Marshal(c)
+	if err != nil {
+		return nil, err
+	}
+	var roundtrip any
+	err = json.Unmarshal(s, &roundtrip)
+	if err != nil {
+		return nil, err
+	}
+	return roundtrip, nil
 }
 
 type xdsFetcher struct {

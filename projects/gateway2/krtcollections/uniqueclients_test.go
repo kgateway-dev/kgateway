@@ -79,7 +79,17 @@ func TestUniqueClients(t *testing.T) {
 			ucc := uccBuilder(context.Background(), pods)
 			ucc.Synced().WaitUntilSynced(context.Background().Done())
 
+			// check fetch as well
+
+			fetchNames := sets.New[string]()
+
 			for i, r := range tc.requests {
+
+				fetchDR := proto.Clone(r).(*envoy_service_discovery_v3.DiscoveryRequest)
+				err := cb.OnFetchRequest(context.Background(), fetchDR)
+				g.Expect(err).NotTo(HaveOccurred())
+				fetchNames.Insert(fetchDR.GetNode().GetMetadata().GetFields()[xds.RoleKey].GetStringValue())
+
 				for j := 0; j < 10; j++ { // simulate 10 requests that are the same client
 					cb.OnStreamRequest(int64(i*10+j), proto.Clone(r).(*envoy_service_discovery_v3.DiscoveryRequest))
 				}
@@ -91,6 +101,7 @@ func TestUniqueClients(t *testing.T) {
 			for _, uc := range allUcc {
 				names.Insert(uc.ResourceName())
 			}
+			g.Expect(fetchNames).To(Equal(tc.result))
 			g.Expect(names).To(Equal(tc.result))
 			for i := range tc.requests {
 				for j := 0; j < 10; j++ {
@@ -99,8 +110,8 @@ func TestUniqueClients(t *testing.T) {
 				}
 				// make sure client removed only when all similar clients are removed.
 				g.Expect(ucc.List()).To(HaveLen(len(allUcc) - 1 - i))
-
 			}
+
 		})
 	}
 

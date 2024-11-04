@@ -31,14 +31,22 @@ func newConnectedClient(uniqueClientName string) ConnectedClient {
 	}
 }
 
+// Certain parts of translation (mainly priority failover) require different translation for
+// different clients (for example, 2 envoys on different AZs).
+// This collection represents the unique clients (envoys) that are connected to the xds server.
+// by unique we mean same namespace, role, labels (which include locality).
+// This collection is populated using xds server callbacks. When an envoy connects to us,
+// we grab it's pod name/namesspace from the requests node->id.
+// We then fetch that pod to get its labels, create a UniqlyConnectedClient and it them to the collection.
 type UniqlyConnectedClient struct {
-	// name namespace of gateway
 	Role      string
 	Labels    map[string]string
 	Locality  PodLocality
 	Namespace string
 
-	snapshotKey  string
+	// modified role that includes the namespace and the hash of the labels.
+	// we set the client's role to this value in the node metadata. so the snapshot key in the cache
+	// should also be set to this value.
 	resourceName string
 }
 
@@ -64,7 +72,6 @@ func newUniqlyConnectedClient(node *envoy_config_core_v3.Node, ns string, labels
 		Namespace:    ns,
 		Locality:     locality,
 		Labels:       labels,
-		snapshotKey:  snapshotKey,
 		resourceName: fmt.Sprintf("%s%s%s", snapshotKey, xds.KeyDelimiter, ns),
 	}
 }
@@ -268,11 +275,8 @@ func (x *callbacks) OnFetchRequest(ctx context.Context, r *envoy_service_discove
 	return c.fetchRequest(ctx, r)
 }
 
-func (x *callbacksCollection) fetchRequest(ctx context.Context, r *envoy_service_discovery_v3.DiscoveryRequest) error {
+func (x *callbacksCollection) fetchRequest(_ context.Context, r *envoy_service_discovery_v3.DiscoveryRequest) error {
 	var pod *LocalityPod
-	if r.GetNode() != nil {
-		return fmt.Errorf("node metadata is nil")
-	}
 	podRef := getRef(r.GetNode())
 	k := krt.Key[LocalityPod](krt.Named{Name: podRef.Name, Namespace: podRef.Namespace}.ResourceName())
 	pod = x.augmentedPods.GetKey(k)

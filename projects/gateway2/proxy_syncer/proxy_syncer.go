@@ -138,7 +138,14 @@ func NewProxySyncer(
 		augmentedPods:       augmentedPods,
 		uniqueClients:       uniqueClients,
 		proxyReconcileQueue: proxyReconcileQueue,
-		translator:          translator,
+		// we would want to instantiate the translator here, but
+		// current we plugins do not assume they may be called concurrently, which could be the case
+		// with individual object translation.
+		// there for we instantiate a new translator each time during translation.
+		// once we audit the plugins to be safe for concurrent use, we can instantiate the translator here.
+		// this will also have the advantage, that the plugin life-cycle will outlive a single translation
+		// so that they could own krt collections internally.
+		translator: translator,
 	}
 }
 
@@ -405,7 +412,7 @@ func (s *ProxySyncer) Init(ctx context.Context) error {
 		if o.Event != controllers.EventDelete {
 			l = o.Latest().list
 		}
-		s.reconcileProxies(ctx, l)
+		s.reconcileProxies(l)
 	})
 
 	// as proxies are created, they also contain a reportMap containing status for the Gateway and associated HTTPRoutes (really parentRefs)
@@ -877,7 +884,8 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMa
 // There are two reasons we must make these proxies available to legacy syncer:
 // 1. To allow Rate Limit extensions to work, as it only syncs RL configs it finds used on Proxies in the snapshots
 // 2. For debug tooling, notably the debug.ProxyEndpointServer
-func (s *ProxySyncer) reconcileProxies(ctx context.Context, proxyList gloov1.ProxyList) {
+func (s *ProxySyncer) reconcileProxies(proxyList gloov1.ProxyList) {
+	// gloo edge v1 will read from this queue
 	s.proxyReconcileQueue.Enqueue(proxyList)
 }
 
