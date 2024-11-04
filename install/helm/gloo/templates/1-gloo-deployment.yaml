@@ -269,7 +269,10 @@ spec:
           - name: HEADER_SECRET_REF_NS_MATCHES_US
             value: "true"
         {{- end}}
-{{- include "gloo.extraDeploymentEnvVars" . | nindent 8 }}
+{{- $extraEnvVars := include "gloo.extraDeploymentEnvVars" . | trim -}}
+{{- if $extraEnvVars -}}
+{{ $extraEnvVars | nindent 10 }}
+{{- end }}
 {{- if not .Values.global.glooMtls.enabled }}
         readinessProbe:
           tcpSocket:
