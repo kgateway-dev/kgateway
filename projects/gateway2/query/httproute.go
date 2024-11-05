@@ -341,29 +341,22 @@ func (r *gatewayQueries) GetRoutesForGateway(ctx context.Context, gw *gwv1.Gatew
 		Name:      gw.Name,
 	}
 
-	// Check if the required Gateway API CRDs exists
-	routeListTypes := []client.ObjectList{}
-	routeCRDs := map[string]client.ObjectList{
-		"httproutes.gateway.networking.k8s.io": &gwv1.HTTPRouteList{},
-		"tcproutes.gateway.networking.k8s.io":  &gwv1a2.TCPRouteList{},
+	// Check if the required Gateway API CRDs exist
+	if err := r.checkCRDs(ctx); err != nil {
+		return nil, err
 	}
 
-	for crdName, routeListType := range routeCRDs {
-		if err := r.isCRDInstalled(ctx, crdName); err != nil {
-			if errors.IsNotFound(err) {
-				fmt.Printf("%s CRD not found; skipping\n", crdName)
-				continue
-			} else {
-				return nil, fmt.Errorf("error checking for %s CRD: %w", crdName, err)
-			}
-		}
-		routeListTypes = append(routeListTypes, routeListType)
-	}
-
-	if len(routeListTypes) == 0 {
-		// Handle the case where no route types are added returning an empty result.
+	// If requiredCRDsExist is false, return an empty result
+	if r.requiredCRDsExist != nil && !*r.requiredCRDsExist {
 		return NewRoutesForGwResult(), nil
 	}
+
+	// List of route types to process based on installed CRDs
+	routeListTypes := []client.ObjectList{}
+
+	// Add route types based on available CRDs
+	// Since we have confirmed that both CRDs exist, we can proceed to add them
+	routeListTypes = append(routeListTypes, &gwv1.HTTPRouteList{}, &gwv1a2.TCPRouteList{})
 
 	var routes []client.Object
 	for _, routeList := range routeListTypes {
@@ -494,13 +487,37 @@ func (r *gatewayQueries) processRoute(ctx context.Context, gw *gwv1.Gateway, rou
 	return nil
 }
 
-func (r *gatewayQueries) isCRDInstalled(ctx context.Context, crdName string) error {
+func (r *gatewayQueries) checkCRDs(ctx context.Context) error {
 	if r.requiredCRDsExist != nil && *r.requiredCRDsExist {
-		// Simulate that the CRDs exist for testing
+		// CRDs are already known to exist, return early
 		return nil
 	}
-	crd := &apiextensionsv1.CustomResourceDefinition{}
-	return r.client.Get(ctx, client.ObjectKey{Name: crdName}, crd)
+
+	// List of required CRDs and their corresponding route list types
+	requiredCRDs := []string{
+		"httproutes.gateway.networking.k8s.io",
+		"tcproutes.gateway.networking.k8s.io",
+	}
+
+	// Check each required CRD
+	for _, crdName := range requiredCRDs {
+		crd := &apiextensionsv1.CustomResourceDefinition{}
+		err := r.client.Get(ctx, client.ObjectKey{Name: crdName}, crd)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				// CRD not found; set requiredCRDsExist to false
+				r.requiredCRDsExist = ptr.To(false)
+				fmt.Printf("%s CRD not found; skipping\n", crdName)
+				return nil
+			}
+			// An error occurred while checking the CRD
+			return fmt.Errorf("error checking for %s CRD: %w", crdName, err)
+		}
+	}
+	// All required CRDs are installed
+	r.requiredCRDsExist = ptr.To(true)
+
+	return nil
 }
 
 // isKindAllowed is a helper function to check if a kind is allowed.

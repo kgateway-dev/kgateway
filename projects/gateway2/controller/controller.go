@@ -488,9 +488,6 @@ func (r *controllerReconciler) ReconcileTcpRoutes(ctx context.Context, req ctrl.
 	//	queries := query.NewData(r.cli, r.scheme)
 	//	httproute.TranslateGatewayHTTPRouteRules(queries, hr, nil)
 
-	log := log.FromContext(ctx).WithValues("tcproute", req.NamespacedName)
-	log.Info("reconciling tcproute")
-
 	r.kick(ctx)
 	return ctrl.Result{}, nil
 }
