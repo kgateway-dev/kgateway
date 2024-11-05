@@ -16,3 +16,14 @@ func GetHostnameForUpstream(us *v1.Upstream) string {
 	}
 	return ""
 }
+
+func GetPortForUpstream(us *v1.Upstream) uint32 {
+	// get the upstream name and namespace
+	// TODO: suppport other suffixes that are not cluster.local
+
+	switch uptype := us.GetUpstreamType().(type) {
+	case *v1.Upstream_Kube:
+		return uptype.Kube.GetServicePort()
+	}
+	return 0
+}

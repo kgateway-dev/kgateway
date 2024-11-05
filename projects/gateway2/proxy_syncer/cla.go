@@ -10,6 +10,7 @@ import (
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"go.uber.org/zap"
+	"istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -132,11 +133,24 @@ func PrioritizeEndpoints(logger *zap.Logger, destrule *DestinationRuleWrapper, e
 	var additionalHash uint64
 	var priorityInfo *PriorityInfo
 	if destrule != nil {
-		priorityInfo = getPriorityInfoFromDestrule(*destrule)
-		hasher := fnv.New64()
-		hasher.Write([]byte(destrule.UID))
-		hasher.Write([]byte(fmt.Sprintf("%v", destrule.Generation)))
-		additionalHash = hasher.Sum64()
+		enabled := destrule.Spec.GetTrafficPolicy().GetLoadBalancer().GetLocalityLbSetting().GetEnabled()
+		if enabled == nil || enabled.Value {
+			localityLb := destrule.Spec.GetTrafficPolicy().GetLoadBalancer().GetLocalityLbSetting()
+			for _, portlevel := range destrule.Spec.GetTrafficPolicy().GetPortLevelSettings() {
+				if portlevel.GetPort().GetNumber() == ep.Port {
+					localityLb = portlevel.GetLoadBalancer().GetLocalityLbSetting()
+					break
+				}
+			}
+
+			if localityLb != nil {
+				priorityInfo = getPriorityInfoFromDestrule(localityLb)
+				hasher := fnv.New64()
+				hasher.Write([]byte(destrule.UID))
+				hasher.Write([]byte(fmt.Sprintf("%v", destrule.Generation)))
+				additionalHash = hasher.Sum64()
+			}
+		}
 	}
 	lbInfo := LoadBalancingInfo{
 		PodLabels:    ucc.Labels,
@@ -153,11 +167,7 @@ func PrioritizeEndpoints(logger *zap.Logger, destrule *DestinationRuleWrapper, e
 	}
 }
 
-func getPriorityInfoFromDestrule(destrules DestinationRuleWrapper) *PriorityInfo {
-	localityLb := destrules.Spec.GetTrafficPolicy().GetLoadBalancer().GetLocalityLbSetting()
-	if localityLb == nil {
-		return nil
-	}
+func getPriorityInfoFromDestrule(localityLb *v1alpha3.LocalityLoadBalancerSetting) *PriorityInfo {
 	return &PriorityInfo{
 		FailoverPriority: NewPriorities(localityLb.GetFailoverPriority()),
 		Failover:         localityLb.GetFailover(),

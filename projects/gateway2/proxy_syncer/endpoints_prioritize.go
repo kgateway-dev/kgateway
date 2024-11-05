@@ -106,14 +106,12 @@ func prioritizeWithLbInfo(logger *zap.Logger, ep EndpointsForUpstream, lbInfo Lo
 
 	if lbInfo.PriorityInfo != nil && lbInfo.PriorityInfo.FailoverPriority == nil {
 		// if no priorities, fallback to failover
-		if len(lbInfo.PriorityInfo.Failover) != 0 {
-			proxyLocality := envoy_config_core_v3.Locality{
-				Region:  lbInfo.PodLocality.Region,
-				Zone:    lbInfo.PodLocality.Zone,
-				SubZone: lbInfo.PodLocality.Subzone,
-			}
-			applyLocalityFailover(&proxyLocality, cla, lbInfo.PriorityInfo.Failover)
+		proxyLocality := envoy_config_core_v3.Locality{
+			Region:  lbInfo.PodLocality.Region,
+			Zone:    lbInfo.PodLocality.Zone,
+			SubZone: lbInfo.PodLocality.Subzone,
 		}
+		applyLocalityFailover(&proxyLocality, cla, lbInfo.PriorityInfo.Failover)
 	}
 	if logger != nil {
 		logger.Debug("created cla", zap.String("cluster", cla.GetClusterName()), zap.Int("numAddresses", totalEndpoints))
