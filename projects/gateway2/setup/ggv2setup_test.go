@@ -125,6 +125,7 @@ func TestScenarios(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get assets dir: %v", err)
 	}
+	t.Cleanup(func() { testEnv.Stop() })
 	client, err := istiokube.NewCLIClient(istiokube.NewClientConfigForRestConfig(cfg))
 	if err != nil {
 		t.Fatalf("failed to get init kube client: %v", err)
