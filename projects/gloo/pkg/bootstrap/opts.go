@@ -24,12 +24,14 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
+	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 )
 
 type SetupOpts struct {
 	Cache               cache.SnapshotCache
 	ProxyReconcileQueue ggv2utils.AsyncQueue[v1.ProxyList]
 	ExtraGatewayClasses []string
+	ExtraCallbacks      xdsserver.Callbacks
 
 	xdsHost    string
 	xdsPort    int32
@@ -37,10 +39,11 @@ type SetupOpts struct {
 	xdsSet     chan struct{}
 }
 
-func NewSetupOpts(cache cache.SnapshotCache) *SetupOpts {
+func NewSetupOpts(cache cache.SnapshotCache, cb xdsserver.Callbacks) *SetupOpts {
 	return &SetupOpts{
-		Cache:  cache,
-		xdsSet: make(chan struct{}),
+		Cache:          cache,
+		ExtraCallbacks: cb,
+		xdsSet:         make(chan struct{}),
 	}
 }
 

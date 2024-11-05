@@ -24,6 +24,10 @@ func (us ResourceWrapper[T]) ResourceName() string {
 	}.ResourceName()
 }
 
+func (us ResourceWrapper[T]) String() string {
+	return us.ResourceName()
+}
+
 func (us ResourceWrapper[T]) Equals(in ResourceWrapper[T]) bool {
 	return proto.Equal(us.Inner, in.Inner)
 }

@@ -8,8 +8,8 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	ggv2utils "github.com/solo-io/gloo/projects/gateway2/utils"
@@ -77,61 +77,48 @@ type EndpointWithMd struct {
 }
 type EndpointsForUpstream struct {
 	LbEps       map[krtcollections.PodLocality][]EndpointWithMd
-	clusterName string
 	UpstreamRef types.NamespacedName
+	Hostname    string
+	clusterName string
 
 	lbEpsEqualityHash uint64
-	logger            *zap.Logger
 }
 
 func NewEndpointsForUpstream(us UpstreamWrapper, logger *zap.Logger) *EndpointsForUpstream {
-	clusterName := translator.UpstreamToClusterName(us.Inner.GetMetadata().Ref())
 	// start with a hash of the cluster name. technically we dont need it for krt, as we can compare the upstream name. but it helps later
 	// to compute the hash we present envoy with.
 	h := fnv.New64()
-	h.Write([]byte(clusterName))
+	h.Write([]byte(us.Inner.GetMetadata().Ref().String()))
 	lbEpsEqualityHash := h.Sum64()
 
 	// add the upstream hash to the clustername, so that if it changes the envoy cluster will become warm again.
-	clusterName = getEndpointClusterName(clusterName, us.Inner)
+	clusterName := getEndpointClusterName(us.Inner)
 	return &EndpointsForUpstream{
-		LbEps:       make(map[krtcollections.PodLocality][]EndpointWithMd),
-		clusterName: clusterName,
+		LbEps: make(map[krtcollections.PodLocality][]EndpointWithMd),
 		UpstreamRef: types.NamespacedName{
 			Namespace: us.Inner.GetMetadata().GetNamespace(),
 			Name:      us.Inner.GetMetadata().GetName(),
 		},
+		Hostname:          ggv2utils.GetHostnameForUpstream(us.Inner),
+		clusterName:       clusterName,
 		lbEpsEqualityHash: lbEpsEqualityHash,
 	}
 }
-
-func (e *EndpointsForUpstream) Add(l krtcollections.PodLocality, emd EndpointWithMd) {
+func hashEndpoints(l krtcollections.PodLocality, emd EndpointWithMd) uint64 {
 	hasher := fnv.New64()
 	hasher.Write([]byte(l.Region))
 	hasher.Write([]byte(l.Zone))
 	hasher.Write([]byte(l.Subzone))
 
 	ggv2utils.HashUint64(hasher, ggv2utils.HashLabels(emd.EndpointMd.Labels))
+	ggv2utils.HashProtoWithHasher(hasher, emd.LbEndpoint)
+	return hasher.Sum64()
+}
 
-	var buffer [1024]byte
-	mo := proto.MarshalOptions{Deterministic: true}
-	buf := buffer[:0]
-	out, err := mo.MarshalAppend(buf, emd.LbEndpoint)
-	if err != nil {
-		if e.logger != nil {
-			e.logger.DPanic("marshalling envoy snapshot components", zap.Error(err))
-		}
-	}
-	_, err = hasher.Write(out)
-	if err != nil {
-		if e.logger != nil {
-			e.logger.DPanic("constructing hash for envoy snapshot components", zap.Error(err))
-		}
-	}
-
+func (e *EndpointsForUpstream) Add(l krtcollections.PodLocality, emd EndpointWithMd) {
 	// xor it as we dont care about order - if we have the same endpoints in the same locality
 	// we are good.
-	e.lbEpsEqualityHash ^= hasher.Sum64()
+	e.lbEpsEqualityHash ^= hashEndpoints(l, emd)
 	e.LbEps[l] = append(e.LbEps[l], emd)
 }
 
@@ -140,7 +127,7 @@ func (c EndpointsForUpstream) ResourceName() string {
 }
 
 func (c EndpointsForUpstream) Equals(in EndpointsForUpstream) bool {
-	return c.UpstreamRef == in.UpstreamRef && c.lbEpsEqualityHash == in.lbEpsEqualityHash
+	return c.UpstreamRef == in.UpstreamRef && c.lbEpsEqualityHash == in.lbEpsEqualityHash && c.Hostname == in.Hostname
 }
 
 func NewGlooK8sEndpoints(ctx context.Context, inputs EndpointsInputs) krt.Collection[EndpointsForUpstream] {
@@ -212,7 +199,6 @@ func TransformUpstreamsBuilder(ctx context.Context, inputs EndpointsInputs) func
 					}
 				}
 
-				var podLabels map[string]string
 				var augmentedLabels map[string]string
 				var l krtcollections.PodLocality
 				if podName != "" {
@@ -222,11 +208,10 @@ func TransformUpstreamsBuilder(ctx context.Context, inputs EndpointsInputs) func
 					}))
 					if maybePod != nil {
 						l = maybePod.Locality
-						podLabels = maybePod.AugmentedLabels
 						augmentedLabels = maybePod.AugmentedLabels
 					}
 				}
-				ep := createLbEndpoint(addr.IP, port, podLabels, enableAutoMtls)
+				ep := createLbEndpoint(addr.IP, port, augmentedLabels, enableAutoMtls)
 
 				ret.Add(l, EndpointWithMd{
 					LbEndpoint: ep,
@@ -257,7 +242,8 @@ func createLbEndpoint(address string, port uint32, podLabels map[string]string, 
 	}
 
 	return &envoy_config_endpoint_v3.LbEndpoint{
-		Metadata: metadata,
+		Metadata:            metadata,
+		LoadBalancingWeight: wrapperspb.UInt32(1),
 		HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
 			Endpoint: &envoy_config_endpoint_v3.Endpoint{
 				Address: &envoy_config_core_v3.Address{
@@ -332,7 +318,8 @@ func findFirstPortInEndpointSubsets(subset corev1.EndpointSubset, singlePortServ
 }
 
 // TODO: use exported version from translator?
-func getEndpointClusterName(clusterName string, upstream *v1.Upstream) string {
+func getEndpointClusterName(upstream *v1.Upstream) string {
+	clusterName := translator.UpstreamToClusterName(upstream.GetMetadata().Ref())
 	endpointClusterName, err := translator.GetEndpointClusterName(clusterName, upstream)
 	if err != nil {
 		panic(err)
