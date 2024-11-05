@@ -2,6 +2,7 @@ package wellknown
 
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/sets"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 	apiv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -83,4 +84,12 @@ var (
 		Version: apiv1beta1.GroupVersion.Version,
 		Kind:    ReferenceGrantListKind,
 	}
+
+	GatewayCRDs = sets.New[string](
+		"gatewayclasses.gateway.networking.k8s.io",
+		"gateways.gateway.networking.k8s.io",
+		"httproutes.gateway.networking.k8s.io",
+		"tcproutes.gateway.networking.k8s.io",
+		"referencegrants.gateway.networking.k8s.io",
+	)
 )
