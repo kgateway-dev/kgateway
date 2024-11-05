@@ -89,7 +89,7 @@ var _ = Describe("Gloo Setup Syncer", func() {
 			}
 
 			It("setup can be called twice", func() {
-				setupOpts := bootstrap.NewSetupOpts(xds.NewAdsSnapshotCache(ctx))
+				setupOpts := bootstrap.NewSetupOpts(xds.NewAdsSnapshotCache(ctx), nil)
 				glooSetup := setup.NewSetupFunc(setupOpts)
 
 				err := glooSetup(ctx, nil, memory.NewInMemoryResourceCache(), settings, singlereplica.Identity())

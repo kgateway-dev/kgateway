@@ -9,6 +9,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
+	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	ggv2setup "github.com/solo-io/gloo/projects/gateway2/setup"
 	ggv2utils "github.com/solo-io/gloo/projects/gateway2/utils"
 	"github.com/solo-io/gloo/projects/gloo/constants"
@@ -18,6 +19,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
+	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 )
 
 const (
@@ -30,16 +32,20 @@ func Main(customCtx context.Context) error {
 }
 
 func startSetupLoop(ctx context.Context) error {
+	k8sgw := envutils.IsEnvTruthy(constants.GlooGatewayEnableK8sGwControllerEnv)
 
 	// get settings:
-
-	setupOpts := bootstrap.NewSetupOpts(xds.NewAdsSnapshotCache(ctx))
+	var uniqueClientCallbacks xdsserver.Callbacks
+	var builder krtcollections.UniquelyConnectedClientsBulider
+	if k8sgw {
+		uniqueClientCallbacks, builder = krtcollections.NewUniquelyConnectedClients()
+	}
+	setupOpts := bootstrap.NewSetupOpts(xds.NewAdsSnapshotCache(ctx), uniqueClientCallbacks)
 	// start gw if needed, get the proxy reconcile q
 	// pass that in to the setup func
-	k8sgw := envutils.IsEnvTruthy(constants.GlooGatewayEnableK8sGwControllerEnv)
 	if k8sgw {
 		setupOpts.ProxyReconcileQueue = ggv2utils.NewAsyncQueue[gloov1.ProxyList]()
-		go ggv2setup.StartGGv2(ctx, setupOpts, extensions.NewK8sGatewayExtensions, registry.GetPluginRegistryFactory)
+		go ggv2setup.StartGGv2(ctx, setupOpts, builder, extensions.NewK8sGatewayExtensions, registry.GetPluginRegistryFactory)
 	}
 
 	return setuputils.Main(setuputils.SetupOpts{
