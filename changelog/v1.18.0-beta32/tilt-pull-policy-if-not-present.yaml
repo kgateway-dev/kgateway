@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Adjusted pull policy in Tiltfile to `IfNotPresent`. Addresses issue with images being not found in local dev.
