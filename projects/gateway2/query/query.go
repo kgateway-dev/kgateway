@@ -214,6 +214,7 @@ func getParentRefsForGw(gw *apiv1.Gateway, obj client.Object) []apiv1.ParentRefe
 		}
 	default:
 		// Unsupported route type
+		// TODO (danehans): Should we should capture this as a metric?
 		return ret
 	}
 
