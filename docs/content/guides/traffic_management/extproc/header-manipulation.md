@@ -12,7 +12,7 @@ External processing is an Enterprise-only feature.
 
 {{% notice warning %}}
 Envoy's external processing filter is considered a work in progress and has an unknown security posture. Use caution when using this feature in production environments. For more information, see the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_proc_filter#external-processing).
-As of Envoy 1.32, header manipulation via ExtProc is supported only for adding new headers and for overwriting or appending existing headers. Note that the [`append_action`](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-msg-config-core-v3-headervalueoption) is not supported.
+Note that as of Envoy 1.32, header manipulation via ExtProc does not support the [`append_action`](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-msg-config-core-v3-headervalueoption) field.
 {{% /notice %}}
 
 1. Before you begin, install [Gloo Gateway Enterprise]({{% versioned_link_path fromRoot="/installation/enterprise/" %}}) in your cluster.
