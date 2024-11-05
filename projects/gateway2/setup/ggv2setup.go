@@ -23,6 +23,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/shared"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
@@ -37,6 +38,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -44,8 +46,8 @@ var (
 	settingsGVR = glookubev1.SchemeGroupVersion.WithResource("settings")
 )
 
-func createKubeClient() (istiokube.Client, error) {
-	restCfg := istiokube.NewClientConfigForRestConfig(ctrl.GetConfigOrDie())
+func createKubeClient(restConfig *rest.Config) (istiokube.Client, error) {
+	restCfg := istiokube.NewClientConfigForRestConfig(restConfig)
 	client, err := istiokube.NewClient(restCfg, "")
 	if err != nil {
 		return nil, err
@@ -70,7 +72,7 @@ func getInitialSettings(ctx context.Context, c istiokube.Client, nns types.Names
 	out := &empty
 	err = runtime.DefaultUnstructuredConverter.FromUnstructured(i.UnstructuredContent(), out)
 	if err != nil {
-		logger.Panicf("failed converting unstructured into %T: %v", empty, i)
+		logger.Panicf("failed converting unstructured into settings: %v", i)
 		return nil
 	}
 	return out
@@ -79,37 +81,51 @@ func getInitialSettings(ctx context.Context, c istiokube.Client, nns types.Names
 
 func StartGGv2(ctx context.Context,
 	setupOpts *bootstrap.SetupOpts,
+	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
 	extensionsFactory extensions.K8sGatewayExtensionsFactory,
 	pluginRegistryFactory func(opts registry.PluginOpts) plugins.PluginRegistryFactory) error {
+
+	restConfig := ctrl.GetConfigOrDie()
+
+	return StartGGv2WithConfig(ctx, setupOpts, restConfig, uccBuilder, extensionsFactory, pluginRegistryFactory, setuputils.SetupNamespaceName())
+}
+
+func StartGGv2WithConfig(ctx context.Context,
+	setupOpts *bootstrap.SetupOpts,
+	restConfig *rest.Config,
+	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
+	extensionsFactory extensions.K8sGatewayExtensionsFactory,
+	pluginRegistryFactory func(opts registry.PluginOpts) plugins.PluginRegistryFactory,
+	settingsNns types.NamespacedName,
+) error {
 	ctx = contextutils.WithLogger(ctx, "k8s")
 
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Info("starting gloo gateway")
 
-	kubeClient, err := createKubeClient()
+	kubeClient, err := createKubeClient(restConfig)
 	if err != nil {
 		return err
 	}
 
-	// create agumented pods
-	setupNamespaceName := setuputils.SetupNamespaceName()
-
-	initialSettings := getInitialSettings(ctx, kubeClient, setupNamespaceName)
+	initialSettings := getInitialSettings(ctx, kubeClient, settingsNns)
 	if initialSettings == nil {
 		return fmt.Errorf("initial settings not found")
 	}
 
 	logger.Info("creating krt collections")
-	pods := krtcollections.NewPodsCollection(ctx, kubeClient)
+	augmentedPods := krtcollections.NewPodsCollection(ctx, kubeClient)
 	setting := proxy_syncer.SetupCollectionDynamic[glookubev1.Settings](
 		ctx,
 		kubeClient,
 		settingsGVR,
 		krt.WithName("GlooSettings"))
 
+	ucc := uccBuilder(ctx, augmentedPods)
+
 	settingsSingle := krt.NewSingleton(func(ctx krt.HandlerContext) *glookubev1.Settings {
 		s := krt.FetchOne(ctx, setting,
-			krt.FilterObjectName(setupNamespaceName))
+			krt.FilterObjectName(settingsNns))
 		if s != nil {
 			return *s
 		}
@@ -131,14 +147,17 @@ func StartGGv2(ctx context.Context,
 	logger.Info("initializing controller")
 	c, err := controller.NewControllerBuilder(ctx, controller.StartConfig{
 		ExtensionsFactory:    extensionsFactory,
+		RestConfig:           restConfig,
 		SetupOpts:            setupOpts,
 		KubeGwStatusReporter: kubeGwStatusReporter,
 		Translator:           setup.TranslatorFactory{PluginRegistry: pluginRegistryFactory(pluginOpts)},
 		GlooStatusReporter:   glooReporter,
 		Client:               kubeClient,
-		Pods:                 pods,
-		InitialSettings:      initialSettings,
-		Settings:             settingsSingle,
+		AugmentedPods:        augmentedPods,
+		UniqueClients:        ucc,
+
+		InitialSettings: initialSettings,
+		Settings:        settingsSingle,
 		// Useful for development purposes; not currently tied to any user-facing API
 		Dev: false,
 	})
@@ -192,6 +211,11 @@ func (g *genericStatusReporter) WriteReports(ctx context.Context, resourceErrs r
 	}
 
 	for resource, report := range resourceErrsCopy {
+
+		// check if resource is an internal upstream. if so skip it..
+		if kubernetes.IsKubeUpstream(resource.GetMetadata().GetName()) {
+			continue
+		}
 
 		status := g.StatusFromReport(report, subresourceStatuses)
 		status = trimStatus(status)

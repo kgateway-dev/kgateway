@@ -60,7 +60,9 @@ func NewNodeMetadataCollection(nodes krt.Collection[*corev1.Node]) krt.Collectio
 }
 
 func NewPodsCollection(ctx context.Context, istioClient kube.Client) krt.Collection[LocalityPod] {
-	podClient := kclient.New[*corev1.Pod](istioClient)
+	podClient := kclient.NewFiltered[*corev1.Pod](istioClient, kclient.Filter{
+		ObjectTransform: kube.StripPodUnusedFields,
+	})
 	pods := krt.WrapClient(podClient, krt.WithName("Pods"))
 	nodes := newNodeCollection(istioClient)
 	return NewLocalityPodsCollection(nodes, pods)

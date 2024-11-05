@@ -46,7 +46,7 @@ var _ = Describe("Setup Syncer", func() {
 	// In our tests we do not follow this pattern, and to avoid data races (that cause test failures)
 	// we ensure that only 1 SetupFunc is ever called at a time
 	newSynchronizedSetupFunc := func() setuputils.SetupFunc {
-		setupOpts := bootstrap.NewSetupOpts(xds.NewAdsSnapshotCache(ctx))
+		setupOpts := bootstrap.NewSetupOpts(xds.NewAdsSnapshotCache(ctx), nil)
 		setupFunc := setup.NewSetupFunc(setupOpts)
 
 		var synchronizedSetupFunc setuputils.SetupFunc
