@@ -21,3 +21,12 @@ func (tf TranslatorFactory) NewTranslator(ctx context.Context, settings *v1.Sett
 		translator.EnvoyCacheResourcesListToFnvHash,
 	)
 }
+
+func (tf TranslatorFactory) NewClusterTranslator(ctx context.Context, settings *v1.Settings) translator.ClusterTranslator {
+	return translator.NewTranslatorWithHasher(
+		sslutils.NewSslConfigTranslator(),
+		settings,
+		tf.PluginRegistry(ctx),
+		translator.EnvoyCacheResourcesListToFnvHash,
+	)
+}

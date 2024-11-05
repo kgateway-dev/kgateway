@@ -9,8 +9,33 @@ import (
 	"math"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	"google.golang.org/protobuf/proto"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 )
+
+func HashProto(resource proto.Message) uint64 {
+	hasher := fnv.New64()
+	HashProtoWithHasher(hasher, resource)
+	return hasher.Sum64()
+}
+
+func HashProtoWithHasher(hasher hash.Hash64, resource proto.Message) {
+	var buffer [1024]byte
+	mo := proto.MarshalOptions{Deterministic: true}
+	buf := buffer[:0]
+	out, err := mo.MarshalAppend(buf, resource)
+	if err != nil {
+		//if e.logger != nil {
+		//	e.logger.DPanic("marshalling envoy snapshot components", zap.Error(err))
+		//}
+	}
+	_, err = hasher.Write(out)
+	if err != nil {
+		//if e.logger != nil {
+		//	e.logger.DPanic("constructing hash for envoy snapshot components", zap.Error(err))
+		//}
+	}
+}
 
 func HashMetadata(newhash func() hash.Hash64, md *envoy_config_core_v3.Metadata) uint64 {
 	var finalHash uint64

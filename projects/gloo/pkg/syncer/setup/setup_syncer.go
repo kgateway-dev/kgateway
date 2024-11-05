@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -397,7 +398,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 			callbacks = s.extensions.XdsCallbacks
 		}
 		s.controlPlane = NewControlPlane(ctx, s.setupOpts.Cache, s.makeGrpcServer(ctx), xdsTcpAddress,
-			bootstrap.KubernetesControlPlaneConfig{XdsHost: xdsHost, XdsPort: xdsPort}, callbacks, true)
+			bootstrap.KubernetesControlPlaneConfig{XdsHost: xdsHost, XdsPort: xdsPort}, multiCallbacks(s.setupOpts.ExtraCallbacks, callbacks), true)
 
 		s.setupOpts.SetXdsAddress(xdsHost, xdsPort)
 
@@ -1368,6 +1369,7 @@ func constructIstioBootstrapOpts(settings *v1.Settings) bootstrap.IstioValues {
 }
 
 func runQueue(ctx context.Context, proxyReconcileQueue ggv2utils.AsyncQueue[gloov1.ProxyList], writeNamespace string, proxyClient gloov1.ProxyClient) {
+	// labels used to uniquely identify Proxies that are managed by the kube gateway controller
 	var kubeGatewayProxyLabels = map[string]string{
 		// the proxy type key/value must stay in sync with the one defined in projects/gateway2/translator/gateway_translator.go
 		utils.ProxyTypeKey: utils.GatewayApiProxyValue,
@@ -1402,4 +1404,17 @@ func runQueue(ctx context.Context, proxyReconcileQueue ggv2utils.AsyncQueue[gloo
 
 	}
 
+}
+
+func multiCallbacks(cb ...xdsserver.Callbacks) xdsserver.Callbacks {
+	cb = slices.DeleteFunc(cb, func(x xdsserver.Callbacks) bool {
+		return x == nil
+	})
+	if len(cb) == 0 {
+		return nil
+	}
+	if len(cb) == 1 {
+		return cb[0]
+	}
+	return MutltiCallbacks(cb)
 }

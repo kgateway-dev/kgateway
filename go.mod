@@ -103,6 +103,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20240822170219-fc7c04adadcd
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1
 	istio.io/api v1.23.2
+	istio.io/client-go v1.23.2
 	istio.io/istio v0.0.0-20240903161425-b8197f455bcf
 	sigs.k8s.io/controller-tools v0.16.3
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1
@@ -333,7 +334,6 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	istio.io/client-go v1.23.2 // indirect
 	k8s.io/apiserver v0.31.1 // indirect
 	k8s.io/cli-runtime v0.31.1 // indirect
 	k8s.io/component-helpers v0.31.1 // indirect
