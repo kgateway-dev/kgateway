@@ -132,24 +132,16 @@ func NewPerClientEnvoyEndpoints(logger *zap.Logger, uccs krt.Collection[krtcolle
 func PrioritizeEndpoints(logger *zap.Logger, destrule *DestinationRuleWrapper, ep EndpointsForUpstream, ucc krtcollections.UniqlyConnectedClient) UccWithEndpoints {
 	var additionalHash uint64
 	var priorityInfo *PriorityInfo
-	if destrule != nil {
-		enabled := destrule.Spec.GetTrafficPolicy().GetLoadBalancer().GetLocalityLbSetting().GetEnabled()
-		if enabled == nil || enabled.Value {
-			localityLb := destrule.Spec.GetTrafficPolicy().GetLoadBalancer().GetLocalityLbSetting()
-			for _, portlevel := range destrule.Spec.GetTrafficPolicy().GetPortLevelSettings() {
-				if portlevel.GetPort().GetNumber() == ep.Port {
-					localityLb = portlevel.GetLoadBalancer().GetLocalityLbSetting()
-					break
-				}
-			}
 
-			if localityLb != nil {
-				priorityInfo = getPriorityInfoFromDestrule(localityLb)
-				hasher := fnv.New64()
-				hasher.Write([]byte(destrule.UID))
-				hasher.Write([]byte(fmt.Sprintf("%v", destrule.Generation)))
-				additionalHash = hasher.Sum64()
-			}
+	if destrule != nil {
+		trafficPolicy := getTraficPolicy(destrule, ep.Port)
+		localityLb := getLocalityLbSetting(trafficPolicy)
+		if localityLb != nil {
+			priorityInfo = getPriorityInfoFromDestrule(localityLb)
+			hasher := fnv.New64()
+			hasher.Write([]byte(destrule.UID))
+			hasher.Write([]byte(fmt.Sprintf("%v", destrule.Generation)))
+			additionalHash = hasher.Sum64()
 		}
 	}
 	lbInfo := LoadBalancingInfo{

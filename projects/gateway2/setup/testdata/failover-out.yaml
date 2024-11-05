@@ -1,6 +1,7 @@
 clusters:
 - commonLbConfig:
     healthyPanicThreshold: {}
+    localityWeightedLbConfig: {}
   connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
