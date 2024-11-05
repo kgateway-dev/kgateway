@@ -13,6 +13,7 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
 	corev1 "k8s.io/api/core/v1"
@@ -133,7 +134,6 @@ func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 }
 
 func TestEndpoints(t *testing.T) {
-	g := gomega.NewWithT(t)
 	testCases := []struct {
 		name     string
 		inputs   []any
@@ -223,6 +223,7 @@ func TestEndpoints(t *testing.T) {
 				// output
 				emd := EndpointWithMd{
 					LbEndpoint: &endpointv3.LbEndpoint{
+						LoadBalancingWeight: wrapperspb.UInt32(1),
 						HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
 							Endpoint: &endpointv3.Endpoint{
 								Address: &envoy_config_core_v3.Address{
@@ -380,6 +381,7 @@ func TestEndpoints(t *testing.T) {
 					Zone:   "zone",
 				}, EndpointWithMd{
 					LbEndpoint: &endpointv3.LbEndpoint{
+						LoadBalancingWeight: wrapperspb.UInt32(1),
 						HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
 							Endpoint: &endpointv3.Endpoint{
 								Address: &envoy_config_core_v3.Address{
@@ -407,6 +409,7 @@ func TestEndpoints(t *testing.T) {
 					Zone:   "zone2",
 				}, EndpointWithMd{
 					LbEndpoint: &endpointv3.LbEndpoint{
+						LoadBalancingWeight: wrapperspb.UInt32(1),
 						HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
 							Endpoint: &endpointv3.Endpoint{
 								Address: &envoy_config_core_v3.Address{
@@ -521,6 +524,7 @@ func TestEndpoints(t *testing.T) {
 				// output
 				emd := EndpointWithMd{
 					LbEndpoint: &endpointv3.LbEndpoint{
+						LoadBalancingWeight: wrapperspb.UInt32(1),
 						HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
 							Endpoint: &endpointv3.Endpoint{
 								Address: &envoy_config_core_v3.Address{
@@ -556,6 +560,7 @@ func TestEndpoints(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := gomega.NewWithT(t)
 			mock := krttest.NewMock(t, tc.inputs)
 			nodes := krtcollections.NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
 			pods := krtcollections.NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock))

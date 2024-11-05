@@ -1,0 +1,136 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: http-gw-for-test
+spec:
+  gatewayClassName: gloo-gateway
+  listeners:
+  - protocol: HTTP
+    port: 8080
+    name: http
+    allowedRoutes:
+      namespaces:
+        from: All
+  - protocol: HTTP
+    port: 8081
+    name: other
+    allowedRoutes:
+      namespaces:
+        from: All
+---
+# needed for unique client set - xds requests will look like they are coming
+# from this pod
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: gateway
+  name: gateway
+spec:
+  containers:
+  - image: gateway
+    name: gateway
+    ports:
+    - containerPort: 8080
+      protocol: TCP
+  nodeName: worker
+  serviceAccount: default
+  serviceAccountName: default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: happypath
+  labels:
+    app: happypath
+    service: happypath
+spec:
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8080
+  selector:
+    app: happypath
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  labels:
+    app: happypath
+    service: happypath
+  name: happypath
+subsets:
+- addresses:
+  - ip: 10.244.1.11
+    nodeName: worker
+    targetRef:
+      kind: Pod
+      name: happypath-1
+      namespace: default
+#      uid: 5905470a-11c5-46d4-b8a9-45d59481da14
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: happypath
+spec:
+  parentRefs:
+    - name: http-gw-for-test
+  hostnames:
+    - "www.example.com"
+  rules:
+    - backendRefs:
+        - name: happypath
+          port: 8080
+---
+apiVersion: v1
+kind: Node
+metadata:
+  labels:
+    beta.kubernetes.io/arch: amd64
+    beta.kubernetes.io/os: linux
+    kubernetes.io/arch: amd64
+    kubernetes.io/hostname: happypath
+    kubernetes.io/os: linux
+    topology.istio.io/subzone: r1z2s3
+    topology.kubernetes.io/region: r1
+    topology.kubernetes.io/zone: r1z2
+  name: happypath
+spec:
+  podCIDR: 10.244.1.0/24
+  podCIDRs:
+  - 10.244.1.0/24
+  providerID: kind://docker/gloo-oss/happypath
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: happypath
+  name: happypath-1
+spec:
+  containers:
+  - image: happypath
+    name: happypath
+    ports:
+    - containerPort: 8080
+      protocol: TCP
+  nodeName: worker
+  serviceAccount: default
+  serviceAccountName: default
+---
+apiVersion: gateway.solo.io/v1
+kind: ListenerOption
+metadata:
+  name: buffer-limit
+spec:
+  options:
+    perConnectionBufferLimitBytes: 42000
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: http-gw-for-test

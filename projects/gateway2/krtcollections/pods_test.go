@@ -15,7 +15,6 @@ import (
 )
 
 func TestPods(t *testing.T) {
-	g := gomega.NewWithT(t)
 	testCases := []struct {
 		name   string
 		inputs []any
@@ -66,6 +65,7 @@ func TestPods(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			g := gomega.NewWithT(t)
 			mock := krttest.NewMock(t, tc.inputs)
 			nodes := krtcollections.NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
 			pods := krtcollections.NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock))

@@ -63,6 +63,7 @@ Name|Version|License
 [AlecAivazis/survey.v1](https://gopkg.in/AlecAivazis/survey.v1)|v1.8.7|MIT License
 [helm/v3](https://helm.sh/helm/v3)|v3.15.4|Apache License 2.0
 [istio.io/api](https://istio.io/api)|v1.23.2|Apache License 2.0
+[istio.io/client-go](https://istio.io/client-go)|v1.23.2|Apache License 2.0
 [istio.io/istio](https://istio.io/istio)|v0.0.0-20240903161425-b8197f455bcf|Apache License 2.0
 [k8s.io/api](https://k8s.io/api)|v0.31.1|Apache License 2.0
 [k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.31.1|Apache License 2.0

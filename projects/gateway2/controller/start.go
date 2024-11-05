@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 
+	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/config"
 
@@ -43,8 +44,9 @@ const (
 var setupLog = ctrl.Log.WithName("setup")
 
 type StartConfig struct {
-	Dev       bool
-	SetupOpts *bootstrap.SetupOpts
+	Dev        bool
+	SetupOpts  *bootstrap.SetupOpts
+	RestConfig *rest.Config
 	// ExtensionsFactory is the factory function which will return an extensions.K8sGatewayExtensions
 	// This is responsible for producing the extension points that this controller requires
 	ExtensionsFactory extensions.K8sGatewayExtensionsFactory
@@ -68,7 +70,9 @@ type StartConfig struct {
 
 	Client istiokube.Client
 
-	Pods            krt.Collection[krtcollections.LocalityPod]
+	AugmentedPods krt.Collection[krtcollections.LocalityPod]
+	UniqueClients krt.Collection[krtcollections.UniqlyConnectedClient]
+
 	InitialSettings *glookubev1.Settings
 	Settings        krt.Singleton[glookubev1.Settings]
 }
@@ -93,6 +97,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	ctrl.SetLogger(zap.New(opts...))
 
 	mgrOpts := ctrl.Options{
+		BaseContext:      func() context.Context { return ctx },
 		Scheme:           glooschemes.DefaultScheme(),
 		PprofBindAddress: "127.0.0.1:9099",
 		// if you change the port here, also change the port "health" in the helmchart.
@@ -108,7 +113,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			SkipNameValidation: ptr.To(true),
 		},
 	}
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), mgrOpts)
+	mgr, err := ctrl.NewManager(cfg.RestConfig, mgrOpts)
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		return nil, err
@@ -153,13 +158,15 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	// Create the proxy syncer for the Gateway API resources
 	proxySyncer := proxy_syncer.NewProxySyncer(
 		ctx,
+		cfg.InitialSettings,
 		cfg.Settings,
 		wellknown.GatewayControllerName,
 		setup.GetWriteNamespace(&cfg.InitialSettings.Spec),
 		inputChannels,
 		mgr,
 		cfg.Client,
-		cfg.Pods,
+		cfg.AugmentedPods,
+		cfg.UniqueClients,
 		k8sGwExtensions,
 		cfg.Translator,
 		cfg.SetupOpts.Cache,
