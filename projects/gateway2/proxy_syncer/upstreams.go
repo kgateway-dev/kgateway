@@ -151,7 +151,6 @@ func ApplyDestRulesForUpstream(destrule *DestinationRuleWrapper, u *gloov1.Upstr
 				Consecutive_5Xx:  outlier.GetConsecutive_5XxErrors(),
 				Interval:         outlier.GetInterval(),
 				BaseEjectionTime: outlier.GetBaseEjectionTime(),
-				// TODO: do the rest of them
 			}
 			if e := outlier.GetConsecutiveGatewayErrors(); e != nil {
 				v := e.GetValue()
