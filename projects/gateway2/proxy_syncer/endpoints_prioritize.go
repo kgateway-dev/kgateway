@@ -10,7 +10,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"go.uber.org/zap"
 	"istio.io/api/networking/v1alpha3"
-	"istio.io/istio/pkg/slices"
 )
 
 type LoadBalancingInfo struct {
@@ -127,9 +126,23 @@ func getEndpoints(eps []EndpointWithMd, lbinfo LoadBalancingInfo) []*envoy_confi
 	if lbinfo.PriorityInfo != nil && lbinfo.PriorityInfo.FailoverPriority != nil {
 		return applyFailoverPriorityPerLocality(eps, lbinfo)
 	}
-	return []*envoy_config_endpoint_v3.LocalityLbEndpoints{{
-		LbEndpoints: slices.Map(eps, func(e EndpointWithMd) *envoy_config_endpoint_v3.LbEndpoint { return e.LbEndpoint }),
+	epsOut := []*envoy_config_endpoint_v3.LocalityLbEndpoints{{
+		LbEndpoints: make([]*envoy_config_endpoint_v3.LbEndpoint, 0, len(eps)),
 	}}
+
+	var weight uint32
+	for _, ep := range eps {
+		epsOut[0].LbEndpoints = append(epsOut[0].GetLbEndpoints(), ep.LbEndpoint)
+		weight += ep.LbEndpoint.GetLoadBalancingWeight().GetValue()
+	}
+	// reset weight
+	if weight > 0 {
+		epsOut[0].LoadBalancingWeight = &wrappers.UInt32Value{
+			Value: weight,
+		}
+	}
+
+	return epsOut
 }
 
 func applyFailoverPriorityPerLocality(
