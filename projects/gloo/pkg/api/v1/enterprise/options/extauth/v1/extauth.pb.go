@@ -867,7 +867,7 @@ func (x *CustomAuth) GetName() string {
 	return ""
 }
 
-// Deprecated: Prefer PassThroughAuth
+// **Deprecated**: The pluginAuth config type is deprecated and will be removed in a future release. Use passThroughAuth instead.
 type AuthPlugin struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
