@@ -106,7 +106,7 @@ func getLocalityLbSetting(trafficPolicy *v1alpha3.TrafficPolicy) *v1alpha3.Local
 	}
 	localityLb := trafficPolicy.GetLoadBalancer().GetLocalityLbSetting()
 	if localityLb != nil {
-		if localityLb.Enabled != nil && !localityLb.Enabled.Value {
+		if localityLb.GetEnabled() != nil && !localityLb.GetEnabled().Value {
 			return nil
 		}
 	}
@@ -131,9 +131,9 @@ func getTraficPolicy(destrule *DestinationRuleWrapper, port uint32) *v1alpha3.Tr
 
 func convertPortLevel(portlevel *v1alpha3.TrafficPolicy_PortTrafficPolicy) *v1alpha3.TrafficPolicy {
 	return &v1alpha3.TrafficPolicy{
-		ConnectionPool:   portlevel.ConnectionPool,
-		LoadBalancer:     portlevel.LoadBalancer,
-		OutlierDetection: portlevel.OutlierDetection,
-		Tls:              portlevel.Tls,
+		ConnectionPool:   portlevel.GetConnectionPool(),
+		LoadBalancer:     portlevel.GetLoadBalancer(),
+		OutlierDetection: portlevel.GetOutlierDetection(),
+		Tls:              portlevel.GetTls(),
 	}
 }
