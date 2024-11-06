@@ -27,7 +27,7 @@ import "google/protobuf/empty.proto";
 This is an internal API used to share configuration between gloo-ee and extauth. Although this API is only used in gloo-ee,
 rules about breaking changes still apply to ensure we do not get errors during upgrade and downgrade.
  */
- message ExtAuthConfig {
+message ExtAuthConfig {
     // For apps in Microsoft Azure, configure Microsoft Entra ID as the OpenID Connect (OIDC) provider.
     // This way, you can enable distributed claims and caching for when users are members of more than 200 groups.
     message Azure {
