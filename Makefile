@@ -178,6 +178,8 @@ install-go-tools: mod-download ## Download and install Go dependencies
 	# This version must stay in sync with the version used in CI: .github/workflows/static-analysis.yaml
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(LINTER_VERSION)
 	go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@v0.3.16
+	# Kubebuilder docs generation
+	go install fybrik.io/crdoc@latest
 
 .PHONY: install-go-test-coverage
 install-go-test-coverage:
@@ -392,6 +394,7 @@ generate-all-debug: generate-all
 generated-code: check-go-version clean-solo-kit-gen ## Run all codegen and formatting as required by CI
 generated-code: go-generate-all generate-cli-docs getter-check mod-tidy
 generated-code: verify-enterprise-protos generate-helm-files update-licenses
+generated-code: generate-crd-reference-docs
 generated-code: fmt
 
 .PHONY: go-generate-all
@@ -439,6 +442,21 @@ generated-code-cleanup: getter-check mod-tidy update-licenses fmt ## Executes th
 .PHONY: generate-changelog
 generate-changelog: ## Generate a changelog entry
 	@./devel/tools/changelog.sh
+
+
+#----------------------------------------------------------------------------------
+# Generate Kubebuilder Documentation
+#
+# TODO - clarify
+
+#----------------------------------------------------------------------------------
+
+GWPARAMS_INPUT_CRD ?= install/helm/gloo/crds/gateway.gloo.solo.io_gatewayparameters.yaml
+GWPARAMS_OUTPUT_MARKDOWN ?= docs/content/reference/api/github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/gateway_parameters.md
+
+.PHONY: generate-crd-reference-docs
+generate-crd-reference-docs:
+	$(DEPSGOBIN)/crdoc --resources $(GWPARAMS_INPUT_CRD) --output $(GWPARAMS_OUTPUT_MARKDOWN)
 
 #----------------------------------------------------------------------------------
 # Generate mocks
