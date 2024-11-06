@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -260,10 +261,10 @@ func testScenario(t *testing.T, ctx context.Context, client istiokube.CLIClient,
 	yamlfile := filepath.Join(t.TempDir(), "test.yaml")
 	os.WriteFile(yamlfile, []byte(testyaml), 0644)
 
-	err = client.ApplyYAMLFiles("gwtest", yamlfile)
+	err = client.ApplyYAMLFiles("", yamlfile)
 	defer func() {
 		// always delete yamls, even if there was an error applying them; to prevent test pollution.
-		err := client.DeleteYAMLFiles("gwtest", yamlfile)
+		err := client.DeleteYAMLFiles("", yamlfile)
 		if err != nil {
 			t.Fatalf("failed to delete yaml: %v", err)
 		}
@@ -506,30 +507,39 @@ func anyJsonRoundTrip[T any, PT interface {
 	return pr, err
 }
 
+func sortResource[T fmt.Stringer](resources []T) []T {
+	// clone the slice
+	resources = append([]T(nil), resources...)
+	sort.Slice(resources, func(i, j int) bool {
+		return resources[i].String() < resources[j].String()
+	})
+	return resources
+}
+
 func (x *xdsDump) ToYaml() ([]byte, error) {
 	jsonM := map[string][]any{}
-	for _, c := range x.Clusters {
+	for _, c := range sortResource(x.Clusters) {
 		roundtrip, err := protoJsonRoundTrip(c)
 		if err != nil {
 			return nil, err
 		}
 		jsonM["clusters"] = append(jsonM["clusters"], roundtrip)
 	}
-	for _, c := range x.Listeners {
+	for _, c := range sortResource(x.Listeners) {
 		roundtrip, err := protoJsonRoundTrip(c)
 		if err != nil {
 			return nil, err
 		}
 		jsonM["listeners"] = append(jsonM["listeners"], roundtrip)
 	}
-	for _, c := range x.Endpoints {
+	for _, c := range sortResource(x.Endpoints) {
 		roundtrip, err := protoJsonRoundTrip(c)
 		if err != nil {
 			return nil, err
 		}
 		jsonM["endpoints"] = append(jsonM["endpoints"], roundtrip)
 	}
-	for _, c := range x.Routes {
+	for _, c := range sortResource(x.Routes) {
 		roundtrip, err := protoJsonRoundTrip(c)
 		if err != nil {
 			return nil, err

@@ -89,9 +89,11 @@ apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
   name: do-failover
-  namespace: gwtest
+  namespace: default
 spec:
   host: reviews.gwtest.svc.cluster.local
+  exportTo:
+  - "gwtest"
   trafficPolicy:
     portLevelSettings:
     - loadBalancer:

@@ -77,7 +77,7 @@ func NewPerClientEnvoyClusters(
 			// as the usptream hash will be different.
 			// save the original name so we can set it as the ServiceName on the cluster;
 			// this ensures that the name will match the ClusterLoadAssignment ClusterName.
-			upstream, name := ApplyDestRulesForUpstream(destrule, up.Inner)
+			upstream, name := ApplyDestRulesForUpstream(logger, destrule, up.Inner)
 
 			latestSnap := &gloosnapshot.ApiSnapshot{}
 			latestSnap.Secrets = make([]*gloov1.Secret, 0, len(secrets))
@@ -132,11 +132,13 @@ func translate(ctx context.Context, settings *gloov1.Settings, translator setup.
 	return cluster, ggv2utils.HashProto(cluster)
 }
 
-func ApplyDestRulesForUpstream(destrule *DestinationRuleWrapper, u *gloov1.Upstream) (*gloov1.Upstream, string) {
+func ApplyDestRulesForUpstream(logger *zap.Logger, destrule *DestinationRuleWrapper, u *gloov1.Upstream) (*gloov1.Upstream, string) {
 
 	if destrule != nil {
+		logger = logger.With(zap.String("destrule", destrule.ResourceName()))
 		trafficPolicy := getTraficPolicy(destrule, ggv2utils.GetPortForUpstream(u))
 		if outlier := trafficPolicy.GetOutlierDetection(); outlier != nil {
+			logger.Debug("applying OutlierDetection ")
 			name := getEndpointClusterName(u)
 			// do not mutate the original upstream
 			up := *u
