@@ -73,7 +73,7 @@ func NewPerClientEnvoyClusters(
 
 			destrule := destinationRulesIndex.FetchDestRulesFor(kctx, ucc.Namespace, hostname, ucc.Labels)
 			if destrule != nil {
-				logger.Debug("found destination rule", zap.Stringer("destrule", destrule))
+				logger.Debug("found destination rule", zap.Stringer("destrule", destrule), zap.String("targetHost", hostname))
 			}
 
 			// if dest rules applies, translation will give the upstream a different name
