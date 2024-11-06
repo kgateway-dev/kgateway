@@ -178,6 +178,8 @@ install-go-tools: mod-download ## Download and install Go dependencies
 	# This version must stay in sync with the version used in CI: .github/workflows/static-analysis.yaml
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(LINTER_VERSION)
 	go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@v0.3.16
+	# Kubebuilder docs generation
+	go install fybrik.io/crdoc@v0.6.3
 
 .PHONY: install-go-test-coverage
 install-go-test-coverage:
@@ -392,6 +394,7 @@ generate-all-debug: generate-all
 generated-code: check-go-version clean-solo-kit-gen ## Run all codegen and formatting as required by CI
 generated-code: go-generate-all generate-cli-docs getter-check mod-tidy
 generated-code: verify-enterprise-protos generate-helm-files update-licenses
+generated-code: generate-crd-reference-docs
 generated-code: fmt
 
 .PHONY: go-generate-all
@@ -439,6 +442,35 @@ generated-code-cleanup: getter-check mod-tidy update-licenses fmt ## Executes th
 .PHONY: generate-changelog
 generate-changelog: ## Generate a changelog entry
 	@./devel/tools/changelog.sh
+
+
+#----------------------------------------------------------------------------------
+# Generate CRD Reference Documentation
+#
+# We are trying to migrate our APIs and CRDs to be built using Kubebuilder.
+#
+# Historically, our docs are generated using Protocol Buffers as the source of truth,
+# and code generation (https://github.com/solo-io/solo-kit/tree/main/pkg/code-generator/docgen)
+# to generate the Markdown for these APIs.
+#
+# With the migration to Kubebuilder, protos are no longer the source of truth, and we must rely on other means to
+# generate documentation. As https://github.com/kubernetes-sigs/controller-tools/issues/240 calls out, there isn't an agreed
+# upon approach yet. We chose to use https://github.com/fybrik/crdoc as it allows us to generate the Markdown for our docs,
+# which is used by Hugo. Other tools produced HTML, which wouldn't have worked for our current setup.
+#
+#----------------------------------------------------------------------------------
+
+GWPARAMS_INPUT_CRD := install/helm/gloo/crds/gateway.gloo.solo.io_gatewayparameters.yaml
+GWPARAMS_OUTPUT_MARKDOWN := docs/content/reference/api/github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/gateway_parameters.md
+
+DRA_INPUT_CRD := install/helm/gloo/crds/gateway.gloo.solo.io_directresponses.yaml
+DRA_OUTPUT_MARKDOWN := docs/content/reference/api/github.com/solo-io/gloo/projects/gateway2/api/v1alpha1/direct_response_action.md
+
+
+.PHONY: generate-crd-reference-docs
+generate-crd-reference-docs:
+	$(DEPSGOBIN)/crdoc --resources $(GWPARAMS_INPUT_CRD) --output $(GWPARAMS_OUTPUT_MARKDOWN)
+	$(DEPSGOBIN)/crdoc --resources $(DRA_INPUT_CRD) --output $(DRA_OUTPUT_MARKDOWN)
 
 #----------------------------------------------------------------------------------
 # Generate mocks
