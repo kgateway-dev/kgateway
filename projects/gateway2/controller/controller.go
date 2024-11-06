@@ -466,6 +466,7 @@ func (r *controllerReconciler) ReconcileGatewayClasses(ctx context.Context, req 
 	}
 
 	log.Info("reconciling gateway class")
+	log.Info("test do not merge")
 
 	// mark it as accepted:
 	acceptedCondition := metav1.Condition{
