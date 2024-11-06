@@ -700,7 +700,7 @@ message ExtAuthConfig {
             BasicAuth basic_auth = 4;
             BasicAuthInternal basic_auth_internal = 17;
             ApiKeyAuthConfig api_key_auth = 5;
-            AuthPlugin plugin_auth = 6;
+            AuthPlugin plugin_auth = 6 [deprecated = true];
             OpaAuthConfig opa_auth = 7;
             Ldap ldap = 8 [deprecated = true];
             // Used for LDAP configurations that need service account credentials saved in a secret.
