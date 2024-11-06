@@ -11,12 +11,6 @@ spec:
     allowedRoutes:
       namespaces:
         from: All
-  - protocol: HTTP
-    port: 8081
-    name: other
-    allowedRoutes:
-      namespaces:
-        from: All
 ---
 apiVersion: v1
 kind: Service
@@ -47,8 +41,27 @@ subsets:
     targetRef:
       kind: Pod
       name: reviews-1
-      namespace: default
+      namespace: gwtest
 #      uid: 5905470a-11c5-46d4-b8a9-45d59481da14
+  - ip: 10.244.2.14
+    nodeName: worker2
+    targetRef:
+      kind: Pod
+      name: reviews-2
+      namespace: gwtest
+#      uid: 6c218fd8-1b6f-4c57-9ee2-108a6a8c84ea
+  - ip: 10.244.3.3
+    nodeName: worker3
+    targetRef:
+      kind: Pod
+      name: reviews-3
+      namespace: gwtest
+  - ip: 10.244.4.4
+    nodeName: worker4
+    targetRef:
+      kind: Pod
+      name: reviews-4
+      namespace: gwtest
   ports:
   - name: http
     port: 8080
@@ -57,7 +70,7 @@ subsets:
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
-  name: reviews
+  name: http
 spec:
   parentRefs:
     - name: http-gw-for-test
@@ -68,14 +81,21 @@ spec:
         - name: reviews
           port: 8080
 ---
-apiVersion: gateway.solo.io/v1
-kind: ListenerOption
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
 metadata:
-  name: buffer-limit
+  name: do-failover
 spec:
-  options:
-    perConnectionBufferLimitBytes: 42000
-  targetRefs:
-  - group: gateway.networking.k8s.io
-    kind: Gateway
-    name: http-gw-for-test
+  host: reviews.gwtest.svc.cluster.local
+  trafficPolicy:
+    portLevelSettings:
+    - loadBalancer:
+        localityLbSetting:
+          enabled: true
+      outlierDetection:
+        baseEjectionTime: 30s
+        consecutive5xxErrors: 2
+        interval: 5s
+        maxEjectionPercent: 100
+      port:
+        number: 8080

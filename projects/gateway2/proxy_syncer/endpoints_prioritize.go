@@ -10,7 +10,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"go.uber.org/zap"
 	"istio.io/api/networking/v1alpha3"
-	"istio.io/istio/pkg/slices"
 )
 
 type LoadBalancingInfo struct {
@@ -106,14 +105,12 @@ func prioritizeWithLbInfo(logger *zap.Logger, ep EndpointsForUpstream, lbInfo Lo
 
 	if lbInfo.PriorityInfo != nil && lbInfo.PriorityInfo.FailoverPriority == nil {
 		// if no priorities, fallback to failover
-		if len(lbInfo.PriorityInfo.Failover) != 0 {
-			proxyLocality := envoy_config_core_v3.Locality{
-				Region:  lbInfo.PodLocality.Region,
-				Zone:    lbInfo.PodLocality.Zone,
-				SubZone: lbInfo.PodLocality.Subzone,
-			}
-			applyLocalityFailover(&proxyLocality, cla, lbInfo.PriorityInfo.Failover)
+		proxyLocality := envoy_config_core_v3.Locality{
+			Region:  lbInfo.PodLocality.Region,
+			Zone:    lbInfo.PodLocality.Zone,
+			SubZone: lbInfo.PodLocality.Subzone,
 		}
+		applyLocalityFailover(&proxyLocality, cla, lbInfo.PriorityInfo.Failover)
 	}
 	if logger != nil {
 		logger.Debug("created cla", zap.String("cluster", cla.GetClusterName()), zap.Int("numAddresses", totalEndpoints))
@@ -129,9 +126,23 @@ func getEndpoints(eps []EndpointWithMd, lbinfo LoadBalancingInfo) []*envoy_confi
 	if lbinfo.PriorityInfo != nil && lbinfo.PriorityInfo.FailoverPriority != nil {
 		return applyFailoverPriorityPerLocality(eps, lbinfo)
 	}
-	return []*envoy_config_endpoint_v3.LocalityLbEndpoints{{
-		LbEndpoints: slices.Map(eps, func(e EndpointWithMd) *envoy_config_endpoint_v3.LbEndpoint { return e.LbEndpoint }),
+	epsOut := []*envoy_config_endpoint_v3.LocalityLbEndpoints{{
+		LbEndpoints: make([]*envoy_config_endpoint_v3.LbEndpoint, 0, len(eps)),
 	}}
+
+	var weight uint32
+	for _, ep := range eps {
+		epsOut[0].LbEndpoints = append(epsOut[0].GetLbEndpoints(), ep.LbEndpoint)
+		weight += ep.LbEndpoint.GetLoadBalancingWeight().GetValue()
+	}
+	// reset weight
+	if weight > 0 {
+		epsOut[0].LoadBalancingWeight = &wrappers.UInt32Value{
+			Value: weight,
+		}
+	}
+
+	return epsOut
 }
 
 func applyFailoverPriorityPerLocality(

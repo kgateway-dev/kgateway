@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"google.golang.org/protobuf/proto"
+	"istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	"istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube"
@@ -97,4 +98,42 @@ func (d *DestinationRuleIndex) FetchDestRulesFor(kctx krt.HandlerContext, proxyN
 		return i.CreationTimestamp.Time.Compare(j.CreationTimestamp.Time)
 	})
 	return &oldestDestRule
+}
+
+func getLocalityLbSetting(trafficPolicy *v1alpha3.TrafficPolicy) *v1alpha3.LocalityLoadBalancerSetting {
+	if trafficPolicy == nil {
+		return nil
+	}
+	localityLb := trafficPolicy.GetLoadBalancer().GetLocalityLbSetting()
+	if localityLb != nil {
+		if localityLb.GetEnabled() != nil && !localityLb.GetEnabled().Value {
+			return nil
+		}
+	}
+	return localityLb
+}
+
+func getTraficPolicy(destrule *DestinationRuleWrapper, port uint32) *v1alpha3.TrafficPolicy {
+	trafficPolicy := destrule.Spec.GetTrafficPolicy()
+	if trafficPolicy == nil {
+		return nil
+	}
+
+	for _, portlevel := range trafficPolicy.GetPortLevelSettings() {
+		if portlevel.GetPort() != nil {
+			if portlevel.GetPort().GetNumber() == port {
+				return convertPortLevel(portlevel)
+			}
+		}
+	}
+	return trafficPolicy
+}
+
+func convertPortLevel(portlevel *v1alpha3.TrafficPolicy_PortTrafficPolicy) *v1alpha3.TrafficPolicy {
+	return &v1alpha3.TrafficPolicy{
+		ConnectionPool:   portlevel.GetConnectionPool(),
+		LoadBalancer:     portlevel.GetLoadBalancer(),
+		OutlierDetection: portlevel.GetOutlierDetection(),
+		Tls:              portlevel.GetTls(),
+	}
 }

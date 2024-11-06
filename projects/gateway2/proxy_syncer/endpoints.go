@@ -78,6 +78,7 @@ type EndpointWithMd struct {
 type EndpointsForUpstream struct {
 	LbEps       map[krtcollections.PodLocality][]EndpointWithMd
 	UpstreamRef types.NamespacedName
+	Port        uint32
 	Hostname    string
 	clusterName string
 
@@ -99,6 +100,7 @@ func NewEndpointsForUpstream(us UpstreamWrapper, logger *zap.Logger) *EndpointsF
 			Namespace: us.Inner.GetMetadata().GetNamespace(),
 			Name:      us.Inner.GetMetadata().GetName(),
 		},
+		Port:              ggv2utils.GetPortForUpstream(us.Inner),
 		Hostname:          ggv2utils.GetHostnameForUpstream(us.Inner),
 		clusterName:       clusterName,
 		lbEpsEqualityHash: lbEpsEqualityHash,
@@ -127,7 +129,7 @@ func (c EndpointsForUpstream) ResourceName() string {
 }
 
 func (c EndpointsForUpstream) Equals(in EndpointsForUpstream) bool {
-	return c.UpstreamRef == in.UpstreamRef && c.lbEpsEqualityHash == in.lbEpsEqualityHash && c.Hostname == in.Hostname
+	return c.UpstreamRef == in.UpstreamRef && c.Port == in.Port && c.lbEpsEqualityHash == in.lbEpsEqualityHash && c.Hostname == in.Hostname
 }
 
 func NewGlooK8sEndpoints(ctx context.Context, inputs EndpointsInputs) krt.Collection[EndpointsForUpstream] {

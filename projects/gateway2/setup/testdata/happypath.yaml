@@ -34,32 +34,32 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: happypath
+  name: reviews
   labels:
-    app: happypath
-    service: happypath
+    app: reviews
+    service: reviews
 spec:
   ports:
     - name: http
-      port: 8000
+      port: 8080
       targetPort: 8080
   selector:
-    app: happypath
+    app: reviews
 ---
 apiVersion: v1
 kind: Endpoints
 metadata:
   labels:
-    app: happypath
-    service: happypath
-  name: happypath
+    app: reviews
+    service: reviews
+  name: reviews
 subsets:
 - addresses:
   - ip: 10.244.1.11
     nodeName: worker
     targetRef:
       kind: Pod
-      name: happypath-1
+      name: reviews-1
       namespace: default
 #      uid: 5905470a-11c5-46d4-b8a9-45d59481da14
   ports:
@@ -78,41 +78,5 @@ spec:
     - "www.example.com"
   rules:
     - backendRefs:
-        - name: happypath
+        - name: reviews
           port: 8080
----
-apiVersion: v1
-kind: Node
-metadata:
-  labels:
-    beta.kubernetes.io/arch: amd64
-    beta.kubernetes.io/os: linux
-    kubernetes.io/arch: amd64
-    kubernetes.io/hostname: happypath
-    kubernetes.io/os: linux
-    topology.istio.io/subzone: r1z2s3
-    topology.kubernetes.io/region: r1
-    topology.kubernetes.io/zone: r1z2
-  name: happypath
-spec:
-  podCIDR: 10.244.1.0/24
-  podCIDRs:
-  - 10.244.1.0/24
-  providerID: kind://docker/gloo-oss/happypath
----
-apiVersion: v1
-kind: Pod
-metadata:
-  labels:
-    app: happypath
-  name: happypath-1
-spec:
-  containers:
-  - image: happypath
-    name: happypath
-    ports:
-    - containerPort: 8080
-      protocol: TCP
-  nodeName: worker
-  serviceAccount: default
-  serviceAccountName: default
