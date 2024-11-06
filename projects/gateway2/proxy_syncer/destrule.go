@@ -43,6 +43,10 @@ func (c DestinationRuleWrapper) ResourceName() string {
 	return krt.Named{Namespace: c.Namespace, Name: c.Name}.ResourceName()
 }
 
+func (c DestinationRuleWrapper) String() string {
+	return c.ResourceName()
+}
+
 var _ krt.Equaler[DestinationRuleWrapper] = new(DestinationRuleWrapper)
 
 func (c DestinationRuleWrapper) Equals(k DestinationRuleWrapper) bool {
