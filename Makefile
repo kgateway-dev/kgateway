@@ -179,7 +179,7 @@ install-go-tools: mod-download ## Download and install Go dependencies
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(LINTER_VERSION)
 	go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@v0.3.16
 	# Kubebuilder docs generation
-	go install fybrik.io/crdoc@latest
+	go install fybrik.io/crdoc@v0.6.3
 
 .PHONY: install-go-test-coverage
 install-go-test-coverage:
