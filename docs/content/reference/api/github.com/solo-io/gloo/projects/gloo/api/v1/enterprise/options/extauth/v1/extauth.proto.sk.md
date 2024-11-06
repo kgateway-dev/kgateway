@@ -370,6 +370,7 @@ This is used with custom auth servers.
 ---
 ### AuthPlugin
 
+ 
 **Deprecated**: The pluginAuth config type is deprecated and will be removed in a future release. Use passThroughAuth instead.
 
 ```yaml
