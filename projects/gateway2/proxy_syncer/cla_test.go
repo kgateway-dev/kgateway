@@ -96,7 +96,7 @@ func TestTransformsEndpointsWithLocality(t *testing.T) {
 
 }
 
-func TestTranslatesDestrules(t *testing.T) {
+func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 	g := gomega.NewWithT(t)
 	us := UpstreamWrapper{
 		Inner: &gloov1.Upstream{
@@ -163,6 +163,92 @@ func TestTranslatesDestrules(t *testing.T) {
 							"topology.kubernetes.io/region",
 						},
 					},
+				},
+			},
+		},
+	}
+
+	uccWithEndpoints := PrioritizeEndpoints(nil, &DestinationRuleWrapper{destRule}, *efu, ucc)
+	cla := uccWithEndpoints.Endpoints.ResourceProto().(*endpointv3.ClusterLoadAssignment)
+	g.Expect(cla.Endpoints).To(gomega.HaveLen(2))
+
+	remoteLocality := cla.Endpoints[0]
+	localLocality := cla.Endpoints[1]
+	if remoteLocality.Locality.Region == "R1" {
+		remoteLocality = cla.Endpoints[1]
+		localLocality = cla.Endpoints[0]
+	}
+	g.Expect(localLocality.Locality.Region).To(gomega.Equal("R1"))
+	g.Expect(remoteLocality.Locality.Region).To(gomega.Equal("R2"))
+
+	g.Expect(localLocality.Priority).To(gomega.Equal(uint32(0)))
+	g.Expect(remoteLocality.Priority).To(gomega.Equal(uint32(1)))
+}
+
+// similar to TestTranslatesDestrulesFailoverPriority but implicit
+func TestTranslatesDestrulesFailover(t *testing.T) {
+	g := gomega.NewWithT(t)
+	us := UpstreamWrapper{
+		Inner: &gloov1.Upstream{
+			Metadata: &core.Metadata{
+				Name:      "name",
+				Namespace: "ns",
+			},
+		},
+	}
+	efu := NewEndpointsForUpstream(us, nil)
+	efu.Add(krtcollections.PodLocality{Region: "R1"}, EndpointWithMd{
+		LbEndpoint: &endpointv3.LbEndpoint{
+			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
+				Endpoint: &endpointv3.Endpoint{
+					Address: &corev3.Address{
+						Address: &corev3.Address_Pipe{Pipe: &corev3.Pipe{Path: "a"}},
+					},
+				},
+			},
+		},
+		EndpointMd: EndpointMetadata{
+			Labels: map[string]string{corev1.LabelTopologyRegion: "R1"},
+		},
+	})
+	efu.Add(krtcollections.PodLocality{Region: "R2"}, EndpointWithMd{
+		LbEndpoint: &endpointv3.LbEndpoint{
+			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
+				Endpoint: &endpointv3.Endpoint{
+					Address: &corev3.Address{
+						Address: &corev3.Address_Pipe{Pipe: &corev3.Pipe{Path: "b"}},
+					},
+				},
+			},
+		},
+		EndpointMd: EndpointMetadata{
+			Labels: map[string]string{corev1.LabelTopologyRegion: "R2"},
+		},
+	})
+	ucc := krtcollections.UniqlyConnectedClient{
+		Namespace: "ns",
+		Locality:  krtcollections.PodLocality{Region: "R1"},
+		Labels:    map[string]string{corev1.LabelTopologyRegion: "R1"},
+	}
+
+	destRule := &networkingclient.DestinationRule{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "networking.istio.io/v1alpha3",
+			Kind:       "DestinationRule",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "do-failover",
+		},
+		Spec: networkingv1alpha3.DestinationRule{
+			Host: "reviews.gwtest.svc.cluster.local",
+			TrafficPolicy: &networkingv1alpha3.TrafficPolicy{
+				OutlierDetection: &networkingv1alpha3.OutlierDetection{
+					Consecutive_5XxErrors: &wrappers.UInt32Value{Value: 7},
+					Interval:              &duration.Duration{Seconds: 300}, // 5 minutes
+					BaseEjectionTime:      &duration.Duration{Seconds: 900}, // 15 minutes
+				},
+				LoadBalancer: &networkingv1alpha3.LoadBalancerSettings{
+					LocalityLbSetting: &networkingv1alpha3.LocalityLoadBalancerSetting{},
 				},
 			},
 		},

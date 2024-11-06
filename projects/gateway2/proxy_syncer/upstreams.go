@@ -135,15 +135,22 @@ func translate(ctx context.Context, settings *gloov1.Settings, translator setup.
 func ApplyDestRulesForUpstream(destrule *DestinationRuleWrapper, u *gloov1.Upstream) (*gloov1.Upstream, string) {
 
 	if destrule != nil {
-		if outlier := destrule.Spec.GetTrafficPolicy().GetOutlierDetection(); outlier != nil {
+		trafficPolicy := getTraficPolicy(destrule, ggv2utils.GetPortForUpstream(u))
+		if outlier := trafficPolicy.GetOutlierDetection(); outlier != nil {
 			name := getEndpointClusterName(u)
 			// do not mutate the original upstream
 			up := *u
+
+			if getLocalityLbSetting(trafficPolicy) != nil {
+				if up.GetLoadBalancerConfig() == nil {
+					up.LoadBalancerConfig = &gloov1.LoadBalancerConfig{}
+				}
+				up.GetLoadBalancerConfig().LocalityConfig = &gloov1.LoadBalancerConfig_LocalityWeightedLbConfig{}
+			}
 			out := &cluster.OutlierDetection{
 				Consecutive_5Xx:  outlier.GetConsecutive_5XxErrors(),
 				Interval:         outlier.GetInterval(),
 				BaseEjectionTime: outlier.GetBaseEjectionTime(),
-				// TODO: do the rest of them
 			}
 			if e := outlier.GetConsecutiveGatewayErrors(); e != nil {
 				v := e.GetValue()

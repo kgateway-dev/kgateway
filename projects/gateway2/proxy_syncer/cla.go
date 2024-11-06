@@ -10,6 +10,7 @@ import (
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"go.uber.org/zap"
+	"istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -131,12 +132,17 @@ func NewPerClientEnvoyEndpoints(logger *zap.Logger, uccs krt.Collection[krtcolle
 func PrioritizeEndpoints(logger *zap.Logger, destrule *DestinationRuleWrapper, ep EndpointsForUpstream, ucc krtcollections.UniqlyConnectedClient) UccWithEndpoints {
 	var additionalHash uint64
 	var priorityInfo *PriorityInfo
+
 	if destrule != nil {
-		priorityInfo = getPriorityInfoFromDestrule(*destrule)
-		hasher := fnv.New64()
-		hasher.Write([]byte(destrule.UID))
-		hasher.Write([]byte(fmt.Sprintf("%v", destrule.Generation)))
-		additionalHash = hasher.Sum64()
+		trafficPolicy := getTraficPolicy(destrule, ep.Port)
+		localityLb := getLocalityLbSetting(trafficPolicy)
+		if localityLb != nil {
+			priorityInfo = getPriorityInfoFromDestrule(localityLb)
+			hasher := fnv.New64()
+			hasher.Write([]byte(destrule.UID))
+			hasher.Write([]byte(fmt.Sprintf("%v", destrule.Generation)))
+			additionalHash = hasher.Sum64()
+		}
 	}
 	lbInfo := LoadBalancingInfo{
 		PodLabels:    ucc.Labels,
@@ -153,11 +159,7 @@ func PrioritizeEndpoints(logger *zap.Logger, destrule *DestinationRuleWrapper, e
 	}
 }
 
-func getPriorityInfoFromDestrule(destrules DestinationRuleWrapper) *PriorityInfo {
-	localityLb := destrules.Spec.GetTrafficPolicy().GetLoadBalancer().GetLocalityLbSetting()
-	if localityLb == nil {
-		return nil
-	}
+func getPriorityInfoFromDestrule(localityLb *v1alpha3.LocalityLoadBalancerSetting) *PriorityInfo {
 	return &PriorityInfo{
 		FailoverPriority: NewPriorities(localityLb.GetFailoverPriority()),
 		Failover:         localityLb.GetFailover(),

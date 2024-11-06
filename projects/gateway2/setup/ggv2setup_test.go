@@ -25,6 +25,9 @@ import (
 	jsonpb "google.golang.org/protobuf/encoding/protojson"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 
 	discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_service_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/service/endpoint/v3"
@@ -125,6 +128,11 @@ func TestScenarios(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get assets dir: %v", err)
 	}
+	t.Cleanup(func() { testEnv.Stop() })
+
+	kubeconfig := generateKubeConfiguration(t, cfg)
+	t.Log("kubeconfig:", kubeconfig)
+
 	client, err := istiokube.NewCLIClient(istiokube.NewClientConfigForRestConfig(cfg))
 	if err != nil {
 		t.Fatalf("failed to get init kube client: %v", err)
@@ -132,6 +140,17 @@ func TestScenarios(t *testing.T) {
 
 	// apply settings/gwclass to the cluster
 	err = client.ApplyYAMLFiles("default", "testdata/setupyaml/setup.yaml")
+	if err != nil {
+		t.Fatalf("failed to apply yaml: %v", err)
+	}
+
+	// create the test ns
+	_, err = client.Kube().CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "gwtest"}}, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatalf("failed to create namespace: %v", err)
+	}
+
+	err = client.ApplyYAMLFiles("gwtest", "testdata/setupyaml/pods.yaml")
 	if err != nil {
 		t.Fatalf("failed to apply yaml: %v", err)
 	}
@@ -185,12 +204,6 @@ func TestScenarios(t *testing.T) {
 	// this means that it attaches the pod collection to the unique client set collection.
 	time.Sleep(time.Second)
 
-	// create the test ns
-	_, err = client.Kube().CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "gwtest"}}, metav1.CreateOptions{})
-	if err != nil {
-		t.Fatalf("failed to create namespace: %v", err)
-	}
-
 	// list all yamls in test data
 	files, err := os.ReadDir("testdata")
 	if err != nil {
@@ -200,7 +213,7 @@ func TestScenarios(t *testing.T) {
 		// run tests with the yaml files (but not -out.yaml files)/s
 		if strings.HasSuffix(f.Name(), ".yaml") && !strings.HasSuffix(f.Name(), "-out.yaml") {
 			fullpath := filepath.Join("testdata", f.Name())
-			t.Run(f.Name(), func(t *testing.T) {
+			t.Run(strings.TrimSuffix(f.Name(), ".yaml"), func(t *testing.T) {
 				//sadly tests can't run yet in parallel, as ggv2 will add all the k8s services as clusters. this means
 				// that we get test pollution.
 				// once we change it to only include the ones in the proxy, we can re-enable this
@@ -248,10 +261,18 @@ func testScenario(t *testing.T, ctx context.Context, client istiokube.CLIClient,
 	os.WriteFile(yamlfile, []byte(testyaml), 0644)
 
 	err = client.ApplyYAMLFiles("gwtest", yamlfile)
+	defer func() {
+		// always delete yamls, even if there was an error applying them; to prevent test pollution.
+		err := client.DeleteYAMLFiles("gwtest", yamlfile)
+		if err != nil {
+			t.Fatalf("failed to delete yaml: %v", err)
+		}
+		t.Log("deleted yamls", t.Name())
+	}()
 	if err != nil {
 		t.Fatalf("failed to apply yaml: %v", err)
 	}
-	defer client.DeleteYAMLFiles("gwtest", yamlfile)
+	t.Log("applied yamls", t.Name())
 	// make sure all yamls reached the control plane
 	time.Sleep(time.Second)
 
@@ -267,7 +288,7 @@ func testScenario(t *testing.T, ctx context.Context, client istiokube.CLIClient,
 		os.WriteFile(fout, d, 0644)
 		t.Fatal("wrote out file - nothing to test")
 	}
-	expectedXdsDump.Compare(t, dump)
+	dump.Compare(t, expectedXdsDump)
 	fmt.Println("test done")
 }
 
@@ -694,4 +715,43 @@ func (x *xdsFetcher) getroutes(t *testing.T, ctx context.Context, rosourceNames 
 		clas = append(clas, &cla)
 	}
 	return clas
+}
+
+func generateKubeConfiguration(t *testing.T, restconfig *rest.Config) string {
+	clusters := make(map[string]*clientcmdapi.Cluster)
+	authinfos := make(map[string]*clientcmdapi.AuthInfo)
+	contexts := make(map[string]*clientcmdapi.Context)
+
+	clusterName := "cluster"
+	clusters[clusterName] = &clientcmdapi.Cluster{
+		Server:                   restconfig.Host,
+		CertificateAuthorityData: restconfig.CAData,
+	}
+	authinfos[clusterName] = &clientcmdapi.AuthInfo{
+		ClientKeyData:         restconfig.KeyData,
+		ClientCertificateData: restconfig.CertData,
+	}
+	contexts[clusterName] = &clientcmdapi.Context{
+		Cluster:   clusterName,
+		Namespace: "default",
+		AuthInfo:  clusterName,
+	}
+
+	clientConfig := clientcmdapi.Config{
+		Kind:       "Config",
+		APIVersion: "v1",
+		Clusters:   clusters,
+		Contexts:   contexts,
+		// current context must be mgmt cluster for now, as the api server doesn't have context configurable.
+		CurrentContext: "cluster",
+		AuthInfos:      authinfos,
+	}
+	// create temp file
+	tmpfile := filepath.Join(t.TempDir(), "kubeconfig")
+	err := clientcmd.WriteToFile(clientConfig, tmpfile)
+	if err != nil {
+		t.Fatalf("failed to write kubeconfig: %v", err)
+	}
+
+	return tmpfile
 }
