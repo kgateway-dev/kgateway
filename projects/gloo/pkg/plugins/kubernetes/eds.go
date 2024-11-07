@@ -447,6 +447,14 @@ func processEndpointAddresses(
 		}
 	}
 	key := Epkey{addr, port, podName, podNamespace, usRef, isHeadlessService}
+
+	// Several endpoint slices can have same endpoints.
+	// Check if the reference to upstream already exists for this endpoint before adding it.
+	for _, existingRef := range endpointsMap[key] {
+		if existingRef.Key() == usRef.Key() {
+			return ""
+		}
+	}
 	copyRef := *usRef
 	endpointsMap[key] = append(endpointsMap[key], &copyRef)
 	return ""
