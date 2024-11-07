@@ -65,7 +65,7 @@ func AddConsulConfigFlags(set *pflag.FlagSet, consul *contextoptions.Consul) {
 	config := api.DefaultConfig()
 	set.BoolVar(&consul.UseConsul, "use-consul", false, "use Consul Key-Value storage as the "+
 		"backend for reading and writing config (VirtualServices, Upstreams, and Proxies)")
-	set.StringVar(&consul.RootKey, "consul-root-key", clients.DefaultRootKey, "key prefix for for Consul key-value storage.")
+	set.StringVar(&consul.RootKey, "consul-root-key", clients.DefaultRootKey, "key prefix for the Consul key-value storage.")
 	set.StringVar(&config.Address, "consul-address", config.Address, "address of the Consul server. "+
 		"Use with --use-consul")
 	set.StringVar(&config.Scheme, "consul-scheme", config.Scheme, "URI scheme for the Consul server. "+
