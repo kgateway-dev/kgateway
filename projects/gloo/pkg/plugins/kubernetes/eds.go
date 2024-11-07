@@ -393,7 +393,7 @@ func computeGlooEndpoints(
 
 		// find each matching endpoint
 		for _, eps := range kubeEndpointSlices {
-			if eps.Namespace != spec.GetServiceNamespace() || eps.Labels["kubernetes.io/service-name"] != spec.GetServiceName() {
+			if eps.Namespace != spec.GetServiceNamespace() || eps.Labels[discoveryv1.LabelServiceName] != spec.GetServiceName() {
 				continue
 			}
 			port := findFirstPortInEndpointSlice(eps, singlePortService, kubeServicePort)
