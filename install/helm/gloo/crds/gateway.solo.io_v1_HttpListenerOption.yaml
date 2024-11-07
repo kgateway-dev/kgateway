@@ -844,6 +844,35 @@ spec:
                         type: string
                       drainTimeout:
                         type: string
+                      earlyHeaderManipulation:
+                        properties:
+                          headersToAdd:
+                            items:
+                              properties:
+                                append:
+                                  nullable: true
+                                  type: boolean
+                                header:
+                                  properties:
+                                    key:
+                                      type: string
+                                    value:
+                                      type: string
+                                  type: object
+                                headerSecretRef:
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  type: object
+                              type: object
+                            type: array
+                          headersToRemove:
+                            items:
+                              type: string
+                            type: array
+                        type: object
                       enableTrailers:
                         nullable: true
                         type: boolean
