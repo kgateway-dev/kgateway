@@ -21,6 +21,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
@@ -80,6 +81,9 @@ func measureResource(ctx context.Context, resource string, length int) {
 func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot, allReports reporter.ResourceReports) {
 	ctx, span := trace.StartSpan(ctx, "gloo.syncer.Sync")
 	defer span.End()
+	stopwatch := statsutils.NewTranslatorStopWatch("EnvoySyncer")
+	stopwatch.Start()
+	defer stopwatch.Stop(ctx)
 
 	// store snap for debug tooling
 	s.snapshotHistory.SetApiSnapshot(snap)

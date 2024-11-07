@@ -9,7 +9,6 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/ports"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"golang.org/x/exp/slices"
 	"k8s.io/utils/ptr"
 	api "sigs.k8s.io/gateway-api/apis/v1"
@@ -133,17 +132,29 @@ func getIstioContainerValues(config *v1alpha1.IstioContainer) *helmIstioContaine
 }
 
 // Convert istio values from GatewayParameters into helm values to be used by the deployer.
-func getIstioValues(istioValues bootstrap.IstioValues, istioConfig *v1alpha1.IstioIntegration) *helmIstio {
+func getIstioValues(istioIntegrationEnabled bool, istioConfig *v1alpha1.IstioIntegration) *helmIstio {
 	// if istioConfig is nil, istio sds is disabled and values can be ignored
 	if istioConfig == nil {
 		return &helmIstio{
-			Enabled: ptr.To(istioValues.IntegrationEnabled),
+			Enabled: ptr.To(istioIntegrationEnabled),
 		}
 	}
 
 	return &helmIstio{
-		Enabled: ptr.To(istioValues.IntegrationEnabled),
+		Enabled: ptr.To(istioIntegrationEnabled),
 	}
+}
+
+// Converts AwsInfo (which come from Settings values) into aws helm values
+func getAwsValues(awsInfo *AwsInfo) *helmAws {
+	if awsInfo != nil {
+		return &helmAws{
+			EnableServiceAccountCredentials: &awsInfo.EnableServiceAccountCredentials,
+			StsClusterName:                  &awsInfo.StsClusterName,
+			StsUri:                          &awsInfo.StsUri,
+		}
+	}
+	return nil
 }
 
 // Get the image values for the envoy container in the proxy deployment.

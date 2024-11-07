@@ -31,6 +31,14 @@ spec:
 {{- end }}{{/* if $gg.service */}}
     service:
       type: {{ $serviceType }}
+      {{- with ($gg.service).extraLabels }}
+      extraLabels:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with ($gg.service).extraAnnotations }}
+      extraAnnotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
 {{- if $gg.serviceAccount }}
     serviceAccount:
       {{- with $gg.serviceAccount.extraLabels }}

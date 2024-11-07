@@ -2,18 +2,21 @@ package virtualhostoptions
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewaykubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/listenerutils"
@@ -30,14 +33,16 @@ import (
 var (
 	_ plugins.ListenerPlugin = &plugin{}
 	_ plugins.StatusPlugin   = &plugin{}
+
+	ReadingVirtualHostOptionErrStr = "error reading VirtualHostOption"
 )
 
 type plugin struct {
-	gwQueries          gwquery.GatewayQueries
-	vhOptQueries       vhoptquery.VirtualHostOptionQueries
-	classicStatusCache classicStatusCache // The lifecycle of this cache is that of the plugin with the assumption that plugins are rebuilt on every translation
-	vhOptionClient     sologatewayv1.VirtualHostOptionClient
-	statusReporter     reporter.StatusReporter
+	gwQueries                   gwquery.GatewayQueries
+	vhOptQueries                vhoptquery.VirtualHostOptionQueries
+	classicStatusCache          classicStatusCache // The lifecycle of this cache is that of the plugin with the assumption that plugins are rebuilt on every translation
+	virtualHostOptionCollection krt.Collection[*gatewaykubev1.VirtualHostOption]
+	statusReporter              reporter.StatusReporter
 }
 
 // holds the data structures needed to derive and report a classic GE status
@@ -74,15 +79,15 @@ func (c *classicStatusCache) getOrCreateEntry(key types.NamespacedName) *classic
 func NewPlugin(
 	gwQueries gwquery.GatewayQueries,
 	client client.Client,
-	vhOptionClient sologatewayv1.VirtualHostOptionClient,
+	virtualHostOptionCollection krt.Collection[*gatewaykubev1.VirtualHostOption],
 	statusReporter reporter.StatusReporter,
 ) *plugin {
 	return &plugin{
-		gwQueries:          gwQueries,
-		vhOptQueries:       vhoptquery.NewQuery(client),
-		vhOptionClient:     vhOptionClient,
-		statusReporter:     statusReporter,
-		classicStatusCache: make(map[types.NamespacedName]*classicStatus),
+		gwQueries:                   gwQueries,
+		vhOptQueries:                vhoptquery.NewQuery(client),
+		virtualHostOptionCollection: virtualHostOptionCollection,
+		statusReporter:              statusReporter,
+		classicStatusCache:          make(map[types.NamespacedName]*classicStatus),
 	}
 }
 
@@ -160,8 +165,30 @@ func optionsToStr(opts []*solokubev1.VirtualHostOption) string {
 	return strings.Join(resourceNames, ", ")
 }
 
+func (p *plugin) InitStatusPlugin(ctx context.Context, statusCtx *plugins.StatusContext) error {
+	for _, proxyWithReport := range statusCtx.ProxiesWithReports {
+		// now that we translate proxies one by one, we can't assume ApplyRoutePlugin is called before ApplyStatusPlugin for all proxies
+		// ApplyStatusPlugin should be come idempotent, as also now it gets applied outside of translation context.
+		// we need to track ownership separately. TODO: re-think this on monday
+
+		// for this specific proxy, get all the route errors and their associated RouteOption sources
+		virtualHostErrors := extractVirtualHostErrors(proxyWithReport.Reports.ProxyReport)
+		for vhKey := range virtualHostErrors {
+			cacheEntry := &classicStatus{
+				subresourceStatus: map[string]*core.Status{},
+				virtualHostErrors: []*validation.VirtualHostReport_Error{},
+				warnings:          []string{},
+			}
+			// init the cache
+			p.classicStatusCache[vhKey] = cacheEntry
+		}
+	}
+	return nil
+}
+
 // Add all statuses for processed VirtualHostOptions. These could come from the VHO itself or
 // or any VH to which it is attached.
+// It returns the aggregated errors reading the VirtualHostOptions if any.
 func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.StatusContext) error {
 	logger := contextutils.LoggerFrom(ctx)
 	// gather all VirtualHostOptions we need to report status for
@@ -199,28 +226,41 @@ func (p *plugin) ApplyStatusPlugin(ctx context.Context, statusCtx *plugins.Statu
 	}
 	virtualHostOptionReport := make(reporter.ResourceReports)
 	// Loop through vhostopts we processed and have a status for
+	var multierr *multierror.Error
 	for vhOptKey, status := range p.classicStatusCache {
 		// get the obj by namespacedName
-		vhOptObj, _ := p.vhOptionClient.Read(vhOptKey.Namespace, vhOptKey.Name, clients.ReadOpts{Ctx: ctx})
+		maybeVhOptObj := p.virtualHostOptionCollection.GetKey(krt.Key[*solokubev1.VirtualHostOption](krt.Named{Namespace: vhOptKey.Namespace, Name: vhOptKey.Name}.ResourceName()))
+		if maybeVhOptObj == nil {
+			err := errors.New("VirtualHostOption not found")
+			multierr = multierror.Append(multierr, eris.Wrapf(err, "%s %s in namespace %s", ReadingVirtualHostOptionErrStr, vhOptKey.Name, vhOptKey.Namespace))
+			continue
+		}
+
+		vhOptObj := **maybeVhOptObj
+		vhOptObj.Spec.Metadata = &core.Metadata{}
+		vhOptObj.Spec.GetMetadata().Name = vhOptObj.GetName()
+		vhOptObj.Spec.GetMetadata().Namespace = vhOptObj.GetNamespace()
+		vhOptObjSk := &vhOptObj.Spec
 
 		// mark this object to be processed
-		virtualHostOptionReport.Accept(vhOptObj)
+		virtualHostOptionReport.Accept(vhOptObjSk)
 
 		// add any virtualHost errors for this obj
 		for _, rerr := range status.virtualHostErrors {
-			virtualHostOptionReport.AddError(vhOptObj, eris.New(rerr.GetReason()))
+			virtualHostOptionReport.AddError(vhOptObjSk, eris.New(rerr.GetReason()))
 		}
 
-		virtualHostOptionReport.AddWarnings(vhOptObj, status.warnings...)
+		virtualHostOptionReport.AddWarnings(vhOptObjSk, status.warnings...)
 
 		// actually write out the reports!
 		err := p.statusReporter.WriteReports(ctx, virtualHostOptionReport, status.subresourceStatus)
 		if err != nil {
-			return eris.Wrap(err, "writing status report from VirtualHostOptionPlugin")
+			multierr = multierror.Append(multierr, eris.Wrap(err, "writing status report from VirtualHostOptionPlugin"))
+			continue
 		}
 
 	}
-	return nil
+	return multierr.ErrorOrNil()
 }
 
 // given a ProxyReport, extract and aggregate all VirtualHost errors that have VirtualHostOption source metadata

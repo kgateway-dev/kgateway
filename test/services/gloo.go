@@ -8,6 +8,7 @@ import (
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	graphqlv1beta1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients/vault"
+	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 
 	"net"
 	"net/http"
@@ -358,7 +359,7 @@ func constructTestOpts(ctx context.Context, runOptions *RunOptions, settings *gl
 			Ctx:         ctx,
 			RefreshRate: time.Second / 10,
 		},
-		ControlPlane: setup.NewControlPlane(ctx, grpcServer, &net.TCPAddr{
+		ControlPlane: setup.NewControlPlane(ctx, xds.NewAdsSnapshotCache(ctx), grpcServer, &net.TCPAddr{
 			IP:   net.IPv4zero,
 			Port: int(runOptions.ports.Gloo),
 		}, bootstrap.KubernetesControlPlaneConfig{}, nil, true),

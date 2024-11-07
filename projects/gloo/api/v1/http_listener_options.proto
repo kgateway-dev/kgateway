@@ -1,0 +1,147 @@
+syntax = "proto3";
+package gloo.solo.io;
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
+
+import "extproto/ext.proto";
+option (extproto.equal_all) = true;
+option (extproto.hash_all) = true;
+option (extproto.clone_all) = true;
+
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc_web/grpc_web.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/hcm/hcm.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/healthcheck/healthcheck.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/dlp/dlp.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/wasm/wasm.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/caching/caching.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extproc/extproc.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/filter/http/gzip/v2/gzip.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/proxylatency/proxylatency.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/csrf/v3/csrf.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc_json/grpc_json.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/dynamic_forward_proxy/dynamic_forward_proxy.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/connection_limit/connection_limit.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/local_ratelimit/local_ratelimit.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/router/router.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/tap/tap.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/stateful_session/stateful_session.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/header_validation/header_validation.proto";
+
+import "google/protobuf/wrappers.proto";
+
+// Optional, feature-specific configuration that lives on http listeners
+message HttpListenerOptions {
+    grpc_web.options.gloo.solo.io.GrpcWeb grpc_web = 1;
+    hcm.options.gloo.solo.io.HttpConnectionManagerSettings http_connection_manager_settings = 2;
+    // enable [Envoy health checks](https://www.envoyproxy.io/docs/envoy/v1.7.0/api-v2/config/filter/http/health_check/v2/health_check.proto) on this listener
+    healthcheck.options.gloo.solo.io.HealthCheck health_check = 4;
+    // Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
+    // underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
+    //
+    // Some sample use cases:
+    // * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata.
+    // * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process.
+    // Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
+    Extensions extensions = 3;
+    // Enterprise-only: Config for Web Application Firewall (WAF), supporting
+    // the popular ModSecurity 3.0 ruleset
+    waf.options.gloo.solo.io.Settings waf = 5;
+    // Enterprise-only: Config for data loss prevention
+    dlp.options.gloo.solo.io.FilterConfig dlp = 6;
+    // Enterprise-only: WASM related configuration [experimental!]
+    wasm.options.gloo.solo.io.PluginSource wasm = 7;
+    // Enterprise-only: External auth related settings
+    enterprise.gloo.solo.io.Settings extauth = 10;
+    // Enterprise-only: Settings for the rate limiting server itself
+    ratelimit.options.gloo.solo.io.Settings ratelimit_server = 11;
+    // Enterprise-only: Settings for the cache server itself
+    caching.options.gloo.solo.io.Settings caching = 17;
+
+    oneof ext_proc_config {
+        // Enterprise-only: Set to true to disable the External Processing filter for this listener.
+        // This can be overridden by child VirtualHostOptions or RouteOptions.
+        google.protobuf.BoolValue disable_ext_proc = 30;
+
+        // Enterprise-only: External Processing filter settings for the listener. This can be used to
+        // override the defaults from the global settings (via shallow merge). Some of the settings
+        // on the listener can be overridden by child VirtualHostOptions or RouteOptions.
+        extproc.options.gloo.solo.io.Settings ext_proc = 31;
+    }
+
+    // Gzip is an HTTP option which enables Gloo to compress
+    // data returned from an upstream service upon client request.
+    // Compression is useful in situations where large payloads need to be transmitted without compromising the response time.
+    // Example:
+    // ```
+    // gzip:
+    //  contentType:
+    //  - "application/json"
+    //  compressionLevel: BEST
+    // ```
+    .solo.io.envoy.config.filter.http.gzip.v2.Gzip gzip = 8;
+
+    // Enterprise-only: Proxy latency
+    envoy.config.filter.http.proxylatency.v2.ProxyLatency proxy_latency = 9;
+
+    // Buffer can be used to set the maximum request size
+    // that the filter will buffer before the connection
+    // manager will stop buffering and return a 413 response.
+    .solo.io.envoy.extensions.filters.http.buffer.v3.Buffer buffer = 12;
+
+    // Csrf can be used to set percent of requests for which the CSRF filter is enabled, enable shadow-only mode
+    // where policies will be evaluated and tracked, but not enforced and add additional source origins
+    // that will be allowed in addition to the destination origin.
+    // For more, see https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/csrf/v2/csrf.proto
+    .solo.io.envoy.extensions.filters.http.csrf.v3.CsrfPolicy csrf = 15;
+
+    // Exposed envoy config for the gRPC to JSON transcoding filter,
+    // envoy.filters.http.grpc_json_transcoder.
+    // For more, see https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/grpc_json_transcoder/v3/transcoder.proto
+    grpc_json.options.gloo.solo.io.GrpcJsonTranscoder grpc_json_transcoder = 13;
+
+    // Enterprise-only: If using the HTTP header specified by cluster_header to direct traffic to a cluster,
+    // this option will sanitize that header from downstream traffic.
+    // Defaults to false
+    google.protobuf.BoolValue sanitize_cluster_header = 14;
+
+    // Enterprise-only: Setting this value to true will grab the leftmost IP address from
+    // the x-forwarded-for header and set it as the downstream address.
+    // It is worth noting that the x-forwarded-for header can be tampered with by clients
+    // and should therefore be sanitized by any preceding proxies / load balancers if this option is to be used.
+    google.protobuf.BoolValue leftmost_xff_address = 16;
+
+    dfp.options.gloo.solo.io.FilterConfig dynamic_forward_proxy = 28;
+
+    // ConnectionLimit can be used to limit the number of active connections per gateway. Useful for resource protection as well as DoS prevention.
+    connection_limit.options.gloo.solo.io.ConnectionLimit connection_limit = 29;
+
+    // NetworkLocalRatelimit can be used to rate limit the connections per gateway at the L4 layer and works pre-auth.
+    // It uses envoy's own local rate limit filter to do so, without the need for an external rate limit server to be set up.
+    local_ratelimit.options.gloo.solo.io.TokenBucket network_local_ratelimit = 32;
+
+    // HttpLocalRatelimit can be used to rate limit the number of requests per gateway and works pre-auth.
+    // Unlike the NetworkLocalRatelimit, this works as part of the HCM (ie: L7 layer).
+    // All virtual host and routes that are part of this gateway will share this rate limit unless explicity configured with another limit.
+    // It uses envoy's own local rate limit filter to do so, without the need for an external rate limit server to be set up.
+    local_ratelimit.options.gloo.solo.io.Settings http_local_ratelimit = 33;
+
+    // Router is an extension of the envoy http filters
+    // Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto
+    Router router = 18;
+
+    // Enterprise only: Tap filter settings (experimental).
+    tap.options.gloo.solo.io.Tap tap = 34;
+
+    // Enterprise only: Listener-level stateful session settings
+    stateful_session.options.gloo.solo.io.StatefulSession stateful_session = 35;
+
+    // Header validation settings - fields in this message can be used to
+    // determine whether requests should be rejected based on the contents of
+    // the header.
+    header_validation.options.gloo.solo.io.HeaderValidationSettings header_validation_settings = 36;
+
+}

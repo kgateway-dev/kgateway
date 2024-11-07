@@ -318,6 +318,11 @@ type Gloo struct {
 type KubeGateway struct {
 	Enabled           *bool                               `json:"enabled,omitempty" desc:"Enable the Gloo Gateway Kubernetes Gateway API controller."`
 	GatewayParameters *GatewayParametersForGatewayClasses `json:"gatewayParameters,omitempty" desc:"Maps GatewayClasses to default GatewayParameters"`
+	Portal            *PortalParameters                   `json:"portal,omitempty" desc:"(Enterprise Only) Config to enable the Gloo Gateway Portal controller and web server."`
+}
+
+type PortalParameters struct {
+	Enabled *bool `json:"enabled,omitempty" desc:"Enable the Gloo Gateway Portal controller and web server."`
 }
 
 type GatewayParametersForGatewayClasses struct {
@@ -354,7 +359,9 @@ type ProvisionedDeployment struct {
 }
 
 type ProvisionedService struct {
-	Type *string `json:"type,omitempty" desc:"K8s service type. If set to null, a default of LoadBalancer will be imposed."`
+	Type             *string           `json:"type,omitempty" desc:"K8s service type. If set to null, a default of LoadBalancer will be imposed."`
+	ExtraLabels      map[string]string `json:"extraLabels,omitempty" desc:"Extra labels to add to the service."`
+	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty" desc:"Extra annotations to add to the service."`
 }
 
 type ProvisionedServiceAccount struct {

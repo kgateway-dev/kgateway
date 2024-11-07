@@ -31,7 +31,7 @@ kubectl cluster-info --context kind-gloo-oss
 
 When you switch branches, you'll need to rebuild the images (unless the changes are in the enabled providers list). Run
 ```bash
-VERSION=1.0.0-ci1 CLUSTER_NAME=gloo-oss make kind-build-and-load build-test-chart build-cli-local
+VERSION=1.0.0-ci1 CLUSTER_NAME=gloo-oss IMAGE_VARIANT=standard make kind-build-and-load build-test-chart build-cli-local
 ```
 
 ### Run tilt!

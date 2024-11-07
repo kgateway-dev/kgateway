@@ -30,7 +30,7 @@ var _ = Describe("Plugin", func() {
 		kube = fake.NewSimpleClientset()
 		kubeCoreCache, err := corecache.NewKubeCoreCache(context.Background(), kube)
 		Expect(err).NotTo(HaveOccurred())
-		plugin = NewPlugin(kube, kubeCoreCache)
+		plugin = NewPlugin(kube, kubeCoreCache, nil)
 		plugin.Init(plugins.InitParams{})
 		upstream = &v1.Upstream{
 			Metadata: &core.Metadata{
@@ -60,7 +60,7 @@ var _ = Describe("Plugin", func() {
 			// Reset plugin to not watch all namespaces.
 			kubeCoreCache, err := corecache.NewKubeCoreCacheWithOptions(context.Background(), kube, time.Duration(1), []string{"ns"})
 			Expect(err).NotTo(HaveOccurred())
-			plugin = NewPlugin(kube, kubeCoreCache)
+			plugin = NewPlugin(kube, kubeCoreCache, nil)
 			plugin.Init(plugins.InitParams{})
 			upstream.UpstreamType = &v1.Upstream_Kube{
 				Kube: &kubernetes.UpstreamSpec{

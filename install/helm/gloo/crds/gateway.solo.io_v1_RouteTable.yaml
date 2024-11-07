@@ -190,8 +190,33 @@ spec:
                                           minimum: 0
                                           type: integer
                                       type: object
+                                    moderation:
+                                      properties:
+                                        openai:
+                                          properties:
+                                            authToken:
+                                              properties:
+                                                inline:
+                                                  type: string
+                                                passthrough:
+                                                  type: object
+                                                secretRef:
+                                                  properties:
+                                                    name:
+                                                      type: string
+                                                    namespace:
+                                                      type: string
+                                                  type: object
+                                              type: object
+                                            model:
+                                              type: string
+                                          type: object
+                                      type: object
                                     regex:
                                       properties:
+                                        action:
+                                          type: string
+                                          x-kubernetes-int-or-string: true
                                         builtins:
                                           items:
                                             type: string
@@ -199,12 +224,17 @@ spec:
                                           type: array
                                         matches:
                                           items:
-                                            type: string
+                                            properties:
+                                              name:
+                                                type: string
+                                              pattern:
+                                                type: string
+                                            type: object
                                           type: array
                                       type: object
                                     webhook:
                                       properties:
-                                        headers:
+                                        forwardHeaders:
                                           items:
                                             properties:
                                               key:
@@ -226,6 +256,9 @@ spec:
                                   properties:
                                     regex:
                                       properties:
+                                        action:
+                                          type: string
+                                          x-kubernetes-int-or-string: true
                                         builtins:
                                           items:
                                             type: string
@@ -233,12 +266,17 @@ spec:
                                           type: array
                                         matches:
                                           items:
-                                            type: string
+                                            properties:
+                                              name:
+                                                type: string
+                                              pattern:
+                                                type: string
+                                            type: object
                                           type: array
                                       type: object
                                     webhook:
                                       properties:
-                                        headers:
+                                        forwardHeaders:
                                           items:
                                             properties:
                                               key:
@@ -279,6 +317,8 @@ spec:
                                           properties:
                                             inline:
                                               type: string
+                                            passthrough:
+                                              type: object
                                             secretRef:
                                               properties:
                                                 name:
@@ -298,6 +338,8 @@ spec:
                                           properties:
                                             inline:
                                               type: string
+                                            passthrough:
+                                              type: object
                                             secretRef:
                                               properties:
                                                 name:
@@ -351,6 +393,8 @@ spec:
                                           properties:
                                             inline:
                                               type: string
+                                            passthrough:
+                                              type: object
                                             secretRef:
                                               properties:
                                                 name:
@@ -370,6 +414,8 @@ spec:
                                           properties:
                                             inline:
                                               type: string
+                                            passthrough:
+                                              type: object
                                             secretRef:
                                               properties:
                                                 name:

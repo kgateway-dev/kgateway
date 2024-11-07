@@ -312,8 +312,51 @@ spec:
                       properties:
                         accessTokenValidation:
                           properties:
+                            azure:
+                              properties:
+                                claimsCachingOptions:
+                                  properties:
+                                    db:
+                                      format: int32
+                                      type: integer
+                                    host:
+                                      type: string
+                                    poolSize:
+                                      format: int32
+                                      type: integer
+                                    socketType:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    tlsCertMountPath:
+                                      type: string
+                                  type: object
+                                clientId:
+                                  type: string
+                                clientSecret:
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  type: object
+                                tenantId:
+                                  type: string
+                              type: object
                             cacheTimeout:
                               type: string
+                            claimsToHeaders:
+                              items:
+                                properties:
+                                  append:
+                                    type: boolean
+                                  claim:
+                                    type: string
+                                  header:
+                                    type: string
+                                type: object
+                              type: array
+                            default:
+                              type: object
                             dynamicMetadataFromClaims:
                               additionalProperties:
                                 type: string

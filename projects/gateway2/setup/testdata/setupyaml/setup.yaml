@@ -1,0 +1,62 @@
+kind: GatewayClass
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: gloo-gateway
+spec:
+  controllerName: solo.io/gloo-gateway
+  parametersRef:
+    group: gateway.gloo.solo.io
+    kind: GatewayParameters
+    name: gloo-gateway
+    namespace: default
+---
+kind: GatewayParameters
+apiVersion: gateway.gloo.solo.io/v1alpha1
+metadata:
+  name: gloo-gateway
+spec:
+  kube: {}
+---
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  name: default
+spec:
+  discovery:
+    fdsMode: WHITELIST
+  discoveryNamespace: gloo-system
+  gateway:
+    enableGatewayController: true
+    isolateVirtualHostsBySslConfig: true
+    readGatewaysFromAllNamespaces: false
+    validation:
+      allowWarnings: true
+      alwaysAccept: false
+      disableTransformationValidation: false
+      fullEnvoyValidation: false
+      proxyValidationServerAddr: gloo:9988
+      serverEnabled: true
+      validationServerGrpcMaxSizeBytes: 104857600
+      warnMissingTlsSecret: true
+      warnRouteShortCircuiting: true
+  gloo:
+    disableKubernetesDestinations: false
+    disableProxyGarbageCollection: false
+    enableRestEds: false
+    invalidConfigPolicy:
+      invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators
+        should run `glooctl check` to find and fix config errors.
+      invalidRouteResponseCode: 404
+      replaceInvalidRoutes: true
+    istioOptions:
+      appendXForwardedHost: true
+      enableAutoMtls: true
+      enableIntegration: true
+    proxyDebugBindAddr: 0.0.0.0:9966
+    regexMaxProgramSize: 1024
+    restXdsBindAddr: 0.0.0.0:9976
+    xdsBindAddr: 0.0.0.0:9977
+  kubernetesArtifactSource: {}
+  kubernetesConfigSource: {}
+  kubernetesSecretSource: {}
+  refreshRate: 60s

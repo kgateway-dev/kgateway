@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
+	"github.com/solo-io/gloo/pkg/utils/statsutils"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -43,6 +44,15 @@ type Translator interface {
 		proxy *v1.Proxy,
 	) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport)
 }
+type ClusterTranslator interface {
+	// Translate converts a Upstream CR into an xDS Snapshot
+	// Any errors or warnings that are encountered during translation are returned, along with the
+	// envoy cluster.
+	TranslateCluster(
+		params plugins.Params,
+		upstream *v1.Upstream,
+	) (*envoy_config_cluster_v3.Cluster, []error)
+}
 
 var (
 	_ Translator = new(translatorInstance)
@@ -50,11 +60,12 @@ var (
 
 // translatorInstance is the implementation for a Translator used during Gloo translation
 type translatorInstance struct {
-	lock                      sync.Mutex
-	pluginRegistry            plugins.PluginRegistry
-	settings                  *v1.Settings
-	hasher                    func(resources []envoycache.Resource) (uint64, error)
-	listenerTranslatorFactory *ListenerSubsystemTranslatorFactory
+	lock                        sync.Mutex
+	pluginRegistry              plugins.PluginRegistry
+	settings                    *v1.Settings
+	hasher                      func(resources []envoycache.Resource) (uint64, error)
+	listenerTranslatorFactory   *ListenerSubsystemTranslatorFactory
+	shouldEnforceNamespaceMatch bool
 }
 
 func NewDefaultTranslator(settings *v1.Settings, pluginRegistry plugins.PluginRegistry) *translatorInstance {
@@ -67,12 +78,22 @@ func NewTranslatorWithHasher(
 	pluginRegistry plugins.PluginRegistry,
 	hasher func(resources []envoycache.Resource) (uint64, error),
 ) *translatorInstance {
+	shouldEnforceStr := os.Getenv(api_conversion.MatchingNamespaceEnv)
+	shouldEnforceNamespaceMatch := false
+	if shouldEnforceStr != "" {
+		var err error
+		shouldEnforceNamespaceMatch, err = strconv.ParseBool(shouldEnforceStr)
+		if err != nil {
+			// TODO: what to do here?
+		}
+	}
 	return &translatorInstance{
-		lock:                      sync.Mutex{},
-		pluginRegistry:            pluginRegistry,
-		settings:                  settings,
-		hasher:                    hasher,
-		listenerTranslatorFactory: NewListenerSubsystemTranslatorFactory(pluginRegistry, sslConfigTranslator, settings),
+		lock:                        sync.Mutex{},
+		pluginRegistry:              pluginRegistry,
+		settings:                    settings,
+		hasher:                      hasher,
+		listenerTranslatorFactory:   NewListenerSubsystemTranslatorFactory(pluginRegistry, sslConfigTranslator, settings),
+		shouldEnforceNamespaceMatch: shouldEnforceNamespaceMatch,
 	}
 }
 
@@ -85,6 +106,9 @@ func (t *translatorInstance) Translate(
 	defer t.lock.Unlock()
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")
 	defer span.End()
+	stopwatch := statsutils.NewTranslatorStopWatch("EdgeSnapshotTranslator")
+	stopwatch.Start()
+	defer stopwatch.Stop(ctx)
 	params.Ctx = contextutils.WithLogger(ctx, "translator")
 
 	// re-initialize plugins on each loop, this is done for 2 reasons:
@@ -103,7 +127,9 @@ func (t *translatorInstance) Translate(
 
 	// execute translation of listener and cluster subsystems
 	// during these translations, params.messages is side effected for the reports to use later in this loop
-	clusters, endpoints := t.translateClusterSubsystemComponents(params, proxy, reports)
+	var clusters []*envoy_config_cluster_v3.Cluster
+	var endpoints []*envoy_config_endpoint_v3.ClusterLoadAssignment
+	clusters, endpoints = t.translateClusterSubsystemComponents(params, proxy, reports)
 	routeConfigs, listeners := t.translateListenerSubsystemComponents(params, proxy, proxyReport)
 	// run Resource Generator Plugins
 	for _, plugin := range t.pluginRegistry.GetResourceGeneratorPlugins() {
@@ -155,16 +181,7 @@ func (t *translatorInstance) translateClusterSubsystemComponents(params plugins.
 
 	// endpoints and listeners are shared between listeners
 	logger.Debugf("computing envoy clusters for proxy: %v", proxy.GetMetadata().GetName())
-	shouldEnforceStr := os.Getenv(api_conversion.MatchingNamespaceEnv)
-	shouldEnforceNamespaceMatch := false
-	if shouldEnforceStr != "" {
-		var err error
-		shouldEnforceNamespaceMatch, err = strconv.ParseBool(shouldEnforceStr)
-		if err != nil {
-			reports.AddError(proxy, err)
-		}
-	}
-	clusters, clusterToUpstreamMap := t.computeClusters(params, reports, upstreamRefKeyToEndpoints, proxy, shouldEnforceNamespaceMatch)
+	clusters, clusterToUpstreamMap := t.computeClusters(params, reports, upstreamRefKeyToEndpoints, proxy)
 	logger.Debugf("computing envoy endpoints for proxy: %v", proxy.GetMetadata().GetName())
 
 	endpoints := t.computeClusterEndpoints(params, upstreamRefKeyToEndpoints, reports)
@@ -196,7 +213,7 @@ ClusterLoop:
 		}
 		// get upstream that generated this cluster
 		upstream := clusterToUpstreamMap[c]
-		endpointClusterName, err := getEndpointClusterName(c.GetName(), upstream)
+		endpointClusterName, err := GetEndpointClusterName(c.GetName(), upstream)
 		if err != nil {
 			reports.AddError(upstream, errors.Wrapf(err, "could not marshal upstream to JSON"))
 		}
@@ -393,7 +410,7 @@ func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) 
 	return envoycache.NewResources(fmt.Sprintf("%v", routesVersion), routesProto)
 }
 
-func getEndpointClusterName(clusterName string, upstream *v1.Upstream) (string, error) {
+func GetEndpointClusterName(clusterName string, upstream *v1.Upstream) (string, error) {
 	hash, err := upstream.Hash(nil)
 	if err != nil {
 		return "", err

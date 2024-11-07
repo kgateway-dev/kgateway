@@ -68,7 +68,7 @@ To explore gRPC transcoding, you can use the Bookstore demo app in the Gloo Gate
 Proto descriptors are created by using the `protoc` tool and are based on the functions and the HTTP mappings that you added to your proto files. 
 
 {{% notice note %}}
-The instructions in this guide assume that you did not enable the Gloo Gateway Function Discovery Service (FDS) to automatically generate proto descriptors and put them on the gRPC upstream. If you want to enable FDS, you can skip [Step 2](#generate-proto-descriptors) and [Step 3](#add-descriptors-to-upstream) in this guide, and go to [Step 4](#grpc-routing) directly. To enable FDS, run the following command: `kubectl label upstream -n gloo-system default-bookstore-8080 discovery.solo.io/function_discovery=enable`. 
+The instructions in this guide assume that you did not enable the Gloo Gateway Function Discovery Service (FDS) to automatically generate proto descriptors and put them on the gRPC upstream. If you want to enable FDS, you can skip [Step 2](#generate-proto-descriptors) and [Step 3](#add-descriptors-to-upstream) in this guide, and go to [Step 4](#grpc-routing) directly. To enable FDS, run the following command: `kubectl label upstream -n gloo-system default-bookstore-8080 discovery.solo.io/function_discovery=enabled`. 
 {{% /notice %}}
 
 

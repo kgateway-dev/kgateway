@@ -72,6 +72,21 @@ func (m *SingleAuthToken) Equal(that interface{}) bool {
 			}
 		}
 
+	case *SingleAuthToken_Passthrough_:
+		if _, ok := target.AuthTokenSource.(*SingleAuthToken_Passthrough_); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetPassthrough()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetPassthrough()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetPassthrough(), target.GetPassthrough()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.AuthTokenSource != target.AuthTokenSource {
@@ -191,6 +206,21 @@ func (m *UpstreamSpec) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(m.GetGemini(), target.GetGemini()) {
+				return false
+			}
+		}
+
+	case *UpstreamSpec_VertexAi:
+		if _, ok := target.Llm.(*UpstreamSpec_VertexAi); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetVertexAi()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetVertexAi()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetVertexAi(), target.GetVertexAi()) {
 				return false
 			}
 		}
@@ -630,6 +660,30 @@ func (m *AIPromptGuard) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *SingleAuthToken_Passthrough) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*SingleAuthToken_Passthrough)
+	if !ok {
+		that2, ok := that.(SingleAuthToken_Passthrough)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
 func (m *UpstreamSpec_CustomHost) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -802,6 +856,78 @@ func (m *UpstreamSpec_Gemini) Equal(that interface{}) bool {
 
 	case *UpstreamSpec_Gemini_AuthToken:
 		if _, ok := target.AuthTokenSource.(*UpstreamSpec_Gemini_AuthToken); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAuthToken()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAuthToken()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAuthToken(), target.GetAuthToken()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.AuthTokenSource != target.AuthTokenSource {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *UpstreamSpec_VertexAI) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*UpstreamSpec_VertexAI)
+	if !ok {
+		that2, ok := that.(UpstreamSpec_VertexAI)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetModel(), target.GetModel()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetApiVersion(), target.GetApiVersion()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetProjectId(), target.GetProjectId()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetLocation(), target.GetLocation()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetModelPath(), target.GetModelPath()) != 0 {
+		return false
+	}
+
+	if m.GetPublisher() != target.GetPublisher() {
+		return false
+	}
+
+	switch m.AuthTokenSource.(type) {
+
+	case *UpstreamSpec_VertexAI_AuthToken:
+		if _, ok := target.AuthTokenSource.(*UpstreamSpec_VertexAI_AuthToken); !ok {
 			return false
 		}
 
@@ -1060,6 +1186,21 @@ func (m *UpstreamSpec_MultiPool_Backend) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(m.GetGemini(), target.GetGemini()) {
+				return false
+			}
+		}
+
+	case *UpstreamSpec_MultiPool_Backend_VertexAi:
+		if _, ok := target.Llm.(*UpstreamSpec_MultiPool_Backend_VertexAi); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetVertexAi()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetVertexAi()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetVertexAi(), target.GetVertexAi()) {
 				return false
 			}
 		}
@@ -1464,8 +1605,14 @@ func (m *AIPromptGuard_Regex) Equal(that interface{}) bool {
 	}
 	for idx, v := range m.GetMatches() {
 
-		if strings.Compare(v, target.GetMatches()[idx]) != 0 {
-			return false
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetMatches()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetMatches()[idx]) {
+				return false
+			}
 		}
 
 	}
@@ -1479,6 +1626,10 @@ func (m *AIPromptGuard_Regex) Equal(that interface{}) bool {
 			return false
 		}
 
+	}
+
+	if m.GetAction() != target.GetAction() {
+		return false
 	}
 
 	return true
@@ -1513,21 +1664,69 @@ func (m *AIPromptGuard_Webhook) Equal(that interface{}) bool {
 		return false
 	}
 
-	if len(m.GetHeaders()) != len(target.GetHeaders()) {
+	if len(m.GetForwardHeaders()) != len(target.GetForwardHeaders()) {
 		return false
 	}
-	for idx, v := range m.GetHeaders() {
+	for idx, v := range m.GetForwardHeaders() {
 
 		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetHeaders()[idx]) {
+			if !h.Equal(target.GetForwardHeaders()[idx]) {
 				return false
 			}
 		} else {
-			if !proto.Equal(v, target.GetHeaders()[idx]) {
+			if !proto.Equal(v, target.GetForwardHeaders()[idx]) {
 				return false
 			}
 		}
 
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AIPromptGuard_Moderation) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AIPromptGuard_Moderation)
+	if !ok {
+		that2, ok := that.(AIPromptGuard_Moderation)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.Moderation.(type) {
+
+	case *AIPromptGuard_Moderation_Openai:
+		if _, ok := target.Moderation.(*AIPromptGuard_Moderation_Openai); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetOpenai()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetOpenai()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetOpenai(), target.GetOpenai()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Moderation != target.Moderation {
+			return false
+		}
 	}
 
 	return true
@@ -1584,6 +1783,16 @@ func (m *AIPromptGuard_Request) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetModeration()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetModeration()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetModeration(), target.GetModeration()) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -1632,6 +1841,38 @@ func (m *AIPromptGuard_Response) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *AIPromptGuard_Regex_RegexMatch) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AIPromptGuard_Regex_RegexMatch)
+	if !ok {
+		that2, ok := that.(AIPromptGuard_Regex_RegexMatch)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetPattern(), target.GetPattern()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetName(), target.GetName()) != 0 {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
 func (m *AIPromptGuard_Webhook_HeaderMatch) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -1658,6 +1899,58 @@ func (m *AIPromptGuard_Webhook_HeaderMatch) Equal(that interface{}) bool {
 
 	if m.GetMatchType() != target.GetMatchType() {
 		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AIPromptGuard_Moderation_OpenAI) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AIPromptGuard_Moderation_OpenAI)
+	if !ok {
+		that2, ok := that.(AIPromptGuard_Moderation_OpenAI)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetModel(), target.GetModel()) != 0 {
+		return false
+	}
+
+	switch m.AuthTokenSource.(type) {
+
+	case *AIPromptGuard_Moderation_OpenAI_AuthToken:
+		if _, ok := target.AuthTokenSource.(*AIPromptGuard_Moderation_OpenAI_AuthToken); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAuthToken()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAuthToken()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAuthToken(), target.GetAuthToken()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.AuthTokenSource != target.AuthTokenSource {
+			return false
+		}
 	}
 
 	return true
