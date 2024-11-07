@@ -28,7 +28,7 @@ rules:
 - apiGroups:
   - "discovery.k8s.io"
   resources:
-  - ednpointslices
+  - endpointslices
   verbs:
   - get
   - list
