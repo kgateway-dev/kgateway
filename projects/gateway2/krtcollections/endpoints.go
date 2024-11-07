@@ -52,23 +52,27 @@ type EndpointsInputs struct {
 	Pods              krt.Collection[LocalityPod]
 	EndpointsSettings krt.Singleton[EndpointsSettings]
 	Services          krt.Collection[*corev1.Service]
+
+	Debugger *krt.DebugHandler
 }
 
 func NewGlooK8sEndpointInputs(
 	settings krt.Singleton[glookubev1.Settings],
 	istioClient kube.Client,
+	dbg *krt.DebugHandler,
 	pods krt.Collection[LocalityPod],
 	services krt.Collection[*corev1.Service],
 	finalUpstreams krt.Collection[UpstreamWrapper],
 ) EndpointsInputs {
+	withDebug := krt.WithDebugging(dbg)
 	epClient := kclient.New[*corev1.Endpoints](istioClient)
-	kubeEndpoints := krt.WrapClient(epClient, krt.WithName("Endpoints"))
+	kubeEndpoints := krt.WrapClient(epClient, krt.WithName("Endpoints"), withDebug)
 	endpointSettings := krt.NewSingleton(func(ctx krt.HandlerContext) *EndpointsSettings {
 		settings := krt.FetchOne(ctx, settings.AsCollection())
 		return &EndpointsSettings{
 			EnableAutoMtls: settings.Spec.GetGloo().GetIstioOptions().GetEnableAutoMtls().GetValue(),
 		}
-	})
+	}, withDebug)
 
 	return EndpointsInputs{
 		Upstreams:         finalUpstreams,
@@ -76,6 +80,7 @@ func NewGlooK8sEndpointInputs(
 		Pods:              pods,
 		EndpointsSettings: endpointSettings,
 		Services:          services,
+		Debugger:          dbg,
 	}
 }
 
@@ -144,7 +149,7 @@ func (c EndpointsForUpstream) Equals(in EndpointsForUpstream) bool {
 }
 
 func NewGlooK8sEndpoints(ctx context.Context, inputs EndpointsInputs) krt.Collection[EndpointsForUpstream] {
-	return krt.NewCollection(inputs.Upstreams, transformK8sEndpoints(ctx, inputs), krt.WithName("GlooK8sEndpoints"))
+	return krt.NewCollection(inputs.Upstreams, transformK8sEndpoints(ctx, inputs), krt.WithName("GlooK8sEndpoints"), krt.WithDebugging(inputs.Debugger))
 }
 
 func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kctx krt.HandlerContext, us UpstreamWrapper) *EndpointsForUpstream {

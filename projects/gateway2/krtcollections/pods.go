@@ -58,9 +58,9 @@ func (c LocalityPod) Equals(in LocalityPod) bool {
 		slices.Equal(c.Addresses, in.Addresses)
 }
 
-func newNodeCollection(istioClient kube.Client) krt.Collection[NodeMetadata] {
+func newNodeCollection(istioClient kube.Client, dbg *krt.DebugHandler) krt.Collection[NodeMetadata] {
 	nodeClient := kclient.New[*corev1.Node](istioClient)
-	nodes := krt.WrapClient(nodeClient, krt.WithName("Nodes"))
+	nodes := krt.WrapClient(nodeClient, krt.WithName("Nodes"), krt.WithDebugging(dbg))
 	return NewNodeMetadataCollection(nodes)
 }
 
@@ -73,17 +73,17 @@ func NewNodeMetadataCollection(nodes krt.Collection[*corev1.Node]) krt.Collectio
 	})
 }
 
-func NewPodsCollection(ctx context.Context, istioClient kube.Client) krt.Collection[LocalityPod] {
+func NewPodsCollection(ctx context.Context, istioClient kube.Client, dbg *krt.DebugHandler) krt.Collection[LocalityPod] {
 	podClient := kclient.NewFiltered[*corev1.Pod](istioClient, kclient.Filter{
 		ObjectTransform: kube.StripPodUnusedFields,
 	})
-	pods := krt.WrapClient(podClient, krt.WithName("Pods"))
-	nodes := newNodeCollection(istioClient)
-	return NewLocalityPodsCollection(nodes, pods)
+	pods := krt.WrapClient(podClient, krt.WithName("Pods"), krt.WithDebugging(dbg))
+	nodes := newNodeCollection(istioClient, dbg)
+	return NewLocalityPodsCollection(nodes, pods, dbg)
 }
 
-func NewLocalityPodsCollection(nodes krt.Collection[NodeMetadata], pods krt.Collection[*corev1.Pod]) krt.Collection[LocalityPod] {
-	return krt.NewCollection(pods, augmentPodLabels(nodes))
+func NewLocalityPodsCollection(nodes krt.Collection[NodeMetadata], pods krt.Collection[*corev1.Pod], dbg *krt.DebugHandler) krt.Collection[LocalityPod] {
+	return krt.NewCollection(pods, augmentPodLabels(nodes), krt.WithName("AugmentPod"), krt.WithDebugging(dbg))
 }
 
 func augmentPodLabels(nodes krt.Collection[NodeMetadata]) func(kctx krt.HandlerContext, pod *corev1.Pod) *LocalityPod {
