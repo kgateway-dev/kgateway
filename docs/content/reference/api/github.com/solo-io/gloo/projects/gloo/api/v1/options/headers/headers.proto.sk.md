@@ -12,6 +12,7 @@ weight: 5
 
 
 - [HeaderManipulation](#headermanipulation)
+- [EarlyHeaderManipulation](#earlyheadermanipulation)
 - [HeaderValueOption](#headervalueoption)
 - [HeaderValue](#headervalue)
   
@@ -46,6 +47,30 @@ HeaderManipulation can be specified on routes, virtual hosts, or weighted destin
 | `requestHeadersToRemove` | `[]string` | Specifies a list of HTTP headers that should be removed from each request handled by this route or virtual host. |
 | `responseHeadersToAdd` | [[]headers.options.gloo.solo.io.HeaderValueOption](../headers.proto.sk/#headervalueoption) | Specifies a list of HTTP headers that should be added to each response handled by this route or host. For more information, including details on header value syntax, see the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers.html# . |
 | `responseHeadersToRemove` | `[]string` | Specifies a list of HTTP headers that should be removed from each response handled by this route or virtual host. |
+
+
+
+
+---
+### EarlyHeaderManipulation
+
+ 
+EarlyHeaderManipulation can be specified on Gateways to manipulate headers before significant processing
+has happened and routing decisions are made.
+Early header manipulation allows adding/removing headers that affect request processing
+and can be used to implement override headers.
+Note: The adding of headers happens before the removal of headers.
+
+```yaml
+"headersToAdd": []solo.io.envoy.api.v2.core.HeaderValueOption
+"headersToRemove": []string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `headersToAdd` | [[]solo.io.envoy.api.v2.core.HeaderValueOption](../../../../../../../../solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#headervalueoption) | Specifies a list of HTTP headers that should be added to each request handled by this gateway. For more information, including details on header value syntax, see the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers.html#) . |
+| `headersToRemove` | `[]string` | Specifies a list of HTTP headers that should be removed from each request handled by this gateway. |
 
 
 
