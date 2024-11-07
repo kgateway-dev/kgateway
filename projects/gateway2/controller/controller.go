@@ -33,7 +33,6 @@ import (
 	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 )
 
 const (
@@ -49,8 +48,9 @@ type GatewayConfig struct {
 	AutoProvision  bool
 	Kick           func(ctx context.Context)
 
-	ControlPlane bootstrap.ControlPlane
-	IstioValues  bootstrap.IstioValues
+	ControlPlane            deployer.ControlPlaneInfo
+	IstioIntegrationEnabled bool
+	Aws                     *deployer.AwsInfo
 
 	Extensions extensions.K8sGatewayExtensions
 }
@@ -80,6 +80,9 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 		controllerBuilder.watchVirtualHostOptions,
 		controllerBuilder.watchUpstreams,
 		controllerBuilder.watchServices,
+		controllerBuilder.watchEndpoints,
+		controllerBuilder.watchPods,
+		controllerBuilder.watchSecrets,
 		controllerBuilder.addIndexes,
 		controllerBuilder.addHttpLisOptIndexes,
 		controllerBuilder.addLisOptIndexes,
@@ -160,12 +163,13 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	// setup a deployer
 	log := log.FromContext(ctx)
 
-	log.Info("creating deployer", "ctrlname", c.cfg.ControllerName, "server", c.cfg.ControlPlane.GetBindAddress(), "port", c.cfg.ControlPlane.GetBindPort())
+	log.Info("creating deployer", "ctrlname", c.cfg.ControllerName, "server", c.cfg.ControlPlane.XdsHost, "port", c.cfg.ControlPlane.XdsPort)
 	d, err := deployer.NewDeployer(c.cfg.Mgr.GetClient(), &deployer.Inputs{
-		ControllerName: c.cfg.ControllerName,
-		Dev:            c.cfg.Dev,
-		IstioValues:    c.cfg.IstioValues,
-		ControlPlane:   c.cfg.ControlPlane,
+		ControllerName:          c.cfg.ControllerName,
+		Dev:                     c.cfg.Dev,
+		IstioIntegrationEnabled: c.cfg.IstioIntegrationEnabled,
+		ControlPlane:            c.cfg.ControlPlane,
+		Aws:                     c.cfg.Aws,
 	})
 	if err != nil {
 		return err
@@ -179,12 +183,17 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	buildr := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		// Don't use WithEventFilter here as it also filters events for Owned objects.
 		For(&apiv1.Gateway{}, builder.WithPredicates(predicate.NewPredicateFuncs(func(object client.Object) bool {
-			// we only care about Gateways that use our GatewayClass
+			// We only care about Gateways that use our GatewayClass
 			if gw, ok := object.(*apiv1.Gateway); ok {
 				return c.cfg.GWClasses.Has(string(gw.Spec.GatewayClassName))
 			}
 			return false
-		}), predicate.GenerationChangedPredicate{}))
+		}),
+			predicate.Or(
+				predicate.AnnotationChangedPredicate{},
+				predicate.GenerationChangedPredicate{},
+			),
+		))
 
 	// watch for changes in GatewayParameters
 	cli := c.cfg.Mgr.GetClient()
@@ -329,6 +338,24 @@ func (c *controllerBuilder) watchDirectResponses(_ context.Context) error {
 		Complete(reconcile.Func(c.reconciler.ReconcileDirectResponses))
 }
 
+func (c *controllerBuilder) watchPods(ctx context.Context) error {
+	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		For(&corev1.Pod{}).
+		Complete(reconcile.Func(c.reconciler.ReconcilePods))
+}
+
+func (c *controllerBuilder) watchEndpoints(ctx context.Context) error {
+	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		For(&corev1.Endpoints{}).
+		Complete(reconcile.Func(c.reconciler.ReconcileEndpoints))
+}
+
+func (c *controllerBuilder) watchSecrets(ctx context.Context) error {
+	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		For(&corev1.Secret{}).
+		Complete(reconcile.Func(c.reconciler.ReconcileSecrets))
+}
+
 type controllerReconciler struct {
 	cli    client.Client
 	scheme *runtime.Scheme
@@ -380,6 +407,24 @@ func (r *controllerReconciler) ReconcileUpstreams(ctx context.Context, req ctrl.
 func (r *controllerReconciler) ReconcileServices(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// eventually reconcile only effected listeners etc
 	// https://github.com/solo-io/gloo/issues/9997.
+	r.kick(ctx)
+	return ctrl.Result{}, nil
+}
+
+func (r *controllerReconciler) ReconcilePods(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// eventually reconcile only effected listeners etc
+	r.kick(ctx)
+	return ctrl.Result{}, nil
+}
+
+func (r *controllerReconciler) ReconcileEndpoints(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// eventually reconcile only effected listeners etc
+	r.kick(ctx)
+	return ctrl.Result{}, nil
+}
+
+func (r *controllerReconciler) ReconcileSecrets(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// eventually reconcile only effected listeners etc
 	r.kick(ctx)
 	return ctrl.Result{}, nil
 }

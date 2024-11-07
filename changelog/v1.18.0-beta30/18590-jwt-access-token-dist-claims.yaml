@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo-mesh-enterprise/issues/18590
+    description: >
+      Enrich the AuthConfig CRD's AccessTokenValidation API to allow for resolution of distributed claims from JWT 
+      and to map JWT claims to downstream request headers.
+    resolvesIssue: false

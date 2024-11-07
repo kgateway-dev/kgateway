@@ -1,0 +1,5 @@
+changelog:
+- type: NON_USER_FACING
+  description: Mark AuthConfig spec.configs.pluginAuth as deprecated in favor of passThroughAuth.
+  issueLink: https://github.com/solo-io/solo-projects/issues/6961
+  resolvesIssue: false

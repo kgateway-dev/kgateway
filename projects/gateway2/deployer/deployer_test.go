@@ -16,7 +16,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	wellknownkube "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/wellknown"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/gloo/test/gomega/matchers"
@@ -115,6 +114,46 @@ var _ = Describe("Deployer", func() {
 	var (
 		d *deployer.Deployer
 
+		defaultGatewayClass = func() *api.GatewayClass {
+			return &api.GatewayClass{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: wellknown.GatewayClassName,
+				},
+				Spec: api.GatewayClassSpec{
+					ControllerName: wellknown.GatewayControllerName,
+					ParametersRef: &api.ParametersReference{
+						Group:     gw2_v1alpha1.Group,
+						Kind:      gw2_v1alpha1.GatewayParametersKind,
+						Name:      wellknown.DefaultGatewayParametersName,
+						Namespace: ptr.To(api.Namespace(defaultNamespace)),
+					},
+				},
+			}
+		}
+
+		defaultGateway = func() *api.Gateway {
+			return &api.Gateway{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: defaultNamespace,
+					UID:       "1235",
+				},
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Gateway",
+					APIVersion: "gateway.solo.io/v1beta1",
+				},
+				Spec: api.GatewaySpec{
+					GatewayClassName: wellknown.GatewayClassName,
+					Listeners: []api.Listener{
+						{
+							Name: "listener-1",
+							Port: 80,
+						},
+					},
+				},
+			}
+		}
+
 		// Note that this is NOT meant to reflect the actual defaults defined in install/helm/gloo/templates/43-gatewayparameters.yaml
 		defaultGatewayParams = func() *gw2_v1alpha1.GatewayParameters {
 			return &gw2_v1alpha1.GatewayParameters{
@@ -160,6 +199,9 @@ var _ = Describe("Deployer", func() {
 						Service: &gw2_v1alpha1.Service{
 							Type:      ptr.To(corev1.ServiceTypeClusterIP),
 							ClusterIP: ptr.To("99.99.99.99"),
+							ExtraLabels: map[string]string{
+								"foo-label": "bar-label",
+							},
 							ExtraAnnotations: map[string]string{
 								"foo": "bar",
 							},
@@ -182,6 +224,11 @@ var _ = Describe("Deployer", func() {
 				},
 			}
 		}
+
+		defaultDeploymentName     = proxyName(defaultGateway().Name)
+		defaultConfigMapName      = defaultDeploymentName
+		defaultServiceName        = defaultDeploymentName
+		defaultServiceAccountName = defaultDeploymentName
 
 		selfManagedGatewayParam = func(name string) *gw2_v1alpha1.GatewayParameters {
 			return &gw2_v1alpha1.GatewayParameters{
@@ -234,8 +281,8 @@ var _ = Describe("Deployer", func() {
 			d, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, gwParams), &deployer.Inputs{
 				ControllerName: wellknown.GatewayControllerName,
 				Dev:            false,
-				ControlPlane: bootstrap.ControlPlane{
-					Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local", XdsPort: 1234,
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -266,30 +313,105 @@ var _ = Describe("Deployer", func() {
 		})
 	})
 
+	Context("aws options", func() {
+		stsClusterName := "my_sts_cluster"
+		stsUri := "sts.cluster.uri"
+
+		It("passes through aws sts values from settings", func() {
+			d, err := deployer.NewDeployer(newFakeClientWithObjs(defaultGatewayClass(), defaultGatewayParams()), &deployer.Inputs{
+				ControllerName: wellknown.GatewayControllerName,
+				Dev:            false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local", XdsPort: 1234,
+				},
+				Aws: &deployer.AwsInfo{
+					EnableServiceAccountCredentials: true,
+					StsClusterName:                  stsClusterName,
+					StsUri:                          stsUri,
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			// run deployer and get the ConfigMap that was created
+			var objs clientObjects
+			objs, err = d.GetObjsToDeploy(context.Background(), defaultGateway())
+			Expect(err).NotTo(HaveOccurred())
+
+			cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
+			Expect(cm).ToNot(BeNil())
+			envoyYaml := cm.Data["envoy.yaml"]
+
+			// check AWS-specific configmap values
+			Expect(envoyYaml).To(ContainSubstring(fmt.Sprintf("cluster_name: %s", stsClusterName)))
+			Expect(envoyYaml).To(ContainSubstring(fmt.Sprintf("sni: %s", stsUri)))
+		})
+
+		It("does not configure aws sts cluster when aws options not set", func() {
+			d, err := deployer.NewDeployer(newFakeClientWithObjs(defaultGatewayClass(), defaultGatewayParams()), &deployer.Inputs{
+				ControllerName: wellknown.GatewayControllerName,
+				Dev:            false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local", XdsPort: 1234,
+				},
+				Aws: nil,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			// run deployer and get the ConfigMap that was created
+			var objs clientObjects
+			objs, err = d.GetObjsToDeploy(context.Background(), defaultGateway())
+			Expect(err).NotTo(HaveOccurred())
+
+			cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
+			Expect(cm).ToNot(BeNil())
+			envoyYaml := cm.Data["envoy.yaml"]
+
+			// sts cluster should not have been created
+			Expect(envoyYaml).NotTo(ContainSubstring(stsClusterName))
+			Expect(envoyYaml).NotTo(ContainSubstring(stsUri))
+		})
+
+		It("does not configure aws sts cluster when service account credentials not enabled", func() {
+			d, err := deployer.NewDeployer(newFakeClientWithObjs(defaultGatewayClass(), defaultGatewayParams()), &deployer.Inputs{
+				ControllerName: wellknown.GatewayControllerName,
+				Dev:            false,
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local", XdsPort: 1234,
+				},
+				Aws: &deployer.AwsInfo{
+					EnableServiceAccountCredentials: false,
+					StsClusterName:                  stsClusterName,
+					StsUri:                          stsUri,
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			// run deployer and get the ConfigMap that was created
+			var objs clientObjects
+			objs, err = d.GetObjsToDeploy(context.Background(), defaultGateway())
+			Expect(err).NotTo(HaveOccurred())
+
+			cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
+			Expect(cm).ToNot(BeNil())
+			envoyYaml := cm.Data["envoy.yaml"]
+
+			// sts cluster should not have been created
+			Expect(envoyYaml).NotTo(ContainSubstring(stsClusterName))
+			Expect(envoyYaml).NotTo(ContainSubstring(stsUri))
+		})
+	})
+
 	Context("special cases", func() {
 		var gwc *api.GatewayClass
 		BeforeEach(func() {
-			gwc = &api.GatewayClass{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: wellknown.GatewayClassName,
-				},
-				Spec: api.GatewayClassSpec{
-					ControllerName: wellknown.GatewayControllerName,
-					ParametersRef: &api.ParametersReference{
-						Group:     gw2_v1alpha1.Group,
-						Kind:      gw2_v1alpha1.GatewayParametersKind,
-						Name:      wellknown.DefaultGatewayParametersName,
-						Namespace: ptr.To(api.Namespace(defaultNamespace)),
-					},
-				},
-			}
+			gwc = defaultGatewayClass()
 			var err error
 
 			d, err = deployer.NewDeployer(newFakeClientWithObjs(gwc, defaultGatewayParams()), &deployer.Inputs{
 				ControllerName: wellknown.GatewayControllerName,
 				Dev:            false,
-				ControlPlane: bootstrap.ControlPlane{
-					Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local", XdsPort: 1234,
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -311,8 +433,8 @@ var _ = Describe("Deployer", func() {
 			d1, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, defaultGatewayParams()), &deployer.Inputs{
 				ControllerName: wellknown.GatewayControllerName,
 				Dev:            false,
-				ControlPlane: bootstrap.ControlPlane{
-					Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local", XdsPort: 1234,
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -320,8 +442,8 @@ var _ = Describe("Deployer", func() {
 			d2, err := deployer.NewDeployer(newFakeClientWithObjs(gwc, defaultGatewayParams()), &deployer.Inputs{
 				ControllerName: wellknown.GatewayControllerName,
 				Dev:            false,
-				ControlPlane: bootstrap.ControlPlane{
-					Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+				ControlPlane: deployer.ControlPlaneInfo{
+					XdsHost: "something.cluster.local", XdsPort: 1234,
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -404,57 +526,17 @@ var _ = Describe("Deployer", func() {
 				return &deployer.Inputs{
 					ControllerName: wellknown.GatewayControllerName,
 					Dev:            false,
-					ControlPlane: bootstrap.ControlPlane{
-						Kube: bootstrap.KubernetesControlPlaneConfig{XdsHost: "something.cluster.local", XdsPort: 1234},
+					ControlPlane: deployer.ControlPlaneInfo{
+						XdsHost: "something.cluster.local", XdsPort: 1234,
 					},
 				}
 			}
 			istioEnabledDeployerInputs = func() *deployer.Inputs {
 				inp := defaultDeployerInputs()
-				inp.IstioValues = bootstrap.IstioValues{
-					IntegrationEnabled: true,
-				}
+				inp.IstioIntegrationEnabled = true
 				return inp
 			}
-			defaultGateway = func() *api.Gateway {
-				return &api.Gateway{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "foo",
-						Namespace: defaultNamespace,
-						UID:       "1235",
-					},
-					TypeMeta: metav1.TypeMeta{
-						Kind:       "Gateway",
-						APIVersion: "gateway.solo.io/v1beta1",
-					},
-					Spec: api.GatewaySpec{
-						GatewayClassName: wellknown.GatewayClassName,
-						Listeners: []api.Listener{
-							{
-								Name: "listener-1",
-								Port: 80,
-							},
-						},
-					},
-				}
-			}
-			defaultGatewayClass = func() *api.GatewayClass {
-				return &api.GatewayClass{
-					TypeMeta: metav1.TypeMeta{},
-					ObjectMeta: metav1.ObjectMeta{
-						Name: wellknown.GatewayClassName,
-					},
-					Spec: api.GatewayClassSpec{
-						ControllerName: wellknown.GatewayControllerName,
-						ParametersRef: &api.ParametersReference{
-							Group:     gw2_v1alpha1.Group,
-							Kind:      gw2_v1alpha1.GatewayParametersKind,
-							Name:      wellknown.DefaultGatewayParametersName,
-							Namespace: ptr.To(api.Namespace(defaultNamespace)),
-						},
-					},
-				}
-			}
+
 			defaultGatewayParamsOverride = func() *gw2_v1alpha1.GatewayParameters {
 				return &gw2_v1alpha1.GatewayParameters{
 					TypeMeta: metav1.TypeMeta{
@@ -499,6 +581,9 @@ var _ = Describe("Deployer", func() {
 							Service: &gw2_v1alpha1.Service{
 								Type:      ptr.To(corev1.ServiceTypeClusterIP),
 								ClusterIP: ptr.To("99.99.99.99"),
+								ExtraLabels: map[string]string{
+									"override-foo-label": "override-bar-label",
+								},
 								ExtraAnnotations: map[string]string{
 									"override-foo": "override-bar",
 								},
@@ -561,6 +646,10 @@ var _ = Describe("Deployer", func() {
 							Service: &gw2_v1alpha1.Service{
 								Type:      ptr.To(corev1.ServiceTypeClusterIP),
 								ClusterIP: ptr.To("99.99.99.99"),
+								ExtraLabels: map[string]string{
+									"foo-label":          "bar-label",
+									"override-foo-label": "override-bar-label",
+								},
 								ExtraAnnotations: map[string]string{
 									"foo":          "bar",
 									"override-foo": "override-bar",
@@ -685,10 +774,6 @@ var _ = Describe("Deployer", func() {
 					gwc:        defaultGatewayClass(),
 				}
 			}
-			defaultDeploymentName     = proxyName(defaultGateway().Name)
-			defaultConfigMapName      = defaultDeploymentName
-			defaultServiceName        = defaultDeploymentName
-			defaultServiceAccountName = defaultDeploymentName
 
 			validateGatewayParametersPropagation = func(objs clientObjects, gwp *gw2_v1alpha1.GatewayParameters) error {
 				expectedGwp := gwp.Spec.Kube
@@ -718,7 +803,9 @@ var _ = Describe("Deployer", func() {
 				svc := objs.findService(defaultNamespace, defaultServiceName)
 				Expect(svc).ToNot(BeNil())
 				Expect(svc.GetAnnotations()).ToNot(BeNil())
-				Expect(svc.Annotations).To(matchers.ContainMapElements(expectedGwp.Service.ExtraAnnotations))
+				Expect(svc.GetAnnotations()).To(matchers.ContainMapElements(expectedGwp.Service.ExtraAnnotations))
+				Expect(svc.GetLabels()).ToNot(BeNil())
+				Expect(svc.GetLabels()).To(matchers.ContainMapElements(expectedGwp.Service.ExtraLabels))
 				Expect(svc.Spec.Type).To(Equal(*expectedGwp.Service.Type))
 				Expect(svc.Spec.ClusterIP).To(Equal(*expectedGwp.Service.ClusterIP))
 
@@ -832,7 +919,9 @@ var _ = Describe("Deployer", func() {
 			svc := objs.findService(defaultNamespace, defaultServiceName)
 			Expect(svc).ToNot(BeNil())
 			Expect(svc.GetAnnotations()).ToNot(BeNil())
-			Expect(svc.Annotations).To(matchers.ContainMapElements(expectedGwp.Service.ExtraAnnotations))
+			Expect(svc.GetAnnotations()).To(matchers.ContainMapElements(expectedGwp.Service.ExtraAnnotations))
+			Expect(svc.GetLabels()).ToNot(BeNil())
+			Expect(svc.GetLabels()).To(matchers.ContainMapElements(expectedGwp.Service.ExtraLabels))
 			Expect(svc.Spec.Type).To(Equal(*expectedGwp.Service.Type))
 			Expect(svc.Spec.ClusterIP).To(Equal(*expectedGwp.Service.ClusterIP))
 

@@ -72,6 +72,21 @@ func (m *SingleAuthToken) Equal(that interface{}) bool {
 			}
 		}
 
+	case *SingleAuthToken_Passthrough_:
+		if _, ok := target.AuthTokenSource.(*SingleAuthToken_Passthrough_); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetPassthrough()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetPassthrough()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetPassthrough(), target.GetPassthrough()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.AuthTokenSource != target.AuthTokenSource {
@@ -176,6 +191,36 @@ func (m *UpstreamSpec) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(m.GetMulti(), target.GetMulti()) {
+				return false
+			}
+		}
+
+	case *UpstreamSpec_Gemini_:
+		if _, ok := target.Llm.(*UpstreamSpec_Gemini_); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetGemini()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetGemini()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetGemini(), target.GetGemini()) {
+				return false
+			}
+		}
+
+	case *UpstreamSpec_VertexAi:
+		if _, ok := target.Llm.(*UpstreamSpec_VertexAi); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetVertexAi()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetVertexAi()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetVertexAi(), target.GetVertexAi()) {
 				return false
 			}
 		}
@@ -513,41 +558,6 @@ func (m *RAG) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *RateLimiting) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*RateLimiting)
-	if !ok {
-		that2, ok := that.(RateLimiting)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if len(m.GetRateLimitConfigs()) != len(target.GetRateLimitConfigs()) {
-		return false
-	}
-	for idx, v := range m.GetRateLimitConfigs() {
-
-		if strings.Compare(v, target.GetRateLimitConfigs()[idx]) != 0 {
-			return false
-		}
-
-	}
-
-	return true
-}
-
-// Equal function
 func (m *AIPromptEnrichment) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -606,14 +616,14 @@ func (m *AIPromptEnrichment) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *AIPromptGaurd) Equal(that interface{}) bool {
+func (m *AIPromptGuard) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*AIPromptGaurd)
+	target, ok := that.(*AIPromptGuard)
 	if !ok {
-		that2, ok := that.(AIPromptGaurd)
+		that2, ok := that.(AIPromptGuard)
 		if ok {
 			target = &that2
 		} else {
@@ -644,6 +654,30 @@ func (m *AIPromptGaurd) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetResponse(), target.GetResponse()) {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *SingleAuthToken_Passthrough) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*SingleAuthToken_Passthrough)
+	if !ok {
+		that2, ok := that.(SingleAuthToken_Passthrough)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
 	}
 
 	return true
@@ -766,6 +800,134 @@ func (m *UpstreamSpec_AzureOpenAI) Equal(that interface{}) bool {
 
 	case *UpstreamSpec_AzureOpenAI_AuthToken:
 		if _, ok := target.AuthTokenSource.(*UpstreamSpec_AzureOpenAI_AuthToken); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAuthToken()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAuthToken()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAuthToken(), target.GetAuthToken()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.AuthTokenSource != target.AuthTokenSource {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *UpstreamSpec_Gemini) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*UpstreamSpec_Gemini)
+	if !ok {
+		that2, ok := that.(UpstreamSpec_Gemini)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetModel(), target.GetModel()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetApiVersion(), target.GetApiVersion()) != 0 {
+		return false
+	}
+
+	switch m.AuthTokenSource.(type) {
+
+	case *UpstreamSpec_Gemini_AuthToken:
+		if _, ok := target.AuthTokenSource.(*UpstreamSpec_Gemini_AuthToken); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAuthToken()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAuthToken()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAuthToken(), target.GetAuthToken()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.AuthTokenSource != target.AuthTokenSource {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *UpstreamSpec_VertexAI) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*UpstreamSpec_VertexAI)
+	if !ok {
+		that2, ok := that.(UpstreamSpec_VertexAI)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetModel(), target.GetModel()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetApiVersion(), target.GetApiVersion()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetProjectId(), target.GetProjectId()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetLocation(), target.GetLocation()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetModelPath(), target.GetModelPath()) != 0 {
+		return false
+	}
+
+	if m.GetPublisher() != target.GetPublisher() {
+		return false
+	}
+
+	switch m.AuthTokenSource.(type) {
+
+	case *UpstreamSpec_VertexAI_AuthToken:
+		if _, ok := target.AuthTokenSource.(*UpstreamSpec_VertexAI_AuthToken); !ok {
 			return false
 		}
 
@@ -1009,6 +1171,36 @@ func (m *UpstreamSpec_MultiPool_Backend) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(m.GetAzureOpenai(), target.GetAzureOpenai()) {
+				return false
+			}
+		}
+
+	case *UpstreamSpec_MultiPool_Backend_Gemini:
+		if _, ok := target.Llm.(*UpstreamSpec_MultiPool_Backend_Gemini); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetGemini()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetGemini()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetGemini(), target.GetGemini()) {
+				return false
+			}
+		}
+
+	case *UpstreamSpec_MultiPool_Backend_VertexAi:
+		if _, ok := target.Llm.(*UpstreamSpec_MultiPool_Backend_VertexAi); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetVertexAi()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetVertexAi()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetVertexAi(), target.GetVertexAi()) {
 				return false
 			}
 		}
@@ -1388,14 +1580,14 @@ func (m *AIPromptEnrichment_Message) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *AIPromptGaurd_Request) Equal(that interface{}) bool {
+func (m *AIPromptGuard_Regex) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*AIPromptGaurd_Request)
+	target, ok := that.(*AIPromptGuard_Regex)
 	if !ok {
-		that2, ok := that.(AIPromptGaurd_Request)
+		that2, ok := that.(AIPromptGuard_Regex)
 		if ok {
 			target = &that2
 		} else {
@@ -1413,47 +1605,14 @@ func (m *AIPromptGaurd_Request) Equal(that interface{}) bool {
 	}
 	for idx, v := range m.GetMatches() {
 
-		if strings.Compare(v, target.GetMatches()[idx]) != 0 {
-			return false
-		}
-
-	}
-
-	if strings.Compare(m.GetCustomResponseMessage(), target.GetCustomResponseMessage()) != 0 {
-		return false
-	}
-
-	return true
-}
-
-// Equal function
-func (m *AIPromptGaurd_Response) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*AIPromptGaurd_Response)
-	if !ok {
-		that2, ok := that.(AIPromptGaurd_Response)
-		if ok {
-			target = &that2
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetMatches()[idx]) {
+				return false
+			}
 		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if len(m.GetMatches()) != len(target.GetMatches()) {
-		return false
-	}
-	for idx, v := range m.GetMatches() {
-
-		if strings.Compare(v, target.GetMatches()[idx]) != 0 {
-			return false
+			if !proto.Equal(v, target.GetMatches()[idx]) {
+				return false
+			}
 		}
 
 	}
@@ -1467,6 +1626,363 @@ func (m *AIPromptGaurd_Response) Equal(that interface{}) bool {
 			return false
 		}
 
+	}
+
+	if m.GetAction() != target.GetAction() {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AIPromptGuard_Webhook) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AIPromptGuard_Webhook)
+	if !ok {
+		that2, ok := that.(AIPromptGuard_Webhook)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetHost(), target.GetHost()) != 0 {
+		return false
+	}
+
+	if m.GetPort() != target.GetPort() {
+		return false
+	}
+
+	if len(m.GetForwardHeaders()) != len(target.GetForwardHeaders()) {
+		return false
+	}
+	for idx, v := range m.GetForwardHeaders() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetForwardHeaders()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetForwardHeaders()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AIPromptGuard_Moderation) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AIPromptGuard_Moderation)
+	if !ok {
+		that2, ok := that.(AIPromptGuard_Moderation)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.Moderation.(type) {
+
+	case *AIPromptGuard_Moderation_Openai:
+		if _, ok := target.Moderation.(*AIPromptGuard_Moderation_Openai); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetOpenai()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetOpenai()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetOpenai(), target.GetOpenai()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Moderation != target.Moderation {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AIPromptGuard_Request) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AIPromptGuard_Request)
+	if !ok {
+		that2, ok := that.(AIPromptGuard_Request)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetCustomResponse()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetCustomResponse()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetCustomResponse(), target.GetCustomResponse()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetRegex()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetRegex()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetRegex(), target.GetRegex()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetWebhook()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetWebhook()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetWebhook(), target.GetWebhook()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetModeration()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetModeration()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetModeration(), target.GetModeration()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AIPromptGuard_Response) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AIPromptGuard_Response)
+	if !ok {
+		that2, ok := that.(AIPromptGuard_Response)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetRegex()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetRegex()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetRegex(), target.GetRegex()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetWebhook()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetWebhook()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetWebhook(), target.GetWebhook()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AIPromptGuard_Regex_RegexMatch) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AIPromptGuard_Regex_RegexMatch)
+	if !ok {
+		that2, ok := that.(AIPromptGuard_Regex_RegexMatch)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetPattern(), target.GetPattern()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetName(), target.GetName()) != 0 {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AIPromptGuard_Webhook_HeaderMatch) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AIPromptGuard_Webhook_HeaderMatch)
+	if !ok {
+		that2, ok := that.(AIPromptGuard_Webhook_HeaderMatch)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetKey(), target.GetKey()) != 0 {
+		return false
+	}
+
+	if m.GetMatchType() != target.GetMatchType() {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AIPromptGuard_Moderation_OpenAI) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AIPromptGuard_Moderation_OpenAI)
+	if !ok {
+		that2, ok := that.(AIPromptGuard_Moderation_OpenAI)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetModel(), target.GetModel()) != 0 {
+		return false
+	}
+
+	switch m.AuthTokenSource.(type) {
+
+	case *AIPromptGuard_Moderation_OpenAI_AuthToken:
+		if _, ok := target.AuthTokenSource.(*AIPromptGuard_Moderation_OpenAI_AuthToken); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAuthToken()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAuthToken()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAuthToken(), target.GetAuthToken()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.AuthTokenSource != target.AuthTokenSource {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AIPromptGuard_Request_CustomResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AIPromptGuard_Request_CustomResponse)
+	if !ok {
+		that2, ok := that.(AIPromptGuard_Request_CustomResponse)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetMessage(), target.GetMessage()) != 0 {
+		return false
+	}
+
+	if m.GetStatusCode() != target.GetStatusCode() {
+		return false
 	}
 
 	return true

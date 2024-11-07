@@ -244,7 +244,7 @@ func CheckResources(ctx context.Context, printer printers.P, opts *options.Optio
 	}
 
 	if included := doesNotContain(opts.Top.CheckName, constants.Proxies); included {
-		err := checkProxies(ctx, printer, opts, namespaces, opts.Metadata.GetNamespace(), deployments, deploymentsIncluded, settings)
+		err := checkProxies(ctx, printer, opts, deployments, deploymentsIncluded, settings)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
@@ -872,7 +872,7 @@ func checkGateways(ctx context.Context, printer printers.P, _ *options.Options, 
 	return nil
 }
 
-func checkProxies(ctx context.Context, printer printers.P, opts *options.Options, namespaces []string, glooNamespace string, deployments *appsv1.DeploymentList, deploymentsIncluded bool, settings *v1.Settings) error {
+func checkProxies(ctx context.Context, printer printers.P, opts *options.Options, deployments *appsv1.DeploymentList, deploymentsIncluded bool, settings *v1.Settings) error {
 	printer.AppendCheck("Checking Proxies... ")
 	if !deploymentsIncluded {
 		printer.AppendStatus("proxies", "Skipping proxies because deployments were excluded")
@@ -883,12 +883,19 @@ func checkProxies(ctx context.Context, printer printers.P, opts *options.Options
 		return fmt.Errorf("proxy check was skipped due to an error in checking deployments")
 	}
 	var multiErr *multierror.Error
-	for _, ns := range namespaces {
-		proxies, err := common.ListProxiesFromSettings(ns, opts, settings)
-		if err != nil {
-			multiErr = multierror.Append(multiErr, err)
-			continue
-		}
+
+	glooNamespace := opts.Metadata.GetNamespace()
+
+	// get the namespace where Proxies are written. if discovery namespace is empty, defaults to the gloo install namespace
+	proxyNamespace := settings.GetDiscoveryNamespace()
+	if proxyNamespace == "" {
+		proxyNamespace = glooNamespace
+	}
+
+	proxies, err := common.ListProxiesFromSettings(proxyNamespace, opts, settings)
+	if err != nil {
+		multiErr = multierror.Append(multiErr, err)
+	} else {
 		for _, proxy := range proxies {
 			if proxy.GetNamespacedStatuses() != nil {
 				namespacedStatuses := proxy.GetNamespacedStatuses()
@@ -920,6 +927,7 @@ func checkProxies(ctx context.Context, printer printers.P, opts *options.Options
 			}
 		}
 	}
+
 	err, warnings := checkProxiesPromStats(ctx, opts, glooNamespace, deployments)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)

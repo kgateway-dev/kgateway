@@ -1,0 +1,6 @@
+changelog:
+- type: NON_USER_FACING
+  description: >-
+    Adds a note about the limitations of header manipulation via ExtProc.
+
+    skipCI-kube-tests:true

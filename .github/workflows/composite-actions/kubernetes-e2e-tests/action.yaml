@@ -37,7 +37,7 @@ runs:
     shell: bash
     run: make go-test
   - name: Summarize tests
-    # Print out a summary of ALL tests run under this action. In the future we can use this tool 
+    # Print out a summary of ALL tests run under this action. In the future we can use this tool
     # with the --json flag to export the results for centralized processing.
     shell: bash
     run: go run ./ci/github-actions/go-test-summary
@@ -45,11 +45,11 @@ runs:
     if: ${{ failure() }}
     uses: actions/upload-artifact@v4
     with:
-      name: bug-report-${{ inputs.cluster-name }}
+      name: bug-report-${{ inputs.cluster-name }}-${{ inputs.matrix-label }}-attempt-${{ github.run_attempt }}
       path: ./_test/bug_report/${{ inputs.cluster-name }}
   - name: Archive test results
     if: ${{ always() }}
     uses: actions/upload-artifact@v4
     with:
-      name: go-test-summary-${{ inputs.cluster-name }}-${{ inputs.matrix-label }}
+      name: go-test-summary-${{ inputs.cluster-name }}-${{ inputs.matrix-label }}-attempt-${{ github.run_attempt }}
       path: ./_test/test_log/go-test-summary

@@ -1,7 +1,6 @@
 package test
 
 import (
-	"encoding/json"
 	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -66,14 +65,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 				testManifest.Expect("ClusterRoleBinding", "", deployerRbacName+"-binding").NotTo(BeNil())
 			})
 			It("renders default GatewayParameters", func() {
-				gwpUnstructured := testManifest.ExpectCustomResource("GatewayParameters", namespace, wellknown.DefaultGatewayParametersName)
-				Expect(gwpUnstructured).NotTo(BeNil())
-
-				var gwp v1alpha1.GatewayParameters
-				b, err := gwpUnstructured.MarshalJSON()
-				Expect(err).ToNot(HaveOccurred())
-				err = json.Unmarshal(b, &gwp)
-				Expect(err).ToNot(HaveOccurred())
+				gwp := getDefaultGatewayParameters(testManifest)
 
 				gwpKube := gwp.Spec.Kube
 				Expect(gwpKube).ToNot(BeNil())
@@ -159,6 +151,8 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 						fmt.Sprintf("kubeGateway.gatewayParameters.glooGateway.envoyContainer.resources.limits.cpu=%s", envoyLimits["cpu"].ToUnstructured()),
 						"kubeGateway.gatewayParameters.glooGateway.proxyDeployment.replicas=5",
 						"kubeGateway.gatewayParameters.glooGateway.service.type=ClusterIP",
+						"kubeGateway.gatewayParameters.glooGateway.service.extraLabels.svclabel1=x",
+						"kubeGateway.gatewayParameters.glooGateway.service.extraAnnotations.svcanno1=y",
 						"kubeGateway.gatewayParameters.glooGateway.serviceAccount.extraLabels.label1=a",
 						"kubeGateway.gatewayParameters.glooGateway.serviceAccount.extraAnnotations.anno1=b",
 						"kubeGateway.gatewayParameters.glooGateway.sdsContainer.image.tag=sds-override-tag",
@@ -194,14 +188,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					valuesArgs = append(valuesArgs, extraValuesArgs...)
 				})
 				It("passes overrides to default GatewayParameters with Istio container", func() {
-					gwpUnstructured := testManifest.ExpectCustomResource("GatewayParameters", namespace, wellknown.DefaultGatewayParametersName)
-					Expect(gwpUnstructured).NotTo(BeNil())
-
-					var gwp v1alpha1.GatewayParameters
-					b, err := gwpUnstructured.MarshalJSON()
-					Expect(err).ToNot(HaveOccurred())
-					err = json.Unmarshal(b, &gwp)
-					Expect(err).ToNot(HaveOccurred())
+					gwp := getDefaultGatewayParameters(testManifest)
 
 					gwpKube := gwp.Spec.Kube
 					Expect(gwpKube).ToNot(BeNil())
@@ -257,6 +244,8 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					Expect(gwpKube.GetSdsContainer().GetResources().Limits).To(matchers.ContainMapElements(sdsLimits))
 
 					Expect(*gwpKube.GetService().GetType()).To(Equal(corev1.ServiceTypeClusterIP))
+					Expect(gwpKube.GetService().GetExtraLabels()).To(matchers.ContainMapElements(map[string]string{"svclabel1": "x"}))
+					Expect(gwpKube.GetService().GetExtraAnnotations()).To(matchers.ContainMapElements(map[string]string{"svcanno1": "y"}))
 
 					Expect(gwpKube.GetServiceAccount().GetExtraLabels()).To(matchers.ContainMapElements(map[string]string{"label1": "a"}))
 					Expect(gwpKube.GetServiceAccount().GetExtraAnnotations()).To(matchers.ContainMapElements(map[string]string{"anno1": "b"}))
@@ -291,6 +280,8 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 						"kubeGateway.gatewayParameters.glooGateway.envoyContainer.image.pullPolicy=Always",
 						"kubeGateway.gatewayParameters.glooGateway.proxyDeployment.replicas=5",
 						"kubeGateway.gatewayParameters.glooGateway.service.type=ClusterIP",
+						"kubeGateway.gatewayParameters.glooGateway.service.extraLabels.svclabel1=a",
+						"kubeGateway.gatewayParameters.glooGateway.service.extraAnnotations.svcanno1=b",
 						"kubeGateway.gatewayParameters.glooGateway.serviceAccount.extraLabels.label1=a",
 						"kubeGateway.gatewayParameters.glooGateway.serviceAccount.extraAnnotations.anno1=b",
 						"kubeGateway.gatewayParameters.glooGateway.sdsContainer.image.tag=sds-override-tag",
@@ -309,14 +300,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					valuesArgs = append(valuesArgs, extraValuesArgs...)
 				})
 				It("passes overrides to default GatewayParameters with custom sidecar", func() {
-					gwpUnstructured := testManifest.ExpectCustomResource("GatewayParameters", namespace, wellknown.DefaultGatewayParametersName)
-					Expect(gwpUnstructured).NotTo(BeNil())
-
-					var gwp v1alpha1.GatewayParameters
-					b, err := gwpUnstructured.MarshalJSON()
-					Expect(err).ToNot(HaveOccurred())
-					err = json.Unmarshal(b, &gwp)
-					Expect(err).ToNot(HaveOccurred())
+					gwp := getDefaultGatewayParameters(testManifest)
 
 					gwpKube := gwp.Spec.Kube
 					Expect(gwpKube).ToNot(BeNil())
@@ -338,6 +322,8 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					Expect(*gwpKube.GetSdsContainer().GetBootstrap().GetLogLevel()).To(Equal("debug"))
 
 					Expect(*gwpKube.GetService().GetType()).To(Equal(corev1.ServiceTypeClusterIP))
+					Expect(gwpKube.GetService().GetExtraLabels()).To(matchers.ContainMapElements(map[string]string{"svclabel1": "a"}))
+					Expect(gwpKube.GetService().GetExtraAnnotations()).To(matchers.ContainMapElements(map[string]string{"svcanno1": "b"}))
 
 					Expect(gwpKube.GetServiceAccount().GetExtraLabels()).To(matchers.ContainMapElements(map[string]string{"label1": "a"}))
 					Expect(gwpKube.GetServiceAccount().GetExtraAnnotations()).To(matchers.ContainMapElements(map[string]string{"anno1": "b"}))
@@ -351,12 +337,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					// Updated values so need to re-render
 					prepareHelmManifest(namespace, glootestutils.HelmValues{ValuesArgs: valuesArgs})
 
-					gwpUnstructured := testManifest.ExpectCustomResource("GatewayParameters", namespace, wellknown.DefaultGatewayParametersName)
-					obj, err := kuberesource.ConvertUnstructured(gwpUnstructured)
-					Expect(err).NotTo(HaveOccurred())
-
-					gwp, ok := obj.(*v1alpha1.GatewayParameters)
-					Expect(ok).To(BeTrue())
+					gwp := getDefaultGatewayParameters(testManifest)
 
 					gwpKube := gwp.Spec.Kube
 					Expect(gwpKube).ToNot(BeNil())
@@ -404,3 +385,13 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 	}
 	runTests(allTests)
 })
+
+func getDefaultGatewayParameters(t TestManifest) *v1alpha1.GatewayParameters {
+	gwpUnstructured := t.ExpectCustomResource("GatewayParameters", namespace, wellknown.DefaultGatewayParametersName)
+	obj, err := kuberesource.ConvertUnstructured(gwpUnstructured)
+	Expect(err).NotTo(HaveOccurred())
+
+	gwp, ok := obj.(*v1alpha1.GatewayParameters)
+	Expect(ok).To(BeTrue())
+	return gwp
+}

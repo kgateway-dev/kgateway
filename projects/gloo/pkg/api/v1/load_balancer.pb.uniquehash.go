@@ -103,6 +103,14 @@ func (m *LoadBalancerConfig) HashUnique(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if _, err = hasher.Write([]byte("CloseConnectionsOnHostSetChange")); err != nil {
+		return 0, err
+	}
+	err = binary.Write(hasher, binary.LittleEndian, m.GetCloseConnectionsOnHostSetChange())
+	if err != nil {
+		return 0, err
+	}
+
 	switch m.Type.(type) {
 
 	case *LoadBalancerConfig_RoundRobin_:

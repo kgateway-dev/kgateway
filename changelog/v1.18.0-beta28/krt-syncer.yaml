@@ -1,0 +1,6 @@
+changelog:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/solo-projects/issues/7036
+  resolvesIssue: true
+  description: >-
+    Add krt syncer

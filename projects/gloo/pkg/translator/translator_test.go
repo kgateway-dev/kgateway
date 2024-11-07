@@ -140,7 +140,7 @@ var _ = Describe("Translator", func() {
 				ConsulWatcher: mock_consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
 			},
 		}
-		registeredPlugins = registry.Plugins(opts)
+		registeredPlugins = registry.Plugins(registry.FromBootstrap(opts))
 
 		upName = &core.Metadata{
 			Name:      "test",
@@ -1397,6 +1397,12 @@ var _ = Describe("Translator", func() {
 				upstream.GetHealthChecks()[0].GetGrpcHealthCheck().InitialMetadata = upstreamHeaders
 				upstream.GetHealthChecks()[0].GetGrpcHealthCheck().InitialMetadata[0].GetHeaderSecretRef().Namespace = secretNamespace
 
+				// changed env var, re-create translator
+				translator = NewTranslatorWithHasher(
+					glooutils.NewSslConfigTranslator(),
+					settings,
+					registry.NewPluginRegistry(registeredPlugins),
+					EnvoyCacheResourcesListToFnvHash)
 				translate(expectError)
 			},
 				Entry("Matching not enforced and namespaces don't match", "false", "bar", false),
@@ -3012,7 +3018,7 @@ var _ = Describe("Translator", func() {
 							},
 						},
 					}
-					registeredPlugins = registry.Plugins(opts)
+					registeredPlugins = registry.Plugins(registry.FromBootstrap(opts))
 
 					pluginRegistry := registry.NewPluginRegistry(registeredPlugins)
 					translator = NewTranslatorWithHasher(
@@ -3049,7 +3055,7 @@ var _ = Describe("Translator", func() {
 							},
 						},
 					}
-					registeredPlugins = registry.Plugins(opts)
+					registeredPlugins = registry.Plugins(registry.FromBootstrap(opts))
 					pluginRegistry := registry.NewPluginRegistry(registeredPlugins)
 					translator = NewTranslatorWithHasher(
 						glooutils.NewSslConfigTranslator(),
@@ -3083,7 +3089,7 @@ var _ = Describe("Translator", func() {
 							},
 						},
 					}
-					registeredPlugins = registry.Plugins(opts)
+					registeredPlugins = registry.Plugins(registry.FromBootstrap(opts))
 					pluginRegistry := registry.NewPluginRegistry(registeredPlugins)
 					translator = NewTranslatorWithHasher(
 						glooutils.NewSslConfigTranslator(),

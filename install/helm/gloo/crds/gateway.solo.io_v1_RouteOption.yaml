@@ -71,24 +71,118 @@ spec:
                         properties:
                           request:
                             properties:
-                              customResponseMessage:
-                                type: string
-                              matches:
-                                items:
-                                  type: string
-                                type: array
+                              customResponse:
+                                properties:
+                                  message:
+                                    type: string
+                                  statusCode:
+                                    maximum: 4294967295
+                                    minimum: 0
+                                    type: integer
+                                type: object
+                              moderation:
+                                properties:
+                                  openai:
+                                    properties:
+                                      authToken:
+                                        properties:
+                                          inline:
+                                            type: string
+                                          passthrough:
+                                            type: object
+                                          secretRef:
+                                            properties:
+                                              name:
+                                                type: string
+                                              namespace:
+                                                type: string
+                                            type: object
+                                        type: object
+                                      model:
+                                        type: string
+                                    type: object
+                                type: object
+                              regex:
+                                properties:
+                                  action:
+                                    type: string
+                                    x-kubernetes-int-or-string: true
+                                  builtins:
+                                    items:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    type: array
+                                  matches:
+                                    items:
+                                      properties:
+                                        name:
+                                          type: string
+                                        pattern:
+                                          type: string
+                                      type: object
+                                    type: array
+                                type: object
+                              webhook:
+                                properties:
+                                  forwardHeaders:
+                                    items:
+                                      properties:
+                                        key:
+                                          type: string
+                                        matchType:
+                                          type: string
+                                          x-kubernetes-int-or-string: true
+                                      type: object
+                                    type: array
+                                  host:
+                                    type: string
+                                  port:
+                                    maximum: 4294967295
+                                    minimum: 0
+                                    type: integer
+                                type: object
                             type: object
                           response:
                             properties:
-                              builtins:
-                                items:
-                                  type: string
-                                  x-kubernetes-int-or-string: true
-                                type: array
-                              matches:
-                                items:
-                                  type: string
-                                type: array
+                              regex:
+                                properties:
+                                  action:
+                                    type: string
+                                    x-kubernetes-int-or-string: true
+                                  builtins:
+                                    items:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    type: array
+                                  matches:
+                                    items:
+                                      properties:
+                                        name:
+                                          type: string
+                                        pattern:
+                                          type: string
+                                      type: object
+                                    type: array
+                                type: object
+                              webhook:
+                                properties:
+                                  forwardHeaders:
+                                    items:
+                                      properties:
+                                        key:
+                                          type: string
+                                        matchType:
+                                          type: string
+                                          x-kubernetes-int-or-string: true
+                                      type: object
+                                    type: array
+                                  host:
+                                    type: string
+                                  port:
+                                    maximum: 4294967295
+                                    minimum: 0
+                                    type: integer
+                                type: object
                             type: object
                         type: object
                       rag:
@@ -113,6 +207,8 @@ spec:
                                     properties:
                                       inline:
                                         type: string
+                                      passthrough:
+                                        type: object
                                       secretRef:
                                         properties:
                                           name:
@@ -132,6 +228,8 @@ spec:
                                     properties:
                                       inline:
                                         type: string
+                                      passthrough:
+                                        type: object
                                       secretRef:
                                         properties:
                                           name:
@@ -185,6 +283,8 @@ spec:
                                     properties:
                                       inline:
                                         type: string
+                                      passthrough:
+                                        type: object
                                       secretRef:
                                         properties:
                                           name:
@@ -204,6 +304,8 @@ spec:
                                     properties:
                                       inline:
                                         type: string
+                                      passthrough:
+                                        type: object
                                       secretRef:
                                         properties:
                                           name:

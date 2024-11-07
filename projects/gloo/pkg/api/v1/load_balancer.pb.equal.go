@@ -76,6 +76,10 @@ func (m *LoadBalancerConfig) Equal(that interface{}) bool {
 		}
 	}
 
+	if m.GetCloseConnectionsOnHostSetChange() != target.GetCloseConnectionsOnHostSetChange() {
+		return false
+	}
+
 	switch m.Type.(type) {
 
 	case *LoadBalancerConfig_RoundRobin_:

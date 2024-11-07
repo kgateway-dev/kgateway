@@ -28,6 +28,9 @@ type Context struct {
 	// i.e. if this is set to true, the webhook will accept regardless of errors found during validation
 	ValidationAlwaysAccept bool
 
+	// is populated if the installation has any AWS options configured (via `settings.aws.*` Helm values)
+	AwsOptions *AwsOptions
+
 	// TestAssetDir is the directory holding the test assets. Must be relative to RootDir.
 	TestAssetDir string
 
@@ -45,6 +48,15 @@ type Context struct {
 
 	// The path to the local helm chart used for testing. Based on the TestAssertDir and relative to RootDir.
 	ChartUri string
+}
+
+// AWS options that the installation was configured with
+type AwsOptions struct {
+	// corresponds to the `settings.aws.enableServiceAccountCredentials` helm value
+	EnableServiceAccountCredentials bool
+
+	// corresponds to the `settings.aws.stsCredentialsRegion` helm value
+	StsCredentialsRegion string
 }
 
 // ValidateGlooGatewayContext returns an error if the provided Context is invalid

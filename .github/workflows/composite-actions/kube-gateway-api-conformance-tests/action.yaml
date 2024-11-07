@@ -57,12 +57,21 @@ runs:
   - name: Capture debug information when tests fail
     if: ${{ failure() }}
     shell: bash
-    run: kubectl -n gloo-system  get events --sort-by='{.lastTimestamp}'
+    run: |
+      kubectl -n gloo-system get events --sort-by='{.lastTimestamp}'
+      echo
+      kubectl -n gateway-conformance-infra get events --sort-by='{.lastTimestamp}'
+      echo
+      kubectl -n gateway-conformance-app-backend get events --sort-by='{.lastTimestamp}'
+      echo
+      kubectl -n gateway-conformance-web-backend get events --sort-by='{.lastTimestamp}'
+      echo
+      kubectl -n gloo-system logs deploy/gloo
   - name: Upload reports
-    if: ${{ success() }}
+    if: ${{ failure() }}
     uses: actions/upload-artifact@v4
     with:
       # Name of the path to upload. The VERSION variable refers to the Makefile
       # VERSION variable.
-      name: conformance-gloo-gateway-report
+      name: conformance-gloo-gateway-report-attempt-${{ github.run_attempt }}@k8s${{ matrix.kube-version.kubectl }}
       path: _test/conformance/${{ env.VERSION }}-report.yaml

@@ -10,9 +10,11 @@ import (
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
+	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"google.golang.org/grpc"
@@ -87,7 +89,8 @@ var _ = Describe("Gloo Setup Syncer", func() {
 			}
 
 			It("setup can be called twice", func() {
-				glooSetup := setup.NewSetupFunc()
+				setupOpts := bootstrap.NewSetupOpts(xds.NewAdsSnapshotCache(ctx), nil)
+				glooSetup := setup.NewSetupFunc(setupOpts)
 
 				err := glooSetup(ctx, nil, memory.NewInMemoryResourceCache(), settings, singlereplica.Identity())
 				Expect(err).NotTo(HaveOccurred())
