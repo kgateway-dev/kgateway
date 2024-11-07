@@ -25,8 +25,9 @@ import (
 
 var _ = Describe("Query", func() {
 	var (
-		scheme       *runtime.Scheme
-		builder      *fake.ClientBuilder
+		scheme  *runtime.Scheme
+		builder *fake.ClientBuilder
+		// Avoids an API server call to check whether required Gateway API CRDs are installed.
 		reqCRDsExist = true
 	)
 

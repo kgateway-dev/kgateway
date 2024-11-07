@@ -493,24 +493,14 @@ func (r *gatewayQueries) checkCRDs(ctx context.Context) error {
 		return nil
 	}
 
-	// List of required CRDs and their corresponding route list types
-	requiredCRDs := []string{
-		"httproutes.gateway.networking.k8s.io",
-		"tcproutes.gateway.networking.k8s.io",
-	}
-
-	// Check each required CRD
-	for _, crdName := range requiredCRDs {
+	for _, crdName := range wellknown.GatewayRouteCRDs {
 		crd := &apiextensionsv1.CustomResourceDefinition{}
 		err := r.client.Get(ctx, client.ObjectKey{Name: crdName}, crd)
 		if err != nil {
 			if errors.IsNotFound(err) {
-				// CRD not found; set requiredCRDsExist to false
 				r.requiredCRDsExist = ptr.To(false)
-				fmt.Printf("%s CRD not found; skipping\n", crdName)
 				return nil
 			}
-			// An error occurred while checking the CRD
 			return fmt.Errorf("error checking for %s CRD: %w", crdName, err)
 		}
 	}

@@ -18,14 +18,14 @@ listeners:
                             name: example-tcp-svc-1
                             namespace: default
                           port: 8080
-                      weight: 0
+                      weight: 65
                     - destination:
                         kube:
                           ref:
                             name: example-tcp-svc-2
                             namespace: default
                           port: 8081
-                      weight: 0
+                      weight: 35
 metadata:
   labels:
     created_by: gloo-kube-gateway-api

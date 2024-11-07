@@ -73,10 +73,12 @@ func (r *ReportMap) newGatewayReport(gateway *gwv1.Gateway) *GatewayReport {
 	return gr
 }
 
-// route returns a RouteReport for the provided route object, nil if there is not a report present.
+// route returns a RouteReport for the provided route object, nil if a report is not present.
 // This is different than the Reporter.Route() method, as we need to understand when
-// reports are not generated for a route that has been translated. HTTPRoute and TCPRoute are the
-// only supported object types.
+// reports are not generated for a route that has been translated. Supported object types are:
+//
+// * HTTPRoute
+// * TCPRoute
 func (r *ReportMap) route(obj client.Object) *RouteReport {
 	key := client.ObjectKeyFromObject(obj)
 

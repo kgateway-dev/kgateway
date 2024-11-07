@@ -92,4 +92,9 @@ var (
 		"tcproutes.gateway.networking.k8s.io",
 		"referencegrants.gateway.networking.k8s.io",
 	)
+
+	GatewayRouteCRDs = []string{
+		"httproutes.gateway.networking.k8s.io",
+		"tcproutes.gateway.networking.k8s.io",
+	}
 )
