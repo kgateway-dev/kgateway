@@ -1,26 +1,38 @@
 package e2e_test
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"html"
+	"io"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	envoytrace_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
+	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
 	"github.com/solo-io/gloo/test/e2e"
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/gloo/test/services/envoy"
 	"github.com/solo-io/gloo/test/testutils"
+	"github.com/solo-io/gloo/test/v1helpers"
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	coreV1 "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -353,4 +365,386 @@ var _ = Describe("HeaderManipulation", func() {
 			)
 		})
 	})
+
+	Describe("Early Header Manipulation", func() {
+		var (
+			httpClient     *http.Client
+			requestBuilder *testutils.HttpRequestBuilder
+		)
+
+		type HeadersResponse struct {
+			Headers map[string][]string `json:"headers"`
+		}
+
+		prepareEHMTestContext := func(testContext *e2e.TestContext, ehm *headers.EarlyHeaderManipulation) {
+			getHCMSettings(testContext).EarlyHeaderManipulation = ehm
+		}
+
+		makeHeadersRequest := func(inHeaders map[string]string) (*HeadersResponse, error) {
+			req := requestBuilder.
+				WithHeader("Accept", "application/json").
+				WithPath("headers").
+				WithHeaders(inHeaders).
+				Build()
+
+			res, err := httpClient.Do(req)
+			if err != nil {
+				return &HeadersResponse{}, err
+			}
+
+			if res.StatusCode != http.StatusOK {
+				return &HeadersResponse{}, fmt.Errorf("unexpected status code %d", res.StatusCode)
+			}
+
+			defer res.Body.Close()
+			body, err := io.ReadAll(res.Body)
+			if err != nil {
+				return &HeadersResponse{}, err
+			}
+
+			var headerResponse HeadersResponse
+			err = json.Unmarshal(body, &headerResponse)
+			if err != nil {
+				return &HeadersResponse{}, err
+			}
+
+			return &headerResponse, nil
+		}
+
+		Context("No mutations", func() {
+			BeforeEach(func() {
+				testContext = testContextFactory.NewTestContext()
+				testContext.SetUpstreamGenerator(v1helpers.NewTestHttpUpstreamWithHttpbin)
+				testContext.BeforeEach()
+
+				prepareEHMTestContext(testContext, nil)
+
+				httpClient = testutils.DefaultClientBuilder().Build()
+				requestBuilder = testContext.GetHttpRequestBuilder()
+			})
+
+			It("Should do nothing if no mutations are present", func() {
+				Eventually(func(g Gomega) {
+					headersResponse, err := makeHeadersRequest(map[string]string{
+						"X-Keep": "foo",
+						"X-Drop": "bar",
+					})
+					g.Expect(err).NotTo(HaveOccurred())
+
+					// the headers should be unchanged
+					g.Expect(headersResponse.Headers).To(HaveKeyWithValue("X-Keep", ConsistOf("foo")),
+						"Expected header X-Keep to be present")
+					g.Expect(headersResponse.Headers).To(HaveKeyWithValue("X-Drop", ConsistOf("bar")),
+						"Expected header X-Drop to be present when no mutations are present")
+					g.Expect(headersResponse.Headers).NotTo(HaveKey("X-Add"),
+						"Expected header X-Add to not be present when no mutations are present")
+				}, "5s", "0.5s").Should(Succeed())
+			})
+		})
+
+		Context("Add/remove manipulations", func() {
+			BeforeEach(func() {
+				testContext = testContextFactory.NewTestContext()
+				testContext.SetUpstreamGenerator(v1helpers.NewTestHttpUpstreamWithHttpbin)
+				testContext.BeforeEach()
+
+				prepareEHMTestContext(testContext, &headers.EarlyHeaderManipulation{
+					HeadersToAdd: []*envoycore_sk.HeaderValueOption{
+						{
+							HeaderOption: &envoycore_sk.HeaderValueOption_Header{
+								Header: &envoycore_sk.HeaderValue{
+									Key:   "X-Add",
+									Value: "baz",
+								},
+							},
+							Append: &wrappers.BoolValue{Value: true},
+						},
+						{
+							HeaderOption: &envoycore_sk.HeaderValueOption_Header{
+								Header: &envoycore_sk.HeaderValue{
+									Key:   "X-Append",
+									Value: "baz",
+								},
+							},
+							Append: &wrappers.BoolValue{Value: true},
+						},
+						{
+							HeaderOption: &envoycore_sk.HeaderValueOption_Header{
+								Header: &envoycore_sk.HeaderValue{
+									Key:   "X-Overwrite",
+									Value: "baz",
+								},
+							},
+							Append: &wrappers.BoolValue{Value: false},
+						},
+					},
+					HeadersToRemove: []string{"X-Drop"},
+				})
+
+				httpClient = testutils.DefaultClientBuilder().Build()
+				requestBuilder = testContext.GetHttpRequestBuilder()
+			})
+
+			It("Should append as expected", func() {
+				Eventually(func(g Gomega) {
+					headersResponse, err := makeHeadersRequest(map[string]string{
+						"X-Append":    "foo",
+						"X-Overwrite": "bar",
+						"X-Drop":      "baz",
+					})
+					g.Expect(err).NotTo(HaveOccurred())
+
+					// the headers should be as expected
+					g.Expect(headersResponse.Headers).To(HaveKeyWithValue("X-Add", ConsistOf("baz")),
+						"Expected header X-Add to be present")
+					g.Expect(headersResponse.Headers).To(HaveKeyWithValue("X-Append", ConsistOf("foo", "baz")),
+						"Expected header X-Add to be present")
+					g.Expect(headersResponse.Headers).To(HaveKeyWithValue("X-Overwrite", ConsistOf("baz")),
+						"Expected header X-Exists two have two values")
+					g.Expect(headersResponse.Headers).NotTo(HaveKey("X-Drop"),
+						"Expected header X-Drop to be removed")
+				}, "5s", "0.5s").Should(Succeed())
+			})
+		})
+
+		Context("Manipulation with secrets", func() {
+			BeforeEach(func() {
+				testContext = testContextFactory.NewTestContext()
+				testContext.SetUpstreamGenerator(v1helpers.NewTestHttpUpstreamWithHttpbin)
+				testContext.BeforeEach()
+
+				prepareEHMTestContext(testContext, &headers.EarlyHeaderManipulation{
+					HeadersToAdd: []*envoycore_sk.HeaderValueOption{
+						{
+							HeaderOption: &envoycore_sk.HeaderValueOption_HeaderSecretRef{
+								HeaderSecretRef: &coreV1.ResourceRef{
+									Name:      "secret",
+									Namespace: writeNamespace,
+								},
+							},
+							Append: &wrappers.BoolValue{Value: true},
+						},
+					},
+				})
+
+				secret := &gloov1.Secret{
+					Kind: &gloov1.Secret_Header{
+						Header: &gloov1.HeaderSecret{
+							Headers: map[string]string{
+								"X-Secret": "something super secret",
+							},
+						},
+					},
+					Metadata: &coreV1.Metadata{
+						Name:      "secret",
+						Namespace: writeNamespace,
+					},
+				}
+
+				testContext.ResourcesToCreate().Secrets = gloov1.SecretList{secret}
+
+				httpClient = testutils.DefaultClientBuilder().Build()
+				requestBuilder = testContext.GetHttpRequestBuilder()
+			})
+
+			It("Should have the secret", func() {
+				Eventually(func(g Gomega) {
+					headersResponse, err := makeHeadersRequest(map[string]string{
+						"X-Keep": "foo",
+						"X-Drop": "bar",
+					})
+					g.Expect(err).NotTo(HaveOccurred())
+
+					// the headers should be as expected
+					g.Expect(headersResponse.Headers).To(HaveKeyWithValue("X-Secret",
+						ConsistOf("something super secret")),
+						"Expected header X-Secret to be present with secret value")
+				}, "5s", "0.5s").Should(Succeed())
+			})
+		})
+
+		// A customer reported that normal header manipulation was happening after the tracing headers were added.
+		// They desired that they be able to override the tracing headers with their own headers.
+		// Setting the tracing headers earlier allows for the override to happen.
+		// This test ensures that the interaction between the two works as expected.
+		Context("Interaction with Zipkin tracing", func() {
+			var (
+				zipkinInstance *envoy.Instance
+				//zipkinUpstream *v1helpers.TestUpstream
+			)
+
+			prepareZipkinTracingTestContext := func(testContext *e2e.TestContext, upstream *gloov1.Upstream) {
+				getHCMSettings(testContext).Tracing = &tracing.ListenerTracingSettings{
+					ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
+						ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
+							CollectorCluster: &envoytrace_gloo.ZipkinConfig_CollectorUpstreamRef{
+								CollectorUpstreamRef: &core.ResourceRef{
+									Name:      upstream.GetMetadata().GetName(),
+									Namespace: writeNamespace,
+								},
+							},
+							CollectorEndpoint:        zipkinCollectionPath,
+							CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
+						},
+					},
+				}
+			}
+
+			startCancellableTracingServer := func(serverContext context.Context, address string) {
+				// Start a dummy server listening on 9411 for tracing requests
+				tracingCollectorHandler := http.NewServeMux()
+				tracingCollectorHandler.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					Expect(r.URL.Path).To(Equal(zipkinCollectionPath))
+					fmt.Fprintf(w, "Dummy tracing Collector received request on - %q", html.EscapeString(r.URL.Path))
+				}))
+
+				tracingServer := &http.Server{
+					Addr:    address,
+					Handler: tracingCollectorHandler,
+				}
+
+				// Start a goroutine to handle requests
+				go func() {
+					defer GinkgoRecover()
+					if err := tracingServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+						ExpectWithOffset(1, err).NotTo(HaveOccurred())
+					}
+				}()
+
+				// Start a goroutine to shutdown the server
+				go func(serverCtx context.Context) {
+					defer GinkgoRecover()
+
+					<-serverCtx.Done()
+					// tracingServer.Shutdown hangs with opentelemetry tests, probably
+					// because the agent leaves the connection open. There's no need for a
+					// graceful shutdown anyway, so just force it using Close() instead
+					tracingServer.Close()
+				}(serverContext)
+			}
+
+			BeforeEach(func() {
+				testContext = testContextFactory.NewTestContext()
+				testContext.SetUpstreamGenerator(v1helpers.NewTestHttpUpstreamWithHttpbin)
+				testContext.BeforeEach()
+
+				httpClient = testutils.DefaultClientBuilder().Build()
+				requestBuilder = testContext.GetHttpRequestBuilder()
+
+				// create Zipkin tracing collector
+				// the tracing extension expects the zipkin collector to be on port 9411
+				// which makes this whole process a bit more complicated
+				zipkinInstance = envoyFactory.NewInstance()
+				startCancellableTracingServer(testContext.Ctx(),
+					fmt.Sprintf("%s:%d", zipkinInstance.LocalAddr(), tracingCollectorPort))
+
+				// create tracing collector upstream
+				zipkinUpstream := &gloov1.Upstream{
+					Metadata: &core.Metadata{
+						Name:      tracingCollectorUpstreamName,
+						Namespace: writeNamespace,
+					},
+					UpstreamType: &gloov1.Upstream_Static{
+						Static: &static_plugin_gloo.UpstreamSpec{
+							Hosts: []*static_plugin_gloo.Host{
+								{
+									Addr: zipkinInstance.LocalAddr(),
+									Port: tracingCollectorPort,
+								},
+							},
+						},
+					},
+				}
+
+				testContext.ResourcesToCreate().Upstreams = gloov1.UpstreamList{
+					testContext.TestUpstream().Upstream,
+					zipkinUpstream,
+				}
+
+				// add the zipkin tracing configuration to the test context
+				prepareZipkinTracingTestContext(testContext, zipkinUpstream)
+			})
+
+			Context("Zipkin/B3 headers without transforms", func() {
+				BeforeEach(func() {
+					prepareEHMTestContext(testContext, nil)
+				})
+
+				It("Zipkin/B3 headers should make without transforms", func() {
+					Eventually(func(g Gomega) {
+						headersResponse, err := makeHeadersRequest(map[string]string{})
+						g.Expect(err).NotTo(HaveOccurred())
+
+						// the headers should be as expected
+						g.Expect(headersResponse.Headers).To(HaveKey("X-B3-Traceid"),
+							"Expected header X-B3-Traceid to be present")
+						g.Expect(headersResponse.Headers).To(HaveKey("X-B3-Spanid"),
+							"Expected header X-B3-Spanid to be present")
+					}, "5s", "0.5s").Should(Succeed())
+				})
+			})
+
+			Context("Zipkin/B3 headers with transforms", func() {
+				BeforeEach(func() {
+					prepareEHMTestContext(testContext, &headers.EarlyHeaderManipulation{
+						HeadersToAdd: []*envoycore_sk.HeaderValueOption{
+							{
+								HeaderOption: &envoycore_sk.HeaderValueOption_Header{
+									Header: &envoycore_sk.HeaderValue{
+										Key:   "X-B3-Traceid",
+										Value: "%REQ(x-override-traceid)%",
+									},
+								},
+							},
+							{
+								HeaderOption: &envoycore_sk.HeaderValueOption_Header{
+									Header: &envoycore_sk.HeaderValue{
+										Key:   "X-B3-Spanid",
+										Value: "%REQ(x-override-spanid)%",
+									},
+								},
+							},
+						},
+					})
+				})
+
+				It("Should be able to override Zipkin/B3 headers", func() {
+					Eventually(func(g Gomega) {
+						headersResponse, err := makeHeadersRequest(map[string]string{
+							"x-override-traceid": "traceid",
+							"x-override-spanid":  "spanid",
+						})
+						g.Expect(err).NotTo(HaveOccurred())
+
+						// the headers should be as expected
+						g.Expect(headersResponse.Headers).To(HaveKeyWithValue("X-B3-Traceid", ConsistOf("traceid")),
+							"Expected header X-B3-Traceid to be present with overridden value")
+						g.Expect(headersResponse.Headers).To(HaveKeyWithValue("X-B3-Spanid", ConsistOf("spanid")),
+							"Expected header X-B3-Spanid to be present with overridden value")
+					}, "5s", "0.5s").Should(Succeed())
+				})
+			})
+		})
+	})
 })
+
+func getHCMSettings(testContext *e2e.TestContext) *hcm.HttpConnectionManagerSettings {
+	gateway := testContext.ResourcesToCreate().Gateways[0]
+	Expect(gateway).NotTo(BeNil())
+	httpGateway := gateway.GetHttpGateway()
+	Expect(httpGateway).NotTo(BeNil())
+
+	listenerOptions := httpGateway.GetOptions()
+	if listenerOptions == nil {
+		listenerOptions = &gloov1.HttpListenerOptions{}
+		httpGateway.Options = listenerOptions
+	}
+
+	hcmSettings := listenerOptions.GetHttpConnectionManagerSettings()
+	if hcmSettings == nil {
+		hcmSettings = &hcm.HttpConnectionManagerSettings{}
+		listenerOptions.HttpConnectionManagerSettings = hcmSettings
+	}
+
+	return hcmSettings
+}
