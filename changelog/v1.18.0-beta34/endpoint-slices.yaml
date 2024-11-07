@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/9803
+    resolvesIssue: true
+    description: >-
+      Migrate kubernetes endpoints discovery to use EndpointSlices.
