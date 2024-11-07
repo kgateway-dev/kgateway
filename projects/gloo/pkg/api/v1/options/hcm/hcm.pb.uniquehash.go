@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"hash"
 	"hash/fnv"
+	"strconv"
 
 	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
 	"github.com/solo-io/protoc-gen-ext/pkg/hasher/hashstructure"
@@ -21,12 +22,16 @@ var (
 	_ = binary.LittleEndian
 	_ = new(hash.Hash64)
 	_ = fnv.New64
+	_ = strconv.Itoa
 	_ = hashstructure.Hash
 	_ = new(safe_hasher.SafeHasher)
 )
 
-// Hash function
-func (m *HttpConnectionManagerSettings) Hash(hasher hash.Hash64) (uint64, error) {
+// HashUnique function generates a hash of the object that is unique to the object by
+// hashing field name and value pairs.
+// Replaces Hash due to original hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
+func (m *HttpConnectionManagerSettings) HashUnique(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -438,6 +443,9 @@ func (m *HttpConnectionManagerSettings) Hash(hasher hash.Hash64) (uint64, error)
 		}
 	}
 
+	if _, err = hasher.Write([]byte("ForwardClientCertDetails")); err != nil {
+		return 0, err
+	}
 	err = binary.Write(hasher, binary.LittleEndian, m.GetForwardClientCertDetails())
 	if err != nil {
 		return 0, err
@@ -483,10 +491,16 @@ func (m *HttpConnectionManagerSettings) Hash(hasher hash.Hash64) (uint64, error)
 		}
 	}
 
-	for _, v := range m.GetUpgrades() {
+	if _, err = hasher.Write([]byte("Upgrades")); err != nil {
+		return 0, err
+	}
+	for i, v := range m.GetUpgrades() {
+		if _, err = hasher.Write([]byte(strconv.Itoa(i))); err != nil {
+			return 0, err
+		}
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("")); err != nil {
+			if _, err = hasher.Write([]byte("v")); err != nil {
 				return 0, err
 			}
 			if _, err = h.Hash(hasher); err != nil {
@@ -496,7 +510,7 @@ func (m *HttpConnectionManagerSettings) Hash(hasher hash.Hash64) (uint64, error)
 			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("")); err != nil {
+				if _, err = hasher.Write([]byte("v")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
@@ -567,6 +581,9 @@ func (m *HttpConnectionManagerSettings) Hash(hasher hash.Hash64) (uint64, error)
 		}
 	}
 
+	if _, err = hasher.Write([]byte("HeadersWithUnderscoresAction")); err != nil {
+		return 0, err
+	}
 	err = binary.Write(hasher, binary.LittleEndian, m.GetHeadersWithUnderscoresAction())
 	if err != nil {
 		return 0, err
@@ -592,16 +609,25 @@ func (m *HttpConnectionManagerSettings) Hash(hasher hash.Hash64) (uint64, error)
 		}
 	}
 
+	if _, err = hasher.Write([]byte("ServerHeaderTransformation")); err != nil {
+		return 0, err
+	}
 	err = binary.Write(hasher, binary.LittleEndian, m.GetServerHeaderTransformation())
 	if err != nil {
 		return 0, err
 	}
 
+	if _, err = hasher.Write([]byte("PathWithEscapedSlashesAction")); err != nil {
+		return 0, err
+	}
 	err = binary.Write(hasher, binary.LittleEndian, m.GetPathWithEscapedSlashesAction())
 	if err != nil {
 		return 0, err
 	}
 
+	if _, err = hasher.Write([]byte("CodecType")); err != nil {
+		return 0, err
+	}
 	err = binary.Write(hasher, binary.LittleEndian, m.GetCodecType())
 	if err != nil {
 		return 0, err
@@ -798,8 +824,11 @@ func (m *HttpConnectionManagerSettings) Hash(hasher hash.Hash64) (uint64, error)
 	return hasher.Sum64(), nil
 }
 
-// Hash function
-func (m *HttpConnectionManagerSettings_SetCurrentClientCertDetails) Hash(hasher hash.Hash64) (uint64, error) {
+// HashUnique function generates a hash of the object that is unique to the object by
+// hashing field name and value pairs.
+// Replaces Hash due to original hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
+func (m *HttpConnectionManagerSettings_SetCurrentClientCertDetails) HashUnique(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -914,8 +943,11 @@ func (m *HttpConnectionManagerSettings_SetCurrentClientCertDetails) Hash(hasher 
 	return hasher.Sum64(), nil
 }
 
-// Hash function
-func (m *HttpConnectionManagerSettings_UuidRequestIdConfigSettings) Hash(hasher hash.Hash64) (uint64, error) {
+// HashUnique function generates a hash of the object that is unique to the object by
+// hashing field name and value pairs.
+// Replaces Hash due to original hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
+func (m *HttpConnectionManagerSettings_UuidRequestIdConfigSettings) HashUnique(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -970,8 +1002,11 @@ func (m *HttpConnectionManagerSettings_UuidRequestIdConfigSettings) Hash(hasher 
 	return hasher.Sum64(), nil
 }
 
-// Hash function
-func (m *HttpConnectionManagerSettings_CidrRange) Hash(hasher hash.Hash64) (uint64, error) {
+// HashUnique function generates a hash of the object that is unique to the object by
+// hashing field name and value pairs.
+// Replaces Hash due to original hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
+func (m *HttpConnectionManagerSettings_CidrRange) HashUnique(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -983,6 +1018,9 @@ func (m *HttpConnectionManagerSettings_CidrRange) Hash(hasher hash.Hash64) (uint
 		return 0, err
 	}
 
+	if _, err = hasher.Write([]byte("AddressPrefix")); err != nil {
+		return 0, err
+	}
 	if _, err = hasher.Write([]byte(m.GetAddressPrefix())); err != nil {
 		return 0, err
 	}
@@ -1010,8 +1048,11 @@ func (m *HttpConnectionManagerSettings_CidrRange) Hash(hasher hash.Hash64) (uint
 	return hasher.Sum64(), nil
 }
 
-// Hash function
-func (m *HttpConnectionManagerSettings_InternalAddressConfig) Hash(hasher hash.Hash64) (uint64, error) {
+// HashUnique function generates a hash of the object that is unique to the object by
+// hashing field name and value pairs.
+// Replaces Hash due to original hashing implemention only using field values. The omission
+// of the field name in the hash calculation can lead to hash collisions.
+func (m *HttpConnectionManagerSettings_InternalAddressConfig) HashUnique(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -1043,10 +1084,16 @@ func (m *HttpConnectionManagerSettings_InternalAddressConfig) Hash(hasher hash.H
 		}
 	}
 
-	for _, v := range m.GetCidrRanges() {
+	if _, err = hasher.Write([]byte("CidrRanges")); err != nil {
+		return 0, err
+	}
+	for i, v := range m.GetCidrRanges() {
+		if _, err = hasher.Write([]byte(strconv.Itoa(i))); err != nil {
+			return 0, err
+		}
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("")); err != nil {
+			if _, err = hasher.Write([]byte("v")); err != nil {
 				return 0, err
 			}
 			if _, err = h.Hash(hasher); err != nil {
@@ -1056,7 +1103,7 @@ func (m *HttpConnectionManagerSettings_InternalAddressConfig) Hash(hasher hash.H
 			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("")); err != nil {
+				if _, err = hasher.Write([]byte("v")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
