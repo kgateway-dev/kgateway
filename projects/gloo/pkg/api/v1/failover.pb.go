@@ -414,8 +414,8 @@ type Failover_Policy struct {
 	//
 	//	{ "overprovisioning_factor": 100 }
 	//
-	// Read more at :ref:`priority levels <arch_overview_load_balancing_priority_levels>` and
-	// :ref:`localities <arch_overview_load_balancing_locality_weighted_lb>`.
+	// Read more at priority levels and
+	// localities.
 	OverprovisioningFactor *wrappers.UInt32Value `protobuf:"bytes,1,opt,name=overprovisioning_factor,json=overprovisioningFactor,proto3" json:"overprovisioning_factor,omitempty"`
 }
 

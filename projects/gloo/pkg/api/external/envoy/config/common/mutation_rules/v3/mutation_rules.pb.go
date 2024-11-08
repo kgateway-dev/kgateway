@@ -74,13 +74,13 @@ type HeaderMutationRules struct {
 	// field. Default is false.
 	AllowEnvoy *wrappers.BoolValue `protobuf:"bytes,2,opt,name=allow_envoy,json=allowEnvoy,proto3" json:"allow_envoy,omitempty"`
 	// If true, prevent modification of any system header, defined as a header
-	// that starts with a “:“ character, regardless of any other settings.
-	// A processing server may still override the “:status“ of an HTTP response
-	// using an “ImmediateResponse“ message. Default is false.
+	// that starts with a `:` character, regardless of any other settings.
+	// A processing server may still override the `:status` of an HTTP response
+	// using an `ImmediateResponse` message. Default is false.
 	DisallowSystem *wrappers.BoolValue `protobuf:"bytes,3,opt,name=disallow_system,json=disallowSystem,proto3" json:"disallow_system,omitempty"`
 	// If true, prevent modifications of all header values, regardless of any
-	// other settings. A processing server may still override the “:status“
-	// of an HTTP response using an “ImmediateResponse“ message. Default is false.
+	// other settings. A processing server may still override the `:status`
+	// of an HTTP response using an `ImmediateResponse` message. Default is false.
 	DisallowAll *wrappers.BoolValue `protobuf:"bytes,4,opt,name=disallow_all,json=disallowAll,proto3" json:"disallow_all,omitempty"`
 	// If set, specifically allow any header that matches this regular
 	// expression. This overrides all other settings except for

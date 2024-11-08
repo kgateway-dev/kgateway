@@ -1355,7 +1355,7 @@ type RouteAction struct {
 	//	This timeout includes all retries. See also
 	//	:ref:`config_http_filters_router_x-envoy-upstream-rq-timeout-ms`,
 	//	:ref:`config_http_filters_router_x-envoy-upstream-rq-per-try-timeout-ms`, and the
-	//	:ref:`retry overview <arch_overview_http_routing_retry>`.
+	//	retry overview.
 	Timeout *duration.Duration `protobuf:"bytes,8,opt,name=timeout,proto3" json:"timeout,omitempty"`
 	// Specifies the idle timeout for the route. If not specified, there is no per-route idle timeout,
 	// although the connection manager wide :ref:`stream_idle_timeout
@@ -1431,7 +1431,7 @@ type RouteAction struct {
 	//	both are present. See also
 	//	:ref:`config_http_filters_router_x-envoy-upstream-rq-timeout-ms`,
 	//	:ref:`config_http_filters_router_x-envoy-upstream-rq-per-try-timeout-ms`, and the
-	//	:ref:`retry overview <arch_overview_http_routing_retry>`.
+	//	retry overview.
 	MaxGrpcTimeout *duration.Duration `protobuf:"bytes,23,opt,name=max_grpc_timeout,json=maxGrpcTimeout,proto3" json:"max_grpc_timeout,omitempty"`
 	// If present, Envoy will adjust the timeout provided by the `grpc-timeout` header by subtracting
 	// the provided duration from the header. This is useful in allowing Envoy to set its global

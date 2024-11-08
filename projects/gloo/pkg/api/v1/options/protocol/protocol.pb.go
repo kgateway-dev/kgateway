@@ -306,8 +306,7 @@ type Http2ProtocolOptions struct {
 	// connection based on upstream settings. Config dumps will reflect the configured upper bound,
 	// not the per-connection negotiated limits.
 	MaxConcurrentStreams *wrappers.UInt32Value `protobuf:"bytes,2,opt,name=max_concurrent_streams,json=maxConcurrentStreams,proto3" json:"max_concurrent_streams,omitempty"`
-	// [Initial stream-level flow-control window](https://httpwg.org/specs/rfc7540.html#rfc.section.6.9.2)
-	// size. Valid values range from 65535
+	// [Initial stream-level flow-control window](https://httpwg.org/specs/rfc7540.html#rfc.section.6.9.2) size. Valid values range from 65535
 	// (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum) and defaults to 268435456
 	// (256 * 1024 * 1024).
 	//

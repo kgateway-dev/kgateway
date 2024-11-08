@@ -429,7 +429,7 @@ type RefreshRate struct {
 	BaseInterval *duration.Duration `protobuf:"bytes,1,opt,name=base_interval,json=baseInterval,proto3" json:"base_interval,omitempty"`
 	// Specifies the maximum interval between refreshes. This parameter is optional, but must be
 	// greater than or equal to the
-	// base_interval if set. The default
+	// base_interval  if set. The default
 	// is 10 times the base_interval.
 	MaxInterval *duration.Duration `protobuf:"bytes,2,opt,name=max_interval,json=maxInterval,proto3" json:"max_interval,omitempty"`
 }
