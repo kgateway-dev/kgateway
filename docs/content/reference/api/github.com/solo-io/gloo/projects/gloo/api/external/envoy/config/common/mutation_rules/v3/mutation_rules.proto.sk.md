@@ -40,22 +40,22 @@ any header except for an "Envoy internal" header (which is typically
 denoted by an x-envoy prefix) or specific headers that may affect
 further filter processing:
 
-* ``host``
-* ``:authority``
-* ``:scheme``
-* ``:method``
+* `host`
+* `:authority`
+* `:scheme`
+* `:method`
 
 Every attempt to add, change, append, or remove a header will be
 tested against the rules here. Disallowed header mutations will be
-ignored unless ``disallow_is_error`` is set to true.
+ignored unless `disallow_is_error` is set to true.
 
 Attempts to remove headers are further constrained -- regardless of the
-settings, system-defined headers (that start with ``:``) and the ``host``
+settings, system-defined headers (that start with `:`) and the `host`
 header may never be removed.
 
 In addition, a counter will be incremented whenever a mutation is
 rejected. In the ext_proc filter, that counter is named
-``rejected_header_mutations``.
+`rejected_header_mutations`.
 [#next-free-field: 8]
 
 ```yaml
@@ -71,13 +71,13 @@ rejected. In the ext_proc filter, that counter is named
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `allowAllRouting` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | By default, certain headers that could affect processing of subsequent filters or request routing cannot be modified. These headers are ``host``, ``:authority``, ``:scheme``, and ``:method``. Setting this parameter to true allows these headers to be modified as well. |
-| `allowEnvoy` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, allow modification of envoy internal headers. By default, these start with ``x-envoy`` but this may be overridden in the ``Bootstrap`` configuration using the :ref:`header_prefix <envoy_v3_api_field_config.bootstrap.v3.Bootstrap.header_prefix>` field. Default is false. |
-| `disallowSystem` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, prevent modification of any system header, defined as a header that starts with a ``:`` character, regardless of any other settings. A processing server may still override the ``:status`` of an HTTP response using an ``ImmediateResponse`` message. Default is false. |
-| `disallowAll` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, prevent modifications of all header values, regardless of any other settings. A processing server may still override the ``:status`` of an HTTP response using an ``ImmediateResponse`` message. Default is false. |
-| `allowExpression` | [.solo.io.envoy.type.matcher.v3.RegexMatcher](../../../../../type/matcher/v3/regex.proto.sk/#regexmatcher) | If set, specifically allow any header that matches this regular expression. This overrides all other settings except for ``disallow_expression``. |
+| `allowAllRouting` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | By default, certain headers that could affect processing of subsequent filters or request routing cannot be modified. These headers are `host`, `:authority`, `:scheme`, and `:method`. Setting this parameter to true allows these headers to be modified as well. |
+| `allowEnvoy` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, allow modification of envoy internal headers. By default, these start with `x-envoy` but this may be overridden in the `Bootstrap` configuration using the :ref:`header_prefix <envoy_v3_api_field_config.bootstrap.v3.Bootstrap.header_prefix>` field. Default is false. |
+| `disallowSystem` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, prevent modification of any system header, defined as a header that starts with a `:` character, regardless of any other settings. A processing server may still override the `:status` of an HTTP response using an `ImmediateResponse` message. Default is false. |
+| `disallowAll` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, prevent modifications of all header values, regardless of any other settings. A processing server may still override the `:status` of an HTTP response using an `ImmediateResponse` message. Default is false. |
+| `allowExpression` | [.solo.io.envoy.type.matcher.v3.RegexMatcher](../../../../../type/matcher/v3/regex.proto.sk/#regexmatcher) | If set, specifically allow any header that matches this regular expression. This overrides all other settings except for `disallow_expression`. |
 | `disallowExpression` | [.solo.io.envoy.type.matcher.v3.RegexMatcher](../../../../../type/matcher/v3/regex.proto.sk/#regexmatcher) | If set, specifically disallow any header that matches this regular expression regardless of any other settings. |
-| `disallowIsError` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, and if the rules in this list cause a header mutation to be disallowed, then the filter using this configuration will terminate the request with a 500 error. In addition, regardless of the setting of this parameter, any attempt to set, add, or modify a disallowed header will cause the ``rejected_header_mutations`` counter to be incremented. Default is false. |
+| `disallowIsError` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, and if the rules in this list cause a header mutation to be disallowed, then the filter using this configuration will terminate the request with a 500 error. In addition, regardless of the setting of this parameter, any attempt to set, add, or modify a disallowed header will cause the `rejected_header_mutations` counter to be incremented. Default is false. |
 
 
 

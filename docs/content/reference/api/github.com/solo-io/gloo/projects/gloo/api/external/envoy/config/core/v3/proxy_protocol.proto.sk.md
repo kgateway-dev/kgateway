@@ -39,7 +39,7 @@ weight: 5
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `matchType` | [.solo.io.envoy.config.core.v3.ProxyProtocolPassThroughTLVs.PassTLVsMatchType](../proxy_protocol.proto.sk/#passtlvsmatchtype) | The strategy to pass through TLVs. Default is INCLUDE_ALL. If INCLUDE_ALL is set, all TLVs will be passed through no matter the tlv_type field. |
-| `tlvType` | `[]int` | The TLV types that are applied based on match_type. TLV type is defined as uint8_t in proxy protocol. See `the spec <https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt>`_ for details. |
+| `tlvType` | `[]int` | The TLV types that are applied based on match_type. TLV type is defined as uint8_t in proxy protocol. See [the spec](https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt) for details. |
 
 
 

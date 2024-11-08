@@ -257,18 +257,18 @@ type VirtualHost struct {
 	//
 	// Domain search order:
 	//
-	//  1. Exact domain names: “www.foo.com“.
+	//  1. Exact domain names: `www.foo.com`.
 	//
-	//  2. Suffix domain wildcards: “*.foo.com“ or “*-bar.foo.com“.
+	//  2. Suffix domain wildcards: `*.foo.com` or `*-bar.foo.com`.
 	//
-	//  3. Prefix domain wildcards: “foo.*“ or “foo-*“.
+	//  3. Prefix domain wildcards: `foo.*` or `foo-*`.
 	//
-	//  4. Special wildcard “*“ matching any domain.
+	//  4. Special wildcard `*` matching any domain.
 	//
 	//     The wildcard will not match the empty string.
-	//     e.g. “*-bar.foo.com“ will match “baz-bar.foo.com“ but not “-bar.foo.com“.
+	//     e.g. `*-bar.foo.com` will match `baz-bar.foo.com` but not `-bar.foo.com`.
 	//     The longest wildcards match first.
-	//     Only a single virtual host in the entire route configuration can match on “*“. A domain
+	//     Only a single virtual host in the entire route configuration can match on `*`. A domain
 	//     must be unique across all virtual hosts or the config will fail to load.
 	Domains []string `protobuf:"bytes,2,rep,name=domains,proto3" json:"domains,omitempty"`
 	// The list of routes that will be matched, in order, for incoming requests.
@@ -949,8 +949,7 @@ type RouteMatch_Regex struct {
 	// If specified, the route is a regular expression rule meaning that the
 	// regex must match the *:path* header once the query string is removed. The entire path
 	// (without the query string) must match the regex. The rule will not match if only a
-	// subsequence of the *:path* header matches the regex. The regex grammar is defined `here
-	// <https://en.cppreference.com/w/cpp/regex/ecmascript>`_.
+	// subsequence of the *:path* header matches the regex. The regex grammar is defined [here](https://en.cppreference.com/w/cpp/regex/ecmascript).
 	//
 	// Examples:
 	//
@@ -1269,7 +1268,7 @@ type RouteAction struct {
 	// Indicates that the route has a CORS policy.
 	Cors *CorsPolicy `protobuf:"bytes,17,opt,name=cors,proto3" json:"cors,omitempty"`
 	// If present, and the request is a gRPC request, use the
-	// `grpc-timeout header <https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md>`_,
+	// [grpc-timeout header](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md),
 	// or its default value (infinity) instead of
 	// `timeout (envoy_api_field_route.RouteAction.timeout)`, but limit the applied timeout
 	// to the maximum value specified here. If configured as 0, the maximum allowed timeout for
@@ -2168,8 +2167,7 @@ type VirtualCluster struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Specifies a regex pattern to use for matching requests. The entire path of the request
-	// must match the regex. The regex grammar used is defined `here
-	// <https://en.cppreference.com/w/cpp/regex/ecmascript>`_.
+	// must match the regex. The regex grammar used is defined [here](https://en.cppreference.com/w/cpp/regex/ecmascript).
 	//
 	// Examples:
 	//
@@ -2465,7 +2463,7 @@ type HeaderMatcher_RegexMatch struct {
 	// If specified, this regex string is a regular expression rule which implies the entire request
 	// header value must match the regex. The rule will not match if only a subsequence of the
 	// request header value matches the regex. The regex grammar used in the value field is defined
-	// `here <https://en.cppreference.com/w/cpp/regex/ecmascript>`_.
+	// [here](https://en.cppreference.com/w/cpp/regex/ecmascript).
 	//
 	// Examples:
 	//
@@ -3669,7 +3667,7 @@ func (*RateLimit_Action_HeaderValueMatch_) isRateLimit_Action_ActionSpecifier() 
 //
 // ```
 //
-// <local service cluster> is derived from the :option:`--service-cluster` option.
+// <local service cluster> is derived from the `--service-cluster` option.
 type RateLimit_Action_SourceCluster struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

@@ -53,9 +53,9 @@ gRPC service configuration. This is used by :ref:`ApiConfigSource
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `envoyGrpc` | [.solo.io.envoy.config.core.v3.GrpcService.EnvoyGrpc](../grpc_service.proto.sk/#envoygrpc) | Envoy's in-built gRPC client. See the :ref:`gRPC services overview <arch_overview_grpc_services>` documentation for discussion on gRPC client selection. Only one of `envoyGrpc` or `googleGrpc` can be set. |
-| `googleGrpc` | [.solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc](../grpc_service.proto.sk/#googlegrpc) | `Google C++ gRPC client <https://github.com/grpc/grpc>`_ See the :ref:`gRPC services overview <arch_overview_grpc_services>` documentation for discussion on gRPC client selection. Only one of `googleGrpc` or `envoyGrpc` can be set. |
+| `googleGrpc` | [.solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc](../grpc_service.proto.sk/#googlegrpc) | [Google C++ gRPC client](https://github.com/grpc/grpc) See the :ref:`gRPC services overview <arch_overview_grpc_services>` documentation for discussion on gRPC client selection. Only one of `googleGrpc` or `envoyGrpc` can be set. |
 | `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The timeout for the gRPC request. This is the timeout for a specific request. |
-| `initialMetadata` | [[]solo.io.envoy.config.core.v3.HeaderValue](../base.proto.sk/#headervalue) | Additional metadata to include in streams initiated to the GrpcService. This can be used for scenarios in which additional ad hoc authorization headers (e.g. ``x-foo-bar: baz-key``) are to be injected. |
+| `initialMetadata` | [[]solo.io.envoy.config.core.v3.HeaderValue](../base.proto.sk/#headervalue) | Additional metadata to include in streams initiated to the GrpcService. This can be used for scenarios in which additional ad hoc authorization headers (e.g. `x-foo-bar: baz-key`) are to be injected. |
 
 
 
@@ -74,8 +74,8 @@ gRPC service configuration. This is used by :ref:`ApiConfigSource
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `clusterName` | `string` | The name of the upstream gRPC cluster. SSL credentials will be supplied in the :ref:`Cluster <envoy_api_msg_config.cluster.v3.Cluster>` :ref:`transport_socket <envoy_api_field_config.cluster.v3.Cluster.transport_socket>`. |
-| `authority` | `string` | The ``:authority`` header in the grpc request. If this field is not set, the authority header value will be ``cluster_name``. Note that this authority does not override the SNI. The SNI is provided by the transport socket of the cluster. |
+| `clusterName` | `string` | The name of the upstream gRPC cluster. SSL credentials will be supplied in the Cluster :ref:`transport_socket <envoy_api_field_config.cluster.v3.Cluster.transport_socket>`. |
+| `authority` | `string` | The `:authority` header in the grpc request. If this field is not set, the authority header value will be `cluster_name`. Note that this authority does not override the SNI. The SNI is provided by the transport socket of the cluster. |
 | `retryPolicy` | [.solo.io.envoy.config.core.v3.RetryPolicy](../base.proto.sk/#retrypolicy) | Indicates the retry policy for re-establishing the gRPC stream This field is optional. If max interval is not provided, it will be set to ten times the provided base interval. Currently only supported for xDS gRPC streams. If not set, xDS gRPC streams default base interval:500ms, maximum interval:30s will be applied. |
 
 
@@ -101,9 +101,9 @@ gRPC service configuration. This is used by :ref:`ApiConfigSource
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `targetUri` | `string` | The target URI when using the `Google C++ gRPC client <https://github.com/grpc/grpc>`_. SSL credentials will be supplied in :ref:`channel_credentials <envoy_api_field_config.core.v3.GrpcService.GoogleGrpc.channel_credentials>`. |
+| `targetUri` | `string` | The target URI when using the [Google C++ gRPC client](https://github.com/grpc/grpc). SSL credentials will be supplied in channel_credentials. |
 | `channelCredentials` | [.solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.ChannelCredentials](../grpc_service.proto.sk/#channelcredentials) |  |
-| `callCredentials` | [[]solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials](../grpc_service.proto.sk/#callcredentials) | A set of call credentials that can be composed with `channel credentials <https://grpc.io/docs/guides/auth.html#credential-types>`_. |
+| `callCredentials` | [[]solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials](../grpc_service.proto.sk/#callcredentials) | A set of call credentials that can be composed with [channel credentials](https://grpc.io/docs/guides/auth.html#credential-types). |
 | `statPrefix` | `string` | The human readable prefix to use when emitting statistics for the gRPC service. .. csv-table:: :header: Name, Type, Description :widths: 1, 1, 2 streams_total, Counter, Total number of streams opened streams_closed_<gRPC status code>, Counter, Total streams closed with <gRPC status code>. |
 | `credentialsFactoryName` | `string` | The name of the Google gRPC credentials factory to use. This must have been registered with Envoy. If this is empty, a default credentials factory will be used that sets up channel credentials based on other configuration parameters. |
 | `config` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Additional configuration for site-specific customizations of the Google gRPC library. |

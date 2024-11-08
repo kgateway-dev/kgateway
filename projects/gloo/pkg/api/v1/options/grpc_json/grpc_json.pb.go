@@ -40,13 +40,12 @@ type GrpcJsonTranscoder struct {
 	DescriptorSet isGrpcJsonTranscoder_DescriptorSet `protobuf_oneof:"descriptor_set"`
 	// A list of strings that
 	// supplies the fully qualified service names (i.e. "package_name.service_name") that
-	// the transcoder will translate. If the service name doesn't exist in “proto_descriptor“,
-	// Envoy will fail at startup. The “proto_descriptor“ may contain more services than
+	// the transcoder will translate. If the service name doesn't exist in `proto_descriptor`,
+	// Envoy will fail at startup. The `proto_descriptor` may contain more services than
 	// the service names specified here, but they won't be translated.
 	Services []string `protobuf:"bytes,2,rep,name=services,proto3" json:"services,omitempty"`
 	// Control options for response JSON. These options are passed directly to
-	// `JsonPrintOptions <https://developers.google.com/protocol-buffers/docs/reference/cpp/
-	// google.protobuf.util.json_util#JsonPrintOptions>`_.
+	// [JsonPrintOptions](https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.util.json_util#JsonPrintOptions).
 	PrintOptions *GrpcJsonTranscoder_PrintOptions `protobuf:"bytes,3,opt,name=print_options,json=printOptions,proto3" json:"print_options,omitempty"`
 	// Set this value to true to keep the incoming request route after the outgoing headers are transformed to match the upstream gRPC service.
 	// Note that you cannot set this value to true with routes for gRPC services that are not transcoded.
@@ -75,11 +74,11 @@ type GrpcJsonTranscoder struct {
 	//
 	//	message Shelf {}
 	//
-	// The request “/shelves/100?foo=bar“ will not be mapped to “GetShelf``` because variable
-	// binding for “foo“ is not defined. Adding “foo“ to “ignored_query_parameters“ will allow
-	// the same request to be mapped to “GetShelf“.
+	// The request `/shelves/100?foo=bar` will not be mapped to `GetShelf` because variable
+	// binding for `foo` is not defined. Adding `foo` to `ignored_query_parameters` will allow
+	// the same request to be mapped to `GetShelf`.
 	IgnoredQueryParameters []string `protobuf:"bytes,6,rep,name=ignored_query_parameters,json=ignoredQueryParameters,proto3" json:"ignored_query_parameters,omitempty"`
-	// Whether to route methods without the “google.api.http“ option.
+	// Whether to route methods without the `google.api.http` option.
 	//
 	// Example :
 	//
@@ -97,20 +96,20 @@ type GrpcJsonTranscoder struct {
 	//
 	//	message Shelf {}
 	//
-	// The client could “post“ a json body “{"shelf": 1234}“ with the path of
-	// “/bookstore.Bookstore/GetShelfRequest“ to call “GetShelfRequest“.
+	// The client could `post` a json body `{"shelf": 1234}` with the path of
+	// `/bookstore.Bookstore/GetShelfRequest` to call `GetShelfRequest`.
 	AutoMapping bool `protobuf:"varint,7,opt,name=auto_mapping,json=autoMapping,proto3" json:"auto_mapping,omitempty"`
 	// Whether to ignore query parameters that cannot be mapped to a corresponding
 	// protobuf field. Use this if you cannot control the query parameters and do
-	// not know them beforehand. Otherwise use “ignored_query_parameters“.
+	// not know them beforehand. Otherwise use `ignored_query_parameters`.
 	// Defaults to false.
 	IgnoreUnknownQueryParameters bool `protobuf:"varint,8,opt,name=ignore_unknown_query_parameters,json=ignoreUnknownQueryParameters,proto3" json:"ignore_unknown_query_parameters,omitempty"`
 	// Whether to convert gRPC status headers to JSON.
-	// When trailer indicates a gRPC error and there was no HTTP body, take “google.rpc.Status“
-	// from the “grpc-status-details-bin“ header and use it as JSON body.
-	// If there was no such header, make “google.rpc.Status“ out of the “grpc-status“ and
-	// “grpc-message“ headers.
-	// The error details types must be present in the “proto_descriptor“.
+	// When trailer indicates a gRPC error and there was no HTTP body, take `google.rpc.Status`
+	// from the `grpc-status-details-bin` header and use it as JSON body.
+	// If there was no such header, make `google.rpc.Status` out of the `grpc-status` and
+	// `grpc-message` headers.
+	// The error details types must be present in the `proto_descriptor`.
 	//
 	// For example, if an upstream server replies with headers:
 	//
@@ -120,8 +119,8 @@ type GrpcJsonTranscoder struct {
 	//	grpc-status-details-bin:
 	//	    CAUaMwoqdHlwZS5nb29nbGVhcGlzLmNvbS9nb29nbGUucnBjLlJlcXVlc3RJbmZvEgUKA3ItMQ
 	//
-	// The “grpc-status-details-bin“ header contains a base64-encoded protobuf message
-	// “google.rpc.Status“. It will be transcoded into:
+	// The `grpc-status-details-bin` header contains a base64-encoded protobuf message
+	// `google.rpc.Status`. It will be transcoded into:
 	//
 	// .. code-block:: none
 	//
@@ -130,9 +129,9 @@ type GrpcJsonTranscoder struct {
 	//
 	//	   {"code":5,"details":[{"@type":"type.googleapis.com/google.rpc.RequestInfo","requestId":"r-1"}]}
 	//
-	//	In order to transcode the message, the ``google.rpc.RequestInfo`` type from
-	//	the ``google/rpc/error_details.proto`` should be included in the configured
-	//	:ref:`proto descriptor set <config_grpc_json_generate_proto_descriptor_set>`.
+	//	In order to transcode the message, the `google.rpc.RequestInfo` type from
+	//	the `google/rpc/error_details.proto` should be included in the configured
+	//	proto descriptor set.
 	ConvertGrpcStatus bool `protobuf:"varint,9,opt,name=convert_grpc_status,json=convertGrpcStatus,proto3" json:"convert_grpc_status,omitempty"`
 }
 
@@ -290,7 +289,7 @@ type GrpcJsonTranscoder_PrintOptions struct {
 	// as strings. Defaults to false.
 	AlwaysPrintEnumsAsInts bool `protobuf:"varint,3,opt,name=always_print_enums_as_ints,json=alwaysPrintEnumsAsInts,proto3" json:"always_print_enums_as_ints,omitempty"`
 	// Whether to preserve proto field names. By default protobuf will
-	// generate JSON field names using the “json_name“ option, or lower camel case,
+	// generate JSON field names using the `json_name` option, or lower camel case,
 	// in that order. Setting this flag will preserve the original field names. Defaults to false.
 	PreserveProtoFieldNames bool `protobuf:"varint,4,opt,name=preserve_proto_field_names,json=preserveProtoFieldNames,proto3" json:"preserve_proto_field_names,omitempty"`
 }
