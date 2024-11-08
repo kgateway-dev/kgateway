@@ -2,6 +2,7 @@ package krtcollections
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"hash/fnv"
 
@@ -52,23 +53,27 @@ type EndpointsInputs struct {
 	Pods              krt.Collection[LocalityPod]
 	EndpointsSettings krt.Singleton[EndpointsSettings]
 	Services          krt.Collection[*corev1.Service]
+
+	Debugger *krt.DebugHandler
 }
 
 func NewGlooK8sEndpointInputs(
 	settings krt.Singleton[glookubev1.Settings],
 	istioClient kube.Client,
+	dbg *krt.DebugHandler,
 	pods krt.Collection[LocalityPod],
 	services krt.Collection[*corev1.Service],
 	finalUpstreams krt.Collection[UpstreamWrapper],
 ) EndpointsInputs {
+	withDebug := krt.WithDebugging(dbg)
 	epClient := kclient.New[*corev1.Endpoints](istioClient)
-	kubeEndpoints := krt.WrapClient(epClient, krt.WithName("Endpoints"))
+	kubeEndpoints := krt.WrapClient(epClient, krt.WithName("Endpoints"), withDebug)
 	endpointSettings := krt.NewSingleton(func(ctx krt.HandlerContext) *EndpointsSettings {
 		settings := krt.FetchOne(ctx, settings.AsCollection())
 		return &EndpointsSettings{
 			EnableAutoMtls: settings.Spec.GetGloo().GetIstioOptions().GetEnableAutoMtls().GetValue(),
 		}
-	})
+	}, withDebug)
 
 	return EndpointsInputs{
 		Upstreams:         finalUpstreams,
@@ -76,6 +81,7 @@ func NewGlooK8sEndpointInputs(
 		Pods:              pods,
 		EndpointsSettings: endpointSettings,
 		Services:          services,
+		Debugger:          dbg,
 	}
 }
 
@@ -83,13 +89,28 @@ type EndpointWithMd struct {
 	*envoy_config_endpoint_v3.LbEndpoint
 	EndpointMd EndpointMetadata
 }
+
+type LocalityLbMap map[PodLocality][]EndpointWithMd
+
+// MarshalJSON implements json.Marshaler. for krt.DebugHandler
+func (l LocalityLbMap) MarshalJSON() ([]byte, error) {
+	out := map[string][]EndpointWithMd{}
+	for locality, eps := range l {
+		out[locality.String()] = eps
+	}
+	return json.Marshal(out)
+}
+
+var _ json.Marshaler = LocalityLbMap{}
+
 type EndpointsForUpstream struct {
-	LbEps       map[PodLocality][]EndpointWithMd
+	LbEps LocalityLbMap
+	// Note - in theory, cluster name should be a function of the UpstreamRef.
+	// But due to an upstream envoy bug, the cluster name also includes the upstream hash.
 	ClusterName string
 	UpstreamRef types.NamespacedName
 	Port        uint32
 	Hostname    string
-	clusterName string
 
 	LbEpsEqualityHash uint64
 }
@@ -112,7 +133,6 @@ func NewEndpointsForUpstream(us UpstreamWrapper, logger *zap.Logger) *EndpointsF
 		},
 		Port:              ggv2utils.GetPortForUpstream(us.Inner),
 		Hostname:          ggv2utils.GetHostnameForUpstream(us.Inner),
-		clusterName:       clusterName,
 		LbEpsEqualityHash: lbEpsEqualityHash,
 	}
 }
@@ -140,11 +160,11 @@ func (c EndpointsForUpstream) ResourceName() string {
 }
 
 func (c EndpointsForUpstream) Equals(in EndpointsForUpstream) bool {
-	return c.UpstreamRef == in.UpstreamRef && c.Port == in.Port && c.LbEpsEqualityHash == in.LbEpsEqualityHash && c.Hostname == in.Hostname
+	return c.UpstreamRef == in.UpstreamRef && c.ClusterName == in.ClusterName && c.Port == in.Port && c.LbEpsEqualityHash == in.LbEpsEqualityHash && c.Hostname == in.Hostname
 }
 
 func NewGlooK8sEndpoints(ctx context.Context, inputs EndpointsInputs) krt.Collection[EndpointsForUpstream] {
-	return krt.NewCollection(inputs.Upstreams, transformK8sEndpoints(ctx, inputs), krt.WithName("GlooK8sEndpoints"))
+	return krt.NewCollection(inputs.Upstreams, transformK8sEndpoints(ctx, inputs), krt.WithName("GlooK8sEndpoints"), krt.WithDebugging(inputs.Debugger))
 }
 
 func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kctx krt.HandlerContext, us UpstreamWrapper) *EndpointsForUpstream {

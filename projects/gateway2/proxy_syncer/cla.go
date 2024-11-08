@@ -104,7 +104,7 @@ func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerConte
 	return krt.Fetch(kctx, ie.endpoints, krt.FilterIndex(ie.index, ucc.ResourceName()))
 }
 
-func NewPerClientEnvoyEndpoints(logger *zap.Logger, uccs krt.Collection[krtcollections.UniqlyConnectedClient],
+func NewPerClientEnvoyEndpoints(logger *zap.Logger, dbg *krt.DebugHandler, uccs krt.Collection[krtcollections.UniqlyConnectedClient],
 	glooEndpoints krt.Collection[krtcollections.EndpointsForUpstream],
 	destinationRulesIndex DestinationRuleIndex,
 ) PerClientEnvoyEndpoints {
@@ -117,7 +117,7 @@ func NewPerClientEnvoyEndpoints(logger *zap.Logger, uccs krt.Collection[krtcolle
 			uccWithEndpointsRet = append(uccWithEndpointsRet, uccWithEp)
 		}
 		return uccWithEndpointsRet
-	})
+	}, krt.WithName("PerClientEnvoyEndpoints"), krt.WithDebugging(dbg))
 	idx := krt.NewIndex(clas, func(ucc UccWithEndpoints) []string {
 		return []string{ucc.Client.ResourceName()}
 	})

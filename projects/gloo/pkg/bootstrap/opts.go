@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
+	"istio.io/istio/pkg/kube/krt"
 
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -33,6 +34,8 @@ type SetupOpts struct {
 	ExtraGatewayClasses []string
 	ExtraCallbacks      xdsserver.Callbacks
 
+	KrtDebugger *krt.DebugHandler
+
 	xdsHost    string
 	xdsPort    int32
 	setXdsOnce sync.Once
@@ -43,6 +46,7 @@ func NewSetupOpts(cache cache.SnapshotCache, cb xdsserver.Callbacks) *SetupOpts 
 	return &SetupOpts{
 		Cache:          cache,
 		ExtraCallbacks: cb,
+		KrtDebugger:    new(krt.DebugHandler),
 		xdsSet:         make(chan struct{}),
 	}
 }
@@ -104,6 +108,7 @@ type Opts struct {
 
 	GlooGateway         GlooGateway
 	ProxyReconcileQueue ggv2utils.AsyncQueue[v1.ProxyList]
+	KrtDebugger         *krt.DebugHandler
 }
 
 type IstioValues struct {
