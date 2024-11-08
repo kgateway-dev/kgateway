@@ -14,7 +14,7 @@ import (
 const (
 	InputSnapshotPath = "/snapshots/input"
 
-	DefaultAdminPort = 9091
+	DefaultAdminPort = 9095
 )
 
 // Client is a utility for executing requests against the Gloo Admin API
