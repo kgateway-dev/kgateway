@@ -438,14 +438,14 @@ type isGrpcDescriptorRegistry_DescriptorSet interface {
 
 type GrpcDescriptorRegistry_ProtoDescriptor struct {
 	// Supplies the filename of
-	// :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC
+	// the proto descriptor set for the gRPC
 	// services.
 	ProtoDescriptor string `protobuf:"bytes,1,opt,name=proto_descriptor,json=protoDescriptor,proto3,oneof"`
 }
 
 type GrpcDescriptorRegistry_ProtoDescriptorBin struct {
 	// Supplies the binary content of
-	// :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC
+	// the proto descriptor set for the gRPC
 	// services.
 	// Note: in yaml, this must be provided as a base64 standard encoded string; yaml cannot handle binary bytes
 	ProtoDescriptorBin []byte `protobuf:"bytes,2,opt,name=proto_descriptor_bin,json=protoDescriptorBin,proto3,oneof"`

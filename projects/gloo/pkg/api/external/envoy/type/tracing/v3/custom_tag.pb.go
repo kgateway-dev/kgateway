@@ -313,9 +313,9 @@ func (x *CustomTag_Header) GetDefaultValue() string {
 }
 
 // Metadata type custom tag using
-// :ref:`MetadataKey <envoy_api_msg_type.metadata.v3.MetadataKey>` to retrieve the protobuf value
-// from :ref:`Metadata <envoy_api_msg_config.core.v3.Metadata>`, and populate the tag value with
-// `the canonical JSON <https://developers.google.com/protocol-buffers/docs/proto3#json>`_
+// MetadataKey to retrieve the protobuf value
+// from Metadata, and populate the tag value with
+// [the canonical JSON](https://developers.google.com/protocol-buffers/docs/proto3#json)
 // representation of it.
 type CustomTag_Metadata struct {
 	state         protoimpl.MessageState

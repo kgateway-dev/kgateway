@@ -27,7 +27,7 @@ weight: 5
 
  
 CidrRange specifies an IP Address and a prefix length to construct
-the subnet mask for a `CIDR <https://datatracker.ietf.org/doc/html/rfc4632>`_ range.
+the subnet mask for a [CIDR](https://datatracker.ietf.org/doc/html/rfc4632) range.
 
 ```yaml
 "addressPrefix": string
@@ -37,7 +37,7 @@ the subnet mask for a `CIDR <https://datatracker.ietf.org/doc/html/rfc4632>`_ ra
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `addressPrefix` | `string` | IPv4 or IPv6 address, e.g. ``192.0.0.0`` or ``2001:db8::``. |
+| `addressPrefix` | `string` | IPv4 or IPv6 address, e.g. `192.0.0.0` or `2001:db8::`. |
 | `prefixLen` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Length of prefix, e.g. 0, 32. Defaults to 0 when unset. |
 
 

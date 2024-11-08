@@ -18,18 +18,20 @@ Gloo Edge is a high-performance, plugin-extendable, platform-agnostic API Gatewa
 ### API Resources:
 Gateway
 - Gateway: {{< protobuf name="gateway.solo.io.Gateway" >}}
-- HTTP Gateway: {{< protobuf name="gateway.solo.io.HttpGateway" >}}
-- TCP Gateway: {{< protobuf name="gateway.solo.io.TcpGateway" >}}
+- HTTPGateway: {{< protobuf name="gateway.solo.io.HttpGateway" >}}
+- HTTPListenerOptions: {{< protobuf name="gloo.solo.io.HTTPListenerOptions" >}}
+- ListenerOptions: {{< protobuf name="gloo.solo.io.ListenerOptions" >}}
+- TCPGateway: {{< protobuf name="gateway.solo.io.TcpGateway" >}}
 
 Settings
 - Settings: {{< protobuf name="gloo.solo.io.Settings" >}}
 
 Routing
 - VirtualService: {{< protobuf name="gateway.solo.io.VirtualService" >}}
-  - Options: {{< protobuf name="gloo.solo.io.VirtualHostOptions" >}}
+- VirtualHostOptions: {{< protobuf name="gloo.solo.io.VirtualHostOptions" >}}
 - RouteTable: {{< protobuf name="gateway.solo.io.RouteTable" >}}
 - Routes: {{< protobuf name="gateway.solo.io.Route" >}} 
-  - Options: {{< protobuf name="gloo.solo.io.RouteOptions" >}}
+- RouteOptions: {{< protobuf name="gloo.solo.io.RouteOptions" >}}
 - Upstream: {{< protobuf name="gloo.solo.io.Upstream" >}}
 
 ExtAuth
