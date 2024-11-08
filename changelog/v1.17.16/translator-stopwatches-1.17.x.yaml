@@ -9,3 +9,6 @@ changelog:
       https://github.com/solo-io/gloo/pull/10243 - that pull request lacked a
       changelog. This pull request simply adds the changelog entry that was
       missing from the other pull request.
+
+      skipCI-kube-tests
+      skipCI-docs-build
