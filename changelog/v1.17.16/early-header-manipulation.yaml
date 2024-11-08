@@ -18,5 +18,5 @@ changelog:
     dependencyRepo: envoy-gloo
     dependencyTag: 1.30.6-patch5
     description: >
-      Bumped the Envoy version to 1.31.2-patch3.
+      Bumped the Envoy version to 1.30.6-patch5
       Needed the Early Header Manipulation extensions enabled.
