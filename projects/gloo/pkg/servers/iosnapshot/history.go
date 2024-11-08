@@ -186,7 +186,7 @@ func (h *historyImpl) GetXdsSnapshot(_ context.Context) SnapshotResponseData {
 	cacheEntries := make(map[string]interface{}, len(cacheKeys))
 
 	for _, k := range cacheKeys {
-		xdsSnapshot, err := h.xdsCache.GetSnapshot(k)
+		xdsSnapshot, err := h.getXdsSnapshot(k)
 		if err != nil {
 			cacheEntries[k] = err.Error()
 		} else {
@@ -195,6 +195,15 @@ func (h *historyImpl) GetXdsSnapshot(_ context.Context) SnapshotResponseData {
 	}
 
 	return completeSnapshotResponse(cacheEntries)
+}
+
+func (h *historyImpl) getXdsSnapshot(k string) (cache cache.Snapshot, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = eris.New(fmt.Sprintf("panic occurred while getting xds snapshot: %v", r))
+		}
+	}()
+	return h.xdsCache.GetSnapshot(k)
 }
 
 // getRedactedApiSnapshot gets an in-memory copy of the ApiSnapshot

@@ -30,12 +30,21 @@ entries:
   gloo-ee:
   - apiVersion: v1
     version: 0.19.1
+    name: test
+
   - apiVersion: v1
     version: 0.10.1
+    name: test
+
   - apiVersion: v1
     version: 0.9.1
+    name: test
+
   - apiVersion: v1
-    version: 0.8.1`
+    version: 0.8.1
+    name: test
+`
+
 		tmpFile, err := afero.TempFile(fs, dir, "")
 		Expect(err).NotTo(HaveOccurred())
 		_, err = tmpFile.WriteString(fileString)
@@ -52,10 +61,17 @@ entries:
   gloo-ee:
   - apiVersion: v1
     version: 1.0.0-rc2
+    name: test
+
   - apiVersion: v1
     version: 1.0.0-rc1
+    name: test
+
   - apiVersion: v1
-    version: 0.20.1`
+    version: 0.20.1
+    name: test
+`
+
 		tmpFile, err := afero.TempFile(fs, dir, "")
 		Expect(err).NotTo(HaveOccurred())
 		_, err = tmpFile.WriteString(fileString)
@@ -72,10 +88,17 @@ entries:
   gloo-ee:
   - apiVersion: v1
     version: 1.0.0-rc2
+    name: test
+
   - apiVersion: v1
     version: 1.0.0-rc1
+    name: test
+
   - apiVersion: v1
-    version: 0.20.1`
+    version: 0.20.1
+    name: test
+`
+
 		tmpFile, err := afero.TempFile(fs, dir, "")
 		Expect(err).NotTo(HaveOccurred())
 		_, err = tmpFile.WriteString(fileString)
@@ -92,16 +115,29 @@ entries:
   gloo-ee:
   - apiVersion: v1
     version: 1.2.0
+    name: test
+
   - apiVersion: v1
     version: 1.1.0
+    name: test
+
   - apiVersion: v1
     version: 1.0.0
+    name: test
+
   - apiVersion: v1
     version: 1.0.0-rc2
+    name: test
+
   - apiVersion: v1
     version: 1.0.0-rc1
+    name: test
+
   - apiVersion: v1
-    version: 0.20.1`
+    version: 0.20.1
+    name: test
+`
+
 		tmpFile, err := afero.TempFile(fs, dir, "")
 		Expect(err).NotTo(HaveOccurred())
 		_, err = tmpFile.WriteString(fileString)
