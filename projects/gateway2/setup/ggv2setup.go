@@ -158,7 +158,7 @@ func StartGGv2WithConfig(ctx context.Context,
 
 		InitialSettings: initialSettings,
 		Settings:        settingsSingle,
-		// Useful for development purposes; not currently tied to any user-facing API
+		// Dev flag may be useful for development purposes; not currently tied to any user-facing API
 		Dev:      false,
 		Debugger: setupOpts.KrtDebugger,
 	})
