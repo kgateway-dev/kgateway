@@ -536,7 +536,6 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 				logger.Debug("context done, stopping proxy syncer")
 				return
 			case <-timer.C:
-				logger.Debug("syncing status plugins")
 				snaps := s.mostXdsSnapshots.List()
 				for _, snapWrap := range snaps {
 					var proxiesWithReports []translatorutils.ProxyWithReports
