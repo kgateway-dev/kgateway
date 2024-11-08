@@ -2,6 +2,7 @@ package proxy_syncer
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
@@ -200,6 +201,34 @@ func (p xdsSnapWrapper) ResourceName() string {
 	return p.proxyKey
 }
 
+type RedactedSecret krtcollections.ResourceWrapper[*gloov1.Secret]
+
+func (us RedactedSecret) ResourceName() string {
+	return (krtcollections.ResourceWrapper[*gloov1.Secret](us)).ResourceName()
+}
+func (us RedactedSecret) Equals(in RedactedSecret) bool {
+	return proto.Equal(us.Inner, in.Inner)
+}
+
+var _ krt.ResourceNamer = RedactedSecret{}
+var _ krt.Equaler[RedactedSecret] = RedactedSecret{}
+
+func (l RedactedSecret) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Name      string
+		Namespace string
+		Kind      string
+		Data      string
+	}{
+		Name:      l.Inner.GetMetadata().GetName(),
+		Namespace: l.Inner.GetMetadata().GetNamespace(),
+		Kind:      fmt.Sprintf("%T", l.Inner.GetKind()),
+		Data:      "[REDACTED]",
+	})
+}
+
+var _ json.Marshaler = RedactedSecret{}
+
 type glooProxy struct {
 	proxy *gloov1.Proxy
 	// plugins used to generate this proxy
@@ -269,9 +298,10 @@ func (p proxyList) Equals(in proxyList) bool {
 	})
 }
 
-func (s *ProxySyncer) Init(ctx context.Context) error {
+func (s *ProxySyncer) Init(ctx context.Context, dbg *krt.DebugHandler) error {
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
 	logger := contextutils.LoggerFrom(ctx)
+	withDebug := krt.WithDebugging(dbg)
 
 	configMapClient := kclient.NewFiltered[*corev1.ConfigMap](s.istioClient, kclient.Filter{
 		ObjectTransform: func(obj any) (any, error) {
@@ -286,16 +316,16 @@ func (s *ProxySyncer) Init(ctx context.Context) error {
 			t.GetObjectMeta().SetAnnotations(nil)
 			return obj, nil
 		}})
-	configMaps := krt.WrapClient(configMapClient, krt.WithName("ConfigMaps"))
+	configMaps := krt.WrapClient(configMapClient, krt.WithName("ConfigMaps"), withDebug)
 
 	secretClient := kclient.New[*corev1.Secret](s.istioClient)
-	k8sSecrets := krt.WrapClient(secretClient, krt.WithName("Secrets"))
+	k8sSecrets := krt.WrapClient(secretClient, krt.WithName("Secrets") /* no debug here - we don't want raw secrets printed*/)
 	legacySecretClient := &kubesecret.ResourceClient{
 		KubeCoreResourceClient: common.KubeCoreResourceClient{
 			ResourceType: &gloov1.Secret{},
 		},
 	}
-	secrets := krt.NewCollection(k8sSecrets, func(kctx krt.HandlerContext, i *corev1.Secret) *krtcollections.ResourceWrapper[*gloov1.Secret] {
+	secrets := krt.NewCollection(k8sSecrets, func(kctx krt.HandlerContext, i *corev1.Secret) *RedactedSecret {
 		secret, err := kubeconverters.GlooSecretConverterChain.FromKubeSecret(ctx, legacySecretClient, i)
 		if err != nil {
 			logger.Errorf(
@@ -307,29 +337,29 @@ func (s *ProxySyncer) Init(ctx context.Context) error {
 			return nil
 		}
 		// this must be a gloov1 secret, we accept a panic if not
-		res := krtcollections.ResourceWrapper[*gloov1.Secret]{Inner: secret.(*gloov1.Secret)}
+		res := RedactedSecret{Inner: secret.(*gloov1.Secret)}
 		return &res
-	})
+	}, withDebug)
 
 	authConfigs := SetupCollectionDynamic[extauthkubev1.AuthConfig](
 		ctx,
 		s.istioClient,
 		extauthkubev1.SchemeGroupVersion.WithResource("authconfigs"),
-		krt.WithName("KubeAuthConfigs"),
+		krt.WithName("KubeAuthConfigs"), withDebug,
 	)
 
 	rlConfigs := SetupCollectionDynamic[rlkubev1a1.RateLimitConfig](
 		ctx,
 		s.istioClient,
 		rlkubev1a1.SchemeGroupVersion.WithResource("ratelimitconfigs"),
-		krt.WithName("KubeRateLimitConfigs"),
+		krt.WithName("KubeRateLimitConfwithDebug,igs"),
 	)
 
 	upstreams := SetupCollectionDynamic[glookubev1.Upstream](
 		ctx,
 		s.istioClient,
 		glookubev1.SchemeGroupVersion.WithResource("upstreams"),
-		krt.WithName("KubeUpstreams"),
+		krt.WithName("KubeUpstreams"), withDebug,
 	)
 
 	// helper collection to map from the runtime.Object Upstream representation to the gloov1.Upstream wrapper
@@ -342,10 +372,10 @@ func (s *ProxySyncer) Init(ctx context.Context) error {
 		glooUs.SetMetadata(&md)
 		us := &krtcollections.UpstreamWrapper{Inner: glooUs}
 		return us
-	}, krt.WithName("GlooUpstreams"))
+	}, krt.WithName("GlooUpstreams"), withDebug)
 
 	serviceClient := kclient.New[*corev1.Service](s.istioClient)
-	services := krt.WrapClient(serviceClient, krt.WithName("Services"))
+	services := krt.WrapClient(serviceClient, krt.WithName("Services"), withDebug)
 
 	k8sServiceUpstreams := krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []krtcollections.UpstreamWrapper {
 		uss := []krtcollections.UpstreamWrapper{}
@@ -354,7 +384,7 @@ func (s *ProxySyncer) Init(ctx context.Context) error {
 			uss = append(uss, krtcollections.UpstreamWrapper{Inner: us})
 		}
 		return uss
-	}, krt.WithName("KubernetesServiceUpstreams"))
+	}, krt.WithName("KubernetesServiceUpstreams"), withDebug)
 
 	finalUpstreams := krt.JoinCollection(append(
 		[]krt.Collection[krtcollections.UpstreamWrapper]{
@@ -362,9 +392,9 @@ func (s *ProxySyncer) Init(ctx context.Context) error {
 			k8sServiceUpstreams,
 		},
 		s.k8sGwExtensions.KRTExtensions().Upstreams()...,
-	))
+	), withDebug, krt.WithName("FinalUpstreams"))
 
-	inputs := krtcollections.NewGlooK8sEndpointInputs(s.proxyTranslator.settings, s.istioClient, s.augmentedPods, services, finalUpstreams)
+	inputs := krtcollections.NewGlooK8sEndpointInputs(s.proxyTranslator.settings, s.istioClient, dbg, s.augmentedPods, services, finalUpstreams)
 
 	// build Endpoint intermediate representation from kubernetes service and extensions
 	// TODO move kube service to be an extension
@@ -372,7 +402,7 @@ func (s *ProxySyncer) Init(ctx context.Context) error {
 		krtcollections.NewGlooK8sEndpoints(ctx, inputs),
 	},
 		s.k8sGwExtensions.KRTExtensions().Endpoints()...,
-	))
+	), withDebug, krt.WithName("EndpointIRs"))
 
 	clas := newEnvoyEndpoints(endpointIRs)
 
@@ -380,7 +410,7 @@ func (s *ProxySyncer) Init(ctx context.Context) error {
 		ctx,
 		s.istioClient,
 		istiogvr.KubernetesGateway_v1,
-		krt.WithName("KubeGateways"),
+		krt.WithName("KubeGateways"), withDebug,
 	)
 
 	// alternatively we could start as not synced, and mark ready once ctrl-runtime caches are synced
@@ -391,7 +421,7 @@ func (s *ProxySyncer) Init(ctx context.Context) error {
 		s.proxyTrigger.MarkDependant(kctx)
 		proxy := s.buildProxy(ctx, gw)
 		return proxy
-	})
+	}, withDebug, krt.WithName("GlooProxies"))
 	s.mostXdsSnapshots = krt.NewCollection(glooProxies, func(kctx krt.HandlerContext, proxy glooProxy) *xdsSnapWrapper {
 		// we are recomputing xds snapshots as proxies have changed, signal that we need to sync xds with these new snapshots
 		xdsSnap := s.translateProxy(
@@ -407,16 +437,16 @@ func (s *ProxySyncer) Init(ctx context.Context) error {
 			rlConfigs,
 		)
 		return xdsSnap
-	})
+	}, withDebug, krt.WithName("MostXdsSnapshots"))
 
 	if s.initialSettings.Spec.GetGloo().GetIstioOptions().GetEnableIntegration().GetValue() {
-		s.destRules = NewDestRuleIndex(s.istioClient)
+		s.destRules = NewDestRuleIndex(s.istioClient, dbg)
 	} else {
 		s.destRules = NewEmptyDestRuleIndex()
 	}
-	epPerClient := NewPerClientEnvoyEndpoints(logger.Desugar(), s.uniqueClients, endpointIRs, s.destRules)
-	clustersPerClient := NewPerClientEnvoyClusters(ctx, s.translator, finalUpstreams, s.uniqueClients, secrets, s.proxyTranslator.settings, s.destRules)
-	s.perclientSnapCollection = snapshotPerClient(logger.Desugar(), s.uniqueClients, s.mostXdsSnapshots, epPerClient, clustersPerClient)
+	epPerClient := NewPerClientEnvoyEndpoints(logger.Desugar(), dbg, s.uniqueClients, endpointIRs, s.destRules)
+	clustersPerClient := NewPerClientEnvoyClusters(ctx, dbg, s.translator, finalUpstreams, s.uniqueClients, secrets, s.proxyTranslator.settings, s.destRules)
+	s.perclientSnapCollection = snapshotPerClient(logger.Desugar(), dbg, s.uniqueClients, s.mostXdsSnapshots, epPerClient, clustersPerClient)
 
 	// build ProxyList collection as glooProxies change
 	proxiesToReconcile := krt.NewSingleton(func(kctx krt.HandlerContext) *proxyList {
@@ -652,7 +682,7 @@ func (s *ProxySyncer) translateProxy(
 	proxy *glooProxy,
 	kcm krt.Collection[*corev1.ConfigMap],
 	kep krt.Collection[EndpointResources],
-	ks krt.Collection[krtcollections.ResourceWrapper[*gloov1.Secret]],
+	ks krt.Collection[RedactedSecret],
 	kus krt.Collection[krtcollections.UpstreamWrapper],
 	authConfigs krt.Collection[*extauthkubev1.AuthConfig],
 	rlConfigs krt.Collection[*rlkubev1a1.RateLimitConfig],

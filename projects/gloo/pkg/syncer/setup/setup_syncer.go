@@ -450,6 +450,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	opts.KubeClient = clientset
 	opts.DevMode = settings.GetDevMode()
 	opts.Settings = settings
+	opts.KrtDebugger = s.setupOpts.KrtDebugger
 
 	opts.Consul.DnsServer = settings.GetConsul().GetDnsAddress()
 	if len(opts.Consul.DnsServer) == 0 {
@@ -903,7 +904,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		EnableK8sGatewayIntegration: opts.GlooGateway.EnableK8sGatewayController,
 	})
 
-	startFuncs["admin-server"] = AdminServerStartFunc(snapshotHistory)
+	startFuncs["admin-server"] = AdminServerStartFunc(snapshotHistory, opts.KrtDebugger)
 
 	if opts.ProxyReconcileQueue != nil {
 		go runQueue(watchOpts.Ctx, opts.ProxyReconcileQueue, opts.WriteNamespace, proxyClient)

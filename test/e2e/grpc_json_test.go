@@ -26,7 +26,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
-	glootest "github.com/solo-io/gloo/test/v1helpers/test_grpc_service/glootest/protos"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -91,7 +90,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 		}
 		expectedResp := `{"str":"foo"}`
 		expectedFields := Fields{
-			"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
+			"GRPCRequest": PointTo(MatchFields(IgnoreExtras, Fields{"Str": Equal("foo")})),
 		}
 		if shouldMatch {
 			EventuallyWithOffset(1, func(g Gomega) {
