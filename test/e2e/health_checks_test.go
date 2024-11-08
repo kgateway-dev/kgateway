@@ -186,7 +186,7 @@ var _ = Describe("Health Checks", func() {
 				Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
 
 				Eventually(tu.C, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
-					"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
+					"GRPCRequest": PointTo(MatchFields(IgnoreExtras, Fields{"Str": Equal("foo")})),
 				}))))
 			})
 		}
