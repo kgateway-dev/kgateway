@@ -41,6 +41,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 "proxyProtocol": .proxy_protocol.options.gloo.solo.io.ProxyProtocol
 "connectionBalanceConfig": .gloo.solo.io.ConnectionBalanceConfig
 "listenerAccessLoggingService": .als.options.gloo.solo.io.AccessLoggingService
+"tcpStats": .google.protobuf.BoolValue
 
 ```
 
@@ -53,6 +54,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 | `proxyProtocol` | [.proxy_protocol.options.gloo.solo.io.ProxyProtocol](../options/proxy_protocol/proxy_protocol.proto.sk/#proxyprotocol) | Enable ProxyProtocol support for this listener. |
 | `connectionBalanceConfig` | [.gloo.solo.io.ConnectionBalanceConfig](../listener_options.proto.sk/#connectionbalanceconfig) | Configuration for listener connection balancing. |
 | `listenerAccessLoggingService` | [.als.options.gloo.solo.io.AccessLoggingService](../options/als/als.proto.sk/#accessloggingservice) | If enabled this sets up an early access logging service for the listener. Added initially to support listener level logging for HTTP listeners. For more info see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener.proto#envoy-v3-api-field-config-listener-v3-listener-access-log. |
+| `tcpStats` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, will wrap all filter chains in the listener with a TCP stats transport socket, which is a passthrough listener that can report low-level Linux TCP stats, useful for diagnosis and triage. |
 
 
 

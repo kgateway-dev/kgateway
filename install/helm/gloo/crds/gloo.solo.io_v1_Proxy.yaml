@@ -459,6 +459,9 @@ spec:
                                 x-kubernetes-int-or-string: true
                             type: object
                           type: array
+                        tcpStats:
+                          nullable: true
+                          type: boolean
                       type: object
                     routeOptions:
                       properties:
