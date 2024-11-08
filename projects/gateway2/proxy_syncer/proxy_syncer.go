@@ -2,6 +2,7 @@ package proxy_syncer
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
@@ -200,6 +201,24 @@ func (p xdsSnapWrapper) ResourceName() string {
 	return p.proxyKey
 }
 
+type RedactedSecret krtcollections.ResourceWrapper[*gloov1.Secret]
+
+func (l RedactedSecret) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Name      string
+		Namespace string
+		Kind      string
+		Data      string
+	}{
+		Name:      l.Inner.Metadata.Name,
+		Namespace: l.Inner.Metadata.Namespace,
+		Kind:      fmt.Sprintf("%T", l.Inner.Kind),
+		Data:      "[REDACTED]",
+	})
+}
+
+var _ json.Marshaler = RedactedSecret{}
+
 type glooProxy struct {
 	proxy *gloov1.Proxy
 	// plugins used to generate this proxy
@@ -296,7 +315,7 @@ func (s *ProxySyncer) Init(ctx context.Context, dbg *krt.DebugHandler) error {
 			ResourceType: &gloov1.Secret{},
 		},
 	}
-	secrets := krt.NewCollection(k8sSecrets, func(kctx krt.HandlerContext, i *corev1.Secret) *krtcollections.ResourceWrapper[*gloov1.Secret] {
+	secrets := krt.NewCollection(k8sSecrets, func(kctx krt.HandlerContext, i *corev1.Secret) *RedactedSecret {
 		secret, err := kubeconverters.GlooSecretConverterChain.FromKubeSecret(ctx, legacySecretClient, i)
 		if err != nil {
 			logger.Errorf(
@@ -308,7 +327,7 @@ func (s *ProxySyncer) Init(ctx context.Context, dbg *krt.DebugHandler) error {
 			return nil
 		}
 		// this must be a gloov1 secret, we accept a panic if not
-		res := krtcollections.ResourceWrapper[*gloov1.Secret]{Inner: secret.(*gloov1.Secret)}
+		res := RedactedSecret{Inner: secret.(*gloov1.Secret)}
 		return &res
 	}, withDebug)
 
