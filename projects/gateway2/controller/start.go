@@ -75,6 +75,8 @@ type StartConfig struct {
 
 	InitialSettings *glookubev1.Settings
 	Settings        krt.Singleton[glookubev1.Settings]
+
+	Debugger *krt.DebugHandler
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -177,7 +179,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.GlooStatusReporter,
 		cfg.SetupOpts.ProxyReconcileQueue,
 	)
-	proxySyncer.Init(ctx)
+	proxySyncer.Init(ctx, cfg.Debugger)
 
 	if err := mgr.Add(proxySyncer); err != nil {
 		setupLog.Error(err, "unable to add proxySyncer runnable")

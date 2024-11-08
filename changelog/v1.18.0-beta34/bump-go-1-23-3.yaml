@@ -1,0 +1,6 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  description: Bumped the go version to 1.23.3
+  dependencyOwner: golang
+  dependencyRepo: go
+  dependencyTag: v1.23.3
