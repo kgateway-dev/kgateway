@@ -104,7 +104,9 @@ func (l LocalityLbMap) MarshalJSON() ([]byte, error) {
 var _ json.Marshaler = LocalityLbMap{}
 
 type EndpointsForUpstream struct {
-	LbEps       LocalityLbMap
+	LbEps LocalityLbMap
+	// Note - in theory, cluster name should be a function of the UpstreamRef.
+	// But due to an upstream envoy bug, the cluster name also includes the upstream hash.
 	ClusterName string
 	UpstreamRef types.NamespacedName
 	Port        uint32
