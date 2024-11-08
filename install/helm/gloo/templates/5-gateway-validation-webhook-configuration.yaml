@@ -67,16 +67,13 @@ specific resources, we will manage the resources that the webhook receives via t
   failurePolicy: {{ .Values.gateway.validation.failurePolicy }}
 {{- end }} {{/* if .Values.gateway.validation.failurePolicy */}}
 
-
-
-{{/* Webhook for non-gloo resourcs - only render if we need to*/}}
-{{/* Can't use the include for these one because if the operations are empty, we need to drop the whole list element */}}
+{{/* Webhook for core resources - only render if we need to */}}
 {{- if and 
   (not (has "*" .Values.gateway.validation.webhook.skipDeleteValidationResources))
   (or (not (has "secrets" .Values.gateway.validation.webhook.skipDeleteValidationResources))
        (not (has "namespaces" .Values.gateway.validation.webhook.skipDeleteValidationResources)))
 }}
-- name: non-gloo.{{ .Release.Namespace }}.svc  # must be a domain with at least three segments separated by dots
+- name: kube.{{ .Release.Namespace }}.svc  # must be a domain with at least three segments separated by dots
   clientConfig:
     service:
       name: gloo
@@ -106,10 +103,9 @@ specific resources, we will manage the resources that the webhook receives via t
   admissionReviewVersions:
     - v1beta1 # v1beta1 still live in 1.22 https://github.com/kubernetes/api/blob/release-1.22/admission/v1beta1/types.go#L33
 {{- if .Values.gateway.validation.failurePolicy }}
-  failurePolicy: {{ .Values.gateway.validation.nonGlooFailurePolicy }}
+  failurePolicy: {{ .Values.gateway.validation.kubeCoreFailurePolicy }}
 {{- end }} {{/* if .Values.gateway.validation.failurePolicy */}}
 {{- end }} {{/* render webhook if */}}
-
 
 {{- end }} {{/* if and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.validation.webhook.enabled */}}
 {{- end }} {{/* define "gateway.validationWebhookSpec" */}}

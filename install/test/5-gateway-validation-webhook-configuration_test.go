@@ -180,16 +180,16 @@ var _ = Describe("WebhookValidationConfiguration helm test", func() {
 
 func generateExpectedChart(timeoutSeconds int, skipDeletes []string, expectedDeletes int) *unstructured.Unstructured {
 	GinkgoHelper()
-	glooRules, nonGlooRules := generateRules(skipDeletes)
+	glooRules, coreRules := generateRules(skipDeletes)
 
 	// indent "rules"
 	m1 := regexp.MustCompile("\n")
 	glooRules = m1.ReplaceAllString(glooRules, "\n    ")
-	nonGlooRules = m1.ReplaceAllString(nonGlooRules, "\n    ")
+	coreRules = m1.ReplaceAllString(coreRules, "\n    ")
 
 	// Check that we have the expected number of DELETEs
 	m2 := regexp.MustCompile(`DELETE`)
-	deletes := len(m2.FindAllStringIndex(glooRules, -1)) + len(m2.FindAllStringIndex(nonGlooRules, -1))
+	deletes := len(m2.FindAllStringIndex(glooRules, -1)) + len(m2.FindAllStringIndex(coreRules, -1))
 	Expect(deletes).To(Equal(expectedDeletes))
 
 	chart := `
@@ -220,9 +220,9 @@ webhooks:
     - v1beta1
   failurePolicy: Ignore
 `
-	// Only create the webhook for non-gloo resources if there are any resources being valdiated
-	if nonGlooRules != "[]\n    " {
-		chart += `- name: non-gloo.` + namespace + `.svc  # must be a domain with at least three segments separated by dots
+	// Only create the webhook for core resources if there are any resources being valdiated
+	if coreRules != "[]\n    " {
+		chart += `- name: core.` + namespace + `.svc  # must be a domain with at least three segments separated by dots
   clientConfig:
     service:
       name: gloo
@@ -230,7 +230,7 @@ webhooks:
       path: "/validation"
     caBundle: "" # update manually or use certgen job
   rules:
-    ` + nonGlooRules + `
+    ` + coreRules + `
   sideEffects: None
   matchPolicy: Exact
   timeoutSeconds: ` + strconv.Itoa(timeoutSeconds) + `
@@ -243,7 +243,7 @@ webhooks:
 	return makeUnstructured(chart)
 }
 
-// generateRules returns gloo rules and non-gloo rules as separate strings
+// generateRules returns gloo rules and core rules as separate strings
 func generateRules(skipDeleteReources []string) (string, string) {
 	GinkgoHelper()
 	glooRules := []map[string][]string{
@@ -279,7 +279,7 @@ func generateRules(skipDeleteReources []string) (string, string) {
 		},
 	}
 
-	nonGlooRules := []map[string][]string{
+	coreRules := []map[string][]string{
 		{
 			"operations":  {"DELETE"},
 			"apiGroups":   {""},
@@ -306,7 +306,7 @@ func generateRules(skipDeleteReources []string) (string, string) {
 	}
 
 	finalNonGlooRules := []map[string][]string{}
-	for i, rule := range nonGlooRules {
+	for i, rule := range coreRules {
 		if stringutils.ContainsAny([]string{rule["resources"][0], "*"}, skipDeleteReources) {
 			rule["operations"] = gloostringutils.DeleteOneByValue(rule["operations"], "DELETE")
 			// A namespace with an update to a label can cause it to no longer be watched,
@@ -317,7 +317,7 @@ func generateRules(skipDeleteReources []string) (string, string) {
 		}
 
 		if len(rule["operations"]) != 0 {
-			finalNonGlooRules = append(finalNonGlooRules, nonGlooRules[i])
+			finalNonGlooRules = append(finalNonGlooRules, coreRules[i])
 		}
 	}
 
