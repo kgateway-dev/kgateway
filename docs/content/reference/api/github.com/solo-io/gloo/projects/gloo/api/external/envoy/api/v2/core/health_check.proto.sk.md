@@ -133,7 +133,7 @@ Describes the encoding of the payload bytes in the payload.
 | `useHttp2` | `bool` | If set, health checks will be made using http/2. |
 | `expectedStatuses` | [[]solo.io.envoy.type.Int64Range](../../../../type/range.proto.sk/#int64range) | Specifies a list of HTTP response statuses considered healthy. If provided, replaces default 200-only policy - 200 must be included explicitly as needed. Ranges follow half-open semantics of `Int64Range (envoy_api_msg_type.Int64Range)`. |
 | `responseAssertions` | [.advancedhttp.options.gloo.solo.io.ResponseAssertions](../../../../../../v1/options/advanced_http/advanced_http.proto.sk/#responseassertions) | (Enterprise Only): If defined, the response health check rules take precedence over the http `expected_statuses`. |
-| `method` | [.solo.io.envoy.config.core.v3.RequestMethod](../../../../config/core/v3/base.proto.sk/#requestmethod) | HTTP Method that will be used for health checking, default is "GET". GET, HEAD, POST, PUT, DELETE, OPTIONS, TRACE, PATCH methods are supported, but making request body is not supported. CONNECT method is disallowed because it is not appropriate for health check request. If a non-200 response is expected by the method, it needs to be set in :ref:`expected_statuses <envoy_v3_api_field_config.core.v3.HealthCheck.HttpHealthCheck.expected_statuses>`. |
+| `method` | [.solo.io.envoy.config.core.v3.RequestMethod](../../../../config/core/v3/base.proto.sk/#requestmethod) | HTTP Method that will be used for health checking, default is "GET". GET, HEAD, POST, PUT, DELETE, OPTIONS, TRACE, PATCH methods are supported, but making request body is not supported. CONNECT method is disallowed because it is not appropriate for health check request. If a non-200 response is expected by the method, it needs to be set in expected_statuses. |
 
 
 
@@ -169,7 +169,7 @@ Describes the encoding of the payload bytes in the payload.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `key` | `string` | If set, optionally perform ``EXISTS <key>`` instead of ``PING``. A return value from Redis of 0 (does not exist) is considered a passing healthcheck. A return value other than 0 is considered a failure. This allows the user to mark a Redis instance for maintenance by setting the specified key to any value and waiting for traffic to drain. |
+| `key` | `string` | If set, optionally perform `EXISTS <key>` instead of `PING`. A return value from Redis of 0 (does not exist) is considered a passing healthcheck. A return value other than 0 is considered a failure. This allows the user to mark a Redis instance for maintenance by setting the specified key to any value and waiting for traffic to drain. |
 
 
 
@@ -178,9 +178,8 @@ Describes the encoding of the payload bytes in the payload.
 ### GrpcHealthCheck
 
  
-`grpc.health.v1.Health
-<https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto>`_-based
-healthcheck. See `gRPC doc <https://github.com/grpc/grpc/blob/master/doc/health-checking.md>`_
+[grpc.health.v1.Health](https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto)-based
+healthcheck. See [gRPC doc](https://github.com/grpc/grpc/blob/master/doc/health-checking.md)
 for details.
 
 ```yaml
@@ -192,7 +191,7 @@ for details.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `serviceName` | `string` | An optional service name parameter which will be sent to gRPC service in `grpc.health.v1.HealthCheckRequest <https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto#L20>`_. message. See `gRPC health-checking overview <https://github.com/grpc/grpc/blob/master/doc/health-checking.md>`_ for more information. |
+| `serviceName` | `string` | An optional service name parameter which will be sent to gRPC service in [grpc.health.v1.HealthCheckRequest](https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto#L20) message. See [gRPC health-checking overview](https://github.com/grpc/grpc/blob/master/doc/health-checking.md) for more information. |
 | `authority` | `string` | The value of the :authority header in the gRPC health check request. If left empty (default value), the name of the cluster this health check is associated with will be used. |
 | `initialMetadata` | [[]solo.io.envoy.api.v2.core.HeaderValueOption](../../../../../../../../../../solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#headervalueoption) | Specifies a list of key-value pairs that should be added to the metadata of each GRPC call that is sent to the health checked cluster. |
 
@@ -230,7 +229,7 @@ Description: Endpoint health status.
 | UNKNOWN | The health status is not known. This is interpreted by Envoy as *HEALTHY*. |
 | HEALTHY | Healthy. |
 | UNHEALTHY | Unhealthy. |
-| DRAINING | Connection draining in progress. E.g., `<https://aws.amazon.com/blogs/aws/elb-connection-draining-remove-instances-from-service-with-care/>`_ or `<https://cloud.google.com/compute/docs/load-balancing/enabling-connection-draining>`_. This is interpreted by Envoy as *UNHEALTHY*. |
+| DRAINING | Connection draining in progress. E.g., https://aws.amazon.com/blogs/aws/elb-connection-draining-remove-instances-from-service-with-care/ or https://cloud.google.com/compute/docs/load-balancing/enabling-connection-draining. This is interpreted by Envoy as *UNHEALTHY*. |
 | TIMEOUT | Health check timed out. This is part of HDS and is interpreted by Envoy as *UNHEALTHY*. |
 | DEGRADED | Degraded. |
 
