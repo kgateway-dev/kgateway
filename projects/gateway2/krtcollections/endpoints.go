@@ -2,6 +2,7 @@ package krtcollections
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"hash/fnv"
 
@@ -88,8 +89,22 @@ type EndpointWithMd struct {
 	*envoy_config_endpoint_v3.LbEndpoint
 	EndpointMd EndpointMetadata
 }
+
+type LocalityLbMap map[PodLocality][]EndpointWithMd
+
+// MarshalJSON implements json.Marshaler. for krt.DebugHandler
+func (l LocalityLbMap) MarshalJSON() ([]byte, error) {
+	out := map[string][]EndpointWithMd{}
+	for locality, eps := range l {
+		out[locality.String()] = eps
+	}
+	return json.Marshal(out)
+}
+
+var _ json.Marshaler = LocalityLbMap{}
+
 type EndpointsForUpstream struct {
-	LbEps       map[PodLocality][]EndpointWithMd
+	LbEps       LocalityLbMap
 	ClusterName string
 	UpstreamRef types.NamespacedName
 	Port        uint32

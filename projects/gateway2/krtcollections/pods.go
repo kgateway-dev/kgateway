@@ -2,6 +2,7 @@ package krtcollections
 
 import (
 	"context"
+	"fmt"
 	"maps"
 
 	"istio.io/api/label"
@@ -22,6 +23,10 @@ type PodLocality struct {
 	Region  string
 	Zone    string
 	Subzone string
+}
+
+func (c PodLocality) String() string {
+	return fmt.Sprintf("%s/%s/%s", c.Region, c.Zone, c.Subzone)
 }
 
 func (c NodeMetadata) ResourceName() string {
