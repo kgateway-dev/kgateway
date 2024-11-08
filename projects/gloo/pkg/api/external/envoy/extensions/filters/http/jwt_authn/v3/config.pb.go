@@ -29,9 +29,9 @@ const (
 
 // Please see following for JWT authentication flow:
 //
-// * `JSON Web Token (JWT) <https://datatracker.ietf.org/doc/html/rfc7519>`_
-// * `The OAuth 2.0 Authorization Framework <https://datatracker.ietf.org/doc/html/rfc6749>`_
-// * `OpenID Connect <http://openid.net/connect>`_
+// * [JSON Web Token (JWT)](https://datatracker.ietf.org/doc/html/rfc7519)
+// * [The OAuth 2.0 Authorization Framework](https://datatracker.ietf.org/doc/html/rfc6749)
+// * [OpenID Connect](http://openid.net/connect)
 //
 // A JwtProvider message specifies how a JSON Web Token (JWT) can be verified. It specifies:
 //
@@ -63,7 +63,7 @@ type JwtProvider struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Specify the `principal <https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.1>`_ that issued
+	// Specify the [principal](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.1) that issued
 	// the JWT, usually a URL or an email address.
 	//
 	// It is optional. If specified, it has to match the *iss* field in JWT.
@@ -83,7 +83,7 @@ type JwtProvider struct {
 	// Example: https://securetoken.google.com
 	// Example: 1234567-compute@developer.gserviceaccount.com
 	Issuer string `protobuf:"bytes,1,opt,name=issuer,proto3" json:"issuer,omitempty"`
-	// The list of JWT `audiences <https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3>`_ are
+	// The list of JWT [audiences](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3) are
 	// allowed to access. A JWT containing any of these audiences will be accepted. If not specified,
 	// will not check audiences in the token.
 	//
@@ -95,7 +95,7 @@ type JwtProvider struct {
 	//	- bookstore_android.apps.googleusercontent.com
 	//	- bookstore_web.apps.googleusercontent.com
 	Audiences []string `protobuf:"bytes,2,rep,name=audiences,proto3" json:"audiences,omitempty"`
-	// `JSON Web Key Set (JWKS) <https://datatracker.ietf.org/doc/html/rfc7517#appendix-A>`_ is needed to
+	// [JSON Web Key Set (JWKS)](https://datatracker.ietf.org/doc/html/rfc7517#appendix-A) is needed to
 	// validate signature of a JWT. This field specifies where to fetch JWKS.
 	//
 	// Types that are assignable to JwksSourceSpecifier:
@@ -110,12 +110,11 @@ type JwtProvider struct {
 	//
 	// If no explicit location is specified, the following default locations are tried in order:
 	//
-	// 1. The Authorization header using the `Bearer schema
-	// <https://datatracker.ietf.org/doc/html/rfc6750#section-2.1>`_. Example::
+	// 1. The Authorization header using the [Bearer schema](https://datatracker.ietf.org/doc/html/rfc6750#section-2.1). Example::
 	//
 	//	Authorization: Bearer <token>.
 	//
-	// 2. `access_token <https://datatracker.ietf.org/doc/html/rfc6750#section-2.3>`_ query parameter.
+	// 2. [access_token](https://datatracker.ietf.org/doc/html/rfc6750#section-2.3) query parameter.
 	//
 	// Multiple JWTs can be verified for a request. Each JWT has to be extracted from the locations
 	// its provider specified or from the default locations.
@@ -129,7 +128,7 @@ type JwtProvider struct {
 	//
 	// can be used to extract token from header::
 	//
-	//	``x-goog-iap-jwt-assertion: <JWT>``.
+	//	`x-goog-iap-jwt-assertion: <JWT>`.
 	FromHeaders []*JwtHeader `protobuf:"bytes,6,rep,name=from_headers,json=fromHeaders,proto3" json:"from_headers,omitempty"`
 	// JWT is sent in a query parameter. `jwt_params` represents the query parameter names.
 	//
@@ -1180,8 +1179,7 @@ type JwtAuthentication struct {
 	// The *rules* field above is checked first, if it could not find any matches,
 	// check this one.
 	FilterStateRules *FilterStateRule `protobuf:"bytes,3,opt,name=filter_state_rules,json=filterStateRules,proto3" json:"filter_state_rules,omitempty"`
-	// When set to true, bypass the `CORS preflight request
-	// <http://www.w3.org/TR/cors/#cross-origin-request-with-preflight>`_ regardless of JWT
+	// When set to true, bypass the [CORS preflight request](http://www.w3.org/TR/cors/#cross-origin-request-with-preflight) regardless of JWT
 	// requirements specified in the rules.
 	BypassCorsPreflight bool `protobuf:"varint,4,opt,name=bypass_cors_preflight,json=bypassCorsPreflight,proto3" json:"bypass_cors_preflight,omitempty"`
 	// A map of unique requirement_names to JwtRequirements.

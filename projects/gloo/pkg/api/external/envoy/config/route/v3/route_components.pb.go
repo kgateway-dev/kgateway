@@ -135,7 +135,7 @@ func (RouteAction_ClusterNotFoundResponseCode) EnumDescriptor() ([]byte, []int) 
 	return file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_route_v3_route_components_proto_rawDescGZIP(), []int{6, 0}
 }
 
-// Configures :ref:`internal redirect <arch_overview_internal_redirects>` behavior.
+// Configures internal redirect behavior.
 // [#next-major-version: remove this definition - it's defined in the InternalRedirectPolicy message.]
 //
 // Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/route/v3/route_components.proto.
@@ -263,17 +263,17 @@ type VirtualHost struct {
 	// virtual host. Wildcard hosts are supported in the suffix or prefix form.
 	//
 	// Domain search order:
-	//  1. Exact domain names: “www.foo.com“.
-	//  2. Suffix domain wildcards: “*.foo.com“ or “*-bar.foo.com“.
-	//  3. Prefix domain wildcards: “foo.*“ or “foo-*“.
-	//  4. Special wildcard “*“ matching any domain.
+	//  1. Exact domain names: `www.foo.com`.
+	//  2. Suffix domain wildcards: `*.foo.com` or `*-bar.foo.com`.
+	//  3. Prefix domain wildcards: `foo.*` or `foo-*`.
+	//  4. Special wildcard `*` matching any domain.
 	//
-	// .. note::
+	// **Note**:
 	//
 	//	The wildcard will not match the empty string.
-	//	e.g. ``*-bar.foo.com`` will match ``baz-bar.foo.com`` but not ``-bar.foo.com``.
+	//	e.g. `*-bar.foo.com` will match `baz-bar.foo.com` but not `-bar.foo.com`.
 	//	The longest wildcards match first.
-	//	Only a single virtual host in the entire route configuration can match on ``*``. A domain
+	//	Only a single virtual host in the entire route configuration can match on `*`. A domain
 	//	must be unique across all virtual hosts or the config will fail to load.
 	//
 	// Domains cannot contain control characters. This is validated by the well_known_regex HTTP_HEADER_VALUE.
@@ -345,7 +345,7 @@ type VirtualHost struct {
 	// [#not-implemented-hide:]
 	// Specifies the configuration for retry policy extension. Note that setting a route level entry
 	// will take precedence over this config and it'll be treated independently (e.g.: values are not
-	// inherited). :ref:`Retry policy <envoy_api_field_config.route.v3.VirtualHost.retry_policy>` should not be
+	// inherited). Retry policy should not be
 	// set if this field is used.
 	RetryPolicyTypedConfig *anypb.Any `protobuf:"bytes,20,opt,name=retry_policy_typed_config,json=retryPolicyTypedConfig,proto3" json:"retry_policy_typed_config,omitempty"`
 	// Indicates the hedge policy for all routes in this virtual host. Note that setting a
@@ -563,7 +563,7 @@ func (x *FilterAction) GetAction() *anypb.Any {
 // A route is both a specification of how to match a request as well as an indication of what to do
 // next (e.g., redirect, forward, rewrite, etc.).
 //
-// .. attention::
+// **Attention**:
 //
 //	Envoy supports routing on HTTP method via :ref:`header matching
 //	<envoy_api_msg_config.route.v3.HeaderMatcher>`.
@@ -596,7 +596,7 @@ type Route struct {
 	// The typed_per_filter_config field can be used to provide route-specific
 	// configurations for filters. The key should match the filter name, such as
 	// *envoy.filters.http.buffer* for the HTTP buffer filter. Use of this field is filter
-	// specific; see the :ref:`HTTP filter documentation <config_http_filters>` for
+	// specific; see the HTTP filter documentation for
 	// if and how it is utilized.
 	TypedPerFilterConfig map[string]*anypb.Any `protobuf:"bytes,13,rep,name=typed_per_filter_config,json=typedPerFilterConfig,proto3" json:"typed_per_filter_config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Specifies a set of headers that will be added to requests matching this
@@ -614,7 +614,7 @@ type Route struct {
 	// headers from the enclosing :ref:`envoy_api_msg_config.route.v3.VirtualHost` and
 	// :ref:`envoy_api_msg_config.route.v3.RouteConfiguration`. For more information, including
 	// details on header value syntax, see the documentation on
-	// :ref:`custom request headers <config_http_conn_man_headers_custom_request_headers>`.
+	// custom request headers.
 	ResponseHeadersToAdd []*v3.HeaderValueOption `protobuf:"bytes,10,rep,name=response_headers_to_add,json=responseHeadersToAdd,proto3" json:"response_headers_to_add,omitempty"`
 	// Specifies a list of HTTP headers that should be removed from each response
 	// to requests matching this route.
@@ -806,7 +806,7 @@ func (*Route_DirectResponse) isRoute_Action() {}
 
 func (*Route_FilterAction) isRoute_Action() {}
 
-// Compared to the :ref:`cluster <envoy_api_field_config.route.v3.RouteAction.cluster>` field that specifies a
+// Compared to the cluster field that specifies a
 // single upstream cluster as the target of a request, the :ref:`weighted_clusters
 // <envoy_api_field_config.route.v3.RouteAction.weighted_clusters>` option allows for specification of
 // multiple upstream clusters along with weights that indicate the percentage of
@@ -909,7 +909,7 @@ type RouteMatch struct {
 	// code/config deploys. Refer to the :ref:`traffic shifting
 	// <config_http_conn_man_route_table_traffic_splitting_shift>` docs for additional documentation.
 	//
-	// .. note::
+	// **Note**:
 	//
 	//	Parsing this field is implemented such that the runtime key's data may be represented
 	//	as a FractionalPercent proto represented as JSON/YAML and may also be represented as an
@@ -1126,10 +1126,10 @@ type CorsPolicy struct {
 	// Specifies the % of requests for which the CORS policies will be evaluated and tracked, but not
 	// enforced.
 	//
-	// This field is intended to be used when “filter_enabled“ and “enabled“ are off. One of those
+	// This field is intended to be used when `filter_enabled` and `enabled` are off. One of those
 	// fields have to explicitly disable the filter in order for this setting to take effect.
 	//
-	// If :ref:`runtime_key <envoy_api_field_config.core.v3.RuntimeFractionalPercent.runtime_key>` is specified,
+	// If runtime_key is specified,
 	// Envoy will lookup the runtime key to get the percentage of requests for which it will evaluate
 	// and track the request's *Origin* to determine if it's valid but will not enforce any policies.
 	ShadowEnabled *v3.RuntimeFractionalPercent `protobuf:"bytes,10,opt,name=shadow_enabled,json=shadowEnabled,proto3" json:"shadow_enabled,omitempty"`
@@ -1235,10 +1235,10 @@ type isCorsPolicy_EnabledSpecifier interface {
 type CorsPolicy_FilterEnabled struct {
 	// Specifies the % of requests for which the CORS filter is enabled.
 	//
-	// If neither “enabled“, “filter_enabled“, nor “shadow_enabled“ are specified, the CORS
+	// If neither `enabled`, `filter_enabled`, nor `shadow_enabled` are specified, the CORS
 	// filter will be enabled for 100% of the requests.
 	//
-	// If :ref:`runtime_key <envoy_api_field_config.core.v3.RuntimeFractionalPercent.runtime_key>` is
+	// If runtime_key is
 	// specified, Envoy will lookup the runtime key to get the percentage of requests to filter.
 	FilterEnabled *v3.RuntimeFractionalPercent `protobuf:"bytes,9,opt,name=filter_enabled,json=filterEnabled,proto3,oneof"`
 }
@@ -1276,13 +1276,13 @@ type RouteAction struct {
 	// :ref:`regex_rewrite <envoy_api_field_config.route.v3.RouteAction.regex_rewrite>`
 	// may be specified.
 	//
-	// .. attention::
+	// **Attention**:
 	//
 	//	Pay careful attention to the use of trailing slashes in the
-	//	:ref:`route's match <envoy_api_field_config.route.v3.Route.match>` prefix value.
+	//	route's match prefix value.
 	//	Stripping a prefix from a path requires multiple Routes to handle all cases. For example,
 	//	rewriting */prefix* to */* and */prefix/etc* to */etc* cannot be done in a single
-	//	:ref:`Route <envoy_api_msg_config.route.v3.Route>`, as shown by the below config entries:
+	//	Route, as shown by the below config entries:
 	//
 	//	.. code-block:: yaml
 	//
@@ -1310,22 +1310,22 @@ type RouteAction struct {
 	// Only one of :ref:`prefix_rewrite <envoy_api_field_config.route.v3.RouteAction.prefix_rewrite>`
 	// or *regex_rewrite* may be specified.
 	//
-	// Examples using Google's `RE2 <https://github.com/google/re2>`_ engine:
+	// Examples using Google's [RE2](https://github.com/google/re2) engine:
 	//
-	//   - The path pattern “^/service/([^/]+)(/.*)$“ paired with a substitution
-	//     string of “\2/instance/\1“ would transform “/service/foo/v1/api“
-	//     into “/v1/api/instance/foo“.
+	//   - The path pattern `^/service/([^/]+)(/.*)$` paired with a substitution
+	//     string of `\2/instance/\1` would transform `/service/foo/v1/api`
+	//     into `/v1/api/instance/foo`.
 	//
-	//   - The pattern “one“ paired with a substitution string of “two“ would
-	//     transform “/xxx/one/yyy/one/zzz“ into “/xxx/two/yyy/two/zzz“.
+	//   - The pattern `one` paired with a substitution string of `two` would
+	//     transform `/xxx/one/yyy/one/zzz` into `/xxx/two/yyy/two/zzz`.
 	//
-	//   - The pattern “^(.*?)one(.*)$“ paired with a substitution string of
-	//     “\1two\2“ would replace only the first occurrence of “one“,
-	//     transforming path “/xxx/one/yyy/one/zzz“ into “/xxx/two/yyy/one/zzz“.
+	//   - The pattern `^(.*?)one(.*)$` paired with a substitution string of
+	//     `\1two\2` would replace only the first occurrence of `one`,
+	//     transforming path `/xxx/one/yyy/one/zzz` into `/xxx/two/yyy/one/zzz`.
 	//
-	//   - The pattern “(?i)/xxx/“ paired with a substitution string of “/yyy/“
-	//     would do a case-insensitive match and transform path “/aaa/XxX/bbb“ to
-	//     “/aaa/yyy/bbb“.
+	//   - The pattern `(?i)/xxx/` paired with a substitution string of `/yyy/`
+	//     would do a case-insensitive match and transform path `/aaa/XxX/bbb` to
+	//     `/aaa/yyy/bbb`.
 	RegexRewrite *v31.RegexMatchAndSubstitute `protobuf:"bytes,32,opt,name=regex_rewrite,json=regexRewrite,proto3" json:"regex_rewrite,omitempty"`
 	// Types that are assignable to HostRewriteSpecifier:
 	//
@@ -1338,12 +1338,12 @@ type RouteAction struct {
 	// processed and when the upstream response has been completely processed. A value of 0 will
 	// disable the route's timeout.
 	//
-	// .. note::
+	// **Note**:
 	//
 	//	This timeout includes all retries. See also
 	//	:ref:`config_http_filters_router_x-envoy-upstream-rq-timeout-ms`,
 	//	:ref:`config_http_filters_router_x-envoy-upstream-rq-per-try-timeout-ms`, and the
-	//	:ref:`retry overview <arch_overview_http_routing_retry>`.
+	//	retry overview.
 	Timeout *durationpb.Duration `protobuf:"bytes,8,opt,name=timeout,proto3" json:"timeout,omitempty"`
 	// Specifies the idle timeout for the route. If not specified, there is no per-route idle timeout,
 	// although the connection manager wide :ref:`stream_idle_timeout
@@ -1376,14 +1376,14 @@ type RouteAction struct {
 	RetryPolicyTypedConfig *anypb.Any `protobuf:"bytes,33,opt,name=retry_policy_typed_config,json=retryPolicyTypedConfig,proto3" json:"retry_policy_typed_config,omitempty"`
 	// Indicates that the route has request mirroring policies.
 	RequestMirrorPolicies []*RouteAction_RequestMirrorPolicy `protobuf:"bytes,30,rep,name=request_mirror_policies,json=requestMirrorPolicies,proto3" json:"request_mirror_policies,omitempty"`
-	// Optionally specifies the :ref:`routing priority <arch_overview_http_routing_priority>`.
+	// Optionally specifies the routing priority.
 	Priority v3.RoutingPriority `protobuf:"varint,11,opt,name=priority,proto3,enum=solo.io.envoy.config.core.v3.RoutingPriority" json:"priority,omitempty"`
 	// Specifies a set of rate limit configurations that could be applied to the
 	// route.
 	RateLimits []*RateLimit `protobuf:"bytes,13,rep,name=rate_limits,json=rateLimits,proto3" json:"rate_limits,omitempty"`
 	// Specifies if the rate limit filter should include the virtual host rate
 	// limits. By default, if the route configured rate limits, the virtual host
-	// :ref:`rate_limits <envoy_api_field_config.route.v3.VirtualHost.rate_limits>` are not applied to the
+	// rate_limits are not applied to the
 	// request.
 	IncludeVhRateLimits *wrapperspb.BoolValue `protobuf:"bytes,14,opt,name=include_vh_rate_limits,json=includeVhRateLimits,proto3" json:"include_vh_rate_limits,omitempty"`
 	// Specifies a list of hash policies to use for ring hash load balancing. Each
@@ -1402,24 +1402,24 @@ type RouteAction struct {
 	// Indicates that the route has a CORS policy.
 	Cors *CorsPolicy `protobuf:"bytes,17,opt,name=cors,proto3" json:"cors,omitempty"`
 	// If present, and the request is a gRPC request, use the
-	// `grpc-timeout header <https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md>`_,
+	// [grpc-timeout header](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md),
 	// or its default value (infinity) instead of
-	// :ref:`timeout <envoy_api_field_config.route.v3.RouteAction.timeout>`, but limit the applied timeout
+	// timeout, but limit the applied timeout
 	// to the maximum value specified here. If configured as 0, the maximum allowed timeout for
 	// gRPC requests is infinity. If not configured at all, the `grpc-timeout` header is not used
 	// and gRPC requests time out like any other requests using
-	// :ref:`timeout <envoy_api_field_config.route.v3.RouteAction.timeout>` or its default.
+	// timeout or its default.
 	// This can be used to prevent unexpected upstream request timeouts due to potentially long
 	// time gaps between gRPC request and response in gRPC streaming mode.
 	//
-	// .. note::
+	// **Note**:
 	//
 	//	If a timeout is specified using :ref:`config_http_filters_router_x-envoy-upstream-rq-timeout-ms`, it takes
-	//	precedence over `grpc-timeout header <https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md>`_, when
+	//	precedence over [grpc-timeout header](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md), when
 	//	both are present. See also
 	//	:ref:`config_http_filters_router_x-envoy-upstream-rq-timeout-ms`,
 	//	:ref:`config_http_filters_router_x-envoy-upstream-rq-per-try-timeout-ms`, and the
-	//	:ref:`retry overview <arch_overview_http_routing_retry>`.
+	//	retry overview.
 	MaxGrpcTimeout *durationpb.Duration `protobuf:"bytes,23,opt,name=max_grpc_timeout,json=maxGrpcTimeout,proto3" json:"max_grpc_timeout,omitempty"`
 	// If present, Envoy will adjust the timeout provided by the `grpc-timeout` header by subtracting
 	// the provided duration from the header. This is useful in allowing Envoy to set its global
@@ -1711,7 +1711,7 @@ type RouteAction_ClusterHeader struct {
 	// header is not found or the referenced cluster does not exist, Envoy will
 	// return a 404 response.
 	//
-	// .. attention::
+	// **Attention**:
 	//
 	//	Internally, Envoy always uses the HTTP/2 *:authority* header to represent the HTTP/1
 	//	*Host* header. Thus, if attempting to match on *Host*, match on *:authority* instead.
@@ -1754,10 +1754,10 @@ type RouteAction_AutoHostRewrite struct {
 
 type RouteAction_HostRewriteHeader struct {
 	// Indicates that during forwarding, the host header will be swapped with the content of given
-	// downstream or :ref:`custom <config_http_conn_man_headers_custom_request_headers>` header.
+	// downstream or custom header.
 	// If header value is empty, host header is left intact.
 	//
-	// .. attention::
+	// **Attention**:
 	//
 	//	Pay attention to the potential security implications of using this option. Provided header
 	//	must come from trusted source.
@@ -1770,7 +1770,7 @@ func (*RouteAction_AutoHostRewrite) isRouteAction_HostRewriteSpecifier() {}
 
 func (*RouteAction_HostRewriteHeader) isRouteAction_HostRewriteSpecifier() {}
 
-// HTTP retry :ref:`architecture overview <arch_overview_http_routing_retry>`.
+// HTTP retry architecture overview.
 // [#next-free-field: 11]
 type RetryPolicy struct {
 	state         protoimpl.MessageState
@@ -1789,21 +1789,21 @@ type RetryPolicy struct {
 	// same conditions documented for
 	// :ref:`config_http_filters_router_x-envoy-upstream-rq-per-try-timeout-ms` apply.
 	//
-	// .. note::
+	// **Note**:
 	//
 	//	If left unspecified, Envoy will use the global
-	//	:ref:`route timeout <envoy_api_field_config.route.v3.RouteAction.timeout>` for the request.
-	//	Consequently, when using a :ref:`5xx <config_http_filters_router_x-envoy-retry-on>` based
+	//	route timeout for the request.
+	//	Consequently, when using a 5xx based
 	//	retry policy, a request that times out will not be retried as the total timeout budget
 	//	would have been exhausted.
 	PerTryTimeout *durationpb.Duration `protobuf:"bytes,3,opt,name=per_try_timeout,json=perTryTimeout,proto3" json:"per_try_timeout,omitempty"`
 	// Specifies an implementation of a RetryPriority which is used to determine the
 	// distribution of load across priorities used for retries. Refer to
-	// :ref:`retry plugin configuration <arch_overview_http_retry_plugins>` for more details.
+	// retry plugin configuration for more details.
 	RetryPriority *RetryPolicy_RetryPriority `protobuf:"bytes,4,opt,name=retry_priority,json=retryPriority,proto3" json:"retry_priority,omitempty"`
 	// Specifies a collection of RetryHostPredicates that will be consulted when selecting a host
 	// for retries. If any of the predicates reject the host, host selection will be reattempted.
-	// Refer to :ref:`retry plugin configuration <arch_overview_http_retry_plugins>` for more
+	// Refer to retry plugin configuration for more
 	// details.
 	RetryHostPredicate []*RetryPolicy_RetryHostPredicate `protobuf:"bytes,5,rep,name=retry_host_predicate,json=retryHostPredicate,proto3" json:"retry_host_predicate,omitempty"`
 	// The maximum number of times host selection will be reattempted before giving up, at which
@@ -1926,7 +1926,7 @@ func (x *RetryPolicy) GetRetriableRequestHeaders() []*HeaderMatcher {
 	return nil
 }
 
-// HTTP request hedging :ref:`architecture overview <arch_overview_http_routing_hedging>`.
+// HTTP request hedging architecture overview.
 type HedgePolicy struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1948,7 +1948,7 @@ type HedgePolicy struct {
 	// Once a timed out request is retried due to per try timeout, the router
 	// filter will ensure that it is not retried again even if the returned
 	// response headers would otherwise be retried according the specified
-	// :ref:`RetryPolicy <envoy_api_msg_config.route.v3.RetryPolicy>`.
+	// RetryPolicy.
 	// Defaults to false.
 	HedgeOnPerTryTimeout bool `protobuf:"varint,3,opt,name=hedge_on_per_try_timeout,json=hedgeOnPerTryTimeout,proto3" json:"hedge_on_per_try_timeout,omitempty"`
 }
@@ -2185,10 +2185,10 @@ type RedirectAction_PrefixRewrite struct {
 	// should be swapped with this value. This option allows redirect URLs be dynamically created
 	// based on the request.
 	//
-	// .. attention::
+	// **Attention**:
 	//
 	//	Pay attention to the use of trailing slashes as mentioned in
-	//	:ref:`RouteAction's prefix_rewrite <envoy_api_field_config.route.v3.RouteAction.prefix_rewrite>`.
+	//	RouteAction's prefix_rewrite.
 	PrefixRewrite string `protobuf:"bytes,5,opt,name=prefix_rewrite,json=prefixRewrite,proto3,oneof"`
 }
 
@@ -2206,7 +2206,7 @@ type DirectResponseAction struct {
 	// Specifies the content of the response body. If this setting is omitted,
 	// no body is included in the generated response.
 	//
-	// .. note::
+	// **Note**:
 	//
 	//	Headers can be specified using *response_headers_to_add* in the enclosing
 	//	:ref:`envoy_api_msg_config.route.v3.Route`, :ref:`envoy_api_msg_config.route.v3.RouteConfiguration` or
@@ -2266,7 +2266,7 @@ type Decorator struct {
 	// The operation name associated with the request matched to this route. If tracing is
 	// enabled, this information will be used as the span name reported for this request.
 	//
-	// .. note::
+	// **Note**:
 	//
 	//	For ingress (inbound) requests, or egress (outbound) responses, this value may be overridden
 	//	by the :ref:`x-envoy-decorator-operation
@@ -2335,7 +2335,7 @@ type Tracing struct {
 	// Target percentage of requests managed by this HTTP connection manager that will be randomly
 	// selected for trace generation, if not requested by the client or not forced. This field is
 	// a direct analog for the runtime variable 'tracing.random_sampling' in the
-	// :ref:`HTTP Connection Manager <config_http_conn_man_runtime>`.
+	// HTTP Connection Manager.
 	// Default: 100%
 	RandomSampling *v32.FractionalPercent `protobuf:"bytes,2,opt,name=random_sampling,json=randomSampling,proto3" json:"random_sampling,omitempty"`
 	// Target percentage of requests managed by this HTTP connection manager that will be traced
@@ -2344,7 +2344,7 @@ type Tracing struct {
 	// instance, setting client_sampling to 100% but overall_sampling to 1% will result in only 1%
 	// of client requests with the appropriate headers to be force traced. This field is a direct
 	// analog for the runtime variable 'tracing.global_enabled' in the
-	// :ref:`HTTP Connection Manager <config_http_conn_man_runtime>`.
+	// HTTP Connection Manager.
 	// Default: 100%
 	OverallSampling *v32.FractionalPercent `protobuf:"bytes,3,opt,name=overall_sampling,json=overallSampling,proto3" json:"overall_sampling,omitempty"`
 	// A list of custom tags with unique tag name to create tags for the active span.
@@ -2424,9 +2424,9 @@ func (x *Tracing) GetCustomTags() []*v33.CustomTag {
 // statistics are perfect in the sense that they are emitted on the downstream
 // side such that they include network level failures.
 //
-// Documentation for :ref:`virtual cluster statistics <config_http_filters_router_vcluster_stats>`.
+// Documentation for virtual cluster statistics.
 //
-// .. note::
+// **Note**:
 //
 //	Virtual clusters are a useful tool, but we do not recommend setting up a virtual cluster for
 //	every application endpoint. This is both not easily maintainable and as well the matching and
@@ -2442,7 +2442,7 @@ type VirtualCluster struct {
 	Headers []*HeaderMatcher `protobuf:"bytes,4,rep,name=headers,proto3" json:"headers,omitempty"`
 	// Specifies the name of the virtual cluster. The virtual cluster name as well
 	// as the virtual host name are used when emitting statistics. The statistics are emitted by the
-	// router filter and are documented :ref:`here <config_http_filters_router_stats>`.
+	// router filter and are documented here.
 	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 }
 
@@ -2490,7 +2490,7 @@ func (x *VirtualCluster) GetName() string {
 	return ""
 }
 
-// Global rate limiting :ref:`architecture overview <arch_overview_global_rate_limit>`.
+// Global rate limiting architecture overview.
 type RateLimit struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2500,7 +2500,7 @@ type RateLimit struct {
 	// applies to filters with the same stage number. The default stage number is
 	// 0.
 	//
-	// .. note::
+	// **Note**:
 	//
 	//	The filter supports a range of 0 - 10 inclusively for stage numbers.
 	Stage *wrapperspb.UInt32Value `protobuf:"bytes,1,opt,name=stage,proto3" json:"stage,omitempty"`
@@ -2578,12 +2578,12 @@ func (x *RateLimit) GetLimit() *RateLimit_Override {
 	return nil
 }
 
-// .. attention::
+// **Attention**:
 //
 //	Internally, Envoy always uses the HTTP/2 *:authority* header to represent the HTTP/1 *Host*
 //	header. Thus, if attempting to match on *Host*, match on *:authority* instead.
 //
-// .. attention::
+// **Attention**:
 //
 //	To route on HTTP method, use the special HTTP/2 *:method* header. This works for both
 //	HTTP/1 and HTTP/2 as Envoy normalizes headers. E.g.,
@@ -2595,7 +2595,7 @@ func (x *RateLimit) GetLimit() *RateLimit_Override {
 //	    "exact_match": "POST"
 //	  }
 //
-// .. attention::
+// **Attention**:
 //
 //	 In the absence of any header match specifier, match will default to :ref:`present_match
 //	 <envoy_api_field_config.route.v3.HeaderMatcher.present_match>`. i.e, a request that has the :ref:`name
@@ -2627,7 +2627,7 @@ type HeaderMatcher struct {
 	//
 	// Examples:
 	//
-	// * The regex “\d{3}“ does not match the value *1234*, so it will match when inverted.
+	// * The regex `\d{3}` does not match the value *1234*, so it will match when inverted.
 	// * The range [-10,0) will match the value -1, so it will not match when inverted.
 	InvertMatch bool `protobuf:"varint,8,opt,name=invert_match,json=invertMatch,proto3" json:"invert_match,omitempty"`
 }
@@ -2888,7 +2888,7 @@ func (*QueryParameterMatcher_StringMatch) isQueryParameterMatcher_QueryParameter
 
 func (*QueryParameterMatcher_PresentMatch) isQueryParameterMatcher_QueryParameterMatchSpecifier() {}
 
-// HTTP Internal Redirect :ref:`architecture overview <arch_overview_internal_redirects>`.
+// HTTP Internal Redirect architecture overview.
 type InternalRedirectPolicy struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2981,7 +2981,7 @@ type WeightedCluster_ClusterWeight struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Name of the upstream cluster. The cluster must exist in the
-	// :ref:`cluster manager configuration <config_cluster_manager>`.
+	// cluster manager configuration.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// An integer between 0 and :ref:`total_weight
 	// <envoy_api_field_config.route.v3.WeightedCluster.total_weight>`. When a request matches the route,
@@ -2991,7 +2991,7 @@ type WeightedCluster_ClusterWeight struct {
 	// Optional endpoint metadata match criteria used by the subset load balancer. Only endpoints in
 	// the upstream cluster with metadata matching what is set in this field will be considered for
 	// load balancing. Note that this will be merged with what's provided in
-	// :ref:`RouteAction.metadata_match <envoy_api_field_config.route.v3.RouteAction.metadata_match>`, with
+	// RouteAction.metadata_match, with
 	// values here taking precedence. The filter name should be specified as *envoy.lb*.
 	MetadataMatch *v3.Metadata `protobuf:"bytes,3,opt,name=metadata_match,json=metadataMatch,proto3" json:"metadata_match,omitempty"`
 	// Specifies a list of headers to be added to requests when this cluster is selected
@@ -3248,7 +3248,7 @@ func (*RouteMatch_ConnectMatcher) Descriptor() ([]byte, []int) {
 // During shadowing, the host/authority header is altered such that *-shadow* is appended. This is
 // useful for logging. For example, *cluster1* becomes *cluster1-shadow*.
 //
-// .. note::
+// **Note**:
 //
 //	Shadowing will not be triggered if the primary cluster does not exist.
 type RouteAction_RequestMirrorPolicy struct {
@@ -4320,7 +4320,7 @@ func (*RateLimit_Override_DynamicMetadata_) isRateLimit_Override_OverrideSpecifi
 //
 //	("source_cluster", "<local service cluster>")
 //
-// <local service cluster> is derived from the :option:`--service-cluster` option.
+// <local service cluster> is derived from the `--service-cluster` option.
 type RateLimit_Action_SourceCluster struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4367,11 +4367,11 @@ func (*RateLimit_Action_SourceCluster) Descriptor() ([]byte, []int) {
 // the following :ref:`route table configuration <envoy_api_msg_config.route.v3.RouteConfiguration>`
 // settings:
 //
-//   - :ref:`cluster <envoy_api_field_config.route.v3.RouteAction.cluster>` indicates the upstream cluster
+//   - cluster indicates the upstream cluster
 //     to route to.
 //   - :ref:`weighted_clusters <envoy_api_field_config.route.v3.RouteAction.weighted_clusters>`
 //     chooses a cluster randomly from a set of clusters with attributed weight.
-//   - :ref:`cluster_header <envoy_api_field_config.route.v3.RouteAction.cluster_header>` indicates which
+//   - cluster_header indicates which
 //     header in the request contains the target cluster.
 type RateLimit_Action_DestinationCluster struct {
 	state         protoimpl.MessageState
@@ -4484,7 +4484,7 @@ func (x *RateLimit_Action_RequestHeaders) GetSkipIfAbsent() bool {
 }
 
 // The following descriptor entry is appended to the descriptor and is populated using the
-// trusted address from :ref:`x-forwarded-for <config_http_conn_man_headers_x-forwarded-for>`:
+// trusted address from x-forwarded-for.
 //
 // .. code-block:: cpp
 //
