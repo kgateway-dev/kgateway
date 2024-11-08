@@ -2,15 +2,17 @@ package admin
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
+	"istio.io/istio/pkg/kube/krt"
 )
 
 // ServerHandlers returns the custom handlers for the Admin Server, which will be bound to the http.ServeMux
 // These endpoints serve as the basis for an Admin Interface for the Control Plane (https://github.com/solo-io/gloo/issues/6494)
-func ServerHandlers(ctx context.Context, history iosnapshot.History) func(mux *http.ServeMux, profiles map[string]string) {
+func ServerHandlers(ctx context.Context, history iosnapshot.History, dbg *krt.DebugHandler) func(mux *http.ServeMux, profiles map[string]string) {
 	return func(m *http.ServeMux, profiles map[string]string) {
 
 		// The Input Snapshot is intended to return a list of resources that are persisted in the Kubernetes DB, etcD
@@ -41,6 +43,9 @@ func ServerHandlers(ctx context.Context, history iosnapshot.History) func(mux *h
 			response := history.GetXdsSnapshot(ctx)
 			respondJson(w, response)
 		})
+		m.HandleFunc("/snapshots/krt", func(w http.ResponseWriter, r *http.Request) {
+			writeJSON(w, dbg, r)
+		})
 	}
 }
 
@@ -58,5 +63,32 @@ func getContentType(format string) string {
 		return "text/x-yaml"
 	default:
 		return "application/json"
+	}
+}
+
+// writeJSON writes a json payload, handling content type, marshaling, and errors
+func writeJSON(w http.ResponseWriter, obj any, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	pretty := req.URL.Query().Has("pretty")
+	indent := ""
+	if pretty {
+		indent = "    "
+	}
+
+	var b []byte
+	var err error
+	if pretty {
+		b, err = json.MarshalIndent(obj, "", indent)
+	} else {
+		b, err = json.Marshal(obj)
+	}
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(err.Error()))
+		return
+	}
+	_, err = w.Write(b)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
