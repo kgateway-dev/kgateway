@@ -85,6 +85,39 @@ func (m *HeaderManipulation) Clone() proto.Message {
 }
 
 // Clone function
+func (m *EarlyHeaderManipulation) Clone() proto.Message {
+	var target *EarlyHeaderManipulation
+	if m == nil {
+		return target
+	}
+	target = &EarlyHeaderManipulation{}
+
+	if m.GetHeadersToAdd() != nil {
+		target.HeadersToAdd = make([]*github_com_solo_io_solo_kit_pkg_api_external_envoy_api_v2_core.HeaderValueOption, len(m.GetHeadersToAdd()))
+		for idx, v := range m.GetHeadersToAdd() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.HeadersToAdd[idx] = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_external_envoy_api_v2_core.HeaderValueOption)
+			} else {
+				target.HeadersToAdd[idx] = proto.Clone(v).(*github_com_solo_io_solo_kit_pkg_api_external_envoy_api_v2_core.HeaderValueOption)
+			}
+
+		}
+	}
+
+	if m.GetHeadersToRemove() != nil {
+		target.HeadersToRemove = make([]string, len(m.GetHeadersToRemove()))
+		for idx, v := range m.GetHeadersToRemove() {
+
+			target.HeadersToRemove[idx] = v
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
 func (m *HeaderValueOption) Clone() proto.Message {
 	var target *HeaderValueOption
 	if m == nil {
