@@ -319,7 +319,7 @@ func (s *ProxySyncer) Init(ctx context.Context, dbg *krt.DebugHandler) error {
 	configMaps := krt.WrapClient(configMapClient, krt.WithName("ConfigMaps"), withDebug)
 
 	secretClient := kclient.New[*corev1.Secret](s.istioClient)
-	k8sSecrets := krt.WrapClient(secretClient, krt.WithName("Secrets"), withDebug)
+	k8sSecrets := krt.WrapClient(secretClient, krt.WithName("Secrets"), nil /* no debug here - we don't want raw secrets printed*/)
 	legacySecretClient := &kubesecret.ResourceClient{
 		KubeCoreResourceClient: common.KubeCoreResourceClient{
 			ResourceType: &gloov1.Secret{},
