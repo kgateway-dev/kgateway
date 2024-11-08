@@ -220,9 +220,9 @@ func (l RedactedSecret) MarshalJSON() ([]byte, error) {
 		Kind      string
 		Data      string
 	}{
-		Name:      l.Inner.Metadata.Name,
-		Namespace: l.Inner.Metadata.Namespace,
-		Kind:      fmt.Sprintf("%T", l.Inner.Kind),
+		Name:      l.Inner.GetMetadata().GetName(),
+		Namespace: l.Inner.GetMetadata().GetNamespace(),
+		Kind:      fmt.Sprintf("%T", l.Inner.GetKind()),
 		Data:      "[REDACTED]",
 	})
 }
