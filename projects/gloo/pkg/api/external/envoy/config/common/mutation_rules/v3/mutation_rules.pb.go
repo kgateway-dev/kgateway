@@ -40,22 +40,22 @@ const (
 // denoted by an x-envoy prefix) or specific headers that may affect
 // further filter processing:
 //
-// * “host“
-// * “:authority“
-// * “:scheme“
-// * “:method“
+// * `host`
+// * `:authority`
+// * `:scheme`
+// * `:method`
 //
 // Every attempt to add, change, append, or remove a header will be
 // tested against the rules here. Disallowed header mutations will be
-// ignored unless “disallow_is_error“ is set to true.
+// ignored unless `disallow_is_error` is set to true.
 //
 // Attempts to remove headers are further constrained -- regardless of the
-// settings, system-defined headers (that start with “:“) and the “host“
+// settings, system-defined headers (that start with `:`) and the `host`
 // header may never be removed.
 //
 // In addition, a counter will be incremented whenever a mutation is
 // rejected. In the ext_proc filter, that counter is named
-// “rejected_header_mutations“.
+// `rejected_header_mutations`.
 // [#next-free-field: 8]
 type HeaderMutationRules struct {
 	state         protoimpl.MessageState
@@ -64,11 +64,11 @@ type HeaderMutationRules struct {
 
 	// By default, certain headers that could affect processing of subsequent
 	// filters or request routing cannot be modified. These headers are
-	// “host“, “:authority“, “:scheme“, and “:method“. Setting this parameter
+	// `host`, `:authority`, `:scheme`, and `:method`. Setting this parameter
 	// to true allows these headers to be modified as well.
 	AllowAllRouting *wrappers.BoolValue `protobuf:"bytes,1,opt,name=allow_all_routing,json=allowAllRouting,proto3" json:"allow_all_routing,omitempty"`
 	// If true, allow modification of envoy internal headers. By default, these
-	// start with “x-envoy“ but this may be overridden in the “Bootstrap“
+	// start with `x-envoy` but this may be overridden in the `Bootstrap`
 	// configuration using the
 	// :ref:`header_prefix <envoy_v3_api_field_config.bootstrap.v3.Bootstrap.header_prefix>`
 	// field. Default is false.
@@ -84,7 +84,7 @@ type HeaderMutationRules struct {
 	DisallowAll *wrappers.BoolValue `protobuf:"bytes,4,opt,name=disallow_all,json=disallowAll,proto3" json:"disallow_all,omitempty"`
 	// If set, specifically allow any header that matches this regular
 	// expression. This overrides all other settings except for
-	// “disallow_expression“.
+	// `disallow_expression`.
 	AllowExpression *v3.RegexMatcher `protobuf:"bytes,5,opt,name=allow_expression,json=allowExpression,proto3" json:"allow_expression,omitempty"`
 	// If set, specifically disallow any header that matches this regular
 	// expression regardless of any other settings.
@@ -93,7 +93,7 @@ type HeaderMutationRules struct {
 	// disallowed, then the filter using this configuration will terminate the
 	// request with a 500 error. In addition, regardless of the setting of this
 	// parameter, any attempt to set, add, or modify a disallowed header will
-	// cause the “rejected_header_mutations“ counter to be incremented.
+	// cause the `rejected_header_mutations` counter to be incremented.
 	// Default is false.
 	DisallowIsError *wrappers.BoolValue `protobuf:"bytes,7,opt,name=disallow_is_error,json=disallowIsError,proto3" json:"disallow_is_error,omitempty"`
 }

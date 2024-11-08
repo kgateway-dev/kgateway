@@ -88,7 +88,7 @@ the list, first being `0` through `n-1`.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `overprovisioningFactor` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Priority levels and localities are considered overprovisioned with this factor (in percentage). This means that we don't consider a priority level or locality unhealthy until the fraction of healthy hosts multiplied by the overprovisioning factor drops below 100. With the default value 140(1.4), Envoy doesn't consider a priority level or a locality unhealthy until their percentage of healthy hosts drops below 72%. For example: .. code-block:: json { "overprovisioning_factor": 100 } Read more at :ref:`priority levels <arch_overview_load_balancing_priority_levels>` and :ref:`localities <arch_overview_load_balancing_locality_weighted_lb>`. |
+| `overprovisioningFactor` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Priority levels and localities are considered overprovisioned with this factor (in percentage). This means that we don't consider a priority level or locality unhealthy until the fraction of healthy hosts multiplied by the overprovisioning factor drops below 100. With the default value 140(1.4), Envoy doesn't consider a priority level or a locality unhealthy until their percentage of healthy hosts drops below 72%. For example: .. code-block:: json { "overprovisioning_factor": 100 } Read more at priority levels and localities. |
 
 
 
@@ -186,7 +186,7 @@ Identifies location of where either Envoy runs or where upstream hosts run.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `region` | `string` | Region this zone belongs to. |
-| `zone` | `string` | Defines the local service zone where Envoy is running. The meaning of zone is context dependent, e.g. `Availability Zone (AZ) <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html>`_ on AWS, `Zone <https://cloud.google.com/compute/docs/regions-zones/>`_ on GCP, etc. |
+| `zone` | `string` | Defines the local service zone where Envoy is running. The meaning of zone is context dependent, e.g. [Availability Zone (AZ)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html) on AWS, [Zone](https://cloud.google.com/compute/docs/regions-zones/) on GCP, etc. |
 | `subZone` | `string` | When used for locality of upstream hosts, this field further splits zone into smaller chunks of sub-zones so they can be load balanced independently. |
 
 

@@ -129,8 +129,7 @@ type ProxyProtocolPassThroughTLVs struct {
 	// If INCLUDE_ALL is set, all TLVs will be passed through no matter the tlv_type field.
 	MatchType ProxyProtocolPassThroughTLVs_PassTLVsMatchType `protobuf:"varint,1,opt,name=match_type,json=matchType,proto3,enum=solo.io.envoy.config.core.v3.ProxyProtocolPassThroughTLVs_PassTLVsMatchType" json:"match_type,omitempty"`
 	// The TLV types that are applied based on match_type.
-	// TLV type is defined as uint8_t in proxy protocol. See `the spec
-	// <https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt>`_ for details.
+	// TLV type is defined as uint8_t in proxy protocol. See [the spec](https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt) for details.
 	TlvType []uint32 `protobuf:"varint,2,rep,packed,name=tlv_type,json=tlvType,proto3" json:"tlv_type,omitempty"`
 }
 

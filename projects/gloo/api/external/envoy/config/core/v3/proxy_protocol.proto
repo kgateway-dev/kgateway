@@ -26,8 +26,7 @@ message ProxyProtocolPassThroughTLVs {
   PassTLVsMatchType match_type = 1;
 
   // The TLV types that are applied based on match_type.
-  // TLV type is defined as uint8_t in proxy protocol. See `the spec
-  // <https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt>`_ for details.
+  // TLV type is defined as uint8_t in proxy protocol. See [the spec](https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt) for details.
   repeated uint32 tlv_type = 2 [(validate.rules).repeated = {items {uint32 {lt: 256}}}];
 }
 
