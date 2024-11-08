@@ -50,6 +50,10 @@ message ListenerOptions {
   // For more info see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener.proto#envoy-v3-api-field-config-listener-v3-listener-access-log
   als.options.gloo.solo.io.AccessLoggingService listener_access_logging_service = 7;
 
+  // If true, will wrap all filter chains in the listener with a TCP stats transport socket, which is a
+  // passthrough listener that can report low-level Linux TCP stats, useful for diagnosis
+  // and triage.
+  google.protobuf.BoolValue tcp_stats = 8;
 }
 
 // Configuration for listener connection balancing.
