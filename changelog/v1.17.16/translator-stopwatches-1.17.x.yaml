@@ -3,7 +3,7 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/10278
     resolvesIssue: true
     description: >-
-      Add stopwatches for translator and Envoy syncer.
+      Add metrics for translatation timing and time for taken to sync served xDS entries.
 
       The work for this pull request was done in
       https://github.com/solo-io/gloo/pull/10243 - that pull request lacked a
