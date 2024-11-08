@@ -129,6 +129,14 @@ func (h *HttpRequestBuilder) WithHeader(key, value string) *HttpRequestBuilder {
 	return h
 }
 
+// WithHeaders accepts a map of headers, the values of which are separated by the headerDelimiter
+func (h *HttpRequestBuilder) WithHeaders(headers map[string]string) *HttpRequestBuilder {
+	for key, value := range headers {
+		h.headers[key] = strings.Split(value, headerDelimiter)
+	}
+	return h
+}
+
 // WithAuthorizationBearerToken is syntactic sugar for setting the Authorization header with a Bearer token
 func (h *HttpRequestBuilder) WithAuthorizationBearerToken(token string) *HttpRequestBuilder {
 	return h.WithHeader("Authorization", fmt.Sprintf("Bearer %s", token))
