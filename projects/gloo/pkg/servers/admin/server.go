@@ -20,6 +20,7 @@ func ServerHandlers(ctx context.Context, history iosnapshot.History, dbg *krt.De
 			response := history.GetInputSnapshot(ctx)
 			respondJson(w, response)
 		})
+		profiles["/snapshots/input"] = "Input Snapshot"
 
 		// The Edge Snapshot is intended to return a representation of the ApiSnapshot object that the Control Plane
 		// manages internally. This is not intended to be consumed by users, but instead be a mechanism to feed this
@@ -28,6 +29,7 @@ func ServerHandlers(ctx context.Context, history iosnapshot.History, dbg *krt.De
 			response := history.GetEdgeApiSnapshot(ctx)
 			respondJson(w, response)
 		})
+		profiles["/snapshots/edge"] = "Edge Snapshot"
 
 		// The Proxy Snapshot is intended to return a representation of the Proxies within the ApiSnapshot object.
 		// Proxies may either be persisted in etcD or in-memory, so this Api provides a single mechansim to access
@@ -36,6 +38,7 @@ func ServerHandlers(ctx context.Context, history iosnapshot.History, dbg *krt.De
 			response := history.GetProxySnapshot(ctx)
 			respondJson(w, response)
 		})
+		profiles["/snapshots/proxies"] = "Proxy Snapshot"
 
 		// The xDS Snapshot is intended to return the full in-memory xDS cache that the Control Plane manages
 		// and serves up to running proxies.
@@ -43,9 +46,12 @@ func ServerHandlers(ctx context.Context, history iosnapshot.History, dbg *krt.De
 			response := history.GetXdsSnapshot(ctx)
 			respondJson(w, response)
 		})
+		profiles["/snapshots/xds"] = "XDS Snapshot"
+
 		m.HandleFunc("/snapshots/krt", func(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, dbg, r)
 		})
+		profiles["/snapshots/krt"] = "KRT Snapshot"
 	}
 }
 
