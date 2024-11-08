@@ -203,6 +203,16 @@ func (p xdsSnapWrapper) ResourceName() string {
 
 type RedactedSecret krtcollections.ResourceWrapper[*gloov1.Secret]
 
+func (us RedactedSecret) ResourceName() string {
+	return (krtcollections.ResourceWrapper[*gloov1.Secret](us)).ResourceName()
+}
+func (us RedactedSecret) Equals(in RedactedSecret) bool {
+	return proto.Equal(us.Inner, in.Inner)
+}
+
+var _ krt.ResourceNamer = RedactedSecret{}
+var _ krt.Equaler[RedactedSecret] = RedactedSecret{}
+
 func (l RedactedSecret) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Name      string
