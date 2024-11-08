@@ -42,7 +42,7 @@ type Upstream_ClusterProtocolSelection int32
 
 const (
 	// Cluster can only operate on one of the possible upstream protocols (HTTP1.1, HTTP2).
-	// If :ref:`http2_protocol_options <envoy_v3_api_field_config.cluster.v3.Cluster.http2_protocol_options>` are
+	// If http2_protocol_options are
 	// present, HTTP2 will be used, otherwise HTTP1.1 will be used.
 	Upstream_USE_CONFIGURED_PROTOCOL Upstream_ClusterProtocolSelection = 0
 	// Use HTTP1.1 or HTTP2, depending on which one is used on the downstream connection.
@@ -165,7 +165,7 @@ type Upstream struct {
 	// This overrides any HCM :ref:`stream_error_on_invalid_http_messaging
 	// <envoy_v3_api_field_extensions.filters.network.http_connection_manager.v3.HttpConnectionManager.stream_error_on_invalid_http_message>`
 	//
-	// See `RFC7540, sec. 8.1 <https://datatracker.ietf.org/doc/html/rfc7540#section-8.1>`_ for details.
+	// See [RFC7540, sec. 8.1](https://datatracker.ietf.org/doc/html/rfc7540#section-8.1) for details.
 	OverrideStreamErrorOnInvalidHttpMessage *wrapperspb.BoolValue `protobuf:"bytes,26,opt,name=override_stream_error_on_invalid_http_message,json=overrideStreamErrorOnInvalidHttpMessage,proto3" json:"override_stream_error_on_invalid_http_message,omitempty"`
 	// Tells envoy that the upstream is an HTTP proxy (e.g., another proxy in a DMZ) that supports HTTP Connect.
 	// This configuration sets the hostname used as part of the HTTP Connect request.
@@ -681,7 +681,7 @@ type PreconnectPolicy struct {
 	// Indicates how many streams (rounded up) can be anticipated across a cluster for each
 	// stream, useful for low QPS services. This is currently supported for a subset of
 	// deterministic non-hash-based load-balancing algorithms (weighted round robin, random).
-	// Unlike “per_upstream_preconnect_ratio“ this preconnects across the upstream instances in a
+	// Unlike `per_upstream_preconnect_ratio` this preconnects across the upstream instances in a
 	// cluster, doing best effort predictions of what upstream would be picked next and
 	// pre-establishing a connection.
 	//

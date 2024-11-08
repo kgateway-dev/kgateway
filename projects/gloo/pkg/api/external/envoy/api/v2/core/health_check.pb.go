@@ -42,9 +42,9 @@ const (
 	// Unhealthy.
 	HealthStatus_UNHEALTHY HealthStatus = 2
 	// Connection draining in progress. E.g.,
-	// `<https://aws.amazon.com/blogs/aws/elb-connection-draining-remove-instances-from-service-with-care/>`_
+	// https://aws.amazon.com/blogs/aws/elb-connection-draining-remove-instances-from-service-with-care/
 	// or
-	// `<https://cloud.google.com/compute/docs/load-balancing/enabling-connection-draining>`_.
+	// https://cloud.google.com/compute/docs/load-balancing/enabling-connection-draining.
 	// This is interpreted by Envoy as *UNHEALTHY*.
 	HealthStatus_DRAINING HealthStatus = 3
 	// Health check timed out. This is part of HDS and is interpreted by Envoy as
@@ -478,7 +478,7 @@ type HealthCheck_HttpHealthCheck struct {
 	// HTTP Method that will be used for health checking, default is "GET".
 	// GET, HEAD, POST, PUT, DELETE, OPTIONS, TRACE, PATCH methods are supported, but making request body is not supported.
 	// CONNECT method is disallowed because it is not appropriate for health check request.
-	// If a non-200 response is expected by the method, it needs to be set in :ref:`expected_statuses <envoy_v3_api_field_config.core.v3.HealthCheck.HttpHealthCheck.expected_statuses>`.
+	// If a non-200 response is expected by the method, it needs to be set in expected_statuses.
 	Method v3.RequestMethod `protobuf:"varint,11,opt,name=method,proto3,enum=solo.io.envoy.config.core.v3.RequestMethod" json:"method,omitempty"`
 }
 
@@ -637,7 +637,7 @@ type HealthCheck_RedisHealthCheck struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// If set, optionally perform “EXISTS <key>“ instead of “PING“. A return value
+	// If set, optionally perform `EXISTS <key>` instead of `PING`. A return value
 	// from Redis of 0 (does not exist) is considered a passing healthcheck. A return value other
 	// than 0 is considered a failure. This allows the user to mark a Redis instance for maintenance
 	// by setting the specified key to any value and waiting for traffic to drain.
@@ -681,9 +681,8 @@ func (x *HealthCheck_RedisHealthCheck) GetKey() string {
 	return ""
 }
 
-// `grpc.health.v1.Health
-// <https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto>`_-based
-// healthcheck. See `gRPC doc <https://github.com/grpc/grpc/blob/master/doc/health-checking.md>`_
+// [grpc.health.v1.Health](https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto)-based
+// healthcheck. See [gRPC doc](https://github.com/grpc/grpc/blob/master/doc/health-checking.md)
 // for details.
 type HealthCheck_GrpcHealthCheck struct {
 	state         protoimpl.MessageState
@@ -691,10 +690,8 @@ type HealthCheck_GrpcHealthCheck struct {
 	unknownFields protoimpl.UnknownFields
 
 	// An optional service name parameter which will be sent to gRPC service in
-	// `grpc.health.v1.HealthCheckRequest
-	// <https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto#L20>`_.
-	// message. See `gRPC health-checking overview
-	// <https://github.com/grpc/grpc/blob/master/doc/health-checking.md>`_ for more information.
+	// [grpc.health.v1.HealthCheckRequest](https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto#L20)
+	// message. See [gRPC health-checking overview](https://github.com/grpc/grpc/blob/master/doc/health-checking.md) for more information.
 	ServiceName string `protobuf:"bytes,1,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
 	// The value of the :authority header in the gRPC health check request. If
 	// left empty (default value), the name of the cluster this health check is associated

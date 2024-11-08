@@ -944,7 +944,7 @@ type RuntimeFilter struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Runtime key to get an optional overridden numerator for use in the
-	// “percent_sampled“ field. If found in runtime, this value will replace the
+	// `percent_sampled` field. If found in runtime, this value will replace the
 	// default numerator.
 	RuntimeKey string `protobuf:"bytes,1,opt,name=runtime_key,json=runtimeKey,proto3" json:"runtime_key,omitempty"`
 	// The default sampling percentage. If not specified, defaults to 0% with
@@ -956,9 +956,9 @@ type RuntimeFilter struct {
 	// is present, the filter will consistently sample across multiple hosts based
 	// on the runtime key value and the value extracted from
 	// :ref:`x-request-id<config_http_conn_man_headers_x-request-id>`. If it is
-	// missing, or “use_independent_randomness“ is set to true, the filter will
+	// missing, or `use_independent_randomness` is set to true, the filter will
 	// randomly sample based on the runtime key value alone.
-	// “use_independent_randomness“ can be used for logging kill switches within
+	// `use_independent_randomness` can be used for logging kill switches within
 	// complex nested :ref:`AndFilter
 	// <envoy_v3_api_msg_config.accesslog.v3.AndFilter>` and :ref:`OrFilter
 	// <envoy_v3_api_msg_config.accesslog.v3.OrFilter>` blocks that are easier to
