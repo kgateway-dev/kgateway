@@ -26,7 +26,7 @@ func (c *OpaqueSecretConverter) FromKubeSecret(ctx context.Context, rc *kubesecr
 
 	// let the ResourceClient try to unmarshal the opaque secret into one of the Gloo secret types
 	resource, err := rc.FromKubeSecret(secret)
-	if err != nil {
+	if err != nil && err != kubesecret.NotOurResource {
 		// if that was unsuccessful, return nil to fall back to the next converter
 		contextutils.LoggerFrom(ctx).Debugw("resource client could not convert secret", zap.Error(err))
 		return nil, nil
