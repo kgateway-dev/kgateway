@@ -18,7 +18,7 @@ import (
 	"github.com/solo-io/gloo/test/v1helpers"
 )
 
-var _ = Describe("Example E2E Test For Developers", Label(), func() {
+var _ = FDescribe("Example E2E Test For Developers", Label(), func() {
 
 	// The TestContext is a framework for writing e2e tests
 	// This test provides some basic use cases to demonstrate how to leverage the framework
@@ -231,9 +231,11 @@ var _ = Describe("Example E2E Test For Developers", Label(), func() {
 				response, err := testutils.DefaultHttpClient.Do(requestBuilder)
 				g.Expect(err).NotTo(HaveOccurred())
 
-				g.Expect(response).Should(matchers.HaveOkResponse())
-				//g.Expect(response).Should(matchers.HaveExactResponseBody("request number 2"))
-			}, "5s", ".5s").Should(Succeed(), "traffic to /test eventually returns a 200")
+				g.Expect(response).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
+					StatusCode: http.StatusOK,
+					Body:       "request number 2",
+				}))
+			}, "5s", ".5s").Should(Succeed(), "traffic to /test eventually returns a 200 with the correct response body")
 		})
 	})
 })
