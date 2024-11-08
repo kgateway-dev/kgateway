@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/solo-io/gloo/test/e2e"
 	"github.com/solo-io/gloo/test/services/envoy"
 
 	"github.com/solo-io/gloo/test/testutils"
@@ -129,7 +130,7 @@ var _ = Describe("Tracing config loading", Serial, func() {
 			vsToTestUpstream := gloohelpers.NewVirtualServiceBuilder().
 				WithName("vs-test").
 				WithNamespace(writeNamespace).
-				WithDomain("test.com").
+				WithDomain(e2e.DefaultHost).
 				WithRoutePrefixMatcher("test", "/").
 				WithRouteActionToUpstream("test", testUpstream.Upstream).
 				Build()
@@ -197,7 +198,7 @@ var _ = Describe("Tracing config loading", Serial, func() {
 				v1helpers.CurlRequest{
 					RootCA: nil,
 					Port:   envoyInstance.HttpPort,
-					Host:   "test.com", // to match the vs-test
+					Host:   e2e.DefaultHost, // to match the vs-test
 					Path:   "/",
 					Body:   []byte("solo.io test"),
 				},

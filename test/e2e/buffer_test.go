@@ -119,7 +119,7 @@ var _ = Describe("buffer", func() {
 				vsToTestUpstream := helpers.NewVirtualServiceBuilder().
 					WithName("vs-test").
 					WithNamespace(writeNamespace).
-					WithDomain("test.com").
+					WithDomain(e2e.DefaultHost).
 					WithVirtualHostOptions(&gloov1.VirtualHostOptions{
 						BufferPerRoute: &buffer.BufferPerRoute{
 							Override: &buffer.BufferPerRoute_Buffer{
@@ -168,7 +168,7 @@ var _ = Describe("buffer", func() {
 				vsToTestUpstream := helpers.NewVirtualServiceBuilder().
 					WithName("vs-test").
 					WithNamespace(writeNamespace).
-					WithDomain("test.com").
+					WithDomain(e2e.DefaultHost).
 					WithVirtualHostOptions(&gloov1.VirtualHostOptions{
 						BufferPerRoute: &buffer.BufferPerRoute{
 							Override: &buffer.BufferPerRoute_Buffer{
@@ -222,7 +222,7 @@ var _ = Describe("buffer", func() {
 				vsToTestUpstream := helpers.NewVirtualServiceBuilder().
 					WithName("vs-test").
 					WithNamespace(writeNamespace).
-					WithDomain("test.com").
+					WithDomain(e2e.DefaultHost).
 					WithRoutePrefixMatcher("test", "/").
 					WithRouteActionToUpstream("test", testContext.TestUpstream().Upstream).
 					WithRouteOptions("test", &gloov1.RouteOptions{
@@ -271,7 +271,7 @@ var _ = Describe("buffer", func() {
 				vsToTestUpstream := helpers.NewVirtualServiceBuilder().
 					WithName("vs-test").
 					WithNamespace(writeNamespace).
-					WithDomain("test.com").
+					WithDomain(e2e.DefaultHost).
 					WithRoutePrefixMatcher("test", "/").
 					WithRouteActionToUpstream("test", testContext.TestUpstream().Upstream).
 					WithRouteOptions("test", &gloov1.RouteOptions{
