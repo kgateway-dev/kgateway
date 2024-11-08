@@ -6,6 +6,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/servers/admin"
 	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 	"github.com/solo-io/go-utils/stats"
+	"istio.io/istio/pkg/kube/krt"
 
 	"golang.org/x/sync/errgroup"
 
@@ -52,10 +53,10 @@ func ExecuteAsynchronousStartFuncs(
 // The endpoints that are available on this server are split between two places:
 //  1. The default endpoints are defined by our stats server: https://github.com/solo-io/go-utils/blob/8eda16b9878d71673e6a3a9756f6088160f75468/stats/stats.go#L79
 //  2. Custom endpoints are defined by our admin server handler in `gloo/pkg/servers/admin`
-func AdminServerStartFunc(history iosnapshot.History) StartFunc {
+func AdminServerStartFunc(history iosnapshot.History, dbg *krt.DebugHandler) StartFunc {
 	return func(ctx context.Context, opts bootstrap.Opts, extensions Extensions) error {
 		// serverHandlers defines the custom handlers that the Admin Server will support
-		serverHandlers := admin.ServerHandlers(ctx, history)
+		serverHandlers := admin.ServerHandlers(ctx, history, dbg)
 
 		// The Stats Server is used as the running server for our admin endpoints
 		//
