@@ -144,7 +144,7 @@ var _ = Describe("CSRF", func() {
 			vs := helpers.NewVirtualServiceBuilder().
 				WithName("vs-test").
 				WithNamespace(writeNamespace).
-				WithDomain("test.com").
+				WithDomain(e2e.DefaultHost).
 				WithRoutePrefixMatcher("test", "/").
 				WithRouteActionToUpstream("test", testContext.TestUpstream().Upstream).
 				WithRouteOptions("test", &gloov1.RouteOptions{
@@ -173,7 +173,7 @@ var _ = Describe("CSRF", func() {
 			vs := helpers.NewVirtualServiceBuilder().
 				WithName("vs-test").
 				WithNamespace(writeNamespace).
-				WithDomain("test.com").
+				WithDomain(e2e.DefaultHost).
 				WithVirtualHostOptions(&gloov1.VirtualHostOptions{
 					Csrf: getCsrfPolicyWithFilterEnabled(allowedOrigin),
 				}).
@@ -202,7 +202,7 @@ var _ = Describe("CSRF", func() {
 			vs := helpers.NewVirtualServiceBuilder().
 				WithName("vs-test").
 				WithNamespace(writeNamespace).
-				WithDomain("test.com").
+				WithDomain(e2e.DefaultHost).
 				WithRoutePrefixMatcher("test", "/").
 				WithRouteActionToMultiDestination("test", &gloov1.MultiDestination{
 					Destinations: []*gloov1.WeightedDestination{{
@@ -245,7 +245,7 @@ var _ = Describe("CSRF", func() {
 			vs := helpers.NewVirtualServiceBuilder().
 				WithName("vs-test").
 				WithNamespace(writeNamespace).
-				WithDomain("test.com").
+				WithDomain(e2e.DefaultHost).
 				WithVirtualHostOptions(&gloov1.VirtualHostOptions{
 					Csrf: getCsrfPolicyWithFilterEnabled(allowedOrigin),
 				}).
