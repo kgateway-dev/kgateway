@@ -121,6 +121,15 @@ func NewTestHttpUpstreamWithReplyAndHealthReply(ctx context.Context, addr, reply
 	return newTestUpstream(addr, []uint32{backendPort}, requests, responses)
 }
 
+// NewTestHttpUpstreamWithHandler creates a test upstream that routes to a server that responds
+// with the provided http.Handler.
+func NewTestHttpUpstreamWithHandler(handler http.Handler) func(ctx context.Context, addr string) *TestUpstream {
+	return func(ctx context.Context, addr string) *TestUpstream {
+		backendPort, requests, responses := runTestServerWithHttpHandler(ctx, NO_TLS, handler)
+		return newTestUpstream(addr, []uint32{backendPort}, requests, responses)
+	}
+}
+
 // NewTestHttpUpstreamWithHttpbin creates a test upstream that routes to a server that responds with go-httpbin.
 // HTTPBin (https://httpbin.org/) provides common introspection endpoints and responses
 // that can be used to simulate a variety of common HTTP behaviors.

@@ -1,7 +1,9 @@
 package e2e_test
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/solo-io/gloo/test/testutils"
@@ -13,6 +15,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/test/e2e"
 	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/gloo/test/v1helpers"
 )
 
 var _ = Describe("Example E2E Test For Developers", Label(), func() {
@@ -164,4 +167,73 @@ var _ = Describe("Example E2E Test For Developers", Label(), func() {
 
 	})
 
+	Context("Using httpbin upstream generator to test", func() {
+		type HeadersResponse struct {
+			Headers map[string]interface{} `json:"headers"`
+		}
+
+		BeforeEach(func() {
+			testContext = testContextFactory.NewTestContext()
+			testContext.SetUpstreamGenerator(v1helpers.NewTestHttpUpstreamWithHttpbin)
+			testContext.BeforeEach()
+		})
+
+		It("Gets reflected headers from /headers route", func() {
+			Eventually(func(g Gomega) {
+				requestBuilder := testContext.GetHttpRequestBuilder().
+					WithPath("headers").
+					WithHeader("X-Test-Header", "test-value").
+					Build()
+
+				response, err := testutils.DefaultHttpClient.Do(requestBuilder)
+				g.Expect(err).NotTo(HaveOccurred())
+
+				defer response.Body.Close()
+				body, err := io.ReadAll(response.Body)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(response.StatusCode).Should(Equal(http.StatusOK))
+
+				var headersResponse HeadersResponse
+				err = json.Unmarshal(body, &headersResponse)
+				g.Expect(err).NotTo(HaveOccurred())
+
+				g.Expect(headersResponse.Headers).Should(HaveKeyWithValue("X-Test-Header", ConsistOf("test-value")))
+			}, "5s", ".5s").Should(Succeed(), "traffic to /headers eventually returns a 200 with the test header")
+		})
+	})
+
+	Context("Using handler upstream generator to test", func() {
+		BeforeEach(func() {
+			counter := 0
+			mux := http.NewServeMux()
+			mux.HandleFunc("/test", func(writer http.ResponseWriter, request *http.Request) {
+				counter++
+				_, err := writer.Write([]byte(fmt.Sprintf("request number %d", counter)))
+				if err != nil {
+					writer.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				writer.WriteHeader(http.StatusOK)
+			})
+
+			testContext = testContextFactory.NewTestContext()
+			testContext.SetUpstreamGenerator(v1helpers.NewTestHttpUpstreamWithHandler(mux))
+			testContext.BeforeEach()
+		})
+
+		It("Can count using custom handler", func() {
+			Eventually(func(g Gomega) {
+				requestBuilder := testContext.GetHttpRequestBuilder().
+					WithPath("test").
+					Build()
+
+				response, err := testutils.DefaultHttpClient.Do(requestBuilder)
+				g.Expect(err).NotTo(HaveOccurred())
+
+				g.Expect(response).Should(matchers.HaveOkResponse())
+				//g.Expect(response).Should(matchers.HaveExactResponseBody("request number 2"))
+			}, "5s", ".5s").Should(Succeed(), "traffic to /test eventually returns a 200")
+		})
+	})
 })
