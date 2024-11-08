@@ -18,7 +18,7 @@ import (
 	"github.com/solo-io/gloo/test/v1helpers"
 )
 
-var _ = FDescribe("Example E2E Test For Developers", Label(), func() {
+var _ = Describe("Example E2E Test For Developers", Label(), func() {
 
 	// The TestContext is a framework for writing e2e tests
 	// This test provides some basic use cases to demonstrate how to leverage the framework
