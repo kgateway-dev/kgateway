@@ -1,10 +1,4 @@
 changelog:
-  - type: DEPENDENCY_BUMP
-    dependencyOwner: solo-io
-    dependencyRepo: envoy-gloo
-    dependencyTag: v1.30.6-patch3
-    description: >
-      Update envoy-gloo to enable support for setting span names via the transformation filter.
   - type: NON_USER_FACING
     description: >-
       Change the image used in our kubernetes/e2e tests from kennship/http-echo
@@ -18,9 +12,9 @@ changelog:
       `kennship/http-echo` image. See
       [here](https://github.com/solo-io/gloo/actions/runs/11693450838/job/32565060282?pr=10123)
       for a sample run.
-  - type: FIX
+  - type: NEW_FEATURE
     issueLink: https://github.com/solo-io/gloo/issues/9848
-    resolvesIssue: false
+    resolvesIssue: true
     description: >-
       Enable modifying the span name for tracing purposes using InjaTemplates
       in the transformation filter. More information on OpenTelemetry span
