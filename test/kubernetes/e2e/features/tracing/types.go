@@ -12,6 +12,8 @@ const (
 	pathWithRouteDescriptor    = "/path/with/route/descriptor"
 	pathWithoutRouteDescriptor = "/path/without/route/descriptor"
 	routeDescriptorSpanName    = "THISISAROUTEDESCRIPTOR"
+	gatewayProxyHost           = "gateway-proxy-tracing"
+	gatewayProxyPort           = 18080
 )
 
 var (

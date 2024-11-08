@@ -7,7 +7,6 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	testdefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
@@ -120,11 +119,11 @@ func (s *testingSuite) TestSpanNameTransformationsWithoutRouteDecorator() {
 	s.testInstallation.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{
-				Name:      gatewaydefaults.GatewayProxyName,
+				Name:      gatewayProxyHost,
 				Namespace: s.testInstallation.Metadata.InstallNamespace,
 			})),
 			curl.WithHostHeader(testHostname),
-			curl.WithPort(80),
+			curl.WithPort(gatewayProxyPort),
 			curl.WithPath(pathWithoutRouteDescriptor),
 		},
 		&matchers.HttpResponse{
@@ -145,11 +144,11 @@ func (s *testingSuite) TestSpanNameTransformationsWithRouteDecorator() {
 	s.testInstallation.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{
-				Name:      gatewaydefaults.GatewayProxyName,
+				Name:      gatewayProxyHost,
 				Namespace: s.testInstallation.Metadata.InstallNamespace,
 			})),
 			curl.WithHostHeader("example.com"),
-			curl.WithPort(80),
+			curl.WithPort(gatewayProxyPort),
 			curl.WithPath(pathWithRouteDescriptor),
 		},
 		&matchers.HttpResponse{

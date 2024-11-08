@@ -32,6 +32,8 @@ apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
   name: default
+  labels:
+    gateway-type: tracing
 spec:
   virtualHost:
     domains:
@@ -70,17 +72,25 @@ spec:
         tracing:
           routeDescriptor: THISISAROUTEDESCRIPTOR
 ---
+# Avoid using the default gateway because we don't want to destroy it when this
+# test is over - that will break other tests that depend on the default gateway
+# existing.
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   labels:
     app: gloo
-  name: gateway-proxy
+    app.kubernetes.io/name: gateway-proxy-tracing
+  name: gateway-proxy-tracing
   namespace: gloo-gateway-edge-test
 spec:
   bindAddress: '::'
-  bindPort: 8080
+  bindPort: 18080
+  proxyNames:
+    - gateway-proxy
   httpGateway:
+    virtualServiceSelector:
+      gateway-type: tracing
     options:
       httpConnectionManagerSettings:
         tracing:
@@ -88,3 +98,20 @@ spec:
             collectorUpstreamRef:
               name: opentelemetry-collector
               namespace: default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-proxy-tracing
+  namespace: gloo-gateway-edge-test
+  labels:
+    app.kubernetes.io/name: gateway-proxy-tracing-service
+spec:
+  ports:
+  - name: gateway-proxy-tracing
+    port: 18080
+    protocol: TCP
+    targetPort: 18080
+  selector:
+    gateway-proxy: live
+    gateway-proxy-id: gateway-proxy
