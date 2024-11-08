@@ -222,7 +222,7 @@ webhooks:
 `
 	// Only create the webhook for core resources if there are any resources being valdiated
 	if coreRules != "[]\n    " {
-		chart += `- name: core.` + namespace + `.svc  # must be a domain with at least three segments separated by dots
+		chart += `- name: kube.` + namespace + `.svc  # must be a domain with at least three segments separated by dots
   clientConfig:
     service:
       name: gloo
