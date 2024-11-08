@@ -13,26 +13,6 @@ spec:
       namespaces:
         from: All
 ---
-# needed for unique client set - xds requests will look like they are coming
-# from this pod
-apiVersion: v1
-kind: Pod
-metadata:
-  labels:
-    app: gateway
-  name: gateway
-  namespace: gwtest
-spec:
-  containers:
-  - image: gateway
-    name: gateway
-    ports:
-    - containerPort: 8080
-      protocol: TCP
-  nodeName: worker
-  serviceAccount: default
-  serviceAccountName: default
----
 apiVersion: v1
 kind: Service
 metadata:

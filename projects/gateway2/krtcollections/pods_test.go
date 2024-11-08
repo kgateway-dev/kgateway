@@ -162,7 +162,7 @@ func TestPods(t *testing.T) {
 			g := gomega.NewWithT(t)
 			mock := krttest.NewMock(t, tc.inputs)
 			nodes := krtcollections.NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
-			pods := krtcollections.NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock))
+			pods := krtcollections.NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), nil)
 			pods.Synced().WaitUntilSynced(context.Background().Done())
 			lp := pods.List()[0]
 
