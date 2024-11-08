@@ -1,0 +1,9 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/10278
+    resolvesIssue: true
+    description: >-
+      Add metrics for translatation timing and time for taken to sync served xDS entries.
+
+      skipCI-kube-tests
+      skipCI-docs-build
