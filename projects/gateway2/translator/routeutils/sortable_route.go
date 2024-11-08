@@ -4,13 +4,13 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"k8s.io/apimachinery/pkg/types"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type SortableRoute struct {
-	Route     *v1.Route
-	HttpRoute *gwv1.HTTPRoute
-	Idx       int
+	GlooRoute   *v1.Route
+	RouteObject client.Object
+	Idx         int
 }
 
 type SortableRoutes []*SortableRoute
@@ -22,18 +22,18 @@ func (a SortableRoutes) Less(i, j int) bool { return !routeWrapperLessFunc(a[i],
 func (a SortableRoutes) ToRoutes() []*v1.Route {
 	var routes []*v1.Route
 	for _, route := range a {
-		routes = append(routes, route.Route)
+		routes = append(routes, route.GlooRoute)
 	}
 	return routes
 }
 
-func ToSortable(route *gwv1.HTTPRoute, routes []*v1.Route) SortableRoutes {
+func ToSortable(obj client.Object, routes []*v1.Route) SortableRoutes {
 	var wrappers SortableRoutes
 	for i, glooRoute := range routes {
 		wrappers = append(wrappers, &SortableRoute{
-			Route:     glooRoute,
-			HttpRoute: route,
-			Idx:       i,
+			GlooRoute:   glooRoute,
+			RouteObject: obj,
+			Idx:         i,
 		})
 	}
 	return wrappers
@@ -43,7 +43,7 @@ func ToSortable(route *gwv1.HTTPRoute, routes []*v1.Route) SortableRoutes {
 // https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io%2fv1.HTTPRouteRule
 func routeWrapperLessFunc(wrapperA, wrapperB *SortableRoute) bool {
 	// We know there's always a single matcher because of the route translator below
-	matchA, matchB := wrapperA.Route.GetMatchers()[0], wrapperB.Route.GetMatchers()[0]
+	matchA, matchB := wrapperA.GlooRoute.GetMatchers()[0], wrapperB.GlooRoute.GetMatchers()[0]
 	switch typedPathA := matchA.GetPathSpecifier().(type) {
 	case *matchers.Matcher_Prefix:
 		// If they are both prefix, then check length
@@ -97,12 +97,12 @@ func routeWrapperLessFunc(wrapperA, wrapperB *SortableRoute) bool {
 		return len(matchA.GetQueryParameters()) < len(matchB.GetQueryParameters())
 	}
 
-	if !wrapperA.HttpRoute.CreationTimestamp.Time.Equal(wrapperB.HttpRoute.CreationTimestamp.Time) {
-		return wrapperA.HttpRoute.CreationTimestamp.Time.After(wrapperB.HttpRoute.CreationTimestamp.Time)
+	if !wrapperA.RouteObject.GetCreationTimestamp().Time.Equal(wrapperB.RouteObject.GetCreationTimestamp().Time) {
+		return wrapperA.RouteObject.GetCreationTimestamp().After(wrapperB.RouteObject.GetCreationTimestamp().Time)
 	}
-	if wrapperA.HttpRoute.Name != wrapperB.HttpRoute.Name || wrapperA.HttpRoute.Namespace != wrapperB.HttpRoute.Namespace {
-		return types.NamespacedName{Namespace: wrapperA.HttpRoute.Namespace, Name: wrapperA.HttpRoute.Name}.String() >
-			types.NamespacedName{Namespace: wrapperB.HttpRoute.Namespace, Name: wrapperB.HttpRoute.Name}.String()
+	if wrapperA.RouteObject.GetName() != wrapperB.RouteObject.GetName() || wrapperA.RouteObject.GetNamespace() != wrapperB.RouteObject.GetNamespace() {
+		return types.NamespacedName{Namespace: wrapperA.RouteObject.GetNamespace(), Name: wrapperA.RouteObject.GetName()}.String() >
+			types.NamespacedName{Namespace: wrapperB.RouteObject.GetNamespace(), Name: wrapperB.RouteObject.GetName()}.String()
 	}
 
 	return wrapperA.Idx > wrapperB.Idx

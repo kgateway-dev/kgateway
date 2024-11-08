@@ -1,4 +1,4 @@
-package proxy_syncer_test
+package krtcollections
 
 import (
 	"context"
@@ -8,8 +8,6 @@ import (
 	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"github.com/onsi/gomega"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
-	. "github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -85,21 +83,21 @@ func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 		},
 	}
 	result1 := NewEndpointsForUpstream(us, nil)
-	result1.Add(krtcollections.PodLocality{
+	result1.Add(PodLocality{
 		Region: "region",
 		Zone:   "zone",
 	}, emd1)
-	result1.Add(krtcollections.PodLocality{
+	result1.Add(PodLocality{
 		Region: "region2",
 		Zone:   "zone2",
 	}, emd2)
 
 	result2 := NewEndpointsForUpstream(us, nil)
-	result2.Add(krtcollections.PodLocality{
+	result2.Add(PodLocality{
 		Region: "region2",
 		Zone:   "zone2",
 	}, emd2)
-	result2.Add(krtcollections.PodLocality{
+	result2.Add(PodLocality{
 		Region: "region",
 		Zone:   "zone",
 	}, emd1)
@@ -107,11 +105,11 @@ func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 
 	// test with non matching locality
 	result3 := NewEndpointsForUpstream(us, nil)
-	result3.Add(krtcollections.PodLocality{
+	result3.Add(PodLocality{
 		Region: "region",
 		Zone:   "zone",
 	}, emd1)
-	result3.Add(krtcollections.PodLocality{
+	result3.Add(PodLocality{
 		Region: "region",
 		Zone:   "zone",
 	}, emd2)
@@ -119,13 +117,13 @@ func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 
 	// test with non matching labels
 	result4 := NewEndpointsForUpstream(us, nil)
-	result4.Add(krtcollections.PodLocality{
+	result4.Add(PodLocality{
 		Region: "region",
 		Zone:   "zone",
 	}, emd1)
 
 	emd2.EndpointMd.Labels["extra"] = "label"
-	result4.Add(krtcollections.PodLocality{
+	result4.Add(PodLocality{
 		Region: "region2",
 		Zone:   "zone2",
 	}, emd2)
@@ -247,7 +245,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				}
 				result := NewEndpointsForUpstream(us, nil)
-				result.Add(krtcollections.PodLocality{
+				result.Add(PodLocality{
 					Region: "region",
 					Zone:   "zone",
 				}, emd)
@@ -376,7 +374,7 @@ func TestEndpoints(t *testing.T) {
 			result: func(us UpstreamWrapper) *EndpointsForUpstream {
 				// output
 				result := NewEndpointsForUpstream(us, nil)
-				result.Add(krtcollections.PodLocality{
+				result.Add(PodLocality{
 					Region: "region",
 					Zone:   "zone",
 				}, EndpointWithMd{
@@ -404,7 +402,7 @@ func TestEndpoints(t *testing.T) {
 						},
 					},
 				})
-				result.Add(krtcollections.PodLocality{
+				result.Add(PodLocality{
 					Region: "region",
 					Zone:   "zone2",
 				}, EndpointWithMd{
@@ -549,7 +547,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				}
 				result := NewEndpointsForUpstream(us, nil)
-				result.Add(krtcollections.PodLocality{
+				result.Add(PodLocality{
 					Region: "region",
 					Zone:   "zone",
 				}, emd)
@@ -562,8 +560,8 @@ func TestEndpoints(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := gomega.NewWithT(t)
 			mock := krttest.NewMock(t, tc.inputs)
-			nodes := krtcollections.NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
-			pods := krtcollections.NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock))
+			nodes := NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
+			pods := NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock))
 			pods.Synced().WaitUntilSynced(context.Background().Done())
 			es := EndpointsSettings{
 				EnableAutoMtls: false,
@@ -578,7 +576,7 @@ func TestEndpoints(t *testing.T) {
 				Services:          krttest.GetMockCollection[*corev1.Service](mock),
 			}
 
-			builder := TransformUpstreamsBuilder(context.Background(), ei)
+			builder := transformK8sEndpoints(context.Background(), ei)
 
 			eps := builder(krt.TestingDummyContext{}, tc.upstream)
 			res := tc.result(tc.upstream)

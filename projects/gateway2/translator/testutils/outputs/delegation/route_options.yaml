@@ -25,7 +25,7 @@ listeners:
                 abort:
                   httpStatus: 418
                   percentage: 100
-            name: route-a-a-0-0
+            name: httproute-route-a-a-0-0
             routeAction:
               single:
                 kube:
@@ -36,7 +36,7 @@ listeners:
           - matchers:
             - prefix: /
             options: {}
-            name: example-route-infra-0-0
+            name: httproute-example-route-infra-0-0
             routeAction:
               single:
                 kube:

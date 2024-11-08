@@ -34,6 +34,7 @@ import (
 	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
 	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -96,8 +97,8 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 
 	Context("HTTPRoute resource routing", func() {
 		var (
-			route             gwv1.HTTPRoute
-			routeInfo         *query.HTTPRouteInfo
+			route             *gwv1.HTTPRoute
+			routeInfo         *query.RouteInfo
 			parentRef         *gwv1.ParentReference
 			baseReporter      reports.Reporter
 			parentRefReporter reports.ParentRefReporter
@@ -111,7 +112,11 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 			parentRef = &gwv1.ParentReference{
 				Name: "my-gw",
 			}
-			route = gwv1.HTTPRoute{
+			route = &gwv1.HTTPRoute{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       wellknown.HTTPRouteKind,
+					APIVersion: gwv1.GroupVersion.String(),
+				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo-httproute",
 					Namespace: "bar",
@@ -149,7 +154,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 			}
 			reportsMap = reports.NewReportMap()
 			baseReporter = reports.NewReporter(&reportsMap)
-			parentRefReporter = baseReporter.Route(&route).ParentRef(parentRef)
+			parentRefReporter = baseReporter.Route(route).ParentRef(parentRef)
 		})
 
 		When("referencing a valid backing service", func() {
@@ -172,10 +177,10 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				backends = query.NewBackendMap[client.Object]()
 				backends.Add(route.Spec.Rules[0].BackendRefs[0].BackendObjectReference, backingSvc)
 
-				// Build HTTPRouteInfo
-				routeInfo = &query.HTTPRouteInfo{
-					HTTPRoute: route,
-					Backends:  backends,
+				// Build RouteInfo
+				routeInfo = &query.RouteInfo{
+					Object:   route,
+					Backends: backends,
 				}
 			})
 
@@ -183,7 +188,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				routes := httproute.TranslateGatewayHTTPRouteRules(ctx, pluginRegistry, gwListener, routeInfo, parentRefReporter, baseReporter)
 
 				Expect(routes).To(HaveLen(1))
-				Expect(routes[0].Name).To(Equal("foo-httproute-bar-0-0"))
+				Expect(routes[0].Name).To(Equal("httproute-foo-httproute-bar-0-0"))
 				Expect(routes[0].Matchers).To(HaveLen(1))
 				Expect(routes[0].GetAction()).To(BeEquivalentTo(&v1.Route_RouteAction{
 					RouteAction: &v1.RouteAction{
@@ -225,10 +230,10 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				// Do not add the backing service to the backend map (simulate missing service)
 				backends = query.NewBackendMap[client.Object]()
 
-				// Build HTTPRouteInfo
-				routeInfo = &query.HTTPRouteInfo{
-					HTTPRoute: route,
-					Backends:  backends,
+				// Build RouteInfo
+				routeInfo = &query.RouteInfo{
+					Object:   route,
+					Backends: backends,
 				}
 			})
 
@@ -236,7 +241,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				routes := httproute.TranslateGatewayHTTPRouteRules(ctx, pluginRegistry, gwListener, routeInfo, parentRefReporter, baseReporter)
 
 				Expect(routes).To(HaveLen(1))
-				Expect(routes[0].Name).To(Equal("foo-httproute-bar-0-0"))
+				Expect(routes[0].Name).To(Equal("httproute-foo-httproute-bar-0-0"))
 				Expect(routes[0].Matchers).To(HaveLen(1))
 				Expect(routes[0].GetAction()).To(BeEquivalentTo(&v1.Route_RouteAction{
 					RouteAction: &v1.RouteAction{
@@ -276,8 +281,8 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 
 	Context("multiple route actions", func() {
 		var (
-			route             gwv1.HTTPRoute
-			routeInfo         *query.HTTPRouteInfo
+			route             *gwv1.HTTPRoute
+			routeInfo         *query.RouteInfo
 			baseReporter      reports.Reporter
 			parentRefReporter reports.ParentRefReporter
 			reportsMap        reports.ReportMap
@@ -297,10 +302,10 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 		}
 
 		// Helper function to create a basic HTTPRoute with a ParentRef
-		createHTTPRoute := func(backendRefs []gwv1.HTTPBackendRef, filters []gwv1.HTTPRouteFilter) gwv1.HTTPRoute {
+		createHTTPRoute := func(backendRefs []gwv1.HTTPBackendRef, filters []gwv1.HTTPRouteFilter) *gwv1.HTTPRoute {
 			parentRef := &gwv1.ParentReference{Name: "my-gw"}
 
-			return gwv1.HTTPRoute{
+			return &gwv1.HTTPRoute{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo-httproute",
 					Namespace: "bar",
@@ -374,11 +379,11 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				route = createHTTPRoute(backendRefs, filters)
 				backends := query.NewBackendMap[client.Object]()
 				backends.Add(route.Spec.Rules[0].BackendRefs[0].BackendObjectReference, backingSvc)
-				routeInfo = &query.HTTPRouteInfo{
-					HTTPRoute: route,
-					Backends:  backends,
+				routeInfo = &query.RouteInfo{
+					Object:   route,
+					Backends: backends,
 				}
-				parentRefReporter = baseReporter.Route(&route).ParentRef(&gwv1.ParentReference{Name: "my-gw"})
+				parentRefReporter = baseReporter.Route(route).ParentRef(&gwv1.ParentReference{Name: "my-gw"})
 			})
 
 			It("should replace the route due to incompatible filters being configured", func() {
@@ -426,8 +431,8 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				}
 
 				route = createHTTPRoute(nil, filters)
-				routeInfo = &query.HTTPRouteInfo{HTTPRoute: route}
-				parentRefReporter = baseReporter.Route(&route).ParentRef(&gwv1.ParentReference{Name: "my-gw"})
+				routeInfo = &query.RouteInfo{Object: route}
+				parentRefReporter = baseReporter.Route(route).ParentRef(&gwv1.ParentReference{Name: "my-gw"})
 			})
 
 			It("should replace the route due to incompatible filters being configured", func() {
@@ -493,11 +498,11 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				route = createHTTPRoute(backendRefs, filters)
 				backends := query.NewBackendMap[client.Object]()
 				backends.Add(route.Spec.Rules[0].BackendRefs[0].BackendObjectReference, backingSvc)
-				routeInfo = &query.HTTPRouteInfo{
-					HTTPRoute: route,
-					Backends:  backends,
+				routeInfo = &query.RouteInfo{
+					Object:   route,
+					Backends: backends,
 				}
-				parentRefReporter = baseReporter.Route(&route).ParentRef(&gwv1.ParentReference{Name: "my-gw"})
+				parentRefReporter = baseReporter.Route(route).ParentRef(&gwv1.ParentReference{Name: "my-gw"})
 			})
 
 			// Note(tim): the current behavior is that the redirect plugin will return an error

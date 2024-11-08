@@ -1,0 +1,14 @@
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TCPRoute
+metadata:
+  name: tcp-app-1
+spec:
+  parentRefs:
+  - name: tcp-gateway
+    sectionName: foo
+  rules:
+  - backendRefs:
+    - name: foo
+      port: 3001
+    - name: bar
+      port: 3002

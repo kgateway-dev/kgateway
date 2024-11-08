@@ -1,59 +1,4 @@
 clusters:
-- commonLbConfig:
-    healthyPanicThreshold: {}
-  connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-    serviceName: kube-svc:gwtest-reviews-8000_gwtest-14569886796848534197
-  metadata: {}
-  name: kube-svc:gwtest-reviews-8000_gwtest
-  outlierDetection:
-    baseEjectionTime: 900s
-    consecutive5xx: 7
-    interval: 300s
-  transportSocketMatches:
-  - match:
-      tlsMode: istio
-    name: tlsMode-istio
-    transportSocket:
-      name: envoy.transport_sockets.tls
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        commonTlsContext:
-          alpnProtocols:
-          - istio
-          tlsCertificateSdsSecretConfigs:
-          - name: istio_server_cert
-            sdsConfig:
-              apiConfigSource:
-                apiType: GRPC
-                grpcServices:
-                - envoyGrpc:
-                    clusterName: gateway_proxy_sds
-                setNodeOnFirstMessageOnly: true
-                transportApiVersion: V3
-              resourceApiVersion: V3
-          tlsParams: {}
-          validationContextSdsSecretConfig:
-            name: istio_validation_context
-            sdsConfig:
-              apiConfigSource:
-                apiType: GRPC
-                grpcServices:
-                - envoyGrpc:
-                    clusterName: gateway_proxy_sds
-                setNodeOnFirstMessageOnly: true
-                transportApiVersion: V3
-              resourceApiVersion: V3
-  - match: {}
-    name: tlsMode-disabled
-    transportSocket:
-      name: envoy.transport_sockets.raw_buffer
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
-  type: EDS
 - connectTimeout: 5s
   edsClusterConfig:
     edsConfig:
@@ -96,6 +41,64 @@ clusters:
                 setNodeOnFirstMessageOnly: true
                 transportApiVersion: V3
               resourceApiVersion: V3
+        sni: outbound_.443_._.kubernetes.default.svc.cluster.local
+  - match: {}
+    name: tlsMode-disabled
+    transportSocket:
+      name: envoy.transport_sockets.raw_buffer
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
+  type: EDS
+- commonLbConfig:
+    healthyPanicThreshold: {}
+    localityWeightedLbConfig: {}
+  connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+    serviceName: kube-svc:gwtest-reviews-8080_gwtest-14235905899168282861
+  metadata: {}
+  name: kube-svc:gwtest-reviews-8080_gwtest
+  outlierDetection:
+    baseEjectionTime: 900s
+    consecutive5xx: 7
+    interval: 300s
+  transportSocketMatches:
+  - match:
+      tlsMode: istio
+    name: tlsMode-istio
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - istio
+          tlsCertificateSdsSecretConfigs:
+          - name: istio_server_cert
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: gateway_proxy_sds
+                setNodeOnFirstMessageOnly: true
+                transportApiVersion: V3
+              resourceApiVersion: V3
+          tlsParams: {}
+          validationContextSdsSecretConfig:
+            name: istio_validation_context
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: gateway_proxy_sds
+                setNodeOnFirstMessageOnly: true
+                transportApiVersion: V3
+              resourceApiVersion: V3
+        sni: outbound_.8080_._.reviews.gwtest.svc.cluster.local
   - match: {}
     name: tlsMode-disabled
     transportSocket:
@@ -104,7 +107,7 @@ clusters:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
   type: EDS
 endpoints:
-- clusterName: kube-svc:gwtest-reviews-8000_gwtest-14569886796848534197
+- clusterName: kube-svc:gwtest-reviews-8080_gwtest-14235905899168282861
   endpoints:
   - lbEndpoints:
     - endpoint:
@@ -214,7 +217,7 @@ routes:
     routes:
     - match:
         prefix: /
-      name: http~www_example_com-route-0-http-gwtest-0-0-matcher-0
+      name: http~www_example_com-route-0-httproute-http-gwtest-0-0-matcher-0
       route:
         cluster: kube-svc:gwtest-reviews-8080_gwtest
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR

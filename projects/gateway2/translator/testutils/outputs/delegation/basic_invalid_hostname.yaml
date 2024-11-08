@@ -15,7 +15,7 @@ listeners:
           - matchers:
             - prefix: /
             options: {}
-            name: example-route-infra-0-0
+            name: httproute-example-route-infra-0-0
             routeAction:
               single:
                 kube:

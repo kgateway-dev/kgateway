@@ -9,7 +9,9 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
 // Plugin is an empty type for base plugins, currently no base methods.
@@ -19,7 +21,9 @@ type RouteContext struct {
 	// top-level gw Listener
 	Listener *gwv1.Listener
 	// top-level HTTPRoute
-	Route *gwv1.HTTPRoute
+	HTTPRoute *gwv1.HTTPRoute
+	// top-level TCPRoute
+	TCPRoute *gwv1a2.TCPRoute
 	// Hostnames associated with the Route.
 	// Note: this should be used over Route.spec.Hostnames as
 	// delegatee (child) routes of delegated routes will not have spec.Hostnames set.
@@ -102,7 +106,7 @@ type StatusContext struct {
 // Plugin that recieves proxy reports post-xds translation to handle any status reporting necessary
 type StatusPlugin interface {
 	Plugin
-	//TODO: tmp fix
+	// TODO: tmp fix
 	InitStatusPlugin(
 		ctx context.Context,
 		statusCtx *StatusContext,
@@ -111,4 +115,15 @@ type StatusPlugin interface {
 		ctx context.Context,
 		statusCtx *StatusContext,
 	) error
+}
+
+// BackendPlugin allows transforming a backendRef into a destination
+type BackendPlugin interface {
+	Plugin
+
+	// ApplyBackendPlugin returns true if the given backendRef is something it can handle
+	ApplyBackendPlugin(
+		resolvedBackend client.Object,
+		ref gwv1.BackendObjectReference,
+	) (*v1.Destination, bool)
 }

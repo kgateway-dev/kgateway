@@ -3,26 +3,29 @@ package listener
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sort"
 
-	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
-	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
-	"github.com/solo-io/gloo/projects/gateway2/translator/sslutils"
-	"github.com/solo-io/go-utils/contextutils"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+
 	"github.com/solo-io/gloo/projects/gateway2/ports"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
-	"github.com/solo-io/gloo/projects/gateway2/translator/httproute"
+	route "github.com/solo-io/gloo/projects/gateway2/translator/httproute"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
+	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	"github.com/solo-io/gloo/projects/gateway2/translator/routeutils"
+	"github.com/solo-io/gloo/projects/gateway2/translator/sslutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	corev1 "k8s.io/api/core/v1"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // TranslateListeners translates the set of gloo listeners required to produce a full output proxy (either form one Gateway or multiple merged Gateways)
@@ -31,7 +34,7 @@ func TranslateListeners(
 	queries query.GatewayQueries,
 	pluginRegistry registry.PluginRegistry,
 	gateway *gwv1.Gateway,
-	routesForGw query.RoutesForGwResult,
+	routesForGw *query.RoutesForGwResult,
 	reporter reports.Reporter,
 ) []*v1.Listener {
 	validatedListeners := validateListeners(gateway, reporter.Gateway(gateway))
@@ -46,10 +49,10 @@ func mergeGWListeners(
 	gatewayNamespace string,
 	listeners []gwv1.Listener,
 	parentGw gwv1.Gateway,
-	routesForGw query.RoutesForGwResult,
+	routesForGw *query.RoutesForGwResult,
 	reporter reports.GatewayReporter,
-) *mergedListeners {
-	ml := &mergedListeners{
+) *MergedListeners {
+	ml := &MergedListeners{
 		parentGw:         parentGw,
 		gatewayNamespace: gatewayNamespace,
 		queries:          queries,
@@ -62,25 +65,25 @@ func mergeGWListeners(
 			// continue
 		}
 		listenerReporter := reporter.Listener(&listener)
-		var routes []*query.HTTPRouteInfo
+		var routes []*query.RouteInfo
 		if result != nil {
 			routes = result.Routes
 		}
-		ml.appendListener(listener, routes, listenerReporter)
+		ml.AppendListener(listener, routes, listenerReporter)
 	}
 	return ml
 }
 
-type mergedListeners struct {
+type MergedListeners struct {
 	gatewayNamespace string
 	parentGw         gwv1.Gateway
-	listeners        []*mergedListener
+	Listeners        []*MergedListener
 	queries          query.GatewayQueries
 }
 
-func (ml *mergedListeners) appendListener(
+func (ml *MergedListeners) AppendListener(
 	listener gwv1.Listener,
-	routes []*query.HTTPRouteInfo,
+	routes []*query.RouteInfo,
 	reporter reports.ListenerReporter,
 ) error {
 	switch listener.Protocol {
@@ -89,6 +92,8 @@ func (ml *mergedListeners) appendListener(
 	case gwv1.HTTPSProtocolType:
 		ml.appendHttpsListener(listener, routes, reporter)
 	// TODO default handling
+	case gwv1.TCPProtocolType:
+		ml.AppendTcpListener(listener, routes, reporter)
 	default:
 		return eris.Errorf("unsupported protocol: %v", listener.Protocol)
 	}
@@ -96,9 +101,9 @@ func (ml *mergedListeners) appendListener(
 	return nil
 }
 
-func (ml *mergedListeners) appendHttpListener(
+func (ml *MergedListeners) appendHttpListener(
 	listener gwv1.Listener,
-	routesWithHosts []*query.HTTPRouteInfo,
+	routesWithHosts []*query.RouteInfo,
 	reporter reports.ListenerReporter,
 ) {
 	parent := httpFilterChainParent{
@@ -112,7 +117,7 @@ func (ml *mergedListeners) appendHttpListener(
 	listenerName := string(listener.Name)
 	finalPort := gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port)))
 
-	for _, lis := range ml.listeners {
+	for _, lis := range ml.Listeners {
 		if lis.port == finalPort {
 			// concatenate the names on the parent output listener/filterchain
 			// TODO is this valid listener name?
@@ -127,7 +132,7 @@ func (ml *mergedListeners) appendHttpListener(
 	}
 
 	// create a new filter chain for the listener
-	ml.listeners = append(ml.listeners, &mergedListener{
+	ml.Listeners = append(ml.Listeners, &MergedListener{
 		name:             listenerName,
 		gatewayNamespace: ml.gatewayNamespace,
 		port:             finalPort,
@@ -137,9 +142,9 @@ func (ml *mergedListeners) appendHttpListener(
 	})
 }
 
-func (ml *mergedListeners) appendHttpsListener(
+func (ml *MergedListeners) appendHttpsListener(
 	listener gwv1.Listener,
-	routesWithHosts []*query.HTTPRouteInfo,
+	routesWithHosts []*query.RouteInfo,
 	reporter reports.ListenerReporter,
 ) {
 	// create a new filter chain for the listener
@@ -157,7 +162,7 @@ func (ml *mergedListeners) appendHttpsListener(
 	finalPort := gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port)))
 
 	listenerName := string(listener.Name)
-	for _, lis := range ml.listeners {
+	for _, lis := range ml.Listeners {
 		if lis.port == finalPort {
 			// concatenate the names on the parent output listener
 			// TODO is this valid listener name?
@@ -166,7 +171,7 @@ func (ml *mergedListeners) appendHttpsListener(
 			return
 		}
 	}
-	ml.listeners = append(ml.listeners, &mergedListener{
+	ml.Listeners = append(ml.Listeners, &MergedListener{
 		name:              listenerName,
 		gatewayNamespace:  ml.gatewayNamespace,
 		port:              finalPort,
@@ -176,15 +181,199 @@ func (ml *mergedListeners) appendHttpsListener(
 	})
 }
 
-func (ml *mergedListeners) translateListeners(
+func (ml *MergedListeners) AppendTcpListener(
+	listener gwv1.Listener,
+	routeInfos []*query.RouteInfo,
+	reporter reports.ListenerReporter,
+) {
+	var validRouteInfos []*query.RouteInfo
+
+	for _, routeInfo := range routeInfos {
+		tRoute, ok := routeInfo.Object.(*gwv1a2.TCPRoute)
+		if !ok {
+			continue
+		}
+
+		if len(tRoute.Spec.ParentRefs) == 0 {
+			contextutils.LoggerFrom(context.Background()).Warnf(
+				"No parent references found for TCPRoute %s", tRoute.Name,
+			)
+			continue
+		}
+
+		validRouteInfos = append(validRouteInfos, routeInfo)
+	}
+
+	// If no valid routes are found, do not create a listener
+	if len(validRouteInfos) == 0 {
+		contextutils.LoggerFrom(context.Background()).Errorf(
+			"No valid routes found for listener %s", listener.Name,
+		)
+		return
+	}
+
+	parent := tcpFilterChainParent{
+		gatewayListenerName: string(listener.Name),
+		routesWithHosts:     validRouteInfos,
+	}
+
+	fc := tcpFilterChain{
+		parents: []tcpFilterChainParent{parent},
+	}
+	listenerName := string(listener.Name)
+	finalPort := gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port)))
+
+	for _, lis := range ml.Listeners {
+		if lis.port == finalPort {
+			// concatenate the names on the parent output listener
+			lis.name += "~" + listenerName
+			lis.TcpFilterChains = append(lis.TcpFilterChains, fc)
+			return
+		}
+	}
+
+	// create a new filter chain for the listener
+	ml.Listeners = append(ml.Listeners, &MergedListener{
+		name:             listenerName,
+		gatewayNamespace: ml.gatewayNamespace,
+		port:             finalPort,
+		TcpFilterChains:  []tcpFilterChain{fc},
+		listenerReporter: reporter,
+		listener:         listener,
+	})
+}
+
+func buildTcpListener(
+	tRoute *gwv1a2.TCPRoute,
+	defaultPort gwv1.PortNumber,
+) *v1.TcpListener {
+	var tcpHosts []*v1.TcpHost
+
+	for i, rule := range tRoute.Spec.Rules {
+		// Ensure unique names by appending the rule index to the TCPRoute name
+		tcpHostName := fmt.Sprintf("%s-rule-%d", tRoute.Name, i)
+		tcpHost := buildTcpHost(tcpHostName, defaultPort, rule.BackendRefs)
+		tcpHosts = append(tcpHosts, tcpHost)
+	}
+
+	return &v1.TcpListener{
+		TcpHosts: tcpHosts,
+	}
+}
+
+// Helper function to build a TcpHost from backend references
+func buildTcpHost(
+	tcpRouteName string,
+	defaultPort gwv1.PortNumber,
+	backendRefs []gwv1.BackendRef,
+) *v1.TcpHost {
+	// If there are no backendRefs, return nil to skip this TcpHost
+	if len(backendRefs) == 0 {
+		return nil
+	}
+
+	// Use the TCPRoute name for the tcpHost name
+	tcpHost := &v1.TcpHost{Name: tcpRouteName}
+
+	if len(backendRefs) == 1 {
+		backendRef := backendRefs[0]
+		port := defaultPort
+		if backendRef.Port != nil {
+			port = *backendRef.Port
+		}
+		tcpHost.Destination = buildSingleDestination(backendRef, port)
+	} else {
+		tcpHost.Destination = buildMultiDestination(backendRefs, defaultPort)
+	}
+
+	return tcpHost
+}
+
+// Helper function to build a single destination
+func buildSingleDestination(
+	backendRef gwv1.BackendRef,
+	port gwv1.PortNumber,
+) *v1.TcpHost_TcpAction {
+	namespace := "default"
+	if backendRef.Namespace != nil {
+		namespace = string(*backendRef.Namespace)
+	}
+
+	return &v1.TcpHost_TcpAction{
+		Destination: &v1.TcpHost_TcpAction_Single{
+			Single: &v1.Destination{
+				DestinationType: &v1.Destination_Kube{
+					Kube: &v1.KubernetesServiceDestination{
+						Ref: &core.ResourceRef{
+							Name:      string(backendRef.Name),
+							Namespace: namespace,
+						},
+						Port: uint32(port),
+					},
+				},
+			},
+		},
+	}
+}
+
+// Helper function to build multiple destinations
+func buildMultiDestination(
+	backendRefs []gwv1.BackendRef,
+	defaultPort gwv1.PortNumber,
+) *v1.TcpHost_TcpAction {
+	var weightedDestinations []*v1.WeightedDestination
+
+	for _, backendRef := range backendRefs {
+		namespace := "default"
+		if backendRef.Namespace != nil {
+			namespace = string(*backendRef.Namespace)
+		}
+
+		port := defaultPort
+		if backendRef.Port != nil {
+			port = *backendRef.Port
+		}
+
+		// Use backendRef's weight if set, otherwise default to 0.
+		weight := uint32(0)
+		if backendRef.Weight != nil {
+			weight = uint32(*backendRef.Weight)
+		}
+
+		weightedDestinations = append(weightedDestinations, &v1.WeightedDestination{
+			Destination: &v1.Destination{
+				DestinationType: &v1.Destination_Kube{
+					Kube: &v1.KubernetesServiceDestination{
+						Ref: &core.ResourceRef{
+							Name:      string(backendRef.Name),
+							Namespace: namespace,
+						},
+						Port: uint32(port),
+					},
+				},
+			},
+			Weight: wrapperspb.UInt32(weight),
+		})
+	}
+
+	return &v1.TcpHost_TcpAction{
+		Destination: &v1.TcpHost_TcpAction_Multi{
+			Multi: &v1.MultiDestination{
+				Destinations: weightedDestinations,
+			},
+		},
+	}
+}
+
+func (ml *MergedListeners) translateListeners(
 	ctx context.Context,
 	pluginRegistry registry.PluginRegistry,
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
 ) []*v1.Listener {
 	var listeners []*v1.Listener
-	for _, mergedListener := range ml.listeners {
-		listener := mergedListener.translateListener(ctx, pluginRegistry, queries, reporter)
+	for _, mergedListener := range ml.Listeners {
+		listener := mergedListener.TranslateListener(ctx, pluginRegistry, queries, reporter)
 
 		// run listener plugins
 		for _, listenerPlugin := range pluginRegistry.GetListenerPlugins() {
@@ -202,29 +391,32 @@ func (ml *mergedListeners) translateListeners(
 	return listeners
 }
 
-type mergedListener struct {
+type MergedListener struct {
 	name              string
 	gatewayNamespace  string
 	port              gwv1.PortNumber
 	httpFilterChain   *httpFilterChain
 	httpsFilterChains []httpsFilterChain
+	TcpFilterChains   []tcpFilterChain
 	listenerReporter  reports.ListenerReporter
 	listener          gwv1.Listener
 
 	// TODO(policy via http listener options)
 }
 
-func (ml *mergedListener) translateListener(
+func (ml *MergedListener) TranslateListener(
 	ctx context.Context,
 	pluginRegistry registry.PluginRegistry,
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
 ) *v1.Listener {
 	var (
-		httpFilterChains []*v1.AggregateListener_HttpFilterChain
-		mergedVhosts     = map[string]*v1.VirtualHost{}
+		httpFilterChains    []*v1.AggregateListener_HttpFilterChain
+		mergedVhosts        = map[string]*v1.VirtualHost{}
+		matchedTcpListeners []*v1.MatchedTcpListener
 	)
 
+	// Translate HTTP filter chains
 	if ml.httpFilterChain != nil {
 		httpFilterChain, vhostsForFilterchain := ml.httpFilterChain.translateHttpFilterChain(
 			ctx,
@@ -236,14 +428,18 @@ func (ml *mergedListener) translateListener(
 		httpFilterChains = append(httpFilterChains, httpFilterChain)
 		for vhostRef, vhost := range vhostsForFilterchain {
 			if _, ok := mergedVhosts[vhostRef]; ok {
-				// TODO handle internal error, should never overlap
+				// Handle potential error if duplicate vhosts are found
+				contextutils.LoggerFrom(ctx).Errorf(
+					"Duplicate virtual host found: %s", vhostRef,
+				)
+				continue
 			}
 			mergedVhosts[vhostRef] = vhost
 		}
 	}
+
+	// Translate HTTPS filter chains
 	for _, mfc := range ml.httpsFilterChains {
-		// each virtual host name must be unique across all filter chains
-		// to prevent collisions because the vhosts have to be re-computed for each set
 		httpsFilterChain, vhostsForFilterchain := mfc.translateHttpsFilterChain(
 			ctx,
 			pluginRegistry,
@@ -255,18 +451,31 @@ func (ml *mergedListener) translateListener(
 			ml.listenerReporter,
 		)
 		if httpsFilterChain == nil {
-			// TODO report
+			// Log and skip invalid HTTPS filter chains
+			contextutils.LoggerFrom(ctx).Errorf("Failed to translate HTTPS filter chain for listener: %s", ml.name)
 			continue
 		}
+
 		httpFilterChains = append(httpFilterChains, httpsFilterChain)
+
 		for vhostRef, vhost := range vhostsForFilterchain {
 			if _, ok := mergedVhosts[vhostRef]; ok {
-				// TODO handle internal error
+				contextutils.LoggerFrom(ctx).Errorf("Duplicate virtual host found: %s", vhostRef)
+				continue
 			}
 			mergedVhosts[vhostRef] = vhost
 		}
 	}
 
+	// Translate TCP listeners (if any exist)
+	for _, tfc := range ml.TcpFilterChains {
+		tcpListener := tfc.translateTcpFilterChain(ctx, ml.listener, pluginRegistry, reporter)
+		matchedTcpListeners = append(matchedTcpListeners, &v1.MatchedTcpListener{
+			TcpListener: tcpListener,
+		})
+	}
+
+	// Create and return the listener with all filter chains and TCP listeners
 	return &v1.Listener{
 		Name:        ml.name,
 		BindAddress: "::",
@@ -275,14 +484,55 @@ func (ml *mergedListener) translateListener(
 			AggregateListener: &v1.AggregateListener{
 				HttpResources: &v1.AggregateListener_HttpResources{
 					VirtualHosts: mergedVhosts,
-					HttpOptions:  nil, // HttpListenerOptions will be added by HttpListenerOption policy plugin
+					HttpOptions:  nil, // HttpListenerOptions will be added by policy plugins
 				},
 				HttpFilterChains: httpFilterChains,
-				TcpListeners:     nil,
+				TcpListeners:     matchedTcpListeners,
 			},
 		},
-		Options:      nil, // Listener options will be added by ListenerOption policy plugin
+		Options:      nil, // Listener options will be added by policy plugins
 		RouteOptions: nil,
+	}
+}
+
+// tcpFilterChain each one represents a Gateway listener that has been merged into a single Gloo Listener
+// (with distinct filter chains). In the case where no Gateway listener merging takes place, every listener
+// will use a Gloo AggregatedListener with one TCP filter chain.
+type tcpFilterChain struct {
+	parents []tcpFilterChainParent
+}
+
+type tcpFilterChainParent struct {
+	gatewayListenerName string
+	routesWithHosts     []*query.RouteInfo
+}
+
+func (tc *tcpFilterChain) translateTcpFilterChain(
+	ctx context.Context,
+	listener gwv1.Listener,
+	pluginRegistry registry.PluginRegistry,
+	reporter reports.Reporter,
+) *v1.TcpListener {
+	var tcpHosts []*v1.TcpHost
+	for _, parent := range tc.parents {
+		for _, r := range parent.routesWithHosts {
+			tRoute, ok := r.Object.(*gwv1a2.TCPRoute)
+			if !ok {
+				continue
+			}
+			for i, rule := range tRoute.Spec.Rules {
+				// Ensure unique names by appending the rule index to the TCPRoute name
+				tcpHostName := fmt.Sprintf("%s-rule-%d", tRoute.Name, i)
+				tcpHost := buildTcpHost(tcpHostName, listener.Port, rule.BackendRefs)
+				if tcpHost != nil {
+					tcpHosts = append(tcpHosts, tcpHost)
+				}
+			}
+		}
+	}
+
+	return &v1.TcpListener{
+		TcpHosts: tcpHosts,
 	}
 }
 
@@ -294,7 +544,7 @@ type httpFilterChain struct {
 
 type httpFilterChainParent struct {
 	gatewayListenerName string
-	routesWithHosts     []*query.HTTPRouteInfo
+	routesWithHosts     []*query.RouteInfo
 }
 
 func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
@@ -344,7 +594,7 @@ type httpsFilterChain struct {
 	gatewayListenerName string
 	sniDomain           *gwv1.Hostname
 	tls                 *gwv1.GatewayTLSConfig
-	routesWithHosts     []*query.HTTPRouteInfo
+	routesWithHosts     []*query.RouteInfo
 	queries             query.GatewayQueries
 }
 
@@ -423,14 +673,14 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 func buildRoutesPerHost(
 	ctx context.Context,
 	routesByHost map[string]routeutils.SortableRoutes,
-	routes []*query.HTTPRouteInfo,
+	routes []*query.RouteInfo,
 	gwListener gwv1.Listener,
 	pluginRegistry registry.PluginRegistry,
 	reporter reports.Reporter,
 ) {
 	for _, routeWithHosts := range routes {
-		parentRefReporter := reporter.Route(&routeWithHosts.HTTPRoute).ParentRef(&routeWithHosts.ParentRef)
-		routes := httproute.TranslateGatewayHTTPRouteRules(
+		parentRefReporter := reporter.Route(routeWithHosts.Object).ParentRef(&routeWithHosts.ParentRef)
+		routes := route.TranslateGatewayHTTPRouteRules(
 			ctx,
 			pluginRegistry,
 			gwListener,
@@ -450,7 +700,7 @@ func buildRoutesPerHost(
 		}
 
 		for _, host := range hostnames {
-			routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(&routeWithHosts.HTTPRoute, routes)...)
+			routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(routeWithHosts.Object, routes)...)
 		}
 	}
 }

@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/7101
+    resolvesIssue: false
+    description: >-
+      Support exportTo for Istio's DestinationRule.

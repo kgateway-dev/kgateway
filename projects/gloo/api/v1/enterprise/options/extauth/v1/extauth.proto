@@ -50,7 +50,7 @@ message AuthConfig {
             OAuth oauth = 2 [deprecated = true];
             OAuth2 oauth2 = 8;
             ApiKeyAuth api_key_auth = 4;
-            AuthPlugin plugin_auth = 5;
+            AuthPlugin plugin_auth = 5 [deprecated = true];
             OpaAuth opa_auth = 6;
             Ldap ldap = 7;
             // This is a "dummy" extauth service which can be used to support multiple auth mechanisms with JWT authentication.
@@ -247,6 +247,7 @@ message CustomAuth {
     string name = 2;
 }
 
+// **Deprecated**: The pluginAuth config type is deprecated and will be removed in a future release. Use passThroughAuth instead.
 message AuthPlugin {
     // Name of the plugin
     string name = 1;

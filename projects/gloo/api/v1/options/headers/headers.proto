@@ -40,6 +40,23 @@ message HeaderManipulation {
     repeated string response_headers_to_remove = 4;
 }
 
+// EarlyHeaderManipulation can be specified on Gateways to manipulate headers before significant processing
+// has happened and routing decisions are made.
+// Early header manipulation allows adding/removing headers that affect request processing
+// and can be used to implement override headers.
+// Note: The adding of headers happens before the removal of headers.
+message EarlyHeaderManipulation {
+    // Specifies a list of HTTP headers that should be added to each request
+    // handled by this gateway. For more information, including
+    // details on header value syntax, see the
+    // [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers.html#) .
+    repeated .solo.io.envoy.api.v2.core.HeaderValueOption headers_to_add = 1;
+
+
+    // Specifies a list of HTTP headers that should be removed from each request
+    // handled by this gateway.
+    repeated string headers_to_remove = 2;
+}
 
 // Header name/value pair plus option to control append behavior.
 message HeaderValueOption {

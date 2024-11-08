@@ -616,6 +616,154 @@ func TestHostnameConflictWithExtraGoodListener(t *testing.T) {
 	assertExpectedListenerStatuses(t, g, gateway, listeners, report, expectedStatuses)
 }
 
+func TestValidTCPRouteListener(t *testing.T) {
+	gateway := simpleGwTCPRoute()
+	listeners := gateway.Spec.Listeners
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+	gatewayReporter := reporter.Gateway(gateway)
+
+	validListeners := validateListeners(gateway, gatewayReporter)
+	g := NewWithT(t)
+	g.Expect(validListeners).To(HaveLen(1))
+
+	expectedStatuses := map[string]gwv1.ListenerStatus{
+		"tcp": {
+			Name: "tcp",
+			SupportedKinds: []gwv1.RouteGroupKind{
+				{
+					Group: GroupNameHelper(),
+					Kind:  "TCPRoute",
+				},
+			},
+		},
+	}
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report, expectedStatuses)
+}
+
+func TestInvalidRouteKindOnTCPListener(t *testing.T) {
+	gateway := simpleGwInvalidTCPRouteKind()
+	listeners := gateway.Spec.Listeners
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+	gatewayReporter := reporter.Gateway(gateway)
+
+	validListeners := validateListeners(gateway, gatewayReporter)
+	g := NewWithT(t)
+	g.Expect(validListeners).To(BeEmpty())
+
+	expectedStatuses := map[string]gwv1.ListenerStatus{
+		"tcp": {
+			Name:           "tcp",
+			SupportedKinds: []gwv1.RouteGroupKind{},
+			Conditions: []metav1.Condition{
+				{
+					Type:   string(gwv1.ListenerConditionResolvedRefs),
+					Status: metav1.ConditionFalse,
+					Reason: string(gwv1.ListenerReasonInvalidRouteKinds),
+				},
+			},
+		},
+	}
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report, expectedStatuses)
+}
+
+func TestTCPProtocolConflict(t *testing.T) {
+	gateway := tcpProtocolConflictGw()
+	listeners := gateway.Spec.Listeners
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+	gatewayReporter := reporter.Gateway(gateway)
+
+	validListeners := validateListeners(gateway, gatewayReporter)
+	g := NewWithT(t)
+	g.Expect(validListeners).To(BeEmpty())
+
+	expectedStatuses := map[string]gwv1.ListenerStatus{
+		"tcp": {
+			Name: "tcp",
+			SupportedKinds: []gwv1.RouteGroupKind{
+				{
+					Group: GroupNameHelper(),
+					Kind:  "TCPRoute",
+				},
+			},
+			Conditions: []metav1.Condition{
+				{
+					Type:   string(gwv1.ListenerConditionConflicted),
+					Status: metav1.ConditionTrue,
+					Reason: string(gwv1.ListenerReasonProtocolConflict),
+				},
+			},
+		},
+		"http": {
+			Name: "http",
+			SupportedKinds: []gwv1.RouteGroupKind{
+				{
+					Group: GroupNameHelper(),
+					Kind:  "HTTPRoute",
+				},
+			},
+			Conditions: []metav1.Condition{
+				{
+					Type:   string(gwv1.ListenerConditionConflicted),
+					Status: metav1.ConditionTrue,
+					Reason: string(gwv1.ListenerReasonProtocolConflict),
+				},
+			},
+		},
+	}
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report, expectedStatuses)
+}
+
+func TestTCPHostnameConflict(t *testing.T) {
+	gateway := tcpHostnameConflictGw()
+	listeners := gateway.Spec.Listeners
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+	gatewayReporter := reporter.Gateway(gateway)
+
+	validListeners := validateListeners(gateway, gatewayReporter)
+	g := NewWithT(t)
+	g.Expect(validListeners).To(BeEmpty())
+
+	expectedStatuses := map[string]gwv1.ListenerStatus{
+		"tcp": {
+			Name: "tcp",
+			SupportedKinds: []gwv1.RouteGroupKind{
+				{
+					Group: GroupNameHelper(),
+					Kind:  "TCPRoute",
+				},
+			},
+			Conditions: []metav1.Condition{
+				{
+					Type:   string(gwv1.ListenerConditionConflicted),
+					Status: metav1.ConditionTrue,
+					Reason: string(gwv1.ListenerReasonHostnameConflict),
+				},
+			},
+		},
+		"tcp2": {
+			Name: "tcp2",
+			SupportedKinds: []gwv1.RouteGroupKind{
+				{
+					Group: GroupNameHelper(),
+					Kind:  "TCPRoute",
+				},
+			},
+			Conditions: []metav1.Condition{
+				{
+					Type:   string(gwv1.ListenerConditionConflicted),
+					Status: metav1.ConditionTrue,
+					Reason: string(gwv1.ListenerReasonHostnameConflict),
+				},
+			},
+		},
+	}
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report, expectedStatuses)
+}
+
 func svc(ns string) *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -651,6 +799,109 @@ func httpRoute(routeNs, backendNs string) gwv1.HTTPRoute {
 							},
 						},
 					},
+				},
+			},
+		},
+	}
+}
+
+func simpleGwTCPRoute() *gwv1.Gateway {
+	return &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "tcp-gateway",
+		},
+		Spec: gwv1.GatewaySpec{
+			GatewayClassName: "solo",
+			Listeners: []gwv1.Listener{
+				{
+					Name:     "tcp",
+					Port:     8080,
+					Protocol: gwv1.TCPProtocolType,
+					AllowedRoutes: &gwv1.AllowedRoutes{
+						Kinds: []gwv1.RouteGroupKind{
+							{
+								Kind: "TCPRoute",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func simpleGwInvalidTCPRouteKind() *gwv1.Gateway {
+	return &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "tcp-invalid-gateway",
+		},
+		Spec: gwv1.GatewaySpec{
+			GatewayClassName: "solo",
+			Listeners: []gwv1.Listener{
+				{
+					Name:     "tcp",
+					Port:     8080,
+					Protocol: gwv1.TCPProtocolType,
+					AllowedRoutes: &gwv1.AllowedRoutes{
+						Kinds: []gwv1.RouteGroupKind{
+							{
+								Kind: "InvalidRouteKind",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func tcpProtocolConflictGw() *gwv1.Gateway {
+	return &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "tcp-conflict-gateway",
+		},
+		Spec: gwv1.GatewaySpec{
+			GatewayClassName: "solo",
+			Listeners: []gwv1.Listener{
+				{
+					Name:     "tcp",
+					Port:     8080,
+					Protocol: gwv1.TCPProtocolType,
+				},
+				{
+					Name:     "http",
+					Port:     8080,
+					Protocol: gwv1.HTTPProtocolType,
+				},
+			},
+		},
+	}
+}
+
+func tcpHostnameConflictGw() *gwv1.Gateway {
+	hostname := gwv1.Hostname("solo.io")
+	return &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "tcp-hostname-conflict-gateway",
+		},
+		Spec: gwv1.GatewaySpec{
+			GatewayClassName: "solo",
+			Listeners: []gwv1.Listener{
+				{
+					Name:     "tcp",
+					Port:     8080,
+					Protocol: gwv1.TCPProtocolType,
+					Hostname: &hostname,
+				},
+				{
+					Name:     "tcp2",
+					Port:     8080,
+					Protocol: gwv1.TCPProtocolType,
+					Hostname: &hostname,
 				},
 			},
 		},

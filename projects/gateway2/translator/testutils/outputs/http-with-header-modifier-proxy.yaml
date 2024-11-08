@@ -13,7 +13,7 @@ listeners:
           routes:
           - matchers:
             - prefix: /header
-            name: example-route-default-1-0
+            name: httproute-example-route-default-1-0
             options:
               headerManipulation:
                 requestHeadersToAdd:
@@ -50,7 +50,7 @@ listeners:
           - matchers:
             - prefix: /
             options: {}
-            name: example-route-default-0-0
+            name: httproute-example-route-default-0-0
             routeAction:
               single:
                 kube:

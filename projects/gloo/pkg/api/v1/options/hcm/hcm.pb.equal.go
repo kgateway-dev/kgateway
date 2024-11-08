@@ -403,6 +403,16 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetEarlyHeaderManipulation()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetEarlyHeaderManipulation()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetEarlyHeaderManipulation(), target.GetEarlyHeaderManipulation()) {
+			return false
+		}
+	}
+
 	switch m.HeaderFormat.(type) {
 
 	case *HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat:
