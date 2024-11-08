@@ -66,11 +66,11 @@ weight: 5
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `protocol` | [.solo.io.envoy.config.core.v3.SocketAddress.Protocol](../address.proto.sk/#protocol) |  |
-| `address` | `string` | The address for this socket. :ref:`Listeners <config_listeners>` will bind to the address. An empty address is not allowed. Specify ``0.0.0.0`` or ``::`` to bind to any address. [#comment:TODO(zuercher) reinstate when implemented: It is possible to distinguish a Listener address via the prefix/suffix matching in :ref:`FilterChainMatch <envoy_api_msg_config.listener.v3.FilterChainMatch>`.] When used within an upstream :ref:`BindConfig <envoy_api_msg_config.core.v3.BindConfig>`, the address controls the source address of outbound connections. For :ref:`clusters <envoy_api_msg_config.cluster.v3.Cluster>`, the cluster type determines whether the address must be an IP (*STATIC* or *EDS* clusters) or a hostname resolved by DNS (*STRICT_DNS* or *LOGICAL_DNS* clusters). Address resolution can be customized via :ref:`resolver_name <envoy_api_field_config.core.v3.SocketAddress.resolver_name>`. |
+| `address` | `string` | The address for this socket. Listeners will bind to the address. An empty address is not allowed. Specify `0.0.0.0` or `::` to bind to any address. [#comment:TODO(zuercher) reinstate when implemented: It is possible to distinguish a Listener address via the prefix/suffix matching in FilterChainMatch.] When used within an upstream BindConfig, the address controls the source address of outbound connections. For :ref:`clusters <envoy_api_msg_config.cluster.v3.Cluster>`, the cluster type determines whether the address must be an IP (*STATIC* or *EDS* clusters) or a hostname resolved by DNS (*STRICT_DNS* or *LOGICAL_DNS* clusters). Address resolution can be customized via resolver_name. |
 | `portValue` | `int` |  Only one of `portValue` or `namedPort` can be set. |
 | `namedPort` | `string` | This is only valid if :ref:`resolver_name <envoy_api_field_config.core.v3.SocketAddress.resolver_name>` is specified below and the named resolver is capable of named port resolution. Only one of `namedPort` or `portValue` can be set. |
 | `resolverName` | `string` | The name of the custom resolver. This must have been registered with Envoy. If this is empty, a context dependent default applies. If the address is a concrete IP address, no resolution will occur. If address is a hostname this should be set for resolution other than DNS. Specifying a custom resolver with *STRICT_DNS* or *LOGICAL_DNS* will generate an error at runtime. |
-| `ipv4Compat` | `bool` | When binding to an IPv6 address above, this enables `IPv4 compatibility <https://datatracker.ietf.org/doc/html/rfc3493#page-11>`_. Binding to ``::`` will allow both IPv4 and IPv6 connections, with peer IPv4 addresses mapped into IPv6 space as ``::FFFF:<IPv4-address>``. |
+| `ipv4Compat` | `bool` | When binding to an IPv6 address above, this enables [IPv4 compatibility](https://datatracker.ietf.org/doc/html/rfc3493#page-11). Binding to `::` will allow both IPv4 and IPv6 connections, with peer IPv4 addresses mapped into IPv6 space as `::FFFF:<IPv4-address>`. |
 
 
 
@@ -157,7 +157,7 @@ management servers.
 
  
 CidrRange specifies an IP Address and a prefix length to construct
-the subnet mask for a `CIDR <https://datatracker.ietf.org/doc/html/rfc4632>`_ range.
+the subnet mask for a [CIDR](https://datatracker.ietf.org/doc/html/rfc4632) range.
 
 ```yaml
 "addressPrefix": string
@@ -167,7 +167,7 @@ the subnet mask for a `CIDR <https://datatracker.ietf.org/doc/html/rfc4632>`_ ra
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `addressPrefix` | `string` | IPv4 or IPv6 address, e.g. ``192.0.0.0`` or ``2001:db8::``. |
+| `addressPrefix` | `string` | IPv4 or IPv6 address, e.g. `192.0.0.0` or `2001:db8::`. |
 | `prefixLen` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Length of prefix, e.g. 0, 32. |
 
 

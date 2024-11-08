@@ -47,7 +47,7 @@ type GrpcService struct {
 	Timeout *durationpb.Duration `protobuf:"bytes,3,opt,name=timeout,proto3" json:"timeout,omitempty"`
 	// Additional metadata to include in streams initiated to the GrpcService.
 	// This can be used for scenarios in which additional ad hoc authorization
-	// headers (e.g. “x-foo-bar: baz-key“) are to be injected.
+	// headers (e.g. `x-foo-bar: baz-key`) are to be injected.
 	InitialMetadata []*HeaderValue `protobuf:"bytes,5,rep,name=initial_metadata,json=initialMetadata,proto3" json:"initial_metadata,omitempty"`
 }
 
@@ -128,7 +128,7 @@ type GrpcService_EnvoyGrpc_ struct {
 }
 
 type GrpcService_GoogleGrpc_ struct {
-	// `Google C++ gRPC client <https://github.com/grpc/grpc>`_
+	// [Google C++ gRPC client](https://github.com/grpc/grpc)
 	// See the :ref:`gRPC services overview <arch_overview_grpc_services>`
 	// documentation for discussion on gRPC client selection.
 	GoogleGrpc *GrpcService_GoogleGrpc `protobuf:"bytes,2,opt,name=google_grpc,json=googleGrpc,proto3,oneof"`
@@ -144,10 +144,10 @@ type GrpcService_EnvoyGrpc struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The name of the upstream gRPC cluster. SSL credentials will be supplied
-	// in the :ref:`Cluster <envoy_api_msg_config.cluster.v3.Cluster>` :ref:`transport_socket
+	// in the Cluster :ref:`transport_socket
 	// <envoy_api_field_config.cluster.v3.Cluster.transport_socket>`.
 	ClusterName string `protobuf:"bytes,1,opt,name=cluster_name,json=clusterName,proto3" json:"cluster_name,omitempty"`
-	// The “:authority“ header in the grpc request. If this field is not set, the authority header value will be “cluster_name“.
+	// The `:authority` header in the grpc request. If this field is not set, the authority header value will be `cluster_name`.
 	// Note that this authority does not override the SNI. The SNI is provided by the transport socket of the cluster.
 	Authority string `protobuf:"bytes,2,opt,name=authority,proto3" json:"authority,omitempty"`
 	// Indicates the retry policy for re-establishing the gRPC stream
@@ -214,13 +214,11 @@ type GrpcService_GoogleGrpc struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The target URI when using the `Google C++ gRPC client
-	// <https://github.com/grpc/grpc>`_. SSL credentials will be supplied in
-	// :ref:`channel_credentials <envoy_api_field_config.core.v3.GrpcService.GoogleGrpc.channel_credentials>`.
+	// The target URI when using the [Google C++ gRPC client](https://github.com/grpc/grpc). SSL credentials will be supplied in
+	// channel_credentials.
 	TargetUri          string                                     `protobuf:"bytes,1,opt,name=target_uri,json=targetUri,proto3" json:"target_uri,omitempty"`
 	ChannelCredentials *GrpcService_GoogleGrpc_ChannelCredentials `protobuf:"bytes,2,opt,name=channel_credentials,json=channelCredentials,proto3" json:"channel_credentials,omitempty"`
-	// A set of call credentials that can be composed with `channel credentials
-	// <https://grpc.io/docs/guides/auth.html#credential-types>`_.
+	// A set of call credentials that can be composed with [channel credentials](https://grpc.io/docs/guides/auth.html#credential-types).
 	CallCredentials []*GrpcService_GoogleGrpc_CallCredentials `protobuf:"bytes,3,rep,name=call_credentials,json=callCredentials,proto3" json:"call_credentials,omitempty"`
 	// The human readable prefix to use when emitting statistics for the gRPC
 	// service.

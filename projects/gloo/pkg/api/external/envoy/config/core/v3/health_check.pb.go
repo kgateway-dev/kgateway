@@ -42,9 +42,9 @@ const (
 	// Unhealthy.
 	HealthStatus_UNHEALTHY HealthStatus = 2
 	// Connection draining in progress. E.g.,
-	// `<https://aws.amazon.com/blogs/aws/elb-connection-draining-remove-instances-from-service-with-care/>`_
+	// https://aws.amazon.com/blogs/aws/elb-connection-draining-remove-instances-from-service-with-care/
 	// or
-	// `<https://cloud.google.com/compute/docs/load-balancing/enabling-connection-draining>`_.
+	// https://cloud.google.com/compute/docs/load-balancing/enabling-connection-draining.
 	// This is interpreted by Envoy as *UNHEALTHY*.
 	HealthStatus_DRAINING HealthStatus = 3
 	// Health check timed out. This is part of HDS and is interpreted by Envoy as
@@ -173,7 +173,7 @@ type HealthCheck struct {
 	//
 	// The default value for "healthy edge interval" is the same as the default interval.
 	HealthyEdgeInterval *durationpb.Duration `protobuf:"bytes,16,opt,name=healthy_edge_interval,json=healthyEdgeInterval,proto3" json:"healthy_edge_interval,omitempty"`
-	// Specifies the path to the :ref:`health check event log <arch_overview_health_check_logging>`.
+	// Specifies the path to the health check event log.
 	// If empty, no event log will be written.
 	EventLogPath string `protobuf:"bytes,17,opt,name=event_log_path,json=eventLogPath,proto3" json:"event_log_path,omitempty"`
 	// [#not-implemented-hide:]
@@ -187,7 +187,7 @@ type HealthCheck struct {
 	// This allows overriding the cluster TLS settings, just for health check connections.
 	TlsOptions *HealthCheck_TlsOptions `protobuf:"bytes,21,opt,name=tls_options,json=tlsOptions,proto3" json:"tls_options,omitempty"`
 	// Optional key/value pairs that will be used to match a transport socket from those specified in the cluster's
-	// :ref:`tranport socket matches <envoy_api_field_config.cluster.v3.Cluster.transport_socket_matches>`.
+	// tranport socket matches.
 	// For example, the following match criteria
 	//
 	// .. code-block:: yaml
@@ -208,12 +208,12 @@ type HealthCheck struct {
 	//	    config: { ... } # tls socket configuration
 	//
 	// If this field is set, then for health checks it will supersede an entry of *envoy.transport_socket* in the
-	// :ref:`LbEndpoint.Metadata <envoy_api_field_config.endpoint.v3.LbEndpoint.metadata>`.
+	// LbEndpoint.Metadata.
 	// This allows using different transport socket capabilities for health checking versus proxying to the
 	// endpoint.
 	//
 	// If the key/values pairs specified do not match any
-	// :ref:`transport socket matches <envoy_api_field_config.cluster.v3.Cluster.transport_socket_matches>`,
+	// transport socket matches,
 	// the cluster's :ref:`transport socket <envoy_api_field_config.cluster.v3.Cluster.transport_socket>`
 	// will be used for health check socket configuration.
 	TransportSocketMatchCriteria *structpb.Struct `protobuf:"bytes,23,opt,name=transport_socket_match_criteria,json=transportSocketMatchCriteria,proto3" json:"transport_socket_match_criteria,omitempty"`
@@ -533,7 +533,7 @@ type HealthCheck_HttpHealthCheck struct {
 	// The value of the host header in the HTTP health check request. If
 	// left empty (default value), the name of the cluster this health check is associated
 	// with will be used. The host header can be customized for a specific endpoint by setting the
-	// :ref:`hostname <envoy_api_field_config.endpoint.v3.Endpoint.HealthCheckConfig.hostname>` field.
+	// hostname field.
 	Host string `protobuf:"bytes,1,opt,name=host,proto3" json:"host,omitempty"`
 	// Specifies the HTTP path that will be requested during health checking. For example
 	// */healthcheck*.
@@ -552,7 +552,7 @@ type HealthCheck_HttpHealthCheck struct {
 	RequestHeadersToRemove []string `protobuf:"bytes,8,rep,name=request_headers_to_remove,json=requestHeadersToRemove,proto3" json:"request_headers_to_remove,omitempty"`
 	// Specifies a list of HTTP response statuses considered healthy. If provided, replaces default
 	// 200-only policy - 200 must be included explicitly as needed. Ranges follow half-open
-	// semantics of :ref:`Int64Range <envoy_api_msg_type.v3.Int64Range>`. The start and end of each
+	// semantics of Int64Range. The start and end of each
 	// range are required. Only statuses in the range [100, 600) are allowed.
 	ExpectedStatuses []*v3.Int64Range `protobuf:"bytes,9,rep,name=expected_statuses,json=expectedStatuses,proto3" json:"expected_statuses,omitempty"`
 	// Use specified application protocol for health checks.
@@ -729,7 +729,7 @@ type HealthCheck_RedisHealthCheck struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// If set, optionally perform “EXISTS <key>“ instead of “PING“. A return value
+	// If set, optionally perform `EXISTS <key>` instead of `PING`. A return value
 	// from Redis of 0 (does not exist) is considered a passing healthcheck. A return value other
 	// than 0 is considered a failure. This allows the user to mark a Redis instance for maintenance
 	// by setting the specified key to any value and waiting for traffic to drain.
@@ -773,9 +773,8 @@ func (x *HealthCheck_RedisHealthCheck) GetKey() string {
 	return ""
 }
 
-// `grpc.health.v1.Health
-// <https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto>`_-based
-// healthcheck. See `gRPC doc <https://github.com/grpc/grpc/blob/master/doc/health-checking.md>`_
+// [grpc.health.v1.Health](https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto)-based
+// healthcheck. See [gRPC doc](https://github.com/grpc/grpc/blob/master/doc/health-checking.md)
 // for details.
 type HealthCheck_GrpcHealthCheck struct {
 	state         protoimpl.MessageState
@@ -783,15 +782,13 @@ type HealthCheck_GrpcHealthCheck struct {
 	unknownFields protoimpl.UnknownFields
 
 	// An optional service name parameter which will be sent to gRPC service in
-	// `grpc.health.v1.HealthCheckRequest
-	// <https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto#L20>`_.
-	// message. See `gRPC health-checking overview
-	// <https://github.com/grpc/grpc/blob/master/doc/health-checking.md>`_ for more information.
+	// [grpc.health.v1.HealthCheckRequest](https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto#L20).
+	// message. See [gRPC health-checking overview](https://github.com/grpc/grpc/blob/master/doc/health-checking.md) for more information.
 	ServiceName string `protobuf:"bytes,1,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
 	// The value of the :authority header in the gRPC health check request. If
 	// left empty (default value), the name of the cluster this health check is associated
 	// with will be used. The authority header can be customized for a specific endpoint by setting
-	// the :ref:`hostname <envoy_api_field_config.endpoint.v3.Endpoint.HealthCheckConfig.hostname>` field.
+	// the hostname field.
 	Authority string `protobuf:"bytes,2,opt,name=authority,proto3" json:"authority,omitempty"`
 }
 

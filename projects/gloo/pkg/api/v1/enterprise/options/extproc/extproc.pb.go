@@ -129,9 +129,9 @@ type Settings struct {
 	// ext_proc service as an opaque *protobuf::Struct*.
 	MetadataContextNamespaces []string `protobuf:"bytes,16,rep,name=metadata_context_namespaces,json=metadataContextNamespaces,proto3" json:"metadata_context_namespaces,omitempty"`
 	// Specifies a list of metadata namespaces whose values, if present, will be passed to the
-	// ext_proc service. :ref:`typed_filter_metadata <envoy_v3_api_field_config.core.v3.Metadata.typed_filter_metadata>` is passed as an “protobuf::Any“.
+	// ext_proc service. typed_filter_metadata is passed as an `protobuf::Any`.
 	//
-	// It works in a way similar to “metadata_context_namespaces“ but allows envoy and external processing server to share the protobuf message definition
+	// It works in a way similar to `metadata_context_namespaces` but allows envoy and external processing server to share the protobuf message definition
 	// in order to do a safe parsing.
 	TypedMetadataContextNamespaces []string `protobuf:"bytes,17,rep,name=typed_metadata_context_namespaces,json=typedMetadataContextNamespaces,proto3" json:"typed_metadata_context_namespaces,omitempty"`
 }
@@ -485,9 +485,9 @@ type Overrides struct {
 	// ext_proc service as an opaque *protobuf::Struct*.
 	MetadataContextNamespaces []string `protobuf:"bytes,6,rep,name=metadata_context_namespaces,json=metadataContextNamespaces,proto3" json:"metadata_context_namespaces,omitempty"`
 	// Specifies a list of metadata namespaces whose values, if present, will be passed to the
-	// ext_proc service. :ref:`typed_filter_metadata <envoy_v3_api_field_config.core.v3.Metadata.typed_filter_metadata>` is passed as an “protobuf::Any“.
+	// ext_proc service. typed_filter_metadata is passed as an `protobuf::Any`.
 	//
-	// It works in a way similar to “metadata_context_namespaces“ but allows envoy and external processing server to share the protobuf message definition
+	// It works in a way similar to `metadata_context_namespaces` but allows envoy and external processing server to share the protobuf message definition
 	// in order to do a safe parsing.
 	TypedMetadataContextNamespaces []string `protobuf:"bytes,7,rep,name=typed_metadata_context_namespaces,json=typedMetadataContextNamespaces,proto3" json:"typed_metadata_context_namespaces,omitempty"`
 }
