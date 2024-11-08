@@ -545,7 +545,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 					initStatusPlugins(ctx, proxiesWithReports, snapWrap.pluginRegistry)
 				}
 				for _, snapWrap := range snaps {
-					err := s.proxyTranslator.syncStatus(ctx, snapWrap.snap, snapWrap.proxyKey, snapWrap.fullReports)
+					err := s.proxyTranslator.syncStatus(ctx, snapWrap.proxyKey, snapWrap.fullReports)
 					if err != nil {
 						logger.Errorf("error while syncing proxy '%s': %s", snapWrap.proxyKey, err.Error())
 					}

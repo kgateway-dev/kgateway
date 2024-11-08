@@ -21,6 +21,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/edsupstream"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
@@ -214,6 +215,10 @@ func (g *genericStatusReporter) WriteReports(ctx context.Context, resourceErrs r
 
 		// check if resource is an internal upstream. if so skip it..
 		if kubernetes.IsKubeUpstream(resource.GetMetadata().GetName()) {
+			continue
+		}
+		// check if resource is an internal upstream. if so skip it..
+		if _, ok := resource.GetMetadata().GetLabels()[edsupstream.InternalEDSLabel]; ok {
 			continue
 		}
 
