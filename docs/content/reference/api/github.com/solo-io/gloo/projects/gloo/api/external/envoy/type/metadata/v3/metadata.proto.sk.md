@@ -33,7 +33,7 @@ weight: 5
 
  
 MetadataKey provides a general interface using `key` and `path` to retrieve value from
-:ref:`Metadata <envoy_api_msg_config.core.v3.Metadata>`.
+Metadata.
 
 For example, for the following Metadata:
 
@@ -64,7 +64,7 @@ The following MetadataKey will retrieve a string value "bar" from the Metadata.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `key` | `string` | The key name of Metadata to retrieve the Struct from the metadata. Typically, it represents a builtin subsystem or custom extension. |
-| `path` | [[]solo.io.envoy.type.metadata.v3.MetadataKey.PathSegment](../metadata.proto.sk/#pathsegment) | The path to retrieve the Value from the Struct. It can be a prefix or a full path, e.g. ``[prop, xyz]`` for a struct or ``[prop, foo]`` for a string in the example, which depends on the particular scenario. Note: Due to that only the key type segment is supported, the path can not specify a list unless the list is the last segment. |
+| `path` | [[]solo.io.envoy.type.metadata.v3.MetadataKey.PathSegment](../metadata.proto.sk/#pathsegment) | The path to retrieve the Value from the Struct. It can be a prefix or a full path, e.g. `[prop, xyz]` for a struct or `[prop, foo]` for a string in the example, which depends on the particular scenario. Note: Due to that only the key type segment is supported, the path can not specify a list unless the list is the last segment. |
 
 
 
