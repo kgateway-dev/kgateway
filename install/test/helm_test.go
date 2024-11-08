@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"reflect"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/proto"
@@ -7381,33 +7383,33 @@ metadata:
 		})
 
 		// Lines ending with whitespace causes malformatted config map (https://github.com/solo-io/gloo/issues/4645)
-		// It("should not contain trailing whitespace", func() {
-		// 	out, err := exec.Command("helm", "template", "../helm/gloo").Output()
-		// 	Expect(err).NotTo(HaveOccurred(), "Helm template Generation error")
+		It("should not contain trailing whitespace", func() {
+			out, err := exec.Command("helm", "template", "../helm/gloo").Output()
+			Expect(err).NotTo(HaveOccurred(), "Helm template Generation error")
 
-		// 	lines := strings.Split(string(out), "\n")
-		// 	// more descriptive fail message that prints out the manifest that includes the trailing whitespace
-		// 	manifestStartingLine := 0
-		// 	skip := false
-		// 	for idx, line := range lines {
-		// 		if strings.Contains(line, "---") {
-		// 			manifestStartingLine = idx
-		// 			continue
-		// 		}
-		// 		// skip all the content within the custom resource configmap since there is extra whitespace
-		// 		// that can't be removed
-		// 		if strings.Contains(line, "custom-resources: |") {
-		// 			skip = true
-		// 			continue
-		// 		}
-		// 		if strings.Contains(line, "has-custom-resources:") {
-		// 			skip = false
-		// 		}
-		// 		if !skip && strings.TrimRightFunc(line, unicode.IsSpace) != line {
-		// 			Fail(strings.Join(lines[manifestStartingLine:idx+1], "\n") + "\n last line has whitespace")
-		// 		}
-		// 	}
-		// })
+			lines := strings.Split(string(out), "\n")
+			// more descriptive fail message that prints out the manifest that includes the trailing whitespace
+			manifestStartingLine := 0
+			skip := false
+			for idx, line := range lines {
+				if strings.Contains(line, "---") {
+					manifestStartingLine = idx
+					continue
+				}
+				// skip all the content within the custom resource configmap since there is extra whitespace
+				// that can't be removed
+				if strings.Contains(line, "custom-resources: |") {
+					skip = true
+					continue
+				}
+				if strings.Contains(line, "has-custom-resources:") {
+					skip = false
+				}
+				if !skip && strings.TrimRightFunc(line, unicode.IsSpace) != line {
+					Fail(strings.Join(lines[manifestStartingLine:idx+1], "\n") + "\n last line has whitespace")
+				}
+			}
+		})
 	}
 
 	runTests(allTests)

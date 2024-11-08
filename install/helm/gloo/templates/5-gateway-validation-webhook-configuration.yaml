@@ -65,7 +65,7 @@ specific resources, we will manage the resources that the webhook receives via t
     - v1beta1 # v1beta1 still live in 1.22 https://github.com/kubernetes/api/blob/release-1.22/admission/v1beta1/types.go#L33
 {{- if .Values.gateway.validation.failurePolicy }}
   failurePolicy: {{ .Values.gateway.validation.failurePolicy }}
-{{- end }} {{/* if .Values.gateway.validation.failurePolicy */}}
+{{- end }} {{- /* if .Values.gateway.validation.failurePolicy */}}
 
 {{/* Webhook for core resources - only render if we need to */}}
 {{- if and 
@@ -81,7 +81,7 @@ specific resources, we will manage the resources that the webhook receives via t
       path: "/validation"
     caBundle: "" # update manually or use certgen job or cert-manager's ca-injector (DO_NOT_SUBMIT: ???)
   rules:
-  {{/* Can't use the include for this one because if the operations are empty, we need to drop the whole list element */}}
+{{- /* Can't use the include for this one because if the operations are empty, we need to drop the whole list element */}}
 {{- if and (not (has "*" .Values.gateway.validation.webhook.skipDeleteValidationResources)) (not (has "secrets" .Values.gateway.validation.webhook.skipDeleteValidationResources)) }}
   - operations: [ "DELETE" ]
     apiGroups: [""]{{/* We do not have internal secret CRDs. We want to validate the deletion of secrets such as TLS, so we add "" which refers to Kubernetes' core APIs. */}}
@@ -103,7 +103,7 @@ specific resources, we will manage the resources that the webhook receives via t
   admissionReviewVersions:
     - v1beta1 # v1beta1 still live in 1.22 https://github.com/kubernetes/api/blob/release-1.22/admission/v1beta1/types.go#L33
 {{- if .Values.gateway.validation.failurePolicy }}
-  failurePolicy: {{ .Values.gateway.validation.kubeCoreFailurePolicy }}
+  failurePolicy: {{ .Values.gateway.validation.kubeCoreFailurePolicy -}}
 {{- end }} {{/* if .Values.gateway.validation.failurePolicy */}}
 {{- end }} {{/* render webhook if */}}
 
@@ -115,6 +115,6 @@ specific resources, we will manage the resources that the webhook receives via t
 {{- if .Values.gateway.validation -}}
 {{- if .Values.gateway.validation.webhook -}}
 {{- $kubeResourceOverride = .Values.gateway.validation.webhook.kubeResourceOverride   -}}
-{{- end -}} {{/* if .Values.gateway.validation.webhook */}}
-{{- end -}} {{/* if .Values.gateway.validation */}}
+{{- end -}} {{/* if .Values.gateway.validation.webhook */ -}}
+{{- end -}} {{/* if .Values.gateway.validation */ -}}
 {{- include "gloo.util.merge" (list . $kubeResourceOverride "gateway.validationWebhookSpec") -}}
