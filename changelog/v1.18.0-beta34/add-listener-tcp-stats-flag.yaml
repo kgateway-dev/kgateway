@@ -4,4 +4,5 @@ changelog:
     resolvesIssue: true
     description: >-
       Add `listenerTcpStats: true|false` to the ListenerOptions API. If `true` will
-      enable Envoy TCP stats collection for all listeners.
+      enable [Envoy TCP](https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/stats#tcp-statistics)
+      stats collection for all listeners. This can be useful for L4 debugging.
