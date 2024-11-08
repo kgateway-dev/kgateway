@@ -53,7 +53,7 @@ func NewPerClientEnvoyClusters(
 	translator setup.TranslatorFactory,
 	upstreams krt.Collection[krtcollections.UpstreamWrapper],
 	uccs krt.Collection[krtcollections.UniqlyConnectedClient],
-	ks krt.Collection[krtcollections.ResourceWrapper[*gloov1.Secret]],
+	ks krt.Collection[RedactedSecret],
 	settings krt.Singleton[glookubev1.Settings],
 	destinationRulesIndex DestinationRuleIndex,
 ) PerClientEnvoyClusters {

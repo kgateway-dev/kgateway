@@ -672,7 +672,7 @@ func (s *ProxySyncer) translateProxy(
 	proxy *glooProxy,
 	kcm krt.Collection[*corev1.ConfigMap],
 	kep krt.Collection[EndpointResources],
-	ks krt.Collection[krtcollections.ResourceWrapper[*gloov1.Secret]],
+	ks krt.Collection[RedactedSecret],
 	kus krt.Collection[krtcollections.UpstreamWrapper],
 	authConfigs krt.Collection[*extauthkubev1.AuthConfig],
 	rlConfigs krt.Collection[*rlkubev1a1.RateLimitConfig],
