@@ -54,9 +54,9 @@ func (c DestinationRuleWrapper) Equals(k DestinationRuleWrapper) bool {
 	return proto.Equal(&c.Spec, &k.Spec)
 }
 
-func NewDestRuleIndex(istioClient kube.Client) DestinationRuleIndex {
+func NewDestRuleIndex(istioClient kube.Client, dbg *krt.DebugHandler) DestinationRuleIndex {
 	destRuleClient := kclient.NewDelayedInformer[*networkingclient.DestinationRule](istioClient, gvr.DestinationRule, kubetypes.StandardInformer, kclient.Filter{})
-	rawDestrules := krt.WrapClient(destRuleClient, krt.WithName("DestinationRules"))
+	rawDestrules := krt.WrapClient(destRuleClient, krt.WithName("DestinationRules"), krt.WithDebugging(dbg))
 	destrules := krt.NewCollection(rawDestrules, func(kctx krt.HandlerContext, dr *networkingclient.DestinationRule) *DestinationRuleWrapper {
 		return &DestinationRuleWrapper{dr}
 	})
