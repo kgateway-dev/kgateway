@@ -33,11 +33,11 @@ message GrpcService {
         "solo.io.envoy.api.v2.core.GrpcService.EnvoyGrpc";
 
     // The name of the upstream gRPC cluster. SSL credentials will be supplied
-    // in the :ref:`Cluster <envoy_api_msg_config.cluster.v3.Cluster>` :ref:`transport_socket
+    // in the Cluster :ref:`transport_socket
     // <envoy_api_field_config.cluster.v3.Cluster.transport_socket>`.
     string cluster_name = 1 [(validate.rules).string = {min_bytes: 1}];
 
-    // The ``:authority`` header in the grpc request. If this field is not set, the authority header value will be ``cluster_name``.
+    // The `:authority` header in the grpc request. If this field is not set, the authority header value will be `cluster_name`.
     // Note that this authority does not override the SNI. The SNI is provided by the transport socket of the cluster.
     string authority = 2
         [(validate.rules).string =
@@ -233,15 +233,13 @@ message GrpcService {
       map<string, Value> args = 1;
     }
 
-    // The target URI when using the `Google C++ gRPC client
-    // <https://github.com/grpc/grpc>`_. SSL credentials will be supplied in
-    // :ref:`channel_credentials <envoy_api_field_config.core.v3.GrpcService.GoogleGrpc.channel_credentials>`.
+    // The target URI when using the [Google C++ gRPC client](https://github.com/grpc/grpc). SSL credentials will be supplied in
+    // channel_credentials.
     string target_uri = 1 [(validate.rules).string = {min_bytes: 1}];
 
     ChannelCredentials channel_credentials = 2;
 
-    // A set of call credentials that can be composed with `channel credentials
-    // <https://grpc.io/docs/guides/auth.html#credential-types>`_.
+    // A set of call credentials that can be composed with [channel credentials](https://grpc.io/docs/guides/auth.html#credential-types).
     repeated CallCredentials call_credentials = 3;
 
     // The human readable prefix to use when emitting statistics for the gRPC
@@ -282,7 +280,7 @@ message GrpcService {
     // documentation for discussion on gRPC client selection.
     EnvoyGrpc envoy_grpc = 1;
 
-    // `Google C++ gRPC client <https://github.com/grpc/grpc>`_
+    // [Google C++ gRPC client](https://github.com/grpc/grpc)
     // See the :ref:`gRPC services overview <arch_overview_grpc_services>`
     // documentation for discussion on gRPC client selection.
     GoogleGrpc google_grpc = 2;
@@ -294,7 +292,7 @@ message GrpcService {
 
   // Additional metadata to include in streams initiated to the GrpcService.
   // This can be used for scenarios in which additional ad hoc authorization
-  // headers (e.g. ``x-foo-bar: baz-key``) are to be injected.
+  // headers (e.g. `x-foo-bar: baz-key`) are to be injected.
   repeated HeaderValue initial_metadata = 5;
 }
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3";

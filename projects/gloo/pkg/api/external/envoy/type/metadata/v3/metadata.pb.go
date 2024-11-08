@@ -25,7 +25,7 @@ const (
 )
 
 // MetadataKey provides a general interface using `key` and `path` to retrieve value from
-// :ref:`Metadata <envoy_api_msg_config.core.v3.Metadata>`.
+// Metadata.
 //
 // For example, for the following Metadata:
 //
@@ -55,7 +55,7 @@ type MetadataKey struct {
 	// Typically, it represents a builtin subsystem or custom extension.
 	Key string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 	// The path to retrieve the Value from the Struct. It can be a prefix or a full path,
-	// e.g. “[prop, xyz]“ for a struct or “[prop, foo]“ for a string in the example,
+	// e.g. `[prop, xyz]` for a struct or `[prop, foo]` for a string in the example,
 	// which depends on the particular scenario.
 	//
 	// Note: Due to that only the key type segment is supported, the path can not specify a list

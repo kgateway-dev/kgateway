@@ -41,17 +41,17 @@ message SocketAddress {
 
   Protocol protocol = 1 [(validate.rules).enum = {defined_only: true}];
 
-  // The address for this socket. :ref:`Listeners <config_listeners>` will bind
-  // to the address. An empty address is not allowed. Specify ``0.0.0.0`` or ``::``
+  // The address for this socket. Listeners will bind
+  // to the address. An empty address is not allowed. Specify `0.0.0.0` or `::`
   // to bind to any address. [#comment:TODO(zuercher) reinstate when implemented:
   // It is possible to distinguish a Listener address via the prefix/suffix matching
-  // in :ref:`FilterChainMatch <envoy_api_msg_config.listener.v3.FilterChainMatch>`.] When used
-  // within an upstream :ref:`BindConfig <envoy_api_msg_config.core.v3.BindConfig>`, the address
+  // in FilterChainMatch.] When used
+  // within an upstream BindConfig, the address
   // controls the source address of outbound connections. For :ref:`clusters
   // <envoy_api_msg_config.cluster.v3.Cluster>`, the cluster type determines whether the
   // address must be an IP (*STATIC* or *EDS* clusters) or a hostname resolved by DNS
   // (*STRICT_DNS* or *LOGICAL_DNS* clusters). Address resolution can be customized
-  // via :ref:`resolver_name <envoy_api_field_config.core.v3.SocketAddress.resolver_name>`.
+  // via resolver_name.
   string address = 2 [(validate.rules).string = {min_bytes: 1}];
 
   oneof port_specifier {
@@ -72,10 +72,9 @@ message SocketAddress {
   // *STRICT_DNS* or *LOGICAL_DNS* will generate an error at runtime.
   string resolver_name = 5;
 
-  // When binding to an IPv6 address above, this enables `IPv4 compatibility
-  // <https://datatracker.ietf.org/doc/html/rfc3493#page-11>`_. Binding to ``::`` will
+  // When binding to an IPv6 address above, this enables [IPv4 compatibility](https://datatracker.ietf.org/doc/html/rfc3493#page-11). Binding to `::` will
   // allow both IPv4 and IPv6 connections, with peer IPv4 addresses mapped into
-  // IPv6 space as ``::FFFF:<IPv4-address>``.
+  // IPv6 space as `::FFFF:<IPv4-address>`.
   bool ipv4_compat = 6;
 }
 
@@ -133,11 +132,11 @@ message Address {
 }
 
 // CidrRange specifies an IP Address and a prefix length to construct
-// the subnet mask for a `CIDR <https://datatracker.ietf.org/doc/html/rfc4632>`_ range.
+// the subnet mask for a [CIDR](https://datatracker.ietf.org/doc/html/rfc4632) range.
 message CidrRange {
   option (solo.io.udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.core.CidrRange";
 
-  // IPv4 or IPv6 address, e.g. ``192.0.0.0`` or ``2001:db8::``.
+  // IPv4 or IPv6 address, e.g. `192.0.0.0` or `2001:db8::`.
   string address_prefix = 1 [(validate.rules).string = {min_bytes: 1}];
 
   // Length of prefix, e.g. 0, 32.

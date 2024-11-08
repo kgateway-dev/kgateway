@@ -116,7 +116,7 @@ spec:
 ```
 
 #### Anatomy of Kubernetes service account
-A service account provides an identity for processes that run inside a Pod. When kubernetes starts a pod, it automatically generates a JWT contains information about the pod's service account and attaches it to the pod. Inside the JWT are *claims* that provide identity information, and a signature for verification. To verify these JWTs, the Kubernetes API server is provided with a public key. Gloo Gateway can use this public key to perform JWT verification for kubernetes service accounts.
+A service account provides an identity for processes that run inside a Pod. When kubernetes starts a pod, it automatically generates a JWT that contains information about the pod's service account and attaches it to the pod. Inside the JWT are *claims* that provide identity information, and a signature for verification. To verify these JWTs, the Kubernetes API server is provided with a public key. Gloo Gateway can use this public key to perform JWT verification for kubernetes service accounts.
 
 Let's see the claims for `svc-a`, the service account we just created:
 
