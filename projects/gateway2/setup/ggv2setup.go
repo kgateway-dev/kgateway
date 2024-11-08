@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 
 	"errors"
 
@@ -21,7 +22,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/edsupstream"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
@@ -217,8 +217,9 @@ func (g *genericStatusReporter) WriteReports(ctx context.Context, resourceErrs r
 		if kubernetes.IsKubeUpstream(resource.GetMetadata().GetName()) {
 			continue
 		}
-		// check if resource is an internal upstream. if so skip it..
-		if _, ok := resource.GetMetadata().GetLabels()[edsupstream.InternalEDSLabel]; ok {
+		// check if resource is an internal upstream. Internal upstreams have ':' in their names so
+		// the cannot be written to the cluster. if so skip it..
+		if strings.IndexRune(resource.GetMetadata().GetName(), ':') >= 0 {
 			continue
 		}
 
