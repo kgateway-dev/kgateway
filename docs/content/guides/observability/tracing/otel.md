@@ -8,6 +8,8 @@ Enable [OpenTelemetry](https://opentelemetry.io/) (OTel) tracing capabilities to
 
 OTel provides a standardized protocol for reporting traces, and a standardized collector through which to recieve metrics. Additionally, OTel supports exporting metrics to several types of distributed tracing platforms. For the full list of supported platforms, see the [OTel GitHub respository](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter).
 
+## Set up OpenTelemetry tracing
+
 To get started, deploy an OTel collector and agents to your Gloo Gateway cluster to trace requests, and modify your gateway proxy with the OTel tracing configuration. Then, use a tracing provider to collect and visualize the sampled spans.
 
 {{% notice note %}}
@@ -173,3 +175,98 @@ This guide uses the Zipkin tracing platform as an example to show how to set up 
 9. [Open the Zipkin web interface.](http://localhost:9411/zipkin/)
 
 10. In the Zipkin web interface, click **Run query** to view traces for your requests, and click **Show** to review the details of the trace.
+
+## Customize the span name
+
+Gloo supports changing the default span name by using the transformation filter. The following steps show an example name change.
+
+1. Change the span name by modifying your Virtual Service. The following sample configuration in a Virtual Service changes the name to the host header in the `text: '{{header("Host")}}'` field. Note because the `spanTransformer.name` field is an Inja template, you can use header values and any other macro logic that is supported in transformations. For more information, see the [transformation documentation]({{< versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/" >}}).
+   {{< highlight yaml "hl_lines=16-24" >}}
+   apiVersion: gateway.solo.io/v1
+   kind: VirtualService
+   metadata:
+     name: default
+     namespace: gloo-system
+   spec:
+     virtualHost:
+       domains:
+         - '*'
+       routes:
+         - matchers:
+            - prefix: /
+           directResponseAction:
+             status: 200
+             body: 'hello world'
+       options:
+         stagedTransformations:
+           regular:
+             requestTransforms:
+               - requestTransformation:
+                   transformationTemplate:
+                     spanTransformer:
+                       name:
+                         text: '{{header("Host")}}'
+   {{< /highlight >}}
+
+2. After you apply the updated Virtual Service, you can verify that the span name in the OpenTelemetry collector now is set to the value of the `Host` header by sending a curl request.
+   ```sh
+   curl -H "Host: my-hostname" http://localhost:8080
+   ```
+   In the output, verify that the following span appears:
+   ```
+   2024-11-04T20:18:08.656Z	info	TracesExporter	{"kind": "exporter", "data_type": "traces", "name": "logging", "#spans": 1}
+   2024-11-04T20:18:08.656Z	info	ResourceSpans #0
+   Resource SchemaURL: 
+   Resource attributes:
+        -> service.name: Str(gateway-proxy)
+   ScopeSpans #0
+   ScopeSpans SchemaURL: 
+   InstrumentationScope  
+   Span #0
+       Trace ID       : e42f4fa3ba873eefeb26b3b16112dc18
+       Parent ID      : 
+       ID             : 21547202617791ee
+       Name           : my-hostname
+       Kind           : Server
+       Start time     : 2024-11-04 20:18:06.697813 +0000 UTC
+       End time       : 2024-11-04 20:18:06.699024 +0000 UTC
+       Status code    : Unset
+       Status message : 
+   Attributes:
+        -> node_id: Str(gateway-proxy-577544cdcd-c6rvm.gloo-system)
+        -> zone: Str()
+        -> guid:x-request-id: Str(d1c5b217-e87b-95ae-b449-56c40eaa879c)
+        -> http.url: Str(http://echo-server/)
+        -> http.method: Str(GET)
+        -> downstream_cluster: Str(-)
+        -> user_agent: Str(curl/7.88.1)
+        -> http.protocol: Str(HTTP/1.1)
+        -> peer.address: Str(127.0.0.1)
+        -> request_size: Str(0)
+        -> response_size: Str(313)
+        -> component: Str(proxy)
+        -> upstream_cluster: Str(echo-server_gloo-system)
+        -> upstream_cluster.name: Str(echo-server_gloo-system)
+        -> http.status_code: Str(200)
+        -> response_flags: Str(-)
+   	{"kind": "exporter", "data_type": "traces", "name": "logging"}
+   ```
+
+Note that in this example, the span name was modified at the level of the virtual host, so all routes under the virtual host will exhibit the same span naming pattern. However, it is also possible to override this logic on a _per-route_ basis using the `routeDescriptor` field:
+
+```
+routes:
+- matchers:
+   - prefix: /route2
+  options:
+    autoHostRewrite: true
+    tracing:
+      routeDescriptor: CUSTOM_ROUTE_DESCRIPTOR
+  routeAction:
+    single:
+      upstream:
+        name: echo-server
+        namespace: gloo-system
+```
+
+When this configuration is applied, requests for the `/route2` endpoint will result in spans being reported to the OpenTelemetry collector with the span name set to `"CUSTOM_ROUTE_DESCRIPTOR"`. However, it is also important to note that `routeDescriptor` can only set a static override value and does not support Inja transformation templates.

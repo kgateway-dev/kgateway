@@ -154,8 +154,8 @@ message Extraction {
   enum Mode {
     // Default mode. Extract the content of a specified capturing group. In this mode,
     // `subgroup` selects the n-th capturing group, which represents the value that
-    // you want to extract. 
-    EXTRACT = 0; 
+    // you want to extract.
+    EXTRACT = 0;
     // Replace the content of a specified capturing group. In this mode, `subgroup` selects the
     // n-th capturing group, which represents the value that you want to replace with
     // the string provided in `replacement_text`.
@@ -342,6 +342,22 @@ message TransformationTemplate {
   // sets the behavior for the entire transformation. Use raw_strings function
   // for fine-grained control within a template.
   bool escape_characters = 12;
+
+  message SpanTransformer {
+    // A template that sets the span name
+    InjaTemplate name = 1;
+
+    // TODO if we want to set attributes as well, add fields to modify them here.
+  }
+
+  // These two fields (merge_json_keys and string_delimiter) are used in
+  // `envoy-gloo` but not used in the control plane. Let's reserve them to keep
+  // our field numbers in sync.
+  reserved 14;
+
+  // Use this field to modify the span of the trace.
+  SpanTransformer span_transformer = 15;
+
 }
 
 // Defines an [Inja template](https://github.com/pantor/inja) that will be
