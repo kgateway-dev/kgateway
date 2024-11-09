@@ -45,7 +45,7 @@ var _ = Describe("Query Get VirtualHostOptions", func() {
 	})
 
 	JustBeforeEach(func() {
-		builder := fake.NewClientBuilder().WithScheme(schemes.DefaultScheme())
+		builder := fake.NewClientBuilder().WithScheme(schemes.TestingScheme())
 		query.IterateIndices(func(o client.Object, f string, fun client.IndexerFunc) error {
 			builder.WithIndex(o, f, fun)
 			return nil

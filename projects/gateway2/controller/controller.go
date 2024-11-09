@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
@@ -56,6 +57,8 @@ type GatewayConfig struct {
 	Aws                     *deployer.AwsInfo
 
 	Extensions extensions.K8sGatewayExtensions
+	// CRDs defines the set of discovered Gateway API CRDs
+	CRDs sets.Set[string]
 }
 
 func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
@@ -114,9 +117,26 @@ type controllerBuilder struct {
 }
 
 func (c *controllerBuilder) addIndexes(ctx context.Context) error {
-	return query.IterateIndices(func(obj client.Object, field string, indexer client.IndexerFunc) error {
-		return c.cfg.Mgr.GetFieldIndexer().IndexField(ctx, obj, field, indexer)
-	})
+	var errs []error
+
+	// Index for HTTPRoute
+	if err := c.cfg.Mgr.GetFieldIndexer().IndexField(ctx, &apiv1.HTTPRoute{}, query.HttpRouteTargetField, query.IndexerByObjType); err != nil {
+		errs = append(errs, err)
+	}
+
+	// Index for ReferenceGrant
+	if err := c.cfg.Mgr.GetFieldIndexer().IndexField(ctx, &apiv1beta1.ReferenceGrant{}, query.ReferenceGrantFromField, query.IndexerByObjType); err != nil {
+		errs = append(errs, err)
+	}
+
+	// Conditionally index for TCPRoute
+	if c.cfg.CRDs.Has(wellknown.TCPRouteCRD) {
+		if err := c.cfg.Mgr.GetFieldIndexer().IndexField(ctx, &apiv1a2.TCPRoute{}, query.TcpRouteTargetField, query.IndexerByObjType); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errors.Join(errs...)
 }
 
 func (c *controllerBuilder) addGwParamsIndexes(ctx context.Context) error {
@@ -231,7 +251,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 			return fmt.Errorf("object %T is not a client.Object", obj)
 		}
 		log.Info("watching gvk as gateway child", "gvk", gvk)
-		// unless its a service, we don't care about the status
+		// unless it's a service, we don't care about the status
 		var opts []builder.OwnsOption
 		if shouldIgnoreStatusChild(gvk) {
 			opts = append(opts, builder.WithPredicates(predicate.GenerationChangedPredicate{}))
@@ -282,7 +302,7 @@ func (c *controllerBuilder) watchCustomResourceDefinitions(_ context.Context) er
 					return false
 				}
 				// Check if the CRD is one we care about
-				return wellknown.GatewayCRDs.Has(crd.Name)
+				return c.cfg.CRDs.Has(crd.Name)
 			}),
 		)).
 		For(&apiextensionsv1.CustomResourceDefinition{}).
@@ -296,7 +316,13 @@ func (c *controllerBuilder) watchHttpRoute(_ context.Context) error {
 		Complete(reconcile.Func(c.reconciler.ReconcileHttpRoutes))
 }
 
-func (c *controllerBuilder) watchTcpRoute(_ context.Context) error {
+func (c *controllerBuilder) watchTcpRoute(ctx context.Context) error {
+	if !c.cfg.CRDs.Has(wellknown.TCPRouteCRD) {
+		log.FromContext(ctx).Info("TCPRoute type not registered in scheme; skipping TCPRoute controller setup")
+		return nil
+	}
+
+	// Proceed to set up the controller for TCPRoute
 	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&apiv1a2.TCPRoute{}).

@@ -1,6 +1,8 @@
 package schemes
 
 import (
+	"fmt"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
@@ -23,7 +25,6 @@ import (
 var SchemeBuilder = runtime.SchemeBuilder{
 	// K8s Gateway API resources
 	gwv1.Install,
-	gwv1a2.Install,
 	gwv1b1.Install,
 
 	// Kubernetes Core resources
@@ -60,5 +61,14 @@ func AddToScheme(s *runtime.Scheme) error {
 func DefaultScheme() *runtime.Scheme {
 	s := runtime.NewScheme()
 	_ = AddToScheme(s)
+	return s
+}
+
+// TestingScheme unconditionally includes the default scheme and the gwv1a2 scheme (which includes TCPRoute).
+func TestingScheme() *runtime.Scheme {
+	s := DefaultScheme()
+	if err := gwv1a2.Install(s); err != nil {
+		panic(fmt.Sprintf("Failed to install gwv1a2 scheme: %v", err))
+	}
 	return s
 }
