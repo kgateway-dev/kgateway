@@ -88,6 +88,7 @@ type ProxySyncer struct {
 	statusReport            krt.Singleton[report]
 	mostXdsSnapshots        krt.Collection[xdsSnapWrapper]
 	perclientSnapCollection krt.Collection[xdsSnapWrapper]
+	proxiesToReconcile      krt.Singleton[proxyList]
 	proxyTrigger            *krt.RecomputeTrigger
 
 	destRules  DestinationRuleIndex
@@ -449,21 +450,13 @@ func (s *ProxySyncer) Init(ctx context.Context, dbg *krt.DebugHandler) error {
 	s.perclientSnapCollection = snapshotPerClient(logger.Desugar(), dbg, s.uniqueClients, s.mostXdsSnapshots, epPerClient, clustersPerClient)
 
 	// build ProxyList collection as glooProxies change
-	proxiesToReconcile := krt.NewSingleton(func(kctx krt.HandlerContext) *proxyList {
+	s.proxiesToReconcile = krt.NewSingleton(func(kctx krt.HandlerContext) *proxyList {
 		proxies := krt.Fetch(kctx, glooProxies)
 		var l gloov1.ProxyList
 		for _, p := range proxies {
 			l = append(l, p.proxy)
 		}
 		return &proxyList{l}
-	})
-	// handler to reconcile ProxyList for in-memory proxy client
-	proxiesToReconcile.Register(func(o krt.Event[proxyList]) {
-		var l gloov1.ProxyList
-		if o.Event != controllers.EventDelete {
-			l = o.Latest().list
-		}
-		s.reconcileProxies(l)
 	})
 
 	// as proxies are created, they also contain a reportMap containing status for the Gateway and associated xRoutes (really parentRefs)
@@ -536,13 +529,6 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	// latestReport will be constantly updated to contain the merged status report for Kube Gateway status
 	// when timer ticks, we will use the state of the mergedReports at that point in time to sync the status to k8s
 	latestReportQueue := ggv2utils.NewAsyncQueue[reports.ReportMap]()
-	s.statusReport.Register(func(o krt.Event[report]) {
-		if o.Event == controllers.EventDelete {
-			// TODO: handle garbage collection (see: https://github.com/solo-io/solo-projects/issues/7086)
-			return
-		}
-		latestReportQueue.Enqueue(o.Latest().ReportMap)
-	})
 	logger.Infof("waiting for cache to sync")
 
 	// wait for krt collections to sync
@@ -558,6 +544,25 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	}
 
 	logger.Infof("caches warm!")
+
+	// caches are warm, now we can do registrations
+	s.statusReport.Register(func(o krt.Event[report]) {
+		if o.Event == controllers.EventDelete {
+			// TODO: handle garbage collection (see: https://github.com/solo-io/solo-projects/issues/7086)
+			return
+		}
+		latestReportQueue.Enqueue(o.Latest().ReportMap)
+	})
+
+	// handler to reconcile ProxyList for in-memory proxy client
+	s.proxiesToReconcile.Register(func(o krt.Event[proxyList]) {
+		var l gloov1.ProxyList
+		if o.Event != controllers.EventDelete {
+			l = o.Latest().list
+		}
+		s.reconcileProxies(l)
+	})
+
 	go func() {
 		timer := time.NewTicker(time.Second * 1)
 		for {
