@@ -102,7 +102,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	scheme := glooschemes.DefaultScheme()
 
 	// Extend the scheme if the TCPRoute CRD exists.
-	if err := glooschemes.ExtendedScheme(ctx, cfg.RestConfig, scheme); err != nil {
+	if err := glooschemes.AddGatewayV1A2Scheme(cfg.RestConfig, scheme); err != nil {
 		return nil, err
 	}
 

@@ -1,11 +1,9 @@
 package schemes
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-	"github.com/solo-io/go-utils/contextutils"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/discovery"
@@ -14,12 +12,8 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
-// ExtendedScheme conditionally adds the gwv1a2 scheme if the TCPRoute CRD exists.
-// TODO (danehans): Extend to check all gw api CRDs in experimental channel?
-func ExtendedScheme(ctx context.Context, restConfig *rest.Config, scheme *runtime.Scheme) error {
-	logger := contextutils.LoggerFrom(ctx)
-	logger.Info("ExtendedScheme()")
-
+// AddGatewayV1A2Scheme adds the gwv1a2 scheme to the provided scheme if the TCPRoute CRD exists.
+func AddGatewayV1A2Scheme(restConfig *rest.Config, scheme *runtime.Scheme) error {
 	exists, err := CRDExists(restConfig, gwv1a2.GroupVersion.Group, gwv1a2.GroupVersion.Version, wellknown.TCPRouteKind)
 	if err != nil {
 		return fmt.Errorf("error checking if %s CRD exists: %w", wellknown.TCPRouteKind, err)
@@ -28,12 +22,8 @@ func ExtendedScheme(ctx context.Context, restConfig *rest.Config, scheme *runtim
 	if exists {
 		if err := gwv1a2.Install(scheme); err != nil {
 			return fmt.Errorf("error adding Gateway API v1alpha2 to scheme: %w", err)
-		} else {
-			logger.Info("Added gwv1a2 CRDs to scheme")
 		}
 	}
-
-	logger.Info("Default scheme not extended")
 
 	return nil
 }
