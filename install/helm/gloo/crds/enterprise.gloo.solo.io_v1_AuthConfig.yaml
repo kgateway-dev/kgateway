@@ -969,6 +969,31 @@ spec:
                       required:
                       - config
                       type: object
+                    portalAuth:
+                      properties:
+                        options:
+                          properties:
+                            db:
+                              format: int32
+                              type: integer
+                            host:
+                              type: string
+                            poolSize:
+                              format: int32
+                              type: integer
+                            socketType:
+                              type: string
+                              x-kubernetes-int-or-string: true
+                            tlsCertMountPath:
+                              type: string
+                          type: object
+                        refreshInterval:
+                          type: string
+                        requestTimeout:
+                          type: string
+                        url:
+                          type: string
+                      type: object
                   type: object
                 type: array
               failOnRedirect:
