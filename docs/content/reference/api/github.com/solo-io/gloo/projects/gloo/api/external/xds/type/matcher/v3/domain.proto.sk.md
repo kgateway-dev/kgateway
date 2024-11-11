@@ -37,7 +37,7 @@ names with optional wildcards.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `domainMatchers` | [[]xds.type.matcher.v3.ServerNameMatcher.DomainMatcher](../domain.proto.sk/#domainmatcher) | Match a server name by multiple domain matchers. Each domain, exact or wildcard, must appear at most once across all the domain matchers. The server name will be matched against all wildcard domains starting from the longest suffix, i.e. ``www.example.com`` input will be first matched against ``www.example.com``, then ``*.example.com``, then ``*.com``, then ``*``, until the associated matcher action accepts the input. Note that wildcards must be on a dot border, and values like ``*w.example.com`` are invalid. |
+| `domainMatchers` | [[]xds.type.matcher.v3.ServerNameMatcher.DomainMatcher](../domain.proto.sk/#domainmatcher) | Match a server name by multiple domain matchers. Each domain, exact or wildcard, must appear at most once across all the domain matchers. The server name will be matched against all wildcard domains starting from the longest suffix, i.e. `www.example.com` input will be first matched against `www.example.com`, then `*.example.com`, then `*.com`, then `*`, until the associated matcher action accepts the input. Note that wildcards must be on a dot border, and values like `*w.example.com` are invalid. |
 
 
 
@@ -47,7 +47,7 @@ names with optional wildcards.
 
  
 Specifies a set of exact and wildcard domains and a match action. The
-wildcard symbol ``*`` must appear at most once as the left-most part of
+wildcard symbol `*` must appear at most once as the left-most part of
 the domain on a dot border. The wildcard matches one or more non-empty
 domain parts.
 
@@ -59,7 +59,7 @@ domain parts.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `domains` | `[]string` | A non-empty set of domain names with optional wildcards, e.g. ``www.example.com``, ``*.com``, or ``*``. |
+| `domains` | `[]string` | A non-empty set of domain names with optional wildcards, e.g. `www.example.com`, `*.com`, or `*`. |
 | `onMatch` | [.xds.type.matcher.v3.Matcher.OnMatch](../matcher.proto.sk/#onmatch) | Match action to apply when the server name matches any of the domain names in the matcher. |
 
 

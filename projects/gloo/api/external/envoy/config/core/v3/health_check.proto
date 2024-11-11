@@ -24,9 +24,9 @@ option java_multiple_files = true;
 option (solo.io.udpa.annotations.file_status).package_version_status = ACTIVE;
 
 // [#protodoc-title: Health check]
-// * Health checking :ref:`architecture overview <arch_overview_health_checking>`.
+// * Health checking architecture overview.
 // * If health checking is configured for a cluster, additional statistics are emitted. They are
-//   documented :ref:`here <config_cluster_manager_cluster_stats>`.
+//   documented here.
 
 // Endpoint health status.
 enum HealthStatus {
@@ -40,9 +40,9 @@ enum HealthStatus {
   UNHEALTHY = 2;
 
   // Connection draining in progress. E.g.,
-  // `<https://aws.amazon.com/blogs/aws/elb-connection-draining-remove-instances-from-service-with-care/>`_
+  // https://aws.amazon.com/blogs/aws/elb-connection-draining-remove-instances-from-service-with-care/
   // or
-  // `<https://cloud.google.com/compute/docs/load-balancing/enabling-connection-draining>`_.
+  // https://cloud.google.com/compute/docs/load-balancing/enabling-connection-draining.
   // This is interpreted by Envoy as *UNHEALTHY*.
   DRAINING = 3;
 
@@ -86,7 +86,7 @@ message HealthCheck {
     // The value of the host header in the HTTP health check request. If
     // left empty (default value), the name of the cluster this health check is associated
     // with will be used. The host header can be customized for a specific endpoint by setting the
-    // :ref:`hostname <envoy_api_field_config.endpoint.v3.Endpoint.HealthCheckConfig.hostname>` field.
+    // hostname field.
     string host = 1 [(validate.rules).string = {well_known_regex: HTTP_HEADER_VALUE strict: false}];
 
     // Specifies the HTTP path that will be requested during health checking. For example
@@ -116,7 +116,7 @@ message HealthCheck {
 
     // Specifies a list of HTTP response statuses considered healthy. If provided, replaces default
     // 200-only policy - 200 must be included explicitly as needed. Ranges follow half-open
-    // semantics of :ref:`Int64Range <envoy_api_msg_type.v3.Int64Range>`. The start and end of each
+    // semantics of Int64Range. The start and end of each
     // range are required. Only statuses in the range [100, 600) are allowed.
     repeated type.v3.Int64Range expected_statuses = 9;
 
@@ -151,32 +151,29 @@ message HealthCheck {
     option (solo.io.udpa.annotations.versioning).previous_message_type =
         ".solo.io.envoy.api.v2.core.HealthCheck.RedisHealthCheck";
 
-    // If set, optionally perform ``EXISTS <key>`` instead of ``PING``. A return value
+    // If set, optionally perform `EXISTS <key>` instead of `PING`. A return value
     // from Redis of 0 (does not exist) is considered a passing healthcheck. A return value other
     // than 0 is considered a failure. This allows the user to mark a Redis instance for maintenance
     // by setting the specified key to any value and waiting for traffic to drain.
     string key = 1;
   }
 
-  // `grpc.health.v1.Health
-  // <https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto>`_-based
-  // healthcheck. See `gRPC doc <https://github.com/grpc/grpc/blob/master/doc/health-checking.md>`_
+  // [grpc.health.v1.Health](https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto)-based
+  // healthcheck. See [gRPC doc](https://github.com/grpc/grpc/blob/master/doc/health-checking.md)
   // for details.
   message GrpcHealthCheck {
     option (solo.io.udpa.annotations.versioning).previous_message_type =
         ".solo.io.envoy.api.v2.core.HealthCheck.GrpcHealthCheck";
 
     // An optional service name parameter which will be sent to gRPC service in
-    // `grpc.health.v1.HealthCheckRequest
-    // <https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto#L20>`_.
-    // message. See `gRPC health-checking overview
-    // <https://github.com/grpc/grpc/blob/master/doc/health-checking.md>`_ for more information.
+    // [grpc.health.v1.HealthCheckRequest](https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto#L20).
+    // message. See [gRPC health-checking overview](https://github.com/grpc/grpc/blob/master/doc/health-checking.md) for more information.
     string service_name = 1;
 
     // The value of the :authority header in the gRPC health check request. If
     // left empty (default value), the name of the cluster this health check is associated
     // with will be used. The authority header can be customized for a specific endpoint by setting
-    // the :ref:`hostname <envoy_api_field_config.endpoint.v3.Endpoint.HealthCheckConfig.hostname>` field.
+    // the hostname field.
     string authority = 2
         [(validate.rules).string = {well_known_regex: HTTP_HEADER_VALUE strict: false}];
   }
@@ -311,7 +308,7 @@ message HealthCheck {
   // The default value for "healthy edge interval" is the same as the default interval.
   google.protobuf.Duration healthy_edge_interval = 16 [(validate.rules).duration = {gt {}}];
 
-  // Specifies the path to the :ref:`health check event log <arch_overview_health_check_logging>`.
+  // Specifies the path to the health check event log.
   // If empty, no event log will be written.
   string event_log_path = 17;
 
@@ -329,7 +326,7 @@ message HealthCheck {
   TlsOptions tls_options = 21;
 
   // Optional key/value pairs that will be used to match a transport socket from those specified in the cluster's
-  // :ref:`tranport socket matches <envoy_api_field_config.cluster.v3.Cluster.transport_socket_matches>`.
+  // tranport socket matches.
   // For example, the following match criteria
   //
   // .. code-block:: yaml
@@ -350,12 +347,12 @@ message HealthCheck {
   //      config: { ... } # tls socket configuration
   //
   // If this field is set, then for health checks it will supersede an entry of *envoy.transport_socket* in the
-  // :ref:`LbEndpoint.Metadata <envoy_api_field_config.endpoint.v3.LbEndpoint.metadata>`.
+  // LbEndpoint.Metadata.
   // This allows using different transport socket capabilities for health checking versus proxying to the
   // endpoint.
   //
   // If the key/values pairs specified do not match any
-  // :ref:`transport socket matches <envoy_api_field_config.cluster.v3.Cluster.transport_socket_matches>`,
+  // transport socket matches,
   // the cluster's :ref:`transport socket <envoy_api_field_config.cluster.v3.Cluster.transport_socket>`
   // will be used for health check socket configuration.
   google.protobuf.Struct transport_socket_match_criteria = 23;
