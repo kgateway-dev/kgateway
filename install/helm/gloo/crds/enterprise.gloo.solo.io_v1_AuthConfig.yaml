@@ -971,7 +971,11 @@ spec:
                       type: object
                     portalAuth:
                       properties:
-                        options:
+                        apiKeyHeader:
+                          type: string
+                        cacheDuration:
+                          type: string
+                        redisOptions:
                           properties:
                             db:
                               format: int32
@@ -987,8 +991,6 @@ spec:
                             tlsCertMountPath:
                               type: string
                           type: object
-                        refreshInterval:
-                          type: string
                         requestTimeout:
                           type: string
                         url:

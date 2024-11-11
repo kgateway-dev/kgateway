@@ -3106,22 +3106,26 @@ func (m *PortalAuth) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetOptions()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetOptions()) {
+	if strings.Compare(m.GetApiKeyHeader(), target.GetApiKeyHeader()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetRedisOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetRedisOptions()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetOptions(), target.GetOptions()) {
+		if !proto.Equal(m.GetRedisOptions(), target.GetRedisOptions()) {
 			return false
 		}
 	}
 
-	if h, ok := interface{}(m.GetRefreshInterval()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetRefreshInterval()) {
+	if h, ok := interface{}(m.GetCacheDuration()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetCacheDuration()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetRefreshInterval(), target.GetRefreshInterval()) {
+		if !proto.Equal(m.GetCacheDuration(), target.GetCacheDuration()) {
 			return false
 		}
 	}

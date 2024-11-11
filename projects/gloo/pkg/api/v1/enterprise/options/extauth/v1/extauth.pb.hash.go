@@ -3765,18 +3765,22 @@ func (m *PortalAuth) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetOptions()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Options")); err != nil {
+	if _, err = hasher.Write([]byte(m.GetApiKeyHeader())); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetRedisOptions()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("RedisOptions")); err != nil {
 			return 0, err
 		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetOptions(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetRedisOptions(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Options")); err != nil {
+			if _, err = hasher.Write([]byte("RedisOptions")); err != nil {
 				return 0, err
 			}
 			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
@@ -3785,18 +3789,18 @@ func (m *PortalAuth) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetRefreshInterval()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("RefreshInterval")); err != nil {
+	if h, ok := interface{}(m.GetCacheDuration()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("CacheDuration")); err != nil {
 			return 0, err
 		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetRefreshInterval(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetCacheDuration(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("RefreshInterval")); err != nil {
+			if _, err = hasher.Write([]byte("CacheDuration")); err != nil {
 				return 0, err
 			}
 			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
