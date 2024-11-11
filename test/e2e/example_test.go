@@ -178,7 +178,7 @@ var _ = Describe("Example E2E Test For Developers", Label(), func() {
 			testContext.BeforeEach()
 		})
 
-		FIt("Gets reflected headers from /headers route", func() {
+		It("Gets reflected headers from /headers route", func() {
 			Eventually(func(g Gomega) {
 				requestBuilder := testContext.GetHttpRequestBuilder().
 					WithPath("headers").
@@ -189,7 +189,7 @@ var _ = Describe("Example E2E Test For Developers", Label(), func() {
 				g.Expect(err).NotTo(HaveOccurred())
 
 				expectedJsonBody := []byte(`{"headers":{"X-Test-Header":["test-value"]}}`)
-				g.Expect(response).Should(matchers.HaveOKResponseWithJSONContaining(expectedJsonBody))
+				g.Expect(response).Should(matchers.HaveOKResponseWithJSONContains(expectedJsonBody))
 			}, "5s", ".5s").Should(Succeed(), "traffic to /headers eventually returns a 200 with the test header")
 		})
 	})
