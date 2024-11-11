@@ -29,10 +29,9 @@ weight: 5
 Specifies that matching should be performed on the set of :ref:`HTTP attributes
 <arch_overview_attributes>`.
 
-The attributes will be exposed via `Common Expression Language
-<https://github.com/google/cel-spec>`_ runtime to associated CEL matcher.
+The attributes will be exposed via [Common Expression Language](https://github.com/google/cel-spec) runtime to associated CEL matcher.
 
-Refer to :ref:`Unified Matcher API <envoy_v3_api_msg_.xds.type.matcher.v3.Matcher>` documentation
+Refer to Unified Matcher API documentation
 for usage details.
 
 [#comment:TODO(sergiitk): When implemented, add the extension tag.]

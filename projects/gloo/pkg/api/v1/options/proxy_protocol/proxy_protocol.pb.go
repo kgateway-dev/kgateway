@@ -32,7 +32,7 @@ type ProxyProtocol struct {
 	Rules []*ProxyProtocol_Rule `protobuf:"bytes,1,rep,name=rules,proto3" json:"rules,omitempty"`
 	// Allow requests through that don't use proxy protocol. Defaults to false.
 	//
-	// .. attention::
+	// **Attention**:
 	//
 	//	The true setting is only honored in Gloo Edge Enterprise.
 	//	This breaks conformance with the specification.
@@ -148,8 +148,7 @@ type ProxyProtocol_Rule struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The type that triggers the rule - required
-	// TLV type is defined as uint8_t in proxy protocol. See `the spec
-	// <https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt>`_ for details.
+	// TLV type is defined as uint8_t in proxy protocol. See [the spec](https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt) for details.
 	TlvType uint32 `protobuf:"varint,1,opt,name=tlv_type,json=tlvType,proto3" json:"tlv_type,omitempty"`
 	// If the TLV type is present, apply this metadata KeyValuePair.
 	OnTlvPresent *ProxyProtocol_KeyValuePair `protobuf:"bytes,2,opt,name=on_tlv_present,json=onTlvPresent,proto3" json:"on_tlv_present,omitempty"`

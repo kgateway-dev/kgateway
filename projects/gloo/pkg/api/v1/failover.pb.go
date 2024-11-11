@@ -281,9 +281,8 @@ type Locality struct {
 	// Region this zone belongs to.
 	Region string `protobuf:"bytes,1,opt,name=region,proto3" json:"region,omitempty"`
 	// Defines the local service zone where Envoy is running. The meaning of zone
-	// is context dependent, e.g. `Availability Zone (AZ)
-	// <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html>`_
-	// on AWS, `Zone <https://cloud.google.com/compute/docs/regions-zones/>`_ on
+	// is context dependent, e.g. [Availability Zone (AZ)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html)
+	// on AWS, [Zone](https://cloud.google.com/compute/docs/regions-zones/) on
 	// GCP, etc.
 	Zone string `protobuf:"bytes,2,opt,name=zone,proto3" json:"zone,omitempty"`
 	// When used for locality of upstream hosts, this field further splits zone
@@ -405,8 +404,8 @@ type Failover_Policy struct {
 	//
 	//	{ "overprovisioning_factor": 100 }
 	//
-	// Read more at :ref:`priority levels <arch_overview_load_balancing_priority_levels>` and
-	// :ref:`localities <arch_overview_load_balancing_locality_weighted_lb>`.
+	// Read more at priority levels and
+	// localities.
 	OverprovisioningFactor *wrapperspb.UInt32Value `protobuf:"bytes,1,opt,name=overprovisioning_factor,json=overprovisioningFactor,proto3" json:"overprovisioning_factor,omitempty"`
 }
 

@@ -212,15 +212,14 @@ type Locality struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Region this :ref:`zone <envoy_api_field_config.core.v3.Locality.zone>` belongs to.
+	// Region this zone belongs to.
 	Region string `protobuf:"bytes,1,opt,name=region,proto3" json:"region,omitempty"`
 	// Defines the local service zone where Envoy is running. Though optional, it
 	// should be set if discovery service routing is used and the discovery
-	// service exposes :ref:`zone data <envoy_api_field_config.endpoint.v3.LocalityLbEndpoints.locality>`,
-	// either in this message or via :option:`--service-zone`. The meaning of zone
-	// is context dependent, e.g. `Availability Zone (AZ)
-	// <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html>`_
-	// on AWS, `Zone <https://cloud.google.com/compute/docs/regions-zones/>`_ on
+	// service exposes zone data,
+	// either in this message or via `--service-zone`. The meaning of zone
+	// is context dependent, e.g. [Availability Zone (AZ)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html)
+	// on AWS, [Zone](https://cloud.google.com/compute/docs/regions-zones/) on
 	// GCP, etc.
 	Zone string `protobuf:"bytes,2,opt,name=zone,proto3" json:"zone,omitempty"`
 	// When used for locality of upstream hosts, this field further splits zone
@@ -442,23 +441,23 @@ type Node struct {
 
 	// An opaque node identifier for the Envoy node. This also provides the local
 	// service node name. It should be set if any of the following features are
-	// used: :ref:`statsd <arch_overview_statistics>`, :ref:`CDS
+	// used: statsd, :ref:`CDS
 	// <config_cluster_manager_cds>`, and :ref:`HTTP tracing
 	// <arch_overview_tracing>`, either in this message or via
-	// :option:`--service-node`.
+	// `--service-node`.
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// Defines the local service cluster name where Envoy is running. Though
 	// optional, it should be set if any of the following features are used:
-	// :ref:`statsd <arch_overview_statistics>`, :ref:`health check cluster
+	// statsd, :ref:`health check cluster
 	// verification
 	// <envoy_api_field_config.core.v3.HealthCheck.HttpHealthCheck.service_name_matcher>`,
-	// :ref:`runtime override directory <envoy_api_msg_config.bootstrap.v3.Runtime>`,
+	// runtime override directory,
 	// :ref:`user agent addition
 	// <envoy_api_field_extensions.filters.network.http_connection_manager.v3.HttpConnectionManager.add_user_agent>`,
-	// :ref:`HTTP global rate limiting <config_http_filters_rate_limit>`,
-	// :ref:`CDS <config_cluster_manager_cds>`, and :ref:`HTTP tracing
+	// HTTP global rate limiting,
+	// CDS, and :ref:`HTTP tracing
 	// <arch_overview_tracing>`, either in this message or via
-	// :option:`--service-cluster`.
+	// `--service-cluster`.
 	Cluster string `protobuf:"bytes,2,opt,name=cluster,proto3" json:"cluster,omitempty"`
 	// Opaque metadata extending the node identifier. Envoy will pass this
 	// directly to the management server.
@@ -478,11 +477,11 @@ type Node struct {
 	// Client feature support list. These are well known features described
 	// in the Envoy API repository for a given major version of an API. Client features
 	// use reverse DNS naming scheme, for example `com.acme.feature`.
-	// See :ref:`the list of features <client_features>` that xDS client may
+	// See the list of features that xDS client may
 	// support.
 	ClientFeatures []string `protobuf:"bytes,10,rep,name=client_features,json=clientFeatures,proto3" json:"client_features,omitempty"`
 	// Known listening ports on the node as a generic hint to the management server
-	// for filtering :ref:`listeners <config_listeners>` to be returned. For example,
+	// for filtering listeners to be returned. For example,
 	// if there is a listener bound to port 80, the list can optionally contain the
 	// SocketAddress `(0.0.0.0,80)`. The field is optional and just a hint.
 	ListeningAddresses []*Address `protobuf:"bytes,11,rep,name=listening_addresses,json=listeningAddresses,proto3" json:"listening_addresses,omitempty"`
@@ -632,7 +631,7 @@ func (*Node_UserAgentBuildVersion) isNode_UserAgentVersionType() {}
 // object to match against. There are some well defined metadata used today for
 // this purpose:
 //
-//   - “{"envoy.lb": {"canary": <bool> }}“ This indicates the canary status of an
+//   - `{"envoy.lb": {"canary": <bool> }}` This indicates the canary status of an
 //     endpoint and is also used during header processing
 //     (x-envoy-upstream-canary) and for stats purposes.
 //
@@ -806,7 +805,7 @@ type RuntimeFeatureFlag struct {
 	DefaultValue *wrapperspb.BoolValue `protobuf:"bytes,1,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`
 	// Runtime key to get value for comparison. This value is used if defined. The boolean value must
 	// be represented via its
-	// `canonical JSON encoding <https://developers.google.com/protocol-buffers/docs/proto3#json>`_.
+	// [canonical JSON encoding](https://developers.google.com/protocol-buffers/docs/proto3#json).
 	RuntimeKey string `protobuf:"bytes,2,opt,name=runtime_key,json=runtimeKey,proto3" json:"runtime_key,omitempty"`
 }
 
@@ -864,8 +863,8 @@ type HeaderValue struct {
 	Key string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 	// Header value.
 	//
-	// The same :ref:`format specifier <config_access_log_format>` as used for
-	// :ref:`HTTP access logging <config_access_log>` applies here, however
+	// The same format specifier as used for
+	// HTTP access logging applies here, however
 	// unknown header values are replaced with the empty string instead of `-`.
 	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 }
@@ -1120,7 +1119,7 @@ type RetryPolicy struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Specifies parameters that control :ref:`retry backoff strategy <envoy_api_msg_config.core.v3.BackoffStrategy>`.
+	// Specifies parameters that control retry backoff strategy.
 	// This parameter is optional, in which case the default base interval is 1000 milliseconds. The
 	// default maximum interval is 10 times the base interval.
 	RetryBackOff *BackoffStrategy `protobuf:"bytes,1,opt,name=retry_back_off,json=retryBackOff,proto3" json:"retry_back_off,omitempty"`
@@ -1320,8 +1319,8 @@ func (*AsyncDataSource_Local) isAsyncDataSource_Specifier() {}
 
 func (*AsyncDataSource_Remote) isAsyncDataSource_Specifier() {}
 
-// Configuration for transport socket in :ref:`listeners <config_listeners>` and
-// :ref:`clusters <envoy_api_msg_config.cluster.v3.Cluster>`. If the configuration is
+// Configuration for transport socket in listeners and
+// clusters. If the configuration is
 // empty, a default transport socket implementation and configuration will be
 // chosen based on the platform and existence of tls_context.
 type TransportSocket struct {
@@ -1405,10 +1404,10 @@ func (*TransportSocket_TypedConfig) isTransportSocket_ConfigType() {}
 // Runtime derived FractionalPercent with defaults for when the numerator or denominator is not
 // specified via a runtime key.
 //
-// .. note::
+// **Note**:
 //
 //	Parsing of the runtime key's data is implemented such that it may be represented as a
-//	:ref:`FractionalPercent <envoy_api_msg_type.v3.FractionalPercent>` proto represented as JSON/YAML
+//	FractionalPercent proto represented as JSON/YAML
 //	and may also be represented as an integer with the assumption that the value is an integral
 //	percentage out of 100. For instance, a runtime key lookup returning the value "42" would parse
 //	as a `FractionalPercent` whose numerator is 42 and denominator is HUNDRED.

@@ -167,8 +167,7 @@ type Matcher_Regex struct {
 	// If specified, the route is a regular expression rule meaning that the
 	// regex must match the *:path* header once the query string is removed. The entire path
 	// (without the query string) must match the regex. The rule will not match if only a
-	// sub-sequence of the *:path* header matches the regex. The regex grammar is defined `here
-	// <http://en.cppreference.com/w/cpp/regex/ecmascript>`_.
+	// sub-sequence of the *:path* header matches the regex. The regex grammar is defined [here](http://en.cppreference.com/w/cpp/regex/ecmascript).
 	//
 	// Examples:<br/>
 	//
@@ -222,7 +221,7 @@ type HeaderMatcher struct {
 	// Examples:
 	// * name=foo, invert_match=true: matches if no header named `foo` is present
 	// * name=foo, value=bar, invert_match=true: matches if no header named `foo` with value `bar` is present
-	// * name=foo, value=“\d{3}“, regex=true, invert_match=true: matches if no header named `foo` with a value consisting of three integers is present
+	// * name=foo, value=`\d{3}`, regex=true, invert_match=true: matches if no header named `foo` with a value consisting of three integers is present
 	InvertMatch bool `protobuf:"varint,4,opt,name=invert_match,json=invertMatch,proto3" json:"invert_match,omitempty"`
 }
 

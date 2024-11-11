@@ -99,7 +99,7 @@ type HttpProtocolOptions struct {
 	// Note that request based timeouts mean that HTTP/2 PINGs will not keep the connection alive.
 	// If not specified, this defaults to 1 hour. To disable idle timeouts explicitly set this to 0.
 	//
-	// .. warning::
+	// **Warning**:
 	//
 	//	Disabling this timeout has a highly likelihood of yielding connection leaks due to lost TCP
 	//	FIN packets, etc.
@@ -290,7 +290,7 @@ type Http2ProtocolOptions struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// `Maximum concurrent streams <https://httpwg.org/specs/rfc7540.html#rfc.section.5.1.2>`_
+	// [Maximum concurrent streams](https://httpwg.org/specs/rfc7540.html#rfc.section.5.1.2)
 	// allowed for peer on one HTTP/2 connection. Valid values range from 1 to 2147483647 (2^31 - 1)
 	// and defaults to 2147483647.
 	//
@@ -302,8 +302,7 @@ type Http2ProtocolOptions struct {
 	// connection based on upstream settings. Config dumps will reflect the configured upper bound,
 	// not the per-connection negotiated limits.
 	MaxConcurrentStreams *wrapperspb.UInt32Value `protobuf:"bytes,2,opt,name=max_concurrent_streams,json=maxConcurrentStreams,proto3" json:"max_concurrent_streams,omitempty"`
-	// `Initial stream-level flow-control window
-	// <https://httpwg.org/specs/rfc7540.html#rfc.section.6.9.2>`_ size. Valid values range from 65535
+	// [Initial stream-level flow-control window](https://httpwg.org/specs/rfc7540.html#rfc.section.6.9.2) size. Valid values range from 65535
 	// (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum) and defaults to 268435456
 	// (256 * 1024 * 1024).
 	//
@@ -324,7 +323,7 @@ type Http2ProtocolOptions struct {
 	// This overrides any HCM :ref:`stream_error_on_invalid_http_messaging
 	// <envoy_v3_api_field_extensions.filters.network.http_connection_manager.v3.HttpConnectionManager.stream_error_on_invalid_http_message>`
 	//
-	// See `RFC7540, sec. 8.1 <https://datatracker.ietf.org/doc/html/rfc7540#section-8.1>`_ for details.
+	// See [RFC7540, sec. 8.1](https://datatracker.ietf.org/doc/html/rfc7540#section-8.1) for details.
 	OverrideStreamErrorOnInvalidHttpMessage *wrapperspb.BoolValue `protobuf:"bytes,14,opt,name=override_stream_error_on_invalid_http_message,json=overrideStreamErrorOnInvalidHttpMessage,proto3" json:"override_stream_error_on_invalid_http_message,omitempty"`
 }
 

@@ -123,6 +123,16 @@ func (m *ListenerOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetTcpStats()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetTcpStats()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetTcpStats(), target.GetTcpStats()) {
+			return false
+		}
+	}
+
 	return true
 }
 

@@ -19,8 +19,8 @@ option (solo.io.udpa.annotations.file_status).package_version_status = ACTIVE;
 message RegexMatcher {
   option (solo.io.udpa.annotations.versioning).previous_message_type = "envoy.type.matcher.RegexMatcher";
 
-  // Google's `RE2 <https://github.com/google/re2>`_ regex engine. The regex string must adhere to
-  // the documented `syntax <https://github.com/google/re2/wiki/Syntax>`_. The engine is designed
+  // Google's [RE2](https://github.com/google/re2) regex engine. The regex string must adhere to
+  // the documented [syntax](https://github.com/google/re2/wiki/Syntax). The engine is designed
   // to complete execution in linear time as well as limit the amount of memory used.
   //
   // Envoy supports program size checking via runtime. The runtime keys `re2.max_program_size.error_level`
@@ -78,10 +78,9 @@ message RegexMatchAndSubstitute {
   // subject string during a substitution operation to produce a new string.
   // Capture groups in the pattern can be referenced in the substitution
   // string. Note, however, that the syntax for referring to capture groups is
-  // defined by the chosen regular expression engine. Google's `RE2
-  // <https://github.com/google/re2>`_ regular expression engine uses a
+  // defined by the chosen regular expression engine. Google's [RE2](https://github.com/google/re2) regular expression engine uses a
   // backslash followed by the capture group number to denote a numbered
-  // capture group. E.g., ``\1`` refers to capture group 1, and ``\2`` refers
+  // capture group. E.g., `\1` refers to capture group 1, and `\2` refers
   // to capture group 2.
   string substitution = 2;
 }

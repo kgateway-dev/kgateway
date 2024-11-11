@@ -162,6 +162,8 @@ jobs:
 
   slack-notification:
     runs-on: ubuntu-latest
+    needs:
+      - copy-docs
     steps:
     - name: Notify on workflow success
       if: |

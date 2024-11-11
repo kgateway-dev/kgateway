@@ -37,8 +37,8 @@ message IPMatcher {
     // first (longest prefix first), then the order of declaration next.
     //
     // For example, consider two range matchers: an exclusive matcher *X* on
-    // ``0.0.0.0/0`` and a matcher *Y* on ``192.0.0.0/2`` with a nested match
-    // condition *Z*. For the input IP ``192.168.0.1`` matcher *Y* is the most
+    // `0.0.0.0/0` and a matcher *Y* on `192.0.0.0/2` with a nested match
+    // condition *Z*. For the input IP `192.168.0.1` matcher *Y* is the most
     // specific. If its nested match condition *Z* does not accept the input,
     // then the less specific matcher *X* does not apply either despite the
     // input being within the range, because matcher *X* is exclusive.
