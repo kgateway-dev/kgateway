@@ -52,7 +52,7 @@ var _ = Describe("ContainMapElements", func() {
 
 	When("actual is nil", func() {
 		var (
-			actual map[any]any = nil
+			actual map[string]any = nil
 		)
 		It("never matches when expected is nil", func() {
 			var expected map[string]string = nil
@@ -69,7 +69,7 @@ var _ = Describe("ContainMapElements", func() {
 	})
 	When("actual is empty", func() {
 		var (
-			actual map[any]any = map[any]any{}
+			actual map[string]any = map[string]any{}
 		)
 		It("never matches when expected is nil", func() {
 			var expected map[string]string = nil
@@ -82,6 +82,79 @@ var _ = Describe("ContainMapElements", func() {
 		It("never matches when expected is non-empty", func() {
 			expected := map[string]string{"foo": "bar"}
 			Expect(actual).ToNot(matchers.ContainMapElements(expected))
+		})
+	})
+})
+
+var _ = Describe("ContainsDeepMapElements", func() {
+	DescribeTable("Map contains all Key/Value pairs",
+		func(expectedMap map[string]any) {
+			actualMap := map[string]any{
+				"key1": "value1",
+				"key2": "value2",
+				"key3": map[string]any{
+					"key4": "value4",
+					"key5": "value5",
+				},
+			}
+
+			Expect(actualMap).To(matchers.ContainsDeepMapElements(expectedMap))
+		},
+		Entry("empty map", map[string]any{}),
+		Entry("nil map", nil),
+		Entry("all values in actual in expected", map[string]any{
+			"key1": "value1",
+			"key2": "value2",
+		}),
+		Entry("some values in actual in expected", map[string]any{
+			"key1": "value1",
+		}),
+		Entry("nested map", map[string]any{
+			"key3": map[string]any{
+				"key4": "value4",
+				"key5": "value5",
+			},
+		}),
+		Entry("nested map with some of the nested values", map[string]any{
+			"key3": map[string]any{
+				"key5": "value5",
+			},
+		}),
+	)
+
+	When("actual is nil", func() {
+		var (
+			actual map[string]any = nil
+		)
+		It("never matches when expected is nil", func() {
+			var expected map[string]any = nil
+			Expect(actual).ToNot(matchers.ContainsDeepMapElements(expected))
+		})
+		It("never matches when expected is empty", func() {
+			expected := map[string]any{}
+			Expect(actual).ToNot(matchers.ContainsDeepMapElements(expected))
+		})
+		It("never matches when expected is non-empty", func() {
+			expected := map[string]any{"foo": "bar"}
+			Expect(actual).ToNot(matchers.ContainsDeepMapElements(expected))
+		})
+	})
+
+	When("actual is empty", func() {
+		var (
+			actual map[string]any = map[string]any{}
+		)
+		It("never matches when expected is nil", func() {
+			var expected map[string]any = nil
+			Expect(actual).ToNot(matchers.ContainsDeepMapElements(expected))
+		})
+		It("never matches when expected is empty", func() {
+			expected := map[string]any{}
+			Expect(actual).ToNot(matchers.ContainsDeepMapElements(expected))
+		})
+		It("never matches when expected is non-empty", func() {
+			expected := map[string]any{"foo": "bar"}
+			Expect(actual).ToNot(matchers.ContainsDeepMapElements(expected))
 		})
 	})
 })
