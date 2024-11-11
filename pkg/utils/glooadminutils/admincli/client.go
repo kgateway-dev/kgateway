@@ -8,13 +8,14 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
+	"github.com/solo-io/gloo/projects/gloo/pkg/servers/admin"
 	"github.com/solo-io/go-utils/threadsafe"
 )
 
 const (
 	InputSnapshotPath = "/snapshots/input"
 
-	DefaultAdminPort = 9095
+	DefaultAdminPort = admin.AdminPort
 )
 
 // Client is a utility for executing requests against the Gloo Admin API

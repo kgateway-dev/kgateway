@@ -1,13 +1,20 @@
 package admin
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
+	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/kube/krt"
+)
+
+const (
+	AdminPort = 9095
 )
 
 // ServerHandlers returns the custom handlers for the Admin Server, which will be bound to the http.ServeMux
@@ -96,5 +103,71 @@ func writeJSON(w http.ResponseWriter, obj any, req *http.Request) {
 	_, err = w.Write(b)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+func StartHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, profiles map[string]string)) error {
+	mux := new(http.ServeMux)
+	profileDescriptions := map[string]string{}
+	for _, addHandler := range addHandlers {
+		addHandler(mux, profileDescriptions)
+	}
+	idx := index(profileDescriptions)
+	mux.HandleFunc("/", idx)
+	mux.HandleFunc("/snapshots/", idx)
+	server := &http.Server{
+		Addr:    fmt.Sprintf("localhost:%d", AdminPort),
+		Handler: mux,
+	}
+	contextutils.LoggerFrom(ctx).Infof("Admin server starting at %s", server.Addr)
+	go func() {
+		err := server.ListenAndServe()
+		if err == http.ErrServerClosed {
+			contextutils.LoggerFrom(ctx).Infof("Admin server closed")
+		} else {
+			contextutils.LoggerFrom(ctx).Warnf("Admin server closed with unexpected error: %v", err)
+		}
+	}()
+	go func() {
+		<-ctx.Done()
+		if server != nil {
+			err := server.Close()
+			if err != nil {
+				contextutils.LoggerFrom(ctx).Warnf("Admin server shutdown returned error: %v", err)
+			}
+		}
+	}()
+	return nil
+}
+
+func index(profileDescriptions map[string]string) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		type profile struct {
+			Name string
+			Href string
+			Desc string
+		}
+		var profiles []profile
+		for href, desc := range profileDescriptions {
+			profiles = append(profiles, profile{
+				Name: href,
+				Href: href,
+				Desc: desc,
+			})
+		}
+
+		sort.Slice(profiles, func(i, j int) bool {
+			return profiles[i].Name < profiles[j].Name
+		})
+
+		// Adding other profiles exposed from within this package
+		var buf bytes.Buffer
+		fmt.Fprintf(&buf, "<h1>Admin Server</h1>\n")
+		for _, p := range profiles {
+			fmt.Fprintf(&buf, "<h2><a href=\"%s\"}>%s</a></h2><p>%s</p>\n", p.Name, p.Name, p.Desc)
+
+		}
+		w.Write(buf.Bytes())
 	}
 }
