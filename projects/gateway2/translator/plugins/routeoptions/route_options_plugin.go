@@ -223,7 +223,7 @@ func (p *plugin) handleAttachment(
 	// We should only make this query once per HTTPRoute.
 	attachedOption, sources, err := p.rtOptQueries.GetRouteOptionForRouteRule(
 		ctx,
-		types.NamespacedName{Name: routeCtx.Route.Name, Namespace: routeCtx.Route.Namespace},
+		types.NamespacedName{Name: routeCtx.HTTPRoute.Name, Namespace: routeCtx.HTTPRoute.Namespace},
 		routeCtx.Rule,
 		p.gwQueries,
 	)
@@ -232,7 +232,7 @@ func (p *plugin) handleAttachment(
 		switch {
 		case errors.Is(err, utils.ErrTypesNotEqual):
 		default:
-			routeCtx.Reporter.SetCondition(reports.HTTPRouteCondition{
+			routeCtx.Reporter.SetCondition(reports.RouteCondition{
 				Type:    gwv1.RouteConditionResolvedRefs,
 				Status:  metav1.ConditionFalse,
 				Reason:  gwv1.RouteReasonBackendNotFound,

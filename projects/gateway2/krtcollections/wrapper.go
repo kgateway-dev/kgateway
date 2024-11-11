@@ -1,9 +1,17 @@
 package krtcollections
 
 import (
-	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"google.golang.org/protobuf/proto"
+
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	"istio.io/istio/pkg/kube/krt"
+)
+
+type (
+	// UpstreamWrapper provides a keying function for Gloo's `v1.Upstream`
+	UpstreamWrapper = ResourceWrapper[*gloov1.Upstream]
 )
 
 type GlooResource interface {

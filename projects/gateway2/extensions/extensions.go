@@ -4,6 +4,7 @@ import (
 	"context"
 
 	gatewaykubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
+	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
@@ -25,17 +26,24 @@ type K8sGatewayExtensions interface {
 	// GetTranslator allows an extension to provide custom translation for
 	// different gateway classes.
 	GetTranslator(context.Context, *apiv1.Gateway, registry.PluginRegistry) translator.K8sGwTranslator
+
+	KRTExtensions() krtcollections.KRTExtensions
+}
+
+type CoreCollections struct {
+	AugmentedPods               krt.Collection[krtcollections.LocalityPod]
+	AuthConfigCollection        krt.Collection[*extauthkubev1.AuthConfig]
+	RouteOptionCollection       krt.Collection[*gatewaykubev1.RouteOption]
+	VirtualHostOptionCollection krt.Collection[*gatewaykubev1.VirtualHostOption]
 }
 
 // K8sGatewayExtensionsFactoryParameters contains the parameters required to start Gloo K8s Gateway Extensions (including Translator Plugins)
 type K8sGatewayExtensionsFactoryParameters struct {
-	Mgr                         controllerruntime.Manager
-	IstioClient                 istiokube.Client
-	AuthConfigCollection        krt.Collection[*extauthkubev1.AuthConfig]
-	RouteOptionCollection       krt.Collection[*gatewaykubev1.RouteOption]
-	VirtualHostOptionCollection krt.Collection[*gatewaykubev1.VirtualHostOption]
-	StatusReporter              reporter.StatusReporter
-	KickXds                     func(ctx context.Context)
+	Mgr             controllerruntime.Manager
+	IstioClient     istiokube.Client
+	CoreCollections CoreCollections
+	StatusReporter  reporter.StatusReporter
+	KickXds         func(ctx context.Context)
 }
 
 // K8sGatewayExtensionsFactory returns an extensions.K8sGatewayExtensions
@@ -52,25 +60,24 @@ func NewK8sGatewayExtensions(
 	queries := query.NewData(
 		params.Mgr.GetClient(),
 		params.Mgr.GetScheme(),
+		nil,
 	)
 
 	return &k8sGatewayExtensions{
-		mgr:                         params.Mgr,
-		routeOptionCollection:       params.RouteOptionCollection,
-		virtualHostOptionCollection: params.VirtualHostOptionCollection,
-		statusReporter:              params.StatusReporter,
-		queries:                     queries,
+		mgr:            params.Mgr,
+		collections:    params.CoreCollections,
+		statusReporter: params.StatusReporter,
+		queries:        queries,
 	}, nil
 }
 
 type k8sGatewayExtensions struct {
-	mgr                         controllerruntime.Manager
-	routeOptionCollection       krt.Collection[*gatewaykubev1.RouteOption]
-	virtualHostOptionCollection krt.Collection[*gatewaykubev1.VirtualHostOption]
-	statusReporter              reporter.StatusReporter
-	translator                  translator.K8sGwTranslator
-	pluginRegistry              registry.PluginRegistry
-	queries                     query.GatewayQueries
+	mgr            controllerruntime.Manager
+	collections    CoreCollections
+	statusReporter reporter.StatusReporter
+	translator     translator.K8sGwTranslator
+	pluginRegistry registry.PluginRegistry
+	queries        query.GatewayQueries
 }
 
 func (e *k8sGatewayExtensions) GetTranslator(_ context.Context, _ *apiv1.Gateway, pluginRegistry registry.PluginRegistry) translator.K8sGwTranslator {
@@ -81,9 +88,13 @@ func (e *k8sGatewayExtensions) CreatePluginRegistry(_ context.Context) registry.
 	plugins := registry.BuildPlugins(
 		e.queries,
 		e.mgr.GetClient(),
-		e.routeOptionCollection,
-		e.virtualHostOptionCollection,
+		e.collections.RouteOptionCollection,
+		e.collections.VirtualHostOptionCollection,
 		e.statusReporter,
 	)
 	return registry.NewPluginRegistry(plugins)
+}
+
+func (e *k8sGatewayExtensions) KRTExtensions() krtcollections.KRTExtensions {
+	return krtcollections.Aggregate()
 }

@@ -58,13 +58,14 @@ func (t *translator) TranslateProxy(
 	logger := contextutils.LoggerFrom(ctx)
 	routesForGw, err := t.queries.GetRoutesForGateway(ctx, gateway)
 	if err != nil {
-		logger.Errorf("err getting routes for gw '%s': %v", client.ObjectKeyFromObject(gateway), err)
+		logger.Errorf("failed to get routes for gateway %s: %v", client.ObjectKeyFromObject(gateway), err)
 		// TODO: decide how/if to report this error on Gateway
 		// reporter.Gateway(gateway).Err(err.Error())
 		return nil
 	}
+
 	for _, rErr := range routesForGw.RouteErrors {
-		reporter.Route(&rErr.Route).ParentRef(&rErr.ParentRef).SetCondition(reports.HTTPRouteCondition{
+		reporter.Route(rErr.Route).ParentRef(&rErr.ParentRef).SetCondition(reports.RouteCondition{
 			Type:   gwv1.RouteConditionAccepted,
 			Status: metav1.ConditionFalse,
 			Reason: rErr.Error.Reason,

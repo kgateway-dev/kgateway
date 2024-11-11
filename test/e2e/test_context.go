@@ -36,7 +36,7 @@ const (
 	// To make our tests more explicit we define VirtualServices with an explicit set
 	// of domains (which match the `Host` header of a request), and DefaultHost
 	// is the domain we use by default
-	DefaultHost = "test.com"
+	DefaultHost = "jsonplaceholder.typicode.com"
 )
 
 var (

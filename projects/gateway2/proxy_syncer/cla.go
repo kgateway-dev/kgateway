@@ -31,26 +31,25 @@ func (c EndpointResources) Equals(in EndpointResources) bool {
 
 // TODO: this is needed temporary while we don't have the per-upstream translation done.
 // once the plugins are fixed to support it, we can have the proxy translation skip upstreams/endpoints and remove this collection
-func newEnvoyEndpoints(glooEndpoints krt.Collection[EndpointsForUpstream]) krt.Collection[EndpointResources] {
-
-	clas := krt.NewCollection(glooEndpoints, func(_ krt.HandlerContext, ep EndpointsForUpstream) *EndpointResources {
+func newEnvoyEndpoints(glooEndpoints krt.Collection[krtcollections.EndpointsForUpstream]) krt.Collection[EndpointResources] {
+	clas := krt.NewCollection(glooEndpoints, func(_ krt.HandlerContext, ep krtcollections.EndpointsForUpstream) *EndpointResources {
 		return TransformEndpointToResources(ep)
 	})
 	return clas
 }
 
-func TransformEndpointToResources(ep EndpointsForUpstream) *EndpointResources {
+func TransformEndpointToResources(ep krtcollections.EndpointsForUpstream) *EndpointResources {
 	cla := prioritize(ep)
 	return &EndpointResources{
 		Endpoints:        resource.NewEnvoyResource(cla),
-		EndpointsVersion: ep.lbEpsEqualityHash,
+		EndpointsVersion: ep.LbEpsEqualityHash,
 		UpstreamRef:      ep.UpstreamRef,
 	}
 }
 
-func prioritize(ep EndpointsForUpstream) *envoy_config_endpoint_v3.ClusterLoadAssignment {
+func prioritize(ep krtcollections.EndpointsForUpstream) *envoy_config_endpoint_v3.ClusterLoadAssignment {
 	cla := &envoy_config_endpoint_v3.ClusterLoadAssignment{
-		ClusterName: ep.clusterName,
+		ClusterName: ep.ClusterName,
 	}
 	for loc, eps := range ep.LbEps {
 		var l *envoy_config_core_v3.Locality
@@ -105,11 +104,11 @@ func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerConte
 	return krt.Fetch(kctx, ie.endpoints, krt.FilterIndex(ie.index, ucc.ResourceName()))
 }
 
-func NewPerClientEnvoyEndpoints(logger *zap.Logger, uccs krt.Collection[krtcollections.UniqlyConnectedClient],
-	glooEndpoints krt.Collection[EndpointsForUpstream],
-	destinationRulesIndex DestinationRuleIndex) PerClientEnvoyEndpoints {
-
-	clas := krt.NewManyCollection(glooEndpoints, func(kctx krt.HandlerContext, ep EndpointsForUpstream) []UccWithEndpoints {
+func NewPerClientEnvoyEndpoints(logger *zap.Logger, dbg *krt.DebugHandler, uccs krt.Collection[krtcollections.UniqlyConnectedClient],
+	glooEndpoints krt.Collection[krtcollections.EndpointsForUpstream],
+	destinationRulesIndex DestinationRuleIndex,
+) PerClientEnvoyEndpoints {
+	clas := krt.NewManyCollection(glooEndpoints, func(kctx krt.HandlerContext, ep krtcollections.EndpointsForUpstream) []UccWithEndpoints {
 		uccs := krt.Fetch(kctx, uccs)
 		uccWithEndpointsRet := make([]UccWithEndpoints, 0, len(uccs))
 		for _, ucc := range uccs {
@@ -118,7 +117,7 @@ func NewPerClientEnvoyEndpoints(logger *zap.Logger, uccs krt.Collection[krtcolle
 			uccWithEndpointsRet = append(uccWithEndpointsRet, uccWithEp)
 		}
 		return uccWithEndpointsRet
-	})
+	}, krt.WithName("PerClientEnvoyEndpoints"), krt.WithDebugging(dbg))
 	idx := krt.NewIndex(clas, func(ucc UccWithEndpoints) []string {
 		return []string{ucc.Client.ResourceName()}
 	})
@@ -129,7 +128,7 @@ func NewPerClientEnvoyEndpoints(logger *zap.Logger, uccs krt.Collection[krtcolle
 	}
 }
 
-func PrioritizeEndpoints(logger *zap.Logger, destrule *DestinationRuleWrapper, ep EndpointsForUpstream, ucc krtcollections.UniqlyConnectedClient) UccWithEndpoints {
+func PrioritizeEndpoints(logger *zap.Logger, destrule *DestinationRuleWrapper, ep krtcollections.EndpointsForUpstream, ucc krtcollections.UniqlyConnectedClient) UccWithEndpoints {
 	var additionalHash uint64
 	var priorityInfo *PriorityInfo
 
@@ -154,7 +153,7 @@ func PrioritizeEndpoints(logger *zap.Logger, destrule *DestinationRuleWrapper, e
 	return UccWithEndpoints{
 		Client:        ucc,
 		Endpoints:     resource.NewEnvoyResource(cla),
-		EndpointsHash: ep.lbEpsEqualityHash ^ additionalHash,
+		EndpointsHash: ep.LbEpsEqualityHash ^ additionalHash,
 		endpointsName: ep.ResourceName(),
 	}
 }

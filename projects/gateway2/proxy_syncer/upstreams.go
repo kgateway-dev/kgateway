@@ -49,16 +49,18 @@ func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext
 
 func NewPerClientEnvoyClusters(
 	ctx context.Context,
+	dbg *krt.DebugHandler,
 	translator setup.TranslatorFactory,
-	upstreams krt.Collection[UpstreamWrapper],
+	upstreams krt.Collection[krtcollections.UpstreamWrapper],
 	uccs krt.Collection[krtcollections.UniqlyConnectedClient],
-	ks krt.Collection[krtcollections.ResourceWrapper[*gloov1.Secret]],
+	ks krt.Collection[RedactedSecret],
 	settings krt.Singleton[glookubev1.Settings],
-	destinationRulesIndex DestinationRuleIndex) PerClientEnvoyClusters {
+	destinationRulesIndex DestinationRuleIndex,
+) PerClientEnvoyClusters {
 	ctx = contextutils.WithLogger(ctx, "upstream-translator")
 	logger := contextutils.LoggerFrom(ctx).Desugar()
 
-	clusters := krt.NewManyCollection(upstreams, func(kctx krt.HandlerContext, up UpstreamWrapper) []uccWithCluster {
+	clusters := krt.NewManyCollection(upstreams, func(kctx krt.HandlerContext, up krtcollections.UpstreamWrapper) []uccWithCluster {
 		logger := logger.With(zap.Stringer("upstream", up))
 		uccs := krt.Fetch(kctx, uccs)
 		uccWithClusterRet := make([]uccWithCluster, 0, len(uccs))
@@ -104,7 +106,7 @@ func NewPerClientEnvoyClusters(
 			})
 		}
 		return uccWithClusterRet
-	})
+	}, krt.WithName("PerClientEnvoyClusters"), krt.WithDebugging(dbg))
 	idx := krt.NewIndex(clusters, func(ucc uccWithCluster) []string {
 		return []string{ucc.Client.ResourceName()}
 	})
@@ -116,7 +118,6 @@ func NewPerClientEnvoyClusters(
 }
 
 func translate(ctx context.Context, settings *gloov1.Settings, translator setup.TranslatorFactory, snap *gloosnapshot.ApiSnapshot, up *gloov1.Upstream) (*envoy_config_cluster_v3.Cluster, uint64) {
-
 	ctx = settingsutil.WithSettings(ctx, settings)
 
 	params := plugins.Params{
@@ -136,11 +137,11 @@ func translate(ctx context.Context, settings *gloov1.Settings, translator setup.
 }
 
 func ApplyDestRulesForUpstream(destrule *DestinationRuleWrapper, u *gloov1.Upstream) (*gloov1.Upstream, string) {
-
 	if destrule != nil {
 		trafficPolicy := getTraficPolicy(destrule, ggv2utils.GetPortForUpstream(u))
 		if outlier := trafficPolicy.GetOutlierDetection(); outlier != nil {
-			name := getEndpointClusterName(u)
+			name := krtcollections.GetEndpointClusterName(u)
+
 			// do not mutate the original upstream
 			up := *u
 

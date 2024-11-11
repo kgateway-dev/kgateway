@@ -8,21 +8,27 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/solo-io/gloo/projects/gateway2/query"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
+	apiv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+
+	"github.com/solo-io/gloo/projects/gateway2/query"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 )
 
 var _ = Describe("Query", func() {
 	var (
 		scheme  *runtime.Scheme
 		builder *fake.ClientBuilder
+		// Avoids an API server call to check whether required Gateway API CRDs are installed.
+		reqCRDsExist = true
 	)
 
 	tofrom := func(o client.Object) query.From {
@@ -42,7 +48,7 @@ var _ = Describe("Query", func() {
 		It("should get service from same namespace", func() {
 			fakeClient := fake.NewFakeClient(svc("default"))
 
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			ref := &apiv1.BackendObjectReference{
 				Name: "foo",
 			}
@@ -57,7 +63,7 @@ var _ = Describe("Query", func() {
 		It("should get service from different ns if we have a ref grant", func() {
 			rg := refGrant()
 			fakeClient := builder.WithObjects(svc("default2"), rg).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			ref := &apiv1.BackendObjectReference{
 				Name:      "foo",
 				Namespace: nsptr("default2"),
@@ -73,7 +79,7 @@ var _ = Describe("Query", func() {
 		It("should fail with service not found if we have a ref grant", func() {
 			rg := refGrant()
 			fakeClient := builder.WithObjects(rg).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			ref := &apiv1.BackendObjectReference{
 				Name:      "foo",
 				Namespace: nsptr("default2"),
@@ -116,7 +122,7 @@ var _ = Describe("Query", func() {
 			}
 			fakeClient := builder.WithObjects(rg, svc("default2")).Build()
 
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			backend, err := gq.GetBackendForRef(context.Background(), tofrom(httpRoute()), ref)
 			Expect(err).To(MatchError(query.ErrMissingReferenceGrant))
 			Expect(backend).To(BeNil())
@@ -124,7 +130,7 @@ var _ = Describe("Query", func() {
 
 		It("should fail getting a service with no ref grant", func() {
 			fakeClient := builder.WithObjects(svc("default3")).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			ref := &apiv1.BackendObjectReference{
 				Name:      "foo",
 				Namespace: nsptr("default3"),
@@ -139,7 +145,7 @@ var _ = Describe("Query", func() {
 			rg := refGrant()
 			fakeClient := builder.WithObjects(svc("default3"), rg).Build()
 
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			ref := &apiv1.BackendObjectReference{
 				Name:      "foo",
 				Namespace: nsptr("default3"),
@@ -154,7 +160,7 @@ var _ = Describe("Query", func() {
 		It("should get secret from different ns if we have a ref grant", func() {
 			rg := refGrantSecret()
 			fakeClient := builder.WithObjects(secret("default2"), rg).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			ref := apiv1.SecretObjectReference{
 				Name:      "foo",
 				Namespace: nsptr("default2"),
@@ -184,7 +190,7 @@ var _ = Describe("Query", func() {
 			}
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -217,7 +223,7 @@ var _ = Describe("Query", func() {
 			}
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -247,14 +253,14 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.ListenerResults["foo"].Error).To(MatchError("selector must be set"))
 		})
 
-		It("should error when listeners allow route", func() {
+		It("should error when listeners do not allow route", func() {
 			gwWithListener := gw()
 			gwWithListener.Spec.Listeners = []apiv1.Listener{
 				{
@@ -278,7 +284,7 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -287,7 +293,7 @@ var _ = Describe("Query", func() {
 			Expect(routes.RouteErrors[0].ParentRef).To(Equal(hr.Spec.ParentRefs[0]))
 		})
 
-		It("should NOT error when one listeners allows route", func() {
+		It("should NOT error when one listener allows route", func() {
 			gwWithListener := gw()
 			gwWithListener.Spec.Listeners = []apiv1.Listener{
 				{
@@ -308,7 +314,7 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -341,7 +347,7 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -372,7 +378,7 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -406,7 +412,7 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -440,7 +446,7 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -470,7 +476,7 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -508,7 +514,7 @@ var _ = Describe("Query", func() {
 				})
 
 				fakeClient := builder.WithObjects(hr).Build()
-				gq := query.NewData(fakeClient, scheme)
+				gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
 				routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
 
 				Expect(err).NotTo(HaveOccurred())
@@ -539,6 +545,181 @@ var _ = Describe("Query", func() {
 			It("should work with double catch all", func() {
 				expectHostnamesToMatch("", nil)
 			})
+		})
+
+		It("should match TCPRoutes for Listener", func() {
+			gw := gw()
+			gw.Spec.Listeners = []apiv1.Listener{
+				{
+					Name:     "foo-tcp",
+					Protocol: apiv1.TCPProtocolType,
+				},
+			}
+
+			tcpRoute := tcpRoute("test-tcp-route", gw.Namespace)
+			tcpRoute.Spec = apiv1a2.TCPRouteSpec{
+				CommonRouteSpec: apiv1.CommonRouteSpec{
+					ParentRefs: []apiv1.ParentReference{
+						{
+							Name: apiv1.ObjectName(gw.Name),
+						},
+					},
+				},
+			}
+
+			fakeClient := builder.WithObjects(tcpRoute).Build()
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
+			routes, err := gq.GetRoutesForGateway(context.Background(), gw)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(routes.ListenerResults[string(gw.Spec.Listeners[0].Name)].Routes).To(HaveLen(1))
+			Expect(routes.ListenerResults[string(gw.Spec.Listeners[0].Name)].Error).NotTo(HaveOccurred())
+		})
+
+		It("should get TCPRoutes in other namespace for listener", func() {
+			gw := gw()
+			gw.Spec.Listeners = []apiv1.Listener{
+				{
+					Name:     "foo-tcp",
+					Protocol: apiv1.TCPProtocolType,
+					AllowedRoutes: &apiv1.AllowedRoutes{
+						Namespaces: &apiv1.RouteNamespaces{
+							From: ptr.To(apiv1.NamespacesFromAll),
+						},
+					},
+				},
+			}
+
+			tcpRoute := tcpRoute("test-tcp-route", "other-ns")
+			tcpRoute.Spec = apiv1a2.TCPRouteSpec{
+				CommonRouteSpec: apiv1.CommonRouteSpec{
+					ParentRefs: []apiv1.ParentReference{
+						{
+							Name:      apiv1.ObjectName(gw.Name),
+							Namespace: ptr.To(apiv1.Namespace(gw.Namespace)),
+						},
+					},
+				},
+			}
+
+			fakeClient := builder.WithObjects(tcpRoute).Build()
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
+			routes, err := gq.GetRoutesForGateway(context.Background(), gw)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(routes.ListenerResults["foo-tcp"].Error).NotTo(HaveOccurred())
+			Expect(routes.ListenerResults["foo-tcp"].Routes).To(HaveLen(1))
+		})
+
+		It("should error when listeners don't match TCPRoute", func() {
+			gw := gw()
+			gw.Spec.Listeners = []apiv1.Listener{
+				{
+					Name:     "foo-tcp",
+					Protocol: apiv1.TCPProtocolType,
+					Port:     8080,
+				},
+				{
+					Name:     "bar-tcp",
+					Protocol: apiv1.TCPProtocolType,
+					Port:     8081,
+				},
+			}
+
+			tcpRoute := tcpRoute("test-tcp-route", gw.Namespace)
+			var badPort apiv1.PortNumber = 9999
+			tcpRoute.Spec = apiv1a2.TCPRouteSpec{
+				CommonRouteSpec: apiv1.CommonRouteSpec{
+					ParentRefs: []apiv1.ParentReference{
+						{
+							Name: apiv1.ObjectName(gw.Name),
+							Port: &badPort,
+						},
+					},
+				},
+			}
+
+			fakeClient := builder.WithObjects(tcpRoute).Build()
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
+			routes, err := gq.GetRoutesForGateway(context.Background(), gw)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(routes.RouteErrors).To(HaveLen(1))
+			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNoMatchingParent))
+			Expect(routes.RouteErrors[0].Error.Reason).To(Equal(apiv1.RouteReasonNoMatchingParent))
+			Expect(routes.RouteErrors[0].ParentRef).To(Equal(tcpRoute.Spec.ParentRefs[0]))
+		})
+
+		It("should error when listener does not allow TCPRoute kind", func() {
+			gw := gw()
+			gw.Spec.Listeners = []apiv1.Listener{
+				{
+					Name:     "foo-tcp",
+					Protocol: apiv1.TCPProtocolType,
+					AllowedRoutes: &apiv1.AllowedRoutes{
+						Kinds: []apiv1.RouteGroupKind{{Kind: "FakeKind"}},
+					},
+				},
+			}
+
+			tcpRoute := tcpRoute("test-tcp-route", gw.Namespace)
+			tcpRoute.Spec = apiv1a2.TCPRouteSpec{
+				CommonRouteSpec: apiv1.CommonRouteSpec{
+					ParentRefs: []apiv1.ParentReference{
+						{
+							Name: apiv1.ObjectName(gw.Name),
+						},
+					},
+				},
+			}
+
+			fakeClient := builder.WithObjects(tcpRoute).Build()
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
+
+			routes, err := gq.GetRoutesForGateway(context.Background(), gw)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(routes.RouteErrors).To(HaveLen(1))
+			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNotAllowedByListeners))
+		})
+
+		It("should allow TCPRoute for one listener", func() {
+			gw := gw()
+			gw.Spec.Listeners = []apiv1.Listener{
+				{
+					Name:     "foo-tcp",
+					Protocol: apiv1.TCPProtocolType,
+					AllowedRoutes: &apiv1.AllowedRoutes{
+						Kinds: []apiv1.RouteGroupKind{{Kind: wellknown.TCPRouteKind}},
+					},
+				},
+				{
+					Name:     "bar",
+					Protocol: apiv1.TCPProtocolType,
+					AllowedRoutes: &apiv1.AllowedRoutes{
+						Kinds: []apiv1.RouteGroupKind{{Kind: "FakeKind"}},
+					},
+				},
+			}
+
+			tcpRoute := tcpRoute("test-tcp-route", gw.Namespace)
+			tcpRoute.Spec = apiv1a2.TCPRouteSpec{
+				CommonRouteSpec: apiv1.CommonRouteSpec{
+					ParentRefs: []apiv1.ParentReference{
+						{
+							Name: apiv1.ObjectName(gw.Name),
+						},
+					},
+				},
+			}
+
+			fakeClient := builder.WithObjects(tcpRoute).Build()
+			gq := query.NewData(fakeClient, scheme, &reqCRDsExist)
+
+			routes, err := gq.GetRoutesForGateway(context.Background(), gw)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(routes.RouteErrors).To(BeEmpty())
+			Expect(routes.ListenerResults["foo-tcp"].Routes).To(HaveLen(1))
+			Expect(routes.ListenerResults["bar"].Routes).To(BeEmpty())
 		})
 	})
 })
@@ -593,6 +774,10 @@ func refGrant() *apiv1beta1.ReferenceGrant {
 
 func httpRoute() *apiv1.HTTPRoute {
 	return &apiv1.HTTPRoute{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       wellknown.HTTPRouteKind,
+			APIVersion: apiv1.GroupVersion.String(),
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
@@ -623,6 +808,19 @@ func svc(ns string) *corev1.Service {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: ns,
 			Name:      "foo",
+		},
+	}
+}
+
+func tcpRoute(name, ns string) *apiv1a2.TCPRoute {
+	return &apiv1a2.TCPRoute{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       wellknown.TCPRouteKind,
+			APIVersion: apiv1a2.GroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
 		},
 	}
 }

@@ -20,7 +20,7 @@ import (
 
 func TestTransformsEndpoint(t *testing.T) {
 	g := gomega.NewWithT(t)
-	us := UpstreamWrapper{
+	us := krtcollections.UpstreamWrapper{
 		Inner: &gloov1.Upstream{
 			Metadata: &core.Metadata{
 				Name:      "name",
@@ -28,8 +28,8 @@ func TestTransformsEndpoint(t *testing.T) {
 			},
 		},
 	}
-	efu := NewEndpointsForUpstream(us, nil)
-	efu.Add(krtcollections.PodLocality{}, EndpointWithMd{
+	efu := krtcollections.NewEndpointsForUpstream(us, nil)
+	efu.Add(krtcollections.PodLocality{}, krtcollections.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
 			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
 				Endpoint: &endpointv3.Endpoint{
@@ -39,7 +39,7 @@ func TestTransformsEndpoint(t *testing.T) {
 				},
 			},
 		},
-		EndpointMd: EndpointMetadata{},
+		EndpointMd: krtcollections.EndpointMetadata{},
 	})
 
 	envoyResources := TransformEndpointToResources(*efu)
@@ -51,7 +51,7 @@ func TestTransformsEndpoint(t *testing.T) {
 
 func TestTransformsEndpointsWithLocality(t *testing.T) {
 	g := gomega.NewWithT(t)
-	us := UpstreamWrapper{
+	us := krtcollections.UpstreamWrapper{
 		Inner: &gloov1.Upstream{
 			Metadata: &core.Metadata{
 				Name:      "name",
@@ -59,8 +59,8 @@ func TestTransformsEndpointsWithLocality(t *testing.T) {
 			},
 		},
 	}
-	efu := NewEndpointsForUpstream(us, nil)
-	efu.Add(krtcollections.PodLocality{Region: "R1"}, EndpointWithMd{
+	efu := krtcollections.NewEndpointsForUpstream(us, nil)
+	efu.Add(krtcollections.PodLocality{Region: "R1"}, krtcollections.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
 			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
 				Endpoint: &endpointv3.Endpoint{
@@ -70,9 +70,9 @@ func TestTransformsEndpointsWithLocality(t *testing.T) {
 				},
 			},
 		},
-		EndpointMd: EndpointMetadata{},
+		EndpointMd: krtcollections.EndpointMetadata{},
 	})
-	efu.Add(krtcollections.PodLocality{Region: "R2"}, EndpointWithMd{
+	efu.Add(krtcollections.PodLocality{Region: "R2"}, krtcollections.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
 			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
 				Endpoint: &endpointv3.Endpoint{
@@ -82,7 +82,7 @@ func TestTransformsEndpointsWithLocality(t *testing.T) {
 				},
 			},
 		},
-		EndpointMd: EndpointMetadata{},
+		EndpointMd: krtcollections.EndpointMetadata{},
 	})
 
 	envoyResources := TransformEndpointToResources(*efu)
@@ -98,7 +98,7 @@ func TestTransformsEndpointsWithLocality(t *testing.T) {
 
 func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 	g := gomega.NewWithT(t)
-	us := UpstreamWrapper{
+	us := krtcollections.UpstreamWrapper{
 		Inner: &gloov1.Upstream{
 			Metadata: &core.Metadata{
 				Name:      "name",
@@ -106,8 +106,8 @@ func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 			},
 		},
 	}
-	efu := NewEndpointsForUpstream(us, nil)
-	efu.Add(krtcollections.PodLocality{Region: "R1"}, EndpointWithMd{
+	efu := krtcollections.NewEndpointsForUpstream(us, nil)
+	efu.Add(krtcollections.PodLocality{Region: "R1"}, krtcollections.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
 			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
 				Endpoint: &endpointv3.Endpoint{
@@ -117,11 +117,11 @@ func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 				},
 			},
 		},
-		EndpointMd: EndpointMetadata{
+		EndpointMd: krtcollections.EndpointMetadata{
 			Labels: map[string]string{corev1.LabelTopologyRegion: "R1"},
 		},
 	})
-	efu.Add(krtcollections.PodLocality{Region: "R2"}, EndpointWithMd{
+	efu.Add(krtcollections.PodLocality{Region: "R2"}, krtcollections.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
 			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
 				Endpoint: &endpointv3.Endpoint{
@@ -131,7 +131,7 @@ func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 				},
 			},
 		},
-		EndpointMd: EndpointMetadata{
+		EndpointMd: krtcollections.EndpointMetadata{
 			Labels: map[string]string{corev1.LabelTopologyRegion: "R2"},
 		},
 	})
@@ -188,7 +188,7 @@ func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 // similar to TestTranslatesDestrulesFailoverPriority but implicit
 func TestTranslatesDestrulesFailover(t *testing.T) {
 	g := gomega.NewWithT(t)
-	us := UpstreamWrapper{
+	us := krtcollections.UpstreamWrapper{
 		Inner: &gloov1.Upstream{
 			Metadata: &core.Metadata{
 				Name:      "name",
@@ -196,8 +196,8 @@ func TestTranslatesDestrulesFailover(t *testing.T) {
 			},
 		},
 	}
-	efu := NewEndpointsForUpstream(us, nil)
-	efu.Add(krtcollections.PodLocality{Region: "R1"}, EndpointWithMd{
+	efu := krtcollections.NewEndpointsForUpstream(us, nil)
+	efu.Add(krtcollections.PodLocality{Region: "R1"}, krtcollections.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
 			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
 				Endpoint: &endpointv3.Endpoint{
@@ -207,11 +207,11 @@ func TestTranslatesDestrulesFailover(t *testing.T) {
 				},
 			},
 		},
-		EndpointMd: EndpointMetadata{
+		EndpointMd: krtcollections.EndpointMetadata{
 			Labels: map[string]string{corev1.LabelTopologyRegion: "R1"},
 		},
 	})
-	efu.Add(krtcollections.PodLocality{Region: "R2"}, EndpointWithMd{
+	efu.Add(krtcollections.PodLocality{Region: "R2"}, krtcollections.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
 			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
 				Endpoint: &endpointv3.Endpoint{
@@ -221,7 +221,7 @@ func TestTranslatesDestrulesFailover(t *testing.T) {
 				},
 			},
 		},
-		EndpointMd: EndpointMetadata{
+		EndpointMd: krtcollections.EndpointMetadata{
 			Labels: map[string]string{corev1.LabelTopologyRegion: "R2"},
 		},
 	})

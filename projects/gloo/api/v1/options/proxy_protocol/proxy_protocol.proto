@@ -23,8 +23,7 @@ message ProxyProtocol {
   // A Rule defines what metadata to apply when a header is present or missing.
   message Rule {
     // The type that triggers the rule - required
-    // TLV type is defined as uint8_t in proxy protocol. See `the spec
-    // <https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt>`_ for details.
+    // TLV type is defined as uint8_t in proxy protocol. See [the spec](https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt) for details.
     uint32 tlv_type = 1 [(validate.rules).uint32 = {lt: 256}];
 
     // If the TLV type is present, apply this metadata KeyValuePair.
@@ -36,7 +35,7 @@ message ProxyProtocol {
 
   // Allow requests through that don't use proxy protocol. Defaults to false.
   //
-  // .. attention::
+  // **Attention**:
   //
   //   The true setting is only honored in Gloo Edge Enterprise.
   //   This breaks conformance with the specification.

@@ -106,6 +106,58 @@ func (m *HeaderManipulation) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *EarlyHeaderManipulation) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*EarlyHeaderManipulation)
+	if !ok {
+		that2, ok := that.(EarlyHeaderManipulation)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetHeadersToAdd()) != len(target.GetHeadersToAdd()) {
+		return false
+	}
+	for idx, v := range m.GetHeadersToAdd() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetHeadersToAdd()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetHeadersToAdd()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	if len(m.GetHeadersToRemove()) != len(target.GetHeadersToRemove()) {
+		return false
+	}
+	for idx, v := range m.GetHeadersToRemove() {
+
+		if strings.Compare(v, target.GetHeadersToRemove()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
 func (m *HeaderValueOption) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil

@@ -2,6 +2,7 @@ package proxy_syncer
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
@@ -46,6 +47,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
 	ggv2utils "github.com/solo-io/gloo/projects/gateway2/utils"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	kubeconverters "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
@@ -59,7 +61,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
+
+const gatewayV1A2Version = "v1alpha2"
 
 // ProxySyncer is responsible for translating Kubernetes Gateway CRs into Gloo Proxies
 // and syncing the proxyClient with the newly translated proxies.
@@ -83,6 +88,7 @@ type ProxySyncer struct {
 	statusReport            krt.Singleton[report]
 	mostXdsSnapshots        krt.Collection[xdsSnapWrapper]
 	perclientSnapCollection krt.Collection[xdsSnapWrapper]
+	proxiesToReconcile      krt.Singleton[proxyList]
 	proxyTrigger            *krt.RecomputeTrigger
 
 	destRules  DestinationRuleIndex
@@ -125,7 +131,6 @@ func NewProxySyncer(
 	glooReporter reporter.StatusReporter,
 	proxyReconcileQueue ggv2utils.AsyncQueue[gloov1.ProxyList],
 ) *ProxySyncer {
-
 	return &ProxySyncer{
 		initialSettings:     initialSettings,
 		controllerName:      controllerName,
@@ -192,9 +197,38 @@ var _ krt.ResourceNamer = xdsSnapWrapper{}
 func (p xdsSnapWrapper) Equals(in xdsSnapWrapper) bool {
 	return p.snap.Equal(in.snap)
 }
+
 func (p xdsSnapWrapper) ResourceName() string {
 	return p.proxyKey
 }
+
+type RedactedSecret krtcollections.ResourceWrapper[*gloov1.Secret]
+
+func (us RedactedSecret) ResourceName() string {
+	return (krtcollections.ResourceWrapper[*gloov1.Secret](us)).ResourceName()
+}
+func (us RedactedSecret) Equals(in RedactedSecret) bool {
+	return proto.Equal(us.Inner, in.Inner)
+}
+
+var _ krt.ResourceNamer = RedactedSecret{}
+var _ krt.Equaler[RedactedSecret] = RedactedSecret{}
+
+func (l RedactedSecret) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Name      string
+		Namespace string
+		Kind      string
+		Data      string
+	}{
+		Name:      l.Inner.GetMetadata().GetName(),
+		Namespace: l.Inner.GetMetadata().GetNamespace(),
+		Kind:      fmt.Sprintf("%T", l.Inner.GetKind()),
+		Data:      "[REDACTED]",
+	})
+}
+
+var _ json.Marshaler = RedactedSecret{}
 
 type glooProxy struct {
 	proxy *gloov1.Proxy
@@ -214,17 +248,18 @@ func (p glooProxy) Equals(in glooProxy) bool {
 	if !maps.Equal(p.reportMap.Gateways, in.reportMap.Gateways) {
 		return false
 	}
-	if !maps.Equal(p.reportMap.Routes, in.reportMap.Routes) {
+	if !maps.Equal(p.reportMap.HTTPRoutes, in.reportMap.HTTPRoutes) {
+		return false
+	}
+	if !maps.Equal(p.reportMap.TCPRoutes, in.reportMap.TCPRoutes) {
 		return false
 	}
 	return true
 }
+
 func (p glooProxy) ResourceName() string {
 	return xds.SnapshotCacheKey(p.proxy)
 }
-
-// UpstreamWrapper provides a keying function for Gloo's `v1.Upstream`
-type UpstreamWrapper = krtcollections.ResourceWrapper[*gloov1.Upstream]
 
 type report struct {
 	reports.ReportMap
@@ -239,7 +274,10 @@ func (r report) Equals(in report) bool {
 	if !maps.Equal(r.ReportMap.Gateways, in.ReportMap.Gateways) {
 		return false
 	}
-	if !maps.Equal(r.ReportMap.Routes, in.ReportMap.Routes) {
+	if !maps.Equal(r.ReportMap.HTTPRoutes, in.ReportMap.HTTPRoutes) {
+		return false
+	}
+	if !maps.Equal(r.ReportMap.TCPRoutes, in.ReportMap.TCPRoutes) {
 		return false
 	}
 	return true
@@ -261,9 +299,10 @@ func (p proxyList) Equals(in proxyList) bool {
 	})
 }
 
-func (s *ProxySyncer) Init(ctx context.Context) error {
+func (s *ProxySyncer) Init(ctx context.Context, dbg *krt.DebugHandler) error {
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
 	logger := contextutils.LoggerFrom(ctx)
+	withDebug := krt.WithDebugging(dbg)
 
 	configMapClient := kclient.NewFiltered[*corev1.ConfigMap](s.istioClient, kclient.Filter{
 		ObjectTransform: func(obj any) (any, error) {
@@ -278,16 +317,16 @@ func (s *ProxySyncer) Init(ctx context.Context) error {
 			t.GetObjectMeta().SetAnnotations(nil)
 			return obj, nil
 		}})
-	configMaps := krt.WrapClient(configMapClient, krt.WithName("ConfigMaps"))
+	configMaps := krt.WrapClient(configMapClient, krt.WithName("ConfigMaps"), withDebug)
 
 	secretClient := kclient.New[*corev1.Secret](s.istioClient)
-	k8sSecrets := krt.WrapClient(secretClient, krt.WithName("Secrets"))
+	k8sSecrets := krt.WrapClient(secretClient, krt.WithName("Secrets") /* no debug here - we don't want raw secrets printed*/)
 	legacySecretClient := &kubesecret.ResourceClient{
 		KubeCoreResourceClient: common.KubeCoreResourceClient{
 			ResourceType: &gloov1.Secret{},
 		},
 	}
-	secrets := krt.NewCollection(k8sSecrets, func(kctx krt.HandlerContext, i *corev1.Secret) *krtcollections.ResourceWrapper[*gloov1.Secret] {
+	secrets := krt.NewCollection(k8sSecrets, func(kctx krt.HandlerContext, i *corev1.Secret) *RedactedSecret {
 		secret, err := kubeconverters.GlooSecretConverterChain.FromKubeSecret(ctx, legacySecretClient, i)
 		if err != nil {
 			logger.Errorf(
@@ -299,67 +338,80 @@ func (s *ProxySyncer) Init(ctx context.Context) error {
 			return nil
 		}
 		// this must be a gloov1 secret, we accept a panic if not
-		res := krtcollections.ResourceWrapper[*gloov1.Secret]{Inner: secret.(*gloov1.Secret)}
+		res := RedactedSecret{Inner: secret.(*gloov1.Secret)}
 		return &res
-	})
+	}, withDebug)
 
 	authConfigs := SetupCollectionDynamic[extauthkubev1.AuthConfig](
 		ctx,
 		s.istioClient,
 		extauthkubev1.SchemeGroupVersion.WithResource("authconfigs"),
-		krt.WithName("KubeAuthConfigs"),
+		krt.WithName("KubeAuthConfigs"), withDebug,
 	)
 
 	rlConfigs := SetupCollectionDynamic[rlkubev1a1.RateLimitConfig](
 		ctx,
 		s.istioClient,
 		rlkubev1a1.SchemeGroupVersion.WithResource("ratelimitconfigs"),
-		krt.WithName("KubeRateLimitConfigs"),
+		krt.WithName("KubeRateLimitConfwithDebug,igs"),
 	)
 
 	upstreams := SetupCollectionDynamic[glookubev1.Upstream](
 		ctx,
 		s.istioClient,
 		glookubev1.SchemeGroupVersion.WithResource("upstreams"),
-		krt.WithName("KubeUpstreams"),
+		krt.WithName("KubeUpstreams"), withDebug,
 	)
 
 	// helper collection to map from the runtime.Object Upstream representation to the gloov1.Upstream wrapper
-	glooUpstreams := krt.NewCollection(upstreams, func(kctx krt.HandlerContext, u *glookubev1.Upstream) *UpstreamWrapper {
+	glooUpstreams := krt.NewCollection(upstreams, func(kctx krt.HandlerContext, u *glookubev1.Upstream) *krtcollections.UpstreamWrapper {
 		glooUs := &u.Spec
 		md := core.Metadata{
 			Name:      u.GetName(),
 			Namespace: u.GetNamespace(),
 		}
 		glooUs.SetMetadata(&md)
-		us := &UpstreamWrapper{Inner: glooUs}
+		us := &krtcollections.UpstreamWrapper{Inner: glooUs}
 		return us
-	}, krt.WithName("GlooUpstreams"))
+	}, krt.WithName("GlooUpstreams"), withDebug)
 
 	serviceClient := kclient.New[*corev1.Service](s.istioClient)
-	services := krt.WrapClient(serviceClient, krt.WithName("Services"))
+	services := krt.WrapClient(serviceClient, krt.WithName("Services"), withDebug)
 
-	inMemUpstreams := krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []UpstreamWrapper {
-		uss := []UpstreamWrapper{}
+	k8sServiceUpstreams := krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []krtcollections.UpstreamWrapper {
+		uss := []krtcollections.UpstreamWrapper{}
 		for _, port := range svc.Spec.Ports {
 			us := kubeupstreams.ServiceToUpstream(ctx, svc, port)
-			uss = append(uss, UpstreamWrapper{Inner: us})
+			uss = append(uss, krtcollections.UpstreamWrapper{Inner: us})
 		}
 		return uss
-	}, krt.WithName("InMemoryUpstreams"))
+	}, krt.WithName("KubernetesServiceUpstreams"), withDebug)
 
-	finalUpstreams := krt.JoinCollection([]krt.Collection[UpstreamWrapper]{glooUpstreams, inMemUpstreams})
+	finalUpstreams := krt.JoinCollection(append(
+		[]krt.Collection[krtcollections.UpstreamWrapper]{
+			glooUpstreams,
+			k8sServiceUpstreams,
+		},
+		s.k8sGwExtensions.KRTExtensions().Upstreams()...,
+	), withDebug, krt.WithName("FinalUpstreams"))
 
-	inputs := NewGlooK8sEndpointInputs(s.proxyTranslator.settings, s.istioClient, s.augmentedPods, services, finalUpstreams)
+	inputs := krtcollections.NewGlooK8sEndpointInputs(s.proxyTranslator.settings, s.istioClient, dbg, s.augmentedPods, services, finalUpstreams)
 
-	glooEndpoints := NewGlooK8sEndpoints(ctx, inputs)
-	clas := newEnvoyEndpoints(glooEndpoints)
+	// build Endpoint intermediate representation from kubernetes service and extensions
+	// TODO move kube service to be an extension
+	endpointIRs := krt.JoinCollection(append([]krt.Collection[krtcollections.EndpointsForUpstream]{
+		krtcollections.NewGlooK8sEndpoints(ctx, inputs),
+	},
+		s.k8sGwExtensions.KRTExtensions().Endpoints()...,
+	), withDebug, krt.WithName("EndpointIRs"))
+
+	clas := newEnvoyEndpoints(endpointIRs)
 
 	kubeGateways := SetupCollectionDynamic[gwv1.Gateway](
 		ctx,
 		s.istioClient,
 		istiogvr.KubernetesGateway_v1,
-		krt.WithName("KubeGateways"),
+		krt.WithName("KubeGateways"), withDebug,
 	)
 
 	// alternatively we could start as not synced, and mark ready once ctrl-runtime caches are synced
@@ -370,7 +422,7 @@ func (s *ProxySyncer) Init(ctx context.Context) error {
 		s.proxyTrigger.MarkDependant(kctx)
 		proxy := s.buildProxy(ctx, gw)
 		return proxy
-	})
+	}, withDebug, krt.WithName("GlooProxies"))
 	s.mostXdsSnapshots = krt.NewCollection(glooProxies, func(kctx krt.HandlerContext, proxy glooProxy) *xdsSnapWrapper {
 		// we are recomputing xds snapshots as proxies have changed, signal that we need to sync xds with these new snapshots
 		xdsSnap := s.translateProxy(
@@ -386,19 +438,19 @@ func (s *ProxySyncer) Init(ctx context.Context) error {
 			rlConfigs,
 		)
 		return xdsSnap
-	})
+	}, withDebug, krt.WithName("MostXdsSnapshots"))
 
 	if s.initialSettings.Spec.GetGloo().GetIstioOptions().GetEnableIntegration().GetValue() {
-		s.destRules = NewDestRuleIndex(s.istioClient)
+		s.destRules = NewDestRuleIndex(s.istioClient, dbg)
 	} else {
 		s.destRules = NewEmptyDestRuleIndex()
 	}
-	epPerClient := NewPerClientEnvoyEndpoints(logger.Desugar(), s.uniqueClients, glooEndpoints, s.destRules)
-	clustersPerClient := NewPerClientEnvoyClusters(ctx, s.translator, finalUpstreams, s.uniqueClients, secrets, s.proxyTranslator.settings, s.destRules)
-	s.perclientSnapCollection = snapshotPerClient(logger.Desugar(), s.uniqueClients, s.mostXdsSnapshots, epPerClient, clustersPerClient)
+	epPerClient := NewPerClientEnvoyEndpoints(logger.Desugar(), dbg, s.uniqueClients, endpointIRs, s.destRules)
+	clustersPerClient := NewPerClientEnvoyClusters(ctx, dbg, s.translator, finalUpstreams, s.uniqueClients, secrets, s.proxyTranslator.settings, s.destRules)
+	s.perclientSnapCollection = snapshotPerClient(logger.Desugar(), dbg, s.uniqueClients, s.mostXdsSnapshots, epPerClient, clustersPerClient)
 
 	// build ProxyList collection as glooProxies change
-	proxiesToReconcile := krt.NewSingleton(func(kctx krt.HandlerContext) *proxyList {
+	s.proxiesToReconcile = krt.NewSingleton(func(kctx krt.HandlerContext) *proxyList {
 		proxies := krt.Fetch(kctx, glooProxies)
 		var l gloov1.ProxyList
 		for _, p := range proxies {
@@ -406,16 +458,8 @@ func (s *ProxySyncer) Init(ctx context.Context) error {
 		}
 		return &proxyList{l}
 	})
-	// handler to reconcile ProxyList for in-memory proxy client
-	proxiesToReconcile.Register(func(o krt.Event[proxyList]) {
-		var l gloov1.ProxyList
-		if o.Event != controllers.EventDelete {
-			l = o.Latest().list
-		}
-		s.reconcileProxies(l)
-	})
 
-	// as proxies are created, they also contain a reportMap containing status for the Gateway and associated HTTPRoutes (really parentRefs)
+	// as proxies are created, they also contain a reportMap containing status for the Gateway and associated xRoutes (really parentRefs)
 	// here we will merge reports that are per-Proxy to a singleton Report used to persist to k8s on a timer
 	s.statusReport = krt.NewSingleton(func(kctx krt.HandlerContext) *report {
 		proxies := krt.Fetch(kctx, glooProxies)
@@ -424,17 +468,30 @@ func (s *ProxySyncer) Init(ctx context.Context) error {
 			// 1. merge GW Reports for all Proxies' status reports
 			maps.Copy(merged.Gateways, p.reportMap.Gateways)
 
-			// 2. merge parentRefs into RouteReports
-			for rnn, rr := range p.reportMap.Routes {
+			// 2. merge httproute parentRefs into RouteReports
+			for rnn, rr := range p.reportMap.HTTPRoutes {
 				// if we haven't encountered this route, just copy it over completely
-				old := merged.Routes[rnn]
+				old := merged.HTTPRoutes[rnn]
 				if old == nil {
-					merged.Routes[rnn] = rr
+					merged.HTTPRoutes[rnn] = rr
 					continue
 				}
 				// else, let's merge our parentRefs into the existing map
 				// obsGen will stay as-is...
-				maps.Copy(p.reportMap.Routes[rnn].Parents, rr.Parents)
+				maps.Copy(p.reportMap.HTTPRoutes[rnn].Parents, rr.Parents)
+			}
+
+			// 3. merge tcproute parentRefs into RouteReports
+			for rnn, rr := range p.reportMap.TCPRoutes {
+				// if we haven't encountered this route, just copy it over completely
+				old := merged.TCPRoutes[rnn]
+				if old == nil {
+					merged.TCPRoutes[rnn] = rr
+					continue
+				}
+				// else, let's merge our parentRefs into the existing map
+				// obsGen will stay as-is...
+				maps.Copy(p.reportMap.TCPRoutes[rnn].Parents, rr.Parents)
 			}
 		}
 		return &report{merged}
@@ -449,18 +506,19 @@ func (s *ProxySyncer) Init(ctx context.Context) error {
 		inputs.Endpoints.Synced().HasSynced,
 		inputs.Pods.Synced().HasSynced,
 		inputs.Upstreams.Synced().HasSynced,
-		glooEndpoints.Synced().HasSynced,
+		endpointIRs.Synced().HasSynced,
 		clas.Synced().HasSynced,
 		s.augmentedPods.Synced().HasSynced,
 		upstreams.Synced().HasSynced,
 		glooUpstreams.Synced().HasSynced,
 		finalUpstreams.Synced().HasSynced,
-		inMemUpstreams.Synced().HasSynced,
+		k8sServiceUpstreams.Synced().HasSynced,
 		kubeGateways.Synced().HasSynced,
 		glooProxies.Synced().HasSynced,
 		s.perclientSnapCollection.Synced().HasSynced,
 		s.mostXdsSnapshots.Synced().HasSynced,
 		s.destRules.Destrules.Synced().HasSynced,
+		s.k8sGwExtensions.KRTExtensions().Synced().HasSynced,
 	}
 	return nil
 }
@@ -471,13 +529,6 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	// latestReport will be constantly updated to contain the merged status report for Kube Gateway status
 	// when timer ticks, we will use the state of the mergedReports at that point in time to sync the status to k8s
 	latestReportQueue := ggv2utils.NewAsyncQueue[reports.ReportMap]()
-	s.statusReport.Register(func(o krt.Event[report]) {
-		if o.Event == controllers.EventDelete {
-			// TODO: handle garbage collection (see: https://github.com/solo-io/solo-projects/issues/7086)
-			return
-		}
-		latestReportQueue.Enqueue(o.Latest().ReportMap)
-	})
 	logger.Infof("waiting for cache to sync")
 
 	// wait for krt collections to sync
@@ -493,6 +544,25 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	}
 
 	logger.Infof("caches warm!")
+
+	// caches are warm, now we can do registrations
+	s.statusReport.Register(func(o krt.Event[report]) {
+		if o.Event == controllers.EventDelete {
+			// TODO: handle garbage collection (see: https://github.com/solo-io/solo-projects/issues/7086)
+			return
+		}
+		latestReportQueue.Enqueue(o.Latest().ReportMap)
+	})
+
+	// handler to reconcile ProxyList for in-memory proxy client
+	s.proxiesToReconcile.Register(func(o krt.Event[proxyList]) {
+		var l gloov1.ProxyList
+		if o.Event != controllers.EventDelete {
+			l = o.Latest().list
+		}
+		s.reconcileProxies(l)
+	})
+
 	go func() {
 		timer := time.NewTicker(time.Second * 1)
 		for {
@@ -501,7 +571,6 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 				logger.Debug("context done, stopping proxy syncer")
 				return
 			case <-timer.C:
-				logger.Debug("syncing status plugins")
 				snaps := s.mostXdsSnapshots.List()
 				for _, snapWrap := range snaps {
 					var proxiesWithReports []translatorutils.ProxyWithReports
@@ -510,7 +579,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 					initStatusPlugins(ctx, proxiesWithReports, snapWrap.pluginRegistry)
 				}
 				for _, snapWrap := range snaps {
-					err := s.proxyTranslator.syncStatus(ctx, snapWrap.snap, snapWrap.proxyKey, snapWrap.fullReports)
+					err := s.proxyTranslator.syncStatus(ctx, snapWrap.proxyKey, snapWrap.fullReports)
 					if err != nil {
 						logger.Errorf("error while syncing proxy '%s': %s", snapWrap.proxyKey, err.Error())
 					}
@@ -539,7 +608,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 
 	go func() {
 		timer := time.NewTicker(time.Second * 1)
-		var needsProxyRecompute = false
+		needsProxyRecompute := false
 		for {
 			select {
 			case <-ctx.Done():
@@ -556,7 +625,6 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 				needsProxyRecompute = true
 			}
 		}
-
 	}()
 
 	go func() {
@@ -618,8 +686,8 @@ func (s *ProxySyncer) translateProxy(
 	proxy *glooProxy,
 	kcm krt.Collection[*corev1.ConfigMap],
 	kep krt.Collection[EndpointResources],
-	ks krt.Collection[krtcollections.ResourceWrapper[*gloov1.Secret]],
-	kus krt.Collection[UpstreamWrapper],
+	ks krt.Collection[RedactedSecret],
+	kus krt.Collection[krtcollections.UpstreamWrapper],
 	authConfigs krt.Collection[*extauthkubev1.AuthConfig],
 	rlConfigs krt.Collection[*rlkubev1a1.RateLimitConfig],
 ) *xdsSnapWrapper {
@@ -792,41 +860,76 @@ func initStatusPlugins(
 func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
 	ctx = contextutils.WithLogger(ctx, "routeStatusSyncer")
 	logger := contextutils.LoggerFrom(ctx)
-	stopwatch := statsutils.NewTranslatorStopWatch("HTTPRouteStatusSyncer")
+	stopwatch := statsutils.NewTranslatorStopWatch("RouteStatusSyncer")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
-	// Sometimes the List returns stale (cached) httproutes, causing the status update to fail
-	// with "the object has been modified" errors. Therefore we try the status updates in a retry loop.
-	err := retry.Do(func() error {
-		for rnn := range rm.Routes {
-			route := gwv1.HTTPRoute{}
-			err := s.mgr.GetClient().Get(ctx, rnn, &route)
+	// Helper function to sync route status with retry
+	syncStatusWithRetry := func(routeType string, routeKey client.ObjectKey, getRouteFunc func() client.Object, statusUpdater func(route client.Object) error) error {
+		return retry.Do(func() error {
+			route := getRouteFunc()
+			err := s.mgr.GetClient().Get(ctx, routeKey, route)
 			if err != nil {
-				// log this at error level because this is not an expected error
-				logger.Error(err)
+				logger.Errorw(fmt.Sprintf("%s get failed", routeType), "error", err, "route", routeKey)
 				return err
 			}
-			if status := rm.BuildRouteStatus(ctx, route, s.controllerName); status != nil {
-				if !isHTTPRouteStatusEqual(&route.Status, status) {
-					route.Status = *status
-					if err := s.mgr.GetClient().Status().Update(ctx, &route); err != nil {
-						// log this as debug, since we will retry
-						logger.Debugw("httproute status update attempt failed", "error", err,
-							"httproute", fmt.Sprintf("%s.%s", route.GetNamespace(), route.GetName()))
-						return err
-					}
-				}
+			if err := statusUpdater(route); err != nil {
+				logger.Debugw(fmt.Sprintf("%s status update attempt failed", routeType), "error", err,
+					"route", fmt.Sprintf("%s.%s", routeKey.Namespace, routeKey.Name))
+				return err
 			}
+			return nil
+		},
+			retry.Attempts(5),
+			retry.Delay(100*time.Millisecond),
+			retry.DelayType(retry.BackOffDelay),
+		)
+	}
+
+	// Helper function to build route status and update if needed
+	buildAndUpdateStatus := func(route client.Object, routeType string) error {
+		var status *gwv1.RouteStatus
+
+		switch r := route.(type) {
+		case *gwv1.HTTPRoute:
+			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
+			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
+				return nil
+			}
+			r.Status.RouteStatus = *status
+		case *gwv1a2.TCPRoute:
+			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
+			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
+				return nil
+			}
+			r.Status.RouteStatus = *status
+		default:
+			logger.Warnw(fmt.Sprintf("unsupported route type for %s", routeType), "route", route)
+			return nil
 		}
-		return nil
-	},
-		retry.Attempts(5),
-		retry.Delay(100*time.Millisecond),
-		retry.DelayType(retry.BackOffDelay),
-	)
-	if err != nil {
-		logger.Errorw("all attempts failed at updating httproute statuses", "error", err)
+
+		// Update the status
+		return s.mgr.GetClient().Status().Update(ctx, route)
+	}
+
+	// Sync HTTPRoute statuses
+	for rnn := range rm.HTTPRoutes {
+		err := syncStatusWithRetry(wellknown.HTTPRouteKind, rnn, func() client.Object { return new(gwv1.HTTPRoute) }, func(route client.Object) error {
+			return buildAndUpdateStatus(route, wellknown.HTTPRouteKind)
+		})
+		if err != nil {
+			logger.Errorw("all attempts failed at updating HTTPRoute status", "error", err, "route", rnn)
+		}
+	}
+
+	// Sync TCPRoute statuses
+	for rnn := range rm.TCPRoutes {
+		err := syncStatusWithRetry(wellknown.TCPRouteKind, rnn, func() client.Object { return new(gwv1a2.TCPRoute) }, func(route client.Object) error {
+			return buildAndUpdateStatus(route, wellknown.TCPRouteKind)
+		})
+		if err != nil {
+			logger.Errorw("all attempts failed at updating TCPRoute status", "error", err, "route", rnn)
+		}
 	}
 }
 
@@ -913,7 +1016,8 @@ func isGatewayStatusEqual(objA, objB *gwv1.GatewayStatus) bool {
 	return cmp.Equal(objA, objB, opts)
 }
 
-func isHTTPRouteStatusEqual(objA, objB *gwv1.HTTPRouteStatus) bool {
+// isRouteStatusEqual compares two RouteStatus objects directly
+func isRouteStatusEqual(objA, objB *gwv1.RouteStatus) bool {
 	return cmp.Equal(objA, objB, opts)
 }
 

@@ -52,20 +52,6 @@ func (mr *MockGatewayQueriesMockRecorder) GetBackendForRef(arg0, arg1, arg2 inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBackendForRef", reflect.TypeOf((*MockGatewayQueries)(nil).GetBackendForRef), arg0, arg1, arg2)
 }
 
-// GetHTTPRouteChain mocks base method.
-func (m *MockGatewayQueries) GetHTTPRouteChain(arg0 context.Context, arg1 v1.HTTPRoute, arg2 []string, arg3 v1.ParentReference) *query.HTTPRouteInfo {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetHTTPRouteChain", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(*query.HTTPRouteInfo)
-	return ret0
-}
-
-// GetHTTPRouteChain indicates an expected call of GetHTTPRouteChain.
-func (mr *MockGatewayQueriesMockRecorder) GetHTTPRouteChain(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHTTPRouteChain", reflect.TypeOf((*MockGatewayQueries)(nil).GetHTTPRouteChain), arg0, arg1, arg2, arg3)
-}
-
 // GetLocalObjRef mocks base method.
 func (m *MockGatewayQueries) GetLocalObjRef(arg0 context.Context, arg1 query.From, arg2 v1.LocalObjectReference) (client.Object, error) {
 	m.ctrl.T.Helper()
@@ -81,11 +67,25 @@ func (mr *MockGatewayQueriesMockRecorder) GetLocalObjRef(arg0, arg1, arg2 interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLocalObjRef", reflect.TypeOf((*MockGatewayQueries)(nil).GetLocalObjRef), arg0, arg1, arg2)
 }
 
+// GetRouteChain mocks base method.
+func (m *MockGatewayQueries) GetRouteChain(arg0 context.Context, arg1 client.Object, arg2 []string, arg3 v1.ParentReference) *query.RouteInfo {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRouteChain", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(*query.RouteInfo)
+	return ret0
+}
+
+// GetRouteChain indicates an expected call of GetRouteChain.
+func (mr *MockGatewayQueriesMockRecorder) GetRouteChain(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRouteChain", reflect.TypeOf((*MockGatewayQueries)(nil).GetRouteChain), arg0, arg1, arg2, arg3)
+}
+
 // GetRoutesForGateway mocks base method.
-func (m *MockGatewayQueries) GetRoutesForGateway(arg0 context.Context, arg1 *v1.Gateway) (query.RoutesForGwResult, error) {
+func (m *MockGatewayQueries) GetRoutesForGateway(arg0 context.Context, arg1 *v1.Gateway) (*query.RoutesForGwResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRoutesForGateway", arg0, arg1)
-	ret0, _ := ret[0].(query.RoutesForGwResult)
+	ret0, _ := ret[0].(*query.RoutesForGwResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

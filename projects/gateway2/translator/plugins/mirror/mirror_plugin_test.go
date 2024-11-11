@@ -23,6 +23,7 @@ func TestSingleMirror(t *testing.T) {
 	g := gomega.NewWithT(t)
 	ctrl := gomock.NewController(t)
 	queries := mocks.NewMockGatewayQueries(ctrl)
+	g.Expect(queries).ToNot(gomega.BeNil())
 
 	filter := gwv1.HTTPRouteFilter{
 		Type: gwv1.HTTPRouteFilterRequestMirror,
@@ -35,7 +36,7 @@ func TestSingleMirror(t *testing.T) {
 	}
 	rt := &gwv1.HTTPRoute{}
 	routeCtx := &plugins.RouteContext{
-		Route: rt,
+		HTTPRoute: rt,
 		Rule: &gwv1.HTTPRouteRule{
 			Filters: []gwv1.HTTPRouteFilter{
 				filter,
@@ -86,7 +87,7 @@ func TestUpstreamMirror(t *testing.T) {
 	}
 	rt := &gwv1.HTTPRoute{}
 	routeCtx := &plugins.RouteContext{
-		Route: rt,
+		HTTPRoute: rt,
 		Rule: &gwv1.HTTPRouteRule{
 			Filters: []gwv1.HTTPRouteFilter{
 				filter,

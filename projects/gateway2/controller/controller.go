@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -20,6 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
+	apiv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
@@ -69,9 +71,11 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 	}
 
 	return run(ctx,
+		controllerBuilder.watchCustomResourceDefinitions,
 		controllerBuilder.watchGwClass,
 		controllerBuilder.watchGw,
 		controllerBuilder.watchHttpRoute,
+		controllerBuilder.watchTcpRoute,
 		controllerBuilder.watchReferenceGrant,
 		controllerBuilder.watchNamespaces,
 		controllerBuilder.watchHttpListenerOptions,
@@ -267,11 +271,35 @@ func (c *controllerBuilder) watchGwClass(_ context.Context) error {
 		Complete(reconcile.Func(c.reconciler.ReconcileGatewayClasses))
 }
 
+func (c *controllerBuilder) watchCustomResourceDefinitions(_ context.Context) error {
+	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		WithEventFilter(predicate.And(
+			predicate.GenerationChangedPredicate{},
+			predicate.NewPredicateFuncs(func(object client.Object) bool {
+				crd, ok := object.(*apiextensionsv1.CustomResourceDefinition)
+				if !ok {
+					return false
+				}
+				// Check if the CRD is one we care about
+				return wellknown.GatewayCRDs.Has(crd.Name)
+			}),
+		)).
+		For(&apiextensionsv1.CustomResourceDefinition{}).
+		Complete(reconcile.Func(c.reconciler.ReconcileCustomResourceDefinitions))
+}
+
 func (c *controllerBuilder) watchHttpRoute(_ context.Context) error {
 	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		For(&apiv1.HTTPRoute{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileHttpRoutes))
+}
+
+func (c *controllerBuilder) watchTcpRoute(_ context.Context) error {
+	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		WithEventFilter(predicate.GenerationChangedPredicate{}).
+		For(&apiv1a2.TCPRoute{}).
+		Complete(reconcile.Func(c.reconciler.ReconcileTcpRoutes))
 }
 
 func (c *controllerBuilder) watchReferenceGrant(_ context.Context) error {
@@ -436,7 +464,24 @@ func (r *controllerReconciler) ReconcileNamespaces(ctx context.Context, req ctrl
 	return ctrl.Result{}, nil
 }
 
+func (r *controllerReconciler) ReconcileCustomResourceDefinitions(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// For now, simply trigger the main reconciliation loop
+	r.kick(ctx)
+	return ctrl.Result{}, nil
+}
+
 func (r *controllerReconciler) ReconcileHttpRoutes(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// TODO: consider finding impacted gateways and queue them
+	// TODO: consider enabling this
+	//	// reconcile this specific route:
+	//	queries := query.NewData(r.cli, r.scheme)
+	//	httproute.TranslateGatewayHTTPRouteRules(queries, hr, nil)
+
+	r.kick(ctx)
+	return ctrl.Result{}, nil
+}
+
+func (r *controllerReconciler) ReconcileTcpRoutes(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// TODO: consider finding impacted gateways and queue them
 	// TODO: consider enabling this
 	//	// reconcile this specific route:

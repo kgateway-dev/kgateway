@@ -47,7 +47,7 @@ func (p *plugin) ApplyRoutePlugin(
 		return errors.Errorf("RequestMirror must have destinations")
 	}
 
-	obj, err := p.queries.GetBackendForRef(ctx, p.queries.ObjToFrom(routeCtx.Route), &config.BackendRef)
+	obj, err := p.queries.GetBackendForRef(ctx, p.queries.ObjToFrom(routeCtx.HTTPRoute), &config.BackendRef)
 	clusterName := query.ProcessBackendRef(
 		obj,
 		err,

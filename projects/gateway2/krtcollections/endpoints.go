@@ -1,7 +1,8 @@
-package proxy_syncer
+package krtcollections
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"hash/fnv"
 
@@ -11,7 +12,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	ggv2utils "github.com/solo-io/gloo/projects/gateway2/utils"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -34,12 +34,15 @@ type EndpointsSettings struct {
 	EnableAutoMtls bool
 }
 
-var _ krt.ResourceNamer = EndpointsSettings{}
-var _ krt.Equaler[EndpointsSettings] = EndpointsSettings{}
+var (
+	_ krt.ResourceNamer              = EndpointsSettings{}
+	_ krt.Equaler[EndpointsSettings] = EndpointsSettings{}
+)
 
 func (p EndpointsSettings) Equals(in EndpointsSettings) bool {
 	return p == in
 }
+
 func (p EndpointsSettings) ResourceName() string {
 	return "endpoints-settings"
 }
@@ -47,20 +50,30 @@ func (p EndpointsSettings) ResourceName() string {
 type EndpointsInputs struct {
 	Upstreams         krt.Collection[UpstreamWrapper]
 	Endpoints         krt.Collection[*corev1.Endpoints]
-	Pods              krt.Collection[krtcollections.LocalityPod]
+	Pods              krt.Collection[LocalityPod]
 	EndpointsSettings krt.Singleton[EndpointsSettings]
 	Services          krt.Collection[*corev1.Service]
+
+	Debugger *krt.DebugHandler
 }
 
-func NewGlooK8sEndpointInputs(settings krt.Singleton[glookubev1.Settings], istioClient kube.Client, pods krt.Collection[krtcollections.LocalityPod], services krt.Collection[*corev1.Service], finalUpstreams krt.Collection[UpstreamWrapper]) EndpointsInputs {
+func NewGlooK8sEndpointInputs(
+	settings krt.Singleton[glookubev1.Settings],
+	istioClient kube.Client,
+	dbg *krt.DebugHandler,
+	pods krt.Collection[LocalityPod],
+	services krt.Collection[*corev1.Service],
+	finalUpstreams krt.Collection[UpstreamWrapper],
+) EndpointsInputs {
+	withDebug := krt.WithDebugging(dbg)
 	epClient := kclient.New[*corev1.Endpoints](istioClient)
-	kubeEndpoints := krt.WrapClient(epClient, krt.WithName("Endpoints"))
+	kubeEndpoints := krt.WrapClient(epClient, krt.WithName("Endpoints"), withDebug)
 	endpointSettings := krt.NewSingleton(func(ctx krt.HandlerContext) *EndpointsSettings {
 		settings := krt.FetchOne(ctx, settings.AsCollection())
 		return &EndpointsSettings{
 			EnableAutoMtls: settings.Spec.GetGloo().GetIstioOptions().GetEnableAutoMtls().GetValue(),
 		}
-	})
+	}, withDebug)
 
 	return EndpointsInputs{
 		Upstreams:         finalUpstreams,
@@ -68,6 +81,7 @@ func NewGlooK8sEndpointInputs(settings krt.Singleton[glookubev1.Settings], istio
 		Pods:              pods,
 		EndpointsSettings: endpointSettings,
 		Services:          services,
+		Debugger:          dbg,
 	}
 }
 
@@ -75,14 +89,30 @@ type EndpointWithMd struct {
 	*envoy_config_endpoint_v3.LbEndpoint
 	EndpointMd EndpointMetadata
 }
+
+type LocalityLbMap map[PodLocality][]EndpointWithMd
+
+// MarshalJSON implements json.Marshaler. for krt.DebugHandler
+func (l LocalityLbMap) MarshalJSON() ([]byte, error) {
+	out := map[string][]EndpointWithMd{}
+	for locality, eps := range l {
+		out[locality.String()] = eps
+	}
+	return json.Marshal(out)
+}
+
+var _ json.Marshaler = LocalityLbMap{}
+
 type EndpointsForUpstream struct {
-	LbEps       map[krtcollections.PodLocality][]EndpointWithMd
+	LbEps LocalityLbMap
+	// Note - in theory, cluster name should be a function of the UpstreamRef.
+	// But due to an upstream envoy bug, the cluster name also includes the upstream hash.
+	ClusterName string
 	UpstreamRef types.NamespacedName
 	Port        uint32
 	Hostname    string
-	clusterName string
 
-	lbEpsEqualityHash uint64
+	LbEpsEqualityHash uint64
 }
 
 func NewEndpointsForUpstream(us UpstreamWrapper, logger *zap.Logger) *EndpointsForUpstream {
@@ -93,20 +123,21 @@ func NewEndpointsForUpstream(us UpstreamWrapper, logger *zap.Logger) *EndpointsF
 	lbEpsEqualityHash := h.Sum64()
 
 	// add the upstream hash to the clustername, so that if it changes the envoy cluster will become warm again.
-	clusterName := getEndpointClusterName(us.Inner)
+	clusterName := GetEndpointClusterName(us.Inner)
 	return &EndpointsForUpstream{
-		LbEps: make(map[krtcollections.PodLocality][]EndpointWithMd),
+		LbEps:       make(map[PodLocality][]EndpointWithMd),
+		ClusterName: clusterName,
 		UpstreamRef: types.NamespacedName{
 			Namespace: us.Inner.GetMetadata().GetNamespace(),
 			Name:      us.Inner.GetMetadata().GetName(),
 		},
 		Port:              ggv2utils.GetPortForUpstream(us.Inner),
 		Hostname:          ggv2utils.GetHostnameForUpstream(us.Inner),
-		clusterName:       clusterName,
-		lbEpsEqualityHash: lbEpsEqualityHash,
+		LbEpsEqualityHash: lbEpsEqualityHash,
 	}
 }
-func hashEndpoints(l krtcollections.PodLocality, emd EndpointWithMd) uint64 {
+
+func hashEndpoints(l PodLocality, emd EndpointWithMd) uint64 {
 	hasher := fnv.New64()
 	hasher.Write([]byte(l.Region))
 	hasher.Write([]byte(l.Zone))
@@ -117,10 +148,10 @@ func hashEndpoints(l krtcollections.PodLocality, emd EndpointWithMd) uint64 {
 	return hasher.Sum64()
 }
 
-func (e *EndpointsForUpstream) Add(l krtcollections.PodLocality, emd EndpointWithMd) {
+func (e *EndpointsForUpstream) Add(l PodLocality, emd EndpointWithMd) {
 	// xor it as we dont care about order - if we have the same endpoints in the same locality
 	// we are good.
-	e.lbEpsEqualityHash ^= hashEndpoints(l, emd)
+	e.LbEpsEqualityHash ^= hashEndpoints(l, emd)
 	e.LbEps[l] = append(e.LbEps[l], emd)
 }
 
@@ -129,14 +160,14 @@ func (c EndpointsForUpstream) ResourceName() string {
 }
 
 func (c EndpointsForUpstream) Equals(in EndpointsForUpstream) bool {
-	return c.UpstreamRef == in.UpstreamRef && c.Port == in.Port && c.lbEpsEqualityHash == in.lbEpsEqualityHash && c.Hostname == in.Hostname
+	return c.UpstreamRef == in.UpstreamRef && c.ClusterName == in.ClusterName && c.Port == in.Port && c.LbEpsEqualityHash == in.LbEpsEqualityHash && c.Hostname == in.Hostname
 }
 
 func NewGlooK8sEndpoints(ctx context.Context, inputs EndpointsInputs) krt.Collection[EndpointsForUpstream] {
-	return krt.NewCollection(inputs.Upstreams, TransformUpstreamsBuilder(ctx, inputs), krt.WithName("GlooK8sEndpoints"))
+	return krt.NewCollection(inputs.Upstreams, transformK8sEndpoints(ctx, inputs), krt.WithName("GlooK8sEndpoints"), krt.WithDebugging(inputs.Debugger))
 }
 
-func TransformUpstreamsBuilder(ctx context.Context, inputs EndpointsInputs) func(kctx krt.HandlerContext, us UpstreamWrapper) *EndpointsForUpstream {
+func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kctx krt.HandlerContext, us UpstreamWrapper) *EndpointsForUpstream {
 	augmentedPods := inputs.Pods
 	kubeEndpoints := inputs.Endpoints
 	services := inputs.Services
@@ -202,7 +233,7 @@ func TransformUpstreamsBuilder(ctx context.Context, inputs EndpointsInputs) func
 				}
 
 				var augmentedLabels map[string]string
-				var l krtcollections.PodLocality
+				var l PodLocality
 				if podName != "" {
 					maybePod := krt.FetchOne(kctx, augmentedPods, krt.FilterObjectName(types.NamespacedName{
 						Namespace: podNamespace,
@@ -213,7 +244,7 @@ func TransformUpstreamsBuilder(ctx context.Context, inputs EndpointsInputs) func
 						augmentedLabels = maybePod.AugmentedLabels
 					}
 				}
-				ep := createLbEndpoint(addr.IP, port, augmentedLabels, enableAutoMtls)
+				ep := CreateLBEndpoint(addr.IP, port, augmentedLabels, enableAutoMtls)
 
 				ret.Add(l, EndpointWithMd{
 					LbEndpoint: ep,
@@ -228,7 +259,7 @@ func TransformUpstreamsBuilder(ctx context.Context, inputs EndpointsInputs) func
 	}
 }
 
-func createLbEndpoint(address string, port uint32, podLabels map[string]string, enableAutoMtls bool) *envoy_config_endpoint_v3.LbEndpoint {
+func CreateLBEndpoint(address string, port uint32, podLabels map[string]string, enableAutoMtls bool) *envoy_config_endpoint_v3.LbEndpoint {
 	// Don't get the metadata labels and filter metadata for the envoy load balancer based on the upstream, as this is not used
 	// metadata := getLbMetadata(upstream, labels, "")
 	// Get the metadata labels for the transport socket match if Istio auto mtls is enabled
@@ -265,7 +296,6 @@ func createLbEndpoint(address string, port uint32, podLabels map[string]string, 
 }
 
 func addIstioAutomtlsMetadata(metadata *envoy_config_core_v3.Metadata, labels map[string]string, enableAutoMtls bool) *envoy_config_core_v3.Metadata {
-
 	const EnvoyTransportSocketMatch = "envoy.transport_socket_match"
 	if enableAutoMtls {
 		if _, ok := labels[constants.IstioTlsModeLabel]; ok {
@@ -320,7 +350,7 @@ func findFirstPortInEndpointSubsets(subset corev1.EndpointSubset, singlePortServ
 }
 
 // TODO: use exported version from translator?
-func getEndpointClusterName(upstream *v1.Upstream) string {
+func GetEndpointClusterName(upstream *v1.Upstream) string {
 	clusterName := translator.UpstreamToClusterName(upstream.GetMetadata().Ref())
 	endpointClusterName, err := translator.GetEndpointClusterName(clusterName, upstream)
 	if err != nil {

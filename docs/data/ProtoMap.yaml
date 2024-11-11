@@ -1262,6 +1262,9 @@ apis:
   header_validation.options.gloo.solo.io.HeaderValidationSettings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/header_validation/header_validation.proto.sk/#HeaderValidationSettings
     package: header_validation.options.gloo.solo.io
+  headers.options.gloo.solo.io.EarlyHeaderManipulation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/headers/headers.proto.sk/#EarlyHeaderManipulation
+    package: headers.options.gloo.solo.io
   headers.options.gloo.solo.io.HeaderManipulation:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/headers/headers.proto.sk/#HeaderManipulation
     package: headers.options.gloo.solo.io

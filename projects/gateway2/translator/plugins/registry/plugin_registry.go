@@ -26,6 +26,7 @@ type PluginRegistry struct {
 	listenerPlugins        []plugins.ListenerPlugin
 	postTranslationPlugins []plugins.PostTranslationPlugin
 	statusPlugins          []plugins.StatusPlugin
+	backendPlugins         []plugins.BackendPlugin
 }
 
 func (p *PluginRegistry) GetRoutePlugins() []plugins.RoutePlugin {
@@ -44,12 +45,17 @@ func (p *PluginRegistry) GetStatusPlugins() []plugins.StatusPlugin {
 	return p.statusPlugins
 }
 
+func (p *PluginRegistry) GetBackendPlugins() []plugins.BackendPlugin {
+	return p.backendPlugins
+}
+
 func NewPluginRegistry(allPlugins []plugins.Plugin) PluginRegistry {
 	var (
 		routePlugins           []plugins.RoutePlugin
 		listenerPlugins        []plugins.ListenerPlugin
 		postTranslationPlugins []plugins.PostTranslationPlugin
 		statusPlugins          []plugins.StatusPlugin
+		backendPlugins         []plugins.BackendPlugin
 	)
 
 	for _, plugin := range allPlugins {
@@ -65,12 +71,16 @@ func NewPluginRegistry(allPlugins []plugins.Plugin) PluginRegistry {
 		if statusPlugin, ok := plugin.(plugins.StatusPlugin); ok {
 			statusPlugins = append(statusPlugins, statusPlugin)
 		}
+		if backendPlugin, ok := plugin.(plugins.BackendPlugin); ok {
+			backendPlugins = append(backendPlugins, backendPlugin)
+		}
 	}
 	return PluginRegistry{
 		routePlugins,
 		listenerPlugins,
 		postTranslationPlugins,
 		statusPlugins,
+		backendPlugins,
 	}
 }
 

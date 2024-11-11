@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 
 	"errors"
 
@@ -114,7 +115,7 @@ func StartGGv2WithConfig(ctx context.Context,
 	}
 
 	logger.Info("creating krt collections")
-	augmentedPods := krtcollections.NewPodsCollection(ctx, kubeClient)
+	augmentedPods := krtcollections.NewPodsCollection(ctx, kubeClient, setupOpts.KrtDebugger)
 	setting := proxy_syncer.SetupCollectionDynamic[glookubev1.Settings](
 		ctx,
 		kubeClient,
@@ -158,8 +159,9 @@ func StartGGv2WithConfig(ctx context.Context,
 
 		InitialSettings: initialSettings,
 		Settings:        settingsSingle,
-		// Useful for development purposes; not currently tied to any user-facing API
-		Dev: false,
+		// Dev flag may be useful for development purposes; not currently tied to any user-facing API
+		Dev:      false,
+		Debugger: setupOpts.KrtDebugger,
 	})
 	if err != nil {
 		return err
@@ -214,6 +216,11 @@ func (g *genericStatusReporter) WriteReports(ctx context.Context, resourceErrs r
 
 		// check if resource is an internal upstream. if so skip it..
 		if kubernetes.IsKubeUpstream(resource.GetMetadata().GetName()) {
+			continue
+		}
+		// check if resource is an internal upstream. Internal upstreams have ':' in their names so
+		// the cannot be written to the cluster. if so skip it..
+		if strings.IndexRune(resource.GetMetadata().GetName(), ':') >= 0 {
 			continue
 		}
 

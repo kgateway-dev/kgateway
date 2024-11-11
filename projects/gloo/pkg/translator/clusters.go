@@ -1,11 +1,10 @@
 package translator
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
-
-	"errors"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -37,7 +36,6 @@ func (t *translatorInstance) computeClusters(
 	upstreamRefKeyToEndpoints map[string][]*v1.Endpoint,
 	proxy *v1.Proxy,
 ) ([]*envoy_config_cluster_v3.Cluster, map[*envoy_config_cluster_v3.Cluster]*v1.Upstream) {
-
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.computeClusters")
 	defer span.End()
 	params.Ctx = contextutils.WithLogger(ctx, "compute_clusters")
@@ -148,7 +146,7 @@ func (t *translatorInstance) initializeCluster(
 		LbSubsetConfig:   createLbConfig(upstream),
 		HealthChecks:     hcConfig,
 		OutlierDetection: detectCfg,
-		//defaults to Cluster_USE_CONFIGURED_PROTOCOL
+		// defaults to Cluster_USE_CONFIGURED_PROTOCOL
 		ProtocolSelection: envoy_config_cluster_v3.Cluster_ClusterProtocolSelection(upstream.GetProtocolSelection()),
 		// this field can be overridden by plugins
 		ConnectTimeout:            ptypes.DurationProto(ClusterConnectionTimeout),
@@ -354,7 +352,6 @@ func getCircuitBreakers(cfgs ...*v1.CircuitBreakerConfig) *envoy_config_cluster_
 // it consumes an ordered list of preconnect policies
 // it returns the first non-nil policy
 func getPreconnectPolicy(cfgs ...*v1.PreconnectPolicy) (*envoy_config_cluster_v3.Cluster_PreconnectPolicy, error) {
-
 	// since we dont want strict reliance on envoy's current api
 	// but still able to map as closely as possible
 	// if not nil then convert the gloo configurations to envoy
@@ -380,7 +377,6 @@ func getPreconnectPolicy(cfgs ...*v1.PreconnectPolicy) (*envoy_config_cluster_v3
 			return nil, errors.New("invalid preconnect policy: " + strings.Join(eStrings, "; "))
 		}
 		return &envoy_config_cluster_v3.Cluster_PreconnectPolicy{
-
 			PerUpstreamPreconnectRatio: curConfig.GetPerUpstreamPreconnectRatio(),
 			PredictivePreconnectRatio:  curConfig.GetPredictivePreconnectRatio(),
 		}, nil
@@ -517,7 +513,6 @@ func validateRouteDestinationForValidLambdas(
 			}
 		}
 	}
-
 }
 
 // Apply defaults to UpstreamSslConfig

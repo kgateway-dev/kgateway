@@ -75,6 +75,8 @@ type StartConfig struct {
 
 	InitialSettings *glookubev1.Settings
 	Settings        krt.Singleton[glookubev1.Settings]
+
+	Debugger *krt.DebugHandler
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -142,13 +144,16 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 
 	inputChannels := proxy_syncer.NewGatewayInputChannels()
 	k8sGwExtensions, err := cfg.ExtensionsFactory(ctx, ext.K8sGatewayExtensionsFactoryParameters{
-		Mgr:                         mgr,
-		IstioClient:                 cfg.Client,
-		RouteOptionCollection:       routeOptionCollection,
-		VirtualHostOptionCollection: virtualHostOptionCollection,
-		AuthConfigCollection:        authConfigCollection,
-		StatusReporter:              cfg.KubeGwStatusReporter,
-		KickXds:                     inputChannels.Kick,
+		Mgr:         mgr,
+		IstioClient: cfg.Client,
+		CoreCollections: ext.CoreCollections{
+			AugmentedPods:               cfg.AugmentedPods,
+			RouteOptionCollection:       routeOptionCollection,
+			VirtualHostOptionCollection: virtualHostOptionCollection,
+			AuthConfigCollection:        authConfigCollection,
+		},
+		StatusReporter: cfg.KubeGwStatusReporter,
+		KickXds:        inputChannels.Kick,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to create k8s gw extensions")
@@ -174,7 +179,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.GlooStatusReporter,
 		cfg.SetupOpts.ProxyReconcileQueue,
 	)
-	proxySyncer.Init(ctx)
+	proxySyncer.Init(ctx, cfg.Debugger)
 
 	if err := mgr.Add(proxySyncer); err != nil {
 		setupLog.Error(err, "unable to add proxySyncer runnable")

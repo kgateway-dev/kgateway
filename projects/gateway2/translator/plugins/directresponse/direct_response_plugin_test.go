@@ -72,7 +72,7 @@ var _ = Describe("DirectResponse", func() {
 			route := &v1.Route{}
 
 			routeCtx := &plugins.RouteContext{
-				Route: rt,
+				HTTPRoute: rt,
 				Rule: &gwv1.HTTPRouteRule{
 					Filters: []gwv1.HTTPRouteFilter{{
 						Type: gwv1.HTTPRouteFilterExtensionRef,
@@ -132,7 +132,7 @@ var _ = Describe("DirectResponse", func() {
 			route := &v1.Route{}
 
 			routeCtx := &plugins.RouteContext{
-				Route: rt,
+				HTTPRoute: rt,
 				Rule: &gwv1.HTTPRouteRule{
 					Filters: []gwv1.HTTPRouteFilter{{
 						Type: gwv1.HTTPRouteFilterExtensionRef,
@@ -190,7 +190,7 @@ var _ = Describe("DirectResponse", func() {
 
 			route := &v1.Route{}
 			routeCtx := &plugins.RouteContext{
-				Route: rt,
+				HTTPRoute: rt,
 				Rule: &gwv1.HTTPRouteRule{
 					Filters: []gwv1.HTTPRouteFilter{{
 						Type: gwv1.HTTPRouteFilterExtensionRef,
@@ -210,7 +210,7 @@ var _ = Describe("DirectResponse", func() {
 			Expect(route.GetAction()).To(BeEquivalentTo(directresponse.ErrorResponseAction()))
 
 			By("verifying the HTTPRoute status is reflecting an error")
-			status := reportsMap.BuildRouteStatus(ctx, *rt, "")
+			status := reportsMap.BuildRouteStatus(ctx, rt, "")
 			Expect(status).NotTo(BeNil())
 			Expect(status.Parents).To(HaveLen(1))
 			resolvedRefs := meta.FindStatusCondition(status.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -263,7 +263,7 @@ var _ = Describe("DirectResponse", func() {
 			route := &v1.Route{}
 
 			routeCtx := &plugins.RouteContext{
-				Route: rt,
+				HTTPRoute: rt,
 				Rule: &gwv1.HTTPRouteRule{
 					Filters: []gwv1.HTTPRouteFilter{
 						{
@@ -294,7 +294,7 @@ var _ = Describe("DirectResponse", func() {
 			Expect(route.GetAction()).To(BeEquivalentTo(directresponse.ErrorResponseAction()))
 
 			By("verifying the HTTPRoute status is set correctly")
-			status := reportsMap.BuildRouteStatus(ctx, *rt, "")
+			status := reportsMap.BuildRouteStatus(ctx, rt, "")
 			Expect(status).NotTo(BeNil())
 			Expect(status.Parents).To(HaveLen(1))
 			resolvedRefs := meta.FindStatusCondition(status.Parents[0].Conditions, string(gwv1.RouteConditionAccepted))
@@ -336,8 +336,8 @@ var _ = Describe("DirectResponse", func() {
 			route := &v1.Route{}
 
 			routeCtx := &plugins.RouteContext{
-				Route:    rt,
-				Reporter: parentRefReporter,
+				HTTPRoute: rt,
+				Reporter:  parentRefReporter,
 				Rule: &gwv1.HTTPRouteRule{
 					BackendRefs: []gwv1.HTTPBackendRef{{
 						BackendRef: gwv1.BackendRef{

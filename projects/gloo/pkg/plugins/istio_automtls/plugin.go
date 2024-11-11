@@ -2,6 +2,7 @@ package istio_automtls
 
 import (
 	"fmt"
+	"strconv"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -52,9 +53,9 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 	sslConfig := in.GetSslConfig()
 	// Istio automtls will only be applied when:
-	//1) automtls is enabled on the settings
-	//2) the upstream has not disabled auto mtls
-	//3) the upstream has no sslConfig
+	// 1) automtls is enabled on the settings
+	// 2) the upstream has not disabled auto mtls
+	// 3) the upstream has no sslConfig
 	if p.settings.GetGloo().GetIstioOptions().GetEnableAutoMtls().GetValue() && !in.GetDisableIstioAutoMtls().GetValue() && sslConfig == nil {
 		// Istio automtls config is not applied if istio integration is disabled on the helm chart.
 		// When istio integration is disabled via istioSds.enabled=false, there is no sds or istio-proxy sidecar present
@@ -68,20 +69,21 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 				contextutils.LoggerFrom(params.Ctx).Warn("Istio sidecar injection (istioIntegration.enableIstioSidecarOnGateway) should be disabled for Istio automtls mode")
 			}
 
+			sni := buildSni(in)
+
 			socketmatches = []*envoy_config_cluster_v3.Cluster_TransportSocketMatch{
 				// add istio mtls match
-				createIstioMatch(),
+				createIstioMatch(sni),
 				// plaintext match. Note: this needs to come after the tlsMode-istio match
 				createDefaultIstioMatch(),
 			}
 		}
 		out.TransportSocketMatches = socketmatches
 	}
-
 	return nil
 }
 
-func createIstioMatch() *envoy_config_cluster_v3.Cluster_TransportSocketMatch {
+func createIstioMatch(sni string) *envoy_config_cluster_v3.Cluster_TransportSocketMatch {
 	istioMtlsTransportSocketMatch := &_struct.Struct{
 		Fields: map[string]*_struct.Value{
 			constants.TLSModeLabelShortname: {Kind: &_struct.Value_StringValue{StringValue: constants.IstioMutualTLSModeLabel}},
@@ -89,6 +91,7 @@ func createIstioMatch() *envoy_config_cluster_v3.Cluster_TransportSocketMatch {
 	}
 
 	sslSds := &tlsv3.UpstreamTlsContext{
+		Sni: sni,
 		CommonTlsContext: &tlsv3.CommonTlsContext{
 			AlpnProtocols: []string{"istio"},
 			TlsParams:     &tlsv3.TlsParameters{},
@@ -159,7 +162,8 @@ func createIstioMatch() *envoy_config_cluster_v3.Cluster_TransportSocketMatch {
 func createDefaultIstioMatch() *envoy_config_cluster_v3.Cluster_TransportSocketMatch {
 	// Based on Istio's default match https://github.com/istio/istio/blob/fa321ebd2a1186325788b0f461aa9f36a1a8d90e/pilot/pkg/xds/filters/filters.go#L78
 	typedConfig, _ := utils.MessageToAny(&socketsRaw.RawBuffer{})
-	rawBufferTransportSocket := &envoy_config_core_v3.TransportSocket{Name: wellknown.TransportSocketRawBuffer,
+	rawBufferTransportSocket := &envoy_config_core_v3.TransportSocket{
+		Name:       wellknown.TransportSocketRawBuffer,
 		ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
 	}
 
@@ -168,4 +172,51 @@ func createDefaultIstioMatch() *envoy_config_cluster_v3.Cluster_TransportSocketM
 		Match:           &_struct.Struct{},
 		TransportSocket: rawBufferTransportSocket,
 	}
+}
+
+func buildSni(us *v1.Upstream) string {
+	if us.GetUpstreamType() == nil {
+		return ""
+	}
+	switch us := us.GetUpstreamType().(type) {
+	case *v1.Upstream_Kube:
+		return buildDNSSrvSubsetKey(
+			svcFQDN(
+				us.Kube.GetServiceName(),
+				us.Kube.GetServiceNamespace(),
+				"cluster.local", // TODO we need a setting like Istio has for trustDomain
+			),
+			us.Kube.GetServicePort(),
+		)
+	case *v1.Upstream_Static:
+		if len(us.Static.GetHosts()) > 0 {
+			// static upstreams use the first host
+			host := us.Static.GetHosts()[0]
+
+			// if SNI address is set, use it directly
+			if host.GetSniAddr() != "" {
+				return host.GetSniAddr()
+			}
+
+			// otherwise build istio DNSSrv style
+			return buildDNSSrvSubsetKey(
+				host.GetAddr(),
+				host.GetPort(),
+			)
+		}
+	default:
+	}
+	return ""
+}
+
+// buildDNSSrvSubsetKey mirrors a similarly named function in Istio.
+// Istio auto-passthrough gateways expect this value for the SNI.
+// We also expect gloo mesh to tell Istio to match the virtual destination SNI
+// but route to the backing Service's cluster via EnvoyFilter.
+func buildDNSSrvSubsetKey(hostname string, port uint32) string {
+	return "outbound" + "_." + strconv.Itoa(int(port)) + "_._." + string(hostname)
+}
+
+func svcFQDN(name, ns, trustDomain string) string {
+	return fmt.Sprintf("%s.%s.svc.%s", name, ns, trustDomain)
 }

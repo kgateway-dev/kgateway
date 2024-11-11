@@ -87,11 +87,11 @@ weight: 5
 | `unhealthyInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The "unhealthy interval" is a health check interval that is used for hosts that are marked as unhealthy. As soon as the host is marked as healthy, Envoy will shift back to using the standard health check interval that is defined. The default value for "unhealthy interval" is the same as "interval". |
 | `unhealthyEdgeInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The "unhealthy edge interval" is a special health check interval that is used for the first health check right after a host is marked as unhealthy. For subsequent health checks Envoy will shift back to using either "unhealthy interval" if present or the standard health check interval that is defined. The default value for "unhealthy edge interval" is the same as "unhealthy interval". |
 | `healthyEdgeInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The "healthy edge interval" is a special health check interval that is used for the first health check right after a host is marked as healthy. For subsequent health checks Envoy will shift back to using the standard health check interval that is defined. The default value for "healthy edge interval" is the same as the default interval. |
-| `eventLogPath` | `string` | Specifies the path to the :ref:`health check event log <arch_overview_health_check_logging>`. If empty, no event log will be written. |
+| `eventLogPath` | `string` | Specifies the path to the health check event log. If empty, no event log will be written. |
 | `eventService` | [.solo.io.envoy.config.core.v3.EventServiceConfig](../event_service_config.proto.sk/#eventserviceconfig) | [#not-implemented-hide:] The gRPC service for the health check event service. If empty, health check events won't be sent to a remote endpoint. |
 | `alwaysLogHealthCheckFailures` | `bool` | If set to true, health check failure events will always be logged. If set to false, only the initial health check failure event will be logged. The default value is false. |
 | `tlsOptions` | [.solo.io.envoy.config.core.v3.HealthCheck.TlsOptions](../health_check.proto.sk/#tlsoptions) | This allows overriding the cluster TLS settings, just for health check connections. |
-| `transportSocketMatchCriteria` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Optional key/value pairs that will be used to match a transport socket from those specified in the cluster's :ref:`tranport socket matches <envoy_api_field_config.cluster.v3.Cluster.transport_socket_matches>`. For example, the following match criteria .. code-block:: yaml transport_socket_match_criteria: useMTLS: true Will match the following :ref:`cluster socket match <envoy_api_msg_config.cluster.v3.Cluster.TransportSocketMatch>` .. code-block:: yaml transport_socket_matches: - name: "useMTLS" match: useMTLS: true transport_socket: name: envoy.transport_sockets.tls config: { ... } # tls socket configuration If this field is set, then for health checks it will supersede an entry of *envoy.transport_socket* in the :ref:`LbEndpoint.Metadata <envoy_api_field_config.endpoint.v3.LbEndpoint.metadata>`. This allows using different transport socket capabilities for health checking versus proxying to the endpoint. If the key/values pairs specified do not match any :ref:`transport socket matches <envoy_api_field_config.cluster.v3.Cluster.transport_socket_matches>`, the cluster's :ref:`transport socket <envoy_api_field_config.cluster.v3.Cluster.transport_socket>` will be used for health check socket configuration. |
+| `transportSocketMatchCriteria` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Optional key/value pairs that will be used to match a transport socket from those specified in the cluster's tranport socket matches. For example, the following match criteria .. code-block:: yaml transport_socket_match_criteria: useMTLS: true Will match the following :ref:`cluster socket match <envoy_api_msg_config.cluster.v3.Cluster.TransportSocketMatch>` .. code-block:: yaml transport_socket_matches: - name: "useMTLS" match: useMTLS: true transport_socket: name: envoy.transport_sockets.tls config: { ... } # tls socket configuration If this field is set, then for health checks it will supersede an entry of *envoy.transport_socket* in the LbEndpoint.Metadata. This allows using different transport socket capabilities for health checking versus proxying to the endpoint. If the key/values pairs specified do not match any transport socket matches, the cluster's :ref:`transport socket <envoy_api_field_config.cluster.v3.Cluster.transport_socket>` will be used for health check socket configuration. |
 
 
 
@@ -138,13 +138,13 @@ Describes the encoding of the payload bytes in the payload.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `host` | `string` | The value of the host header in the HTTP health check request. If left empty (default value), the name of the cluster this health check is associated with will be used. The host header can be customized for a specific endpoint by setting the :ref:`hostname <envoy_api_field_config.endpoint.v3.Endpoint.HealthCheckConfig.hostname>` field. |
+| `host` | `string` | The value of the host header in the HTTP health check request. If left empty (default value), the name of the cluster this health check is associated with will be used. The host header can be customized for a specific endpoint by setting the hostname field. |
 | `path` | `string` | Specifies the HTTP path that will be requested during health checking. For example */healthcheck*. |
 | `send` | [.solo.io.envoy.config.core.v3.HealthCheck.Payload](../health_check.proto.sk/#payload) | [#not-implemented-hide:] HTTP specific payload. |
 | `receive` | [.solo.io.envoy.config.core.v3.HealthCheck.Payload](../health_check.proto.sk/#payload) | [#not-implemented-hide:] HTTP specific response. |
 | `requestHeadersToAdd` | [[]solo.io.envoy.config.core.v3.HeaderValueOption](../base.proto.sk/#headervalueoption) | Specifies a list of HTTP headers that should be added to each request that is sent to the health checked cluster. For more information, including details on header value syntax, see the documentation on :ref:`custom request headers <config_http_conn_man_headers_custom_request_headers>`. |
 | `requestHeadersToRemove` | `[]string` | Specifies a list of HTTP headers that should be removed from each request that is sent to the health checked cluster. |
-| `expectedStatuses` | [[]solo.io.envoy.type.v3.Int64Range](../../../../type/v3/range.proto.sk/#int64range) | Specifies a list of HTTP response statuses considered healthy. If provided, replaces default 200-only policy - 200 must be included explicitly as needed. Ranges follow half-open semantics of :ref:`Int64Range <envoy_api_msg_type.v3.Int64Range>`. The start and end of each range are required. Only statuses in the range [100, 600) are allowed. |
+| `expectedStatuses` | [[]solo.io.envoy.type.v3.Int64Range](../../../../type/v3/range.proto.sk/#int64range) | Specifies a list of HTTP response statuses considered healthy. If provided, replaces default 200-only policy - 200 must be included explicitly as needed. Ranges follow half-open semantics of Int64Range. The start and end of each range are required. Only statuses in the range [100, 600) are allowed. |
 | `codecClientType` | [.solo.io.envoy.type.v3.CodecClientType](../../../../type/v3/http.proto.sk/#codecclienttype) | Use specified application protocol for health checks. |
 | `serviceNameMatcher` | [.solo.io.envoy.type.matcher.v3.StringMatcher](../../../../type/matcher/v3/string.proto.sk/#stringmatcher) | An optional service name parameter which is used to validate the identity of the health checked cluster using a :ref:`StringMatcher <envoy_api_msg_type.matcher.v3.StringMatcher>`. See the :ref:`architecture overview <arch_overview_health_checking_identity>` for more information. |
 | `responseAssertions` | [.advancedhttp.options.gloo.solo.io.ResponseAssertions](../../../../../../v1/options/advanced_http/advanced_http.proto.sk/#responseassertions) | (Enterprise Only): If defined, the response health check rules take precedence over the http `expected_statuses`. |
@@ -183,7 +183,7 @@ Describes the encoding of the payload bytes in the payload.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `key` | `string` | If set, optionally perform ``EXISTS <key>`` instead of ``PING``. A return value from Redis of 0 (does not exist) is considered a passing healthcheck. A return value other than 0 is considered a failure. This allows the user to mark a Redis instance for maintenance by setting the specified key to any value and waiting for traffic to drain. |
+| `key` | `string` | If set, optionally perform `EXISTS <key>` instead of `PING`. A return value from Redis of 0 (does not exist) is considered a passing healthcheck. A return value other than 0 is considered a failure. This allows the user to mark a Redis instance for maintenance by setting the specified key to any value and waiting for traffic to drain. |
 
 
 
@@ -192,9 +192,8 @@ Describes the encoding of the payload bytes in the payload.
 ### GrpcHealthCheck
 
  
-`grpc.health.v1.Health
-<https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto>`_-based
-healthcheck. See `gRPC doc <https://github.com/grpc/grpc/blob/master/doc/health-checking.md>`_
+[grpc.health.v1.Health](https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto)-based
+healthcheck. See [gRPC doc](https://github.com/grpc/grpc/blob/master/doc/health-checking.md)
 for details.
 
 ```yaml
@@ -205,8 +204,8 @@ for details.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `serviceName` | `string` | An optional service name parameter which will be sent to gRPC service in `grpc.health.v1.HealthCheckRequest <https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto#L20>`_. message. See `gRPC health-checking overview <https://github.com/grpc/grpc/blob/master/doc/health-checking.md>`_ for more information. |
-| `authority` | `string` | The value of the :authority header in the gRPC health check request. If left empty (default value), the name of the cluster this health check is associated with will be used. The authority header can be customized for a specific endpoint by setting the :ref:`hostname <envoy_api_field_config.endpoint.v3.Endpoint.HealthCheckConfig.hostname>` field. |
+| `serviceName` | `string` | An optional service name parameter which will be sent to gRPC service in [grpc.health.v1.HealthCheckRequest](https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto#L20). message. See [gRPC health-checking overview](https://github.com/grpc/grpc/blob/master/doc/health-checking.md) for more information. |
+| `authority` | `string` | The value of the :authority header in the gRPC health check request. If left empty (default value), the name of the cluster this health check is associated with will be used. The authority header can be customized for a specific endpoint by setting the hostname field. |
 
 
 
@@ -261,7 +260,7 @@ Description: Endpoint health status.
 | UNKNOWN | The health status is not known. This is interpreted by Envoy as *HEALTHY*. |
 | HEALTHY | Healthy. |
 | UNHEALTHY | Unhealthy. |
-| DRAINING | Connection draining in progress. E.g., `<https://aws.amazon.com/blogs/aws/elb-connection-draining-remove-instances-from-service-with-care/>`_ or `<https://cloud.google.com/compute/docs/load-balancing/enabling-connection-draining>`_. This is interpreted by Envoy as *UNHEALTHY*. |
+| DRAINING | Connection draining in progress. E.g., https://aws.amazon.com/blogs/aws/elb-connection-draining-remove-instances-from-service-with-care/ or https://cloud.google.com/compute/docs/load-balancing/enabling-connection-draining. This is interpreted by Envoy as *UNHEALTHY*. |
 | TIMEOUT | Health check timed out. This is part of HDS and is interpreted by Envoy as *UNHEALTHY*. |
 | DEGRADED | Degraded. |
 
