@@ -1,9 +1,7 @@
 package e2e_test
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/solo-io/gloo/test/testutils"
@@ -25,6 +23,8 @@ var _ = Describe("Example E2E Test For Developers", Label(), func() {
 
 	var (
 		testContext *e2e.TestContext
+
+		testPath = "test"
 	)
 
 	BeforeEach(func() {
@@ -141,7 +141,7 @@ var _ = Describe("Example E2E Test For Developers", Label(), func() {
 	Context("Modifying resources directly in a test", func() {
 
 		It("can route traffic", func() {
-			requestBuilder := testContext.GetHttpRequestBuilder().WithPath("test")
+			requestBuilder := testContext.GetHttpRequestBuilder().WithPath(testPath)
 
 			Eventually(func(g Gomega) {
 				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
@@ -178,7 +178,7 @@ var _ = Describe("Example E2E Test For Developers", Label(), func() {
 			testContext.BeforeEach()
 		})
 
-		It("Gets reflected headers from /headers route", func() {
+		FIt("Gets reflected headers from /headers route", func() {
 			Eventually(func(g Gomega) {
 				requestBuilder := testContext.GetHttpRequestBuilder().
 					WithPath("headers").
@@ -188,16 +188,8 @@ var _ = Describe("Example E2E Test For Developers", Label(), func() {
 				response, err := testutils.DefaultHttpClient.Do(requestBuilder)
 				g.Expect(err).NotTo(HaveOccurred())
 
-				defer response.Body.Close()
-				body, err := io.ReadAll(response.Body)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(response.StatusCode).Should(Equal(http.StatusOK))
-
-				var headersResponse HeadersResponse
-				err = json.Unmarshal(body, &headersResponse)
-				g.Expect(err).NotTo(HaveOccurred())
-
-				g.Expect(headersResponse.Headers).Should(HaveKeyWithValue("X-Test-Header", ConsistOf("test-value")))
+				expectedJsonBody := []byte(`{"headers":{"X-Test-Header":["test-value"]}}`)
+				g.Expect(response).Should(matchers.HaveOKResponseWithJSONContaining(expectedJsonBody))
 			}, "5s", ".5s").Should(Succeed(), "traffic to /headers eventually returns a 200 with the test header")
 		})
 	})
@@ -225,7 +217,7 @@ var _ = Describe("Example E2E Test For Developers", Label(), func() {
 		It("Can count using custom handler", func() {
 			Eventually(func(g Gomega) {
 				requestBuilder := testContext.GetHttpRequestBuilder().
-					WithPath("test").
+					WithPath(testPath).
 					Build()
 
 				response, err := testutils.DefaultHttpClient.Do(requestBuilder)
@@ -235,7 +227,7 @@ var _ = Describe("Example E2E Test For Developers", Label(), func() {
 					StatusCode: http.StatusOK,
 					Body:       "request number 2",
 				}))
-			}, "5s", ".5s").Should(Succeed(), "traffic to /test eventually returns a 200 with the correct response body")
+			}, "5s", ".5s").Should(Succeed(), fmt.Sprintf("traffic to /%s eventually returns a 200 with the correct response body", testPath))
 		})
 	})
 })
