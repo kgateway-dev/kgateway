@@ -3,6 +3,7 @@ package schemes
 import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -28,6 +29,7 @@ var SchemeBuilder = runtime.SchemeBuilder{
 	// Kubernetes Core resources
 	corev1.AddToScheme,
 	appsv1.AddToScheme,
+	discoveryv1.AddToScheme,
 
 	// Register the apiextensions API group
 	apiextensionsv1.AddToScheme,
