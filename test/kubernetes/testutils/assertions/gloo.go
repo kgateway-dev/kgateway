@@ -26,7 +26,7 @@ func (p *Provider) AssertGlooAdminApi(
 
 	portForwarder, err := p.clusterContext.Cli.StartPortForward(ctx,
 		portforward.WithDeployment(glooDeployment.GetName(), glooDeployment.GetNamespace()),
-		portforward.WithPorts(admincli.DefaultAdminPort, admincli.DefaultAdminPort),
+		portforward.WithPorts(int(admincli.DefaultAdminPort), int(admincli.DefaultAdminPort)),
 	)
 	p.Require.NoError(err, "can open port-forward")
 	defer func() {
@@ -49,7 +49,7 @@ func (p *Provider) AssertGlooAdminApi(
 		WithReceiver(io.Discard). // adminAssertion can overwrite this
 		WithCurlOptions(
 			curl.WithRetries(3, 0, 10),
-			curl.WithPort(admincli.DefaultAdminPort),
+			curl.WithPort(int(admincli.DefaultAdminPort)),
 		)
 
 	for _, adminAssertion := range adminAssertions {

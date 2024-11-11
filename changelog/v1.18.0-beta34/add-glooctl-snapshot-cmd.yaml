@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/7131
+    resolvesIssue: true
+    description: >-
+      Add `glooctl proxy snapshot` command, which can be pointed at a Gloo Gateway instance and will produce
+      a zip archive containing all Envoy state, for the purposes of simplified issue reporting and triage.
