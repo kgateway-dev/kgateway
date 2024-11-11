@@ -331,6 +331,12 @@ func (c *Cli) RestartDeploymentAndWait(ctx context.Context, name string, extraAr
 	return c.DeploymentRolloutStatus(ctx, name, extraArgs...)
 }
 
+// Describe the container status (equivalent of running `kubectl describe`)
+func (c *Cli) Describe(ctx context.Context, namespace string, name string) (string, error) {
+	stdout, stderr, err := c.Execute(ctx, "-n", namespace, "describe", name)
+	return stdout + stderr, err
+}
+
 // GetContainerLogs retrieves the logs for the specified container
 func (c *Cli) GetContainerLogs(ctx context.Context, namespace string, name string) (string, error) {
 	stdout, stderr, err := c.Execute(ctx, "-n", namespace, "logs", name)

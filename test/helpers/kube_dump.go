@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/hashicorp/go-multierror"
 
@@ -19,8 +18,9 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
+	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
+
 	gateway_defaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/gateway"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/skv2/codegen/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -303,26 +303,16 @@ func EnvoyDumpOnFail(_ io.Writer, proxies ...metav1.ObjectMeta) func() {
 			if proxyNamespace == "" {
 				proxyNamespace = defaults.GlooSystem
 			}
-			recordEnvoyAdminData(fileAtPath(filepath.Join(envoyOutDir, "config.log")), "/config_dump", proxyName, proxyNamespace)
-			recordEnvoyAdminData(fileAtPath(filepath.Join(envoyOutDir, "stats.log")), "/stats", proxyName, proxyNamespace)
-			recordEnvoyAdminData(fileAtPath(filepath.Join(envoyOutDir, "clusters.log")), "/clusters", proxyName, proxyNamespace)
-			recordEnvoyAdminData(fileAtPath(filepath.Join(envoyOutDir, "listeners.log")), "/listeners", proxyName, proxyNamespace)
+
+			adminCli, shutdown, _ := admincli.NewPortForwardedClient(context.Background(), fmt.Sprintf("deployment/%s", proxyName), proxyNamespace)
+			defer shutdown()
+
+			adminCli.ConfigDumpCmd(context.Background(), nil).WithStdout(fileAtPath(filepath.Join(envoyOutDir, "config.log"))).Run().Cause()
+			adminCli.StatsCmd(context.Background()).WithStdout(fileAtPath(filepath.Join(envoyOutDir, "stats.log"))).Run().Cause()
+			adminCli.ClustersCmd(context.Background()).WithStdout(fileAtPath(filepath.Join(envoyOutDir, "clusters.log"))).Run().Cause()
+			adminCli.ListenersCmd(context.Background()).WithStdout(fileAtPath(filepath.Join(envoyOutDir, "listeners.log"))).Run().Cause()
 		}
 	}
-}
-
-func recordEnvoyAdminData(f *os.File, path, proxyName, namespace string) {
-	defer f.Close()
-
-	fmt.Printf("Getting and storing envoy output for %s path on %s.%s proxy\n", path, proxyName, namespace)
-	cfg, err := gateway.GetEnvoyAdminData(context.Background(), proxyName, namespace, path, 30*time.Second)
-	if err != nil {
-		f.WriteString("*** Unable to get envoy " + path + " dump ***. Reason: " + err.Error() + " \n")
-		return
-	}
-	f.WriteString("*** Envoy " + path + " dump ***\n")
-	f.WriteString(cfg + "\n")
-	f.WriteString("*** End Envoy " + path + " dump ***\n")
 }
 
 // setupOutDir forcibly deletes/creates the output directory

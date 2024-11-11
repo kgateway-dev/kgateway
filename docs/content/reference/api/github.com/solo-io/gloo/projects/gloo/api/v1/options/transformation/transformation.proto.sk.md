@@ -22,6 +22,7 @@ weight: 5
 - [TransformationTemplate](#transformationtemplate)
 - [HeaderToAppend](#headertoappend)
 - [DynamicMetadataValue](#dynamicmetadatavalue)
+- [SpanTransformer](#spantransformer)
 - [RequestBodyParse](#requestbodyparse)
 - [InjaTemplate](#injatemplate)
 - [Passthrough](#passthrough)
@@ -238,6 +239,7 @@ Defines a transformation template.
 "ignoreErrorOnParse": bool
 "dynamicMetadataValues": []transformation.options.gloo.solo.io.TransformationTemplate.DynamicMetadataValue
 "escapeCharacters": .google.protobuf.BoolValue
+"spanTransformer": .transformation.options.gloo.solo.io.TransformationTemplate.SpanTransformer
 
 ```
 
@@ -256,6 +258,7 @@ Defines a transformation template.
 | `ignoreErrorOnParse` | `bool` | If set to true, Envoy will not throw an exception in case the body parsing fails. |
 | `dynamicMetadataValues` | [[]transformation.options.gloo.solo.io.TransformationTemplate.DynamicMetadataValue](../transformation.proto.sk/#dynamicmetadatavalue) | Use this field to set Dynamic Metadata. |
 | `escapeCharacters` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Use this field to set Inja behavior when rendering strings which contain characters that would need to be escaped to be valid JSON. Note that this sets the behavior for the entire transformation. Use raw_strings function for fine-grained control within a template. |
+| `spanTransformer` | [.transformation.options.gloo.solo.io.TransformationTemplate.SpanTransformer](../transformation.proto.sk/#spantransformer) | Use this field to modify the span of the trace. This field can only be applied on requestTransformations. Attempting to set this on a responseTransformation will result in an error. |
 
 
 
@@ -302,6 +305,24 @@ entry.
 | `key` | `string` | The metadata key. |
 | `value` | [.transformation.options.gloo.solo.io.InjaTemplate](../transformation.proto.sk/#injatemplate) | A template that determines the metadata value. |
 | `jsonToProto` | `bool` | Instruct the filter to parse the rendered value as a proto Struct message before setting it as the metadata value. |
+
+
+
+
+---
+### SpanTransformer
+
+ 
+Definitions for span transformations for tracing purposes.
+
+```yaml
+"name": .transformation.options.gloo.solo.io.InjaTemplate
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | [.transformation.options.gloo.solo.io.InjaTemplate](../transformation.proto.sk/#injatemplate) | A template that sets the span name. For example, to set the span name to the value of the host header, you can set this value to `'{{header("Host")}}'`. |
 
 
 

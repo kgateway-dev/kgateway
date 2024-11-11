@@ -380,6 +380,12 @@ func (m *TransformationTemplate) Clone() proto.Message {
 		target.EscapeCharacters = proto.Clone(m.GetEscapeCharacters()).(*google_golang_org_protobuf_types_known_wrapperspb.BoolValue)
 	}
 
+	if h, ok := interface{}(m.GetSpanTransformer()).(clone.Cloner); ok {
+		target.SpanTransformer = h.Clone().(*TransformationTemplate_SpanTransformer)
+	} else {
+		target.SpanTransformer = proto.Clone(m.GetSpanTransformer()).(*TransformationTemplate_SpanTransformer)
+	}
+
 	switch m.BodyTransformation.(type) {
 
 	case *TransformationTemplate_Body:
@@ -545,6 +551,23 @@ func (m *TransformationTemplate_DynamicMetadataValue) Clone() proto.Message {
 	}
 
 	target.JsonToProto = m.GetJsonToProto()
+
+	return target
+}
+
+// Clone function
+func (m *TransformationTemplate_SpanTransformer) Clone() proto.Message {
+	var target *TransformationTemplate_SpanTransformer
+	if m == nil {
+		return target
+	}
+	target = &TransformationTemplate_SpanTransformer{}
+
+	if h, ok := interface{}(m.GetName()).(clone.Cloner); ok {
+		target.Name = h.Clone().(*InjaTemplate)
+	} else {
+		target.Name = proto.Clone(m.GetName()).(*InjaTemplate)
+	}
 
 	return target
 }

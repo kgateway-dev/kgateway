@@ -93,6 +93,7 @@ type Proxy struct {
 	Port             string
 	FollowLogs       bool
 	DebugLogs        bool
+	ConfigDumpEDS    bool
 }
 
 type Upgrade struct {
