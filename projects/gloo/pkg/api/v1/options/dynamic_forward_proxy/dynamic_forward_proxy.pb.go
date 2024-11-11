@@ -248,19 +248,19 @@ type DnsCacheConfig struct {
 	// The TTL for hosts that are unused. Hosts that have not been used in the configured time
 	// interval will be purged. If not specified defaults to 5m.
 	//
-	// .. note:
+	// **Note**:
 	//
 	//	 The TTL is only checked at the time of DNS refresh, as specified by *dns_refresh_rate*. This
 	//	 means that if the configured TTL is shorter than the refresh rate the host may not be removed
 	//	 immediately.
 	//
-	//	.. note:
+	//	**Note**:
 	//
 	//	 The TTL has no relation to DNS TTL and is only used to control Envoy's resource usage.
 	HostTtl *durationpb.Duration `protobuf:"bytes,4,opt,name=host_ttl,json=hostTtl,proto3" json:"host_ttl,omitempty"`
 	// The maximum number of hosts that the cache will hold. If not specified defaults to 1024.
 	//
-	// .. note:
+	// **Note**:
 	//
 	//	The implementation is approximate and enforced independently on each worker thread, thus
 	//	it is possible for the maximum hosts in the cache to go slightly above the configured
@@ -419,12 +419,12 @@ type RefreshRate struct {
 
 	// Specifies the base interval between refreshes. This parameter is required and must be greater
 	// than 1ms and less than
-	// :ref:`max_interval <envoy_v3_api_field_config.cluster.v3.Cluster.RefreshRate.max_interval>`.
+	// max_interval.
 	BaseInterval *durationpb.Duration `protobuf:"bytes,1,opt,name=base_interval,json=baseInterval,proto3" json:"base_interval,omitempty"`
 	// Specifies the maximum interval between refreshes. This parameter is optional, but must be
 	// greater than or equal to the
-	// :ref:`base_interval <envoy_v3_api_field_config.cluster.v3.Cluster.RefreshRate.base_interval>`  if set. The default
-	// is 10 times the :ref:`base_interval <envoy_v3_api_field_config.cluster.v3.Cluster.RefreshRate.base_interval>`.
+	// base_interval  if set. The default
+	// is 10 times the base_interval.
 	MaxInterval *durationpb.Duration `protobuf:"bytes,2,opt,name=max_interval,json=maxInterval,proto3" json:"max_interval,omitempty"`
 }
 
@@ -547,7 +547,7 @@ type PerRouteConfig_HostRewrite struct {
 	//
 	// Note: this rewrite affects both DNS lookup and host header forwarding. However, this
 	// option shouldn't be used with
-	// :ref:`HCM host rewrite <envoy_api_field_route.RouteAction.host_rewrite>` given that the
+	// HCM host rewrite given that the
 	// value set here would be used for DNS lookups whereas the value set in the HCM would be used
 	// for host header forwarding which is not the desired outcome.
 	HostRewrite string `protobuf:"bytes,1,opt,name=host_rewrite,json=hostRewrite,proto3,oneof"`
@@ -564,7 +564,7 @@ type PerRouteConfig_AutoHostRewriteHeader struct {
 	// given that the value set here would be used for DNS lookups whereas the value set in the HCM
 	// would be used for host header forwarding which is not the desired outcome.
 	//
-	// .. note::
+	// **Note**:
 	//
 	//	If the header appears multiple times only the first value is used.
 	AutoHostRewriteHeader string `protobuf:"bytes,2,opt,name=auto_host_rewrite_header,json=autoHostRewriteHeader,proto3,oneof"`

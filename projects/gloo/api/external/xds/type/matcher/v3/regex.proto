@@ -13,9 +13,8 @@ option go_package = "github.com/cncf/xds/go/xds/type/matcher/v3";
 
 // A regex matcher designed for safety when used with untrusted input.
 message RegexMatcher {
-  // Google's `RE2 <https://github.com/google/re2>`_ regex engine. The regex
-  // string must adhere to the documented `syntax
-  // <https://github.com/google/re2/wiki/Syntax>`_. The engine is designed to
+  // Google's [RE2](https://github.com/google/re2) regex engine. The regex
+  // string must adhere to the documented [syntax](https://github.com/google/re2/wiki/Syntax). The engine is designed to
   // complete execution in linear time as well as limit the amount of memory
   // used.
   //

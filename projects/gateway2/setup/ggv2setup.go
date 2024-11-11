@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 
 	"errors"
 
@@ -215,6 +216,11 @@ func (g *genericStatusReporter) WriteReports(ctx context.Context, resourceErrs r
 
 		// check if resource is an internal upstream. if so skip it..
 		if kubernetes.IsKubeUpstream(resource.GetMetadata().GetName()) {
+			continue
+		}
+		// check if resource is an internal upstream. Internal upstreams have ':' in their names so
+		// the cannot be written to the cluster. if so skip it..
+		if strings.IndexRune(resource.GetMetadata().GetName(), ':') >= 0 {
 			continue
 		}
 

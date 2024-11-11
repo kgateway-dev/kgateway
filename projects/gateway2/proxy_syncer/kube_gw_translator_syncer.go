@@ -112,23 +112,13 @@ func (s *ProxyTranslator) syncXds(
 
 func (s *ProxyTranslator) syncStatus(
 	ctx context.Context,
-	snap *xds.EnvoySnapshot,
 	proxyKey string,
 	reports reporter.ResourceReports,
 ) error {
 	ctx = contextutils.WithLogger(ctx, "kube-gateway-xds-syncer")
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Infof("begin kube gw sync for proxy %s (%v listeners, %v clusters, %v routes, %v endpoints)",
-		proxyKey, len(snap.Listeners.Items), len(snap.Clusters.Items), len(snap.Routes.Items), len(snap.Endpoints.Items))
-	stopwatch := statsutils.NewTranslatorStopWatch("sync-xds-and-gloo-status")
-	stopwatch.Start()
-	defer func() {
-		duration := stopwatch.Stop(ctx)
-		logger.Infof("end kube gw sync for proxy %s in %s", proxyKey, duration.String())
-	}()
 
 	// TODO: only leaders should write status (https://github.com/solo-io/solo-projects/issues/6367)
-	logger.Debugf("gloo reports for proxy %s to be written", proxyKey)
 	if err := s.glooReporter.WriteReports(ctx, reports, nil); err != nil {
 		logger.Errorf("Failed writing gloo reports for proxy %s: %v", proxyKey, err)
 		return err
