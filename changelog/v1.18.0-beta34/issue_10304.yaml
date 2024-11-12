@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/10304
+    resolvesIssue: false
+    description: >-
+      Makes the Gateway API TCPRoute controller optional.

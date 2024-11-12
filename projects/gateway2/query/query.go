@@ -165,7 +165,6 @@ func WithBackendRefResolvers(
 func NewData(
 	c client.Client,
 	scheme *runtime.Scheme,
-	reqCRDsExist *bool,
 	opts ...Option,
 ) GatewayQueries {
 	builtOpts := &options{}
@@ -175,7 +174,6 @@ func NewData(
 	return &gatewayQueries{
 		client:                 c,
 		scheme:                 scheme,
-		requiredCRDsExist:      reqCRDsExist,
 		customBackendResolvers: builtOpts.customBackendResolvers,
 	}
 }
@@ -192,8 +190,6 @@ type gatewayQueries struct {
 	client                 client.Client
 	scheme                 *runtime.Scheme
 	customBackendResolvers []BackendRefResolver
-	// Cache whether the required Gateway API CRDs are installed.
-	requiredCRDsExist *bool
 }
 
 func (r *gatewayQueries) referenceAllowed(ctx context.Context, from metav1.GroupKind, fromns string, to metav1.GroupKind, tons, toname string) (bool, error) {

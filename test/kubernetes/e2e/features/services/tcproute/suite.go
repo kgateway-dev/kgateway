@@ -68,7 +68,7 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinationsWithSingleService
 		expectedTcpBarSvcResp)
 }
 
-func (s *testingSuite) TestConfigureTCPRouteBackingDestinationsWithMultiService() {
+func (s *testingSuite) TestConfigureTCPRouteBackingDestinationsWithMultiServices() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, multiTcpRouteManifest)
 		s.NoError(err, "can delete manifest")

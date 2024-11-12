@@ -60,7 +60,6 @@ func NewK8sGatewayExtensions(
 	queries := query.NewData(
 		params.Mgr.GetClient(),
 		params.Mgr.GetScheme(),
-		nil,
 	)
 
 	return &k8sGatewayExtensions{
