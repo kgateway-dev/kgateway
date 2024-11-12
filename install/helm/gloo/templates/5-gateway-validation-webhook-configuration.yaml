@@ -79,7 +79,7 @@ specific resources, we will manage the resources that the webhook receives via t
       name: gloo
       namespace: {{ .Release.Namespace }}
       path: "/validation"
-    caBundle: "" # update manually or use certgen job or cert-manager's ca-injector (DO_NOT_SUBMIT: ???)
+    caBundle: "" # update manually or use certgen job or cert-manager's ca-injector
   rules:
 {{- /* Can't use the include for this one because if the operations are empty, we need to drop the whole list element */}}
 {{- if and (not (has "*" .Values.gateway.validation.webhook.skipDeleteValidationResources)) (not (has "secrets" .Values.gateway.validation.webhook.skipDeleteValidationResources)) }}

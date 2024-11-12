@@ -46,7 +46,7 @@ var (
 	VSTransformationSingleReplace = filepath.Join(util.MustGetThisDir(), "testdata", "transformation", "vs-transform-single-replace.yaml")
 
 	// Split webhook validation
-	SplitWebhookVS = filepath.Join(util.MustGetThisDir(), "testdata", "split-webhook", "vs-with-upstream-in-different-namespace.yaml")
+	BasicUpstream     = filepath.Join(util.MustGetThisDir(), "testdata", "split-webhook", "basic-upstream.yaml")
 
 	ExpectedUpstreamResp = &testmatchers.HttpResponse{
 		StatusCode: http.StatusOK,
