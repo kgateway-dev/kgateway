@@ -28,9 +28,6 @@ const (
 	DefaultHost       = "127.0.0.1"
 	DefaultPort       = 8200
 	DefaultVaultToken = "root"
-
-	vaultDockerImage = "hashicorp/vault:1.13.3"
-	vaultBinaryName  = "vault"
 )
 
 type VaultFactory struct {
@@ -47,8 +44,8 @@ func NewVaultFactory() (*VaultFactory, error) {
 		return nil, err
 	}
 	binaryPath, err := utils.GetBinary(utils.GetBinaryParams{
-		Filename:    vaultBinaryName,
-		DockerImage: vaultDockerImage,
+		Filename:    testutils.VaultBinaryName,
+		DockerImage: testutils.VaultDockerImage,
 		DockerPath:  "/bin/vault",
 		EnvKey:      testutils.VaultBinary,
 		TmpDir:      tmpdir,
