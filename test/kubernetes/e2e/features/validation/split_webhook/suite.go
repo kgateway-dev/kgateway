@@ -3,6 +3,8 @@ package split_webhook
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/onsi/gomega"
@@ -79,6 +81,16 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 	s.Assert().NotNil(manifest.validateCreated, "validateCreated function must be set for %s", testName)
 	manifest.validateCreated(s)
 
+	// Get current replica count of gloo deployment
+	stdout, _, err := s.testInstallation.Actions.Kubectl().Execute(s.ctx, "get", "deployment", "gloo", "-n", s.testInstallation.Metadata.InstallNamespace, "-o=jsonpath='{.status.replicas}'")
+	s.Assert().NoError(err)
+
+	if stdout == "" {
+		s.glooReplicas = 0
+	} else {
+		s.glooReplicas, err = strconv.Atoi(strings.Trim(stdout, "'"))
+		s.Assert().NoError(err)
+	}
 	// Scale gloo deployment to 0
 	err = s.testInstallation.Actions.Kubectl().Scale(s.ctx, s.testInstallation.Metadata.InstallNamespace, "deployment/gloo", 0)
 	s.Assert().NoError(err, "can scale gloo deployment to 0")
@@ -93,12 +105,12 @@ func (s *testingSuite) AfterTest(suiteName, testName string) {
 	err := s.testInstallation.Actions.Kubectl().Scale(s.ctx, s.testInstallation.Metadata.InstallNamespace, "deployment/gloo", uint(s.glooReplicas))
 	s.Assert().NoError(err, "can scale gloo deployment back to %d", s.glooReplicas)
 	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, s.glooDeployment().ObjectMeta, gomega.Equal(s.glooReplicas))
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, s.testInstallation.Metadata.InstallNamespace, metav1.ListOptions{LabelSelector: "gloo=gloo"}, time.Minute*2)
 
 	// Delete the resource created if it hasn't been already
 	if !s.resourceDeleted {
 		manifest := manifests[testName]
 		output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, manifest.filename, "-n", s.testInstallation.Metadata.InstallNamespace)
-		// May have already been deleted
 		s.testInstallation.Assertions.ExpectObjectDeleted(manifest.filename, err, output)
 	}
 
