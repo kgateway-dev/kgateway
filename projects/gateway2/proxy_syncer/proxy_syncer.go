@@ -503,7 +503,7 @@ func (s *ProxySyncer) Init(ctx context.Context, dbg *krt.DebugHandler) error {
 		configMaps.Synced().HasSynced,
 		secrets.Synced().HasSynced,
 		services.Synced().HasSynced,
-		inputs.Endpoints.Synced().HasSynced,
+		inputs.EndpointSlices.Synced().HasSynced,
 		inputs.Pods.Synced().HasSynced,
 		inputs.Upstreams.Synced().HasSynced,
 		endpointIRs.Synced().HasSynced,

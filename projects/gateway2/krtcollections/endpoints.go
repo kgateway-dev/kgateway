@@ -23,6 +23,7 @@ import (
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -48,11 +49,12 @@ func (p EndpointsSettings) ResourceName() string {
 }
 
 type EndpointsInputs struct {
-	Upstreams         krt.Collection[UpstreamWrapper]
-	Endpoints         krt.Collection[*corev1.Endpoints]
-	Pods              krt.Collection[LocalityPod]
-	EndpointsSettings krt.Singleton[EndpointsSettings]
-	Services          krt.Collection[*corev1.Service]
+	Upstreams               krt.Collection[UpstreamWrapper]
+	EndpointSlices          krt.Collection[*discoveryv1.EndpointSlice]
+	EndpointSlicesByService krt.Index[types.NamespacedName, *discoveryv1.EndpointSlice]
+	Pods                    krt.Collection[LocalityPod]
+	EndpointsSettings       krt.Singleton[EndpointsSettings]
+	Services                krt.Collection[*corev1.Service]
 
 	Debugger *krt.DebugHandler
 }
@@ -66,8 +68,8 @@ func NewGlooK8sEndpointInputs(
 	finalUpstreams krt.Collection[UpstreamWrapper],
 ) EndpointsInputs {
 	withDebug := krt.WithDebugging(dbg)
-	epClient := kclient.New[*corev1.Endpoints](istioClient)
-	kubeEndpoints := krt.WrapClient(epClient, krt.WithName("Endpoints"), withDebug)
+	epSliceClient := kclient.New[*discoveryv1.EndpointSlice](istioClient)
+	endpointSlices := krt.WrapClient(epSliceClient, krt.WithName("EndpointSlices"), withDebug)
 	endpointSettings := krt.NewSingleton(func(ctx krt.HandlerContext) *EndpointsSettings {
 		settings := krt.FetchOne(ctx, settings.AsCollection())
 		return &EndpointsSettings{
@@ -75,13 +77,26 @@ func NewGlooK8sEndpointInputs(
 		}
 	}, withDebug)
 
+	// Create index on EndpointSlices by service name and endpointslice namespace
+	endpointSlicesByService := krt.NewIndex(endpointSlices, func(es *discoveryv1.EndpointSlice) []types.NamespacedName {
+		svcName, ok := es.Labels[discoveryv1.LabelServiceName]
+		if !ok {
+			return nil
+		}
+		return []types.NamespacedName{{
+			Namespace: es.Namespace,
+			Name:      svcName,
+		}}
+	})
+
 	return EndpointsInputs{
-		Upstreams:         finalUpstreams,
-		Endpoints:         kubeEndpoints,
-		Pods:              pods,
-		EndpointsSettings: endpointSettings,
-		Services:          services,
-		Debugger:          dbg,
+		Upstreams:               finalUpstreams,
+		EndpointSlices:          endpointSlices,
+		EndpointSlicesByService: endpointSlicesByService,
+		Pods:                    pods,
+		EndpointsSettings:       endpointSettings,
+		Services:                services,
+		Debugger:                dbg,
 	}
 }
 
@@ -169,8 +184,7 @@ func NewGlooK8sEndpoints(ctx context.Context, inputs EndpointsInputs) krt.Collec
 
 func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kctx krt.HandlerContext, us UpstreamWrapper) *EndpointsForUpstream {
 	augmentedPods := inputs.Pods
-	kubeEndpoints := inputs.Endpoints
-	services := inputs.Services
+	svcs := inputs.Services
 
 	logger := contextutils.LoggerFrom(ctx).Desugar()
 
@@ -192,66 +206,95 @@ func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kct
 			return nil
 		}
 		spec := kubeUpstream.Kube
-		kubeServicePort, singlePortService := findPortForService(kctx, services, spec)
-		if kubeServicePort == nil {
+		kubeSvcPort, singlePortSvc := findPortForService(kctx, svcs, spec)
+		if kubeSvcPort == nil {
 			logger.Debug("findPortForService - not found.", zap.Uint32("port", spec.GetServicePort()), zap.String("svcName", spec.GetServiceName()), zap.String("svcNamespace", spec.GetServiceNamespace()))
 			return nil
 		}
 
-		maybeEps := krt.FetchOne(kctx, kubeEndpoints, krt.FilterObjectName(types.NamespacedName{
-			Namespace: spec.GetServiceNamespace(),
-			Name:      spec.GetServiceName(),
-		}))
-		if maybeEps == nil {
-			warnsToLog = append(warnsToLog, fmt.Sprintf("endpoints not found for service %v", spec.GetServiceName()))
-			logger.Debug("endpoints not found for service")
+		svcNs := spec.GetServiceNamespace()
+		svcName := spec.GetServiceName()
+		// Fetch all EndpointSlices for the service
+		key := types.NamespacedName{
+			Namespace: svcNs,
+			Name:      svcName,
+		}
+
+		endpointSlices := krt.Fetch(kctx, inputs.EndpointSlices, krt.FilterIndex(inputs.EndpointSlicesByService, key))
+		if len(endpointSlices) == 0 {
+			warnsToLog = append(warnsToLog, fmt.Sprintf("EndpointSlices not found for service %v/%v", svcNs, svcName))
 			return nil
 		}
-		eps := *maybeEps
 
+		if len(endpointSlices) == 0 {
+			warnsToLog = append(warnsToLog, fmt.Sprintf("EndpointSlices not found for service %v/%v", svcNs, svcName))
+			logger.Debug("EndpointSlices not found for service")
+			return nil
+		}
+
+		// Initialize the returned EndpointsForUpstream
 		settings := krt.FetchOne(kctx, inputs.EndpointsSettings.AsCollection())
 		enableAutoMtls := settings.EnableAutoMtls
 		ret := NewEndpointsForUpstream(us, logger)
-		for _, subset := range eps.Subsets {
-			port := findFirstPortInEndpointSubsets(subset, singlePortService, kubeServicePort)
+
+		// Handle deduplication of endpoint addresses
+		seenAddresses := make(map[string]struct{})
+
+		// Add an endpoint to the returned EndpointsForUpstream for each EndpointSlice
+		for _, endpointSlice := range endpointSlices {
+			port := findPortInEndpointSlice(endpointSlice, singlePortSvc, kubeSvcPort)
 			if port == 0 {
-				warnsToLog = append(warnsToLog, fmt.Sprintf("port not found (%v) for service %v in endpoint %v", spec.GetServicePort(), spec.GetServiceName(), subset))
+				warnsToLog = append(warnsToLog, fmt.Sprintf("port %v not found for service %v/%v in EndpointSlice %v",
+					spec.GetServicePort(), svcNs, svcName, endpointSlice.Name))
 				continue
 			}
 
-			for _, addr := range subset.Addresses {
-				var podName string
-				podNamespace := eps.Namespace
-				targetRef := addr.TargetRef
-				if targetRef != nil {
-					if targetRef.Kind == "Pod" {
-						podName = targetRef.Name
-						if targetRef.Namespace != "" {
-							podNamespace = targetRef.Namespace
+			for _, endpoint := range endpointSlice.Endpoints {
+				// Skip endpoints that are not ready
+				if endpoint.Conditions.Ready != nil && !*endpoint.Conditions.Ready {
+					continue
+				}
+				// Get the addresses
+				for _, addr := range endpoint.Addresses {
+					// Deduplicate addresses
+					if _, exists := seenAddresses[addr]; exists {
+						continue
+					}
+					seenAddresses[addr] = struct{}{}
+
+					var podName string
+					podNamespace := endpointSlice.Namespace
+					targetRef := endpoint.TargetRef
+					if targetRef != nil {
+						if targetRef.Kind == "Pod" {
+							podName = targetRef.Name
+							if targetRef.Namespace != "" {
+								podNamespace = targetRef.Namespace
+							}
 						}
 					}
-				}
 
-				var augmentedLabels map[string]string
-				var l PodLocality
-				if podName != "" {
-					maybePod := krt.FetchOne(kctx, augmentedPods, krt.FilterObjectName(types.NamespacedName{
-						Namespace: podNamespace,
-						Name:      podName,
-					}))
-					if maybePod != nil {
-						l = maybePod.Locality
-						augmentedLabels = maybePod.AugmentedLabels
+					var augmentedLabels map[string]string
+					var l PodLocality
+					if podName != "" {
+						maybePod := krt.FetchOne(kctx, augmentedPods, krt.FilterObjectName(types.NamespacedName{
+							Namespace: podNamespace,
+							Name:      podName,
+						}))
+						if maybePod != nil {
+							l = maybePod.Locality
+							augmentedLabels = maybePod.AugmentedLabels
+						}
 					}
-				}
-				ep := CreateLBEndpoint(addr.IP, port, augmentedLabels, enableAutoMtls)
+					ep := CreateLBEndpoint(addr, port, augmentedLabels, enableAutoMtls)
 
-				ret.Add(l, EndpointWithMd{
-					LbEndpoint: ep,
-					EndpointMd: EndpointMetadata{
-						Labels: augmentedLabels,
-					},
-				})
+					ret.Add(l, EndpointWithMd{
+						LbEndpoint: ep,
+						EndpointMd: EndpointMetadata{
+							Labels: augmentedLabels,
+						},
+					})
+				}
 			}
 		}
 		logger.Debug("created endpoint", zap.Int("numAddresses", len(ret.LbEps)))
@@ -333,16 +376,19 @@ func findPortForService(kctx krt.HandlerContext, services krt.Collection[*corev1
 	return nil, false
 }
 
-func findFirstPortInEndpointSubsets(subset corev1.EndpointSubset, singlePortService bool, kubeServicePort *corev1.ServicePort) uint32 {
+func findPortInEndpointSlice(endpointSlice *discoveryv1.EndpointSlice, singlePortService bool, kubeServicePort *corev1.ServicePort) uint32 {
 	var port uint32
-	for _, p := range subset.Ports {
-		// if the endpoint port is not named, it implies that
+	for _, p := range endpointSlice.Ports {
+		if p.Port == nil {
+			continue
+		}
+		// If the endpoint port is not named, it implies that
 		// the kube service only has a single unnamed port as well.
 		switch {
 		case singlePortService:
-			port = uint32(p.Port)
-		case p.Name == kubeServicePort.Name:
-			port = uint32(p.Port)
+			port = uint32(*p.Port)
+		case p.Name != nil && *p.Name == kubeServicePort.Name:
+			port = uint32(*p.Port)
 			break
 		}
 	}
