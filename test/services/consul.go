@@ -20,11 +20,6 @@ import (
 	"github.com/solo-io/gloo/test/testutils"
 )
 
-const (
-	consulDockerImage = "hashicorp/consul:1.15.3"
-	consulBinaryName  = "consul"
-)
-
 type ConsulFactory struct {
 	consulPath string
 	tmpdir     string
@@ -49,8 +44,8 @@ func NewConsulFactory() (*ConsulFactory, error) {
 		return nil, err
 	}
 	binaryPath, err := utils.GetBinary(utils.GetBinaryParams{
-		Filename:    consulBinaryName,
-		DockerImage: consulDockerImage,
+		Filename:    testutils.ConsulBinaryName,
+		DockerImage: testutils.ConsulDockerImage,
 		DockerPath:  "/bin/consul",
 		EnvKey:      testutils.ConsulBinary,
 		TmpDir:      tmpdir,
