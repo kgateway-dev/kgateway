@@ -4,4 +4,5 @@ changelog:
     resolvesIssue: false
     description: >-
       Split the validating webhook to allow different failure policies for gloo/non-gloo resources.
-      DO_NOT_SUBMIT: add notes about the new helm field
+      The split out webhook for kubernetes resources shares all configuration with the existing webhook except for the failure policy,
+      which can be set with `gateway.validation.kubeCoreFailurePolicy`
