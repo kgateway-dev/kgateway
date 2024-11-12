@@ -6,3 +6,9 @@ changelog:
       Split the validating webhook to allow different failure policies for gloo/non-gloo resources.
       The split out webhook for kubernetes resources shares all configuration with the existing webhook except for the failure policy,
       which can be set with `gateway.validation.kubeCoreFailurePolicy`
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: k8s-utils
+    dependencyTag: v0.8.1
+    description: >-
+      Bump k8s-utils to v0.8.1 for updated `ConvertUnstructured` function

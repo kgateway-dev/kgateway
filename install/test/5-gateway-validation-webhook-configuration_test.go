@@ -16,7 +16,9 @@ import (
 	. "github.com/onsi/gomega"
 	gloostringutils "github.com/solo-io/gloo/pkg/utils/stringutils"
 	"github.com/solo-io/go-utils/stringutils"
+	"github.com/solo-io/k8s-utils/installutils/kuberesource"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
 )
@@ -102,6 +104,29 @@ var _ = Describe("WebhookValidationConfiguration helm test", func() {
 				},
 			})
 			testManifest.ExpectUnstructured(expectedChart.GetKind(), expectedChart.GetNamespace(), expectedChart.GetName()).To(BeEquivalentTo(expectedChart))
+		})
+
+		It("Kube Webhook is not rendered if secrets and resources are skipped", func() {
+			prepareMakefile(namespace, glootestutils.HelmValues{
+				ValuesArgs: []string{
+					`gateway.validation.webhook.skipDeleteValidationResources={secrets,namespaces}`,
+				},
+			})
+
+			// assert that the kube webhook is not rendered
+			testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+				return resource.GetKind() == "ValidatingWebhookConfiguration" && resource.GetName() == "gloo-gateway-validation-webhook-"+namespace
+			}).ExpectAll(func(webhook *unstructured.Unstructured) {
+				webhookObject, err := kuberesource.ConvertUnstructured(webhook)
+
+				ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Webhook %+v should be able to convert from unstructured", webhook))
+				structuredDeployment, ok := webhookObject.(*admissionregistrationv1.ValidatingWebhookConfiguration)
+				ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Webhook %+v should be able to cast to a structured deployment", webhook))
+
+				//ExpectWithOffset(1, structuredDeployment.Spec.Template.ObjectMeta.Annotations).To(BeEmpty(), fmt.Sprintf("No annotations should be present on deployment %+v", structuredDeployment))
+				ExpectWithOffset(1, structuredDeployment.Webhooks).To(HaveLen(1), fmt.Sprintf("Only one webhook should be present on deployment %+v", structuredDeployment))
+				ExpectWithOffset(1, structuredDeployment.Webhooks[0].Name).To(Equal("gloo."+namespace+".svc"), fmt.Sprintf("Webhook name should be 'gloo.%s.svc' on deployment %+v", namespace, structuredDeployment))
+			})
 		})
 
 		Context("enablePolicyApi", func() {
@@ -234,7 +259,6 @@ func generateExpectedChart(args expectedChartArgs) *unstructured.Unstructured {
 		args.kubeFailurePolicy = "Ignore"
 	}
 
-	//func generateExpectedChart(timeoutSeconds int, skipDeletes []string, expectedDeletes int) *unstructured.Unstructured {
 	GinkgoHelper()
 	glooRules, coreRules := generateRules(args.skipDeletes)
 
