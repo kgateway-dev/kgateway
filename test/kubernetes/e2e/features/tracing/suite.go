@@ -125,6 +125,7 @@ func (s *testingSuite) TestSpanNameTransformationsWithoutRouteDecorator() {
 			curl.WithHostHeader(testHostname),
 			curl.WithPort(gatewayProxyPort),
 			curl.WithPath(pathWithoutRouteDescriptor),
+			curl.Silent(),
 		},
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
@@ -150,6 +151,7 @@ func (s *testingSuite) TestSpanNameTransformationsWithRouteDecorator() {
 			curl.WithHostHeader("example.com"),
 			curl.WithPort(gatewayProxyPort),
 			curl.WithPath(pathWithRouteDescriptor),
+			curl.Silent(),
 		},
 		&matchers.HttpResponse{
 			StatusCode: http.StatusOK,

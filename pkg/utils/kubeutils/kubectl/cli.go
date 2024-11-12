@@ -274,6 +274,7 @@ func (c *Cli) CurlFromPod(ctx context.Context, podOpts PodExecOptions, options .
 		"--max-time",
 		"5",
 	}, curlArgs...)
+	fmt.Printf("Executing curl command: %s\n", args)
 
 	stdout, stderr, err := c.ExecuteOn(ctx, c.kubeContext, args...)
 

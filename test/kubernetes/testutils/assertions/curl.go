@@ -50,7 +50,7 @@ func (p *Provider) AssertEventualCurlReturnResponse(
 		//nolint:bodyclose // The caller of this assertion should be responsible for ensuring the body close - if the response is not needed for the test, AssertEventualCurlResponse should be used instead
 		curlHttpResponse = transforms.WithCurlResponse(curlResponse)
 		g.Expect(curlHttpResponse).To(matchers.HaveHttpResponse(expectedResponse))
-		fmt.Printf("success: %+v", curlResponse)
+		fmt.Printf("success: %+v\n\n\n", curlResponse)
 	}).
 		WithTimeout(currentTimeout).
 		WithPolling(pollingInterval).
@@ -93,7 +93,7 @@ func (p *Provider) AssertCurlReturnResponse(
 	// Do the transform in a separate step instead of a WithTransform to avoid having to do it twice
 	curlHttpResponse := transforms.WithCurlResponse(curlResponse)
 	Expect(curlHttpResponse).To(matchers.HaveHttpResponse(expectedResponse))
-	fmt.Printf("success: %+v", curlResponse)
+	fmt.Printf("success: %+v\n\n\n", curlResponse)
 
 	return curlHttpResponse
 }
@@ -132,7 +132,7 @@ func (p *Provider) AssertEventuallyConsistentCurlResponse(
 
 		expectedResponseMatcher := WithTransform(transforms.WithCurlResponse, matchers.HaveHttpResponse(expectedResponse))
 		g.Expect(res).To(expectedResponseMatcher)
-		fmt.Printf("success: %+v", res)
+		fmt.Printf("success: %+v\n\n\n", res)
 	}).
 		WithTimeout(pollTimeout).
 		WithPolling(pollInterval).
