@@ -15,7 +15,7 @@ listeners:
           - matchers:
             - prefix: /
             options: {}
-            name: httproute-example-route-default-0-0
+            name: example-route-default-0-0
             routeAction:
               single:
                 kube:

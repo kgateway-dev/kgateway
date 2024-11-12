@@ -37,18 +37,12 @@ func TranslateGatewayHTTPRouteRules(
 	ctx context.Context,
 	pluginRegistry registry.PluginRegistry,
 	gwListener gwv1.Listener,
-	routeInfo *query.RouteInfo,
+	route *query.HTTPRouteInfo,
 	reporter reports.ParentRefReporter,
 	baseReporter reports.Reporter,
 ) []*v1.Route {
 	var finalRoutes []*v1.Route
 	routesVisited := sets.New[types.NamespacedName]()
-
-	// Only HTTPRoute types should be translated.
-	route, ok := routeInfo.Object.(*gwv1.HTTPRoute)
-	if !ok {
-		return finalRoutes
-	}
 
 	// Hostnames need to be explicitly passed to the plugins since they
 	// are required by delegatee (child) routes of delegated routes that
@@ -59,7 +53,7 @@ func TranslateGatewayHTTPRouteRules(
 	delegationChain := list.New()
 
 	translateGatewayHTTPRouteRulesUtil(
-		ctx, pluginRegistry, gwListener, routeInfo, reporter, baseReporter, &finalRoutes, routesVisited, hostnames, delegationChain)
+		ctx, pluginRegistry, gwListener, route, reporter, baseReporter, &finalRoutes, routesVisited, hostnames, delegationChain)
 	return finalRoutes
 }
 
@@ -69,7 +63,7 @@ func translateGatewayHTTPRouteRulesUtil(
 	ctx context.Context,
 	pluginRegistry registry.PluginRegistry,
 	gwListener gwv1.Listener,
-	routeInfo *query.RouteInfo,
+	route *query.HTTPRouteInfo,
 	reporter reports.ParentRefReporter,
 	baseReporter reports.Reporter,
 	outputs *[]*v1.Route,
@@ -77,12 +71,6 @@ func translateGatewayHTTPRouteRulesUtil(
 	hostnames []gwv1.Hostname,
 	delegationChain *list.List,
 ) {
-	// Only HTTPRoute types should be translated.
-	route, ok := routeInfo.Object.(*gwv1.HTTPRoute)
-	if !ok {
-		return
-	}
-
 	for ruleIdx, rule := range route.Spec.Rules {
 		rule := rule
 		if rule.Matches == nil {
@@ -95,7 +83,7 @@ func translateGatewayHTTPRouteRulesUtil(
 			ctx,
 			pluginRegistry,
 			gwListener,
-			routeInfo,
+			route,
 			rule,
 			ruleIdx,
 			reporter,
@@ -122,7 +110,7 @@ func translateGatewayHTTPRouteRule(
 	ctx context.Context,
 	pluginRegistry registry.PluginRegistry,
 	gwListener gwv1.Listener,
-	gwroute *query.RouteInfo,
+	gwroute *query.HTTPRouteInfo,
 	rule gwv1.HTTPRouteRule,
 	ruleIdx int,
 	reporter reports.ParentRefReporter,
@@ -133,13 +121,6 @@ func translateGatewayHTTPRouteRule(
 	delegationChain *list.List,
 ) []*v1.Route {
 	routes := make([]*v1.Route, len(rule.Matches))
-
-	// Only HTTPRoutes should be translated.
-	route, ok := gwroute.Object.(*gwv1.HTTPRoute)
-	if !ok {
-		return routes
-	}
-
 	for idx, match := range rule.Matches {
 		match := match // pike
 		// HTTPRoute names are being introduced to upstream as part of https://github.com/kubernetes-sigs/gateway-api/issues/995
@@ -175,7 +156,7 @@ func translateGatewayHTTPRouteRule(
 
 		rtCtx := &plugins.RouteContext{
 			Listener:        &gwListener,
-			HTTPRoute:       route,
+			Route:           &gwroute.HTTPRoute,
 			Hostnames:       hostnames,
 			DelegationChain: delegationChain,
 			Rule:            &rule,
@@ -309,7 +290,7 @@ func parsePath(path *gwv1.HTTPPathMatch) (gwv1.PathMatchType, string) {
 
 func setRouteAction(
 	ctx context.Context,
-	gwroute *query.RouteInfo,
+	gwroute *query.HTTPRouteInfo,
 	rule gwv1.HTTPRouteRule,
 	outputRoute *v1.Route,
 	reporter reports.ParentRefReporter,
@@ -421,7 +402,7 @@ func setRouteAction(
 			}
 			spec, err := makeDestinationSpec(upstream, backendRef.Filters)
 			if err != nil {
-				reporter.SetCondition(reports.RouteCondition{
+				reporter.SetCondition(reports.HTTPRouteCondition{
 					Type:    gwv1.RouteConditionResolvedRefs,
 					Status:  metav1.ConditionFalse,
 					Reason:  gwv1.RouteReasonBackendNotFound,

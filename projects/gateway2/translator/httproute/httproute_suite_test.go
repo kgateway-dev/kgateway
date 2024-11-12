@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestRoute(t *testing.T) {
+func TestHttproute(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Route Suite")
+	RunSpecs(t, "Httproute Suite")
 }

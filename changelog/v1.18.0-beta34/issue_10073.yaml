@@ -1,6 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/10073
-    resolvesIssue: true
-    description: >-
-      Adds basic support for Gateway API TCPRoute.

@@ -15,7 +15,7 @@ listeners:
           - matchers:
             - prefix: /a/1
             options: {}
-            name: httproute-route-a-a-0-0
+            name: route-a-a-0-0
             routeAction:
               single:
                 kube:

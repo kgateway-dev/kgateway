@@ -22,8 +22,7 @@ func BuildIndexedFakeClient(objs []client.Object, funcs ...IndexIteratorFunc) cl
 }
 
 func BuildGatewayQueriesWithClient(fakeClient client.Client) query.GatewayQueries {
-	reqCRDsExist := true
-	return query.NewData(fakeClient, schemes.DefaultScheme(), &reqCRDsExist)
+	return query.NewData(fakeClient, schemes.DefaultScheme())
 }
 
 func BuildGatewayQueries(
@@ -37,7 +36,5 @@ func BuildGatewayQueries(
 
 	fakeClient := builder.WithObjects(objs...).Build()
 
-	reqCRDsExist := true
-
-	return query.NewData(fakeClient, schemes.DefaultScheme(), &reqCRDsExist)
+	return query.NewData(fakeClient, schemes.DefaultScheme())
 }

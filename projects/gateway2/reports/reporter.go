@@ -1,21 +1,16 @@
 package reports
 
 import (
-	"context"
-
-	"github.com/solo-io/go-utils/contextutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
 type ReportMap struct {
-	Gateways   map[types.NamespacedName]*GatewayReport
-	HTTPRoutes map[types.NamespacedName]*RouteReport
-	TCPRoutes  map[types.NamespacedName]*RouteReport
+	Gateways map[types.NamespacedName]*GatewayReport
+	Routes   map[types.NamespacedName]*RouteReport
 }
 
 type GatewayReport struct {
@@ -46,12 +41,10 @@ type ParentRefKey struct {
 
 func NewReportMap() ReportMap {
 	gr := make(map[types.NamespacedName]*GatewayReport)
-	hr := make(map[types.NamespacedName]*RouteReport)
-	tr := make(map[types.NamespacedName]*RouteReport)
+	rr := make(map[types.NamespacedName]*RouteReport)
 	return ReportMap{
-		Gateways:   gr,
-		HTTPRoutes: hr,
-		TCPRoutes:  tr,
+		Gateways: gr,
+		Routes:   rr,
 	}
 }
 
@@ -73,43 +66,19 @@ func (r *ReportMap) newGatewayReport(gateway *gwv1.Gateway) *GatewayReport {
 	return gr
 }
 
-// route returns a RouteReport for the provided route object, nil if a report is not present.
+// Returns a RouteReport for the provided HTTPRoute, nil if there is not a report present.
 // This is different than the Reporter.Route() method, as we need to understand when
-// reports are not generated for a route that has been translated. Supported object types are:
-//
-// * HTTPRoute
-// * TCPRoute
-func (r *ReportMap) route(obj client.Object) *RouteReport {
-	key := client.ObjectKeyFromObject(obj)
-
-	switch obj.(type) {
-	case *gwv1.HTTPRoute:
-		return r.HTTPRoutes[key]
-	case *gwv1alpha2.TCPRoute:
-		return r.TCPRoutes[key]
-	default:
-		contextutils.LoggerFrom(context.TODO()).Warnf("Unsupported route type: %T", obj)
-		return nil
-	}
+// reports are not generated for a HTTPRoute that has been translated.
+func (r *ReportMap) route(route *gwv1.HTTPRoute) *RouteReport {
+	key := client.ObjectKeyFromObject(route)
+	return r.Routes[key]
 }
 
-func (r *ReportMap) newRouteReport(obj client.Object) *RouteReport {
-	rr := &RouteReport{
-		observedGeneration: obj.GetGeneration(),
-	}
-
-	key := client.ObjectKeyFromObject(obj)
-
-	switch obj.(type) {
-	case *gwv1.HTTPRoute:
-		r.HTTPRoutes[key] = rr
-	case *gwv1alpha2.TCPRoute:
-		r.TCPRoutes[key] = rr
-	default:
-		contextutils.LoggerFrom(context.TODO()).Warnf("Unsupported route type: %T", obj)
-		return nil
-	}
-
+func (r *ReportMap) newRouteReport(route *gwv1.HTTPRoute) *RouteReport {
+	rr := &RouteReport{}
+	rr.observedGeneration = route.Generation
+	key := client.ObjectKeyFromObject(route)
+	r.Routes[key] = rr
 	return rr
 }
 
@@ -121,15 +90,11 @@ func (g *GatewayReport) listener(listener *gwv1.Listener) *ListenerReport {
 	if g.listeners == nil {
 		g.listeners = make(map[string]*ListenerReport)
 	}
-
-	// Return the ListenerReport if it already exists
-	if lr, exists := g.listeners[string(listener.Name)]; exists {
-		return lr
+	lr := g.listeners[string(listener.Name)]
+	if lr == nil {
+		lr = NewListenerReport(string(listener.Name))
+		g.listeners[string(listener.Name)] = lr
 	}
-
-	// Create and add the new ListenerReport if it doesn't exist
-	lr := NewListenerReport(string(listener.Name))
-	g.listeners[string(listener.Name)] = lr
 	return lr
 }
 
@@ -186,10 +151,10 @@ func (r *reporter) Gateway(gateway *gwv1.Gateway) GatewayReporter {
 	return gr
 }
 
-func (r *reporter) Route(obj client.Object) RouteReporter {
-	rr := r.report.route(obj)
+func (r *reporter) Route(route *gwv1.HTTPRoute) HTTPRouteReporter {
+	rr := r.report.route(route)
 	if rr == nil {
-		rr = r.report.newRouteReport(obj)
+		rr = r.report.newRouteReport(route)
 	}
 	return rr
 }
@@ -253,7 +218,7 @@ func (r *RouteReport) ParentRef(parentRef *gwv1.ParentReference) ParentRefReport
 	return r.parentRef(parentRef)
 }
 
-func (prr *ParentRefReport) SetCondition(rc RouteCondition) {
+func (prr *ParentRefReport) SetCondition(rc HTTPRouteCondition) {
 	condition := metav1.Condition{
 		Type:    string(rc.Type),
 		Status:  rc.Status,
@@ -269,7 +234,7 @@ func NewReporter(reportMap *ReportMap) Reporter {
 
 type Reporter interface {
 	Gateway(gateway *gwv1.Gateway) GatewayReporter
-	Route(obj client.Object) RouteReporter
+	Route(route *gwv1.HTTPRoute) HTTPRouteReporter
 }
 
 type GatewayReporter interface {
@@ -283,12 +248,13 @@ type ListenerReporter interface {
 	SetAttachedRoutes(n uint)
 }
 
-type RouteReporter interface {
+type HTTPRouteReporter interface {
 	ParentRef(parentRef *gwv1.ParentReference) ParentRefReporter
 }
 
+// TODO: rename to e.g. RouteParentReporter
 type ParentRefReporter interface {
-	SetCondition(condition RouteCondition)
+	SetCondition(condition HTTPRouteCondition)
 }
 
 type GatewayCondition struct {
@@ -305,7 +271,7 @@ type ListenerCondition struct {
 	Message string
 }
 
-type RouteCondition struct {
+type HTTPRouteCondition struct {
 	Type    gwv1.RouteConditionType
 	Status  metav1.ConditionStatus
 	Reason  gwv1.RouteConditionReason

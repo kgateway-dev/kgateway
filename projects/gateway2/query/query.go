@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -14,10 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
-	apiv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
-
-	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 )
 
 var (
@@ -125,10 +123,10 @@ type GatewayQueries interface {
 
 	GetLocalObjRef(ctx context.Context, from From, localObjRef apiv1.LocalObjectReference) (client.Object, error)
 
-	// GetRoutesForGateway finds the top level xRoutes attached to the provided Gateway
-	GetRoutesForGateway(ctx context.Context, gw *apiv1.Gateway) (*RoutesForGwResult, error)
-	// GetRouteChain resolves backends and delegated routes for a the provided xRoute object
-	GetRouteChain(ctx context.Context, obj client.Object, hostnames []string, parentRef apiv1.ParentReference) *RouteInfo
+	// GetRoutesForGateway finds the top level HTTPRoutes attached to a Gateway
+	GetRoutesForGateway(ctx context.Context, gw *apiv1.Gateway) (RoutesForGwResult, error)
+	// GetHTTPRouteChain resolves backends and delegated routes for a HTTPRoute
+	GetHTTPRouteChain(ctx context.Context, route apiv1.HTTPRoute, hostnames []string, parentRef apiv1.ParentReference) *HTTPRouteInfo
 }
 
 type RoutesForGwResult struct {
@@ -139,61 +137,22 @@ type RoutesForGwResult struct {
 
 type ListenerResult struct {
 	Error  error
-	Routes []*RouteInfo
+	Routes []*HTTPRouteInfo
 }
 
 type RouteError struct {
-	Route     client.Object
+	Route     apiv1.HTTPRoute
 	ParentRef apiv1.ParentReference
 	Error     Error
 }
 
-type options struct {
-	customBackendResolvers []BackendRefResolver
-}
-
-type Option func(*options)
-
-func WithBackendRefResolvers(
-	customBackendResolvers ...BackendRefResolver,
-) Option {
-	return func(o *options) {
-		o.customBackendResolvers = append(o.customBackendResolvers, customBackendResolvers...)
-	}
-}
-
-func NewData(
-	c client.Client,
-	scheme *runtime.Scheme,
-	reqCRDsExist *bool,
-	opts ...Option,
-) GatewayQueries {
-	builtOpts := &options{}
-	for _, opt := range opts {
-		opt(builtOpts)
-	}
-	return &gatewayQueries{
-		client:                 c,
-		scheme:                 scheme,
-		requiredCRDsExist:      reqCRDsExist,
-		customBackendResolvers: builtOpts.customBackendResolvers,
-	}
-}
-
-// NewRoutesForGwResult creates and returns a new RoutesForGwResult with initialized fields.
-func NewRoutesForGwResult() *RoutesForGwResult {
-	return &RoutesForGwResult{
-		ListenerResults: make(map[string]*ListenerResult),
-		RouteErrors:     []*RouteError{},
-	}
+func NewData(c client.Client, scheme *runtime.Scheme) GatewayQueries {
+	return &gatewayQueries{c, scheme}
 }
 
 type gatewayQueries struct {
-	client                 client.Client
-	scheme                 *runtime.Scheme
-	customBackendResolvers []BackendRefResolver
-	// Cache whether the required Gateway API CRDs are installed.
-	requiredCRDsExist *bool
+	client client.Client
+	scheme *runtime.Scheme
 }
 
 func (r *gatewayQueries) referenceAllowed(ctx context.Context, from metav1.GroupKind, fromns string, to metav1.GroupKind, tons, toname string) (bool, error) {
@@ -210,8 +169,8 @@ func (r *gatewayQueries) ObjToFrom(obj client.Object) From {
 	return FromObject{Object: obj, Scheme: r.scheme}
 }
 
-func parentRefMatchListener(ref *apiv1.ParentReference, l *apiv1.Listener) bool {
-	if ref != nil && ref.Port != nil && *ref.Port != l.Port {
+func parentRefMatchListener(ref apiv1.ParentReference, l *apiv1.Listener) bool {
+	if ref.Port != nil && *ref.Port != l.Port {
 		return false
 	}
 	if ref.SectionName != nil && *ref.SectionName != l.Name {
@@ -220,62 +179,30 @@ func parentRefMatchListener(ref *apiv1.ParentReference, l *apiv1.Listener) bool 
 	return true
 }
 
-// getParentRefsForGw extracts the ParentReferences from the provided object for the provided Gateway.
-// Supported object types are:
-//
-//   - HTTPRoute
-//   - TCPRoute
-func getParentRefsForGw(gw *apiv1.Gateway, obj client.Object) []apiv1.ParentReference {
+func getParentRefsForGw(gw *apiv1.Gateway, hr *apiv1.HTTPRoute) []apiv1.ParentReference {
 	var ret []apiv1.ParentReference
+	for _, pRef := range hr.Spec.ParentRefs {
 
-	switch route := obj.(type) {
-	case *apiv1.HTTPRoute:
-		for _, pRef := range route.Spec.ParentRefs {
-			if isParentRefForGw(&pRef, gw, route.Namespace) {
-				ret = append(ret, pRef)
-			}
+		if pRef.Group != nil && *pRef.Group != "gateway.networking.k8s.io" {
+			continue
 		}
-	case *apiv1alpha2.TCPRoute:
-		for _, pRef := range route.Spec.ParentRefs {
-			if isParentRefForGw(&pRef, gw, route.Namespace) {
-				ret = append(ret, pRef)
-			}
+		if pRef.Kind != nil && *pRef.Kind != "Gateway" {
+			continue
 		}
-	default:
-		// Unsupported route type
-		// TODO (danehans): Should we should capture this as a metric?
-		return ret
+		ns := hr.Namespace
+		if pRef.Namespace != nil {
+			ns = string(*pRef.Namespace)
+		}
+
+		if ns == gw.Namespace && string(pRef.Name) == gw.Name {
+			ret = append(ret, pRef)
+		}
 	}
-
 	return ret
-}
-
-// isParentRefForGw checks if a ParentReference is associated with the provided Gateway.
-func isParentRefForGw(pRef *apiv1.ParentReference, gw *apiv1.Gateway, defaultNs string) bool {
-	if gw == nil || pRef == nil {
-		return false
-	}
-
-	if pRef.Group != nil && *pRef.Group != apiv1.GroupName {
-		return false
-	}
-	if pRef.Kind != nil && *pRef.Kind != wellknown.GatewayKind {
-		return false
-	}
-
-	ns := defaultNs
-	if pRef.Namespace != nil {
-		ns = string(*pRef.Namespace)
-	}
-
-	return ns == gw.Namespace && string(pRef.Name) == gw.Name
 }
 
 func hostnameIntersect(l *apiv1.Listener, hr *apiv1.HTTPRoute) (bool, []string) {
 	var hostnames []string
-	if l == nil || hr == nil {
-		return false, hostnames
-	}
 	if l.Hostname == nil {
 		for _, h := range hr.Spec.Hostnames {
 			hostnames = append(hostnames, string(h))
@@ -421,6 +348,24 @@ func (r *gatewayQueries) getRef(ctx context.Context, from From, backendName stri
 		return nil, err
 	}
 	return ret, nil
+}
+
+func isHttpRouteAllowed(allowedKinds []metav1.GroupKind) bool {
+	return isRouteAllowed(apiv1.GroupName, wellknown.HTTPRouteKind, allowedKinds)
+}
+
+func isRouteAllowed(group, kind string, allowedKinds []metav1.GroupKind) bool {
+	for _, k := range allowedKinds {
+		var allowedGroup string = k.Group
+		if allowedGroup == "" {
+			allowedGroup = apiv1.GroupName
+		}
+
+		if allowedGroup == group && k.Kind == kind {
+			return true
+		}
+	}
+	return false
 }
 
 func SameNamespace(ns string) func(string) bool {

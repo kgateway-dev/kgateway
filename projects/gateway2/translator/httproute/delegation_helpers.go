@@ -39,20 +39,15 @@ const inheritMatcherAnnotation = "delegation.gateway.solo.io/inherit-parent-matc
 func filterDelegatedChildren(
 	parentRef types.NamespacedName,
 	parentMatch gwv1.HTTPRouteMatch,
-	children []*query.RouteInfo,
-) []*query.RouteInfo {
+	children []*query.HTTPRouteInfo,
+) []*query.HTTPRouteInfo {
 	// Select the child routes that match the parent
-	var selected []*query.RouteInfo
-	for _, c := range children {
+	var selected []*query.HTTPRouteInfo
+	for _, child := range children {
 		// make a copy; multiple parents can delegate to the same child so we can't modify a shared reference
-		clone := c.Clone()
+		child := child.Clone()
 
-		child, ok := clone.Object.(*gwv1.HTTPRoute)
-		if !ok {
-			continue
-		}
-
-		inheritMatcher := shouldInheritMatcher(child)
+		inheritMatcher := shouldInheritMatcher(&child.HTTPRoute)
 
 		// Check if the child route has a prefix that matches the parent.
 		// Only rules matching the parent prefix are considered.
@@ -96,8 +91,7 @@ func filterDelegatedChildren(
 		}
 		if len(validRules) > 0 {
 			child.Spec.Rules = validRules
-			clone.Object = child
-			selected = append(selected, clone)
+			selected = append(selected, child)
 		}
 	}
 

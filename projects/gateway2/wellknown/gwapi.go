@@ -2,10 +2,7 @@ package wellknown
 
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/sets"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
-	apiv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 const (
@@ -17,9 +14,6 @@ const (
 
 	// Kind string for HTTPRoute resource
 	HTTPRouteKind = "HTTPRoute"
-
-	// Kind string for TCPRoute resource
-	TCPRouteKind = "TCPRoute"
 
 	// Kind string for Gateway resource
 	GatewayKind = "Gateway"
@@ -40,61 +34,43 @@ const (
 var (
 	GatewayGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
-		Version: apiv1.GroupVersion.Version,
+		Version: "v1",
 		Kind:    GatewayKind,
 	}
 	GatewayClassGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
-		Version: apiv1.GroupVersion.Version,
+		Version: "v1",
 		Kind:    GatewayClassKind,
 	}
 	HTTPRouteGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
-		Version: apiv1.GroupVersion.Version,
+		Version: "v1",
 		Kind:    HTTPRouteKind,
 	}
 	ReferenceGrantGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
-		Version: apiv1beta1.GroupVersion.Version,
+		Version: "v1beta1",
 		Kind:    ReferenceGrantKind,
 	}
 
 	GatewayListGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
-		Version: apiv1.GroupVersion.Version,
+		Version: "v1",
 		Kind:    GatewayListKind,
 	}
 	GatewayClassListGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
-		Version: apiv1.GroupVersion.Version,
+		Version: "v1",
 		Kind:    GatewayClassListKind,
 	}
 	HTTPRouteListGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
-		Version: apiv1.GroupVersion.Version,
-		Kind:    HTTPRouteListKind,
-	}
-	HTCPRouteListGVK = schema.GroupVersionKind{
-		Group:   GatewayGroup,
-		Version: apiv1alpha2.GroupVersion.Version,
+		Version: "v1",
 		Kind:    HTTPRouteListKind,
 	}
 	ReferenceGrantListGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
-		Version: apiv1beta1.GroupVersion.Version,
+		Version: "v1beta1",
 		Kind:    ReferenceGrantListKind,
-	}
-
-	GatewayCRDs = sets.New[string](
-		"gatewayclasses.gateway.networking.k8s.io",
-		"gateways.gateway.networking.k8s.io",
-		"httproutes.gateway.networking.k8s.io",
-		"tcproutes.gateway.networking.k8s.io",
-		"referencegrants.gateway.networking.k8s.io",
-	)
-
-	GatewayRouteCRDs = []string{
-		"httproutes.gateway.networking.k8s.io",
-		"tcproutes.gateway.networking.k8s.io",
 	}
 )

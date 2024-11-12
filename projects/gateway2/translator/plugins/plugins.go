@@ -11,7 +11,6 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
 // Plugin is an empty type for base plugins, currently no base methods.
@@ -21,9 +20,7 @@ type RouteContext struct {
 	// top-level gw Listener
 	Listener *gwv1.Listener
 	// top-level HTTPRoute
-	HTTPRoute *gwv1.HTTPRoute
-	// top-level TCPRoute
-	TCPRoute *gwv1a2.TCPRoute
+	Route *gwv1.HTTPRoute
 	// Hostnames associated with the Route.
 	// Note: this should be used over Route.spec.Hostnames as
 	// delegatee (child) routes of delegated routes will not have spec.Hostnames set.
