@@ -22,7 +22,6 @@ rules:
   - services
   - pods
   - nodes
-  - endpoints
   - secrets
   - namespaces
   verbs: ["get", "list", "watch"]
