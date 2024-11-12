@@ -61,7 +61,7 @@ message TransformationStages {
     // Post routing transformations happen during the router filter chain. This is important for a number of reasons
     // 1. Retries re-trigger this filter, which might impact performance.
     // 2. It is the only point where endpoint metadata is available.
-    // 3. `clear_route_cache` does NOT work in this stage as the routing decision is already made. 
+    // 3. `clear_route_cache` does NOT work in this stage as the routing decision is already made.
     // Enterprise only
     RequestResponseTransformations post_routing = 6;
     // Inherit transformation config from parent. This has no affect on VirtualHost level transformations.
@@ -111,8 +111,8 @@ message Extraction {
   enum Mode {
     // Default mode. Extract the content of a specified capturing group. In this mode,
     // `subgroup` selects the n-th capturing group, which represents the value that
-    // you want to extract. 
-    EXTRACT = 0; 
+    // you want to extract.
+    EXTRACT = 0;
     // Replace the content of a specified capturing group. In this mode, `subgroup` selects the
     // n-th capturing group, which represents the value that you want to replace with
     // the string provided in `replacement_text`.
@@ -286,7 +286,7 @@ message TransformationTemplate {
 
     // A template that determines the metadata value.
     InjaTemplate value = 3;
-    
+
     // Instruct the filter to parse the rendered value as a proto Struct message
     // before setting it as the metadata value.
     bool json_to_proto = 4;
@@ -299,6 +299,29 @@ message TransformationTemplate {
   // sets the behavior for the entire transformation. Use raw_strings function
   // for fine-grained control within a template.
   google.protobuf.BoolValue escape_characters = 12;
+
+  // Definitions for span transformations for tracing purposes.
+  message SpanTransformer {
+    // A template that sets the span name. For example, to set the span name to
+    // the value of the host header, you can set this value to
+    // `'{{header("Host")}}'`
+    InjaTemplate name = 1;
+
+    // TODO if we want to set attributes as well, add fields to modify them here.
+  }
+
+  // These field numbers are used in envoy-gloo but not exposed. Let's reserve
+  // them so we do not drift in numbers between the transformation filter in
+  // `envoy-gloo` and our gloo control plane API.
+  // 14: string_delimiter
+  // https://github.com/solo-io/envoy-gloo/blob/0a088716a0cc04409ad926e7364363c6de4a83a5/api/envoy/config/filter/http/transformation/v2/transformation_filter.proto#L321
+  reserved 14;
+
+  // Use this field to modify the span of the trace. This field can only be
+  // applied on requestTransformations. Attempting to set this on a
+  // responseTransformation will result in an error.
+  SpanTransformer span_transformer = 15;
+
 }
 
 // Defines an [Inja template](https://github.com/pantor/inja) that will be

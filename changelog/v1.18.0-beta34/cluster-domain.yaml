@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/10268
+    resolvesIssue: false
+    description: >-
+      Fix issue where Gloo Gateway did not respect the cluster domain for the xds host address.

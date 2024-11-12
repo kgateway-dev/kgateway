@@ -1,6 +1,7 @@
 package admincli
 
 import (
+	"archive/zip"
 	"context"
 	"fmt"
 	"io"
@@ -13,6 +14,10 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/go-utils/threadsafe"
+
+	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
+	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
 const (
@@ -25,9 +30,13 @@ const (
 	HealthCheckPath    = "healthcheck"
 	LoggingPath        = "logging"
 	ServerInfoPath     = "server_info"
-
-	DefaultAdminPort = 19000
 )
+
+// DumpOptions should have flags for any kind of underlying optional
+// filtering or inclusion of Envoy dump data, such as including EDS, filters, etc.
+type DumpOptions struct {
+	ConfigIncludeEDS bool
+}
 
 // Client is a utility for executing requests against the Envoy Admin API
 // The Admin API handlers can be found here:
@@ -47,11 +56,43 @@ func NewClient() *Client {
 		curlOptions: []curl.Option{
 			curl.WithScheme("http"),
 			curl.WithHost("127.0.0.1"),
-			curl.WithPort(DefaultAdminPort),
+			curl.WithPort(int(defaults.EnvoyAdminPort)),
 			// 3 retries, exponential back-off, 10 second max
 			curl.WithRetries(3, 0, 10),
 		},
 	}
+}
+
+// NewPortForwardedClient takes a pod selector like <podname> or `deployment/<podname`,
+// and returns a port-forwarded Envoy admin client pointing at that pod,
+// as well as a deferrable shutdown function.
+//
+// Designed to be used by tests and CLI from outside of a cluster where `kubectl` is present.
+// In all other cases, `NewClient` is preferred
+func NewPortForwardedClient(ctx context.Context, proxySelector, namespace string) (*Client, func(), error) {
+	selector := portforward.WithResourceSelector(proxySelector, namespace)
+
+	// 1. Open a port-forward to the Kubernetes Deployment, so that we can query the Envoy Admin API directly
+	portForwarder, err := kubectl.NewCli().StartPortForward(ctx,
+		selector,
+		portforward.WithRemotePort(int(defaults.EnvoyAdminPort)))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// 2. Close the port-forward when we're done accessing data
+	deferFunc := func() {
+		portForwarder.Close()
+		portForwarder.WaitForStop()
+	}
+
+	// 3. Create a CLI that connects to the Envoy Admin API
+	adminCli := NewClient().
+		WithCurlOptions(
+			curl.WithHostPort(portForwarder.Address()),
+		)
+
+	return adminCli, deferFunc, err
 }
 
 // WithReceiver sets the io.Writer that will be used by default for the stdout and stderr
@@ -108,6 +149,11 @@ func (c *Client) GetStats(ctx context.Context) (string, error) {
 	}
 
 	return outLocation.String(), nil
+}
+
+// ServerInfoCmd returns the cmdutils.Cmd that can be run to request data from the server_info endpoint
+func (c *Client) ServerInfoCmd(ctx context.Context) cmdutils.Cmd {
+	return c.RequestPathCmd(ctx, ServerInfoPath)
 }
 
 // ClustersCmd returns the cmdutils.Cmd that can be run to request data from the clusters endpoint
@@ -208,10 +254,7 @@ func (c *Client) GetServerInfo(ctx context.Context) (*adminv3.ServerInfo, error)
 		outLocation threadsafe.Buffer
 	)
 
-	err := c.RequestPathCmd(ctx, ServerInfoPath).
-		WithStdout(&outLocation).
-		Run().
-		Cause()
+	err := c.ServerInfoCmd(ctx).WithStdout(&outLocation).Run().Cause()
 	if err != nil {
 		return nil, err
 	}
@@ -260,4 +303,43 @@ func (c *Client) GetSingleListenerFromDynamicListeners(
 		return nil, fmt.Errorf("could not unmarshal listener from listener dump: %w", err)
 	}
 	return &listener, nil
+}
+
+// WriteEnvoyDumpToZip will dump config, stats, clusters and listeners to zipfile in the current directory.
+// Useful for diagnostics or testing
+func (c *Client) WriteEnvoyDumpToZip(ctx context.Context, options DumpOptions, zip *zip.Writer) error {
+	configParams := make(map[string]string)
+	if options.ConfigIncludeEDS {
+		configParams["include_eds"] = "on"
+	}
+
+	// zip writer has the benefit of not requiring tmpdirs or file ops (all in mem)
+	// - but it can't support async writes, so do these sequentally
+	// Also don't join errors, we want to fast-fail
+	if err := c.ServerInfoCmd(ctx).WithStdout(fileInArchive(zip, "server_info.json")).Run().Cause(); err != nil {
+		return err
+	}
+	if err := c.ConfigDumpCmd(ctx, configParams).WithStdout(fileInArchive(zip, "config.json")).Run().Cause(); err != nil {
+		return err
+	}
+	if err := c.StatsCmd(ctx).WithStdout(fileInArchive(zip, "stats.txt")).Run().Cause(); err != nil {
+		return err
+	}
+	if err := c.ClustersCmd(ctx).WithStdout(fileInArchive(zip, "clusters.txt")).Run().Cause(); err != nil {
+		return err
+	}
+	if err := c.ListenersCmd(ctx).WithStdout(fileInArchive(zip, "listeners.txt")).Run().Cause(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// fileInArchive creates a file at the given path within the archive, and returns the file object for writing.
+func fileInArchive(w *zip.Writer, path string) io.Writer {
+	f, err := w.Create(path)
+	if err != nil {
+		fmt.Printf("unable to create file: %f\n", err)
+	}
+	return f
 }
