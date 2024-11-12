@@ -30,6 +30,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	api "sigs.k8s.io/gateway-api/apis/v1"
+
+	// TODO BML tests in this suite fail if this no-op import is not imported first.
+	//
+	// I know, I know, you're reading this, and you're skeptical. I can feel it.
+	// Don't take my word for it.
+	//
+	// There is some import within this package that this suite relies on. Chasing that down is
+	// *hard* tho due to the import tree, and best done in a followup.
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
 
 // testBootstrap implements resources.Resource in order to use protoutils.UnmarshalYAML

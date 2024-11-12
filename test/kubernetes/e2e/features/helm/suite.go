@@ -1,15 +1,18 @@
 package helm
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/gateway"
+	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/tests/base"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
@@ -39,9 +42,16 @@ func (s *testingSuite) TestProductionRecommendations() {
 
 func (s *testingSuite) TestChangedConfigMapTriggersRollout() {
 	expectConfigDumpToContain := func(str string) {
-		dump, err := gateway.GetEnvoyAdminData(s.Ctx, "gateway-proxy", s.TestHelper.InstallNamespace, "/config_dump", 5*time.Second)
+		adminCli, shutdown, err := admincli.NewPortForwardedClient(s.Ctx, "deployment/gateway-proxy", s.TestHelper.InstallNamespace)
 		s.NoError(err)
-		s.Contains(dump, str)
+		defer shutdown()
+
+		var b bytes.Buffer
+		dump := io.Writer(&b)
+		err = adminCli.ConfigDumpCmd(s.Ctx, nil).WithStdout(dump).Run().Cause()
+		s.NoError(err)
+
+		strings.Contains(b.String(), str)
 	}
 
 	getChecksum := func() string {

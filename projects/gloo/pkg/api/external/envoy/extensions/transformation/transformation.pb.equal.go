@@ -561,6 +561,16 @@ func (m *TransformationTemplate) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetSpanTransformer()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSpanTransformer()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSpanTransformer(), target.GetSpanTransformer()) {
+			return false
+		}
+	}
+
 	switch m.BodyTransformation.(type) {
 
 	case *TransformationTemplate_Body:
@@ -1084,6 +1094,40 @@ func (m *TransformationTemplate_DynamicMetadataValue) Equal(that interface{}) bo
 
 	if m.GetJsonToProto() != target.GetJsonToProto() {
 		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *TransformationTemplate_SpanTransformer) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*TransformationTemplate_SpanTransformer)
+	if !ok {
+		that2, ok := that.(TransformationTemplate_SpanTransformer)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetName()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetName()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetName(), target.GetName()) {
+			return false
+		}
 	}
 
 	return true
