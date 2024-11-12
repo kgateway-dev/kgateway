@@ -20,8 +20,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// var _ e2e.NewSuiteFunc = NewKubeFailTestingSuite
-// var _ e2e.NewSuiteFunc = NewGlooFailTestingSuite
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
 type testingSuite struct {
@@ -37,6 +35,7 @@ type testingSuite struct {
 	glooReplicas    int
 	manifestObjects map[string][]client.Object
 	rollback        func() error
+	resourceDeleted bool
 }
 
 // This suite is mean to be run in an environment where validation is enabled
@@ -58,7 +57,7 @@ type webhookFailurePolicyTest struct {
 func (s *testingSuite) TearDownSuite() {
 	// nothing at the moment
 }
-func (s *testingSuite) SetupDownSuite() {
+func (s *testingSuite) SetupSuite() {
 	// nothing at the moment
 }
 
@@ -86,6 +85,7 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, s.glooDeployment().ObjectMeta, gomega.Equal(0))
 
 	s.validateCaBundles()
+	s.resourceDeleted = false
 }
 
 func (s *testingSuite) AfterTest(suiteName, testName string) {
@@ -94,11 +94,11 @@ func (s *testingSuite) AfterTest(suiteName, testName string) {
 	s.Assert().NoError(err, "can scale gloo deployment back to %d", s.glooReplicas)
 	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, s.glooDeployment().ObjectMeta, gomega.Equal(s.glooReplicas))
 
-	// Delete the resource created
-	manifest := manifests[testName]
-	output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, manifest.filename, "-n", s.testInstallation.Metadata.InstallNamespace)
-	// May have already been deleted
-	if err == nil {
+	// Delete the resource created if it hasn't been already
+	if !s.resourceDeleted {
+		manifest := manifests[testName]
+		output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, manifest.filename, "-n", s.testInstallation.Metadata.InstallNamespace)
+		// May have already been deleted
 		s.testInstallation.Assertions.ExpectObjectDeleted(manifest.filename, err, output)
 	}
 
@@ -153,8 +153,11 @@ func (s *testingSuite) TestKubeFailurePolicyIgnore() {
 
 func (s *testingSuite) testDeleteResource(fileName string, shouldDelete bool) {
 	output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, fileName, "-n", s.testInstallation.Metadata.InstallNamespace)
+
 	if shouldDelete {
 		s.Assert().NoError(err)
+		s.testInstallation.Assertions.ExpectObjectDeleted(fileName, err, output)
+		s.resourceDeleted = true
 	} else {
 		s.Assert().Error(err)
 		s.Assert().Contains(output, "Internal error occurred: failed calling webhook")

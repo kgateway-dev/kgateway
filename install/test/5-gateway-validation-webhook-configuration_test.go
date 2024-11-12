@@ -123,7 +123,6 @@ var _ = Describe("WebhookValidationConfiguration helm test", func() {
 				structuredDeployment, ok := webhookObject.(*admissionregistrationv1.ValidatingWebhookConfiguration)
 				ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Webhook %+v should be able to cast to a structured deployment", webhook))
 
-				//ExpectWithOffset(1, structuredDeployment.Spec.Template.ObjectMeta.Annotations).To(BeEmpty(), fmt.Sprintf("No annotations should be present on deployment %+v", structuredDeployment))
 				ExpectWithOffset(1, structuredDeployment.Webhooks).To(HaveLen(1), fmt.Sprintf("Only one webhook should be present on deployment %+v", structuredDeployment))
 				ExpectWithOffset(1, structuredDeployment.Webhooks[0].Name).To(Equal("gloo."+namespace+".svc"), fmt.Sprintf("Webhook name should be 'gloo.%s.svc' on deployment %+v", namespace, structuredDeployment))
 			})
