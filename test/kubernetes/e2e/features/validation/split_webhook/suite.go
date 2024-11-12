@@ -20,7 +20,7 @@ import (
 var _ e2e.NewSuiteFunc = NewKubeFailTestingSuite
 var _ e2e.NewSuiteFunc = NewGlooFailTestingSuite
 
-// testingSuite is the entire Suite of tests for DO_NOT_SUBMIT
+// testingSuite is the entire Suite of tests for validating the split webhook functionality
 type testingSuite struct {
 	suite.Suite
 
