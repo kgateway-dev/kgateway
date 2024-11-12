@@ -35,6 +35,9 @@ const (
 	GatewayListKind        = "GatewayList"
 	GatewayClassListKind   = "GatewayClassList"
 	ReferenceGrantListKind = "ReferenceGrantList"
+
+	// Gateway API CRD names
+	TCPRouteCRD = "tcproutes.gateway.networking.k8s.io"
 )
 
 var (
@@ -85,16 +88,12 @@ var (
 		Kind:    ReferenceGrantListKind,
 	}
 
-	GatewayCRDs = sets.New[string](
+	// GatewayStandardCRDs defines the set of Gateway API CRDs from the standard release channel.
+	GatewayStandardCRDs = sets.New[string](
 		"gatewayclasses.gateway.networking.k8s.io",
 		"gateways.gateway.networking.k8s.io",
 		"httproutes.gateway.networking.k8s.io",
-		"tcproutes.gateway.networking.k8s.io",
+		"grpcroutes.gateway.networking.k8s.io",
 		"referencegrants.gateway.networking.k8s.io",
 	)
-
-	GatewayRouteCRDs = []string{
-		"httproutes.gateway.networking.k8s.io",
-		"tcproutes.gateway.networking.k8s.io",
-	}
 )

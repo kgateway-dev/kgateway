@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/ptr"
@@ -341,22 +340,18 @@ func (r *gatewayQueries) GetRoutesForGateway(ctx context.Context, gw *gwv1.Gatew
 		Name:      gw.Name,
 	}
 
-	// Check if the required Gateway API CRDs exist
-	if err := r.checkCRDs(ctx); err != nil {
-		return nil, err
-	}
-
-	// If requiredCRDsExist is false, return an empty result
-	if r.requiredCRDsExist != nil && !*r.requiredCRDsExist {
-		return NewRoutesForGwResult(), nil
-	}
-
 	// List of route types to process based on installed CRDs
-	routeListTypes := []client.ObjectList{}
+	routeListTypes := []client.ObjectList{&gwv1.HTTPRouteList{}}
 
-	// Add route types based on available CRDs
-	// Since we have confirmed that both CRDs exist, we can proceed to add them
-	routeListTypes = append(routeListTypes, &gwv1.HTTPRouteList{}, &gwv1a2.TCPRouteList{})
+	// Conditionally include TCPRouteList
+	tcpRouteGVK := schema.GroupVersionKind{
+		Group:   gwv1a2.GroupVersion.Group,
+		Version: gwv1a2.GroupVersion.Version,
+		Kind:    wellknown.TCPRouteKind,
+	}
+	if r.scheme.Recognizes(tcpRouteGVK) {
+		routeListTypes = append(routeListTypes, &gwv1a2.TCPRouteList{})
+	}
 
 	var routes []client.Object
 	for _, routeList := range routeListTypes {
@@ -483,29 +478,6 @@ func (r *gatewayQueries) processRoute(ctx context.Context, gw *gwv1.Gateway, rou
 			})
 		}
 	}
-
-	return nil
-}
-
-func (r *gatewayQueries) checkCRDs(ctx context.Context) error {
-	if r.requiredCRDsExist != nil && *r.requiredCRDsExist {
-		// CRDs are already known to exist, return early
-		return nil
-	}
-
-	for _, crdName := range wellknown.GatewayRouteCRDs {
-		crd := &apiextensionsv1.CustomResourceDefinition{}
-		err := r.client.Get(ctx, client.ObjectKey{Name: crdName}, crd)
-		if err != nil {
-			if errors.IsNotFound(err) {
-				r.requiredCRDsExist = ptr.To(false)
-				return nil
-			}
-			return fmt.Errorf("error checking for %s CRD: %w", crdName, err)
-		}
-	}
-	// All required CRDs are installed
-	r.requiredCRDsExist = ptr.To(true)
 
 	return nil
 }

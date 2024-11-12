@@ -21,18 +21,18 @@ const (
 // IterateIndices calls the provided function for each indexable object with the appropriate indexer function.
 func IterateIndices(f func(client.Object, string, client.IndexerFunc) error) error {
 	return errors.Join(
-		f(&gwv1.HTTPRoute{}, HttpRouteTargetField, indexerByObjType),
-		f(&gwv1a2.TCPRoute{}, TcpRouteTargetField, indexerByObjType),
-		f(&gwv1b1.ReferenceGrant{}, ReferenceGrantFromField, indexerByObjType),
+		f(&gwv1.HTTPRoute{}, HttpRouteTargetField, IndexerByObjType),
+		f(&gwv1a2.TCPRoute{}, TcpRouteTargetField, IndexerByObjType),
+		f(&gwv1b1.ReferenceGrant{}, ReferenceGrantFromField, IndexerByObjType),
 	)
 }
 
-// indexerByObjType indexes objects based on the provided object type. The following object types are supported:
+// IndexerByObjType indexes objects based on the provided object type. The following object types are supported:
 //
 //   - HTTPRoute
 //   - TCPRoute
 //   - ReferenceGrant
-func indexerByObjType(obj client.Object) []string {
+func IndexerByObjType(obj client.Object) []string {
 	var results []string
 
 	switch resource := obj.(type) {
