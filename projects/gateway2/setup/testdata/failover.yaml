@@ -29,43 +29,54 @@ spec:
   selector:
     app: reviews
 ---
-apiVersion: v1
-kind: Endpoints
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
 metadata:
+  name: reviews-slice
+  namespace: gwtest
   labels:
+    kubernetes.io/service-name: reviews
     app: reviews
     service: reviews
-  name: reviews
-  namespace: gwtest
-subsets:
-- addresses:
-  - ip: 10.244.1.11
+addressType: IPv4
+endpoints:
+  - addresses:
+      - 10.244.1.11
+    conditions:
+      ready: true
     nodeName: worker
     targetRef:
       kind: Pod
       name: reviews-1
       namespace: gwtest
-#      uid: 5905470a-11c5-46d4-b8a9-45d59481da14
-  - ip: 10.244.2.14
+  - addresses:
+      - 10.244.2.14
+    conditions:
+      ready: true
     nodeName: worker2
     targetRef:
       kind: Pod
       name: reviews-2
       namespace: gwtest
-#      uid: 6c218fd8-1b6f-4c57-9ee2-108a6a8c84ea
-  - ip: 10.244.3.3
+  - addresses:
+      - 10.244.3.3
+    conditions:
+      ready: true
     nodeName: worker3
     targetRef:
       kind: Pod
       name: reviews-3
       namespace: gwtest
-  - ip: 10.244.4.4
+  - addresses:
+      - 10.244.4.4
+    conditions:
+      ready: true
     nodeName: worker4
     targetRef:
       kind: Pod
       name: reviews-4
       namespace: gwtest
-  ports:
+ports:
   - name: http
     port: 8080
     protocol: TCP

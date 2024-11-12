@@ -14,6 +14,7 @@ spec:
     app.kubernetes.io/name: http-echo
   ports:
     - protocol: TCP
+      targetPort: 8080
       port: 3000
 ---
 apiVersion: v1
@@ -26,11 +27,13 @@ metadata:
 spec:
   containers:
   - name: http-echo
-    image: kennship/http-echo@sha256:144322e8e96be2be6675dcf6e3ee15697c5d052d14d240e8914871a2a83990af
+    # we avoid using checksums so that we automatically select amd64 or arm64
+    image: jmalloc/echo-server:v0.3.7
     ports:
-      - containerPort: 3000
+      - containerPort: 8080
     resources:
       requests:
         cpu: "100m"
       limits:
         cpu: "200m"
+

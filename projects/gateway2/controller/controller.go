@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -84,7 +85,7 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 		controllerBuilder.watchVirtualHostOptions,
 		controllerBuilder.watchUpstreams,
 		controllerBuilder.watchServices,
-		controllerBuilder.watchEndpoints,
+		controllerBuilder.watchEndpointSlices,
 		controllerBuilder.watchPods,
 		controllerBuilder.watchSecrets,
 		controllerBuilder.addIndexes,
@@ -372,10 +373,10 @@ func (c *controllerBuilder) watchPods(ctx context.Context) error {
 		Complete(reconcile.Func(c.reconciler.ReconcilePods))
 }
 
-func (c *controllerBuilder) watchEndpoints(ctx context.Context) error {
+func (c *controllerBuilder) watchEndpointSlices(ctx context.Context) error {
 	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
-		For(&corev1.Endpoints{}).
-		Complete(reconcile.Func(c.reconciler.ReconcileEndpoints))
+		For(&discoveryv1.EndpointSlice{}).
+		Complete(reconcile.Func(c.reconciler.ReconcileEndpointSlices))
 }
 
 func (c *controllerBuilder) watchSecrets(ctx context.Context) error {
@@ -445,7 +446,7 @@ func (r *controllerReconciler) ReconcilePods(ctx context.Context, req ctrl.Reque
 	return ctrl.Result{}, nil
 }
 
-func (r *controllerReconciler) ReconcileEndpoints(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *controllerReconciler) ReconcileEndpointSlices(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// eventually reconcile only effected listeners etc
 	r.kick(ctx)
 	return ctrl.Result{}, nil

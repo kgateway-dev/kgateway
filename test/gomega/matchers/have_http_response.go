@@ -53,6 +53,14 @@ func HaveOkResponseWithHeaders(headers map[string]interface{}) types.GomegaMatch
 	})
 }
 
+// HaveOKResponseWithJSONContains expects a 200 response with a body that contains the provided JSON
+func HaveOKResponseWithJSONContains(jsonBody []byte) types.GomegaMatcher {
+	return HaveHttpResponse(&HttpResponse{
+		StatusCode: http.StatusOK,
+		Body:       JSONContains(jsonBody),
+	})
+}
+
 // HttpResponse defines the set of properties that we can validate from an http.Response
 type HttpResponse struct {
 	// StatusCode is the expected status code for an http.Response

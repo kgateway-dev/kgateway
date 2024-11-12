@@ -1242,9 +1242,8 @@ $(TEST_ASSET_DIR)/conformance/conformance_test.go:
 
 CONFORMANCE_SUPPORTED_FEATURES ?= -supported-features=Gateway,ReferenceGrant,HTTPRoute,HTTPRouteQueryParamMatching,HTTPRouteMethodMatching,HTTPRouteResponseHeaderModification,HTTPRoutePortRedirect,HTTPRouteHostRewrite,HTTPRouteSchemeRedirect,HTTPRoutePathRedirect,HTTPRouteHostRewrite,HTTPRoutePathRewrite,HTTPRouteRequestMirror
 CONFORMANCE_SUPPORTED_PROFILES ?= -conformance-profiles=GATEWAY-HTTP
-CONFORMANCE_SKIP_TESTS ?= -skip-tests=HTTPRouteServiceTypes
 CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSION)-report.yaml -organization=solo.io -project=gloo-gateway -version=$(VERSION) -url=github.com/solo-io/gloo -contact=github.com/solo-io/gloo/issues/new/choose
-CONFORMANCE_ARGS := -gateway-class=gloo-gateway $(CONFORMANCE_SKIP_TESTS) $(CONFORMANCE_SUPPORTED_FEATURES) $(CONFORMANCE_SUPPORTED_PROFILES) $(CONFORMANCE_REPORT_ARGS)
+CONFORMANCE_ARGS := -gateway-class=gloo-gateway $(CONFORMANCE_SUPPORTED_FEATURES) $(CONFORMANCE_SUPPORTED_PROFILES) $(CONFORMANCE_REPORT_ARGS)
 
 .PHONY: conformance ## Run the conformance test suite
 conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go

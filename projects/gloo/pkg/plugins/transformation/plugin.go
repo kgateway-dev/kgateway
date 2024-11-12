@@ -522,6 +522,12 @@ func translateTransformationTemplate(in *transformation.Transformation_Transform
 		}
 	}
 
+	if spanTransformer := inTemplate.GetSpanTransformer(); spanTransformer != nil {
+		outTemplate.SpanTransformer = &envoytransformation.TransformationTemplate_SpanTransformer{
+			Name: &envoytransformation.InjaTemplate{Text: spanTransformer.GetName().GetText()},
+		}
+	}
+
 	out.TransformationTemplate = outTemplate
 	return out, nil
 }
@@ -554,6 +560,10 @@ func NewExtractorError(message, name string, mode transformation.Extraction_Mode
 		extractorError.Mode = modeName
 	}
 	return extractorError
+}
+
+func NewInvalidSpanTransformerError(message string) error {
+	return fmt.Errorf("unable to create span transformer: %s", message)
 }
 
 const (
@@ -662,6 +672,9 @@ func (p *Plugin) getTransformations(
 		requestTransform, err := p.TranslateTransformation(t.GetRequestTransformation(), p.escapeCharacters, stagedEscapeCharacters)
 		if err != nil {
 			return nil, err
+		}
+		if t.GetResponseTransformation().GetTransformationTemplate().GetSpanTransformer() != nil {
+			return nil, NewInvalidSpanTransformerError("spanTransformer cannot be set on a responseTransformation")
 		}
 		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation(), p.escapeCharacters, stagedEscapeCharacters)
 		if err != nil {

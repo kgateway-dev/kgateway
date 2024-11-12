@@ -121,9 +121,20 @@ func NewTestHttpUpstreamWithReplyAndHealthReply(ctx context.Context, addr, reply
 	return newTestUpstream(addr, []uint32{backendPort}, requests, responses)
 }
 
-// NewTestHttpUpstreamWithHttpbin creates a test upstream that routes to a server that responds with go-httpbin
+// NewTestHttpUpstreamWithHandler creates a test upstream that routes to a server that responds
+// with the provided http.Handler.
+func NewTestHttpUpstreamWithHandler(handler http.Handler) func(ctx context.Context, addr string) *TestUpstream {
+	return func(ctx context.Context, addr string) *TestUpstream {
+		backendPort, requests, responses := runTestServerWithHttpHandler(ctx, NO_TLS, handler)
+		return newTestUpstream(addr, []uint32{backendPort}, requests, responses)
+	}
+}
+
+// NewTestHttpUpstreamWithHttpbin creates a test upstream that routes to a server that responds with go-httpbin.
+// HTTPBin (https://httpbin.org/) provides common introspection endpoints and responses
+// that can be used to simulate a variety of common HTTP behaviors.
 func NewTestHttpUpstreamWithHttpbin(ctx context.Context, addr string) *TestUpstream {
-	backendPort, requests, responses := runTestServerWithHttpbin(ctx, NO_TLS)
+	backendPort, requests, responses := runTestServerWithHttpHandler(ctx, NO_TLS, httpbin.New())
 	return newTestUpstream(addr, []uint32{backendPort}, requests, responses)
 }
 
@@ -290,16 +301,13 @@ func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string
 	return uint32(port), reqChan, respChan
 }
 
-// runTestServerWithHttpbin starts a local server listening on a random port, that responds to
-// requests with go-httpbin. HTTPBin (https://httpbin.org/) provides common introspection
-// endpoints and responses that can be used to simulate a variety of common HTTP behaviors.
-func runTestServerWithHttpbin(ctx context.Context,
-	tlsServer UpstreamTlsRequired) (uint32, <-chan *ReceivedRequest, <-chan *ReturnedResponse) {
+// runTestServerWithHttpHandler starts a local server listening on a random port
+// that hands requests off to the provided http.Handler.
+func runTestServerWithHttpHandler(ctx context.Context, tlsServer UpstreamTlsRequired,
+	handler http.Handler) (uint32, <-chan *ReceivedRequest, <-chan *ReturnedResponse) {
 
 	reqChan := make(chan *ReceivedRequest, 100)
 	respChan := make(chan *ReturnedResponse, 100)
-
-	httpbinApp := httpbin.New()
 
 	handlerFunc := func(rw http.ResponseWriter, r *http.Request) {
 		// copy the request to the request channel
@@ -322,9 +330,8 @@ func runTestServerWithHttpbin(ctx context.Context,
 		// create a new recorder to capture the response
 		w := httptest.NewRecorder()
 
-		// run the request through the httpbin app
-		// and get all that sweet sweet introspection
-		httpbinApp.Handler().ServeHTTP(w, r)
+		// run the request through the http.Handler
+		handler.ServeHTTP(w, r)
 
 		// copy the response to the original writer
 		for k, v := range w.Header() {

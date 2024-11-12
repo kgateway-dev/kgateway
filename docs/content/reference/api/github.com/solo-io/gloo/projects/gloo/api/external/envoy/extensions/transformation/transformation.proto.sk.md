@@ -26,6 +26,7 @@ weight: 5
 - [TransformationTemplate](#transformationtemplate)
 - [HeaderToAppend](#headertoappend)
 - [DynamicMetadataValue](#dynamicmetadatavalue)
+- [SpanTransformer](#spantransformer)
 - [RequestBodyParse](#requestbodyparse)
 - [InjaTemplate](#injatemplate)
 - [Passthrough](#passthrough)
@@ -319,6 +320,7 @@ Defines a transformation template.
 "ignoreErrorOnParse": bool
 "dynamicMetadataValues": []envoy.api.v2.filter.http.TransformationTemplate.DynamicMetadataValue
 "escapeCharacters": bool
+"spanTransformer": .envoy.api.v2.filter.http.TransformationTemplate.SpanTransformer
 
 ```
 
@@ -337,6 +339,7 @@ Defines a transformation template.
 | `ignoreErrorOnParse` | `bool` | If set to true, Envoy will not throw an exception in case the body parsing fails. |
 | `dynamicMetadataValues` | [[]envoy.api.v2.filter.http.TransformationTemplate.DynamicMetadataValue](../transformation.proto.sk/#dynamicmetadatavalue) | Use this field to set Dynamic Metadata. |
 | `escapeCharacters` | `bool` | Use this field to set Inja behavior when rendering strings which contain characters that would need to be escaped to be valid JSON. Note that this sets the behavior for the entire transformation. Use raw_strings function for fine-grained control within a template. |
+| `spanTransformer` | [.envoy.api.v2.filter.http.TransformationTemplate.SpanTransformer](../transformation.proto.sk/#spantransformer) | Use this field to modify the span of the trace. |
 
 
 
@@ -383,6 +386,23 @@ entry.
 | `key` | `string` | The metadata key. |
 | `value` | [.envoy.api.v2.filter.http.InjaTemplate](../transformation.proto.sk/#injatemplate) | A template that determines the metadata value. |
 | `jsonToProto` | `bool` | Instruct the filter to parse the rendered value as a proto Struct message before setting it as the metadata value. |
+
+
+
+
+---
+### SpanTransformer
+
+
+
+```yaml
+"name": .envoy.api.v2.filter.http.InjaTemplate
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | [.envoy.api.v2.filter.http.InjaTemplate](../transformation.proto.sk/#injatemplate) | A template that sets the span name. |
 
 
 
