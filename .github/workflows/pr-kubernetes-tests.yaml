@@ -73,7 +73,7 @@ jobs:
         # Oct 10, 2024: 20 minutes
         - cluster-name: 'cluster-four'
           go-test-args: '-v -timeout=30m'
-          go-test-run-regex: '(^TestK8sGatewayIstio$$|^TestGlooGatewayEdgeGateway$$|^TestGlooctlIstioInjectEdgeApiGateway$$|^TestSplitWebHookGlooFail$$|^TestSplitWebHookKubeFail$$)'
+          go-test-run-regex: '(^TestK8sGatewayIstio$$|^TestGlooGatewayEdgeGateway$$|^TestGlooctlIstioInjectEdgeApiGateway$$)'
 
         # October 10, 2024: 22 minutes
         - cluster-name: 'cluster-five'

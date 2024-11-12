@@ -48,6 +48,11 @@ var (
 	// Split webhook validation
 	BasicUpstream = filepath.Join(util.MustGetThisDir(), "testdata", "split-webhook", "basic-upstream.yaml")
 
+	GlooFailurePolicyFailValues   = filepath.Join(util.MustGetThisDir(), "testdata", "split-webhook", "gloo-webhook-failure-policy-fail-values.yaml")
+	KubeFailurePolicyFailValues   = filepath.Join(util.MustGetThisDir(), "testdata", "split-webhook", "kube-webhook-failure-policy-fail-values.yaml")
+	GlooFailurePolicyIgnoreValues = filepath.Join(util.MustGetThisDir(), "testdata", "split-webhook", "gloo-webhook-failure-policy-ignore-values.yaml")
+	KubeFailurePolicyIgnoreValues = filepath.Join(util.MustGetThisDir(), "testdata", "split-webhook", "kube-webhook-failure-policy-ignore-values.yaml")
+
 	ExpectedUpstreamResp = &testmatchers.HttpResponse{
 		StatusCode: http.StatusOK,
 		Body:       gomega.ContainSubstring("Welcome to nginx!"),

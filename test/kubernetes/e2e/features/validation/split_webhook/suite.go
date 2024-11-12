@@ -3,24 +3,27 @@ package split_webhook
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/onsi/gomega"
 	gloo_defaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/validation"
+	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/stretchr/testify/suite"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ e2e.NewSuiteFunc = NewKubeFailTestingSuite
-var _ e2e.NewSuiteFunc = NewGlooFailTestingSuite
+// var _ e2e.NewSuiteFunc = NewKubeFailTestingSuite
+// var _ e2e.NewSuiteFunc = NewGlooFailTestingSuite
+var _ e2e.NewSuiteFunc = NewTestingSuite
 
-// testingSuite is the entire Suite of tests for validating the split webhook functionality
 type testingSuite struct {
 	suite.Suite
 
@@ -30,28 +33,78 @@ type testingSuite struct {
 	// against an installation of Gloo Gateway
 	testInstallation *e2e.TestInstallation
 
+	testHelper      *helper.SoloTestHelper
+	glooReplicas    int
+	manifestObjects map[string][]client.Object
+	rollback        func() error
+}
+
+// This suite is mean to be run in an environment where validation is enabled
+func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
+	return &testingSuite{
+		ctx:              ctx,
+		testInstallation: testInst,
+		testHelper:       e2e.MustTestHelper(ctx, testInst),
+	}
+}
+
+type webhookFailurePolicyTest struct {
 	// glooFailurePolicyFail determines whether the gloo webhook failure policy is set to Fail
 	glooFailurePolicyFail bool
 	// kubeFailurePolicyFail determines whether the kube webhook failure policy is set to Fail
 	kubeFailurePolicyFail bool
 }
 
-func NewKubeFailTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
-	return &testingSuite{
-		ctx:                   ctx,
-		testInstallation:      testInst,
-		glooFailurePolicyFail: false,
-		kubeFailurePolicyFail: true,
-	}
+func (s *testingSuite) TearDownSuite() {
+	// nothing at the moment
+}
+func (s *testingSuite) SetupDownSuite() {
+	// nothing at the moment
 }
 
-func NewGlooFailTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
-	return &testingSuite{
-		ctx:                   ctx,
-		testInstallation:      testInst,
-		glooFailurePolicyFail: true,
-		kubeFailurePolicyFail: false,
+func (s *testingSuite) BeforeTest(suiteName, testName string) {
+	// Apply the upgrade values file
+	var err error
+	s.rollback, err = s.testHelper.UpgradeGloo(s.ctx, 600*time.Second, helper.WithExtraArgs([]string{
+		// Reuse values so there's no need to know the prior values used
+		"--reuse-values",
+		"--values", upgradeValues[testName],
+	}...))
+	s.testInstallation.Assertions.Require.NoError(err)
+
+	// Create resource we will be trying to delete
+	manifest := manifests[testName]
+	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest.filename, "-n", s.testInstallation.Metadata.InstallNamespace)
+	s.Assert().NoError(err, "can apply %s", manifest.filename)
+
+	s.Assert().NotNil(manifest.validateCreated, "validateCreated function must be set for %s", testName)
+	manifest.validateCreated(s)
+
+	// Scale gloo deployment to 0
+	err = s.testInstallation.Actions.Kubectl().Scale(s.ctx, s.testInstallation.Metadata.InstallNamespace, "deployment/gloo", 0)
+	s.Assert().NoError(err, "can scale gloo deployment to 0")
+	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, s.glooDeployment().ObjectMeta, gomega.Equal(0))
+
+	s.validateCaBundles()
+}
+
+func (s *testingSuite) AfterTest(suiteName, testName string) {
+	// Scale gloo deployment back to original replica count
+	err := s.testInstallation.Actions.Kubectl().Scale(s.ctx, s.testInstallation.Metadata.InstallNamespace, "deployment/gloo", uint(s.glooReplicas))
+	s.Assert().NoError(err, "can scale gloo deployment back to %d", s.glooReplicas)
+	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, s.glooDeployment().ObjectMeta, gomega.Equal(s.glooReplicas))
+
+	// Delete the resource created
+	manifest := manifests[testName]
+	output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, manifest.filename, "-n", s.testInstallation.Metadata.InstallNamespace)
+	// May have already been deleted
+	if err == nil {
+		s.testInstallation.Assertions.ExpectObjectDeleted(manifest.filename, err, output)
 	}
+
+	// Rollback the helm upgrades
+	err = s.rollback()
+	s.testInstallation.Assertions.Require.NoError(err)
 }
 
 func (s *testingSuite) glooDeployment() *appsv1.Deployment {
@@ -62,58 +115,6 @@ func (s *testingSuite) glooDeployment() *appsv1.Deployment {
 			Labels:    map[string]string{"gloo": "gloo"},
 		},
 	}
-}
-
-func (s *testingSuite) setup() {
-	glooReplicas := 1
-	s.T().Cleanup(func() {
-		// Scale the gloo deployment back up
-		err := s.testInstallation.Actions.Kubectl().Scale(s.ctx, s.testInstallation.Metadata.InstallNamespace, "deployment/gloo", uint(glooReplicas))
-		s.Assert().NoError(err, "can scale gloo deployment back to %d", glooReplicas)
-		s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, s.glooDeployment().ObjectMeta, gomega.Equal(glooReplicas))
-
-		// The upstream should have been deleted either directly or via the namespace
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.BasicUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
-		if s.glooFailurePolicyFail {
-			// If the gloo failure policy is "Fail", the upstream should be deleted
-			s.Assert().NoError(err, "can delete "+validation.BasicUpstream)
-
-		} else {
-			// If the gloo failure policy is "Ignore", the upstream was already deleted
-			s.Assert().Error(err, "cannot delete "+validation.BasicUpstream+" - expected failure as it was already deleted")
-		}
-
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, validation.Secret, "-n", s.testInstallation.Metadata.InstallNamespace)
-		if s.kubeFailurePolicyFail {
-			// If the kube failure policy is "Fail", the secret should be deleted
-			s.Assert().NoError(err, "can delete "+validation.Secret)
-		} else {
-			// If the kube failure policy is "Ignore", the secret was already deleted
-			s.Assert().Error(err, "cannot delete "+validation.Secret+" - expected failure as it was already deleted")
-		}
-
-	})
-
-	// Upstream should be accepted
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.BasicUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
-	s.Assert().NoError(err)
-
-	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
-		func() (resources.InputResource, error) {
-			return s.testInstallation.ResourceClients.UpstreamClient().Read(s.testInstallation.Metadata.InstallNamespace, "json-upstream", clients.ReadOpts{Ctx: s.ctx})
-		},
-		core.Status_Accepted,
-		gloo_defaults.GlooReporter,
-	)
-
-	// Create secret
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, validation.Secret, "-n", s.testInstallation.Metadata.InstallNamespace)
-	s.Assert().NoError(err)
-
-	err = s.testInstallation.Actions.Kubectl().Scale(s.ctx, s.testInstallation.Metadata.InstallNamespace, "deployment/gloo", 0)
-	s.Assert().NoError(err, "can scale gloo deployment back to %d", glooReplicas)
-	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, s.glooDeployment().ObjectMeta, gomega.Equal(0))
-
 }
 
 // Test the caBundle is set for both webhooks
@@ -134,43 +135,75 @@ func (s *testingSuite) validateCaBundles() {
 
 }
 
-// TestSplitWebhook tests the split webhook functionality
-// The test will apply a basic upstream and a secret, then attempt to delete the upstream and secret
-func (s *testingSuite) TestSplitWebhook() {
-	s.setup()
+func (s *testingSuite) TestGlooFailurePolicyFail() {
+	s.testDeleteResource(validation.BasicUpstream, false)
+}
 
-	s.validateCaBundles()
+func (s *testingSuite) TestKubeFailurePolicyFail() {
+	s.testDeleteResource(validation.Secret, false)
+}
 
-	// Validate that the clientConfig.caBundle is set
-	stdout, _, err := s.testInstallation.Actions.Kubectl().Execute(
-		s.ctx, "get",
-		"ValidatingWebhookConfiguration", fmt.Sprintf("gloo-gateway-validation-webhook-%s", s.testInstallation.Metadata.InstallNamespace),
-		"-n", s.testInstallation.Metadata.InstallNamespace,
-		"-o", "jsonpath={.webhooks[1].clientConfig.caBundle}",
-	)
+func (s *testingSuite) TestGlooFailurePolicyIgnore() {
+	s.testDeleteResource(validation.BasicUpstream, true)
+}
 
-	s.Assert().NoError(err)
-	// The value is set as "" in the template, so if it is not empty we know it was set
-	s.Assert().NotEmpty(stdout)
+func (s *testingSuite) TestKubeFailurePolicyIgnore() {
+	s.testDeleteResource(validation.Secret, true)
+}
 
-	output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, validation.BasicUpstream, "-n", s.testInstallation.Metadata.InstallNamespace)
-	if s.glooFailurePolicyFail {
-		// If the gloo failure policy is "Fail", the upstream should not be deleted
+func (s *testingSuite) testDeleteResource(fileName string, shouldDelete bool) {
+	output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, fileName, "-n", s.testInstallation.Metadata.InstallNamespace)
+	if shouldDelete {
+		s.Assert().NoError(err)
+	} else {
 		s.Assert().Error(err)
 		s.Assert().Contains(output, "Internal error occurred: failed calling webhook")
-	} else {
-		// If the gloo failure policy is "Ignore", the upstream should be deleted
-		s.Assert().NoError(err)
-	}
-
-	output, err = s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, validation.Secret, "-n", s.testInstallation.Metadata.InstallNamespace)
-	if s.kubeFailurePolicyFail {
-		// If the kube failure policy is "Fail", the secret should not be deleted
-		s.Assert().Error(err)
-		s.Assert().Contains(output, "Internal error occurred: failed calling webhook")
-	} else {
-		// If the gloo failure policy is "Ignore", the secret should be deleted
-		s.Assert().NoError(err)
 	}
 
 }
+
+var upgradeValues = map[string]string{
+	"TestGlooFailurePolicyFail":   validation.GlooFailurePolicyFailValues,
+	"TestKubeFailurePolicyFail":   validation.KubeFailurePolicyFailValues,
+	"TestGlooFailurePolicyIgnore": validation.GlooFailurePolicyIgnoreValues,
+	"TestKubeFailurePolicyIgnore": validation.KubeFailurePolicyIgnoreValues,
+}
+
+// These tests create one resource and try to delete it, so don't need lists of resources
+type testManifest struct {
+	filename        string
+	validateCreated func(*testingSuite)
+}
+
+var (
+	validateSecretCreated = func(s *testingSuite) {
+		// No error is enough to validate the secret was created
+	}
+
+	validateUpstreamCreated = func(s *testingSuite) {
+		s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+			func() (resources.InputResource, error) {
+				return s.testInstallation.ResourceClients.UpstreamClient().Read(s.testInstallation.Metadata.InstallNamespace, "json-upstream", clients.ReadOpts{Ctx: s.ctx})
+			},
+			core.Status_Accepted,
+			gloo_defaults.GlooReporter,
+		)
+	}
+
+	secretManifest = &testManifest{
+		filename:        validation.Secret,
+		validateCreated: validateSecretCreated,
+	}
+
+	upstreamManifest = &testManifest{
+		filename:        validation.BasicUpstream,
+		validateCreated: validateUpstreamCreated,
+	}
+
+	manifests = map[string]*testManifest{
+		"TestGlooFailurePolicyFail":   upstreamManifest,
+		"TestGlooFailurePolicyIgnore": upstreamManifest,
+		"TestKubeFailurePolicyFail":   secretManifest,
+		"TestKubeFailurePolicyIgnore": secretManifest,
+	}
+)
