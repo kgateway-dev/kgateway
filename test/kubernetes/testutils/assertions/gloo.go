@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/glooadminutils/admincli"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
+	"github.com/solo-io/gloo/projects/gloo/pkg/servers/admin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -26,7 +27,7 @@ func (p *Provider) AssertGlooAdminApi(
 
 	portForwarder, err := p.clusterContext.Cli.StartPortForward(ctx,
 		portforward.WithDeployment(glooDeployment.GetName(), glooDeployment.GetNamespace()),
-		portforward.WithPorts(int(admincli.DefaultAdminPort), int(admincli.DefaultAdminPort)),
+		portforward.WithPorts(int(admin.AdminPort), int(admin.AdminPort)),
 	)
 	p.Require.NoError(err, "can open port-forward")
 	defer func() {
@@ -49,7 +50,7 @@ func (p *Provider) AssertGlooAdminApi(
 		WithReceiver(io.Discard). // adminAssertion can overwrite this
 		WithCurlOptions(
 			curl.WithRetries(3, 0, 10),
-			curl.WithPort(int(admincli.DefaultAdminPort)),
+			curl.WithPort(int(admin.AdminPort)),
 		)
 
 	for _, adminAssertion := range adminAssertions {
