@@ -86,7 +86,7 @@ func LoadFromFiles(ctx context.Context, filename string) ([]client.Object, error
 }
 
 func parseFile(ctx context.Context, filename string) ([]runtime.Object, error) {
-	scheme := schemes.DefaultScheme()
+	scheme := schemes.TestingScheme()
 	file, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
