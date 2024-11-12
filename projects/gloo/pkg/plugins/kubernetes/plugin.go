@@ -11,6 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
+	"knative.dev/pkg/network"
 
 	"github.com/solo-io/go-utils/contextutils"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -54,9 +55,10 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 	if !ok {
 		return nil, nil
 	}
-	return url.Parse(fmt.Sprintf("tcp://%v.%v.svc.cluster.local:%v",
+	return url.Parse(fmt.Sprintf("tcp://%v.%v.svc.%s:%v",
 		kubeSpec.Kube.GetServiceName(),
 		kubeSpec.Kube.GetServiceNamespace(),
+		network.GetClusterDomainName(),
 		kubeSpec.Kube.GetServicePort(),
 	))
 }

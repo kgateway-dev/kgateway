@@ -2,7 +2,10 @@ package setup
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 
+	"github.com/solo-io/gloo/pkg/utils/envutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/servers/admin"
 	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 	"github.com/solo-io/go-utils/stats"
@@ -63,8 +66,20 @@ func AdminServerStartFunc(history iosnapshot.History, dbg *krt.DebugHandler) Sta
 		// NOTE: There is a slight difference in how we run this server -vs- how we used to run it
 		// In the past, we would start the server once, at the beginning of the running container
 		// Now, we start a new server each time we invoke a StartFunc.
-		stats.StartCancellableStatsServerWithPort(ctx, stats.DefaultStartupOptions(), serverHandlers)
+		if serverAdminHandlersWithStats() {
+			stats.StartCancellableStatsServerWithPort(ctx, stats.DefaultStartupOptions(), serverHandlers)
+		} else {
+			stats.StartCancellableStatsServerWithPort(ctx, stats.DefaultStartupOptions(), func(mux *http.ServeMux, profiles map[string]string) {
+				// let people know these moved
+				profiles[fmt.Sprintf("http://localhost:%d/snapshots/", admin.AdminPort)] = fmt.Sprintf("To see snapshots, port forward to port %d", admin.AdminPort)
+			})
+			admin.StartHandlers(ctx, serverHandlers)
+		}
 
 		return nil
 	}
+}
+
+func serverAdminHandlersWithStats() bool {
+	return envutils.IsEnvTruthy("ADMIN_HANDLERS_WITH_STATS")
 }

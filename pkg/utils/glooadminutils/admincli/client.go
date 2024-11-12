@@ -8,12 +8,12 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
+	"github.com/solo-io/gloo/projects/gloo/pkg/servers/admin"
 	"github.com/solo-io/go-utils/threadsafe"
 )
 
 const (
 	InputSnapshotPath = "/snapshots/input"
-	DefaultAdminPort  = 9091
 )
 
 // Client is a utility for executing requests against the Gloo Admin API
@@ -33,7 +33,7 @@ func NewClient() *Client {
 		curlOptions: []curl.Option{
 			curl.WithScheme("http"),
 			curl.WithHost("127.0.0.1"),
-			curl.WithPort(DefaultAdminPort),
+			curl.WithPort(admin.AdminPort),
 			// 3 retries, exponential back-off, 10 second max
 			curl.WithRetries(3, 0, 10),
 		},

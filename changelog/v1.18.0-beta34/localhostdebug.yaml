@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Move snapshot debug endpoints localhost:9095. can be reverted by setting env ADMIN_HANDLERS_WITH_STATS to 'true'
