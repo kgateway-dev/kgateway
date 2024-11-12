@@ -43,7 +43,11 @@ var _ = Describe("WebhookValidationConfiguration helm test", func() {
 
 			// Count the "DELETES" as a sanity check.
 			expectedDeletes := 6 - expectedRemoved
-			expectedChart := generateExpectedChart(timeoutSeconds, resources, expectedDeletes)
+			expectedChart := generateExpectedChart(expectedChartArgs{
+				timeoutSeconds:  timeoutSeconds,
+				skipDeletes:     resources,
+				expectedDeletes: expectedDeletes,
+			})
 
 			prepareMakefile(namespace, glootestutils.HelmValues{
 				ValuesArgs: []string{
@@ -65,6 +69,40 @@ var _ = Describe("WebhookValidationConfiguration helm test", func() {
 			Entry("all", []string{"*"}, 6),
 			Entry("empty", []string{}, 0),
 		)
+
+		It("Can set gloo failurePolicy", func() {
+			timeoutSeconds := 5
+			expectedChart := generateExpectedChart(expectedChartArgs{
+				timeoutSeconds:    timeoutSeconds,
+				glooFailurePolicy: "Fail",
+				expectedDeletes:   6,
+			})
+
+			prepareMakefile(namespace, glootestutils.HelmValues{
+				ValuesArgs: []string{
+					fmt.Sprintf(`gateway.validation.webhook.timeoutSeconds=%d`, timeoutSeconds),
+					`gateway.validation.failurePolicy=Fail`,
+				},
+			})
+			testManifest.ExpectUnstructured(expectedChart.GetKind(), expectedChart.GetNamespace(), expectedChart.GetName()).To(BeEquivalentTo(expectedChart))
+		})
+
+		It("Can set kube failurePolicy", func() {
+			timeoutSeconds := 5
+			expectedChart := generateExpectedChart(expectedChartArgs{
+				timeoutSeconds:    timeoutSeconds,
+				kubeFailurePolicy: "Fail",
+				expectedDeletes:   6,
+			})
+
+			prepareMakefile(namespace, glootestutils.HelmValues{
+				ValuesArgs: []string{
+					fmt.Sprintf(`gateway.validation.webhook.timeoutSeconds=%d`, timeoutSeconds),
+					`gateway.validation.kubeCoreFailurePolicy=Fail`,
+				},
+			})
+			testManifest.ExpectUnstructured(expectedChart.GetKind(), expectedChart.GetNamespace(), expectedChart.GetName()).To(BeEquivalentTo(expectedChart))
+		})
 
 		Context("enablePolicyApi", func() {
 
@@ -178,9 +216,27 @@ var _ = Describe("WebhookValidationConfiguration helm test", func() {
 	runTests(allTests)
 })
 
-func generateExpectedChart(timeoutSeconds int, skipDeletes []string, expectedDeletes int) *unstructured.Unstructured {
+type expectedChartArgs struct {
+	timeoutSeconds    int
+	skipDeletes       []string
+	expectedDeletes   int
+	glooFailurePolicy string
+	kubeFailurePolicy string
+}
+
+func generateExpectedChart(args expectedChartArgs) *unstructured.Unstructured {
+
+	// Default failure policies
+	if args.glooFailurePolicy == "" {
+		args.glooFailurePolicy = "Ignore"
+	}
+	if args.kubeFailurePolicy == "" {
+		args.kubeFailurePolicy = "Ignore"
+	}
+
+	//func generateExpectedChart(timeoutSeconds int, skipDeletes []string, expectedDeletes int) *unstructured.Unstructured {
 	GinkgoHelper()
-	glooRules, coreRules := generateRules(skipDeletes)
+	glooRules, coreRules := generateRules(args.skipDeletes)
 
 	// indent "rules"
 	m1 := regexp.MustCompile("\n")
@@ -190,7 +246,7 @@ func generateExpectedChart(timeoutSeconds int, skipDeletes []string, expectedDel
 	// Check that we have the expected number of DELETEs
 	m2 := regexp.MustCompile(`DELETE`)
 	deletes := len(m2.FindAllStringIndex(glooRules, -1)) + len(m2.FindAllStringIndex(coreRules, -1))
-	Expect(deletes).To(Equal(expectedDeletes))
+	Expect(deletes).To(Equal(args.expectedDeletes))
 
 	chart := `
 apiVersion: admissionregistration.k8s.io/v1
@@ -215,10 +271,10 @@ webhooks:
     ` + glooRules + `
   sideEffects: None
   matchPolicy: Exact
-  timeoutSeconds: ` + strconv.Itoa(timeoutSeconds) + `
+  timeoutSeconds: ` + strconv.Itoa(args.timeoutSeconds) + `
   admissionReviewVersions:
     - v1beta1
-  failurePolicy: Ignore
+  failurePolicy: ` + args.glooFailurePolicy + `
 `
 	// Only create the webhook for core resources if there are any resources being valdiated
 	if coreRules != "[]\n    " {
@@ -233,10 +289,10 @@ webhooks:
     ` + coreRules + `
   sideEffects: None
   matchPolicy: Exact
-  timeoutSeconds: ` + strconv.Itoa(timeoutSeconds) + `
+  timeoutSeconds: ` + strconv.Itoa(args.timeoutSeconds) + `
   admissionReviewVersions:
     - v1beta1
-  failurePolicy: Ignore
+  failurePolicy: ` + args.kubeFailurePolicy + `
 `
 	}
 
