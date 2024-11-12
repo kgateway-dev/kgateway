@@ -102,9 +102,9 @@ specific resources, we will manage the resources that the webhook receives via t
 {{- end }}
   admissionReviewVersions:
     - v1beta1 # v1beta1 still live in 1.22 https://github.com/kubernetes/api/blob/release-1.22/admission/v1beta1/types.go#L33
-{{- if .Values.gateway.validation.failurePolicy }}
+{{- if .Values.gateway.validation.kubeCoreFailurePolicy }}
   failurePolicy: {{ .Values.gateway.validation.kubeCoreFailurePolicy -}}
-{{- end }} {{/* if .Values.gateway.validation.failurePolicy */}}
+{{- end }} {{/* if .Values.gateway.validation.kubeCoreFailurePolicy */}}
 {{- end }} {{/* render webhook if */}}
 
 {{- end }} {{/* if and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.validation.webhook.enabled */}}
