@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/10323
+    resolvesIssue: true
+    description: >-
+      Removes the endpoints resource from Helm RBAC manifest when kubeGateway is enabled.
