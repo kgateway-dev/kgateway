@@ -1,9 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Add some extra spacing to print statements to make them easier to read.
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/10327
-    resolvesIssue: false
-    description: >-
-      Fix a flaky test by adding retry logic.
