@@ -126,7 +126,7 @@ ggv2 - Route delegation: enable HTTP route delegation with Gateway API, such tha
 
 edge, yes (issue open for full docs) - Adds the API for a new enterprise only feature designed to allow authenticating requests using tokens from the google metadata service before sending the requests upstreams. This feature will be exposed as a new Upstream type. (https://github.com/solo-io/gloo/issues/6828)
 
-ggv2 - Upstream Support: enable the use of Gloo Edge v1 Upstreams as destinations for using routes and mirror policy from the K8s Gateway API. (https://github.com/solo-io/solo-projects/issues/6129)
+ggv2 - Upstream Support: enable the use of k8sgateway v1 Upstreams as destinations for using routes and mirror policy from the K8s Gateway API. (https://github.com/solo-io/solo-projects/issues/6129)
 
 ggv2 - Add VirtualHostOptions status tracking for Kubernetes Gateways (https://github.com/solo-io/solo-projects/issues/6044)
 

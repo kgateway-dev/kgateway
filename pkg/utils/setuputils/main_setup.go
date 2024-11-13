@@ -48,7 +48,7 @@ type SetupOpts struct {
 
 var once sync.Once
 
-// Main is the main entrypoint for running Gloo Edge components
+// Main is the main entrypoint for running k8sgateway components
 // It works by performing the following:
 //  1. Initialize a SettingsClient backed either by Kubernetes or a File
 //  2. Run an event loop, watching events on the Settings resource, and executing the

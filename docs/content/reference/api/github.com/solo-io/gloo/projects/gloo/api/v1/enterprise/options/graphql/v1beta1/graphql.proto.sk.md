@@ -36,7 +36,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto](https://github.com/solo-io/gloo/blob/main/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto)
+##### Source File: [github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/graphql/v1beta1/graphql.proto](https://github.com/solo-io/gloo/blob/main/projects/controller/api/v1/enterprise/options/graphql/v1beta1/graphql.proto)
 
 
 
@@ -168,7 +168,7 @@ Is a Schema Extension
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `configMapRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | List of references to config maps that contain proto data for this resolver. For each of the config maps referenced here, they must contain keys in their data map with valid base64 encoded proto descriptor set binaries as the values. Also they must be in a namespace watched by gloo edge. |
+| `configMapRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | List of references to config maps that contain proto data for this resolver. For each of the config maps referenced here, they must contain keys in their data map with valid base64 encoded proto descriptor set binaries as the values. Also they must be in a namespace watched by k8sgateway. |
 
 
 

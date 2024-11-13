@@ -21,7 +21,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/form3tech-oss/jwt-go"
-	aws2 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
+	aws2 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/aws"
 	"github.com/solo-io/gloo/test/helpers"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -36,14 +36,14 @@ import (
 
 	gw1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	aws_plugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers"
+	aws_plugin "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/aws"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/hcm"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 )

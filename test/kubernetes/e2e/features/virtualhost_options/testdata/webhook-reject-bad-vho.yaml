@@ -13,6 +13,6 @@ spec:
       retryOn: "5xx"
       retryBackOff:
         # We expect to receive an error when the base interval is less than max interval. 
-        # ref projects/gloo/pkg/plugins/basicroute/plugin.go
+        # ref projects/controller/pkg/plugins/basicroute/plugin.go
         baseInterval: "1s"
         maxInterval: "1ms"

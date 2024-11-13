@@ -15,14 +15,14 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/grpc"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -32,8 +32,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/defaults"
 )
 
 var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {

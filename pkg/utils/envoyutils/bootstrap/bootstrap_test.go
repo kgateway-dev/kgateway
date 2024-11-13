@@ -3,8 +3,8 @@ package bootstrap
 import (
 	"context"
 
-	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	envoytransformation "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
 
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"

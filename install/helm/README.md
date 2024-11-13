@@ -1,5 +1,5 @@
-# Gloo Edge Helm chart
-This directory contains the resources used to generate the Gloo Edge Helm chart archive.
+# k8sgateway Helm chart
+This directory contains the resources used to generate the k8sgateway Helm chart archive.
 
 📝 [make targets](https://opensource.com/article/18/8/what-how-makefile]) are currently defined in the [Makefile](https://github.com/solo-io/gloo/blob/main/Makefile) and should be executed from the root of the repository 📝
 
@@ -8,18 +8,18 @@ This directory contains the resources used to generate the Gloo Edge Helm chart 
 This go script takes the `*-template.yaml` files in this directory and performs value substitutions 
 to generate the following files:
 
-- `Chart.yaml`: contains information about the Gloo Edge chart
+- `Chart.yaml`: contains information about the k8sgateway chart
 - `values.yaml`: default configuration values for the chart
 
-Check the [Gloo Edge docs](https://docs.solo.io/gloo-edge/latest/installation/)
+Check the [k8sgateway docs](https://docs.solo.io/gloo-edge/latest/installation/)
 for a description of the different installation options.
 
 ### /crds
-This directory contains the Gloo Edge `CustomResourceDefinitions`. This is the 
+This directory contains the k8sgateway `CustomResourceDefinitions`. This is the 
 [required location](https://helm.sh/docs/topics/charts/#custom-resource-definitions-crds) for CRDs in Helm 3 charts.
 
 ### /templates
-This directory contains the Helm templates used to generate the Gloo Edge manifests.
+This directory contains the Helm templates used to generate the k8sgateway manifests.
 
 ## Helm-centric commands
 Relevant commands to helm, meant to be run from the **root of this repository**
@@ -30,7 +30,7 @@ VERSION=$VERSION make generate-helm-files    # generate `Chart.yaml` and `values
 VERSION=$VERSION make package-chart          # package a helm chart to `_output/charts` directory (used for releasing)
 VERSION=$VERSION make build-test-chart       # package a helm chart to `_test` directory (used for testing)
 
-helm install gloo gloo/gloo                  # install Gloo Edge using Helm
+helm install gloo gloo/gloo                  # install k8sgateway using Helm
 TEST_PKG=install/test make test              # run all tests in this project
 ```
 

@@ -4,12 +4,12 @@ import (
 	"context"
 	"time"
 
-	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
+	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/matcher/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	gloo_matchers "github.com/solo-io/solo-kit/test/matchers"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
@@ -21,9 +21,9 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	. "github.com/solo-io/gloo/projects/gateway/pkg/translator"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers"
+	gloov1snap "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"

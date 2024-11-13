@@ -58,7 +58,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto](https://github.com/solo-io/gloo/blob/main/projects/gloo/api/v1/enterprise/options/ai/ai.proto)
+##### Source File: [github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/ai/ai.proto](https://github.com/solo-io/gloo/blob/main/projects/controller/api/v1/enterprise/options/ai/ai.proto)
 
 
 

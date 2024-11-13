@@ -20,8 +20,8 @@ import (
 	v1alpha1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
 	v1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	glooutils "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
 )
 
 type translatorSyncer struct {

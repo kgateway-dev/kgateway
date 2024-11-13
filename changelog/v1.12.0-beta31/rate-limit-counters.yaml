@@ -3,7 +3,7 @@ CHANGELOG:
     issueLink: https://github.com/solo-io/gloo/issues/2785
     description: |
       Add API options for enabling Envoy's X-RateLimit headers. Breaking calls to
-      projects/gloo/pkg/plugins/ratelimit.GenerateEnvoyConfigForFilterWith which
+      projects/controller/pkg/plugins/ratelimit.GenerateEnvoyConfigForFilterWith which
       now requires a boolean parameter specifying whether these headers should be enabled
     resolvesIssue: false
 

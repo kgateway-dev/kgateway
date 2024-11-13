@@ -30,7 +30,7 @@ settings:
 
 # Configuration for the Edge Gateway integration in Gloo Gateway
 gateway:
-  # In earlier versions of Gloo Gateway (when it was named Gloo Edge) there were separate 'gloo' and 'gateway'
+  # In earlier versions of Gloo Gateway (when it was named k8sgateway) there were separate 'gloo' and 'gateway'
   # pods, and the Proxy CR was persisted in etcD to allow that resource to be shared between the two pods.
   # Those pods have since been combined, and persisting the resource in memory is unnecessary and costs
   # unnecessary CPU to read/write and marshal/unmarshal

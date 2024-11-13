@@ -3,18 +3,18 @@ package helpers
 import (
 	"fmt"
 
-	v12 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	v12 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/defaults"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
-	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
+	v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3"
+	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers"
+	v1static "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/static"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 

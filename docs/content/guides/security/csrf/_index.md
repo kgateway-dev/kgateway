@@ -249,7 +249,7 @@ http.http.csrf.request_valid: 1
 
 ### CSRF Policy Scoping
 
-Note that CSRF policies may be scoped at different levels of the Gloo Gateway hierarchy.  In this example, we are applying the policy at the [virtual host level]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#virtualhostoptions" %}}).  In addition, we may scope them more broadly, at the [listener level]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#httplisteneroptions" %}}) for an entire gateway.  Or we may scope these policies more narrowly, even down to the [individual route level]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#routeoptions" %}}).
+Note that CSRF policies may be scoped at different levels of the Gloo Gateway hierarchy.  In this example, we are applying the policy at the [virtual host level]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/options.proto.sk/#virtualhostoptions" %}}).  In addition, we may scope them more broadly, at the [listener level]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/options.proto.sk/#httplisteneroptions" %}}) for an entire gateway.  Or we may scope these policies more narrowly, even down to the [individual route level]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/options.proto.sk/#routeoptions" %}}).
 
 ### Enforce the CSRF Policy
 
@@ -440,4 +440,4 @@ x-envoy-upstream-service-time: 2
 
 In this guide, we described what is Cross Site Request Forgery (CSRF) and approaches for dealing with these attacks.  We delved into one Gloo Gateway approach that directly uses an integrated Envoy filter.
 
-For more information, check out both the [Envoy docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/csrf_filter#config-http-filters-csrf) and [Gloo docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/csrf/v3/csrf.proto.sk/" %}}).
+For more information, check out both the [Envoy docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/csrf_filter#config-http-filters-csrf) and [Gloo docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/external/envoy/extensions/filters/http/csrf/v3/csrf.proto.sk/" %}}).

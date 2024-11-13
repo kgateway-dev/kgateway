@@ -6,7 +6,7 @@ weight: 5
 
 ## Intro
 
-Gloo Gateway uses the [v1.Upstream]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk" %}}) config object to define routable destinations for Gloo Gateway. These are converted inside Gloo Gateway.
+Gloo Gateway uses the [v1.Upstream]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/upstream.proto.sk" %}}) config object to define routable destinations for Gloo Gateway. These are converted inside Gloo Gateway.
 
 In this tutorial, you learn how to write an Upstream plugin for virtual machines (VM) that are hosted on Google Compute Engine, and to add the plugin to Gloo Gateway to enable service discovery. A single endpoint represents a single VM, and the Upstream groups these instances by using the labels that are assigned to the VMs. 
 
@@ -53,7 +53,7 @@ We'll write a simple `UpstreamSpec` proto for the new `gce` upstream type:
 syntax = "proto3";
 package gce.options.gloo.solo.io;
 
-option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/gce";
+option go_package = "github.com/solo-io/gloo/projects/controller/pkg/api/v1/plugins/gce";
 
 option (extproto.equal_all) = true;
 
@@ -79,13 +79,13 @@ Let's follow the established convention and place our proto code into a new `gce
 # cd to the gloo directory
 cd ${GOPATH}/src/github.com/solo-io/gloo
 # make the new gce plugin directory
-mkdir -p projects/gloo/api/v1/plugins/gce
-# paste the proto code from above to projects/gloo/api/v1/plugins/gce/gce.proto 
-cat > projects/gloo/api/v1/plugins/gce/gce.proto <<EOF
+mkdir -p projects/controller/api/v1/plugins/gce
+# paste the proto code from above to projects/controller/api/v1/plugins/gce/gce.proto 
+cat > projects/controller/api/v1/plugins/gce/gce.proto <<EOF
 syntax = "proto3";
 package gce.options.gloo.solo.io;
 
-option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/gce";
+option go_package = "github.com/solo-io/gloo/projects/controller/pkg/api/v1/plugins/gce";
 
 option (extproto.equal_all) = true;
 
@@ -111,42 +111,42 @@ You can view the complete `gce.proto` here: [gce.proto](../gce.proto).
 
 
 Now we need to add the new GCE `UpstreamSpec` to Gloo Gateway's list of Upstream Types. This can be found in 
-the {{% protobuf name="gloo.solo.io.UpstreamSpec" %}} file at the API root (projects/gloo/api/v1)/. 
+the {{% protobuf name="gloo.solo.io.UpstreamSpec" %}} file at the API root (projects/controller/api/v1)/. 
 
 First, we'll add an import to the top of the file
 
 {{< highlight proto "hl_lines=31-32" >}}
 syntax = "proto3";
 package gloo.solo.io;
-option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
+option go_package = "github.com/solo-io/gloo/projects/controller/pkg/api/v1";
 
 import "google/protobuf/struct.proto";
 
 option (extproto.equal_all) = true;
 
-import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl/ssl.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/load_balancer.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/connection.proto";
+import "github.com/solo-io/gloo/projects/controller/api/v1/ssl/ssl.proto";
+import "github.com/solo-io/gloo/projects/controller/api/v1/extensions.proto";
+import "github.com/solo-io/gloo/projects/controller/api/v1/circuit_breaker.proto";
+import "github.com/solo-io/gloo/projects/controller/api/v1/load_balancer.proto";
+import "github.com/solo-io/gloo/projects/controller/api/v1/connection.proto";
 
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/aws/aws.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/rest/rest.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/grpc/grpc.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/grpc_web/grpc_web.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/hcm/hcm.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/tcp/tcp.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/azure/azure.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/consul/consul.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/kubernetes/kubernetes.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/retries/retries.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/static/static.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/stats/stats.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/prefix_rewrite.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/transformation.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/faultinjection/fault.proto";
+import "github.com/solo-io/gloo/projects/controller/api/v1/plugins/aws/aws.proto";
+import "github.com/solo-io/gloo/projects/controller/api/v1/plugins/rest/rest.proto";
+import "github.com/solo-io/gloo/projects/controller/api/v1/plugins/grpc/grpc.proto";
+import "github.com/solo-io/gloo/projects/controller/api/v1/plugins/grpc_web/grpc_web.proto";
+import "github.com/solo-io/gloo/projects/controller/api/v1/plugins/hcm/hcm.proto";
+import "github.com/solo-io/gloo/projects/controller/api/v1/plugins/tcp/tcp.proto";
+import "github.com/solo-io/gloo/projects/controller/api/v1/plugins/azure/azure.proto";
+import "github.com/solo-io/gloo/projects/controller/api/v1/plugins/consul/consul.proto";
+import "github.com/solo-io/gloo/projects/controller/api/v1/plugins/kubernetes/kubernetes.proto";
+import "github.com/solo-io/gloo/projects/controller/api/v1/plugins/retries/retries.proto";
+import "github.com/solo-io/gloo/projects/controller/api/v1/plugins/static/static.proto";
+import "github.com/solo-io/gloo/projects/controller/api/v1/plugins/stats/stats.proto";
+import "github.com/solo-io/gloo/projects/controller/api/v1/plugins/transformation/prefix_rewrite.proto";
+import "github.com/solo-io/gloo/projects/controller/api/v1/plugins/transformation/transformation.proto";
+import "github.com/solo-io/gloo/projects/controller/api/v1/plugins/faultinjection/fault.proto";
 // add the following line:
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/gce/gce.proto";
+import "github.com/solo-io/gloo/projects/controller/api/v1/plugins/gce/gce.proto";
 
 {{< /highlight >}}
 
@@ -205,7 +205,7 @@ make generated-code # add -B if you need to re-run
 
 ```
 
-We should be able to see modifications and additions to the generated code in `projects/gloo/pkg/api/v1`. Run `git status` to see what's been changed.
+We should be able to see modifications and additions to the generated code in `projects/controller/pkg/api/v1`. Run `git status` to see what's been changed.
 
 Let's start writing our plugin!
 
@@ -213,12 +213,12 @@ Let's start writing our plugin!
 
 #### Skeleton
 
-We'll start by creating a new package/directory for our code to live in. Following the convention in Gloo Gateway, we'll create our new package at `projects/gloo/pkg/plugins/gce`:
+We'll start by creating a new package/directory for our code to live in. Following the convention in Gloo Gateway, we'll create our new package at `projects/controller/pkg/plugins/gce`:
 
 ```bash
 cd ${GOPATH}/src/github.com/solo-io/gloo
-mkdir -p projects/gloo/pkg/plugins/gce
-touch projects/gloo/pkg/plugins/gce/plugin.go
+mkdir -p projects/controller/pkg/plugins/gce
+touch projects/controller/pkg/plugins/gce/plugin.go
 ```
 
 We'll start writing the code for our plugin in `plugin.go`:
@@ -234,7 +234,7 @@ func NewPlugin() *plugin {
 
 ```
 
-So far, our plugin is just a plain go struct with no features. In order to provide service discovery for Gloo Gateway, our plugin needs to implement two interfaces: the [`plugins.UpstreamPlugin`](https://github.com/solo-io/gloo/blob/main//projects/gloo/pkg/plugins/plugin_interface.go#L43) and [`discovery.DiscoveryPlugin`](https://github.com/solo-io/gloo/blob/main/projects/gloo/pkg/discovery/discovery.go#L21) interfaces.
+So far, our plugin is just a plain go struct with no features. In order to provide service discovery for Gloo Gateway, our plugin needs to implement two interfaces: the [`plugins.UpstreamPlugin`](https://github.com/solo-io/gloo/blob/main//projects/controller/pkg/plugins/plugin_interface.go#L43) and [`discovery.DiscoveryPlugin`](https://github.com/solo-io/gloo/blob/main/projects/controller/pkg/discovery/discovery.go#L21) interfaces.
 
 Let's add the functions necessary to implement these interfaces:
 
@@ -243,9 +243,9 @@ package gce
 
 import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controller/pkg/discovery"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
@@ -763,7 +763,7 @@ Our `WatchEndpoints` is now finished, along with our plugin!
 We are not finished, however. The task remains to wire our plugin 
 into the Gloo Gateway core, then rebuild Gloo Gateway and deploy to Kubernetes!
 
-All Gloo Gateway plugins are registered inside of a `registry` subpackage within the `plugins` directory. See [the registry.go file on GitHub here](https://github.com/solo-io/gloo/blob/main/projects/gloo/pkg/plugins/registry/registry.go).
+All Gloo Gateway plugins are registered inside of a `registry` subpackage within the `plugins` directory. See [the registry.go file on GitHub here](https://github.com/solo-io/gloo/blob/main/projects/controller/pkg/plugins/registry/registry.go).
 
 We need to add our plugin (and its import) to `registry.go`:
 
@@ -772,27 +772,27 @@ We need to add our plugin (and its import) to `registry.go`:
 package registry
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/azure"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/basicroute"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/cors"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/faultinjection"
+	"github.com/solo-io/gloo/projects/controller/pkg/bootstrap"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/aws"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/azure"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/basicroute"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/consul"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/cors"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/faultinjection"
 	// add our plugin's import here:
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/gce"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/grpc"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/linkerd"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/loadbalancer"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/rest"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/static"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/stats"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/upstreamconn"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/upstreamssl"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/gce"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/grpc"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/hcm"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/kubernetes"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/linkerd"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/loadbalancer"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/rest"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/static"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/stats"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/transformation"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/upstreamconn"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/upstreamssl"
 )
 
 type registry struct {

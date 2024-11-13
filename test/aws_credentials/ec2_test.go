@@ -8,19 +8,19 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/aws/ec2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 
 	ec2api "github.com/aws/aws-sdk-go/service/ec2"
 
-	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
+	glooec2 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/aws/ec2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
 )
 
 var _ = Describe("", func() {

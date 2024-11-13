@@ -125,7 +125,7 @@ EOF
 {{< /highlight >}}
 
 {{% notice note %}}
-Passthrough services also allow for failing "open" through the [`failureModeAllow`]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#settings" >}}) field. 
+Passthrough services also allow for failing "open" through the [`failureModeAllow`]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#settings" >}}) field. 
 By setting this field to `true`, the auth service responds with an `OK` if either your server returns a `5XX` response or the request times out.
 {{% /notice %}}
 
@@ -233,7 +233,7 @@ The request should now be authorized!
 
 ## Http Passthrough Auth Config Options
 
-For more information about configuration options, see the [API docs]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#passthroughhttp" >}}).
+For more information about configuration options, see the [API docs]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#passthroughhttp" >}}).
 
 ```yaml
 apiVersion: enterprise.gloo.solo.io/v1

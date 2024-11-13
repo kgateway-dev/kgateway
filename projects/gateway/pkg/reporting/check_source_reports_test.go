@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	gloov1snap "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/test/samples"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 

@@ -264,7 +264,7 @@ Regex matching provides the most flexibility when using path matching, but it al
 
 {{% notice note %}}
 The complexity of the regex is constrained by the regex engine's "program size" setting. If your regex is too complex, you may need to adjust the `regexMaxProgramSize` field
-in the [GlooOptions section of your Settings resource]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#gloooptions" %}}).
+in the [GlooOptions section of your Settings resource]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/settings.proto.sk/#gloooptions" %}}).
 {{% /notice %}}
 
 ### Regex Example 1: Match Precise Count of Characters

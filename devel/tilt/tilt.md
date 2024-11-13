@@ -50,10 +50,10 @@ The list of enabled providers is specified in the `enabled_providers` array in `
 The providers have the following format :
 ```yaml
   gloo:                                          # Service name
-    context: _output/projects/gloo               # The output dir of the binary
+    context: _output/projects/controller               # The output dir of the binary
     image: quay.io/solo-io/gloo                  # Image name of the container in the deployment
     live_reload_deps:                            # files / folders to watch. Changes here will trigger a rebuild and reload
-    - projects/gloo
+    - projects/controller
     label: gloo                                  # The service name
     build_binary: make -B gloo                   # Command to build the binary
     binary_name: gloo-linux-arm64                # Name of the binary file when built

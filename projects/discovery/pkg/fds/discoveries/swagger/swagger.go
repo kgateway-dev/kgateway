@@ -18,11 +18,11 @@ import (
 	"github.com/solo-io/go-utils/log"
 
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
-	transformation_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
-	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
-	rest_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
+	transformation_plugins "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation"
+	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1"
+	plugins "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options"
+	rest_plugins "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/rest"
 )
 
 var commonSwaggerURIs = []string{

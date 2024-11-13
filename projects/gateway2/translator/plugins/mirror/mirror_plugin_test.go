@@ -9,8 +9,8 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/mirror"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/mirror/mocks"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
@@ -118,7 +118,7 @@ func TestUpstreamMirror(t *testing.T) {
 	g.Expect(shadowing.Percentage).To(gomega.Equal(float32(100.0)))
 }
 
-// NOTE: Gloo Edge Proxy IR doesn't support multiple mirror/shadow policies on the same route
+// NOTE: k8sgateway Proxy IR doesn't support multiple mirror/shadow policies on the same route
 // func TestMultipleMirrors(t *testing.T) {
 // 	g := gomega.NewWithT(t)
 // 	ctrl := gomock.NewController(t)

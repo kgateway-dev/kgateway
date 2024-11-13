@@ -10,10 +10,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
-	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/aws"
+	kubeplugin "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/kubernetes"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/bootstrap"
 )
 
 var disabledLabels = map[string]string{FdsLabelKey: disabledLabelValue}

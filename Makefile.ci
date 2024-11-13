@@ -5,7 +5,7 @@
 # glooctl
 #----------------------------------------------------------------------------------
 
-CLI_DIR=projects/gloo/cli
+CLI_DIR=projects/controller/cli
 
 $(OUTPUT_DIR)/glooctl: $(SOURCES)
 	GO111MODULE=on go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)

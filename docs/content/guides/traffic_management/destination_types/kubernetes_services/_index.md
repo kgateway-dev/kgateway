@@ -46,7 +46,7 @@ routes:
 
 ## Option 2: Use Kubernetes Upstream resources
 
-Instead of routing to a Kubernetes service directly, you can create [Gloo Kubernetes Upstream]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/kubernetes/kubernetes.proto.sk/" %}}) resources that represent your Kubernetes workload. With Kubernetes Upstream resources, you can route requests to a specific pod in the cluster. 
+Instead of routing to a Kubernetes service directly, you can create [Gloo Kubernetes Upstream]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/options/kubernetes/kubernetes.proto.sk/" %}}) resources that represent your Kubernetes workload. With Kubernetes Upstream resources, you can route requests to a specific pod in the cluster. 
 
 To use Kubernetes Upstream resources: 
 

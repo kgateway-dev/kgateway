@@ -3,8 +3,8 @@ package routeutils
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )

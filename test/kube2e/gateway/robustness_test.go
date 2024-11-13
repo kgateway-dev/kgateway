@@ -14,14 +14,14 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
 
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 
 	"github.com/rotisserie/eris"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmission"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
 
@@ -36,7 +36,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

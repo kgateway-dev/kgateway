@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/defaults"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
@@ -17,7 +17,7 @@ import (
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
 // testingSuite is the entire Suite of tests for the "Admin Server" feature
-// The "Admin Server" code can be found here: /projects/gloo/pkg/servers/admin
+// The "Admin Server" code can be found here: /projects/controllerrollerroller/pkg/servers/admin
 type testingSuite struct {
 	suite.Suite
 

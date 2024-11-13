@@ -8,7 +8,7 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
-	"github.com/solo-io/gloo/projects/gloo/pkg/servers/admin"
+	"github.com/solo-io/gloo/projects/controller/pkg/servers/admin"
 	"github.com/solo-io/go-utils/threadsafe"
 )
 
@@ -17,7 +17,7 @@ const (
 )
 
 // Client is a utility for executing requests against the Gloo Admin API
-// The Admin API handlers can be found at: /projects/gloo/pkg/servers/admin
+// The Admin API handlers can be found at: /projects/controllerrollerroller/pkg/servers/admin
 type Client struct {
 	// receiver is the default destination for the curl stdout and stderr
 	receiver io.Writer

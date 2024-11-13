@@ -23,8 +23,8 @@ Before you begin, set up basic JWT authorization and configure a Virtual Service
 ## Matching against nested JWT claims
 
 By default, matching is supported for only top-level claims of the JWT.
-To additionally enable matching against nested claims, or claims that are children of top-level claims, you must specify a `nestedClaimDelimiter`, such as `.`, in the RBAC [policy]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto.sk/#policy" %}}),
-and specify the claim name as a path, such as `parent.child.foo: user`, in the `claims` field of the [`jwtPrincipal`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto.sk/#jwtprincipal" %}}).
+To additionally enable matching against nested claims, or claims that are children of top-level claims, you must specify a `nestedClaimDelimiter`, such as `.`, in the RBAC [policy]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/rbac/rbac.proto.sk/#policy" %}}),
+and specify the claim name as a path, such as `parent.child.foo: user`, in the `claims` field of the [`jwtPrincipal`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/rbac/rbac.proto.sk/#jwtprincipal" %}}).
 
 ### Sample JWT (nested claims)
 
@@ -102,8 +102,8 @@ spec:
 
 ## Matching against non-string JWT claim values
 
-By default, claims are matched against values by using exact string comparison. To instead match claims against non-string values, you must specify a [ClaimMatcher]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto.sk/#claimmatcher" %}})
-in the `matcher` field of the [`jwtPrincipal`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto.sk/#jwtprincipal" %}}).
+By default, claims are matched against values by using exact string comparison. To instead match claims against non-string values, you must specify a [ClaimMatcher]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/rbac/rbac.proto.sk/#claimmatcher" %}})
+in the `matcher` field of the [`jwtPrincipal`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/rbac/rbac.proto.sk/#jwtprincipal" %}}).
 
 ### Matching boolean values
 

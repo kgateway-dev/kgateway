@@ -1,7 +1,7 @@
 syntax = "proto3";
 package gce.plugins.gloo.solo.io;
 
-option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/gce";
+option go_package = "github.com/solo-io/gloo/projects/controller/pkg/api/v1/plugins/gce";
 
 option (extproto.equal_all) = true;
 

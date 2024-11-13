@@ -96,7 +96,7 @@ go run <path-to-cmd>/main.go
 For example:
 ```bash
 # run gloo locally
-go run projects/gloo/cmd/main.go
+go run projects/controller/cmd/main.go
 # run discovery locally
 go run projects/discovery/cmd/main.go
 # run gateway locally

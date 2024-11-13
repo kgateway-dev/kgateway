@@ -3,8 +3,8 @@ package syncer
 import (
 	"errors"
 
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/bootstrap"
 )
 
 // ErrorIfDiscoveryServiceUnused returns an error if the discovery service is not used by any upstreams.

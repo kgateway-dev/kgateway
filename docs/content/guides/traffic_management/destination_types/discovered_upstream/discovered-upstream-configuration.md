@@ -111,11 +111,11 @@ By setting the `gloo.solo.io/upstream_config.deep_merge` annotation to `true` on
 You can consistently configure upstreams with the global annotations setting (`Settings.UpstreamOptions.globalAnnotations`).
 
 When using global annotations, keep in mind the following considerations:
-* To overwrite global annotations for an upstream, define the same annotation key with a different value on the Kubernetes service. For possible upstream annotations to set, see the [API docs]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk/" >}}).
+* To overwrite global annotations for an upstream, define the same annotation key with a different value on the Kubernetes service. For possible upstream annotations to set, see the [API docs]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/upstream.proto.sk/" >}}).
 * You can use the merge strategy annotation `gloo.solo.io/upstream_config.deep_merge` for global annotations.
 * You cannot set an [SSL global annotation]({{< versioned_link_path fromRoot="/guides/security/tls/client_tls_service_annotations/" >}}) with the prefix `gloo.solo.io/sslService`.
 
-Review the following example configuration and description. For more information, see the [API docs]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#upstreamoptions" >}}).
+Review the following example configuration and description. For more information, see the [API docs]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/settings.proto.sk/#upstreamoptions" >}}).
 
 ```yaml
 # Gloo Gateway Settings configuration

@@ -66,7 +66,7 @@ func BuildSecurityScanReportGlooE(tags []string) error {
 	return nil
 }
 
-// List of images included in gloo edge open source version 1.<version>.x
+// List of images included in k8sgateway open source version 1.<version>.x
 func OpenSourceImages(semver *version.Version) []string {
 	images := []string{"access-logger", "certgen", "discovery", "gloo", "gloo-envoy-wrapper", "ingress", "sds"}
 
@@ -82,7 +82,7 @@ func OpenSourceImages(semver *version.Version) []string {
 	return images
 }
 
-// List of images only included in gloo edge enterprise
+// List of images only included in k8sgateway enterprise
 // In 1.7, we replaced the grpcserver images with gloo-fed images.
 func EnterpriseImages(semver *version.Version) []string {
 	images := []string{"rate-limit-ee", "gloo-ee", "gloo-ee-envoy-wrapper", "observability-ee", "extauth-ee"}

@@ -15,10 +15,10 @@ func main() {
 
 	// Explicitly specify the directories to be built (i.e. do not build gateway2 since
 	// it causes compilation errors in solo-kit, and also because gateway2 protos are not
-	// needed for gloo edge classic). See `projects/gateway2/api/README.md` for more info.
+	// needed for k8sgateway classic). See `projects/gateway2/api/README.md` for more info.
 	protoImports := sk_anyvendor.CreateDefaultMatchOptions(
 		[]string{
-			"projects/gloo/**/*.proto",
+			"projects/controller/**/*.proto",
 			"projects/gateway/**/*.proto",
 			"projects/ingress/**/*.proto",
 			sk_anyvendor.SoloKitMatchPattern,
@@ -36,14 +36,14 @@ func main() {
 	generateOptions := cmd.GenerateOptions{
 		SkipGenMocks: true,
 		CustomCompileProtos: []string{
-			"github.com/solo-io/gloo/projects/gloo/api/grpc",
+			"github.com/solo-io/gloo/projects/controller/api/grpc",
 		},
 		SkipGeneratedTests: true,
 		// helps to cut down on time spent searching for imports, not strictly necessary
 		SkipDirs: []string{
 			"docs",
 			"test",
-			"projects/gloo/api/grpc",
+			"projects/controller/api/grpc",
 		},
 		RelativeRoot:  ".",
 		CompileProtos: true,

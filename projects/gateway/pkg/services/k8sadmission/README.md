@@ -28,7 +28,7 @@ To verify the TLS connection with the webhook, a PEM-encoded CA bundle for valid
 
 The `CaBundle` can be defined in the following ways:
 1. Manually
-2. Using the [Gloo Edge Certgen Job](https://github.com/solo-io/gloo/tree/main/jobs/certgen/cmd)
+2. Using the [k8sgateway Certgen Job](https://github.com/solo-io/gloo/tree/main/jobs/certgen/cmd)
 3. Using the [Cert-Manager CA Injector](https://cert-manager.io/docs/concepts/ca-injector/)
 
 #### When the ValidatingAdmissionWebhook is invoked, how does Gloo perform validation?
@@ -44,7 +44,7 @@ Instead of re-defining this same set of validation code in our webhook, we re-us
 
 ### Configuration
 #### Where is the webhook configuration defined?
-Webhook configuration is defined on the [Gloo Settings resource](https://github.com/solo-io/gloo/blob/a3430da820bd39a8b0940025c1040e33eeb7d8f8/projects/gloo/api/v1/settings.proto#L605)
+Webhook configuration is defined on the [Gloo Settings resource](https://github.com/solo-io/gloo/blob/a3430da820bd39a8b0940025c1040e33eeb7d8f8/projects/controller/api/v1/settings.proto#L605)
 
 
 ### Debugging

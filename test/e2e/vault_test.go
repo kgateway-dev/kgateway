@@ -1,10 +1,10 @@
 package e2e_test
 
 import (
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	bootstrap "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients/vault"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extauth/v1"
+	bootstrap "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/bootstrap/clients"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/bootstrap/clients/vault"
 	"github.com/solo-io/gloo/test/e2e"
 	"github.com/solo-io/gloo/test/ginkgo/decorators"
 	"github.com/solo-io/gloo/test/services"

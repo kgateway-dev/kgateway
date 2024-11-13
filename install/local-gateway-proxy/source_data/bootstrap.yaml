@@ -20,7 +20,7 @@ node:
   id: gateway-proxy
   # Opaque metadata extending the node identifier. Envoy will pass this directly to the management server.
   metadata:
-    # Specifies the Proxy's in-memory xDS cache key (see projects/gloo/pkg/xds/envoy.go)
+    # Specifies the Proxy's in-memory xDS cache key (see projects/controller/pkg/xds/envoy.go)
     role: gateway-proxy
 
 ####

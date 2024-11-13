@@ -1,7 +1,7 @@
 changelog:
   - type: BREAKING_CHANGE
     description: >
-      Adds support for running Gloo Edge (OSS) on Kubernetes 1.25 and removes support for 1.22 and below.
+      Adds support for running k8sgateway (OSS) on Kubernetes 1.25 and removes support for 1.22 and below.
       Notable changes include `PodDisruptionBudget` moving from `policy/v1beta1` to `policy/v1`, and the
       gloo helm chart OCI registry path changing from `gcr.io/solo-public/gloo-helm` to
       `gcr.io/solo-public/gloo-helm/gloo`.

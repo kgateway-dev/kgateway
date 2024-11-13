@@ -10,8 +10,8 @@ import (
 	"os"
 	"time"
 
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	matchers "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	matchers "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"

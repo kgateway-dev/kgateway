@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	utils2 "github.com/solo-io/gloo/pkg/utils/statsutils"
-	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	gloov1snap "github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/go-utils/hashutils"
 
 	"github.com/hashicorp/go-multierror"
@@ -17,11 +17,11 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
 	k8sgwvalidation "github.com/solo-io/gloo/projects/gateway2/validation"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	syncerValidation "github.com/solo-io/gloo/projects/gloo/pkg/syncer/validation"
-	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
-	gloovalidation "github.com/solo-io/gloo/projects/gloo/pkg/validation"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/grpc/validation"
+	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	syncerValidation "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/syncer/validation"
+	validationutils "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils/validation"
+	gloovalidation "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/validation"
 	"github.com/solo-io/go-utils/contextutils"
 	kubeCRDV1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -314,7 +314,7 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 
 		if len(glooReports) != 1 {
 			// This was likely caused by a development error. When passing a proxy to the glooValidator,  it should return a single report:
-			// https://github.com/solo-io/gloo/blob/85a8f3f509f47d93e877b932e9785998215210c5/projects/gloo/pkg/validation/validator.go#L55
+			// https://github.com/solo-io/gloo/blob/85a8f3f509f47d93e877b932e9785998215210c5/projects/controllerrollerroller/pkg/validation/validator.go#L55
 			// If this error is encountered, stop collecting all errors, as revalidation will fail due to the presence of this error
 			err = GlooValidationResponseLengthError{reportLength: len(glooReports)}
 			errs = multierror.Append(errs, err)

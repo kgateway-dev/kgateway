@@ -1,6 +1,6 @@
 ---
 title: "API Reference"
-description: Reference documentation for the Gloo Edge API
+description: Reference documentation for the k8sgateway API
 weight: 10
 ---
 
@@ -8,11 +8,11 @@ weight: 10
 
 
 
-### API Reference for Gloo Edge, The Hybrid Application Gateway
+### API Reference for k8sgateway, The Hybrid Application Gateway
 
 API Version: `gloo.solo.io.v1`
 
-Gloo Edge is a high-performance, plugin-extendable, platform-agnostic API Gateway built on top of Envoy. Gloo Edge is designed for microservice, monolithic, and serverless applications. By employing function-level routing, Gloo Edge can completely decouple client APIs from upstream APIs at the routing level. Gloo Edge serves as an abstraction layer between clients and upstream services, allowing front-end teams to work independently of teams developing the microservices their apps connect to.
+k8sgateway is a high-performance, plugin-extendable, platform-agnostic API Gateway built on top of Envoy. k8sgateway is designed for microservice, monolithic, and serverless applications. By employing function-level routing, k8sgateway can completely decouple client APIs from upstream APIs at the routing level. k8sgateway serves as an abstraction layer between clients and upstream services, allowing front-end teams to work independently of teams developing the microservices their apps connect to.
 
 
 ### API Resources:

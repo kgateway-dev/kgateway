@@ -9,5 +9,5 @@ changelog:
     resolvesIssue: false
     description: |
       Add ListenerOption as a policy resource for use with Kube Gateway API objects.
-      Note that this resource can not currently be used as a standalone resource (i.e. delegated option) for the Gloo Edge API.
+      Note that this resource can not currently be used as a standalone resource (i.e. delegated option) for the k8sgateway API.
 

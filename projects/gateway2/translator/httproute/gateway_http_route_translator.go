@@ -8,9 +8,9 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway2/parameters"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/aws"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/azure"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,8 +23,8 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/backendref"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers"
 )
 
 var (

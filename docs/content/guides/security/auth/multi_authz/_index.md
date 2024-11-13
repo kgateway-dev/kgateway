@@ -39,7 +39,7 @@ You can use either the [gRPC Passthrough Auth]({{% versioned_link_path fromRoot=
 ### Option B - Using namedExtAuth
 
 In Gloo Gateway Enterprise, you can define additional ExtAuthZ servers in the Gloo Gateway settings.
-For that, you must register your authorization servers in the "default" `Settings` custom resource, as shown in the following example. For more information, see the [API reference](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#settings).
+For that, you must register your authorization servers in the "default" `Settings` custom resource, as shown in the following example. For more information, see the [API reference](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/settings.proto.sk/#settings).
 
 
 {{< highlight bash "hl_lines=9-15" >}}
@@ -113,5 +113,5 @@ For gRPC, use the [protobuf specification](https://github.com/envoyproxy/envoy/b
 
 With both the **HTTP passthrough** option and the **namedExtAuth** with HTTP option, if you want to send new headers to the rest of the filter chain or to the upstream service, then just add the headers to the authorization response. Then, the headers are merged into the original request before being forwarded upstream.
 
-You also decide which headers are allowed to go upstream and which are not. Under the `httpService` option, you can [define]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#response" %}}) some rules about headers you want to forward to the external authorization service, and also rules to sanitize headers before forwarding the request upstream.
+You also decide which headers are allowed to go upstream and which are not. Under the `httpService` option, you can [define]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#response" %}}) some rules about headers you want to forward to the external authorization service, and also rules to sanitize headers before forwarding the request upstream.
 

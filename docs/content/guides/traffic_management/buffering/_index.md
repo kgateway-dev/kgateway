@@ -8,7 +8,7 @@ You can set buffering limits on different Gloo Gateway resources to help fine-tu
 
 ## Gateway listener
 
-You can set buffer limits and other connection options with the [ListenerOptions]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#listeneroptions" >}}) settings for a [Gateway]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/" >}}).
+You can set buffer limits and other connection options with the [ListenerOptions]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/options.proto.sk/#listeneroptions" >}}) settings for a [Gateway]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/" >}}).
 
 The listener options that you set on the Gateway apply to all routes that the Gateway serves.
 
@@ -31,7 +31,7 @@ You can configure a maximum payload size on a gateway (`perConnectionBufferLimit
 
 ## Route
 
-You can set buffer limits and other connection options with the [Buffer]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto.sk/" >}}) settings in the options of a [Route]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto.sk/#route" >}}) in a [RouteTable]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk/" >}}).
+You can set buffer limits and other connection options with the [Buffer]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto.sk/" >}}) settings in the options of a [Route]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto.sk/#route" >}}) in a [RouteTable]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk/" >}}).
 
 ```yaml
 apiVersion: gateway.solo.io/v1
@@ -57,7 +57,7 @@ spec:
 
 ## Upstream
 
-You can set buffer limits and other connection options with the [ConnectionConfig]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/connection.proto.sk/" >}}) settings for an [Upstream]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk/" >}}).
+You can set buffer limits and other connection options with the [ConnectionConfig]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/connection.proto.sk/" >}}) settings for an [Upstream]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/upstream.proto.sk/" >}}).
 
 ```yaml
 apiVersion: gloo.solo.io/v1

@@ -46,7 +46,7 @@ For more information, see the [extProc proto definition](https://github.com/envo
 
 ## Enable ExtProc in Gloo Gateway
 
-You can enable ExtProc for all requests and responses that the gateway processes by using the [Settings]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/" %}}) custom resource. Alternatively, you can enable ExtProc for a specific gateway listener, virtual host, or route. 
+You can enable ExtProc for all requests and responses that the gateway processes by using the [Settings]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/settings.proto.sk/" %}}) custom resource. Alternatively, you can enable ExtProc for a specific gateway listener, virtual host, or route. 
 
 Example configuration to add to the `default` Settings resource: 
 

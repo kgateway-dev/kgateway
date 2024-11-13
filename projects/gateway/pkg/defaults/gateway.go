@@ -4,10 +4,10 @@ import (
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/ssl"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 

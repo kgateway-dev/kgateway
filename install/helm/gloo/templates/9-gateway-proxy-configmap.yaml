@@ -41,7 +41,7 @@ data:
       cluster: gateway
       id: "{{ `{{.PodName}}.{{.PodNamespace}}` }}"
       metadata:
-        # Specifies the proxy's in-memory xds cache key (see projects/gloo/pkg/xds/envoy.go)
+        # Specifies the proxy's in-memory xds cache key (see projects/controller/pkg/xds/envoy.go)
         # This value needs to match discoveryNamespace (or "writeNamespace") in the settings template
         role: {{.Values.settings.writeNamespace | default .Release.Namespace }}~{{ $name | kebabcase }}
 {{- if $spec.envoyStatsConfig }}

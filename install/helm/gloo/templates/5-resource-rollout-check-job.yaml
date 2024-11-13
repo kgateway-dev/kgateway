@@ -83,7 +83,7 @@ spec:
           - /bin/sh
           - -c
           - |
-            # Check if Gloo Edge applied custom resources
+            # Check if k8sgateway applied custom resources
             if [ "$HAS_CUSTOM_RESOURCES" == "true" ]
             then
               # Wait for the resource rollout job to complete

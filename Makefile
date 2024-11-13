@@ -411,7 +411,7 @@ go-generate-mocks: clean-vendor-any ## Runs all generate directives for mockgen 
 
 .PHONY: generate-cli-docs
 generate-cli-docs: clean-cli-docs ## Removes existing CLI docs and re-generates them
-	GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
+	GO111MODULE=on go run projects/controller/cli/cmd/docs/main.go
 
 # Ensures that accesses for fields which have "getter" functions are exclusively done via said "getter" functions
 .PHONY: getter-check
@@ -426,7 +426,7 @@ mod-tidy:
 .PHONY: verify-enterprise-protos
 verify-enterprise-protos:
 	@echo Verifying validity of generated enterprise files...
-	$(GO_BUILD_FLAGS) GOOS=linux go build projects/gloo/pkg/api/v1/enterprise/verify.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build projects/controller/pkg/api/v1/enterprise/verify.go
 
 # Validates that local Go version matches go.mod
 .PHONY: check-go-version
@@ -640,7 +640,7 @@ discovery-distroless-docker: $(DISCOVERY_OUTPUT_DIR)/discovery-linux-$(GOARCH) $
 # Gloo
 #----------------------------------------------------------------------------------
 
-GLOO_DIR=projects/gloo
+GLOO_DIR=projects/controller
 EDGE_GATEWAY_DIR=projects/gateway
 K8S_GATEWAY_DIR=projects/gateway2
 GLOO_SOURCES=$(call get_sources,$(GLOO_DIR))
@@ -728,7 +728,7 @@ $(GLOO_RACE_OUT_DIR)/.gloo-race-docker: $(GLOO_RACE_OUT_DIR)/gloo-linux-amd64 $(
 	touch $@
 
 #----------------------------------------------------------------------------------
-# SDS Server - gRPC server for serving Secret Discovery Service config for Gloo Edge MTLS
+# SDS Server - gRPC server for serving Secret Discovery Service config for k8sgateway MTLS
 #----------------------------------------------------------------------------------
 
 SDS_DIR=projects/sds
@@ -1091,7 +1091,7 @@ endif # distroless images
 #----------------------------------------------------------------------------------
 #
 # The following targets are used to generate the assets on which the kube2e tests rely upon.
-# The Kube2e tests will use the generated Gloo Edge Chart to install Gloo Edge to the KinD test cluster.
+# The Kube2e tests will use the generated k8sgateway Chart to install k8sgateway to the KinD test cluster.
 
 CLUSTER_NAME ?= kind
 INSTALL_NAMESPACE ?= gloo-system

@@ -67,7 +67,7 @@ func TestAutomtlsIstioEdgeApisGateway(t *testing.T) {
 		t.Fatalf("failed to install: %v\n", err)
 	}
 
-	// Install Gloo Gateway with only Gloo Edge Gateway APIs enabled
+	// Install Gloo Gateway with only k8sgateway Gateway APIs enabled
 	testInstallation.InstallGlooGatewayWithTestHelper(ctx, testHelper, 5*time.Minute)
 
 	AutomtlsIstioEdgeApiSuiteRunner().Run(ctx, t, testInstallation)

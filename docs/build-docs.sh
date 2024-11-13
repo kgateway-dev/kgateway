@@ -1,13 +1,13 @@
 #!/bin/bash
 
 ###################################################################################
-# This script generates a versioned docs website for Gloo Edge which can 
+# This script generates a versioned docs website for k8sgateway which can 
 # then be deployed to firebase
 ###################################################################################
 
 set -ex
 
-# Update this array with all versions of Gloo Edge to include in the versioned docs website.
+# Update this array with all versions of k8sgateway to include in the versioned docs website.
 declare -a versions=($(cat active_versions.json | jq -rc '."versions" | join(" ")'))
 declare -a oldVersions=($(cat active_versions.json | jq -rc '."oldVersions" | join(" ")'))
 latestVersion=$(cat active_versions.json | jq -r ."latest")
@@ -252,7 +252,7 @@ firebaseJson=$(cat <<EOF
       },
       {
         "source": "/gloo-edge/:version/reference/api/github.com/solo-io/solo-apis/api/gloo/enterprise.gloo/v1/auth_config.proto.sk/",
-        "destination": "/gloo-edge/:version/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig",
+        "destination": "/gloo-edge/:version/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig",
         "type":"301"
       },
       {
@@ -266,18 +266,18 @@ firebaseJson=$(cat <<EOF
         "type":"301"
       },
       {
-        "source": "/gloo-edge/:version/v1/github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/transformation.proto.sk/",
-        "destination": "/gloo-edge/:version/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/",
+        "source": "/gloo-edge/:version/v1/github.com/solo-io/gloo/projects/controller/api/v1/plugins/transformation/transformation.proto.sk/",
+        "destination": "/gloo-edge/:version/reference/api/github.com/solo-io/gloo/projects/controller/api/external/envoy/extensions/transformation/transformation.proto.sk/",
         "type":"301"
       },
       {
-        "source": "/gloo-edge/:version/v1/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/",
-        "destination": "/gloo-edge/:version/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/",
+        "source": "/gloo-edge/:version/v1/github.com/solo-io/gloo/projects/controller/api/v1/proxy.proto.sk/",
+        "destination": "/gloo-edge/:version/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/proxy.proto.sk/",
         "type":"301"
       },
       {
-        "source": "/gloo-edge/:version/v1/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk/",
-        "destination": "/gloo-edge/:version/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk/",
+        "source": "/gloo-edge/:version/v1/github.com/solo-io/gloo/projects/controller/api/v1/upstream.proto.sk/",
+        "destination": "/gloo-edge/:version/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/upstream.proto.sk/",
         "type":"301"
       },
       {
@@ -286,13 +286,13 @@ firebaseJson=$(cat <<EOF
         "type":"301"
       },
       {
-        "source": "/gloo-edge/:version/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/",
-        "destination": "/gloo-edge/:version/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/",
+        "source": "/gloo-edge/:version/api/github.com/solo-io/gloo/projects/controller/api/v1/proxy.proto.sk/",
+        "destination": "/gloo-edge/:version/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/proxy.proto.sk/",
         "type":"301"
       },
       {
-        "source": "/gloo-edge/v1.13.xreference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tracing/tracing.proto.sk/",
-        "destination": "/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tracing/tracing.proto.sk/",
+        "source": "/gloo-edge/v1.13.xreference/api/github.com/solo-io/gloo/projects/controller/api/v1/options/tracing/tracing.proto.sk/",
+        "destination": "/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/options/tracing/tracing.proto.sk/",
         "type":"301"
       }
     ]

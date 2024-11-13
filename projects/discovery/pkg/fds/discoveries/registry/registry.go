@@ -5,9 +5,9 @@ import (
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds/discoveries/aws"
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds/discoveries/grpc"
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds/discoveries/swagger"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/bootstrap"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
 )
 
 type FunctionDiscoveryPlugin func(u *v1.Upstream) fds.UpstreamFunctionDiscovery

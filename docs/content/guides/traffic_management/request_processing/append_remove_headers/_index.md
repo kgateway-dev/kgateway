@@ -299,7 +299,7 @@ In the previous example of the `x-route-table` response header, the virtual host
 You can reverse the order in which header manipulations are evaluated so that order of evaluation becomes: global level headers, virtual host level headers, route level headers, and finally weighted cluster level headers.
 With the order of evaluation being reversed, more specific header manipulations can override less specific ones.
 
-To reverse the order of evaluation, set the `mostSpecificHeaderMutationsWins` field to `true` in the [routeOptions]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#routeconfigurationoptions" >}}) settings for a [Gateway]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/" >}}).
+To reverse the order of evaluation, set the `mostSpecificHeaderMutationsWins` field to `true` in the [routeOptions]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/options.proto.sk/#routeconfigurationoptions" >}}) settings for a [Gateway]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/" >}}).
 
 The route options that you set on the Gateway will apply to all routes that the Gateway serves.
 

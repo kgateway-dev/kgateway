@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	v1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
-	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	graphqlv1beta1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients/vault"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
+	v1alpha1 "github.com/solo-io/gloo/projects/controller/pkg/api/external/solo/ratelimit"
+	extauthv1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extauth/v1"
+	graphqlv1beta1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/bootstrap/clients/vault"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/xds"
 
 	"net"
 	"net/http"
@@ -30,17 +30,17 @@ import (
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/syncer/setup"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/upstreams/consul"
 
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -55,8 +55,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/bootstrap"
 	"google.golang.org/grpc"
 
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -69,7 +69,7 @@ import (
 	. "github.com/onsi/gomega"
 	fds_syncer "github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
 	uds_syncer "github.com/solo-io/gloo/projects/discovery/pkg/uds/syncer"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/defaults"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -122,7 +122,7 @@ type ExtensionsBuilders struct {
 	Fds  func(ctx context.Context, opts bootstrap.Opts) fds_syncer.Extensions
 }
 
-// RunGlooGatewayUdsFds runs the Gloo Edge control plane components in goroutines and stores
+// RunGlooGatewayUdsFds runs the k8sgateway control plane components in goroutines and stores
 // configuration in-memory. This is used by the e2e tests in `test/e2e` package.
 func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClients {
 	runOptions.ports = Ports{
@@ -134,7 +134,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	settings := constructTestSettings(runOptions)
 	ctx = settingsutil.WithSettings(ctx, settings)
 
-	// All Gloo Edge components run using a Bootstrap.Opts object
+	// All k8sgateway components run using a Bootstrap.Opts object
 	// These values are extracted from the Settings object and as part of our SetupSyncer
 	// we pull values off the Settings object to build the Bootstrap.Opts. It would be ideal if we
 	// could use the same setup code, but in the meantime, we use constructTestOpts to mirror the functionality
@@ -209,7 +209,7 @@ func constructTestSettings(runOptions *RunOptions) *gloov1.Settings {
 		Gateway: &gloov1.GatewayOptions{
 			Validation: &gloov1.GatewayOptions_ValidationOptions{
 				// To validate transformations, we call out to an Envoy binary running in validate mode
-				// https://github.com/solo-io/gloo/blob/01d04751f72c168e304977c4f67fdbcbf30232a9/projects/gloo/pkg/bootstrap/bootstrap_validation.go#L28
+				// https://github.com/solo-io/gloo/blob/01d04751f72c168e304977c4f67fdbcbf30232a9/projects/controllerrollerroller/pkg/bootstrap/bootstrap_validation.go#L28
 				// This binary is present in our CI/CD pipeline. But when running locally it is not, so we fallback to the Upstream Envoy binary
 				// which doesn't have the custom Solo.io types registered with the deserializer. Therefore, when running locally tests will fail,
 				// and the logs will contain:

@@ -11,11 +11,11 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/namespaces"
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 	syncerutils "github.com/solo-io/gloo/projects/discovery/pkg/syncer"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
-	plugins "github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/bootstrap"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/discovery"
+	plugins "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/registry"
 )
 
 func RunUDS(opts bootstrap.Opts) error {

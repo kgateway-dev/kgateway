@@ -18,7 +18,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/v1/options/proxy_protocol/proxy_protocol.proto](https://github.com/solo-io/gloo/blob/main/projects/gloo/api/v1/options/proxy_protocol/proxy_protocol.proto)
+##### Source File: [github.com/solo-io/gloo/projects/controller/api/v1/options/proxy_protocol/proxy_protocol.proto](https://github.com/solo-io/gloo/blob/main/projects/controller/api/v1/options/proxy_protocol/proxy_protocol.proto)
 
 
 
@@ -38,7 +38,7 @@ weight: 5
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `rules` | [[]proxy_protocol.options.gloo.solo.io.ProxyProtocol.Rule](../proxy_protocol.proto.sk/#rule) | The list of rules to apply to requests. |
-| `allowRequestsWithoutProxyProtocol` | `bool` | Allow requests through that don't use proxy protocol. Defaults to false. **Attention**: The true setting is only honored in Gloo Edge Enterprise. This breaks conformance with the specification. Only enable if ALL traffic to the listener comes from a trusted source. For more information on the security implications of this feature, see https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt. |
+| `allowRequestsWithoutProxyProtocol` | `bool` | Allow requests through that don't use proxy protocol. Defaults to false. **Attention**: The true setting is only honored in k8sgateway Enterprise. This breaks conformance with the specification. Only enable if ALL traffic to the listener comes from a trusted source. For more information on the security implications of this feature, see https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt. |
 
 
 

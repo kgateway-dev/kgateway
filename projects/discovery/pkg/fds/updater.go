@@ -7,16 +7,16 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"go.uber.org/zap"
 
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
-	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	plugins "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/translator"
 )
 
 var errorUndetectableUpstream = errors.New("upstream type cannot be detected")
