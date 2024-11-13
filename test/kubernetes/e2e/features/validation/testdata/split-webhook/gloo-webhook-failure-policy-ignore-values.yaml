@@ -1,0 +1,5 @@
+gateway:
+  validation:
+    failurePolicy: Ignore
+    webhook:
+      skipDeleteValidationResources: []

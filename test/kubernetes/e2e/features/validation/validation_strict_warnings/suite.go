@@ -116,7 +116,7 @@ func (s *testingSuite) TestVirtualServiceWithSecretDeletion() {
 	// failing to delete a secret that is in use
 	output, err := s.testInstallation.Actions.Kubectl().DeleteFileWithOutput(s.ctx, validation.Secret, "-n", s.testInstallation.Metadata.InstallNamespace)
 	s.Assert().Error(err)
-	s.Assert().Contains(output, fmt.Sprintf(`admission webhook "gloo.%s.svc" denied the request`, s.testInstallation.Metadata.InstallNamespace))
+	s.Assert().Contains(output, fmt.Sprintf(`admission webhook "kube.%s.svc" denied the request`, s.testInstallation.Metadata.InstallNamespace))
 	s.Assert().Contains(output, fmt.Sprintf("failed validating the deletion of resource"))
 	s.Assert().Contains(output, fmt.Sprintf("SSL secret not found: list did not find secret %s.tls-secret", s.testInstallation.Metadata.InstallNamespace))
 

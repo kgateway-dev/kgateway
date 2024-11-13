@@ -76,8 +76,9 @@ jobs:
           go-test-run-regex: '(^TestK8sGatewayIstio$$|^TestGlooGatewayEdgeGateway$$|^TestGlooctlIstioInjectEdgeApiGateway$$)'
 
         # October 10, 2024: 22 minutes
+        # TODO (sheidkamp) rebalance tests
         - cluster-name: 'cluster-five'
-          go-test-args: '-v -timeout=25m'
+          go-test-args: '-v -timeout=35m'
           go-test-run-regex: '^TestFullEnvoyValidation$$|^TestValidationStrict$$|^TestValidationAlwaysAccept$$|^TestTransformationValidationDisabled$$|^TestGloomtlsGatewayEdgeGateway$$|^TestWatchNamespaceSelector$$'
 
         # October 10, 2024: 12 minutes
