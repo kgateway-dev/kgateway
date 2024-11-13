@@ -35,7 +35,7 @@ Create a sample Cloud Run workload. Then, use Google Workload Identity to author
 
 The following examples create a basic VirtualService that routes traffic to an Upstream that represents your Cloud Run workload.
 
-1. Create an Upstream that represents your Cloud Run workload. Replace the `host` with the Cloud Run endpoint that your GKE cluster can access. In the Google Cloud console, the host is the **URL** on the services detail page for your Cloud Run workload. For more options, see the [API docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/gcp/gcp.proto.sk/#upstreamspec" %}}).
+1. Create an Upstream that represents your Cloud Run workload. Replace the `host` with the Cloud Run endpoint that your GKE cluster can access. In the Google Cloud console, the host is the **URL** on the services detail page for your Cloud Run workload. For more options, see the [API docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/gcp/gcp.proto.sk/#upstreamspec" %}}).
    
    ```yaml
    kubectl apply -f - <<EOF

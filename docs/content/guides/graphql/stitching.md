@@ -215,4 +215,4 @@ query {
 
 ## Next steps
 
-For more information, check out the API reference documentation for [`stitchedSchema`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#stitchedschema" %}}).
+For more information, check out the API reference documentation for [`stitchedSchema`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#stitchedschema" %}}).

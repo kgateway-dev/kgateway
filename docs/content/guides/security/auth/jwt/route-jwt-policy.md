@@ -781,7 +781,7 @@ Set up the VirtualService to configure JWT policies at different stages before a
 
 In the previous scenario, you protected a route by requiring JWT authentication at two stages of a request, before and after external auth. To do so, you configured separate JWT policies at the route and gateway layers with VirtualService and VirtualHost resources. But what if you want to enforce just one layer of JWT policy, without being picky about which JWT is used? 
 
-You can achieve that by setting up a validation policy. The validation policy has several options as follows. For more details, see the [API reference docs](https://docs.solo.io/gloo-edge/main/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto.sk/#validationpolicy).
+You can achieve that by setting up a validation policy. The validation policy has several options as follows. For more details, see the [API reference docs](https://docs.solo.io/gloo-edge/main/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/jwt/jwt.proto.sk/#validationpolicy).
 
 * `REQUIRE_VALID`: The default value, which allows only requests that have a valid JWT.
 * `ALLOW_MISSING`: Let requests succeed when a JWT is missing. However, if an invalid JWT is provided, such as in an incorrect header or an expired token, the request fails.

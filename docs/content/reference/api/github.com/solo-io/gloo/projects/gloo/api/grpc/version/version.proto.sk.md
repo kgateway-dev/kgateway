@@ -28,7 +28,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/grpc/version/version.proto](https://github.com/solo-io/gloo/blob/main/projects/gloo/api/grpc/version/version.proto)
+##### Source File: [github.com/solo-io/gloo/projects/controller/api/grpc/version/version.proto](https://github.com/solo-io/gloo/blob/main/projects/controller/api/grpc/version/version.proto)
 
 
 
@@ -169,7 +169,7 @@ Description: type of gloo server instance
 | Unknown |  |
 | Gateway |  |
 | Ingress |  |
-| Knative | Deprecated: Will not be available in Gloo Edge 1.11 |
+| Knative | Deprecated: Will not be available in k8sgateway 1.11 |
 
 
 <!-- Start of HubSpot Embed Code -->

@@ -11,11 +11,11 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewayv1kubetypes "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gatewayv1kube "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/clientset/versioned/typed/gateway.solo.io/v1"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	gloov1kubetypes "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	gloov1kube "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client/clientset/versioned/typed/gloo.solo.io/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers"
+	gloov1kubetypes "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+	gloov1kube "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/kube/client/clientset/versioned/typed/gloo.solo.io/v1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/static"
 )
 
 // Tests generated code in projects/gateway/pkg/api/v1/kube

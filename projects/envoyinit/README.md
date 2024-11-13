@@ -44,7 +44,7 @@ In Gloo Gateway, Envoy configuration is processed in the following order:
 4. The transformed configuration is provided to the Envoy executable
 
 ### Dynamic
-Envoy receives dynamic configuration via the [xDS protocol](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#xds-protocol). The Gloo [xDS](https://github.com/solo-io/gloo/tree/main/projects/gloo/pkg/xds) package contains relevant code for serving dynamic configuration.
+Envoy receives dynamic configuration via the [xDS protocol](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#xds-protocol). The Gloo [xDS](https://github.com/solo-io/gloo/tree/main/projects/controller/pkg/xds) package contains relevant code for serving dynamic configuration.
 
 ## Debug
 It can be useful to run the Envoy proxy, without the control-plane, as a way of validating proxy behavior. Please refer to [Running the Gateway Proxy locally](https://github.com/solo-io/gloo/tree/main/install/local-gateway-proxy) for further instructions.

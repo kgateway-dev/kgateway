@@ -25,7 +25,7 @@ The `install-go-tools` target installs the dependencies to build Gloo Gateway in
 
 The `generated-code` target does multiple things:
 
-1. It generates the Go source code from the `.proto` files in the `api` directories. For example, `.proto` files in `projects/gloo/api` will be generated in `projects/gloo/pkg/api`.
+1. It generates the Go source code from the `.proto` files in the `api` directories. For example, `.proto` files in `projects/controller/api` will be generated in `projects/controller/pkg/api`.
 
 2. It generates the custom resource definitions (CRDs) so that Gloo Gateway can interact with Kubernetes. These CRDs can be found in `install/helm/gloo/crds`.
 
@@ -33,11 +33,11 @@ The `generated-code` target does multiple things:
 
 ## Build Gloo Gateway and Docker Images {#build}
 
-The Gloo Gateway project has several products. The code for `gloo` itself can be found in `projects/gloo`. Each product has its own set of build targets. 
+The Gloo Gateway project has several products. The code for `gloo` itself can be found in `projects/controller`. Each product has its own set of build targets. 
 
 **Gloo Gateway binary**
 
-To compile the `gloo` binary to the `_output/projects/gloo/` directory, run:
+To compile the `gloo` binary to the `_output/projects/controller/` directory, run:
 
     make -B gloo
 
@@ -113,7 +113,7 @@ kubectl -n gloo-system set image deployments/gloo gloo=quay.io/solo-io/gloo:0.0.
 
 Now that you can build and deploy your own builds, you can start editing Gloo Gateway itself. An in-depth discussion on making code changes is outside the scope of this guide. However, a brief overview of Gloo's software architecture will make things easier to understand.
 
-Gloo Gateway is primarily composed of *plugins*. You can find the code for these plugins in `projects/gloo/pkg/plugins`. Gloo Gateway has a lot of them! Generally speaking, these plugins take Gloo Gateway configuration as input, and translate Envoy configuration as output. You can test any changes you make to plugins by following two main steps:
+Gloo Gateway is primarily composed of *plugins*. You can find the code for these plugins in `projects/controller/pkg/plugins`. Gloo Gateway has a lot of them! Generally speaking, these plugins take Gloo Gateway configuration as input, and translate Envoy configuration as output. You can test any changes you make to plugins by following two main steps:
 1. Unit tests, including dynamic and static breakpoints
 2. Deploying the code
 
@@ -123,7 +123,7 @@ The fastest way to test and debug changes is by using the unit tests in these di
 
 1. Navigate to the directory of a plugin, such as cross-site request forgery (CSRF).
    ```sh
-   cd projects/gloo/pkg/plugins/csrf/
+   cd projects/controller/pkg/plugins/csrf/
    ```
 2. Run the plugin unit tests. You might use `ginkgo` or `gdb`.
    {{< tabs >}} 
@@ -156,7 +156,7 @@ Dynamic breakpoints can be added via gdb without having to rebuild the unit test
    ```
 2. Specify the breakpoint by copying the *full path* of the filename, followed by the line on which to place it. For example:
    ```
-   b /home/user/go/src/github.com/solo-io/gloo/projects/gloo/pkg/plugins/csrf/plugin.go:91
+   b /home/user/go/src/github.com/solo-io/gloo/projects/controller/pkg/plugins/csrf/plugin.go:91
    ```
 
 ### Static breakpoints

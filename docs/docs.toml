@@ -1,6 +1,6 @@
 baseURL = "https://docs.solo.io"
 languageCode = "en-us"
-title = "Gloo Edge Docs"
+title = "k8sgateway Docs"
 theme = "hugo-theme-soloio"
 
 contentDir = "content"
@@ -31,7 +31,7 @@ home = [ "HTML", "JSON"]
 
 [params]
 author = "Solo.io"
-description = "Documentation for Solo.io Gloo Edge"
+description = "Documentation for Solo.io k8sgateway"
 disableSearch = false
 disableAssetsBusting = false
 disableInlineCopyToClipBoard = true

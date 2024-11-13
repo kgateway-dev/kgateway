@@ -15,8 +15,8 @@ import (
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/cors"
 )
 
 const (

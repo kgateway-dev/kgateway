@@ -83,4 +83,4 @@ Now that you've tried out GraphQL with Gloo Gateway, check out the following pag
 * [Manually configure resolvers and schema for your GraphQL API]({{% versioned_link_path fromRoot="/guides/graphql/resolver_config/" %}})
 * [Stitch GraphQL schemas]({{% versioned_link_path fromRoot="/guides/graphql/stitching/" %}})
 * [Monitor your GraphQL services]({{% versioned_link_path fromRoot="/guides/graphql/observability/" %}})
-* [Gloo Gateway API reference for GraphQL]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/" %}})
+* [Gloo Gateway API reference for GraphQL]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/" %}})

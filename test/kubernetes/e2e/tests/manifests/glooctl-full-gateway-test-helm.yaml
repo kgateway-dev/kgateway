@@ -1,4 +1,4 @@
-# Gloo k8s Gateway helm setup where k8s Gateway controller is enabled AND default Gloo Edge gateway is present.
+# Gloo k8s Gateway helm setup where k8s Gateway controller is enabled AND default k8sgateway gateway is present.
 # An additional gateway "publicGw" is defined in gatewayProxies.
 
 gateway:
@@ -7,7 +7,7 @@ gateway:
     # Therefore, we accept all resources in our webhook
     alwaysAcceptResources: true
 
-gatewayProxies: # k8s gateway glooctl tests have gloo edge gateway enabled
+gatewayProxies: # k8s gateway glooctl tests have k8sgateway gateway enabled
   publicGw: # Proxy name for public access (Internet facing)
     disabled: false # overwrite the "default" value in the merge step
     kind:

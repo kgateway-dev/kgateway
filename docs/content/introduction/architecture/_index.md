@@ -14,7 +14,7 @@ End users issue requests or [emit events](https://github.com/solo-io/gloo-sdk-go
 
 End users connect to Envoy cluster proxies managed by Gloo Gateway, which transform requests into function invocations for a variety of functional back-ends. Non-functional back-ends are supported via a traditional Gateway-to-Service routing model.
 
-Gloo Gateway performs the necessary transformation between the routes defined by clients and the back-end functions. Gloo Gateway is able to support various upstream functions through its extendable [function plugin interface](https://github.com/solo-io/gloo/blob/main/projects/gloo/pkg/plugins/plugins.go).
+Gloo Gateway performs the necessary transformation between the routes defined by clients and the back-end functions. Gloo Gateway is able to support various upstream functions through its extendable [function plugin interface](https://github.com/solo-io/gloo/blob/main/projects/controller/pkg/plugins/plugins.go).
 
 Gloo Gateway offers first-class API management features on all functions:
 

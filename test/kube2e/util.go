@@ -12,11 +12,11 @@ import (
 	. "github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/fsutils"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/check"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd/options"
+	clienthelpers "github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/printers"
+	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
 	"github.com/solo-io/gloo/test/gomega/assertions"
 	"github.com/solo-io/gloo/test/kube2e/helper"
 	newhelper "github.com/solo-io/gloo/test/kubernetes/testutils/helper"
@@ -190,7 +190,7 @@ func GetTestReleasedVersion(ctx context.Context, repoName string) string {
 		return current.String()
 	}
 
-	// Assume that releasedVersion is a valid version, for a previously released version of Gloo Edge
+	// Assume that releasedVersion is a valid version, for a previously released version of k8sgateway
 	return releasedVersion
 }
 func GetTestHelper(ctx context.Context, namespace string) (*helper.SoloTestHelper, error) {

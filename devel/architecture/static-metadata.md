@@ -1,9 +1,9 @@
 # Uses of metadataStatic
 
-The [Gloo Proxy Api](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk) contains a [SourceMetaData](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#sourcemetadata) message that an an element of:
-* [Listeners](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#listener)
-* [VirtualHosts](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#listener)
-* [Routes](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#route)
+The [Gloo Proxy Api](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/proxy.proto.sk) contains a [SourceMetaData](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/proxy.proto.sk/#sourcemetadata) message that an an element of:
+* [Listeners](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/proxy.proto.sk/#listener)
+* [VirtualHosts](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/proxy.proto.sk/#listener)
+* [Routes](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/proxy.proto.sk/#route)
 
 
 This metadata is not required and the `resourceKind`, `resourceRef.name`, and `resourceRef.namespace` fields which compose the metadata are plain strings.

@@ -13,10 +13,10 @@ metal_lb: false
 
 providers:
   gloo:
-    context: _output/projects/gloo
+    context: _output/projects/controller
     image: quay.io/solo-io/gloo
     live_reload_deps:
-      - projects/gloo
+      - projects/controller
     label: gloo
     build_binary: GCFLAGS='all="-N -l"' make -B gloo
     binary_name: gloo-linux-$ARCH

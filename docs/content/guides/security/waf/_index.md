@@ -27,7 +27,7 @@ You have several options for using ModSecurity to write WAF policies:
 * Use publicly available rule sets that provide a generic set of detection rules to protect against the most common security threats. For example, the [OWASP Core Rule Set](https://github.com/coreruleset/coreruleset) is an open source project that protects apps against a wide range of attacks, including the "OWASP Top Ten."
 * Write your own custom rules by following the [ModSecurity rules language](https://github.com/SpiderLabs/ModSecurity/wiki/Reference-Manual-(v3.x)). For examples, see [Configure WAF policies](#configure-waf-policies).
 
-For more information, see the [Gloo API docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto.sk/" %}}).
+For more information, see the [Gloo API docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/external/envoy/extensions/waf/waf.proto.sk/" %}}).
 
 ### Understand the WAF API {#about-api}
 
@@ -35,7 +35,7 @@ The WAF filter supports a list of `RuleSet` objects which are loaded into the Mo
 
 You can disable each rule set on a route independently of other rule sets. Rule sets are applied on top of each other in order. This order means that later rule sets overwrite any conflicting rules in previous rule sets. For more fine-grained control, you can add a custom `rule_str`, which is applied after any files of rule sets.
 
-Review the following `RuleSet` API example and explanation. For more information, see the [Gloo API docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto.sk/" %}}).
+Review the following `RuleSet` API example and explanation. For more information, see the [Gloo API docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/external/envoy/extensions/waf/waf.proto.sk/" %}}).
 
 ```proto
 message ModSecurity {
@@ -429,7 +429,7 @@ of envoy's access logging. This means that directives that configure the audit e
 This is **intentional** - to make sure that ModSecurity doesn't degrade
 envoy performance. While the way we emit the logs is different, you have _all the features_ that 
 ModSecurity audit-logging provides:
-- You can use the `action` property of the [audit logging configuration]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto.sk/#auditlogging" %}}) instead of [SecAuditEngine](https://github.com/SpiderLabs/ModSecurity/wiki/Reference-Manual-%28v2.x%29#SecAuditEngine) to choose when to log.
+- You can use the `action` property of the [audit logging configuration]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/external/envoy/extensions/waf/waf.proto.sk/#auditlogging" %}}) instead of [SecAuditEngine](https://github.com/SpiderLabs/ModSecurity/wiki/Reference-Manual-%28v2.x%29#SecAuditEngine) to choose when to log.
 - You can still use the [SecAuditLogParts](https://github.com/SpiderLabs/ModSecurity/wiki/Reference-Manual-%28v2.x%29#SecAuditLogParts), 
 [SecAuditLogRelevantStatus](https://github.com/SpiderLabs/ModSecurity/wiki/Reference-Manual-%28v2.x%29#SecAuditLogRelevantStatus) and (assuming action is RELEVANT_ONLY) `noauditlog` features of ModSecurity.
 - The format of the log is controlled by [SecAuditLogFormat](https://github.com/SpiderLabs/ModSecurity/wiki/Reference-Manual-%28v2.x%29#SecAuditLogFormat).
@@ -451,8 +451,8 @@ is better for your specific use-case.
 
 Let's see this in action!
 
-To enable audit logging, edit the [auditLogging]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto.sk/#auditlogging" %}}) field in your 
-[WAF settings]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto.sk/#settings" %}}).
+To enable audit logging, edit the [auditLogging]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/external/envoy/extensions/waf/waf.proto.sk/#auditlogging" %}}) field in your 
+[WAF settings]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/waf/waf.proto.sk/#settings" %}}).
 
 For example, lets edit our `VirtualService` with some
 rules and audit logging:

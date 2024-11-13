@@ -15,14 +15,14 @@ See the [developer kube-e2e testing guide](/devel/testing/kube-e2e-tests.md) for
 
 ## Local Development
 ### Setup (Previously Released Assets)
-It is possible to run these tests against a previously released version of Gloo Edge. This is useful for testing a release candidate, or a nightly build.
+It is possible to run these tests against a previously released version of k8sgateway. This is useful for testing a release candidate, or a nightly build.
 
 There is no setup required for this option, as the test suite will download the helm chart archive and `glooctl` binary from the specified release. You will use the `RELEASED_VERSION` environment variable when running the tests. See the [variable definition](/test/testutils/env.go) for more details.
 
 ### Setup (Locally Build Assets)
 
 For these tests to run, we require the following conditions:
-- Gloo Edge Helm chart archive is present in the `_test` folder,
+- k8sgateway Helm chart archive is present in the `_test` folder,
 - `glooctl` is built in the `_output` folder
 - A KinD cluster is set up and loaded with the images to be installed by the helm chart
 
@@ -75,7 +75,7 @@ The below table contains the environment variables that can be used to configure
 |------------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | KUBE2E_TESTS     | gateway | Name of the test suite to be run. Options: `'gateway', 'gloo', 'ingress', 'helm', 'glooctl', 'upgrade', 'istio'`                                                                                                                                   |
 | DEBUG            | 0       | Set to 1 for debug log output                                                                                                                                                                                                                      |
-| WAIT_ON_FAIL     | 0       | Set to 1 to prevent Ginkgo from cleaning up the Gloo Edge installation in case of failure. Useful to exec into inspect resources created by the test. A command to resume the test run (and thus clean up resources) will be logged to the output. |
+| WAIT_ON_FAIL     | 0       | Set to 1 to prevent Ginkgo from cleaning up the k8sgateway installation in case of failure. Useful to exec into inspect resources created by the test. A command to resume the test run (and thus clean up resources) will be logged to the output. |
 | TEAR_DOWN        | false   | Set to true to uninstall Gloo after the test suite completes                                                                                                                                                                                       |
 | RELEASED_VERSION | ''      | Used by nightlies to tests a specific released version. 'LATEST' will find the latest release                                                                                                                                                      |
 

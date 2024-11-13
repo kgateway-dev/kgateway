@@ -130,7 +130,7 @@ EOF
 {{< /highlight >}}
 
 {{% notice note %}}
-Passthrough services also allow for failing "open" through the [`failureModeAllow`]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#settings" >}}) field. 
+Passthrough services also allow for failing "open" through the [`failureModeAllow`]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#settings" >}}) field. 
 By setting this field to `true`, the auth service responds with an `OK` if either your server returns a `5XX`-equivalent response or the request times out.
 {{% /notice %}}
 
@@ -217,7 +217,7 @@ You can configure the Gloo ExtAuth server to retry the connection to the passthr
 
 * **Passthrough service becomes unavailable after initial connection**: In this scenario, the Gloo ExtAuth server successfully established an initial connection to the passthrough service. However later on, the passthrough service becomes unavailable. You can add a retry policy to your AuthConfig to retry the connection to the passthrough service if the service becomes unavailable. In the following AuthConfig, the Gloo ExtAuth server is configured to retry the connection to the passthrough service 10 times. To not overload the passthrough service, an optional exponential backoff strategy is defined. The backoff strategy configures the ExtAuth server to start retries after 1 second (`baseInterval`). Retries are then executed exponentially, such as after 2 seconds, 4 seconds, 8 seconds, etc up to the `maxInterval` that defaults to 10 times the `baseInterval`. In this example, the `maxInterval` configures a maximum delay of 2 seconds between retries. Note that the global settings `global.extensions.extAuth.requestTimeout` must be greater than the `retryPolicy.numRetries` * `retryPolicy.retryBackOff.baseInterval` to ensure that the failed gRPC call has sufficient time to retry.
 
-  For more information, see the [API docs]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#retrypolicy" >}}).
+  For more information, see the [API docs]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#retrypolicy" >}}).
 
   {{< highlight yaml "hl_lines=13-18" >}}
 apiVersion: enterprise.gloo.solo.io/v1

@@ -81,7 +81,7 @@ func getResourceStatus(getter InputResourceGetter) (core.Status, error) {
 	statusClient := statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem)
 	status := statusClient.GetStatus(resource)
 
-	// In newer versions of Gloo Edge we provide a default "empty" status, which allows us to patch it to perform updates
+	// In newer versions of k8sgateway we provide a default "empty" status, which allows us to patch it to perform updates
 	// As a result, a nil check isn't enough to determine that that status hasn't been reported
 	// Note: RateLimitConfig statuses can have an empty reporter
 	if status == nil {

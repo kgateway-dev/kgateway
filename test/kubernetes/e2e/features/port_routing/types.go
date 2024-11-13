@@ -38,7 +38,7 @@ var (
 	matchPortandTargetportManifest          = filepath.Join(util.MustGetThisDir(), "testdata", "k8s", "match-port-and-targetport.yaml")
 	invalidPortWithoutTargetportManifest    = filepath.Join(util.MustGetThisDir(), "testdata", "k8s", "invalid-port-without-targetport.yaml")
 
-	// Gloo Edge Resources
+	// k8sgateway Resources
 	setupEdgeManifest                               = filepath.Join(util.MustGetThisDir(), "testdata", "edge-routing.yaml")
 	upstreamInvalidPortAndValidTargetportManifest   = filepath.Join(util.MustGetThisDir(), "testdata", "edge", "invalid-port-and-valid-targetport.yaml")
 	upstreamInvalidPortAndInvalidTargetportManifest = filepath.Join(util.MustGetThisDir(), "testdata", "edge", "invalid-port-and-invalid-targetport.yaml")

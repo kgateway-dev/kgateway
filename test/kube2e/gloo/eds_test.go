@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/gloo/test/kube2e/helper"
@@ -86,7 +86,7 @@ var _ = Describe("EDS", func() {
 		})
 
 		// This test is inspired by the issue here: https://github.com/solo-io/gloo/issues/8968
-		// There were some versions of Gloo Edge 1.15.x which depended on versions of envoy-gloo
+		// There were some versions of k8sgateway 1.15.x which depended on versions of envoy-gloo
 		// which did not have REST config subscription enabled, and so gateway-proxy logs would
 		// contain warnings about not finding a registered config subscription factory implementation
 		// for REST EDS. This test validates that we have not regressed to that state.

@@ -17,7 +17,7 @@ import (
 
 	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/helpers"
 	exec_utils "github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	corev1 "k8s.io/api/core/v1"
@@ -25,8 +25,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd/version"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/defaults"
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/gloo/test/kube2e/helper"
 

@@ -4,9 +4,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
-	"github.com/solo-io/gloo/projects/gloo/api/external/solo/ratelimit"
-	ratelimitpkg "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controller/api/external/solo/ratelimit"
+	ratelimitpkg "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/solo/ratelimit"
+	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )

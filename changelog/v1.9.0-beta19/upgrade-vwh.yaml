@@ -2,4 +2,4 @@ changelog:
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/5339
     resolvesIssue: true
-    description: Update Gloo Edge's validating webhook to v1 from v1beta1 to support k8s 1.22.
+    description: Update k8sgateway's validating webhook to v1 from v1beta1 to support k8s 1.22.

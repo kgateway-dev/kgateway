@@ -8,7 +8,7 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/8990
     resolvesIssue: false
     description: >-
-      The `ErrNoSupportedSidecar` has been removed from the `projects/gloo/cli/pkg/cmd/istio/sidecars` package as we no longer support any versions that would trigger this error.
+      The `ErrNoSupportedSidecar` has been removed from the `projects/controller/cli/pkg/cmd/istio/sidecars` package as we no longer support any versions that would trigger this error.
   - type: HELM
     issueLink: https://github.com/solo-io/gloo/issues/8990
     resolvesIssue: false

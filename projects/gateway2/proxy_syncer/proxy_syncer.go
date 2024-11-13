@@ -15,13 +15,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
 
-	rlexternal "github.com/solo-io/gloo/projects/gloo/api/external/solo/ratelimit"
-	skrl "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
-	extauthkubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1/kube/apis/enterprise.gloo.solo.io/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
+	rlexternal "github.com/solo-io/gloo/projects/controller/api/external/solo/ratelimit"
+	skrl "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/solo/ratelimit"
+	extauthkubev1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extauth/v1/kube/apis/enterprise.gloo.solo.io/v1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
+	glookubev1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/syncer/setup"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/xds"
 	rlkubev1a1 "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/common"
@@ -48,11 +48,11 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
 	ggv2utils "github.com/solo-io/gloo/projects/gateway2/utils"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-	kubeconverters "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
-	kubeupstreams "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
+	kubeconverters "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/converters/kube"
+	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	extauthv1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/syncer"
+	kubeupstreams "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/upstreams/kubernetes"
 	"github.com/solo-io/go-utils/contextutils"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"google.golang.org/protobuf/proto"
@@ -988,7 +988,7 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMa
 // 1. To allow Rate Limit extensions to work, as it only syncs RL configs it finds used on Proxies in the snapshots
 // 2. For debug tooling, notably the debug.ProxyEndpointServer
 func (s *ProxySyncer) reconcileProxies(proxyList gloov1.ProxyList) {
-	// gloo edge v1 will read from this queue
+	// k8sgateway v1 will read from this queue
 	s.proxyReconcileQueue.Enqueue(proxyList)
 }
 

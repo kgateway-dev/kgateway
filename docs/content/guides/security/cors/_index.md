@@ -29,7 +29,7 @@ You can configure the CORS policy at two levels in the VirtualService:
 * [Virtual host](#virtual-host): By applying the CORS policy in the `virtualHost.options.cors` section, each route in the VirtualService gets the policy.
 * [Route](#route): Configure separate CORS policies per route in the `routes.options.cors` section.
 
-By default, the configuration of the route option take precedence over the virtual host. However, you can change this behavior by using the `corsPolicyMergeSettings` field in the virtual host options. For more information about the supported merge strategies, see the [API docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/cors/cors.proto.sk/#corspolicymergesettings" %}}).
+By default, the configuration of the route option take precedence over the virtual host. However, you can change this behavior by using the `corsPolicyMergeSettings` field in the virtual host options. For more information about the supported merge strategies, see the [API docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/options/cors/cors.proto.sk/#corspolicymergesettings" %}}).
 
 {{% notice note %}} 
 Some apps, such as `httpbin`, have built-in CORS policies that allow all origins. These policies take precedence over CORS policies that you might configure in Gloo Gateway. 
@@ -94,7 +94,7 @@ spec:
 
 ### Available fields to configure CORS {#available-fields}
 
-The following fields are available when configuring a CORS policy for your `VirtualService`. For more information, see the [API docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/cors/cors.proto.sk/" %}}).
+The following fields are available when configuring a CORS policy for your `VirtualService`. For more information, see the [API docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/options/cors/cors.proto.sk/" %}}).
 
 | Field              | Type       | Description                                                                                                                                                      | Default |
 | ------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
@@ -283,7 +283,7 @@ The following fields are available when configuring a CORS policy for your `Virt
    [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat",   "status":"pending"}]
    ```
 
-8. To change how conflicting CORS policies are handled, update the VirtualService with the `corsPolicyMergeSettings` in the virtual host. In the following example, you configure a `UNION` merge strategy for the `exposeHeaders` field. Now, the CORS policy applies to requests so that all the `exposeHeaders` values from both the virtual host and route are included. For more information, see the [API docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/cors/cors.proto.sk/#corspolicymergesettings" %}}).
+8. To change how conflicting CORS policies are handled, update the VirtualService with the `corsPolicyMergeSettings` in the virtual host. In the following example, you configure a `UNION` merge strategy for the `exposeHeaders` field. Now, the CORS policy applies to requests so that all the `exposeHeaders` values from both the virtual host and route are included. For more information, see the [API docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/options/cors/cors.proto.sk/#corspolicymergesettings" %}}).
 
    {{< highlight yaml "hl_lines=7-8" >}}
    ...

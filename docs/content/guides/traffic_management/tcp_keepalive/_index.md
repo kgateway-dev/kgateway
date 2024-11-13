@@ -99,8 +99,8 @@ spec:
 
 Upstream connections are between the Envoy gateway proxy and your services, such as Gloo upstreams, Kubernetes services, external services, OTel collectors, TAP servers, cloud functions, or other destinations.
 
-To enable TCP keepalive on upstream connections, configure the following [ConnectionConfig]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/connection.proto.sk/" >}}) settings in the
-[Upstream]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk/" >}}) resource.
+To enable TCP keepalive on upstream connections, configure the following [ConnectionConfig]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/connection.proto.sk/" >}}) settings in the
+[Upstream]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/upstream.proto.sk/" >}}) resource.
 
 The following example enables TCP keepalive probes between the gateway proxy and the upstream connection. The first probe is sent when the connection has been idle for 60 seconds (`keepaliveTime`). After, a TCP keepalive probe is sent every 20 seconds (`keepaliveInterval`). After no response for 2 consecutive probes (`keepaliveProbes`), the connection is dropped.
 

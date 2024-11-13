@@ -3,9 +3,9 @@ weight: 99
 title: Gloo Gateway
 ---
 
-# Gloo Gateway (Gloo Edge API)
+# Gloo Gateway (k8sgateway API)
 
-Welcome to the Gloo Gateway (Gloo Edge API) documentation.
+Welcome to the Gloo Gateway (k8sgateway API) documentation.
 
 ## What is Gloo Gateway?
 

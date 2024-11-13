@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-// Leader Election is a valuable feature of Gloo Edge that is enabled by default
+// Leader Election is a valuable feature of k8sgateway that is enabled by default
 // If you wish to disable it, set this env variable to a truthy value ("1", "t", "T", "true", "TRUE", "True")
 const disableElectionEnvVar = "DISABLE_LEADER_ELECTION"
 

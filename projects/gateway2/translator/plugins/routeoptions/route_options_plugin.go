@@ -7,7 +7,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
+	"github.com/solo-io/gloo/projects/controller/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -26,9 +26,9 @@ import (
 	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/utils"
 	"github.com/solo-io/gloo/projects/gateway2/translator/routeutils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/grpc/validation"
+	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	glooutils "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
 )
 
 var (

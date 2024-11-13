@@ -17,7 +17,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/grpc/debug/proxy_endpoint.proto](https://github.com/solo-io/gloo/blob/main/projects/gloo/api/grpc/debug/proxy_endpoint.proto)
+##### Source File: [github.com/solo-io/gloo/projects/controller/api/grpc/debug/proxy_endpoint.proto](https://github.com/solo-io/gloo/blob/main/projects/controller/api/grpc/debug/proxy_endpoint.proto)
 
 
 

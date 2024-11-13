@@ -26,7 +26,7 @@ func main() {
 		panic(err)
 	}
 
-	// use the Gloo Edge Gateway api resources
+	// use the k8sgateway Gateway api resources
 	exampleNs := defaults.GlooSystem
 	edgeGatewayApiResources := headless_svc.GetEdgeGatewayResources(exampleNs)
 	edgeGatewayApiRoutingGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", headless_svc.EdgeGatewayApiRoutingGeneratedFileName)

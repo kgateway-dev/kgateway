@@ -69,10 +69,10 @@ const (
 	// This is set when running tests in Cloudbuild
 	GcloudBuildId = "GCLOUD_BUILD_ID"
 
-	// ReleasedVersion can be used when running KubeE2E tests to have the test suite use a previously released version of Gloo Edge
+	// ReleasedVersion can be used when running KubeE2E tests to have the test suite use a previously released version of k8sgateway
 	// If set to 'LATEST', the most recently released version will be used
 	// If set to another value, the test suite will use that version (ie '1.15.0-beta1')
-	// This is an optional value, so if it is not set, the test suite will use the locally built version of Gloo Edge
+	// This is an optional value, so if it is not set, the test suite will use the locally built version of k8sgateway
 	ReleasedVersion = "RELEASED_VERSION"
 
 	// Istio auto mtls
@@ -93,14 +93,14 @@ func ShouldTearDown() bool {
 
 // ShouldSkipInstall returns true if any assets that need to be created before a test (for example Gloo being installed)
 // should be skipped. This is typically used in tandem with ShouldTearDown when running consecutive tests and skipping
-// both the tear down and install of Gloo Edge.
+// both the tear down and install of k8sgateway.
 func ShouldSkipInstall() bool {
 	return IsEnvTruthy(SkipInstall)
 }
 
 // ShouldSkipIstioInstall returns true if any assets that need to be created before a test (for example Gloo being installed)
 // should be skipped. This is typically used in tandem with ShouldTearDown when running consecutive tests and skipping
-// both the tear down and install of Gloo Edge.
+// both the tear down and install of k8sgateway.
 func ShouldSkipIstioInstall() bool {
 	return IsEnvTruthy(SkipIstioInstall)
 }

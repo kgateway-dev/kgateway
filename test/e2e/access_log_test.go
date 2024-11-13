@@ -21,12 +21,12 @@ import (
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/runner"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
-	gloo_envoy_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+	gloo_envoy_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
 
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
-	alsplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
-	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/als"
+	alsplugin "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/als"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/translator"
 )
 
 var _ = Describe("Access Log", func() {

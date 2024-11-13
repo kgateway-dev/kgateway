@@ -173,7 +173,7 @@ glooctl proxy logs -f
 When you have the logging window up, send requests through to the proxy and you can get some very detailed debugging logging going through the log tail.
 
 {{% notice warning %}}
-Keep in mind that this command will actually [change](https://github.com/solo-io/gloo/blob/c2e025728df3c66c67275ac718e251a275d32bd3/projects/gloo/cli/pkg/cmd/gateway/logs.go#L65) the log level to `debug`. You might want to revert it to `info` after that, as shown in the following commands.
+Keep in mind that this command will actually [change](https://github.com/solo-io/gloo/blob/c2e025728df3c66c67275ac718e251a275d32bd3/projects/controller/cli/pkg/cmd/gateway/logs.go#L65) the log level to `debug`. You might want to revert it to `info` after that, as shown in the following commands.
 {{% /notice %}}
 
 A more advanced way of changing the log level, globally or on a per-logger basis, is through the Envoy Admin endpoints:
@@ -363,7 +363,7 @@ observability:
 ```
 
 ### Gloo Admin Endpoints [*Recommended, Introduced in 1.17*]
-The Control Plane exposes a set of [Administration endpoints](https://github.com/solo-io/gloo/tree/3ad2c1b4e7f0d73f6caeacee461f04315e612d47/projects/gloo/pkg/servers/admin). To access these:
+The Control Plane exposes a set of [Administration endpoints](https://github.com/solo-io/gloo/tree/3ad2c1b4e7f0d73f6caeacee461f04315e612d47/projects/controller/pkg/servers/admin). To access these:
 
 * Enable port forwarding:
 ```

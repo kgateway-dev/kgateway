@@ -4,13 +4,13 @@ Analysis script geared towards hunting and removing unwanted dependencies from a
 
 Prior runs have yielded results resembling:
 ```
-    PACKAGE="github.com/solo-io/gloo/projects/gloo/cli/cmd"
+    PACKAGE="github.com/solo-io/gloo/projects/controller/cli/cmd"
     TARGET_BASE="github.com/onsi/ginkgo/v2"
     REFRESH_GO_LIST=True
-        [github.com/solo-io/gloo/projects/gloo/cli/cmd, github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd, github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/federation, github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/federation/register, github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install, github.com/solo-io/solo-kit/test/setup]
-        [github.com/solo-io/gloo/projects/gloo/cli/cmd, github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd, github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/debug, github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install, github.com/solo-io/solo-kit/test/setup]
-        [github.com/solo-io/gloo/projects/gloo/cli/cmd, github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd, github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install, github.com/solo-io/solo-kit/test/setup]
-        [github.com/solo-io/gloo/projects/gloo/cli/cmd, github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd, github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check-crds, github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install, github.com/solo-io/solo-kit/test/setup]
+        [github.com/solo-io/gloo/projects/controller/cli/cmd, github.com/solo-io/gloo/projects/controller/cli/pkg/cmd, github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/federation, github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/federation/register, github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/install, github.com/solo-io/solo-kit/test/setup]
+        [github.com/solo-io/gloo/projects/controller/cli/cmd, github.com/solo-io/gloo/projects/controller/cli/pkg/cmd, github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/debug, github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/install, github.com/solo-io/solo-kit/test/setup]
+        [github.com/solo-io/gloo/projects/controller/cli/cmd, github.com/solo-io/gloo/projects/controller/cli/pkg/cmd, github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/install, github.com/solo-io/solo-kit/test/setup]
+        [github.com/solo-io/gloo/projects/controller/cli/cmd, github.com/solo-io/gloo/projects/controller/cli/pkg/cmd, github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/check-crds, github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/install, github.com/solo-io/solo-kit/test/setup]
 ```
 
 which were used to remove a dependency on ginkgo by avoiding a solo-kit import
@@ -20,7 +20,7 @@ import subprocess
 import json
 import pickle
 
-PACKAGE         = "github.com/solo-io/gloo/projects/gloo/cli/cmd"   # go module to analyze
+PACKAGE         = "github.com/solo-io/gloo/projects/controller/cli/cmd"   # go module to analyze
 TARGET_BASE     = "github.com/onsi/gomega"                          # string match for dependency to hunt
 REFRESH_GO_LIST = False                                             # recompute "go list" operation, overwriting saved pickle files
 

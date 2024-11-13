@@ -91,7 +91,7 @@ spec:
             kubectl rollout status deployment -n {{ .Release.Namespace }} gloo
             {{- end }}
 
-            # apply extra Gloo Edge custom resources - these are created in enterprise
+            # apply extra k8sgateway custom resources - these are created in enterprise
             if [ "$HAS_EXTRA_CUSTOM_RESOURCES" == "true" ]
             then
               kubectl apply -f /etc/gloo-custom-resources/extra-custom-resources || exit $?
@@ -99,7 +99,7 @@ spec:
               echo "no extra custom resources to apply"
             fi
 
-            # apply Gloo Edge custom resources
+            # apply k8sgateway custom resources
             if [ "$HAS_CUSTOM_RESOURCES" == "true" ]
             then
               kubectl apply -f /etc/gloo-custom-resources/custom-resources || exit $?

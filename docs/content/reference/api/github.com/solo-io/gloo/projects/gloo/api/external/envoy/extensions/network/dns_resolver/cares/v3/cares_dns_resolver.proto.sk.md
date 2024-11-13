@@ -16,7 +16,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/network/dns_resolver/cares/v3/cares_dns_resolver.proto](https://github.com/solo-io/gloo/blob/main/projects/gloo/api/external/envoy/extensions/network/dns_resolver/cares/v3/cares_dns_resolver.proto)
+##### Source File: [github.com/solo-io/gloo/projects/controller/api/external/envoy/extensions/network/dns_resolver/cares/v3/cares_dns_resolver.proto](https://github.com/solo-io/gloo/blob/main/projects/controller/api/external/envoy/extensions/network/dns_resolver/cares/v3/cares_dns_resolver.proto)
 
 
 

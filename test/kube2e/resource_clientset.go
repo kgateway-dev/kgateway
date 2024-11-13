@@ -16,10 +16,10 @@ import (
 	gatewayclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/typed/apis/v1"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	kubeconverters "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
-	externalrl "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	kubeconverters "github.com/solo-io/gloo/projects/controller/pkg/api/converters/kube"
+	externalrl "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/solo/ratelimit"
+	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	extauthv1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/test/helpers"
 )
 
@@ -269,7 +269,7 @@ func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*KubeResou
 	resourceClientSet.settingsClient = settingsClient
 
 	// Artifact
-	// Mirror kube setup from: https://github.com/solo-io/gloo/blob/dc96c0cd0e4d93457e77a848d69a0d652488a92e/projects/gloo/pkg/bootstrap/utils.go#L216
+	// Mirror kube setup from: https://github.com/solo-io/gloo/blob/dc96c0cd0e4d93457e77a848d69a0d652488a92e/projects/controllerrollerroller/pkg/bootstrap/utils.go#L216
 	artifactClientFactory := &factory.KubeConfigMapClientFactory{
 		Clientset:       kubeClient,
 		Cache:           kubeCoreCache,
@@ -285,7 +285,7 @@ func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*KubeResou
 	resourceClientSet.artifactClient = artifactClient
 
 	// Secret
-	// Mirror kube setup from: https://github.com/solo-io/gloo/blob/dc96c0cd0e4d93457e77a848d69a0d652488a92e/projects/gloo/pkg/bootstrap/utils.go#L170
+	// Mirror kube setup from: https://github.com/solo-io/gloo/blob/dc96c0cd0e4d93457e77a848d69a0d652488a92e/projects/controllerrollerroller/pkg/bootstrap/utils.go#L170
 	secretClientFactory := &factory.KubeSecretClientFactory{
 		Clientset:       kubeClient,
 		Cache:           kubeCoreCache,

@@ -4,12 +4,12 @@ import (
 	"fmt"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/solo-io/gloo/projects/gloo/constants"
+	"github.com/solo-io/gloo/projects/controller/constants"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
 	v1 "github.com/solo-io/solo-apis/pkg/api/gateway.solo.io/v1"
 	soloapis_gloov1 "github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1"
 	"github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1/core/matchers"

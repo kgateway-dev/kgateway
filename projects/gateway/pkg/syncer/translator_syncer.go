@@ -12,7 +12,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/statsutils/metrics"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 
-	gloo_translator "github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	gloo_translator "github.com/solo-io/gloo/projects/controller/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"go.uber.org/zap/zapcore"
@@ -25,10 +25,10 @@ import (
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/compress"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	gloov1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/compress"
+	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	gloov1snap "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
+	glooutils "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -420,9 +420,9 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 			// Only leaders will write reports
 			//
 			// while tempting to write statuses in parallel to increase performance, we should actually first consider recommending the user tunes k8s qps/burst:
-			// https://github.com/solo-io/gloo/blob/a083522af0a4ce22f4d2adf3a02470f782d5a865/projects/gloo/api/v1/settings.proto#L337-L350
+			// https://github.com/solo-io/gloo/blob/a083522af0a4ce22f4d2adf3a02470f782d5a865/projects/controllerrollerroller/api/v1/settings.proto#L337-L350
 			if err := s.reporter.WriteReports(ctx, reports, currentStatuses); err != nil {
-				// add TEMPORARY wrap to our WriteReports error that we should remove in Gloo Edge ~v1.16.0+.
+				// add TEMPORARY wrap to our WriteReports error that we should remove in k8sgateway ~v1.16.0+.
 				// to get the status performance improvements, we need to make the assumption that the user has the latest CRDs installed.
 				// if a user forgets the error message is very confusing (invalid request during kubectl patch);
 				// this should help them understand what's going on in case they did not read the changelog.

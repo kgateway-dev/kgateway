@@ -285,7 +285,7 @@ Also, consider using `retries` on your _routes_. The default value for this attr
 
 ### Proxy latency filter
 
-In the `httpGateway.options` section of your Gateway resource, you can enable the proxy latency filter. This Envoy filter measures the request and response latency incurred by the filter chain in additional histograms and access log parameters. For more information about the `proxyLatency` section, see the [API reference]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/proxylatency/proxylatency.proto.sk/#proxylatency" %}}).
+In the `httpGateway.options` section of your Gateway resource, you can enable the proxy latency filter. This Envoy filter measures the request and response latency incurred by the filter chain in additional histograms and access log parameters. For more information about the `proxyLatency` section, see the [API reference]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/external/envoy/extensions/proxylatency/proxylatency.proto.sk/#proxylatency" %}}).
 
 ### Grafana dashboards
 

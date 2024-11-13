@@ -11,19 +11,19 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/listener"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-// K8sGwTranslator This translator Translates K8s Gateway resources into Gloo Edge Proxies.
+// K8sGwTranslator This translator Translates K8s Gateway resources into k8sgateway Proxies.
 type K8sGwTranslator interface {
 	// TranslateProxy This function is called by the reconciler when a K8s Gateway resource is created or updated.
-	// It returns an instance of the Gloo Edge Proxy resource, that should configure a target Gloo Edge Proxy workload.
-	// A null return value indicates the K8s Gateway resource failed to translate into a Gloo Edge Proxy. The error will be reported on the provided reporter.
+	// It returns an instance of the k8sgateway Proxy resource, that should configure a target k8sgateway Proxy workload.
+	// A null return value indicates the K8s Gateway resource failed to translate into a k8sgateway Proxy. The error will be reported on the provided reporter.
 	TranslateProxy(
 		ctx context.Context,
 		gateway *gwv1.Gateway,

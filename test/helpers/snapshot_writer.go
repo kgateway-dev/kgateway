@@ -4,10 +4,10 @@ import (
 	"time"
 
 	"github.com/onsi/ginkgo/v2"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
 
 	"github.com/avast/retry-go"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
@@ -23,7 +23,7 @@ type SnapshotWriterImpl struct {
 	ResourceClientSet
 
 	// retryOptions is the criteria for retrying a Snapshot Write or Delete operation.
-	// Due to the eventually consistent nature of Gloo Edge, when applying changes in bulk,
+	// Due to the eventually consistent nature of k8sgateway, when applying changes in bulk,
 	// parent resources may be rejected by the validation webhook, if the Gloo hasn't processed the child
 	// resources. A more thorough solution would be to support bulk applies of resources.
 	// In the interim however, we retry the operation

@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
+	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/defaults"
 	"github.com/solo-io/gloo/test/helpers"
 
 	. "github.com/solo-io/gloo/projects/gateway/pkg/translator"

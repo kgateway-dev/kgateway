@@ -8,7 +8,7 @@ Route traffic requests directly to an [Amazon Web Services (AWS) Lambda function
 
 ## About
 
-Gloo Gateway enables you to route traffic requests directly to your AWS Lambda functions. To also use Gloo Gateway in place of your AWS ALB or AWS API Gateway, you can configure the `unwrapAsAlb` or `unwrapAsApiGateway` setting (Gloo Gateway Enterprise only, version 1.12.0 or later) in the [AWS `destinationSpec`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto.sk/" %}}) of the route to your Lambda upstream. These settings allow Gloo Gateway to manipulate a response from an upstream Lambda in the same way as an AWS ALB or AWS API Gateway.
+Gloo Gateway enables you to route traffic requests directly to your AWS Lambda functions. To also use Gloo Gateway in place of your AWS ALB or AWS API Gateway, you can configure the `unwrapAsAlb` or `unwrapAsApiGateway` setting (Gloo Gateway Enterprise only, version 1.12.0 or later) in the [AWS `destinationSpec`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/options/aws/aws.proto.sk/" %}}) of the route to your Lambda upstream. These settings allow Gloo Gateway to manipulate a response from an upstream Lambda in the same way as an AWS ALB or AWS API Gateway.
 
 For more information, see the AWS Lambda documentation on [configuring Lambda functions as targets](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html).
 
@@ -159,7 +159,7 @@ Note that request transformations are incompatible with the `wrapAsApiGateway` s
 
 Unwrap the JSON response from the function in the same way as an AWS ALB.
 
-In the following steps, you configure the `unwrapAsAlb` setting in the [AWS `destinationSpec`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto.sk/" %}}) of the route to your Lambda upstream. These settings allow Gloo Gateway to manipulate a response from an upstream Lambda in the same way as an AWS ALB .
+In the following steps, you configure the `unwrapAsAlb` setting in the [AWS `destinationSpec`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/options/aws/aws.proto.sk/" %}}) of the route to your Lambda upstream. These settings allow Gloo Gateway to manipulate a response from an upstream Lambda in the same way as an AWS ALB .
 
 1. Edit the VirtualService resource that you created in the previous section to add the `destinationSpec.aws.unwrapAsAlb: true` setting.
    ```bash
@@ -180,7 +180,7 @@ In the following steps, you configure the `unwrapAsAlb` setting in the [AWS `des
 
 2. Verify that Gloo Gateway correctly routes traffic requests to the Lambda function and unwraps the response from the function.
    ```sh
-   curl $(glooctl proxy url)/ -d '{"body": "gloo edge is inserting this body", "headers": {"test-header-key": "test-header-value"}, "statusCode": 201}' -X POST -v
+   curl $(glooctl proxy url)/ -d '{"body": "k8sgateway is inserting this body", "headers": {"test-header-key": "test-header-value"}, "statusCode": 201}' -X POST -v
    ```
    A successful response contains the same body string, response headers, and status code that you provided in the curl command, such as the following:
    ```
@@ -202,12 +202,12 @@ In the following steps, you configure the `unwrapAsAlb` setting in the [AWS `des
    < server: envoy
    <
    * Connection #0 to host localhost left intact
-   gloo edge is inserting this body* Closing connection 0
+   k8sgateway is inserting this body* Closing connection 0
    ```
 
 ### Wrap or unwrap requests and responses as an AWS API Gateway (Enterprise v1.12.0+ only)
 
-In Gloo Gateway Enterprise, you can use Gloo Gateway in place of an AWS API Gateway. To do this, configure the `wrapAsApiGateway` setting or the `unwrapAsApiGateway` setting (Gloo Gateway Enterprise only, version 1.12.0 or later) in the [AWS `destinationSpec`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto.sk/" %}}) of the route to your Lambda upstream. These settings allow Gloo Gateway to manipulate a response from an upstream Lambda in the same way as an AWS API Gateway.
+In Gloo Gateway Enterprise, you can use Gloo Gateway in place of an AWS API Gateway. To do this, configure the `wrapAsApiGateway` setting or the `unwrapAsApiGateway` setting (Gloo Gateway Enterprise only, version 1.12.0 or later) in the [AWS `destinationSpec`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/options/aws/aws.proto.sk/" %}}) of the route to your Lambda upstream. These settings allow Gloo Gateway to manipulate a response from an upstream Lambda in the same way as an AWS API Gateway.
 
 #### Unwrap as API Gateway
 
@@ -243,7 +243,7 @@ For more information, see the AWS Lambda documentation on [how AWS API Gateways 
 
 2. Verify that Gloo Gateway correctly routes traffic requests to the Lambda function and unwraps the response from the function.
    ```sh
-   curl $(glooctl proxy url)/ -d '{"body": "gloo edge is inserting this body", "headers": {"test-header-key": "test-header-value"}, "statusCode": 201}' -X POST -v
+   curl $(glooctl proxy url)/ -d '{"body": "k8sgateway is inserting this body", "headers": {"test-header-key": "test-header-value"}, "statusCode": 201}' -X POST -v
    ```
    A successful response contains the same body string, response headers, and status code that you provided in the curl command, such as the following:
    ```
@@ -265,7 +265,7 @@ For more information, see the AWS Lambda documentation on [how AWS API Gateways 
    < server: envoy
    <
    * Connection #0 to host localhost left intact
-   gloo edge is inserting this body* Closing connection 0
+   k8sgateway is inserting this body* Closing connection 0
    ```
 
 #### Wrap as API Gateway
@@ -293,7 +293,7 @@ Wrap the request to the function in the same way as an AWS API Gateway.
 
 2. Verify that Gloo Gateway correctly routes traffic requests to the Lambda function and unwraps the response from the function.
    ```sh
-   curl $(glooctl proxy url)/ -d 'gloo edge is inserting this body' -H 'test-header-key: test-header-value' -X POST -v
+   curl $(glooctl proxy url)/ -d 'k8sgateway is inserting this body' -H 'test-header-key: test-header-value' -X POST -v
    ```
    A successful response contains the body as received by the upstream lambda function, such as the following:
    ```
@@ -321,6 +321,6 @@ Wrap the request to the function in the same way as an AWS API Gateway.
    < server: envoy
    <
    * Connection #0 to host localhost left intact
-   {"body": "gloo edge is inserting this body", "headers": {":authority": "localhost:8080", ":method": "POST", ":path": "/", ":scheme": "http", "accept": "*/*", "content-length": "32", "content-type": "application/x-www-form-urlencoded", "test-header-key": "test-header-value", "user-agent": "curl/7.85.0", "x-forwarded-proto": "http", "x-request-id": "347975da-fa61-4d8a-9285-ee0826202819"}, "httpMethod": "POST", "isBase64Encoded": false, "multiValueHeaders": null, "multiValueQueryStringParameters": null, "path": "/", "pathParameters": null, "queryStringParameters": null, "requestContext": {"httpMethod": "POST", "path": "/", "protocol": "HTTP/1.1", "resourcePath": "/"}, "resource": "/", "routeKey": "POST /", "stageVariables": null, "version": "1.0"}%
+   {"body": "k8sgateway is inserting this body", "headers": {":authority": "localhost:8080", ":method": "POST", ":path": "/", ":scheme": "http", "accept": "*/*", "content-length": "32", "content-type": "application/x-www-form-urlencoded", "test-header-key": "test-header-value", "user-agent": "curl/7.85.0", "x-forwarded-proto": "http", "x-request-id": "347975da-fa61-4d8a-9285-ee0826202819"}, "httpMethod": "POST", "isBase64Encoded": false, "multiValueHeaders": null, "multiValueQueryStringParameters": null, "path": "/", "pathParameters": null, "queryStringParameters": null, "requestContext": {"httpMethod": "POST", "path": "/", "protocol": "HTTP/1.1", "resourcePath": "/"}, "resource": "/", "routeKey": "POST /", "stageVariables": null, "version": "1.0"}%
    ```
 
