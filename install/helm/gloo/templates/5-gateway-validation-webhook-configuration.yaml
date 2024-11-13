@@ -52,20 +52,6 @@ specific resources, we will manage the resources that the webhook receives via t
     apiGroups: ["gloo.solo.io"]
     apiVersions: ["v1"]
     resources: ["upstreams"]{{/* TODO(https://github.com/solo-io/gloo/issues/2797): Extend to all gloo resources */}}
-{{/* Can't use the include for this one because if the operations are empty, we need to drop the whole list element */}}
-{{- if and (not (has "*" .Values.gateway.validation.webhook.skipDeleteValidationResources)) (not (has "secrets" .Values.gateway.validation.webhook.skipDeleteValidationResources)) }}
-  - operations: [ "DELETE" ]
-    apiGroups: [""]{{/* We do not have internal secret CRDs. We want to validate the deletion of secrets such as TLS, so we add "" which refers to Kubernetes' core APIs. */}}
-    apiVersions: ["v1"]
-    resources: ["secrets"]
-{{- end }}
-{{- if and (not (has "*" .Values.gateway.validation.webhook.skipDeleteValidationResources)) (not (has "namespaces" .Values.gateway.validation.webhook.skipDeleteValidationResources)) }}
-{{- /* A namespace with an updated to a label can cause it to no longer be watched, equivalent to deleting it from the controller's perspective */}}
-  - operations: [ "UPDATE", "DELETE"]
-    apiGroups: [""]{{/* We do not have internal namespace CRDs. We want to validate the updation and deletion of namespaces that are watched. */}}
-    apiVersions: ["v1"]
-    resources: ["namespaces"]
-{{- end }}
   - operations: {{ include "gloo.webhookvalidation.operationsForResource" (list "ratelimitconfigs" .Values.gateway.validation.webhook.skipDeleteValidationResources) }}
     apiGroups: ["ratelimit.solo.io"]
     apiVersions: ["v1alpha1"]
@@ -79,7 +65,48 @@ specific resources, we will manage the resources that the webhook receives via t
     - v1beta1 # v1beta1 still live in 1.22 https://github.com/kubernetes/api/blob/release-1.22/admission/v1beta1/types.go#L33
 {{- if .Values.gateway.validation.failurePolicy }}
   failurePolicy: {{ .Values.gateway.validation.failurePolicy }}
-{{- end }} {{/* if .Values.gateway.validation.failurePolicy */}}
+{{- end }} {{- /* if .Values.gateway.validation.failurePolicy */}}
+
+{{/* Webhook for core resources - only render if we need to */}}
+{{- if and 
+  (not (has "*" .Values.gateway.validation.webhook.skipDeleteValidationResources))
+  (or (not (has "secrets" .Values.gateway.validation.webhook.skipDeleteValidationResources))
+       (not (has "namespaces" .Values.gateway.validation.webhook.skipDeleteValidationResources)))
+}}
+- name: kube.{{ .Release.Namespace }}.svc  # must be a domain with at least three segments separated by dots
+  clientConfig:
+    service:
+      name: gloo
+      namespace: {{ .Release.Namespace }}
+      path: "/validation"
+    caBundle: "" # update manually or use certgen job or cert-manager's ca-injector
+  rules:
+{{- /* Can't use the include for this one because if the operations are empty, we need to drop the whole list element */}}
+{{- if and (not (has "*" .Values.gateway.validation.webhook.skipDeleteValidationResources)) (not (has "secrets" .Values.gateway.validation.webhook.skipDeleteValidationResources)) }}
+  - operations: [ "DELETE" ]
+    apiGroups: [""]{{/* We do not have internal secret CRDs. We want to validate the deletion of secrets such as TLS, so we add "" which refers to Kubernetes' core APIs. */}}
+    apiVersions: ["v1"]
+    resources: ["secrets"]
+{{- end }}
+{{- if and (not (has "*" .Values.gateway.validation.webhook.skipDeleteValidationResources)) (not (has "namespaces" .Values.gateway.validation.webhook.skipDeleteValidationResources)) }}
+{{- /* A namespace with an updated to a label can cause it to no longer be watched, equivalent to deleting it from the controller's perspective */}}
+  - operations: [ "UPDATE", "DELETE"]
+    apiGroups: [""]{{/* We do not have internal namespace CRDs. We want to validate the updation and deletion of namespaces that are watched. */}}
+    apiVersions: ["v1"]
+    resources: ["namespaces"]
+{{- end }}
+  sideEffects: None
+  matchPolicy: Exact
+{{- if .Values.gateway.validation.webhook.timeoutSeconds }}
+  timeoutSeconds: {{ .Values.gateway.validation.webhook.timeoutSeconds }}
+{{- end }}
+  admissionReviewVersions:
+    - v1beta1 # v1beta1 still live in 1.22 https://github.com/kubernetes/api/blob/release-1.22/admission/v1beta1/types.go#L33
+{{- if .Values.gateway.validation.kubeCoreFailurePolicy }}
+  failurePolicy: {{ .Values.gateway.validation.kubeCoreFailurePolicy -}}
+{{- end }} {{/* if .Values.gateway.validation.kubeCoreFailurePolicy */}}
+{{- end }} {{/* render webhook if */}}
+
 {{- end }} {{/* if and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.validation.webhook.enabled */}}
 {{- end }} {{/* define "gateway.validationWebhookSpec" */}}
 
@@ -88,6 +115,6 @@ specific resources, we will manage the resources that the webhook receives via t
 {{- if .Values.gateway.validation -}}
 {{- if .Values.gateway.validation.webhook -}}
 {{- $kubeResourceOverride = .Values.gateway.validation.webhook.kubeResourceOverride   -}}
-{{- end -}} {{/* if .Values.gateway.validation.webhook */}}
-{{- end -}} {{/* if .Values.gateway.validation */}}
+{{- end -}} {{/* if .Values.gateway.validation.webhook */ -}}
+{{- end -}} {{/* if .Values.gateway.validation */ -}}
 {{- include "gloo.util.merge" (list . $kubeResourceOverride "gateway.validationWebhookSpec") -}}

@@ -16,7 +16,9 @@ import (
 	. "github.com/onsi/gomega"
 	gloostringutils "github.com/solo-io/gloo/pkg/utils/stringutils"
 	"github.com/solo-io/go-utils/stringutils"
+	"github.com/solo-io/k8s-utils/installutils/kuberesource"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
 )
@@ -38,13 +40,16 @@ var _ = Describe("WebhookValidationConfiguration helm test", func() {
 			testManifest = tm
 		}
 
-		//
 		DescribeTable("Can remove DELETEs from webhook rules", func(resources []string, expectedRemoved int) {
 			timeoutSeconds := 5
 
 			// Count the "DELETES" as a sanity check.
 			expectedDeletes := 6 - expectedRemoved
-			expectedChart := generateExpectedChart(timeoutSeconds, resources, expectedDeletes)
+			expectedChart := generateExpectedChart(expectedChartArgs{
+				timeoutSeconds:  timeoutSeconds,
+				skipDeletes:     resources,
+				expectedDeletes: expectedDeletes,
+			})
 
 			prepareMakefile(namespace, glootestutils.HelmValues{
 				ValuesArgs: []string{
@@ -66,6 +71,62 @@ var _ = Describe("WebhookValidationConfiguration helm test", func() {
 			Entry("all", []string{"*"}, 6),
 			Entry("empty", []string{}, 0),
 		)
+
+		It("Can set gloo failurePolicy", func() {
+			timeoutSeconds := 5
+			expectedChart := generateExpectedChart(expectedChartArgs{
+				timeoutSeconds:    timeoutSeconds,
+				glooFailurePolicy: "Fail",
+				expectedDeletes:   6,
+			})
+
+			prepareMakefile(namespace, glootestutils.HelmValues{
+				ValuesArgs: []string{
+					fmt.Sprintf(`gateway.validation.webhook.timeoutSeconds=%d`, timeoutSeconds),
+					`gateway.validation.failurePolicy=Fail`,
+				},
+			})
+			testManifest.ExpectUnstructured(expectedChart.GetKind(), expectedChart.GetNamespace(), expectedChart.GetName()).To(BeEquivalentTo(expectedChart))
+		})
+
+		It("Can set kube failurePolicy", func() {
+			timeoutSeconds := 5
+			expectedChart := generateExpectedChart(expectedChartArgs{
+				timeoutSeconds:    timeoutSeconds,
+				kubeFailurePolicy: "Fail",
+				expectedDeletes:   6,
+			})
+
+			prepareMakefile(namespace, glootestutils.HelmValues{
+				ValuesArgs: []string{
+					fmt.Sprintf(`gateway.validation.webhook.timeoutSeconds=%d`, timeoutSeconds),
+					`gateway.validation.kubeCoreFailurePolicy=Fail`,
+				},
+			})
+			testManifest.ExpectUnstructured(expectedChart.GetKind(), expectedChart.GetNamespace(), expectedChart.GetName()).To(BeEquivalentTo(expectedChart))
+		})
+
+		It("Kube Webhook is not rendered if secrets and resources are skipped", func() {
+			prepareMakefile(namespace, glootestutils.HelmValues{
+				ValuesArgs: []string{
+					`gateway.validation.webhook.skipDeleteValidationResources={secrets,namespaces}`,
+				},
+			})
+
+			// assert that the kube webhook is not rendered
+			testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+				return resource.GetKind() == "ValidatingWebhookConfiguration" && resource.GetName() == "gloo-gateway-validation-webhook-"+namespace
+			}).ExpectAll(func(webhook *unstructured.Unstructured) {
+				webhookObject, err := kuberesource.ConvertUnstructured(webhook)
+
+				ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Webhook %+v should be able to convert from unstructured", webhook))
+				structuredDeployment, ok := webhookObject.(*admissionregistrationv1.ValidatingWebhookConfiguration)
+				ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Webhook %+v should be able to cast to a structured deployment", webhook))
+
+				ExpectWithOffset(1, structuredDeployment.Webhooks).To(HaveLen(1), fmt.Sprintf("Only one webhook should be present on deployment %+v", structuredDeployment))
+				ExpectWithOffset(1, structuredDeployment.Webhooks[0].Name).To(Equal("gloo."+namespace+".svc"), fmt.Sprintf("Webhook name should be 'gloo.%s.svc' on deployment %+v", namespace, structuredDeployment))
+			})
+		})
 
 		Context("enablePolicyApi", func() {
 
@@ -179,20 +240,38 @@ var _ = Describe("WebhookValidationConfiguration helm test", func() {
 	runTests(allTests)
 })
 
-func generateExpectedChart(timeoutSeconds int, skipDeletes []string, expectedDeletes int) *unstructured.Unstructured {
-	rules := generateRules(skipDeletes)
+type expectedChartArgs struct {
+	timeoutSeconds    int
+	skipDeletes       []string
+	expectedDeletes   int
+	glooFailurePolicy string
+	kubeFailurePolicy string
+}
+
+func generateExpectedChart(args expectedChartArgs) *unstructured.Unstructured {
+
+	// Default failure policies
+	if args.glooFailurePolicy == "" {
+		args.glooFailurePolicy = "Ignore"
+	}
+	if args.kubeFailurePolicy == "" {
+		args.kubeFailurePolicy = "Ignore"
+	}
+
+	GinkgoHelper()
+	glooRules, coreRules := generateRules(args.skipDeletes)
 
 	// indent "rules"
 	m1 := regexp.MustCompile("\n")
-	rules = m1.ReplaceAllString(rules, "\n    ")
+	glooRules = m1.ReplaceAllString(glooRules, "\n    ")
+	coreRules = m1.ReplaceAllString(coreRules, "\n    ")
 
 	// Check that we have the expected number of DELETEs
 	m2 := regexp.MustCompile(`DELETE`)
-	deletes := m2.FindAllStringIndex(rules, -1)
-	Expect(deletes).To(HaveLen(expectedDeletes))
+	deletes := len(m2.FindAllStringIndex(glooRules, -1)) + len(m2.FindAllStringIndex(coreRules, -1))
+	Expect(deletes).To(Equal(args.expectedDeletes))
 
-	return makeUnstructured(`
-
+	chart := `
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
@@ -212,18 +291,41 @@ webhooks:
       path: "/validation"
     caBundle: "" # update manually or use certgen job
   rules:
-    ` + rules + `
+    ` + glooRules + `
   sideEffects: None
   matchPolicy: Exact
-  timeoutSeconds: ` + strconv.Itoa(timeoutSeconds) + `
+  timeoutSeconds: ` + strconv.Itoa(args.timeoutSeconds) + `
   admissionReviewVersions:
     - v1beta1
-  failurePolicy: Ignore
-`)
+  failurePolicy: ` + args.glooFailurePolicy + `
+`
+	// Only create the webhook for core resources if there are any resources being valdiated
+	if coreRules != "[]\n    " {
+		chart += `- name: kube.` + namespace + `.svc  # must be a domain with at least three segments separated by dots
+  clientConfig:
+    service:
+      name: gloo
+      namespace: ` + namespace + `
+      path: "/validation"
+    caBundle: "" # update manually or use certgen job
+  rules:
+    ` + coreRules + `
+  sideEffects: None
+  matchPolicy: Exact
+  timeoutSeconds: ` + strconv.Itoa(args.timeoutSeconds) + `
+  admissionReviewVersions:
+    - v1beta1
+  failurePolicy: ` + args.kubeFailurePolicy + `
+`
+	}
+
+	return makeUnstructured(chart)
 }
 
-func generateRules(skipDeleteReources []string) string {
-	rules := []map[string][]string{
+// generateRules returns gloo rules and core rules as separate strings
+func generateRules(skipDeleteReources []string) (string, string) {
+	GinkgoHelper()
+	glooRules := []map[string][]string{
 		{
 			"operations":  {"CREATE", "UPDATE", "DELETE"},
 			"apiGroups":   {"gateway.solo.io"},
@@ -249,6 +351,15 @@ func generateRules(skipDeleteReources []string) string {
 			"resources":   {"upstreams"},
 		},
 		{
+			"operations":  {"CREATE", "UPDATE", "DELETE"},
+			"apiGroups":   {"ratelimit.solo.io"},
+			"apiVersions": {"v1alpha1"},
+			"resources":   {"ratelimitconfigs"},
+		},
+	}
+
+	coreRules := []map[string][]string{
+		{
 			"operations":  {"DELETE"},
 			"apiGroups":   {""},
 			"apiVersions": {"v1"},
@@ -260,16 +371,21 @@ func generateRules(skipDeleteReources []string) string {
 			"apiVersions": {"v1"},
 			"resources":   {"namespaces"},
 		},
-		{
-			"operations":  {"CREATE", "UPDATE", "DELETE"},
-			"apiGroups":   {"ratelimit.solo.io"},
-			"apiVersions": {"v1alpha1"},
-			"resources":   {"ratelimitconfigs"},
-		},
 	}
 
-	finalRules := []map[string][]string{}
-	for i, rule := range rules {
+	finalGlooRules := []map[string][]string{}
+	for i, rule := range glooRules {
+		if stringutils.ContainsAny([]string{rule["resources"][0], "*"}, skipDeleteReources) {
+			rule["operations"] = gloostringutils.DeleteOneByValue(rule["operations"], "DELETE")
+		}
+
+		if len(rule["operations"]) != 0 {
+			finalGlooRules = append(finalGlooRules, glooRules[i])
+		}
+	}
+
+	finalNonGlooRules := []map[string][]string{}
+	for i, rule := range coreRules {
 		if stringutils.ContainsAny([]string{rule["resources"][0], "*"}, skipDeleteReources) {
 			rule["operations"] = gloostringutils.DeleteOneByValue(rule["operations"], "DELETE")
 			// A namespace with an update to a label can cause it to no longer be watched,
@@ -280,11 +396,13 @@ func generateRules(skipDeleteReources []string) string {
 		}
 
 		if len(rule["operations"]) != 0 {
-			finalRules = append(finalRules, rules[i])
+			finalNonGlooRules = append(finalNonGlooRules, coreRules[i])
 		}
 	}
 
-	str, err := yaml.Marshal(finalRules)
+	glooRulesYaml, err := yaml.Marshal(finalGlooRules)
 	Expect(err).NotTo(HaveOccurred())
-	return string(str)
+	nonGlooRulesYaml, err := yaml.Marshal(finalNonGlooRules)
+	Expect(err).NotTo(HaveOccurred())
+	return string(glooRulesYaml), string(nonGlooRulesYaml)
 }

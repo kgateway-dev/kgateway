@@ -16,6 +16,8 @@ Gloo leverages the ValidatingAdmissionWebhook to validate proposed changes to cu
 #### Which resources are subject to the ValidatingAdmissionWebhook?
 The ValidatingWebhookConfiguration is part of the Kubernetes API, and configured through a [Helm template](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/5-gateway-validation-webhook-configuration.yaml). Based on the webhook rules, only the API groups/resources that match the rules will be subject to validation
 
+The template defines two separate webhooks, one for Gloo resources and one for supported Kubernetes resources, currently namespaces and secrets. These webhooks can have different `failurePolicies` defined, and it is recommended that the Kubernetes webhook failure policy, set the Helm value `gateway.validation.kubeCoreFailurePolicy`, remains at its default value of `Ignore`. The danger of a `failurePolicy` of `Fail` in this situation is that if the Gloo Service is unavailable, unrelated namespaces and secrets will not be able to be modified if those modifications match the webhook rules.
+
 #### Where is the Webhook entrypoint defined?
 The ValidatingWebhookConfiguration defines the `name` and `path` to the service which handles validation requests. In Gloo, this is the Gloo Service, at the `/validation` endpoint.
 
@@ -43,6 +45,7 @@ Instead of re-defining this same set of validation code in our webhook, we re-us
 ### Configuration
 #### Where is the webhook configuration defined?
 Webhook configuration is defined on the [Gloo Settings resource](https://github.com/solo-io/gloo/blob/a3430da820bd39a8b0940025c1040e33eeb7d8f8/projects/gloo/api/v1/settings.proto#L605)
+
 
 ### Debugging
 #### What if requests aren't received by the webhook?
