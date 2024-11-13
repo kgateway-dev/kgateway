@@ -25,6 +25,10 @@ K8sGateway is a feature-rich, fast, and flexible Kubernetes-native ingress contr
   * Allow different teams in an organization choose different architectures. 
 
 
+<!---
+PLEASE DO NOT RENAME THIS SECTION
+This header is used as an anchor in our CNCF Donation Issue
+-->
 ### What makes K8sGateway unique
 - **Function-level routing allows integration of legacy applications, microservices and serverless**: K8sGateway can route requests directly to functions. Request to Function can be a serverless function call (e.g. Lambda, Google Cloud Function, OpenFaaS Function, etc.), an API call on a microservice or a legacy service (e.g. a REST API call, OpenAPI operation, XML/SOAP request etc.), or publishing to a message queue (e.g. NATS, AMQP, etc.). This unique ability is what makes K8sGateway the only API gateway that supports hybrid apps as well as the only one that does not tie the user to a specific paradigm.
 - **K8sGateway incorporates vetted open-source projects to provide broad functionality**: K8sGateway supports high-quality features by integrating with top open-source projects, including gRPC, OpenTracing, NATS and more. K8sGateway's architecture allows rapid integration of future popular open-source projects as they emerge.
