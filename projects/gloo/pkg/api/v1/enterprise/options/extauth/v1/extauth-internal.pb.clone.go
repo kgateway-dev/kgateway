@@ -1075,6 +1075,39 @@ func (m *ExtAuthConfig_HmacAuthConfig) Clone() proto.Message {
 }
 
 // Clone function
+func (m *ExtAuthConfig_PortalAuthConfig) Clone() proto.Message {
+	var target *ExtAuthConfig_PortalAuthConfig
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_PortalAuthConfig{}
+
+	target.Url = m.GetUrl()
+
+	target.ApiKeyHeader = m.GetApiKeyHeader()
+
+	if h, ok := interface{}(m.GetRedisOptions()).(clone.Cloner); ok {
+		target.RedisOptions = h.Clone().(*RedisOptions)
+	} else {
+		target.RedisOptions = proto.Clone(m.GetRedisOptions()).(*RedisOptions)
+	}
+
+	if h, ok := interface{}(m.GetCacheDuration()).(clone.Cloner); ok {
+		target.CacheDuration = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
+	} else {
+		target.CacheDuration = proto.Clone(m.GetCacheDuration()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
+	}
+
+	if h, ok := interface{}(m.GetRequestTimeout()).(clone.Cloner); ok {
+		target.RequestTimeout = h.Clone().(*google_golang_org_protobuf_types_known_durationpb.Duration)
+	} else {
+		target.RequestTimeout = proto.Clone(m.GetRequestTimeout()).(*google_golang_org_protobuf_types_known_durationpb.Duration)
+	}
+
+	return target
+}
+
+// Clone function
 func (m *ExtAuthConfig_InMemorySecretList) Clone() proto.Message {
 	var target *ExtAuthConfig_InMemorySecretList
 	if m == nil {
@@ -1263,6 +1296,18 @@ func (m *ExtAuthConfig_Config) Clone() proto.Message {
 		} else {
 			target.AuthConfig = &ExtAuthConfig_Config_OpaServerAuth{
 				OpaServerAuth: proto.Clone(m.GetOpaServerAuth()).(*ExtAuthConfig_OpaServerAuthConfig),
+			}
+		}
+
+	case *ExtAuthConfig_Config_PortalAuth:
+
+		if h, ok := interface{}(m.GetPortalAuth()).(clone.Cloner); ok {
+			target.AuthConfig = &ExtAuthConfig_Config_PortalAuth{
+				PortalAuth: h.Clone().(*ExtAuthConfig_PortalAuthConfig),
+			}
+		} else {
+			target.AuthConfig = &ExtAuthConfig_Config_PortalAuth{
+				PortalAuth: proto.Clone(m.GetPortalAuth()).(*ExtAuthConfig_PortalAuthConfig),
 			}
 		}
 
