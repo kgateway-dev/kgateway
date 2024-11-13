@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/6888
+    resolvesIssue: false
+    description: >-
+      Update helm public docs generation to work from main branch and only pull in released changes
