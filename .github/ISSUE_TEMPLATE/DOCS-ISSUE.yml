@@ -10,7 +10,7 @@ body:
     id: version
     attributes:
       label: Version
-      description: Which version of the Gloo Gateway docs does this affect?
+      description: Which version of the K8sGateway docs does this affect?
       options:
         - main (1.18.x beta)
         - 1.17.x (latest)
@@ -26,21 +26,20 @@ body:
       description: Which Gateway API does this use?
       options:
         - Kubernetes Gateway API
-        - Gloo Edge API
+        - K8sGateway API
     validations:
       required: true
   - type: textarea
     id: change-details
     attributes:
       label: Describe the requested changes
-      description: List the desired changes to be made to the Gloo Gateway docs.
+      description: List the desired changes to be made to the K8sGateway docs.
   - type: textarea
     id: docs-links
     attributes:
       label: Link to any relevant existing docs
       placeholder: |
-        1. Edge API docs: https://docs.solo.io/gloo-edge/latest...
-        2. Kubernetes Gateway API docs: https://docs.solo.io/gateway/latest...
+        1. Kubernetes Gateway docs: https://k8sgateway.io/docs/...
   - type: textarea
     id: browser-details
     attributes:

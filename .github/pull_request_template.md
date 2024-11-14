@@ -42,7 +42,6 @@ _Fill out any of the following sections that are relevant and remove the others_
 
 <!-- Users ran into this bug doing ... \ Users needed this feature to ...
 
-See slack conversation [here](https://solo-io-corp.slack.com/archives/some/post)
 -->
 
 ## Interesting decisions
@@ -71,9 +70,9 @@ This is a complex PR and may require a huddle to discuss ...
 
 <!---
 # Author reminders (delete before opening)
-- Include a concise, user-facing changelog (for details, see https://github.com/solo-io/go-utils/tree/main/changelogutils) referencing the issue that is resolved
+- Include a concise, user-facing changelog referencing the issue that is resolved
   - Include `resolvesIssue: false` unless the issue does not require a release to be resolved; only a subset of non-user-facing issues can be considered resolved without release
 - Run codegen via `make -B install-go-tools generated-code`
-- Follow guidelines laid out in the Gloo Edge [contribution guide](https://docs.solo.io/gloo-edge/latest/contributing/)
+- Follow guidelines laid out in the [contribution guide](https://github.com/k8sgateway/community/blob/main/CONTRIBUTING.md)
 - If not ready for review, open a draft PR or apply the `work in progress` label
 -->
