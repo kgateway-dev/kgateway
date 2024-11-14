@@ -6,9 +6,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/defaults"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/xds"
+	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/xds"
 )
 
 var _ = Describe("Cache", func() {

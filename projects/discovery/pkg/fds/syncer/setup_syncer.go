@@ -6,7 +6,7 @@ import (
 	discoveryRegistry "github.com/solo-io/gloo/projects/discovery/pkg/fds/discoveries/registry"
 	syncerutils "github.com/solo-io/gloo/projects/discovery/pkg/syncer"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/syncer/setup"
+	"github.com/solo-io/gloo/projects/controller/pkg/syncer/setup"
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
@@ -14,9 +14,9 @@ import (
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/bootstrap"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/registry"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controller/pkg/bootstrap"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/registry"
 )
 
 type Extensions struct {

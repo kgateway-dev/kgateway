@@ -38,7 +38,7 @@ func (m *HttpConnectionManagerSettings) Hash(hasher hash.Hash64) (uint64, error)
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("hcm.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/hcm.HttpConnectionManagerSettings")); err != nil {
+	if _, err = hasher.Write([]byte("hcm.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/hcm.HttpConnectionManagerSettings")); err != nil {
 		return 0, err
 	}
 
@@ -815,7 +815,7 @@ func (m *HttpConnectionManagerSettings_SetCurrentClientCertDetails) Hash(hasher 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("hcm.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/hcm.HttpConnectionManagerSettings_SetCurrentClientCertDetails")); err != nil {
+	if _, err = hasher.Write([]byte("hcm.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/hcm.HttpConnectionManagerSettings_SetCurrentClientCertDetails")); err != nil {
 		return 0, err
 	}
 
@@ -935,7 +935,7 @@ func (m *HttpConnectionManagerSettings_UuidRequestIdConfigSettings) Hash(hasher 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("hcm.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/hcm.HttpConnectionManagerSettings_UuidRequestIdConfigSettings")); err != nil {
+	if _, err = hasher.Write([]byte("hcm.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/hcm.HttpConnectionManagerSettings_UuidRequestIdConfigSettings")); err != nil {
 		return 0, err
 	}
 
@@ -995,7 +995,7 @@ func (m *HttpConnectionManagerSettings_CidrRange) Hash(hasher hash.Hash64) (uint
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("hcm.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/hcm.HttpConnectionManagerSettings_CidrRange")); err != nil {
+	if _, err = hasher.Write([]byte("hcm.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/hcm.HttpConnectionManagerSettings_CidrRange")); err != nil {
 		return 0, err
 	}
 
@@ -1039,7 +1039,7 @@ func (m *HttpConnectionManagerSettings_InternalAddressConfig) Hash(hasher hash.H
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("hcm.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/hcm.HttpConnectionManagerSettings_InternalAddressConfig")); err != nil {
+	if _, err = hasher.Write([]byte("hcm.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/hcm.HttpConnectionManagerSettings_InternalAddressConfig")); err != nil {
 		return 0, err
 	}
 

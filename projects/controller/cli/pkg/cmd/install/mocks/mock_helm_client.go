@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	install "github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd/install"
+	install "github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/install"
 	chart "helm.sh/helm/v3/pkg/chart"
 	cli "helm.sh/helm/v3/pkg/cli"
 )

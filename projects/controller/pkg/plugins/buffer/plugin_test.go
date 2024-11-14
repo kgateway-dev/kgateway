@@ -10,10 +10,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	. "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/buffer"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	. "github.com/solo-io/gloo/projects/controller/pkg/plugins/buffer"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 	"github.com/solo-io/solo-kit/test/matchers"
 )
 

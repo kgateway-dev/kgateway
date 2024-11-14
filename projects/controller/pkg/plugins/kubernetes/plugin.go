@@ -17,8 +17,8 @@ import (
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/xds"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/xds"
 )
 
 const (

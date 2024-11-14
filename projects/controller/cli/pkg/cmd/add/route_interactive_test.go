@@ -8,9 +8,9 @@ import (
 
 	"github.com/solo-io/gloo/pkg/cliutil/testutil"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/helpers"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/testutils"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/testutils"
 
-	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )

@@ -38,7 +38,7 @@ func (m *GrpcJsonTranscoder) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("grpc_json.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/grpc_json.GrpcJsonTranscoder")); err != nil {
+	if _, err = hasher.Write([]byte("grpc_json.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/grpc_json.GrpcJsonTranscoder")); err != nil {
 		return 0, err
 	}
 
@@ -152,7 +152,7 @@ func (m *GrpcJsonTranscoder_PrintOptions) Hash(hasher hash.Hash64) (uint64, erro
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("grpc_json.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/grpc_json.GrpcJsonTranscoder_PrintOptions")); err != nil {
+	if _, err = hasher.Write([]byte("grpc_json.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/grpc_json.GrpcJsonTranscoder_PrintOptions")); err != nil {
 		return 0, err
 	}
 
@@ -192,7 +192,7 @@ func (m *GrpcJsonTranscoder_DescriptorConfigMap) Hash(hasher hash.Hash64) (uint6
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("grpc_json.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/grpc_json.GrpcJsonTranscoder_DescriptorConfigMap")); err != nil {
+	if _, err = hasher.Write([]byte("grpc_json.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/grpc_json.GrpcJsonTranscoder_DescriptorConfigMap")); err != nil {
 		return 0, err
 	}
 

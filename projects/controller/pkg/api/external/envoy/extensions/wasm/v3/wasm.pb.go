@@ -13,7 +13,7 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3"
+	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"

@@ -9,14 +9,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	extauth "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extauth/v1"
-	gloov1snap "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/defaults"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/syncer"
+	extauth "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1"
+	gloov1snap "github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
+	"github.com/solo-io/gloo/projects/controller/pkg/syncer"
 	skcore "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
-	. "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/syncer/extauth"
+	. "github.com/solo-io/gloo/projects/controller/pkg/syncer/extauth"
 )
 
 var _ = Describe("ExtauthTranslatorSyncer", func() {

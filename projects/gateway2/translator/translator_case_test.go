@@ -32,7 +32,7 @@ import (
 	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/defaults"
+	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
 )
 
 type TestCase struct {

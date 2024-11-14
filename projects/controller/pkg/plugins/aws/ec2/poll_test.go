@@ -14,8 +14,8 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 
-	glooec2 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/aws/ec2"
-	bootstrap "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/bootstrap/clients"
+	glooec2 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/aws/ec2"
+	bootstrap "github.com/solo-io/gloo/projects/controller/pkg/bootstrap/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"

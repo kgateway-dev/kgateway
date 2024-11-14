@@ -11,9 +11,9 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	v32 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3"
-	v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3"
-	v31 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/matcher/v3"
+	v32 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
+	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3"
+	v31 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/matcher/v3"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -279,16 +279,16 @@ type RouteTransformations struct {
 	// deprecated. Use transformations[].request_match.request_transformation
 	// instead.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/extensions/transformation/transformation.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/extensions/transformation/transformation.proto.
 	RequestTransformation *Transformation `protobuf:"bytes,1,opt,name=request_transformation,json=requestTransformation,proto3" json:"request_transformation,omitempty"`
 	// deprecated. Use transformations[].request_match.response_transformation
 	// instead.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/extensions/transformation/transformation.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/extensions/transformation/transformation.proto.
 	ResponseTransformation *Transformation `protobuf:"bytes,2,opt,name=response_transformation,json=responseTransformation,proto3" json:"response_transformation,omitempty"`
 	// deprecated. Use transformations[].request_match.clear_route_cache instead.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/extensions/transformation/transformation.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/extensions/transformation/transformation.proto.
 	ClearRouteCache bool                                        `protobuf:"varint,3,opt,name=clear_route_cache,json=clearRouteCache,proto3" json:"clear_route_cache,omitempty"`
 	Transformations []*RouteTransformations_RouteTransformation `protobuf:"bytes,4,rep,name=transformations,proto3" json:"transformations,omitempty"`
 }
@@ -323,7 +323,7 @@ func (*RouteTransformations) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_extensions_transformation_transformation_proto_rawDescGZIP(), []int{2}
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/extensions/transformation/transformation.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/extensions/transformation/transformation.proto.
 func (x *RouteTransformations) GetRequestTransformation() *Transformation {
 	if x != nil {
 		return x.RequestTransformation
@@ -331,7 +331,7 @@ func (x *RouteTransformations) GetRequestTransformation() *Transformation {
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/extensions/transformation/transformation.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/extensions/transformation/transformation.proto.
 func (x *RouteTransformations) GetResponseTransformation() *Transformation {
 	if x != nil {
 		return x.ResponseTransformation
@@ -339,7 +339,7 @@ func (x *RouteTransformations) GetResponseTransformation() *Transformation {
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/extensions/transformation/transformation.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/extensions/transformation/transformation.proto.
 func (x *RouteTransformations) GetClearRouteCache() bool {
 	if x != nil {
 		return x.ClearRouteCache

@@ -14,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/cliutil/helm"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/install"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/defaults"
+	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
 	"github.com/solo-io/gloo/test/makefile"
 	glootestutils "github.com/solo-io/gloo/test/testutils"
 	soloHelm "github.com/solo-io/go-utils/helmutils"

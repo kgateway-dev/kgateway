@@ -2,7 +2,7 @@ package httpprotocolhelpers
 
 import (
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/protocol"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_extensions_http_header_formatters_preserve_case_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/header_formatters/preserve_case/v3"

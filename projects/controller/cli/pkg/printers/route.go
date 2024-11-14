@@ -15,7 +15,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/solo-io/go-utils/cliutils"
 
-	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 )
 
 var routeActionType = struct {

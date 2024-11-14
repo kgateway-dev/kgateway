@@ -14,8 +14,8 @@ import (
 
 	. "github.com/solo-io/gloo/projects/discovery/pkg/fds"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	plugins "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options"
-	kubernetes_plugins_gloo_solo_io "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/kubernetes"
+	plugins "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options"
+	kubernetes_plugins_gloo_solo_io "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/kubernetes"
 )
 
 type testUpstreamWriterClient struct{}

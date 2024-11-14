@@ -10,16 +10,16 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/translator"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/xds"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controller/pkg/translator"
+	"github.com/solo-io/gloo/projects/controller/pkg/xds"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
-	. "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/syncer/sanitizer"
+	. "github.com/solo-io/gloo/projects/controller/pkg/syncer/sanitizer"
 )
 
 var _ = Describe("UpstreamRemovingSanitizer", func() {

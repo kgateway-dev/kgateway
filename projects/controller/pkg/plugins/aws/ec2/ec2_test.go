@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 
-	glooec2 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/aws/ec2"
+	glooec2 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/aws/ec2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 

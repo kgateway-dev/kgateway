@@ -10,10 +10,10 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	graphql "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/graphql"
-	grpc "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/grpc"
-	grpc_json "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/grpc_json"
-	rest "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/rest"
+	graphql "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/graphql"
+	grpc "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/grpc"
+	grpc_json "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/grpc_json"
+	rest "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/rest"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -91,7 +91,7 @@ func (x *ServiceSpec) GetRest() *rest.ServiceSpec {
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/options/service_spec.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/options/service_spec.proto.
 func (x *ServiceSpec) GetGrpc() *grpc.ServiceSpec {
 	if x, ok := x.GetPluginType().(*ServiceSpec_Grpc); ok {
 		return x.Grpc
@@ -122,7 +122,7 @@ type ServiceSpec_Rest struct {
 }
 
 type ServiceSpec_Grpc struct {
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/options/service_spec.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/options/service_spec.proto.
 	Grpc *grpc.ServiceSpec `protobuf:"bytes,2,opt,name=grpc,proto3,oneof"`
 }
 

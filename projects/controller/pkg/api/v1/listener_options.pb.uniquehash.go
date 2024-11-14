@@ -39,7 +39,7 @@ func (m *ListenerOptions) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.ListenerOptions")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.ListenerOptions")); err != nil {
 		return 0, err
 	}
 
@@ -228,7 +228,7 @@ func (m *ConnectionBalanceConfig) HashUnique(hasher hash.Hash64) (uint64, error)
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.ConnectionBalanceConfig")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.ConnectionBalanceConfig")); err != nil {
 		return 0, err
 	}
 
@@ -267,7 +267,7 @@ func (m *ConnectionBalanceConfig_ExactBalance) HashUnique(hasher hash.Hash64) (u
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.ConnectionBalanceConfig_ExactBalance")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.ConnectionBalanceConfig_ExactBalance")); err != nil {
 		return 0, err
 	}
 

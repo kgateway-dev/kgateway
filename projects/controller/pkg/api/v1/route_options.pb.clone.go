@@ -13,45 +13,45 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_buffer_v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_buffer_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_csrf_v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_csrf_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/matcher/v3"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/matcher/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ai "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ai "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_dlp "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/dlp"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_dlp "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/dlp"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extauth_v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extauth/v1"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extauth_v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extproc"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extproc"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_jwt "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/jwt"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_jwt "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/jwt"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ratelimit "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ratelimit"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ratelimit "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ratelimit"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_rbac "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/rbac"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_rbac "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/rbac"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_waf "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/waf"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_waf "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/waf"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_cors "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/cors"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_cors "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/cors"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_faultinjection "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/faultinjection"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_faultinjection "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/faultinjection"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_headers "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/headers"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_headers "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/headers"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_lbhash "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/lbhash"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_lbhash "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/lbhash"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_protocol_upgrade "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/protocol_upgrade"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_protocol_upgrade "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/protocol_upgrade"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_retries "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/retries"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_retries "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/retries"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_shadowing "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/shadowing"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_shadowing "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/shadowing"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_tracing "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/tracing"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_tracing "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/tracing"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_transformation "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_transformation "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation"
 
 	google_golang_org_protobuf_types_known_durationpb "google.golang.org/protobuf/types/known/durationpb"
 

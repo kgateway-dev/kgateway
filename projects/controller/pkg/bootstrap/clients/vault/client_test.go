@@ -11,9 +11,9 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	. "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/bootstrap/clients/vault"
+	. "github.com/solo-io/gloo/projects/controller/pkg/bootstrap/clients/vault"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/bootstrap/clients/vault/mocks"
+	"github.com/solo-io/gloo/projects/controller/pkg/bootstrap/clients/vault/mocks"
 	"github.com/solo-io/gloo/test/gomega/assertions"
 )
 

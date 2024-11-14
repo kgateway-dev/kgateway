@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	statsapi "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/stats"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
+	statsapi "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/stats"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
 )
 
 var _ = Describe("Virtual Clusters", func() {

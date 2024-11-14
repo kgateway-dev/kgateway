@@ -29,7 +29,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_annotations_de
 		Field:         246172783,
 		Name:          "solo.io.envoy.annotations.disallowed_by_default",
 		Tag:           "varint,246172783,opt,name=disallowed_by_default",
-		Filename:      "github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/annotations/deprecation.proto",
+		Filename:      "github.com/solo-io/gloo/projects/controller/api/external/envoy/annotations/deprecation.proto",
 	},
 	{
 		ExtendedType:  (*descriptorpb.FieldOptions)(nil),
@@ -37,7 +37,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_annotations_de
 		Field:         246172784,
 		Name:          "solo.io.envoy.annotations.deprecated_at_minor_version",
 		Tag:           "bytes,246172784,opt,name=deprecated_at_minor_version",
-		Filename:      "github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/annotations/deprecation.proto",
+		Filename:      "github.com/solo-io/gloo/projects/controller/api/external/envoy/annotations/deprecation.proto",
 	},
 	{
 		ExtendedType:  (*descriptorpb.EnumValueOptions)(nil),
@@ -45,7 +45,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_annotations_de
 		Field:         178329844,
 		Name:          "solo.io.envoy.annotations.disallowed_by_default_enum",
 		Tag:           "varint,178329844,opt,name=disallowed_by_default_enum",
-		Filename:      "github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/annotations/deprecation.proto",
+		Filename:      "github.com/solo-io/gloo/projects/controller/api/external/envoy/annotations/deprecation.proto",
 	},
 }
 

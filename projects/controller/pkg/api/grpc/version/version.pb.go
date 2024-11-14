@@ -32,7 +32,7 @@ const (
 	GlooType_Ingress GlooType = 2
 	// Deprecated: Will not be available in k8sgateway 1.11
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/grpc/version/version.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/grpc/version/version.proto.
 	GlooType_Knative GlooType = 3
 )
 

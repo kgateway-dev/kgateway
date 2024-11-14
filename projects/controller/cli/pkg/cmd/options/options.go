@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options/contextoptions"
-	printTypes "github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/printers"
+	printTypes "github.com/solo-io/gloo/projects/controller/cli/pkg/printers"
 
 	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/rotisserie/eris"
-	extauth "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extauth/v1"
+	extauth "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 

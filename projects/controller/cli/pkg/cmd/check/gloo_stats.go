@@ -8,9 +8,9 @@ import (
 
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/helpers"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/printers"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/defaults"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/printers"
+	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
 	appsv1 "k8s.io/api/apps/v1"
 )
 

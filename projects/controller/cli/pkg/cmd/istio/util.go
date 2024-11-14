@@ -10,10 +10,10 @@ import (
 
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options/contextoptions"
 
-	versioncmd "github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd/version"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/prerun"
+	versioncmd "github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/version"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/prerun"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/helpers"
 
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"

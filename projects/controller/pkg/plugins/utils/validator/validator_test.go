@@ -11,7 +11,7 @@ import (
 )
 
 // Validation against envoy can not be tested here as it is designed to pass if the envoy binary is not found. So we test the cache and metrics instead.
-// Ref: https://github.com/solo-io/gloo/blob/7e503dea039fa69211232c83bd07f8c169df0d45/projects/controllerrollerroller/pkg/bootstrap/bootstrap_validation.go#L53
+// Ref: https://github.com/solo-io/gloo/blob/7e503dea039fa69211232c83bd07f8c169df0d45/projects/controller/pkg/bootstrap/bootstrap_validation.go#L53
 // Validation is tested in the enterprise gateway kube2e tests
 var _ = Describe("Validator", func() {
 

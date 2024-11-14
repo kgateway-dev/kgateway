@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/solo-io/gloo/projects/controller/pkg/plugins/pluginutils"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/upstreams"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/upstreams"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 
 	envoy_config_mutation_rules_v3 "github.com/envoyproxy/go-control-plane/envoy/config/common/mutation_rules/v3"
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -17,10 +17,10 @@ import (
 	envoy_ehm_header_mutation_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/http/early_header_mutation/header_mutation/v3"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	v1snap "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/headers"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/headers"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
 )
 
 var (

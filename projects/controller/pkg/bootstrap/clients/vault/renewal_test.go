@@ -12,7 +12,7 @@ import (
 	errors "github.com/rotisserie/eris"
 
 	. "github.com/solo-io/gloo/projects/controller/pkg/bootstrap/clients/vault"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/bootstrap/clients/vault/mocks"
+	"github.com/solo-io/gloo/projects/controller/pkg/bootstrap/clients/vault/mocks"
 	"github.com/solo-io/gloo/test/gomega/assertions"
 )
 

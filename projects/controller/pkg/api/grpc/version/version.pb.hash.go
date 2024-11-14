@@ -38,7 +38,7 @@ func (m *ServerVersion) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/grpc/version.ServerVersion")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/grpc/version.ServerVersion")); err != nil {
 		return 0, err
 	}
 
@@ -94,7 +94,7 @@ func (m *Kubernetes) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/grpc/version.Kubernetes")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/grpc/version.Kubernetes")); err != nil {
 		return 0, err
 	}
 
@@ -142,7 +142,7 @@ func (m *ClientVersion) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/grpc/version.ClientVersion")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/grpc/version.ClientVersion")); err != nil {
 		return 0, err
 	}
 
@@ -166,7 +166,7 @@ func (m *KubernetesClusterVersion) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/grpc/version.KubernetesClusterVersion")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/grpc/version.KubernetesClusterVersion")); err != nil {
 		return 0, err
 	}
 
@@ -206,7 +206,7 @@ func (m *Version) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/grpc/version.Version")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/grpc/version.Version")); err != nil {
 		return 0, err
 	}
 
@@ -290,7 +290,7 @@ func (m *Kubernetes_Container) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/grpc/version.Kubernetes_Container")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/grpc/version.Kubernetes_Container")); err != nil {
 		return 0, err
 	}
 

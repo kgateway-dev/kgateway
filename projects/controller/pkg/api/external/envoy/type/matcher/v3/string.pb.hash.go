@@ -38,7 +38,7 @@ func (m *StringMatcher) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.type.matcher.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/matcher/v3.StringMatcher")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.type.matcher.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/matcher/v3.StringMatcher")); err != nil {
 		return 0, err
 	}
 
@@ -107,7 +107,7 @@ func (m *ListStringMatcher) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.type.matcher.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/matcher/v3.ListStringMatcher")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.type.matcher.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/matcher/v3.ListStringMatcher")); err != nil {
 		return 0, err
 	}
 

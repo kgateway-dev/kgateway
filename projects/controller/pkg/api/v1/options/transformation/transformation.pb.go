@@ -10,8 +10,8 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	xslt "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformers/xslt"
-	matchers "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers"
+	xslt "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformers/xslt"
+	matchers "github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"

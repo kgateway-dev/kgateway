@@ -4,14 +4,14 @@ import (
 	"fmt"
 
 	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/grpc/validation"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	. "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils/validation"
+	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/grpc/validation"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	. "github.com/solo-io/gloo/projects/controller/pkg/utils/validation"
 )
 
 var _ = Describe("validation utils", func() {

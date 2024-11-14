@@ -3,9 +3,9 @@ package secret
 import (
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/constants"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/flagutils"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/prerun"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/flagutils"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/prerun"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/spf13/cobra"
 )

@@ -31,10 +31,10 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd/options/contextoptions"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/constants"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/flagutils"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options/contextoptions"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/flagutils"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/helpers"
 )
 
 const (

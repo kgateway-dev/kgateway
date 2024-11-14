@@ -7,9 +7,9 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	validationapi "github.com/solo-io/gloo/projects/controller/pkg/api/grpc/validation"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils/validation"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils/validation"
 	"github.com/solo-io/go-utils/contextutils"
 )
 

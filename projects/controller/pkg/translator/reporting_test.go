@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/pluginutils"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/pluginutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 

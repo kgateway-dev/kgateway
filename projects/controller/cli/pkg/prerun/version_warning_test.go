@@ -9,8 +9,8 @@ import (
 	. "github.com/onsi/gomega"
 	linkedversion "github.com/solo-io/gloo/pkg/version"
 	version2 "github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/version"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/prerun"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/grpc/version"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/prerun"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/grpc/version"
 	"github.com/solo-io/go-utils/versionutils"
 )
 

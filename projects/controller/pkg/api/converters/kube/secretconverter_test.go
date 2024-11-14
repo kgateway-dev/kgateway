@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/solo-io/gloo/projects/controller/pkg/api/converters/kube"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -24,7 +24,7 @@ var _ = Describe("SecretConverter", func() {
 		Expect(ok).To(BeTrue())
 		convertersValue := reflect.ValueOf(*GlooSecretConverterChain).FieldByName(converterField.Name)
 		// NOTE: when adding a converter here, please add the glooctl command
-		// for the secret converter as well add to cli projects/controllerrollerroller/cli/pkg/cmd/create/secret
+		// for the secret converter as well add to cli projects/controller/cli/pkg/cmd/create/secret
 		Expect(convertersValue.Len()).To(Equal(8))
 	})
 	It("should convert kube secret to gloo secret", func() {

@@ -25,9 +25,9 @@ import (
 	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/vhostutils"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/grpc/validation"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	glooutils "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/xds"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	glooutils "github.com/solo-io/gloo/projects/controller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/xds"
 )
 
 var (

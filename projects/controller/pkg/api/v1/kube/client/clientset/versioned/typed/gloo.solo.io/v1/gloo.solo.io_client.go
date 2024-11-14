@@ -22,7 +22,7 @@ import (
 	"net/http"
 
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/kube/client/clientset/versioned/scheme"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/kube/client/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
 

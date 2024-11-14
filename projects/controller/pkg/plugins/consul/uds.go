@@ -5,9 +5,9 @@ import (
 
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/discovery"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/utils"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/upstreams/consul"
+	"github.com/solo-io/gloo/projects/controller/pkg/discovery"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/upstreams/consul"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )

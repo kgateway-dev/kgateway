@@ -7,7 +7,7 @@ import (
 
 // We support global UpstreamOptions to define SslParameters for all upstreams
 // If an upstream is configure with ssl, it will inherit the defaults here:
-// https://github.com/solo-io/gloo/blob/15da82bdd65ab4bcedbc7fb803ea0bb5f7e926fc/projects/controllerrollerroller/pkg/translator/clusters.go#L108
+// https://github.com/solo-io/gloo/blob/15da82bdd65ab4bcedbc7fb803ea0bb5f7e926fc/projects/controller/pkg/translator/clusters.go#L108
 // However, if an upstream is configured with one-way TLS, we must explicitly apply the defaults, since there is no ssl
 // configuration on the upstream
 func GetCommonTlsContextFromUpstreamOptions(options *v1.UpstreamOptions) (*envoyauth.CommonTlsContext, error) {

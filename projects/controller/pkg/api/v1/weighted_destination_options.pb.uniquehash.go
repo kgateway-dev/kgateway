@@ -39,7 +39,7 @@ func (m *WeightedDestinationOptions) HashUnique(hasher hash.Hash64) (uint64, err
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.WeightedDestinationOptions")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.WeightedDestinationOptions")); err != nil {
 		return 0, err
 	}
 

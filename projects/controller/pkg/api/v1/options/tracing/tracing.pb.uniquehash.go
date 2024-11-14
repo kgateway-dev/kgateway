@@ -39,7 +39,7 @@ func (m *ListenerTracingSettings) HashUnique(hasher hash.Hash64) (uint64, error)
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("tracing.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/tracing.ListenerTracingSettings")); err != nil {
+	if _, err = hasher.Write([]byte("tracing.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/tracing.ListenerTracingSettings")); err != nil {
 		return 0, err
 	}
 
@@ -280,7 +280,7 @@ func (m *RouteTracingSettings) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("tracing.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/tracing.RouteTracingSettings")); err != nil {
+	if _, err = hasher.Write([]byte("tracing.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/tracing.RouteTracingSettings")); err != nil {
 		return 0, err
 	}
 
@@ -346,7 +346,7 @@ func (m *TracePercentages) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("tracing.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/tracing.TracePercentages")); err != nil {
+	if _, err = hasher.Write([]byte("tracing.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/tracing.TracePercentages")); err != nil {
 		return 0, err
 	}
 
@@ -425,7 +425,7 @@ func (m *TracingTagEnvironmentVariable) HashUnique(hasher hash.Hash64) (uint64, 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("tracing.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/tracing.TracingTagEnvironmentVariable")); err != nil {
+	if _, err = hasher.Write([]byte("tracing.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/tracing.TracingTagEnvironmentVariable")); err != nil {
 		return 0, err
 	}
 
@@ -504,7 +504,7 @@ func (m *TracingTagLiteral) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("tracing.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/tracing.TracingTagLiteral")); err != nil {
+	if _, err = hasher.Write([]byte("tracing.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/tracing.TracingTagLiteral")); err != nil {
 		return 0, err
 	}
 

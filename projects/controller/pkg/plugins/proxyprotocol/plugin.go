@@ -6,9 +6,9 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/enterprise_warning"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/enterprise_warning"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 )
 
 var (

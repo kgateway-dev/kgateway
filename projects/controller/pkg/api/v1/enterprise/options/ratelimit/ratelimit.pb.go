@@ -10,7 +10,7 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	local_ratelimit "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/local_ratelimit"
+	local_ratelimit "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/local_ratelimit"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	v1alpha1 "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"

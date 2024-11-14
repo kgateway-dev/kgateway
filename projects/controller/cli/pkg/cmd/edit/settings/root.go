@@ -3,9 +3,9 @@ package settings
 import (
 	editOptions "github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/edit/options"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd/edit/settings/ratelimit"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/constants"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/flagutils"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/edit/settings/ratelimit"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/flagutils"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/spf13/cobra"
 )

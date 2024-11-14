@@ -6,8 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	. "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/virtualhost"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	. "github.com/solo-io/gloo/projects/controller/pkg/plugins/virtualhost"
 )
 
 var _ = Describe("AttemptCount Plugin", func() {

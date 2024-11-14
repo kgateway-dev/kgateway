@@ -7,7 +7,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/envutils"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/ssl"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	corev1 "k8s.io/api/core/v1"

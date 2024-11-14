@@ -6,8 +6,8 @@ import (
 	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/grpc/validation"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/grpc/validation"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	"go.uber.org/multierr"
 )
 

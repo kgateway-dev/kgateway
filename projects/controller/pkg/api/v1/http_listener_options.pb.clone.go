@@ -13,49 +13,49 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_filter_http_gzip_v2 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/filter/http/gzip/v2"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_filter_http_gzip_v2 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/filter/http/gzip/v2"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_buffer_v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_buffer_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_csrf_v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_csrf_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_proxylatency "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/proxylatency"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_proxylatency "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/proxylatency"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_caching "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/caching"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_caching "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/caching"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_dlp "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/dlp"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_dlp "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/dlp"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extauth_v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extauth/v1"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extauth_v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extproc"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extproc"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ratelimit "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ratelimit"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ratelimit "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ratelimit"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_stateful_session "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/stateful_session"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_stateful_session "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/stateful_session"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_waf "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/waf"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_waf "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/waf"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_connection_limit "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/connection_limit"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_connection_limit "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/connection_limit"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/dynamic_forward_proxy"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/dynamic_forward_proxy"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_grpc_json "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/grpc_json"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_grpc_json "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/grpc_json"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_grpc_web "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/grpc_web"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_grpc_web "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/grpc_web"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_hcm "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/hcm"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_hcm "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/hcm"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_header_validation "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/header_validation"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_header_validation "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/header_validation"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_healthcheck "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/healthcheck"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_healthcheck "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/healthcheck"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_local_ratelimit "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/local_ratelimit"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_local_ratelimit "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/local_ratelimit"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_router "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/router"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_router "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/router"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_tap "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/tap"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_tap "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/tap"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_wasm "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/wasm"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_wasm "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/wasm"
 
 	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )

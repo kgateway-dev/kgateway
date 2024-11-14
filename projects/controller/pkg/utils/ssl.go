@@ -11,13 +11,13 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/controller/constants"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/ssl"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"k8s.io/client-go/util/cert"
 )
 
-//go:generate mockgen -destination mocks/mock_ssl.go github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils SslConfigTranslator
+//go:generate mockgen -destination mocks/mock_ssl.go github.com/solo-io/gloo/projects/controller/pkg/utils SslConfigTranslator
 
 const (
 	MetadataPluginName = "envoy.grpc_credentials.file_based_metadata"

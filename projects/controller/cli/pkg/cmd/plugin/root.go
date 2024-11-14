@@ -2,9 +2,9 @@ package plugin
 
 import (
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd/plugin/list"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/constants"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/prerun"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/plugin/list"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/prerun"
 
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/spf13/cobra"

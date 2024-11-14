@@ -5,15 +5,15 @@ import (
 
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/printers"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/prerun"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/prerun"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/argsutils"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/constants"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/flagutils"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/helpers"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/surveyutils"
-	extauth "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/argsutils"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/flagutils"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/surveyutils"
+	extauth "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"

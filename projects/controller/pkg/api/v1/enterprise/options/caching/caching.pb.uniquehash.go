@@ -39,7 +39,7 @@ func (m *Settings) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("caching.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/caching.Settings")); err != nil {
+	if _, err = hasher.Write([]byte("caching.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/caching.Settings")); err != nil {
 		return 0, err
 	}
 

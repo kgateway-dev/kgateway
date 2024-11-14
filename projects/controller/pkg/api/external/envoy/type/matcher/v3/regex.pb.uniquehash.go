@@ -39,7 +39,7 @@ func (m *RegexMatcher) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.type.matcher.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/matcher/v3.RegexMatcher")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.type.matcher.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/matcher/v3.RegexMatcher")); err != nil {
 		return 0, err
 	}
 
@@ -91,7 +91,7 @@ func (m *RegexMatchAndSubstitute) HashUnique(hasher hash.Hash64) (uint64, error)
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.type.matcher.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/matcher/v3.RegexMatchAndSubstitute")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.type.matcher.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/matcher/v3.RegexMatchAndSubstitute")); err != nil {
 		return 0, err
 	}
 
@@ -137,7 +137,7 @@ func (m *RegexMatcher_GoogleRE2) HashUnique(hasher hash.Hash64) (uint64, error) 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.type.matcher.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/matcher/v3.RegexMatcher_GoogleRE2")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.type.matcher.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/matcher/v3.RegexMatcher_GoogleRE2")); err != nil {
 		return 0, err
 	}
 

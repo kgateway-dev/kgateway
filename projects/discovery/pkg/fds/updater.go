@@ -14,9 +14,9 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"go.uber.org/zap"
 
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	plugins "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/translator"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	plugins "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options"
+	"github.com/solo-io/gloo/projects/controller/pkg/translator"
 )
 
 var errorUndetectableUpstream = errors.New("upstream type cannot be detected")

@@ -14,9 +14,9 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3"
-	v32 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3"
-	v31 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/v3"
+	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
+	v32 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3"
+	v31 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/v3"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	_ "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"

@@ -10,9 +10,9 @@ import (
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/constants"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/helpers"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/printers"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/printers"
 	glooinstancev1 "github.com/solo-io/solo-apis/pkg/api/fed.solo.io/v1"
 	"github.com/solo-io/solo-apis/pkg/api/fed.solo.io/v1/types"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"

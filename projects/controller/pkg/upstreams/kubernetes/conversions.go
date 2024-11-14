@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	kubeplugin "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/kubernetes"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	kubeplugin "github.com/solo-io/gloo/projects/controller/pkg/plugins/kubernetes"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	corev1 "k8s.io/api/core/v1"

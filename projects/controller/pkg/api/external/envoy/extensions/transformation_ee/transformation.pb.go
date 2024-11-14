@@ -11,8 +11,8 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	route "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/api/v2/route"
-	v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3"
+	route "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/api/v2/route"
+	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3"
 	_type "github.com/solo-io/solo-kit/pkg/api/external/envoy/type"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -361,7 +361,7 @@ type Action struct {
 	// List of regexes to apply to the response body to match data which should be masked
 	// They will be applied iteratively in the order which they are specified
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/extensions/transformation_ee/transformation.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/extensions/transformation_ee/transformation.proto.
 	Regex []string `protobuf:"bytes,2,rep,name=regex,proto3" json:"regex,omitempty"`
 	// Deprecated in favor of DlpMatcher
 	// List of regexes to apply to the response body to match data which should be
@@ -369,7 +369,7 @@ type Action struct {
 	// specified. If this field and `regex` are both provided, all the regexes will
 	// be applied iteratively in the order provided, starting with the ones from `regex`
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/extensions/transformation_ee/transformation.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/extensions/transformation_ee/transformation.proto.
 	RegexActions []*RegexAction `protobuf:"bytes,6,rep,name=regex_actions,json=regexActions,proto3" json:"regex_actions,omitempty"`
 	// If specified, this rule will not actually be applied, but only logged.
 	Shadow bool `protobuf:"varint,3,opt,name=shadow,proto3" json:"shadow,omitempty"`
@@ -420,7 +420,7 @@ func (x *Action) GetName() string {
 	return ""
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/extensions/transformation_ee/transformation.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/extensions/transformation_ee/transformation.proto.
 func (x *Action) GetRegex() []string {
 	if x != nil {
 		return x.Regex
@@ -428,7 +428,7 @@ func (x *Action) GetRegex() []string {
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/extensions/transformation_ee/transformation.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/extensions/transformation_ee/transformation.proto.
 func (x *Action) GetRegexActions() []*RegexAction {
 	if x != nil {
 		return x.RegexActions

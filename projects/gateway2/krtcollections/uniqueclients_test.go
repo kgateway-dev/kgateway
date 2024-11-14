@@ -11,7 +11,7 @@ import (
 	. "github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/utils"
 	glooutils "github.com/solo-io/gloo/projects/controller/pkg/utils"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/xds"
+	"github.com/solo-io/gloo/projects/controller/pkg/xds"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt/krttest"

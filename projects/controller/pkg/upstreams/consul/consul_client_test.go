@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/controller/pkg/upstreams/consul"
-	mock_consul "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/upstreams/consul/mocks"
+	mock_consul "github.com/solo-io/gloo/projects/controller/pkg/upstreams/consul/mocks"
 )
 
 var _ = Describe("ClientWrapper", func() {

@@ -38,7 +38,7 @@ func (m *RetryBackOff) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("retries.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/retries.RetryBackOff")); err != nil {
+	if _, err = hasher.Write([]byte("retries.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/retries.RetryBackOff")); err != nil {
 		return 0, err
 	}
 
@@ -98,7 +98,7 @@ func (m *RetryPolicy) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("retries.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/retries.RetryPolicy")); err != nil {
+	if _, err = hasher.Write([]byte("retries.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/retries.RetryPolicy")); err != nil {
 		return 0, err
 	}
 
@@ -198,7 +198,7 @@ func (m *RetryPolicy_PreviousPriorities) Hash(hasher hash.Hash64) (uint64, error
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("retries.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/retries.RetryPolicy_PreviousPriorities")); err != nil {
+	if _, err = hasher.Write([]byte("retries.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/retries.RetryPolicy_PreviousPriorities")); err != nil {
 		return 0, err
 	}
 

@@ -3,7 +3,7 @@ package install
 import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/flagutils"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/flagutils"
 	"github.com/spf13/cobra"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )

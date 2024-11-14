@@ -38,7 +38,7 @@ func (m *IngressRateLimit) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ratelimit.IngressRateLimit")); err != nil {
+	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ratelimit.IngressRateLimit")); err != nil {
 		return 0, err
 	}
 
@@ -98,7 +98,7 @@ func (m *Settings) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ratelimit.Settings")); err != nil {
+	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ratelimit.Settings")); err != nil {
 		return 0, err
 	}
 
@@ -199,7 +199,7 @@ func (m *GrpcService) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ratelimit.GrpcService")); err != nil {
+	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ratelimit.GrpcService")); err != nil {
 		return 0, err
 	}
 
@@ -223,7 +223,7 @@ func (m *ServiceSettings) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ratelimit.ServiceSettings")); err != nil {
+	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ratelimit.ServiceSettings")); err != nil {
 		return 0, err
 	}
 
@@ -291,7 +291,7 @@ func (m *RateLimitConfigRefs) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ratelimit.RateLimitConfigRefs")); err != nil {
+	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ratelimit.RateLimitConfigRefs")); err != nil {
 		return 0, err
 	}
 
@@ -335,7 +335,7 @@ func (m *RateLimitConfigRef) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ratelimit.RateLimitConfigRef")); err != nil {
+	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ratelimit.RateLimitConfigRef")); err != nil {
 		return 0, err
 	}
 
@@ -363,7 +363,7 @@ func (m *RateLimitVhostExtension) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ratelimit.RateLimitVhostExtension")); err != nil {
+	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ratelimit.RateLimitVhostExtension")); err != nil {
 		return 0, err
 	}
 
@@ -427,7 +427,7 @@ func (m *RateLimitRouteExtension) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ratelimit.RateLimitRouteExtension")); err != nil {
+	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ratelimit.RateLimitRouteExtension")); err != nil {
 		return 0, err
 	}
 

@@ -11,8 +11,8 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	_ "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/annotations"
-	_ "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/udpa/annotations"
+	_ "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/annotations"
+	_ "github.com/solo-io/gloo/projects/controller/pkg/api/external/udpa/annotations"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -39,7 +39,7 @@ const (
 	// user upgrading Envoy with this change. Furthermore, we also immediately deprecate this field,
 	// since in Zipkin realm this v1 version is considered to be not preferable anymore.]
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/config/trace/v3/zipkin.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/config/trace/v3/zipkin.proto.
 	ZipkinConfig_DEPRECATED_AND_UNAVAILABLE_DO_NOT_USE ZipkinConfig_CollectorEndpointVersion = 0
 	// Zipkin API v2, JSON over HTTP.
 	ZipkinConfig_HTTP_JSON ZipkinConfig_CollectorEndpointVersion = 1

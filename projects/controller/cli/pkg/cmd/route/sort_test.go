@@ -11,7 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/helpers"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/testutils"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 

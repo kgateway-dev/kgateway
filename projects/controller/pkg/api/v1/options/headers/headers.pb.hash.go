@@ -38,7 +38,7 @@ func (m *HeaderManipulation) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("headers.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/headers.HeaderManipulation")); err != nil {
+	if _, err = hasher.Write([]byte("headers.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/headers.HeaderManipulation")); err != nil {
 		return 0, err
 	}
 
@@ -122,7 +122,7 @@ func (m *EarlyHeaderManipulation) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("headers.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/headers.EarlyHeaderManipulation")); err != nil {
+	if _, err = hasher.Write([]byte("headers.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/headers.EarlyHeaderManipulation")); err != nil {
 		return 0, err
 	}
 
@@ -174,7 +174,7 @@ func (m *HeaderValueOption) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("headers.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/headers.HeaderValueOption")); err != nil {
+	if _, err = hasher.Write([]byte("headers.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/headers.HeaderValueOption")); err != nil {
 		return 0, err
 	}
 
@@ -234,7 +234,7 @@ func (m *HeaderValue) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("headers.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/headers.HeaderValue")); err != nil {
+	if _, err = hasher.Write([]byte("headers.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/headers.HeaderValue")); err != nil {
 		return 0, err
 	}
 

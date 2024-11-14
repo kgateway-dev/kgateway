@@ -38,7 +38,7 @@ func (m *OpenCensusConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.trace.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/trace/v3.OpenCensusConfig")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.trace.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/trace/v3.OpenCensusConfig")); err != nil {
 		return 0, err
 	}
 
@@ -133,7 +133,7 @@ func (m *TraceConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.trace.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/trace/v3.TraceConfig")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.trace.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/trace/v3.TraceConfig")); err != nil {
 		return 0, err
 	}
 
@@ -243,7 +243,7 @@ func (m *ProbabilitySampler) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.trace.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/trace/v3.ProbabilitySampler")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.trace.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/trace/v3.ProbabilitySampler")); err != nil {
 		return 0, err
 	}
 
@@ -268,7 +268,7 @@ func (m *ConstantSampler) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.trace.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/trace/v3.ConstantSampler")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.trace.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/trace/v3.ConstantSampler")); err != nil {
 		return 0, err
 	}
 
@@ -293,7 +293,7 @@ func (m *RateLimitingSampler) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.trace.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/trace/v3.RateLimitingSampler")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.trace.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/trace/v3.RateLimitingSampler")); err != nil {
 		return 0, err
 	}
 
@@ -318,7 +318,7 @@ func (m *OpenCensusConfig_OcagentGrpcAddress) Hash(hasher hash.Hash64) (uint64, 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.trace.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/trace/v3.OpenCensusConfig_OcagentGrpcAddress")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.trace.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/trace/v3.OpenCensusConfig_OcagentGrpcAddress")); err != nil {
 		return 0, err
 	}
 

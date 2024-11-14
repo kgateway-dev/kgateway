@@ -2,7 +2,7 @@ package virtualservice
 
 import (
 	editOptions "github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/edit/options"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/constants"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/spf13/cobra"
 )

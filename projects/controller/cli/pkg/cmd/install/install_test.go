@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/install"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/testutils"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/testutils"
 )
 
 var _ = Describe("Install", func() {

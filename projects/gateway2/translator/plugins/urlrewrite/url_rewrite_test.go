@@ -6,7 +6,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/filtertests"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/urlrewrite"
 	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/matcher/v3"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"

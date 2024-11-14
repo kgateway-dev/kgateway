@@ -16,11 +16,11 @@ import (
 	"github.com/solo-io/gloo/test/gomega/matchers"
 
 	"github.com/golang/mock/gomock"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/grpc/validation"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/bootstrap"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/registry"
-	mock_consul "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/upstreams/consul/mocks"
-	glooutils "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/grpc/validation"
+	"github.com/solo-io/gloo/projects/controller/pkg/bootstrap"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/registry"
+	mock_consul "github.com/solo-io/gloo/projects/controller/pkg/upstreams/consul/mocks"
+	glooutils "github.com/solo-io/gloo/projects/controller/pkg/utils"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
@@ -30,13 +30,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gmeasure"
-	. "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/translator"
+	. "github.com/solo-io/gloo/projects/controller/pkg/translator"
 
 	"time"
 
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	v1snap "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
 )
 
 // Tests are run as part of the "Nightly" action in a GHA using the default Linux runner

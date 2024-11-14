@@ -7,7 +7,7 @@ import (
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/flagutils"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	survey "gopkg.in/AlecAivazis/survey.v1"
 )

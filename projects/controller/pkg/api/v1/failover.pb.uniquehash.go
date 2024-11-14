@@ -39,7 +39,7 @@ func (m *Failover) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Failover")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Failover")); err != nil {
 		return 0, err
 	}
 
@@ -108,7 +108,7 @@ func (m *LocalityLbEndpoints) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.LocalityLbEndpoints")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.LocalityLbEndpoints")); err != nil {
 		return 0, err
 	}
 
@@ -197,7 +197,7 @@ func (m *LbEndpoint) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.LbEndpoint")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.LbEndpoint")); err != nil {
 		return 0, err
 	}
 
@@ -333,7 +333,7 @@ func (m *Locality) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Locality")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Locality")); err != nil {
 		return 0, err
 	}
 
@@ -373,7 +373,7 @@ func (m *Failover_PrioritizedLocality) HashUnique(hasher hash.Hash64) (uint64, e
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Failover_PrioritizedLocality")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Failover_PrioritizedLocality")); err != nil {
 		return 0, err
 	}
 
@@ -422,7 +422,7 @@ func (m *Failover_Policy) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Failover_Policy")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Failover_Policy")); err != nil {
 		return 0, err
 	}
 
@@ -461,7 +461,7 @@ func (m *LbEndpoint_HealthCheckConfig) HashUnique(hasher hash.Hash64) (uint64, e
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.LbEndpoint_HealthCheckConfig")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.LbEndpoint_HealthCheckConfig")); err != nil {
 		return 0, err
 	}
 

@@ -7,12 +7,12 @@ import (
 	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	v1snap "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/azure"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/ssl"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	azureplugin "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/azure"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/azure"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	azureplugin "github.com/solo-io/gloo/projects/controller/pkg/plugins/azure"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/onsi/ginkgo/v2"

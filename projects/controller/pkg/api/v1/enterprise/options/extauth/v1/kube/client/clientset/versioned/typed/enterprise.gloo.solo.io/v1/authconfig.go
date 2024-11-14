@@ -23,7 +23,7 @@ import (
 	"time"
 
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1/kube/apis/enterprise.gloo.solo.io/v1"
-	scheme "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extauth/v1/kube/client/clientset/versioned/scheme"
+	scheme "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1/kube/client/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"

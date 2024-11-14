@@ -8,7 +8,7 @@ import (
 
 	utils_namespaces "github.com/solo-io/gloo/pkg/utils/namespaces"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/defaults"
+	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 

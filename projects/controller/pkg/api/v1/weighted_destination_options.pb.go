@@ -10,11 +10,11 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
-	v31 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extauth/v1"
-	headers "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/headers"
-	transformation "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation"
+	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
+	v31 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1"
+	headers "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/headers"
+	transformation "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -39,7 +39,7 @@ type WeightedDestinationOptions struct {
 	// Transformations to apply. Note: this field is superseded by `staged_transformations`.
 	// If `staged_transformations.regular` is set, this field will be ignored.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/weighted_destination_options.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/weighted_destination_options.proto.
 	Transformations *transformation.Transformations `protobuf:"bytes,2,opt,name=transformations,proto3" json:"transformations,omitempty"`
 	// Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
 	// underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
@@ -104,7 +104,7 @@ func (x *WeightedDestinationOptions) GetHeaderManipulation() *headers.HeaderMani
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/weighted_destination_options.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/weighted_destination_options.proto.
 func (x *WeightedDestinationOptions) GetTransformations() *transformation.Transformations {
 	if x != nil {
 		return x.Transformations

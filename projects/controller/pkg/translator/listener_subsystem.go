@@ -5,10 +5,10 @@ import (
 
 	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
 
-	validationapi "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/grpc/validation"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/ssl"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	validationapi "github.com/solo-io/gloo/projects/controller/pkg/api/grpc/validation"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
 )
 

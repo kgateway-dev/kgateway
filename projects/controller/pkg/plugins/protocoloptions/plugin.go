@@ -7,10 +7,10 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/pluginutils"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/utils/httpprotocolhelpers"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/utils/httpprotocolvalidation"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/pluginutils"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/utils/httpprotocolhelpers"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/utils/httpprotocolvalidation"
 )
 
 var (

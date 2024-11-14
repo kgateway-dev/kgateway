@@ -38,7 +38,7 @@ func (m *Settings) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("extproc.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extproc.Settings")); err != nil {
+	if _, err = hasher.Write([]byte("extproc.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extproc.Settings")); err != nil {
 		return 0, err
 	}
 
@@ -350,7 +350,7 @@ func (m *RouteSettings) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("extproc.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extproc.RouteSettings")); err != nil {
+	if _, err = hasher.Write([]byte("extproc.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extproc.RouteSettings")); err != nil {
 		return 0, err
 	}
 
@@ -418,7 +418,7 @@ func (m *GrpcService) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("extproc.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extproc.GrpcService")); err != nil {
+	if _, err = hasher.Write([]byte("extproc.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extproc.GrpcService")); err != nil {
 		return 0, err
 	}
 
@@ -542,7 +542,7 @@ func (m *Overrides) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("extproc.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extproc.Overrides")); err != nil {
+	if _, err = hasher.Write([]byte("extproc.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extproc.Overrides")); err != nil {
 		return 0, err
 	}
 
@@ -654,7 +654,7 @@ func (m *HeaderForwardingRules) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("extproc.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extproc.HeaderForwardingRules")); err != nil {
+	if _, err = hasher.Write([]byte("extproc.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extproc.HeaderForwardingRules")); err != nil {
 		return 0, err
 	}
 

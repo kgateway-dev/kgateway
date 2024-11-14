@@ -10,8 +10,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	glooec2 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/aws/ec2"
-	aws2 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils/aws"
+	glooec2 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/aws/ec2"
+	aws2 "github.com/solo-io/gloo/projects/controller/pkg/utils/aws"
 )
 
 func GetEc2Client(cred *CredentialSpec, secrets v1.SecretList) (*ec2.EC2, error) {

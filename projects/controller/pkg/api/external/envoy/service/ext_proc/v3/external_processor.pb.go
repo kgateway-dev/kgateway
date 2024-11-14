@@ -12,11 +12,11 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	_ "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/annotations"
-	v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3"
-	v31 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/filters/http/ext_proc/v3"
-	v32 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/v3"
-	_ "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/udpa/annotations"
+	_ "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/annotations"
+	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
+	v31 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/filters/http/ext_proc/v3"
+	v32 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/v3"
+	_ "github.com/solo-io/gloo/projects/controller/pkg/api/external/udpa/annotations"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -538,7 +538,7 @@ type HttpHeaders struct {
 	// the  top-level :ref:`attributes <envoy_v3_api_field_service.ext_proc.v3.ProcessingRequest.attributes`
 	// field.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/service/ext_proc/v3/external_processor.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/service/ext_proc/v3/external_processor.proto.
 	Attributes map[string]*structpb.Struct `protobuf:"bytes,2,rep,name=attributes,proto3" json:"attributes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// If true, then there is no message body associated with this
 	// request or response.
@@ -582,7 +582,7 @@ func (x *HttpHeaders) GetHeaders() *v3.HeaderMap {
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/service/ext_proc/v3/external_processor.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/service/ext_proc/v3/external_processor.proto.
 func (x *HttpHeaders) GetAttributes() map[string]*structpb.Struct {
 	if x != nil {
 		return x.Attributes
@@ -1777,5 +1777,5 @@ var _ExternalProcessor_serviceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
-	Metadata: "github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/service/ext_proc/v3/external_processor.proto",
+	Metadata: "github.com/solo-io/gloo/projects/controller/api/external/envoy/service/ext_proc/v3/external_processor.proto",
 }

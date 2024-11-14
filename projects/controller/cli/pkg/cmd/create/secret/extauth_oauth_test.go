@@ -11,9 +11,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/helpers"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/testutils"
-	extauthpb "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/testutils"
+	extauthpb "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1"
 )
 
 var _ = Describe("ExtauthOauth", func() {

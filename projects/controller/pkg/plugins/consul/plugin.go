@@ -15,11 +15,11 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/rotisserie/eris"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/upstreams/consul"
+	"github.com/solo-io/gloo/projects/controller/pkg/upstreams/consul"
 
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/xds"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/xds"
 )
 
 var (

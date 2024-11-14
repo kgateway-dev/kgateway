@@ -12,9 +12,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/protocol"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	. "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/upstreamconn"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/protocol"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	. "github.com/solo-io/gloo/projects/controller/pkg/plugins/upstreamconn"
 )
 
 var _ = Describe("Plugin", func() {

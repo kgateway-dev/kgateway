@@ -10,7 +10,7 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	_ "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/udpa/annotations"
+	_ "github.com/solo-io/gloo/projects/controller/pkg/api/external/udpa/annotations"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"

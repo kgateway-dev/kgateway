@@ -13,29 +13,29 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_api_v2_cluster "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/api/v2/cluster"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_api_v2_cluster "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/api/v2/cluster"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_api_v2_core "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/api/v2/core"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_api_v2_core "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/api/v2/core"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ai "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ai "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_gcp "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/gcp"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_gcp "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/gcp"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_aws "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/aws"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_aws "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/aws"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_aws_ec2 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/aws/ec2"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_aws_ec2 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/aws/ec2"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_azure "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/azure"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_azure "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/azure"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_consul "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/consul"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_consul "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/consul"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_kubernetes "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/kubernetes"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_kubernetes "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/kubernetes"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_pipe "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/pipe"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_pipe "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/pipe"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_static "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/static"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_static "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/static"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/ssl"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl "github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 

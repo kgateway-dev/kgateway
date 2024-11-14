@@ -6,7 +6,7 @@ import (
 	"helm.sh/helm/v3/pkg/chartutil"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
 	"github.com/spf13/cobra"
 )
 

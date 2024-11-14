@@ -38,7 +38,7 @@ func (m *FilterConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("dlp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/dlp.FilterConfig")); err != nil {
+	if _, err = hasher.Write([]byte("dlp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/dlp.FilterConfig")); err != nil {
 		return 0, err
 	}
 
@@ -87,7 +87,7 @@ func (m *DlpRule) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("dlp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/dlp.DlpRule")); err != nil {
+	if _, err = hasher.Write([]byte("dlp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/dlp.DlpRule")); err != nil {
 		return 0, err
 	}
 
@@ -151,7 +151,7 @@ func (m *Config) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("dlp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/dlp.Config")); err != nil {
+	if _, err = hasher.Write([]byte("dlp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/dlp.Config")); err != nil {
 		return 0, err
 	}
 
@@ -200,7 +200,7 @@ func (m *Action) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("dlp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/dlp.Action")); err != nil {
+	if _, err = hasher.Write([]byte("dlp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/dlp.Action")); err != nil {
 		return 0, err
 	}
 
@@ -270,7 +270,7 @@ func (m *CustomAction) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("dlp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/dlp.CustomAction")); err != nil {
+	if _, err = hasher.Write([]byte("dlp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/dlp.CustomAction")); err != nil {
 		return 0, err
 	}
 
@@ -350,7 +350,7 @@ func (m *KeyValueAction) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("dlp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/dlp.KeyValueAction")); err != nil {
+	if _, err = hasher.Write([]byte("dlp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/dlp.KeyValueAction")); err != nil {
 		return 0, err
 	}
 

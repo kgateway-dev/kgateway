@@ -9,7 +9,7 @@ import (
 	envoytrace "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	envoytracegloo "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/trace/v3"
-	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"go.uber.org/zap"

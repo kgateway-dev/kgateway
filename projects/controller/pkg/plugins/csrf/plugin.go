@@ -8,13 +8,13 @@ import (
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/rotisserie/eris"
 	gloo_config_core "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
-	v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3"
-	csrf "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
-	gloo_type_matcher "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/matcher/v3"
-	glootype "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/v3"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/pluginutils"
+	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
+	csrf "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
+	gloo_type_matcher "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/matcher/v3"
+	glootype "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/v3"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/pluginutils"
 )
 
 var (

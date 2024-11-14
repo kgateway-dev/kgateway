@@ -39,7 +39,7 @@ func (m *ServerNameMatcher) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.config.matching.custom_matchers.server_name.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/matching/custom_matchers/server_name/v3.ServerNameMatcher")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.config.matching.custom_matchers.server_name.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/matching/custom_matchers/server_name/v3.ServerNameMatcher")); err != nil {
 		return 0, err
 	}
 
@@ -88,7 +88,7 @@ func (m *ServerNameMatcher_ServerNameSetMatcher) HashUnique(hasher hash.Hash64) 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.config.matching.custom_matchers.server_name.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/matching/custom_matchers/server_name/v3.ServerNameMatcher_ServerNameSetMatcher")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.config.matching.custom_matchers.server_name.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/matching/custom_matchers/server_name/v3.ServerNameMatcher_ServerNameSetMatcher")); err != nil {
 		return 0, err
 	}
 

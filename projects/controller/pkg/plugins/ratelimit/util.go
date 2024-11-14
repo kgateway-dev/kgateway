@@ -6,7 +6,7 @@ import (
 	envoyratelimit "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ratelimit"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/translator"
+	"github.com/solo-io/gloo/projects/controller/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 

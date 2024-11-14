@@ -11,7 +11,7 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	_type1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type"
+	_type1 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 	_type "github.com/solo-io/solo-kit/pkg/api/external/envoy/type"
@@ -1105,7 +1105,7 @@ func (m *CorsPolicy) GetEnabledSpecifier() isCorsPolicy_EnabledSpecifier {
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/api/v2/route/route.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/api/v2/route/route.proto.
 func (x *CorsPolicy) GetEnabled() *wrapperspb.BoolValue {
 	if x, ok := x.GetEnabledSpecifier().(*CorsPolicy_Enabled); ok {
 		return x.Enabled
@@ -1137,7 +1137,7 @@ type CorsPolicy_Enabled struct {
 	//	**This field is deprecated**. Set the
 	//	`filter_enabled (envoy_api_field_route.CorsPolicy.filter_enabled)` field instead.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/api/v2/route/route.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/api/v2/route/route.proto.
 	Enabled *wrapperspb.BoolValue `protobuf:"bytes,7,opt,name=enabled,proto3,oneof"`
 }
 
@@ -2844,7 +2844,7 @@ type RouteAction_RequestMirrorPolicy struct {
 	//	`runtime_fraction
 	//	(envoy_api_field_route.RouteAction.RequestMirrorPolicy.runtime_fraction)` field instead.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/api/v2/route/route.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/api/v2/route/route.proto.
 	RuntimeKey string `protobuf:"bytes,2,opt,name=runtime_key,json=runtimeKey,proto3" json:"runtime_key,omitempty"`
 	// If both `runtime_key
 	// (envoy_api_field_route.RouteAction.RequestMirrorPolicy.runtime_key)` and this field are not
@@ -2904,7 +2904,7 @@ func (x *RouteAction_RequestMirrorPolicy) GetCluster() string {
 	return ""
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/api/v2/route/route.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/api/v2/route/route.proto.
 func (x *RouteAction_RequestMirrorPolicy) GetRuntimeKey() string {
 	if x != nil {
 		return x.RuntimeKey

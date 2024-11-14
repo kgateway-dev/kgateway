@@ -11,7 +11,7 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	grpc "google.golang.org/grpc"
@@ -363,7 +363,7 @@ type TcpHostReport_Error_Type int32
 
 const (
 	TcpHostReport_Error_NameNotUniqueError TcpHostReport_Error_Type = 0
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/grpc/validation/gloo_validation.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/grpc/validation/gloo_validation.proto.
 	TcpHostReport_Error_InvalidDestinationError TcpHostReport_Error_Type = 1
 	TcpHostReport_Error_ProcessingError         TcpHostReport_Error_Type = 2
 )
@@ -2720,5 +2720,5 @@ var _GlooValidationService_serviceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "github.com/solo-io/gloo/projects/controllerrollerroller/api/grpc/validation/gloo_validation.proto",
+	Metadata: "github.com/solo-io/gloo/projects/controller/api/grpc/validation/gloo_validation.proto",
 }

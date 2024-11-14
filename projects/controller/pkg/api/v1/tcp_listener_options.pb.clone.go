@@ -13,11 +13,11 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_connection_limit "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/connection_limit"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_connection_limit "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/connection_limit"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_local_ratelimit "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/local_ratelimit"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_local_ratelimit "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/local_ratelimit"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_tcp "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/tcp"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_tcp "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/tcp"
 )
 
 // ensure the imports are used

@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	v1 "github.com/solo-io/solo-apis/pkg/api/gateway.solo.io/v1"
 	soloapis_gloov1 "github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1"
 	"github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1/core/matchers"

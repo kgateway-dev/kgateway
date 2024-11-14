@@ -16,9 +16,9 @@ import (
 	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/v3"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/als"
-	translatorutil "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/translator"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/als"
+	translatorutil "github.com/solo-io/gloo/projects/controller/pkg/translator"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 )
 
 var (

@@ -10,9 +10,9 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	errors "github.com/rotisserie/eris"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
 )
 

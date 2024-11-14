@@ -6,12 +6,12 @@ import (
 
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/prerun"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/constants"
 	"github.com/spf13/cobra"
 )
 

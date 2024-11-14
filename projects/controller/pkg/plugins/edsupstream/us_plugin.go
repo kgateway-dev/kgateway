@@ -3,8 +3,8 @@ package edsupstream
 import (
 	cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/xds"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/xds"
 )
 
 // InternalEDSLabel is a marker that synthetic Upstreams can use to indicate

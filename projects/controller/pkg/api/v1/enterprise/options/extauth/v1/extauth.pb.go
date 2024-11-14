@@ -1221,20 +1221,20 @@ type OAuth struct {
 
 	// your client id as registered with the issuer
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 	ClientId string `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
 	// your client secret as registered with the issuer
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 	ClientSecretRef *core.ResourceRef `protobuf:"bytes,2,opt,name=client_secret_ref,json=clientSecretRef,proto3" json:"client_secret_ref,omitempty"`
 	// The url of the issuer. We will look for OIDC information in issuerUrl+
 	// ".well-known/openid-configuration"
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 	IssuerUrl string `protobuf:"bytes,3,opt,name=issuer_url,json=issuerUrl,proto3" json:"issuer_url,omitempty"`
 	// extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 	AuthEndpointQueryParams map[string]string `protobuf:"bytes,7,rep,name=auth_endpoint_query_params,json=authEndpointQueryParams,proto3" json:"auth_endpoint_query_params,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// we to redirect after successful auth, if we can't determine the original
 	// url this should be your publicly available app url.
@@ -1242,16 +1242,16 @@ type OAuth struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 	AppUrl string `protobuf:"bytes,4,opt,name=app_url,json=appUrl,proto3" json:"app_url,omitempty"`
 	// a callback path relative to app url that will be used for OIDC callbacks.
 	// needs to not be used by the application
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 	CallbackPath string `protobuf:"bytes,5,opt,name=callback_path,json=callbackPath,proto3" json:"callback_path,omitempty"`
 	// Scopes to request in addition to openid scope.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 	Scopes []string `protobuf:"bytes,6,rep,name=scopes,proto3" json:"scopes,omitempty"`
 }
 
@@ -1285,7 +1285,7 @@ func (*OAuth) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_extauth_v1_extauth_proto_rawDescGZIP(), []int{12}
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 func (x *OAuth) GetClientId() string {
 	if x != nil {
 		return x.ClientId
@@ -1293,7 +1293,7 @@ func (x *OAuth) GetClientId() string {
 	return ""
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 func (x *OAuth) GetClientSecretRef() *core.ResourceRef {
 	if x != nil {
 		return x.ClientSecretRef
@@ -1301,7 +1301,7 @@ func (x *OAuth) GetClientSecretRef() *core.ResourceRef {
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 func (x *OAuth) GetIssuerUrl() string {
 	if x != nil {
 		return x.IssuerUrl
@@ -1309,7 +1309,7 @@ func (x *OAuth) GetIssuerUrl() string {
 	return ""
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 func (x *OAuth) GetAuthEndpointQueryParams() map[string]string {
 	if x != nil {
 		return x.AuthEndpointQueryParams
@@ -1317,7 +1317,7 @@ func (x *OAuth) GetAuthEndpointQueryParams() map[string]string {
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 func (x *OAuth) GetAppUrl() string {
 	if x != nil {
 		return x.AppUrl
@@ -1325,7 +1325,7 @@ func (x *OAuth) GetAppUrl() string {
 	return ""
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 func (x *OAuth) GetCallbackPath() string {
 	if x != nil {
 		return x.CallbackPath
@@ -1333,7 +1333,7 @@ func (x *OAuth) GetCallbackPath() string {
 	return ""
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 func (x *OAuth) GetScopes() []string {
 	if x != nil {
 		return x.Scopes
@@ -2217,7 +2217,7 @@ type OidcAuthorizationCode struct {
 	// This is required unless `disable_client_secret` is true
 	// This field has been deprecated and can be set in the client_secret option of client_authentication
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 	ClientSecretRef *core.ResourceRef `protobuf:"bytes,2,opt,name=client_secret_ref,json=clientSecretRef,proto3" json:"client_secret_ref,omitempty"`
 	// The url of the issuer. We will look for OIDC information in issuerUrl+
 	// ".well-known/openid-configuration"
@@ -2297,7 +2297,7 @@ type OidcAuthorizationCode struct {
 	// If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange
 	// The session id is used as the key for sessions in Redis
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 	SessionIdHeaderName string `protobuf:"bytes,16,opt,name=session_id_header_name,json=sessionIdHeaderName,proto3" json:"session_id_header_name,omitempty"`
 	// If set, CallbackPath will be evaluated as a regular expression
 	ParseCallbackPathAsRegex bool `protobuf:"varint,17,opt,name=parse_callback_path_as_regex,json=parseCallbackPathAsRegex,proto3" json:"parse_callback_path_as_regex,omitempty"`
@@ -2325,7 +2325,7 @@ type OidcAuthorizationCode struct {
 	// However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oidc without a client secret.
 	// This field has been deprecated and can be set in the client_secret option of client_authentication
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 	DisableClientSecret *wrapperspb.BoolValue `protobuf:"bytes,21,opt,name=disable_client_secret,json=disableClientSecret,proto3" json:"disable_client_secret,omitempty"`
 	// Optional: Configuration specific to the OAuth2 access token received and processed by the ext-auth-service.
 	AccessToken *OidcAuthorizationCode_AccessToken `protobuf:"bytes,23,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
@@ -2380,7 +2380,7 @@ func (x *OidcAuthorizationCode) GetClientId() string {
 	return ""
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 func (x *OidcAuthorizationCode) GetClientSecretRef() *core.ResourceRef {
 	if x != nil {
 		return x.ClientSecretRef
@@ -2479,7 +2479,7 @@ func (x *OidcAuthorizationCode) GetJwksCacheRefreshPolicy() *JwksOnDemandCacheRe
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 func (x *OidcAuthorizationCode) GetSessionIdHeaderName() string {
 	if x != nil {
 		return x.SessionIdHeaderName
@@ -2515,7 +2515,7 @@ func (x *OidcAuthorizationCode) GetDynamicMetadataFromClaims() map[string]string
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 func (x *OidcAuthorizationCode) GetDisableClientSecret() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.DisableClientSecret
@@ -3073,7 +3073,7 @@ func (m *AccessTokenValidation) GetValidationType() isAccessTokenValidation_Vali
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 func (x *AccessTokenValidation) GetIntrospectionUrl() string {
 	if x, ok := x.GetValidationType().(*AccessTokenValidation_IntrospectionUrl); ok {
 		return x.IntrospectionUrl
@@ -3170,7 +3170,7 @@ type AccessTokenValidation_IntrospectionUrl struct {
 	//
 	// +kubebuilder:validation:MinLength=1
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 	IntrospectionUrl string `protobuf:"bytes,1,opt,name=introspection_url,json=introspectionUrl,proto3,oneof"`
 }
 
@@ -3286,21 +3286,21 @@ type ApiKeyAuth struct {
 	// Identify all valid API key secrets that match the provided label selector.
 	// API key secrets must be in one of the watch namespaces for gloo to locate them.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 	LabelSelector map[string]string `protobuf:"bytes,1,rep,name=label_selector,json=labelSelector,proto3" json:"label_selector,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend. Values here
 	// will be overwritten if values are specified in the storage backend.
 	// A way to directly reference API key secrets. This configuration can be useful for testing,
 	// but in general the more flexible label selector should be preferred.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 	ApiKeySecretRefs []*core.ResourceRef `protobuf:"bytes,2,rep,name=api_key_secret_refs,json=apiKeySecretRefs,proto3" json:"api_key_secret_refs,omitempty"`
 	// When receiving a request, the k8sgateway Enterprise external auth server will look for an API key in a header
 	// with this name. This field is optional; if not provided it defaults to `api-key`.
 	HeaderName string `protobuf:"bytes,3,opt,name=header_name,json=headerName,proto3" json:"header_name,omitempty"`
 	// DEPRECATED: use headers_from_metadata_entry
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 	HeadersFromMetadata map[string]*ApiKeyAuth_SecretKey `protobuf:"bytes,4,rep,name=headers_from_metadata,json=headersFromMetadata,proto3" json:"headers_from_metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// API key structures might contain additional data (e.g. the ID of the user that the API key belongs to)
 	// in the form of extra fields included in the API key metadata structure.
@@ -3357,7 +3357,7 @@ func (*ApiKeyAuth) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_extauth_v1_extauth_proto_rawDescGZIP(), []int{29}
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 func (x *ApiKeyAuth) GetLabelSelector() map[string]string {
 	if x != nil {
 		return x.LabelSelector
@@ -3365,7 +3365,7 @@ func (x *ApiKeyAuth) GetLabelSelector() map[string]string {
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 func (x *ApiKeyAuth) GetApiKeySecretRefs() []*core.ResourceRef {
 	if x != nil {
 		return x.ApiKeySecretRefs
@@ -3380,7 +3380,7 @@ func (x *ApiKeyAuth) GetHeaderName() string {
 	return ""
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 func (x *ApiKeyAuth) GetHeadersFromMetadata() map[string]*ApiKeyAuth_SecretKey {
 	if x != nil {
 		return x.HeadersFromMetadata
@@ -4827,7 +4827,7 @@ func (x *AuthConfig_Config) GetBasicAuth() *BasicAuth {
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 func (x *AuthConfig_Config) GetOauth() *OAuth {
 	if x, ok := x.GetAuthConfig().(*AuthConfig_Config_Oauth); ok {
 		return x.Oauth
@@ -4849,7 +4849,7 @@ func (x *AuthConfig_Config) GetApiKeyAuth() *ApiKeyAuth {
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 func (x *AuthConfig_Config) GetPluginAuth() *AuthPlugin {
 	if x, ok := x.GetAuthConfig().(*AuthConfig_Config_PluginAuth); ok {
 		return x.PluginAuth
@@ -4909,7 +4909,7 @@ type AuthConfig_Config_BasicAuth struct {
 }
 
 type AuthConfig_Config_Oauth struct {
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 	Oauth *OAuth `protobuf:"bytes,2,opt,name=oauth,proto3,oneof"`
 }
 
@@ -4922,7 +4922,7 @@ type AuthConfig_Config_ApiKeyAuth struct {
 }
 
 type AuthConfig_Config_PluginAuth struct {
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.
 	PluginAuth *AuthPlugin `protobuf:"bytes,5,opt,name=plugin_auth,json=pluginAuth,proto3,oneof"`
 }
 
@@ -4936,7 +4936,7 @@ type AuthConfig_Config_Ldap struct {
 
 type AuthConfig_Config_Jwt struct {
 	// This is a "dummy" extauth service which can be used to support multiple auth mechanisms with JWT authentication.
-	// If Jwt authentication is to be used in the [boolean expression](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig) in an AuthConfig, you can use this auth config type to include Jwt as an Auth config.
+	// If Jwt authentication is to be used in the [boolean expression](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig) in an AuthConfig, you can use this auth config type to include Jwt as an Auth config.
 	// In addition, `allow_missing_or_failed_jwt` must be set on the Virtual Host or Route that uses JWT auth or else the JWT filter will short circuit this behaviour.
 	Jwt *emptypb.Empty `protobuf:"bytes,11,opt,name=jwt,proto3,oneof"`
 }

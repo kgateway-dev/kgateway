@@ -15,16 +15,16 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gloo_envoy_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
-	gloo_envoy_route "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3"
-	gloo_envoy_types "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/v3"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	accessLogService "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/als"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
+	gloo_envoy_route "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3"
+	gloo_envoy_types "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/v3"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	accessLogService "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/als"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/test/matchers"
 
-	. "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/als"
-	translatorutil "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/translator"
+	. "github.com/solo-io/gloo/projects/controller/pkg/plugins/als"
+	translatorutil "github.com/solo-io/gloo/projects/controller/pkg/translator"
 
 	envoygrpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
 )

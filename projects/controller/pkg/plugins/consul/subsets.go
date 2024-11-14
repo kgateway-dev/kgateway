@@ -6,11 +6,11 @@ import (
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/dynamic_forward_proxy"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/pluginutils"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/translator"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/upstreams"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/dynamic_forward_proxy"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/pluginutils"
+	"github.com/solo-io/gloo/projects/controller/pkg/translator"
+	"github.com/solo-io/gloo/projects/controller/pkg/upstreams"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 

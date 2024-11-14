@@ -13,9 +13,9 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation_ee "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation_ee"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation_ee "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation_ee"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_matchers "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_matchers "github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
 
 	github_com_solo_io_solo_kit_pkg_api_external_envoy_type "github.com/solo-io/solo-kit/pkg/api/external/envoy/type"
 )

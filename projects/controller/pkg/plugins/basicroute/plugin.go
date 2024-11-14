@@ -9,12 +9,12 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/protocol_upgrade"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/retries"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/utils/headers"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/utils/upgradeconfig"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/protocol_upgrade"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/retries"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/utils/headers"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/utils/upgradeconfig"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 

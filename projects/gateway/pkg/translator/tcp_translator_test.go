@@ -13,8 +13,8 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	. "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	gloov1snap "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/tcp"
+	gloov1snap "github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/tcp"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 )

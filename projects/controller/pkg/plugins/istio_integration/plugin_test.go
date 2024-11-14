@@ -9,10 +9,10 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
-	kubeplugin "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/kubernetes"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/istio_integration"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
+	kubeplugin "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/kubernetes"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/istio_integration"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 

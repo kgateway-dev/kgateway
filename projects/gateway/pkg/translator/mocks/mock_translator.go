@@ -11,7 +11,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v10 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	gloosnapshot "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
+	gloosnapshot "github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
 	reporter "github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 

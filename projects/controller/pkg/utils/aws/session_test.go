@@ -8,7 +8,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	. "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils/aws"
+	. "github.com/solo-io/gloo/projects/controller/pkg/utils/aws"
 )
 
 var _ = Describe("Session", func() {

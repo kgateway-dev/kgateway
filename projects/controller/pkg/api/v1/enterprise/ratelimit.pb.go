@@ -433,5 +433,5 @@ var _RateLimitDiscoveryService_serviceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
-	Metadata: "github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/ratelimit.proto",
+	Metadata: "github.com/solo-io/gloo/projects/controller/api/v1/enterprise/ratelimit.proto",
 }

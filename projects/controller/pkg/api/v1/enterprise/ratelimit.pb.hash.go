@@ -38,7 +38,7 @@ func (m *RateLimitConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("glooe.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise.RateLimitConfig")); err != nil {
+	if _, err = hasher.Write([]byte("glooe.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise.RateLimitConfig")); err != nil {
 		return 0, err
 	}
 

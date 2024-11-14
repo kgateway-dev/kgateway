@@ -7,7 +7,7 @@ import (
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/kubernetes"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/kubernetes"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -15,7 +15,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
 )
 
 var _ = Describe("Plugin", func() {

@@ -13,7 +13,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	equality "github.com/solo-io/protoc-gen-ext/pkg/equality"
 
-	v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3"
+	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
 )
 
 // ensure the imports are used

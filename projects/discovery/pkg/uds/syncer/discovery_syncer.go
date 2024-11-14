@@ -10,7 +10,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/discovery"
+	"github.com/solo-io/gloo/projects/controller/pkg/discovery"
 )
 
 type syncer struct {

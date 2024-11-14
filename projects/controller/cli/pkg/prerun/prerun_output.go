@@ -7,9 +7,9 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/flagutils"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/printers"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/flagutils"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/printers"
 	"github.com/spf13/cobra"
 )
 

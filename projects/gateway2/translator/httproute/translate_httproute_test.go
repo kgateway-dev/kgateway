@@ -36,8 +36,8 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/defaults"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
 )
 
 var _ = Describe("GatewayHttpRouteTranslator", func() {

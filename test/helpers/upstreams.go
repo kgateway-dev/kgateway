@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/api/v2/core"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/ssl"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
 )
 
 // UpstreamBuilder contains options for building Upstreams to be included in scaled Snapshots

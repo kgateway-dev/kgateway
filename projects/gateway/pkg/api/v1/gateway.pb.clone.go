@@ -15,13 +15,13 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_selectors "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/selectors"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_selectors "github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/selectors"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_hcm "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/hcm"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_hcm "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/hcm"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/ssl"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl "github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 

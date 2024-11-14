@@ -38,7 +38,7 @@ func (m *TokenBucket) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("local_ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/local_ratelimit.TokenBucket")); err != nil {
+	if _, err = hasher.Write([]byte("local_ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/local_ratelimit.TokenBucket")); err != nil {
 		return 0, err
 	}
 
@@ -103,7 +103,7 @@ func (m *Settings) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("local_ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/local_ratelimit.Settings")); err != nil {
+	if _, err = hasher.Write([]byte("local_ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/local_ratelimit.Settings")); err != nil {
 		return 0, err
 	}
 

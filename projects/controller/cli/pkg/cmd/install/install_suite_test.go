@@ -8,14 +8,14 @@ import (
 
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/install"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/helpers"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/testutils"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/testutils"
 	gotestutils "github.com/solo-io/go-utils/testutils"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/yaml"

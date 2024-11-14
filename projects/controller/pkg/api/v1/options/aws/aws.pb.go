@@ -270,7 +270,7 @@ type DestinationSpec struct {
 	RequestTransformation bool `protobuf:"varint,6,opt,name=request_transformation,json=requestTransformation,proto3" json:"request_transformation,omitempty"`
 	// Deprecated. Use unwrapAsApiGateway
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/options/aws/aws.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/options/aws/aws.proto.
 	ResponseTransformation bool `protobuf:"varint,5,opt,name=response_transformation,json=responseTransformation,proto3" json:"response_transformation,omitempty"`
 	// Unwrap the response as if the proxy was an ALB.
 	// Intended to ease migration when previously using ALB to invoke Lambdas.
@@ -340,7 +340,7 @@ func (x *DestinationSpec) GetRequestTransformation() bool {
 	return false
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/options/aws/aws.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/options/aws/aws.proto.
 func (x *DestinationSpec) GetResponseTransformation() bool {
 	if x != nil {
 		return x.ResponseTransformation

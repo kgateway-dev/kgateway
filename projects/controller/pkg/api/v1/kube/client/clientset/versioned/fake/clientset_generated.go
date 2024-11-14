@@ -20,8 +20,8 @@ package fake
 
 import (
 	clientset "github.com/solo-io/gloo/projects/controller/pkg/api/v1/kube/client/clientset/versioned"
-	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/kube/client/clientset/versioned/typed/gloo.solo.io/v1"
-	fakegloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/kube/client/clientset/versioned/typed/gloo.solo.io/v1/fake"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/kube/client/clientset/versioned/typed/gloo.solo.io/v1"
+	fakegloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/kube/client/clientset/versioned/typed/gloo.solo.io/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

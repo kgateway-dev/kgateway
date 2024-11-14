@@ -13,7 +13,7 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3"
+	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -53,7 +53,7 @@ type AWSLambdaPerRoute struct {
 	// https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html
 	// Defaults to false.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/extensions/aws/filter.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/extensions/aws/filter.proto.
 	UnwrapAsAlb bool `protobuf:"varint,5,opt,name=unwrap_as_alb,json=unwrapAsAlb,proto3" json:"unwrap_as_alb,omitempty"`
 	// transformer configuration used to process response data
 	// cannot be configured simultaneously with unwrap_as_alb
@@ -121,7 +121,7 @@ func (x *AWSLambdaPerRoute) GetEmptyBodyOverride() *wrapperspb.StringValue {
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/extensions/aws/filter.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/extensions/aws/filter.proto.
 func (x *AWSLambdaPerRoute) GetUnwrapAsAlb() bool {
 	if x != nil {
 		return x.UnwrapAsAlb

@@ -10,20 +10,20 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
-	v31 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
-	dlp "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/dlp"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extauth/v1"
-	extproc "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extproc"
-	jwt "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/jwt"
-	ratelimit "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ratelimit"
-	rbac "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/rbac"
-	waf "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/waf"
-	cors "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/cors"
-	headers "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/headers"
-	retries "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/retries"
-	stats "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/stats"
-	transformation "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation"
+	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
+	v31 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
+	dlp "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/dlp"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1"
+	extproc "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extproc"
+	jwt "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/jwt"
+	ratelimit "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ratelimit"
+	rbac "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/rbac"
+	waf "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/waf"
+	cors "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/cors"
+	headers "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/headers"
+	retries "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/retries"
+	stats "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/stats"
+	transformation "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -66,7 +66,7 @@ type VirtualHostOptions struct {
 	// Transformations to apply. Note: this field is superseded by `staged_transformations`.
 	// If `staged_transformations.regular` is set, this field will be ignored.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/virtual_host_options.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/virtual_host_options.proto.
 	Transformations *transformation.Transformations `protobuf:"bytes,4,opt,name=transformations,proto3" json:"transformations,omitempty"`
 	// Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API
 	RatelimitBasic *ratelimit.IngressRateLimit `protobuf:"bytes,6,opt,name=ratelimit_basic,json=ratelimitBasic,proto3" json:"ratelimit_basic,omitempty"`
@@ -199,7 +199,7 @@ func (x *VirtualHostOptions) GetCors() *cors.CorsPolicy {
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/virtual_host_options.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/virtual_host_options.proto.
 func (x *VirtualHostOptions) GetTransformations() *transformation.Transformations {
 	if x != nil {
 		return x.Transformations
@@ -291,7 +291,7 @@ func (m *VirtualHostOptions) GetJwtConfig() isVirtualHostOptions_JwtConfig {
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/virtual_host_options.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/virtual_host_options.proto.
 func (x *VirtualHostOptions) GetJwt() *jwt.VhostExtension {
 	if x, ok := x.GetJwtConfig().(*VirtualHostOptions_Jwt); ok {
 		return x.Jwt
@@ -459,7 +459,7 @@ type VirtualHostOptions_Jwt struct {
 	// This has been deprecated in favor of staged jwt. The same configuration can be achieved through staged jwt
 	// using AfterExtAuth.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/virtual_host_options.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/virtual_host_options.proto.
 	Jwt *jwt.VhostExtension `protobuf:"bytes,9,opt,name=jwt,proto3,oneof"`
 }
 
@@ -468,7 +468,7 @@ type VirtualHostOptions_JwtStaged struct {
 	// headers to make routing decisions or combine with RBAC for fine-grained access control.
 	// JWT configuration has stages "BeforeExtAuth" and "AfterExtAuth". BeforeExtAuth JWT
 	// validation runs before the external authentication service. This is useful when JWT
-	// is used in conjunction with other auth mechanisms specified in the [boolean expression Extauth API](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig).
+	// is used in conjunction with other auth mechanisms specified in the [boolean expression Extauth API](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig).
 	// AfterExtAuth validation runs after external authentication service, which is useful for verifying
 	// JWTs obtained during extauth (e.g. oauth/oidc)
 	JwtStaged *jwt.JwtStagedVhostExtension `protobuf:"bytes,19,opt,name=jwt_staged,json=jwtStaged,proto3,oneof"`

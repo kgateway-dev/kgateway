@@ -39,7 +39,7 @@ func (m *HeaderMutationRules) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.common.mutation_rules.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/common/mutation_rules/v3.HeaderMutationRules")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.common.mutation_rules.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/common/mutation_rules/v3.HeaderMutationRules")); err != nil {
 		return 0, err
 	}
 
@@ -198,7 +198,7 @@ func (m *HeaderMutation) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.common.mutation_rules.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/common/mutation_rules/v3.HeaderMutation")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.common.mutation_rules.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/common/mutation_rules/v3.HeaderMutation")); err != nil {
 		return 0, err
 	}
 

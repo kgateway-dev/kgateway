@@ -38,7 +38,7 @@ func (m *CustomTag) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.type.tracing.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/tracing/v3.CustomTag")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.type.tracing.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/tracing/v3.CustomTag")); err != nil {
 		return 0, err
 	}
 
@@ -154,7 +154,7 @@ func (m *CustomTag_Literal) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.type.tracing.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/tracing/v3.CustomTag_Literal")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.type.tracing.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/tracing/v3.CustomTag_Literal")); err != nil {
 		return 0, err
 	}
 
@@ -178,7 +178,7 @@ func (m *CustomTag_Environment) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.type.tracing.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/tracing/v3.CustomTag_Environment")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.type.tracing.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/tracing/v3.CustomTag_Environment")); err != nil {
 		return 0, err
 	}
 
@@ -206,7 +206,7 @@ func (m *CustomTag_Header) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.type.tracing.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/tracing/v3.CustomTag_Header")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.type.tracing.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/tracing/v3.CustomTag_Header")); err != nil {
 		return 0, err
 	}
 
@@ -234,7 +234,7 @@ func (m *CustomTag_Metadata) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.type.tracing.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/tracing/v3.CustomTag_Metadata")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.type.tracing.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/tracing/v3.CustomTag_Metadata")); err != nil {
 		return 0, err
 	}
 

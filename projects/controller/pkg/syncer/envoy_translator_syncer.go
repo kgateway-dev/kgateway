@@ -24,11 +24,11 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	v1snap "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	syncerstats "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/syncer/stats"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/xds"
+	v1snap "github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	syncerstats "github.com/solo-io/gloo/projects/controller/pkg/syncer/stats"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/xds"
 )
 
 const (

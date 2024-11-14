@@ -10,9 +10,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	. "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/listener"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	. "github.com/solo-io/gloo/projects/controller/pkg/plugins/listener"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 	"github.com/solo-io/solo-kit/test/matchers"
 )

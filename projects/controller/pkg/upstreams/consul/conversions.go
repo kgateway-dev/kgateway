@@ -6,11 +6,11 @@ import (
 
 	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
 
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/ssl"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	consulplugin "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/consul"
+	consulplugin "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/consul"
 )
 
 const UpstreamNamePrefix = "consul-svc:"

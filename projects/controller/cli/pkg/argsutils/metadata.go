@@ -2,7 +2,7 @@ package argsutils
 
 import (
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/surveyutils"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/surveyutils"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 

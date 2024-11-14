@@ -4,7 +4,7 @@ import (
 	"context"
 
 	v1alpha1 "github.com/solo-io/gloo/projects/controller/pkg/api/external/solo/ratelimit"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"

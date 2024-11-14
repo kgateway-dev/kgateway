@@ -13,8 +13,8 @@ import (
 
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/headers"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/headers"
 
 	"github.com/solo-io/gloo/projects/clusteringress/api/external/knative"
 	v1alpha12 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
@@ -22,7 +22,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
-	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"

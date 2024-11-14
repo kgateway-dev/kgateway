@@ -2,8 +2,8 @@ package flagutils
 
 import (
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/defaults"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/aws/ec2"
+	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/aws/ec2"
 	"github.com/spf13/pflag"
 )
 

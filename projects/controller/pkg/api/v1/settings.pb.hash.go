@@ -13,7 +13,7 @@ import (
 	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
 	"github.com/solo-io/protoc-gen-ext/pkg/hasher/hashstructure"
 
-	consul "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/consul"
+	consul "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/consul"
 )
 
 // ensure the imports are used
@@ -42,7 +42,7 @@ func (m *Settings) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Settings")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Settings")); err != nil {
 		return 0, err
 	}
 
@@ -777,7 +777,7 @@ func (m *LabelSelector) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.LabelSelector")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.LabelSelector")); err != nil {
 		return 0, err
 	}
 
@@ -844,7 +844,7 @@ func (m *LabelSelectorRequirement) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.LabelSelectorRequirement")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.LabelSelectorRequirement")); err != nil {
 		return 0, err
 	}
 
@@ -880,7 +880,7 @@ func (m *UpstreamOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.UpstreamOptions")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.UpstreamOptions")); err != nil {
 		return 0, err
 	}
 
@@ -943,7 +943,7 @@ func (m *GlooOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.GlooOptions")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.GlooOptions")); err != nil {
 		return 0, err
 	}
 
@@ -1244,7 +1244,7 @@ func (m *VirtualServiceOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.VirtualServiceOptions")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.VirtualServiceOptions")); err != nil {
 		return 0, err
 	}
 
@@ -1284,7 +1284,7 @@ func (m *GatewayOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.GatewayOptions")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.GatewayOptions")); err != nil {
 		return 0, err
 	}
 
@@ -1443,7 +1443,7 @@ func (m *ConsoleOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.ConsoleOptions")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.ConsoleOptions")); err != nil {
 		return 0, err
 	}
 
@@ -1503,7 +1503,7 @@ func (m *GraphqlOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.GraphqlOptions")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.GraphqlOptions")); err != nil {
 		return 0, err
 	}
 
@@ -1543,7 +1543,7 @@ func (m *Settings_SecretOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Settings_SecretOptions")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Settings_SecretOptions")); err != nil {
 		return 0, err
 	}
 
@@ -1587,7 +1587,7 @@ func (m *Settings_KubernetesCrds) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Settings_KubernetesCrds")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Settings_KubernetesCrds")); err != nil {
 		return 0, err
 	}
 
@@ -1607,7 +1607,7 @@ func (m *Settings_KubernetesSecrets) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Settings_KubernetesSecrets")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Settings_KubernetesSecrets")); err != nil {
 		return 0, err
 	}
 
@@ -1627,7 +1627,7 @@ func (m *Settings_VaultSecrets) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Settings_VaultSecrets")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Settings_VaultSecrets")); err != nil {
 		return 0, err
 	}
 
@@ -1755,7 +1755,7 @@ func (m *Settings_VaultAwsAuth) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Settings_VaultAwsAuth")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Settings_VaultAwsAuth")); err != nil {
 		return 0, err
 	}
 
@@ -1808,7 +1808,7 @@ func (m *Settings_VaultTlsConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Settings_VaultTlsConfig")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Settings_VaultTlsConfig")); err != nil {
 		return 0, err
 	}
 
@@ -1868,7 +1868,7 @@ func (m *Settings_ConsulKv) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Settings_ConsulKv")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Settings_ConsulKv")); err != nil {
 		return 0, err
 	}
 
@@ -1892,7 +1892,7 @@ func (m *Settings_KubernetesConfigmaps) Hash(hasher hash.Hash64) (uint64, error)
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Settings_KubernetesConfigmaps")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Settings_KubernetesConfigmaps")); err != nil {
 		return 0, err
 	}
 
@@ -1912,7 +1912,7 @@ func (m *Settings_Directory) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Settings_Directory")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Settings_Directory")); err != nil {
 		return 0, err
 	}
 
@@ -1936,7 +1936,7 @@ func (m *Settings_KnativeOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Settings_KnativeOptions")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Settings_KnativeOptions")); err != nil {
 		return 0, err
 	}
 
@@ -1968,7 +1968,7 @@ func (m *Settings_DiscoveryOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Settings_DiscoveryOptions")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Settings_DiscoveryOptions")); err != nil {
 		return 0, err
 	}
 
@@ -2033,7 +2033,7 @@ func (m *Settings_ConsulConfiguration) Hash(hasher hash.Hash64) (uint64, error) 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Settings_ConsulConfiguration")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Settings_ConsulConfiguration")); err != nil {
 		return 0, err
 	}
 
@@ -2177,7 +2177,7 @@ func (m *Settings_ConsulUpstreamDiscoveryConfiguration) Hash(hasher hash.Hash64)
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Settings_ConsulUpstreamDiscoveryConfiguration")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Settings_ConsulUpstreamDiscoveryConfiguration")); err != nil {
 		return 0, err
 	}
 
@@ -2284,7 +2284,7 @@ func (m *Settings_KubernetesConfiguration) Hash(hasher hash.Hash64) (uint64, err
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Settings_KubernetesConfiguration")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Settings_KubernetesConfiguration")); err != nil {
 		return 0, err
 	}
 
@@ -2324,7 +2324,7 @@ func (m *Settings_ObservabilityOptions) Hash(hasher hash.Hash64) (uint64, error)
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Settings_ObservabilityOptions")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Settings_ObservabilityOptions")); err != nil {
 		return 0, err
 	}
 
@@ -2403,7 +2403,7 @@ func (m *Settings_SecretOptions_Source) Hash(hasher hash.Hash64) (uint64, error)
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Settings_SecretOptions_Source")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Settings_SecretOptions_Source")); err != nil {
 		return 0, err
 	}
 
@@ -2493,7 +2493,7 @@ func (m *Settings_DiscoveryOptions_UdsOptions) Hash(hasher hash.Hash64) (uint64,
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Settings_DiscoveryOptions_UdsOptions")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Settings_DiscoveryOptions_UdsOptions")); err != nil {
 		return 0, err
 	}
 
@@ -2556,7 +2556,7 @@ func (m *Settings_DiscoveryOptions_FdsOptions) Hash(hasher hash.Hash64) (uint64,
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Settings_DiscoveryOptions_FdsOptions")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Settings_DiscoveryOptions_FdsOptions")); err != nil {
 		return 0, err
 	}
 
@@ -2596,7 +2596,7 @@ func (m *Settings_ConsulConfiguration_ServiceDiscoveryOptions) Hash(hasher hash.
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Settings_ConsulConfiguration_ServiceDiscoveryOptions")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Settings_ConsulConfiguration_ServiceDiscoveryOptions")); err != nil {
 		return 0, err
 	}
 
@@ -2624,7 +2624,7 @@ func (m *Settings_KubernetesConfiguration_RateLimits) Hash(hasher hash.Hash64) (
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Settings_KubernetesConfiguration_RateLimits")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Settings_KubernetesConfiguration_RateLimits")); err != nil {
 		return 0, err
 	}
 
@@ -2654,7 +2654,7 @@ func (m *Settings_ObservabilityOptions_GrafanaIntegration) Hash(hasher hash.Hash
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Settings_ObservabilityOptions_GrafanaIntegration")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Settings_ObservabilityOptions_GrafanaIntegration")); err != nil {
 		return 0, err
 	}
 
@@ -2702,7 +2702,7 @@ func (m *Settings_ObservabilityOptions_MetricLabels) Hash(hasher hash.Hash64) (u
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.Settings_ObservabilityOptions_MetricLabels")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.Settings_ObservabilityOptions_MetricLabels")); err != nil {
 		return 0, err
 	}
 
@@ -2745,7 +2745,7 @@ func (m *GlooOptions_AWSOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.GlooOptions_AWSOptions")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.GlooOptions_AWSOptions")); err != nil {
 		return 0, err
 	}
 
@@ -2858,7 +2858,7 @@ func (m *GlooOptions_InvalidConfigPolicy) Hash(hasher hash.Hash64) (uint64, erro
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.GlooOptions_InvalidConfigPolicy")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.GlooOptions_InvalidConfigPolicy")); err != nil {
 		return 0, err
 	}
 
@@ -2892,7 +2892,7 @@ func (m *GlooOptions_IstioOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.GlooOptions_IstioOptions")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.GlooOptions_IstioOptions")); err != nil {
 		return 0, err
 	}
 
@@ -2972,7 +2972,7 @@ func (m *GatewayOptions_ValidationOptions) Hash(hasher hash.Hash64) (uint64, err
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.GatewayOptions_ValidationOptions")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.GatewayOptions_ValidationOptions")); err != nil {
 		return 0, err
 	}
 
@@ -3169,7 +3169,7 @@ func (m *GraphqlOptions_SchemaChangeValidationOptions) Hash(hasher hash.Hash64) 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.GraphqlOptions_SchemaChangeValidationOptions")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.GraphqlOptions_SchemaChangeValidationOptions")); err != nil {
 		return 0, err
 	}
 

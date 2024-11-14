@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	validation "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/grpc/validation"
+	validation "github.com/solo-io/gloo/projects/controller/pkg/api/grpc/validation"
 	grpc "google.golang.org/grpc"
 )
 

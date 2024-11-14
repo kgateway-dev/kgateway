@@ -23,7 +23,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	static_plugin_gloo "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/static"
+	static_plugin_gloo "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/test/helpers"
 	testgrpcservice "github.com/solo-io/gloo/test/v1helpers/test_grpc_service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"

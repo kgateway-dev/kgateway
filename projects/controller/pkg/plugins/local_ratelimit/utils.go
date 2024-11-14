@@ -13,9 +13,9 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	local_ratelimit "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/local_ratelimit"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/pluginutils"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/pluginutils"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 

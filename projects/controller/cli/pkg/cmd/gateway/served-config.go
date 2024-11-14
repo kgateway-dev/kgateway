@@ -5,7 +5,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/xdsinspection"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/spf13/cobra"
 )

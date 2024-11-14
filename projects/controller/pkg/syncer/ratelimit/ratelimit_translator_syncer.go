@@ -10,9 +10,9 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
-	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	gloov1snap "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/syncer"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	gloov1snap "github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/controller/pkg/syncer"
 	"github.com/solo-io/go-utils/contextutils"
 )
 

@@ -2,7 +2,7 @@ package routeutils
 
 import (
 	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 )
 
 func AppendSourceToRoute(route *v1.Route, newSources []*gloov1.SourceMetadata_SourceRef, preserveExisting bool) {

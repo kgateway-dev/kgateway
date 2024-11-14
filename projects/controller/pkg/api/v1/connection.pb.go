@@ -10,7 +10,7 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	protocol "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/protocol"
+	protocol "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/protocol"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"

@@ -16,10 +16,10 @@ import (
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	validationapi "github.com/solo-io/gloo/projects/controller/pkg/api/grpc/validation"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	proto_utils "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils/validation"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	proto_utils "github.com/solo-io/gloo/projects/controller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils/validation"
 )
 
 type NetworkFilterTranslator interface {

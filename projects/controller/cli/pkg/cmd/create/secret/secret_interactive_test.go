@@ -9,9 +9,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/cliutil/testutil"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/helpers"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/surveyutils"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/surveyutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 

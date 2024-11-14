@@ -6,9 +6,9 @@ import (
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/flagutils"
 
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/constants"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/helpers"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

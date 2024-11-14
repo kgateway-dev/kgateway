@@ -19,7 +19,7 @@ import (
 	"github.com/solo-io/go-utils/versionutils"
 
 	"github.com/google/go-github/github"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/spf13/cobra"
 )

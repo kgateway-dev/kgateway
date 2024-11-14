@@ -3,7 +3,7 @@ package xdsinspection
 import (
 	"github.com/solo-io/gloo/projects/controller/pkg/plugins/aws/ec2"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/translator"
+	"github.com/solo-io/gloo/projects/controller/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 

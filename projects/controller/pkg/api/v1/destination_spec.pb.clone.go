@@ -13,13 +13,13 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_aws "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/aws"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_aws "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/aws"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_azure "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/azure"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_azure "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/azure"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_grpc "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/grpc"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_grpc "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/grpc"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_rest "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/rest"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_rest "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/rest"
 )
 
 // ensure the imports are used

@@ -26,7 +26,7 @@ import (
 	"github.com/rotisserie/eris"
 	_ "github.com/solo-io/gloo/projects/envoyinit/hack/filter_types"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/helpers"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/defaults"
+	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
