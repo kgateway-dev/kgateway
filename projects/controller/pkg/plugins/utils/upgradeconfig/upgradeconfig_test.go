@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/upgradeconfig"
+	. "github.com/solo-io/gloo/projects/controller/pkg/plugins/utils/upgradeconfig"
 )
 
 var _ = Describe("Upgradeconfig", func() {

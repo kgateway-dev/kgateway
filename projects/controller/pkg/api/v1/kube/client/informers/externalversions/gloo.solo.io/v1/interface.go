@@ -19,7 +19,7 @@ limitations under the License.
 package v1
 
 import (
-	internalinterfaces "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client/informers/externalversions/internalinterfaces"
+	internalinterfaces "github.com/solo-io/gloo/projects/controller/pkg/api/v1/kube/client/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to all the informers in this group version.

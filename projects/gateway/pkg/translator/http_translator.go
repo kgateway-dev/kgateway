@@ -2,8 +2,8 @@ package translator
 
 import (
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
 )

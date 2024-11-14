@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	pbgostruct "github.com/golang/protobuf/ptypes/struct"
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/solo-io/go-utils/cliutils"

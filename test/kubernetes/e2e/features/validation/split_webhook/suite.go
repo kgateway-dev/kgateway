@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/onsi/gomega"
-	gloo_defaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	gloo_defaults "github.com/solo-io/gloo/projects/controller/pkg/defaults"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/validation"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"

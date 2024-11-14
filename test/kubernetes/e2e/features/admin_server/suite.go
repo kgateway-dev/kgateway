@@ -3,8 +3,8 @@ package admin_server
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 
 	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
 

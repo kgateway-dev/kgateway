@@ -8,7 +8,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 )
 
 const GlooH2Annotation = "gloo.solo.io/h2_service"

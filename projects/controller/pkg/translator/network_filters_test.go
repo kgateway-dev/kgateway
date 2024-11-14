@@ -10,7 +10,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	gloov1snap "github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/hcm"
@@ -22,6 +21,7 @@ import (
 	"github.com/solo-io/gloo/projects/controller/pkg/translator"
 	sslutils "github.com/solo-io/gloo/projects/controller/pkg/utils"
 	gloovalidation "github.com/solo-io/gloo/projects/controller/pkg/utils/validation"
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 

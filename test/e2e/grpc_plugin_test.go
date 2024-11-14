@@ -18,11 +18,11 @@ import (
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/grpc"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"

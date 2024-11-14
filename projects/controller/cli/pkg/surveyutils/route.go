@@ -8,7 +8,6 @@ import (
 
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/cliutil"
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/helpers"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
@@ -16,6 +15,7 @@ import (
 	plugins "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/aws"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/rest"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )

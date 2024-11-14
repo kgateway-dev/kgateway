@@ -2,9 +2,9 @@ package remove
 
 import (
 	errors "github.com/rotisserie/eris"
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/printers"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 

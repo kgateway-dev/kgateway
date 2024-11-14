@@ -79,7 +79,7 @@ var _ = Describe("validation utils", func() {
 				hybridListener.MatchedListeners = append(hybridListener.MatchedListeners, &v1.MatchedListener{
 					Matcher: &v1.Matcher{
 						SourcePrefixRanges: []*v3.CidrRange{
-							&v3.CidrRange{
+							{
 								AddressPrefix: fmt.Sprintf("tcp-%d", l),
 							},
 						},
@@ -103,7 +103,7 @@ var _ = Describe("validation utils", func() {
 				hybridListener.MatchedListeners = append(hybridListener.MatchedListeners, &v1.MatchedListener{
 					Matcher: &v1.Matcher{
 						SourcePrefixRanges: []*v3.CidrRange{
-							&v3.CidrRange{
+							{
 								AddressPrefix: fmt.Sprintf("http-%d", l),
 							},
 						},
@@ -192,7 +192,7 @@ var _ = Describe("validation utils", func() {
 					}
 					expMatcher := &v1.Matcher{
 						SourcePrefixRanges: []*v3.CidrRange{
-							&v3.CidrRange{
+							{
 								AddressPrefix: fmt.Sprintf("%s-%d", matchPrefix, matchNum),
 							},
 						},
@@ -278,7 +278,7 @@ var _ = Describe("validation utils", func() {
 
 			tcpMatcher := &v1.Matcher{
 				SourcePrefixRanges: []*v3.CidrRange{
-					&v3.CidrRange{
+					{
 						AddressPrefix: "tcp-0",
 					},
 				},
@@ -309,7 +309,7 @@ var _ = Describe("validation utils", func() {
 
 			httpMatcher := &v1.Matcher{
 				SourcePrefixRanges: []*v3.CidrRange{
-					&v3.CidrRange{
+					{
 						AddressPrefix: "http-0",
 					},
 				},
@@ -340,14 +340,14 @@ var _ = Describe("validation utils", func() {
 			)
 			tcpMatcher := &v1.Matcher{
 				SourcePrefixRanges: []*v3.CidrRange{
-					&v3.CidrRange{
+					{
 						AddressPrefix: "tcp-0",
 					},
 				},
 			}
 			httpMatcher := &v1.Matcher{
 				SourcePrefixRanges: []*v3.CidrRange{
-					&v3.CidrRange{
+					{
 						AddressPrefix: "http-0",
 					},
 				},

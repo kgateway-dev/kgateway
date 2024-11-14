@@ -7,7 +7,7 @@ import (
 
 	socketsRaw "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/raw_buffer/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 )
 
 const (

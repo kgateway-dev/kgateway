@@ -3,12 +3,12 @@ package httplisteneroptions
 import (
 	"context"
 
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	edgegwutils "github.com/solo-io/gloo/projects/gateway/pkg/translator/utils"
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	httplisquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/httplisteneroptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/utils"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )

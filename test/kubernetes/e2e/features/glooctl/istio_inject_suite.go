@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/onsi/gomega"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/istio"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/istio"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/stretchr/testify/suite"

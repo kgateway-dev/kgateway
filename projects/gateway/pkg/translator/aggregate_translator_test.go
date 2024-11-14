@@ -12,10 +12,10 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	. "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	gloov1snap "github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	. "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/test/samples"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"

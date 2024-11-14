@@ -4,7 +4,7 @@ import (
 	"context"
 
 	vault "github.com/hashicorp/vault/api"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 

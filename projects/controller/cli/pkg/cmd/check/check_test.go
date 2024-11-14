@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	gatewaysoloiov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1"
+	gatewaysoloiov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

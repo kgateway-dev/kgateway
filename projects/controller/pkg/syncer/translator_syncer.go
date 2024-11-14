@@ -18,11 +18,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
-	gwsyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/controller/pkg/syncer/sanitizer"
 	"github.com/solo-io/gloo/projects/controller/pkg/translator"
+	gwsyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
 )
 
 type translatorSyncer struct {

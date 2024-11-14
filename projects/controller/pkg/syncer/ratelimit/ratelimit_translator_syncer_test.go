@@ -154,7 +154,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 										ListenerType: &gloov1.MatchedListener_HttpListener{
 											HttpListener: &gloov1.HttpListener{
 												VirtualHosts: []*gloov1.VirtualHost{
-													&gloov1.VirtualHost{
+													{
 														Name: "gloo-system.default",
 														Options: &gloov1.VirtualHostOptions{
 															RatelimitBasic: config,

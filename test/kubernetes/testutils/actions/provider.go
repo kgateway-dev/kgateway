@@ -3,7 +3,7 @@ package actions
 import (
 	"github.com/solo-io/gloo/pkg/utils/helmutils"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/testutils"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
 )

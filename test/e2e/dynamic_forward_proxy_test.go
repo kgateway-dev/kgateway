@@ -18,8 +18,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 )
 
 var _ = Describe("dynamic forward proxy", func() {

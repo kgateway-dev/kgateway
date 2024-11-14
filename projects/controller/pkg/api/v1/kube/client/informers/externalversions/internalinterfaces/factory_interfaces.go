@@ -21,7 +21,7 @@ package internalinterfaces
 import (
 	time "time"
 
-	versioned "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client/clientset/versioned"
+	versioned "github.com/solo-io/gloo/projects/controller/pkg/api/v1/kube/client/clientset/versioned"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	cache "k8s.io/client-go/tools/cache"

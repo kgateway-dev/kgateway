@@ -132,7 +132,7 @@ var _ = Describe("Static bootstrap generation", func() {
 		})
 		Context("convertToStaticClusters", func() {
 			BeforeEach(func() {
-				routedCluster = map[string]struct{}{"foo": struct{}{}, "bar": struct{}{}}
+				routedCluster = map[string]struct{}{"foo": {}, "bar": {}}
 				clusters = []*envoy_config_cluster_v3.Cluster{{
 					Name: "foo",
 					EdsClusterConfig: &envoy_config_cluster_v3.Cluster_EdsClusterConfig{
@@ -155,7 +155,7 @@ var _ = Describe("Static bootstrap generation", func() {
 		})
 		Context("addBlackholeClusters", func() {
 			BeforeEach(func() {
-				routedCluster = map[string]struct{}{"bar": struct{}{}}
+				routedCluster = map[string]struct{}{"bar": {}}
 				clusters = []*envoy_config_cluster_v3.Cluster{{
 					Name: "foo",
 					EdsClusterConfig: &envoy_config_cluster_v3.Cluster_EdsClusterConfig{

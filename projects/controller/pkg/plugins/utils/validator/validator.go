@@ -5,7 +5,7 @@ import (
 	"hash"
 
 	"github.com/solo-io/gloo/pkg/utils/statsutils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/projects/controller/pkg/bootstrap"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.opencensus.io/stats"
 	"google.golang.org/protobuf/runtime/protoiface"

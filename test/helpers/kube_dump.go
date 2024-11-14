@@ -20,8 +20,8 @@ import (
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
 
+	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
 	gateway_defaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/skv2/codegen/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

@@ -4,11 +4,11 @@ import (
 	"sync"
 	"time"
 
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/connection_limit"
 	fault "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/faultinjection"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/test/e2e"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"

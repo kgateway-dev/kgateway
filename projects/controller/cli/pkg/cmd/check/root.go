@@ -11,7 +11,6 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/common"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/constants"
@@ -21,6 +20,7 @@ import (
 	ratelimit "github.com/solo-io/gloo/projects/controller/pkg/api/external/solo/ratelimit"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	rlopts "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ratelimit"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/go-utils/cliutils"
 	rlv1alpha1 "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"

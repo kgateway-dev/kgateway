@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/rotisserie/eris"
-	skratelimit "github.com/solo-io/gloo/projects/gloo/api/external/solo/ratelimit"
+	skratelimit "github.com/solo-io/gloo/projects/controller/api/external/solo/ratelimit"
 	rlv1alpha1 "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"

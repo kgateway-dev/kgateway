@@ -3,8 +3,8 @@ package utils
 import (
 	"sort"
 
-	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 

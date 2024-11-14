@@ -14,12 +14,12 @@ import (
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/aws"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/rest"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"

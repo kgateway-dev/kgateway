@@ -3,7 +3,7 @@ package utils
 import (
 	"fmt"
 
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 )
 
 // RouteConfigName cannot always be relied on to get the route config name for any listener because

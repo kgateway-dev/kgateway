@@ -44,7 +44,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	return cmd
 }
 
-var knownTags = map[string]struct{}{"experimental": struct{}{}, "latest": struct{}{}}
+var knownTags = map[string]struct{}{"experimental": {}, "latest": {}}
 
 // timeoutseconds for our http client. This should move along with
 // the client options to a higher place in code and become merely a default setting.

@@ -6,8 +6,6 @@ import (
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ratelimit"
 	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/argsutils"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/constants"
@@ -16,6 +14,8 @@ import (
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/surveyutils"
 	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"

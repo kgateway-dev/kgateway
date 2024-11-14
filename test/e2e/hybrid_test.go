@@ -19,13 +19,13 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
 	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/headers"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/proxy_protocol"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/test/e2e"
 )
 

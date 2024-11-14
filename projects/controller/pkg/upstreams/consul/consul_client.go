@@ -3,7 +3,7 @@ package consul
 import (
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/rotisserie/eris"
-	glooConsul "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
+	glooConsul "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/consul"
 )
 
 //go:generate mockgen -destination=./mocks/mock_consul_client.go -source consul_client.go

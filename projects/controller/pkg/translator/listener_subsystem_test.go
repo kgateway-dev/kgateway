@@ -13,7 +13,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
@@ -33,6 +32,7 @@ import (
 	sslutils "github.com/solo-io/gloo/projects/controller/pkg/utils"
 	mock_utils "github.com/solo-io/gloo/projects/controller/pkg/utils/mocks"
 	gloovalidation "github.com/solo-io/gloo/projects/controller/pkg/utils/validation"
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )

@@ -6,7 +6,7 @@ import (
 	"github.com/onsi/gomega/types"
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
 
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"

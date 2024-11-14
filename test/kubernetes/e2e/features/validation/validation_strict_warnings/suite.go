@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	gloo_defaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	gloo_defaults "github.com/solo-io/gloo/projects/controller/pkg/defaults"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	testdefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
 	"github.com/solo-io/gloo/test/kubernetes/e2e/features/validation"

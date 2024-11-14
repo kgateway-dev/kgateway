@@ -10,7 +10,7 @@ import (
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/loggingservice"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/transformation"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/healthchecker"
 	"github.com/solo-io/go-utils/stats"

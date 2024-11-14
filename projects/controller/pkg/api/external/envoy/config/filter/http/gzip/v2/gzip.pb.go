@@ -4,7 +4,7 @@
 // versions:
 // 	protoc-gen-go v1.35.1
 // 	protoc        v3.6.1
-// source: github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/filter/http/gzip/v2/gzip.proto
+// source: github.com/solo-io/gloo/projects/controller/api/external/envoy/config/filter/http/gzip/v2/gzip.proto
 
 package v2
 

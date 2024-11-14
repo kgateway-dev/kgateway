@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/istio"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/istio"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 )

@@ -3,7 +3,7 @@ package utils
 import (
 	"reflect"
 
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 )
 
 // ShallowMerge sets dst to the value of src, if src is non-zero and dst is zero-valued or overwrite=true.

@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/olekukonko/tablewriter"
-	ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
+	ratelimit "github.com/solo-io/gloo/projects/controller/pkg/api/external/solo/ratelimit"
 	"github.com/solo-io/go-utils/cliutils"
 	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 )

@@ -12,8 +12,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/statsutils"
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	gloov1snap "github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
@@ -21,6 +19,8 @@ import (
 	syncerValidation "github.com/solo-io/gloo/projects/controller/pkg/syncer/validation"
 	validationutils "github.com/solo-io/gloo/projects/controller/pkg/utils/validation"
 	gloovalidation "github.com/solo-io/gloo/projects/controller/pkg/validation"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 

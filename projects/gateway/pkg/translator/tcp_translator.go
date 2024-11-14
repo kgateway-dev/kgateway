@@ -1,8 +1,8 @@
 package translator
 
 import (
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
 var _ ListenerTranslator = new(TcpTranslator)

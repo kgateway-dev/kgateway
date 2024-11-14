@@ -6,8 +6,8 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/envoyutils/bootstrap"
 	"github.com/solo-io/gloo/pkg/utils/envutils"
-	"github.com/solo-io/gloo/projects/envoyinit/pkg/runner"
 	"github.com/solo-io/gloo/projects/controller/constants"
+	"github.com/solo-io/gloo/projects/envoyinit/pkg/runner"
 	"github.com/solo-io/go-utils/contextutils"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 )

@@ -7,7 +7,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 
 	"github.com/solo-io/gloo/install/helm/gloo/generate"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/grpc/version"
 	"github.com/solo-io/go-utils/stringutils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

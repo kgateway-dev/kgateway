@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
+	"github.com/solo-io/gloo/projects/controller/pkg/servers/iosnapshot"
 	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/kube/krt"
 )

@@ -20,9 +20,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/hashicorp/consul/api"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	vault_client "github.com/solo-io/gloo/projects/controller/pkg/bootstrap/clients/vault"
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	skclients "github.com/solo-io/solo-kit/pkg/api/v1/clients"

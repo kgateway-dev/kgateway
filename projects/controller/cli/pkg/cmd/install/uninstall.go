@@ -14,7 +14,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/solo-io/gloo/pkg/cliutil/install"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
 )
 
 func Uninstall(opts *options.Options, cli install.KubeCli, mode Mode) error {

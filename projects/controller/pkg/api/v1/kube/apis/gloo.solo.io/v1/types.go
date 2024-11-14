@@ -8,7 +8,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 
-	api "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	api "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

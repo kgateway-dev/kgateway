@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	cli "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd"
+	cli "github.com/solo-io/gloo/projects/controller/cli/pkg/cmd"
 )
 
 // NewGlooCli returns an implementation of the GlooCli

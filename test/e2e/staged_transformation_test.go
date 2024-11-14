@@ -10,9 +10,9 @@ import (
 
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1"
 	gloov1static "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/static"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
