@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -18,7 +18,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
-//go:generate mockgen -destination mocks/mock_discovery.go -package mocks github.com/solo-io/gloo/projects/controllerrollerroller/pkg/discovery DiscoveryPlugin
+//go:generate mockgen -destination mocks/mock_discovery.go -package mocks github.com/solo-io/gloo/projects/controller/pkg/discovery DiscoveryPlugin
 type DiscoveryPlugin interface {
 	plugins.Plugin
 

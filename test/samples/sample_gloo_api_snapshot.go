@@ -2,15 +2,15 @@ package samples
 
 import (
 	"github.com/golang/protobuf/ptypes/wrappers"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
+	v1snap "github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/hcm"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/static"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers"
-	v1snap "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/hcm"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/static"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/ssl"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )

@@ -39,7 +39,7 @@ func (m *SingleAuthToken) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.SingleAuthToken")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.SingleAuthToken")); err != nil {
 		return 0, err
 	}
 
@@ -115,7 +115,7 @@ func (m *UpstreamSpec) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.UpstreamSpec")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.UpstreamSpec")); err != nil {
 		return 0, err
 	}
 
@@ -292,7 +292,7 @@ func (m *RouteSettings) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.RouteSettings")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.RouteSettings")); err != nil {
 		return 0, err
 	}
 
@@ -429,7 +429,7 @@ func (m *FieldDefault) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.FieldDefault")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.FieldDefault")); err != nil {
 		return 0, err
 	}
 
@@ -483,7 +483,7 @@ func (m *Postgres) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.Postgres")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.Postgres")); err != nil {
 		return 0, err
 	}
 
@@ -516,7 +516,7 @@ func (m *Embedding) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.Embedding")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.Embedding")); err != nil {
 		return 0, err
 	}
 
@@ -583,7 +583,7 @@ func (m *SemanticCache) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.SemanticCache")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.SemanticCache")); err != nil {
 		return 0, err
 	}
 
@@ -658,7 +658,7 @@ func (m *RAG) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.RAG")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.RAG")); err != nil {
 		return 0, err
 	}
 
@@ -724,7 +724,7 @@ func (m *AIPromptEnrichment) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.AIPromptEnrichment")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.AIPromptEnrichment")); err != nil {
 		return 0, err
 	}
 
@@ -803,7 +803,7 @@ func (m *AIPromptGuard) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.AIPromptGuard")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.AIPromptGuard")); err != nil {
 		return 0, err
 	}
 
@@ -862,7 +862,7 @@ func (m *SingleAuthToken_Passthrough) HashUnique(hasher hash.Hash64) (uint64, er
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.SingleAuthToken_Passthrough")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.SingleAuthToken_Passthrough")); err != nil {
 		return 0, err
 	}
 
@@ -881,7 +881,7 @@ func (m *UpstreamSpec_CustomHost) HashUnique(hasher hash.Hash64) (uint64, error)
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.UpstreamSpec_CustomHost")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.UpstreamSpec_CustomHost")); err != nil {
 		return 0, err
 	}
 
@@ -915,7 +915,7 @@ func (m *UpstreamSpec_OpenAI) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.UpstreamSpec_OpenAI")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.UpstreamSpec_OpenAI")); err != nil {
 		return 0, err
 	}
 
@@ -981,7 +981,7 @@ func (m *UpstreamSpec_AzureOpenAI) HashUnique(hasher hash.Hash64) (uint64, error
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.UpstreamSpec_AzureOpenAI")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.UpstreamSpec_AzureOpenAI")); err != nil {
 		return 0, err
 	}
 
@@ -1047,7 +1047,7 @@ func (m *UpstreamSpec_Gemini) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.UpstreamSpec_Gemini")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.UpstreamSpec_Gemini")); err != nil {
 		return 0, err
 	}
 
@@ -1106,7 +1106,7 @@ func (m *UpstreamSpec_VertexAI) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.UpstreamSpec_VertexAI")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.UpstreamSpec_VertexAI")); err != nil {
 		return 0, err
 	}
 
@@ -1194,7 +1194,7 @@ func (m *UpstreamSpec_Mistral) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.UpstreamSpec_Mistral")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.UpstreamSpec_Mistral")); err != nil {
 		return 0, err
 	}
 
@@ -1260,7 +1260,7 @@ func (m *UpstreamSpec_Anthropic) HashUnique(hasher hash.Hash64) (uint64, error) 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.UpstreamSpec_Anthropic")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.UpstreamSpec_Anthropic")); err != nil {
 		return 0, err
 	}
 
@@ -1333,7 +1333,7 @@ func (m *UpstreamSpec_MultiPool) HashUnique(hasher hash.Hash64) (uint64, error) 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.UpstreamSpec_MultiPool")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.UpstreamSpec_MultiPool")); err != nil {
 		return 0, err
 	}
 
@@ -1382,7 +1382,7 @@ func (m *UpstreamSpec_MultiPool_Backend) HashUnique(hasher hash.Hash64) (uint64,
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.UpstreamSpec_MultiPool_Backend")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.UpstreamSpec_MultiPool_Backend")); err != nil {
 		return 0, err
 	}
 
@@ -1537,7 +1537,7 @@ func (m *UpstreamSpec_MultiPool_Priority) HashUnique(hasher hash.Hash64) (uint64
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.UpstreamSpec_MultiPool_Priority")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.UpstreamSpec_MultiPool_Priority")); err != nil {
 		return 0, err
 	}
 
@@ -1586,7 +1586,7 @@ func (m *Embedding_OpenAI) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.Embedding_OpenAI")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.Embedding_OpenAI")); err != nil {
 		return 0, err
 	}
 
@@ -1631,7 +1631,7 @@ func (m *Embedding_AzureOpenAI) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.Embedding_AzureOpenAI")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.Embedding_AzureOpenAI")); err != nil {
 		return 0, err
 	}
 
@@ -1697,7 +1697,7 @@ func (m *SemanticCache_Redis) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.SemanticCache_Redis")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.SemanticCache_Redis")); err != nil {
 		return 0, err
 	}
 
@@ -1731,7 +1731,7 @@ func (m *SemanticCache_Weaviate) HashUnique(hasher hash.Hash64) (uint64, error) 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.SemanticCache_Weaviate")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.SemanticCache_Weaviate")); err != nil {
 		return 0, err
 	}
 
@@ -1781,7 +1781,7 @@ func (m *SemanticCache_DataStore) HashUnique(hasher hash.Hash64) (uint64, error)
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.SemanticCache_DataStore")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.SemanticCache_DataStore")); err != nil {
 		return 0, err
 	}
 
@@ -1848,7 +1848,7 @@ func (m *RAG_DataStore) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.RAG_DataStore")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.RAG_DataStore")); err != nil {
 		return 0, err
 	}
 
@@ -1893,7 +1893,7 @@ func (m *AIPromptEnrichment_Message) HashUnique(hasher hash.Hash64) (uint64, err
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.AIPromptEnrichment_Message")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.AIPromptEnrichment_Message")); err != nil {
 		return 0, err
 	}
 
@@ -1926,7 +1926,7 @@ func (m *AIPromptGuard_Regex) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Regex")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Regex")); err != nil {
 		return 0, err
 	}
 
@@ -2001,7 +2001,7 @@ func (m *AIPromptGuard_Webhook) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Webhook")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Webhook")); err != nil {
 		return 0, err
 	}
 
@@ -2065,7 +2065,7 @@ func (m *AIPromptGuard_Moderation) HashUnique(hasher hash.Hash64) (uint64, error
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Moderation")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Moderation")); err != nil {
 		return 0, err
 	}
 
@@ -2110,7 +2110,7 @@ func (m *AIPromptGuard_Request) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Request")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Request")); err != nil {
 		return 0, err
 	}
 
@@ -2209,7 +2209,7 @@ func (m *AIPromptGuard_Response) HashUnique(hasher hash.Hash64) (uint64, error) 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Response")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Response")); err != nil {
 		return 0, err
 	}
 
@@ -2268,7 +2268,7 @@ func (m *AIPromptGuard_Regex_RegexMatch) HashUnique(hasher hash.Hash64) (uint64,
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Regex_RegexMatch")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Regex_RegexMatch")); err != nil {
 		return 0, err
 	}
 
@@ -2301,7 +2301,7 @@ func (m *AIPromptGuard_Webhook_HeaderMatch) HashUnique(hasher hash.Hash64) (uint
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Webhook_HeaderMatch")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Webhook_HeaderMatch")); err != nil {
 		return 0, err
 	}
 
@@ -2335,7 +2335,7 @@ func (m *AIPromptGuard_Moderation_OpenAI) HashUnique(hasher hash.Hash64) (uint64
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Moderation_OpenAI")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Moderation_OpenAI")); err != nil {
 		return 0, err
 	}
 
@@ -2387,7 +2387,7 @@ func (m *AIPromptGuard_Request_CustomResponse) HashUnique(hasher hash.Hash64) (u
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Request_CustomResponse")); err != nil {
+	if _, err = hasher.Write([]byte("ai.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai.AIPromptGuard_Request_CustomResponse")); err != nil {
 		return 0, err
 	}
 

@@ -18,6 +18,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/solo-io/gloo/projects/controller/pkg/api/grpc/validation"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	glooutils "github.com/solo-io/gloo/projects/controller/pkg/utils"
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
@@ -26,9 +29,6 @@ import (
 	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/utils"
 	"github.com/solo-io/gloo/projects/gateway2/translator/routeutils"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/grpc/validation"
-	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	glooutils "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
 )
 
 var (

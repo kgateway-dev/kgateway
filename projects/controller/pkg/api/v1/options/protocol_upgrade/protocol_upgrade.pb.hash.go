@@ -38,7 +38,7 @@ func (m *ProtocolUpgradeConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("protocol_upgrade.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/protocol_upgrade.ProtocolUpgradeConfig")); err != nil {
+	if _, err = hasher.Write([]byte("protocol_upgrade.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/protocol_upgrade.ProtocolUpgradeConfig")); err != nil {
 		return 0, err
 	}
 
@@ -106,7 +106,7 @@ func (m *ProtocolUpgradeConfig_ProtocolUpgradeSpec) Hash(hasher hash.Hash64) (ui
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("protocol_upgrade.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec")); err != nil {
+	if _, err = hasher.Write([]byte("protocol_upgrade.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec")); err != nil {
 		return 0, err
 	}
 

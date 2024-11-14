@@ -5,13 +5,13 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 	"github.com/solo-io/gloo/test/helpers"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 )
 
 var _ = Describe("PathAsString", func() {

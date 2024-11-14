@@ -6,7 +6,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 )
 
 func ConsolidateSslConfigurations(sslConfigurations []*ssl.SslConfig) []*ssl.SslConfig {

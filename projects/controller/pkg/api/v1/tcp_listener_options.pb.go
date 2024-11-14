@@ -10,9 +10,9 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	connection_limit "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/connection_limit"
-	local_ratelimit "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/local_ratelimit"
-	tcp "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/tcp"
+	connection_limit "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/connection_limit"
+	local_ratelimit "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/local_ratelimit"
+	tcp "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/tcp"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"

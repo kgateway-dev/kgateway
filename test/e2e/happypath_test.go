@@ -18,15 +18,15 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/healthcheck"
-	routerV1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/router"
-	static_plugin_gloo "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/static"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/stats"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/ssl"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/defaults"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/healthcheck"
+	routerV1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/router"
+	static_plugin_gloo "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/static"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/stats"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
+	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	testhelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -149,7 +149,7 @@ var _ = Describe("Happy path", func() {
 			proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
 
 			// configuring an http listener option to set suppressEnvoyHeaders to true
-			//projects/controllerrollerroller/api/v1/options/router/router.proto
+			//projects/controller/api/v1/options/router/router.proto
 			proxy.Listeners[0].GetHttpListener().Options = &gloov1.HttpListenerOptions{
 				Router: &routerV1.Router{
 					SuppressEnvoyHeaders: wrapperspb.Bool(true),

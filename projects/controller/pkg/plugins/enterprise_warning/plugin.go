@@ -12,8 +12,8 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/aws"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/aws"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 

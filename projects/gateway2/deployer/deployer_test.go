@@ -12,12 +12,12 @@ import (
 	"github.com/onsi/gomega/types"
 	"github.com/solo-io/gloo/pkg/schemes"
 	"github.com/solo-io/gloo/pkg/version"
+	wellknownkube "github.com/solo-io/gloo/projects/controller/pkg/api/v1/kube/wellknown"
+	glooutils "github.com/solo-io/gloo/projects/controller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/xds"
 	gw2_v1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-	wellknownkube "github.com/solo-io/gloo/projects/controller/pkg/api/v1/kube/wellknown"
-	glooutils "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/xds"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
@@ -38,7 +38,7 @@ import (
 	//
 	// There is some import within this package that this suite relies on. Chasing that down is
 	// *hard* tho due to the import tree, and best done in a followup.
-	_ "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/translator"
+	_ "github.com/solo-io/gloo/projects/controller/pkg/translator"
 )
 
 // testBootstrap implements resources.Resource in order to use protoutils.UnmarshalYAML

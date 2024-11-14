@@ -39,7 +39,7 @@ func (m *AccessLoggingService) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/als.AccessLoggingService")); err != nil {
+	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/als.AccessLoggingService")); err != nil {
 		return 0, err
 	}
 
@@ -88,7 +88,7 @@ func (m *AccessLog) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/als.AccessLog")); err != nil {
+	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/als.AccessLog")); err != nil {
 		return 0, err
 	}
 
@@ -175,7 +175,7 @@ func (m *FileSink) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/als.FileSink")); err != nil {
+	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/als.FileSink")); err != nil {
 		return 0, err
 	}
 
@@ -236,7 +236,7 @@ func (m *GrpcService) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/als.GrpcService")); err != nil {
+	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/als.GrpcService")); err != nil {
 		return 0, err
 	}
 
@@ -326,7 +326,7 @@ func (m *AccessLogFilter) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/als.AccessLogFilter")); err != nil {
+	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/als.AccessLogFilter")); err != nil {
 		return 0, err
 	}
 
@@ -569,7 +569,7 @@ func (m *ComparisonFilter) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/als.ComparisonFilter")); err != nil {
+	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/als.ComparisonFilter")); err != nil {
 		return 0, err
 	}
 
@@ -616,7 +616,7 @@ func (m *StatusCodeFilter) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/als.StatusCodeFilter")); err != nil {
+	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/als.StatusCodeFilter")); err != nil {
 		return 0, err
 	}
 
@@ -655,7 +655,7 @@ func (m *DurationFilter) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/als.DurationFilter")); err != nil {
+	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/als.DurationFilter")); err != nil {
 		return 0, err
 	}
 
@@ -694,7 +694,7 @@ func (m *NotHealthCheckFilter) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/als.NotHealthCheckFilter")); err != nil {
+	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/als.NotHealthCheckFilter")); err != nil {
 		return 0, err
 	}
 
@@ -713,7 +713,7 @@ func (m *TraceableFilter) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/als.TraceableFilter")); err != nil {
+	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/als.TraceableFilter")); err != nil {
 		return 0, err
 	}
 
@@ -732,7 +732,7 @@ func (m *RuntimeFilter) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/als.RuntimeFilter")); err != nil {
+	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/als.RuntimeFilter")); err != nil {
 		return 0, err
 	}
 
@@ -786,7 +786,7 @@ func (m *AndFilter) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/als.AndFilter")); err != nil {
+	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/als.AndFilter")); err != nil {
 		return 0, err
 	}
 
@@ -835,7 +835,7 @@ func (m *OrFilter) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/als.OrFilter")); err != nil {
+	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/als.OrFilter")); err != nil {
 		return 0, err
 	}
 
@@ -884,7 +884,7 @@ func (m *HeaderFilter) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/als.HeaderFilter")); err != nil {
+	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/als.HeaderFilter")); err != nil {
 		return 0, err
 	}
 
@@ -923,7 +923,7 @@ func (m *ResponseFlagFilter) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/als.ResponseFlagFilter")); err != nil {
+	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/als.ResponseFlagFilter")); err != nil {
 		return 0, err
 	}
 
@@ -959,7 +959,7 @@ func (m *GrpcStatusFilter) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/als.GrpcStatusFilter")); err != nil {
+	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/als.GrpcStatusFilter")); err != nil {
 		return 0, err
 	}
 

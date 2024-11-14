@@ -23,9 +23,9 @@ import (
 	time "time"
 
 	gloosoloiov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	versioned "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/kube/client/clientset/versioned"
-	internalinterfaces "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/kube/client/informers/externalversions/internalinterfaces"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/kube/client/listers/gloo.solo.io/v1"
+	versioned "github.com/solo-io/gloo/projects/controller/pkg/api/v1/kube/client/clientset/versioned"
+	internalinterfaces "github.com/solo-io/gloo/projects/controller/pkg/api/v1/kube/client/informers/externalversions/internalinterfaces"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/kube/client/listers/gloo.solo.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"

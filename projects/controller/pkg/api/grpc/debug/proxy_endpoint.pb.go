@@ -11,7 +11,7 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	_ "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	grpc "google.golang.org/grpc"
@@ -338,5 +338,5 @@ var _ProxyEndpointService_serviceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "github.com/solo-io/gloo/projects/controllerrollerroller/api/grpc/debug/proxy_endpoint.proto",
+	Metadata: "github.com/solo-io/gloo/projects/controller/api/grpc/debug/proxy_endpoint.proto",
 }

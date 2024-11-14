@@ -6,10 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
-	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/servers/iosnapshot"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/syncer"
+	"github.com/solo-io/gloo/projects/controller/pkg/servers/iosnapshot"
+	"github.com/solo-io/gloo/projects/controller/pkg/syncer"
+	"github.com/solo-io/gloo/projects/gateway2/extensions"
 )
 
 var _ = Describe("Extensions", func() {

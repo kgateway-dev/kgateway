@@ -9,16 +9,16 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
 	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ratelimit"
-	gloov1snap "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/syncer"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ratelimit"
+	gloov1snap "github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/controller/pkg/syncer"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	skcore "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
-	. "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/syncer/ratelimit"
+	. "github.com/solo-io/gloo/projects/controller/pkg/syncer/ratelimit"
 )
 
 var _ = Describe("RatelimitTranslatorSyncer", func() {
@@ -154,7 +154,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 										ListenerType: &gloov1.MatchedListener_HttpListener{
 											HttpListener: &gloov1.HttpListener{
 												VirtualHosts: []*gloov1.VirtualHost{
-													&gloov1.VirtualHost{
+													{
 														Name: "gloo-system.default",
 														Options: &gloov1.VirtualHostOptions{
 															RatelimitBasic: config,

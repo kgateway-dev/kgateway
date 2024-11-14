@@ -39,7 +39,7 @@ func (m *ServiceSpec) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("rest.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/rest.ServiceSpec")); err != nil {
+	if _, err = hasher.Write([]byte("rest.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/rest.ServiceSpec")); err != nil {
 		return 0, err
 	}
 
@@ -120,7 +120,7 @@ func (m *DestinationSpec) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("rest.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/rest.DestinationSpec")); err != nil {
+	if _, err = hasher.Write([]byte("rest.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/rest.DestinationSpec")); err != nil {
 		return 0, err
 	}
 
@@ -186,7 +186,7 @@ func (m *ServiceSpec_SwaggerInfo) HashUnique(hasher hash.Hash64) (uint64, error)
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("rest.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/rest.ServiceSpec_SwaggerInfo")); err != nil {
+	if _, err = hasher.Write([]byte("rest.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/rest.ServiceSpec_SwaggerInfo")); err != nil {
 		return 0, err
 	}
 

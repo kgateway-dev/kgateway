@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
 
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/defaults"
+	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
 	"github.com/spf13/cobra"
 )
 

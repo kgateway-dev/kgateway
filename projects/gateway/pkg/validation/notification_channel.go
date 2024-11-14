@@ -4,7 +4,7 @@ import (
 	"context"
 
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/grpc/validation"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 )

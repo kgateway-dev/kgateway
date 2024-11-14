@@ -38,7 +38,7 @@ func (m *TcpProxySettings) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("tcp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/tcp.TcpProxySettings")); err != nil {
+	if _, err = hasher.Write([]byte("tcp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/tcp.TcpProxySettings")); err != nil {
 		return 0, err
 	}
 
@@ -138,7 +138,7 @@ func (m *HeaderValueOption) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("tcp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/tcp.HeaderValueOption")); err != nil {
+	if _, err = hasher.Write([]byte("tcp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/tcp.HeaderValueOption")); err != nil {
 		return 0, err
 	}
 
@@ -198,7 +198,7 @@ func (m *HeaderValue) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("tcp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/tcp.HeaderValue")); err != nil {
+	if _, err = hasher.Write([]byte("tcp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/tcp.HeaderValue")); err != nil {
 		return 0, err
 	}
 
@@ -226,7 +226,7 @@ func (m *TcpProxySettings_TunnelingConfig) Hash(hasher hash.Hash64) (uint64, err
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("tcp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/tcp.TcpProxySettings_TunnelingConfig")); err != nil {
+	if _, err = hasher.Write([]byte("tcp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/tcp.TcpProxySettings_TunnelingConfig")); err != nil {
 		return 0, err
 	}
 

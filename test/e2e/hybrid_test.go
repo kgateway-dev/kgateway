@@ -19,13 +19,13 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/headers"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/proxy_protocol"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
-	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/headers"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/proxy_protocol"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/test/e2e"
 )
 
@@ -418,7 +418,7 @@ var _ = Describe("Hybrid Gateway", func() {
 				// for the next 2 entries, no filter chain match is recorded
 				// because the filter chain translator aborts translation if there
 				// are no network filters (ie. virtual hosts)
-				// https://github.com/solo-io/gloo/blob/d3879f282da00dc0cb6c8c9366a87b48ca1a382b/projects/controllerrollerroller/pkg/translator/filter_chain.go#L94-L96
+				// https://github.com/solo-io/gloo/blob/d3879f282da00dc0cb6c8c9366a87b48ca1a382b/projects/controller/pkg/translator/filter_chain.go#L94-L96
 				// so even though the ip matches, we expect the request to fail
 				// similar to the above test.
 				// there is a workaround for this: by setting SniDomains to '*.', a

@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	bootstrap "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/bootstrap/clients"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	bootstrap "github.com/solo-io/gloo/projects/controller/pkg/bootstrap/clients"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 

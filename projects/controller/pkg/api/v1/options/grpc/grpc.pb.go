@@ -10,8 +10,8 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	_ "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/grpc_json"
-	transformation "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation"
+	_ "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/grpc_json"
+	transformation "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -39,7 +39,7 @@ type ServiceSpec struct {
 	Descriptors []byte `protobuf:"bytes,1,opt,name=descriptors,proto3" json:"descriptors,omitempty"`
 	// List of services used by this upstream. These services must be present in the descriptors.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/options/grpc/grpc.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/options/grpc/grpc.proto.
 	GrpcServices []*ServiceSpec_GrpcService `protobuf:"bytes,2,rep,name=grpc_services,json=grpcServices,proto3" json:"grpc_services,omitempty"`
 }
 
@@ -80,7 +80,7 @@ func (x *ServiceSpec) GetDescriptors() []byte {
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/options/grpc/grpc.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/options/grpc/grpc.proto.
 func (x *ServiceSpec) GetGrpcServices() []*ServiceSpec_GrpcService {
 	if x != nil {
 		return x.GrpcServices

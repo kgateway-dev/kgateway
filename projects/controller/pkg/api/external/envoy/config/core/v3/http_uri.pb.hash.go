@@ -38,7 +38,7 @@ func (m *HttpUri) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3.HttpUri")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3.HttpUri")); err != nil {
 		return 0, err
 	}
 

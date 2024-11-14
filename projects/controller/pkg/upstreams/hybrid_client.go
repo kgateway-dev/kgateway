@@ -11,10 +11,10 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/controller/pkg/upstreams/consul"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/upstreams/kubernetes"
+	"github.com/solo-io/gloo/projects/controller/pkg/upstreams/kubernetes"
 	"golang.org/x/sync/errgroup"
 
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"

@@ -38,7 +38,7 @@ func (m *FilterConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("dfp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/dynamic_forward_proxy.FilterConfig")); err != nil {
+	if _, err = hasher.Write([]byte("dfp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/dynamic_forward_proxy.FilterConfig")); err != nil {
 		return 0, err
 	}
 
@@ -103,7 +103,7 @@ func (m *DnsCacheCircuitBreakers) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("dfp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/dynamic_forward_proxy.DnsCacheCircuitBreakers")); err != nil {
+	if _, err = hasher.Write([]byte("dfp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/dynamic_forward_proxy.DnsCacheCircuitBreakers")); err != nil {
 		return 0, err
 	}
 
@@ -143,7 +143,7 @@ func (m *DnsCacheConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("dfp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/dynamic_forward_proxy.DnsCacheConfig")); err != nil {
+	if _, err = hasher.Write([]byte("dfp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/dynamic_forward_proxy.DnsCacheConfig")); err != nil {
 		return 0, err
 	}
 
@@ -360,7 +360,7 @@ func (m *RefreshRate) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("dfp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/dynamic_forward_proxy.RefreshRate")); err != nil {
+	if _, err = hasher.Write([]byte("dfp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/dynamic_forward_proxy.RefreshRate")); err != nil {
 		return 0, err
 	}
 
@@ -420,7 +420,7 @@ func (m *PerRouteConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("dfp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/dynamic_forward_proxy.PerRouteConfig")); err != nil {
+	if _, err = hasher.Write([]byte("dfp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/dynamic_forward_proxy.PerRouteConfig")); err != nil {
 		return 0, err
 	}
 
@@ -456,7 +456,7 @@ func (m *DnsResolverOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("dfp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/dynamic_forward_proxy.DnsResolverOptions")); err != nil {
+	if _, err = hasher.Write([]byte("dfp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/dynamic_forward_proxy.DnsResolverOptions")); err != nil {
 		return 0, err
 	}
 
@@ -486,7 +486,7 @@ func (m *CaresDnsResolverConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("dfp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/dynamic_forward_proxy.CaresDnsResolverConfig")); err != nil {
+	if _, err = hasher.Write([]byte("dfp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/dynamic_forward_proxy.CaresDnsResolverConfig")); err != nil {
 		return 0, err
 	}
 
@@ -550,7 +550,7 @@ func (m *AppleDnsResolverConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("dfp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/dynamic_forward_proxy.AppleDnsResolverConfig")); err != nil {
+	if _, err = hasher.Write([]byte("dfp.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/dynamic_forward_proxy.AppleDnsResolverConfig")); err != nil {
 		return 0, err
 	}
 

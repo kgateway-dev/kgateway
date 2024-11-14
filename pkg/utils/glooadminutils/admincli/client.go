@@ -17,7 +17,7 @@ const (
 )
 
 // Client is a utility for executing requests against the Gloo Admin API
-// The Admin API handlers can be found at: /projects/controllerrollerroller/pkg/servers/admin
+// The Admin API handlers can be found at: /projects/controller/pkg/servers/admin
 type Client struct {
 	// receiver is the default destination for the curl stdout and stderr
 	receiver io.Writer

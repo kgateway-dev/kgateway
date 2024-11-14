@@ -20,7 +20,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation"
 )
 
 var _ = Describe("Transformations", func() {

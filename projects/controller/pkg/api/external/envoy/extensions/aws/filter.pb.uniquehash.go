@@ -39,7 +39,7 @@ func (m *AWSLambdaPerRoute) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.config.filter.http.aws_lambda.v2.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/aws.AWSLambdaPerRoute")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.config.filter.http.aws_lambda.v2.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/aws.AWSLambdaPerRoute")); err != nil {
 		return 0, err
 	}
 
@@ -148,7 +148,7 @@ func (m *AWSLambdaProtocolExtension) HashUnique(hasher hash.Hash64) (uint64, err
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.config.filter.http.aws_lambda.v2.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/aws.AWSLambdaProtocolExtension")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.config.filter.http.aws_lambda.v2.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/aws.AWSLambdaProtocolExtension")); err != nil {
 		return 0, err
 	}
 
@@ -217,7 +217,7 @@ func (m *AWSLambdaConfig) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.config.filter.http.aws_lambda.v2.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/aws.AWSLambdaConfig")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.config.filter.http.aws_lambda.v2.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/aws.AWSLambdaConfig")); err != nil {
 		return 0, err
 	}
 
@@ -312,7 +312,7 @@ func (m *ApiGatewayTransformation) HashUnique(hasher hash.Hash64) (uint64, error
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.config.filter.http.aws_lambda.v2.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/aws.ApiGatewayTransformation")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.config.filter.http.aws_lambda.v2.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/aws.ApiGatewayTransformation")); err != nil {
 		return 0, err
 	}
 
@@ -331,7 +331,7 @@ func (m *AWSLambdaConfig_ServiceAccountCredentials) HashUnique(hasher hash.Hash6
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.config.filter.http.aws_lambda.v2.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/aws.AWSLambdaConfig_ServiceAccountCredentials")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.config.filter.http.aws_lambda.v2.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/aws.AWSLambdaConfig_ServiceAccountCredentials")); err != nil {
 		return 0, err
 	}
 

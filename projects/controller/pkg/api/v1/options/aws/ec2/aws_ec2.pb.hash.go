@@ -38,7 +38,7 @@ func (m *UpstreamSpec) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("aws_ec2.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/aws/ec2.UpstreamSpec")); err != nil {
+	if _, err = hasher.Write([]byte("aws_ec2.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/aws/ec2.UpstreamSpec")); err != nil {
 		return 0, err
 	}
 
@@ -120,7 +120,7 @@ func (m *TagFilter) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("aws_ec2.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/aws/ec2.TagFilter")); err != nil {
+	if _, err = hasher.Write([]byte("aws_ec2.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/aws/ec2.TagFilter")); err != nil {
 		return 0, err
 	}
 
@@ -172,7 +172,7 @@ func (m *TagFilter_KvPair) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("aws_ec2.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/aws/ec2.TagFilter_KvPair")); err != nil {
+	if _, err = hasher.Write([]byte("aws_ec2.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/aws/ec2.TagFilter_KvPair")); err != nil {
 		return 0, err
 	}
 

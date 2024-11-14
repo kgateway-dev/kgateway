@@ -8,7 +8,7 @@ import (
 	"github.com/go-openapi/spec"
 	"github.com/solo-io/go-utils/log"
 
-	transformation_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
+	transformation_plugins "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation"
 )
 
 func createFunctionsForPath(pathFunctions map[string]*transformation_plugins.TransformationTemplate, basePath, functionPath string, path spec.PathItemProps, definitions spec.Definitions) {

@@ -34,16 +34,16 @@ import (
 
 	"github.com/solo-io/gloo/test/services"
 
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
 	gw1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers"
-	aws_plugin "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/aws"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/hcm"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
+	aws_plugin "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/aws"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/hcm"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 )

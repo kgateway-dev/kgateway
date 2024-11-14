@@ -6,8 +6,8 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/envoyutils/bootstrap"
 	"github.com/solo-io/gloo/pkg/utils/envutils"
-	"github.com/solo-io/gloo/projects/envoyinit/pkg/runner"
 	"github.com/solo-io/gloo/projects/controller/constants"
+	"github.com/solo-io/gloo/projects/envoyinit/pkg/runner"
 	"github.com/solo-io/go-utils/contextutils"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 )
@@ -16,7 +16,7 @@ const (
 	// defaultEnvoyPath is derived from where our Gloo pod has Envoy. Gloo is built with
 	// our Envoy wrapper as a base image, which itself contains the Envoy binary at
 	// this path. See the following files for more info on how this is built.
-	// projects/controllerrollerroller/cmd/Dockerfile
+	// projects/controller/cmd/Dockerfile
 	// projects/envoyinit/cmd/Dockerfile.envoyinit
 	// https://github.com/solo-io/envoy-gloo/blob/v1.30.4-patch5/ci/Dockerfile
 	defaultEnvoyPath = "/usr/local/bin/envoy"

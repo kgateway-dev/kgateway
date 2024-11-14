@@ -3,7 +3,7 @@ package krtcollections
 import (
 	"google.golang.org/protobuf/proto"
 
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"istio.io/istio/pkg/kube/krt"

@@ -4,7 +4,7 @@
 // versions:
 // 	protoc-gen-go v1.35.1
 // 	protoc        v3.6.1
-// source: github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc_json/grpc_json.proto
+// source: github.com/solo-io/gloo/projects/controller/api/v1/options/grpc_json/grpc_json.proto
 
 package grpc_json
 

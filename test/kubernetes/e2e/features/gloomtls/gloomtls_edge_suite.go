@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/onsi/gomega"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/istio"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/istio"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	testdefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
 	"github.com/stretchr/testify/suite"

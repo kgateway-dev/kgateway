@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/constants"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/helpers"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/testutils"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/testutils"
 )
 
 var _ = Describe("Root", func() {

@@ -39,7 +39,7 @@ func (m *UpstreamSpec) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("static.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/static.UpstreamSpec")); err != nil {
+	if _, err = hasher.Write([]byte("static.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/static.UpstreamSpec")); err != nil {
 		return 0, err
 	}
 
@@ -148,7 +148,7 @@ func (m *Host) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("static.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/static.Host")); err != nil {
+	if _, err = hasher.Write([]byte("static.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/static.Host")); err != nil {
 		return 0, err
 	}
 
@@ -271,7 +271,7 @@ func (m *Host_HealthCheckConfig) HashUnique(hasher hash.Hash64) (uint64, error) 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("static.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/static.Host_HealthCheckConfig")); err != nil {
+	if _, err = hasher.Write([]byte("static.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/static.Host_HealthCheckConfig")); err != nil {
 		return 0, err
 	}
 

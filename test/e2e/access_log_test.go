@@ -23,10 +23,10 @@ import (
 
 	gloo_envoy_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
 
-	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/als"
-	alsplugin "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/als"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/translator"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/als"
+	alsplugin "github.com/solo-io/gloo/projects/controller/pkg/plugins/als"
+	"github.com/solo-io/gloo/projects/controller/pkg/translator"
 )
 
 var _ = Describe("Access Log", func() {

@@ -6,7 +6,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/controller/pkg/syncer/sanitizer"
 
-	v1snap "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
+	v1snap "github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
@@ -19,7 +19,7 @@ var (
 )
 
 // Deprecated: Prefer the MockXdsCache that is colocated with our xds functionality in
-// `projects/controllerrollerroller/pkg/xds`
+// `projects/controller/pkg/xds`
 type MockXdsCache struct {
 	Called bool
 	// Snap that is set

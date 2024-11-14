@@ -17,16 +17,16 @@ import (
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
-	v1snap "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
-	als2 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/als"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/tcp"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/als"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/pluginutils"
-	translatorutil "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/translator"
-	usconversion "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/upstreams"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils/validation"
+	v1snap "github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
+	als2 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/als"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/tcp"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/als"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/pluginutils"
+	translatorutil "github.com/solo-io/gloo/projects/controller/pkg/translator"
+	usconversion "github.com/solo-io/gloo/projects/controller/pkg/upstreams"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils/validation"
 )
 
 var (

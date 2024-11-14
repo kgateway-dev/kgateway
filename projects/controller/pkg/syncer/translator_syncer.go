@@ -7,7 +7,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/statsutils/metrics"
 	"github.com/solo-io/gloo/projects/controller/pkg/servers/iosnapshot"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
@@ -18,11 +18,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/controller/pkg/syncer/sanitizer"
+	"github.com/solo-io/gloo/projects/controller/pkg/translator"
 	gwsyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	v1snap "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/syncer/sanitizer"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/translator"
 )
 
 type translatorSyncer struct {
@@ -238,7 +238,7 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 		// Only leaders will write reports
 		//
 		// while tempting to write statuses in parallel to increase performance, we should actually first consider recommending the user tunes k8s qps/burst:
-		// https://github.com/solo-io/gloo/blob/a083522af0a4ce22f4d2adf3a02470f782d5a865/projects/controllerrollerroller/api/v1/settings.proto#L337-L350
+		// https://github.com/solo-io/gloo/blob/a083522af0a4ce22f4d2adf3a02470f782d5a865/projects/controller/api/v1/settings.proto#L337-L350
 		//
 		// add TEMPORARY wrap to our WriteReports error that we should remove in k8sgateway ~v1.16.0+.
 		// to get the status performance improvements, we need to make the assumption that the user has the latest CRDs installed.

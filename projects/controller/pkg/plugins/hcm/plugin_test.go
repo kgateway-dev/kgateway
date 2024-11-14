@@ -17,12 +17,12 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/hcm"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/header_validation"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/protocol"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/protocol_upgrade"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	. "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/hcm"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/hcm"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/header_validation"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/protocol"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/protocol_upgrade"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	. "github.com/solo-io/gloo/projects/controller/pkg/plugins/hcm"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	. "github.com/solo-io/solo-kit/test/matchers"
 )
@@ -129,11 +129,11 @@ var _ = Describe("Plugin", func() {
 			InternalAddressConfig: &hcm.HttpConnectionManagerSettings_InternalAddressConfig{
 				UnixSockets: &wrappers.BoolValue{Value: true},
 				CidrRanges: []*hcm.HttpConnectionManagerSettings_CidrRange{
-					&hcm.HttpConnectionManagerSettings_CidrRange{
+					{
 						AddressPrefix: "123.45.0.0",
 						PrefixLen:     &wrappers.UInt32Value{Value: 16},
 					},
-					&hcm.HttpConnectionManagerSettings_CidrRange{
+					{
 						AddressPrefix: "abcd:1234::",
 						PrefixLen:     &wrappers.UInt32Value{Value: 32},
 					},
@@ -222,7 +222,7 @@ var _ = Describe("Plugin", func() {
 			InternalAddressConfig: &hcm.HttpConnectionManagerSettings_InternalAddressConfig{
 				UnixSockets: &wrappers.BoolValue{Value: true},
 				CidrRanges: []*hcm.HttpConnectionManagerSettings_CidrRange{
-					&hcm.HttpConnectionManagerSettings_CidrRange{
+					{
 						AddressPrefix: "invalid_prefix",
 						PrefixLen:     &wrappers.UInt32Value{Value: 32},
 					},
@@ -392,7 +392,7 @@ var _ = Describe("Plugin", func() {
 				failureMessage := fmt.Sprintf(`
 New Fields have been added to the envoy HTTP Connection Manager.
 You may want to consider adding support for these fields to k8sgateway's API.
-You can force this test to pass by adding the new fields listed below to projects/controllerrollerroller/pkg/plugins/hcm/testing/expected_hcm_fields.json
+You can force this test to pass by adding the new fields listed below to projects/controller/pkg/plugins/hcm/testing/expected_hcm_fields.json
 %+v`,
 					newFields)
 				Fail(failureMessage)

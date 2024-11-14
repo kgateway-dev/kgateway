@@ -10,26 +10,26 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
-	v31 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
-	v32 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/matcher/v3"
-	ai "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ai"
-	dlp "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/dlp"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extauth/v1"
-	extproc "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extproc"
-	jwt "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/jwt"
-	ratelimit "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ratelimit"
-	rbac "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/rbac"
-	waf "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/waf"
-	cors "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/cors"
-	faultinjection "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/faultinjection"
-	headers "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/headers"
-	lbhash "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/lbhash"
-	protocol_upgrade "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/protocol_upgrade"
-	retries "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/retries"
-	shadowing "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/shadowing"
-	tracing "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/tracing"
-	transformation "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation"
+	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
+	v31 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
+	v32 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/matcher/v3"
+	ai "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai"
+	dlp "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/dlp"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1"
+	extproc "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extproc"
+	jwt "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/jwt"
+	ratelimit "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ratelimit"
+	rbac "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/rbac"
+	waf "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/waf"
+	cors "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/cors"
+	faultinjection "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/faultinjection"
+	headers "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/headers"
+	lbhash "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/lbhash"
+	protocol_upgrade "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/protocol_upgrade"
+	retries "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/retries"
+	shadowing "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/shadowing"
+	tracing "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/tracing"
+	transformation "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -57,7 +57,7 @@ type RouteOptions struct {
 	// Transformations to apply. Note: this field is superseded by `staged_transformations`.
 	// If `staged_transformations.regular` is set, this field will be ignored.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/route_options.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/route_options.proto.
 	Transformations *transformation.Transformations `protobuf:"bytes,1,opt,name=transformations,proto3" json:"transformations,omitempty"`
 	Faults          *faultinjection.RouteFaults     `protobuf:"bytes,2,opt,name=faults,proto3" json:"faults,omitempty"`
 	// For requests matched on this route, rewrite the HTTP request path to the provided value before forwarding upstream
@@ -167,7 +167,7 @@ type RouteOptions struct {
 	// Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-msg-config-route-v3-routeaction-maxstreamduration)
 	MaxStreamDuration *RouteOptions_MaxStreamDuration `protobuf:"bytes,28,opt,name=max_stream_duration,json=maxStreamDuration,proto3" json:"max_stream_duration,omitempty"`
 	// Specifies the idle timeout for the route. If not specified, there is no per-route idle timeout,
-	// although the Gateway's [httpConnectionManagerSettings](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/options/hcm/hcm.proto.sk/#httpconnectionmanagersettings)
+	// although the Gateway's [httpConnectionManagerSettings](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/options/hcm/hcm.proto.sk/#httpconnectionmanagersettings)
 	// wide stream_idle_timeout will still apply. A value of 0 will completely disable the route’s idle timeout, even if a connection manager stream idle timeout is configured.
 	// Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-idle-timeout)
 	IdleTimeout *durationpb.Duration `protobuf:"bytes,29,opt,name=idle_timeout,json=idleTimeout,proto3" json:"idle_timeout,omitempty"`
@@ -209,7 +209,7 @@ func (*RouteOptions) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_route_options_proto_rawDescGZIP(), []int{0}
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/route_options.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/route_options.proto.
 func (x *RouteOptions) GetTransformations() *transformation.Transformations {
 	if x != nil {
 		return x.Transformations
@@ -420,7 +420,7 @@ func (m *RouteOptions) GetJwtConfig() isRouteOptions_JwtConfig {
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/route_options.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/route_options.proto.
 func (x *RouteOptions) GetJwt() *jwt.RouteExtension {
 	if x, ok := x.GetJwtConfig().(*RouteOptions_Jwt); ok {
 		return x.Jwt
@@ -646,7 +646,7 @@ type RouteOptions_Jwt struct {
 	// This has been deprecated in favor of staged jwt. The same configuration can be achieved through staged jwt
 	// using AfterExtAuth.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/route_options.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/route_options.proto.
 	Jwt *jwt.RouteExtension `protobuf:"bytes,16,opt,name=jwt,proto3,oneof"`
 }
 
@@ -655,7 +655,7 @@ type RouteOptions_JwtStaged struct {
 	// headers to make routing decisions or combine with RBAC for fine-grained access control.
 	// JWT configuration has stages "BeforeExtAuth" and "AfterExtAuth". BeforeExtAuth JWT
 	// validation runs before the external authentication service. This is useful when JWT
-	// is used in conjunction with other auth mechanisms specified in the [boolean expression Extauth API](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig).
+	// is used in conjunction with other auth mechanisms specified in the [boolean expression Extauth API](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig).
 	// AfterExtAuth validation runs after external authentication service, which is useful for verifying
 	// JWTs obtained during extauth (e.g. oauth/oidc)
 	JwtStaged *jwt.JwtStagedRouteExtension `protobuf:"bytes,25,opt,name=jwt_staged,json=jwtStaged,proto3,oneof"`
@@ -666,7 +666,7 @@ type RouteOptions_JwtProvidersStaged struct {
 	// headers to make routing decisions or combine with RBAC for fine-grained access control.
 	// JWT configuration has stages "BeforeExtAuth" and "AfterExtAuth". BeforeExtAuth JWT
 	// validation runs before the external authentication service. This is useful when JWT
-	// is used in conjunction with other auth mechanisms specified in the [boolean expression Extauth API](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig).
+	// is used in conjunction with other auth mechanisms specified in the [boolean expression Extauth API](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig).
 	// AfterExtAuth validation runs after external authentication service, which is useful for verifying
 	// JWTs obtained during extauth (e.g. oauth/oidc)
 	JwtProvidersStaged *jwt.JwtStagedRouteProvidersExtension `protobuf:"bytes,32,opt,name=jwt_providers_staged,json=jwtProvidersStaged,proto3,oneof"`

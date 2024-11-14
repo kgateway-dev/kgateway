@@ -38,7 +38,7 @@ func (m *ProxyProtocol) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("proxy_protocol.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/proxy_protocol.ProxyProtocol")); err != nil {
+	if _, err = hasher.Write([]byte("proxy_protocol.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/proxy_protocol.ProxyProtocol")); err != nil {
 		return 0, err
 	}
 
@@ -87,7 +87,7 @@ func (m *ProxyProtocol_KeyValuePair) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("proxy_protocol.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/proxy_protocol.ProxyProtocol_KeyValuePair")); err != nil {
+	if _, err = hasher.Write([]byte("proxy_protocol.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/proxy_protocol.ProxyProtocol_KeyValuePair")); err != nil {
 		return 0, err
 	}
 
@@ -115,7 +115,7 @@ func (m *ProxyProtocol_Rule) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("proxy_protocol.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/proxy_protocol.ProxyProtocol_Rule")); err != nil {
+	if _, err = hasher.Write([]byte("proxy_protocol.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/proxy_protocol.ProxyProtocol_Rule")); err != nil {
 		return 0, err
 	}
 

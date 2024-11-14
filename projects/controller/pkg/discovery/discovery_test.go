@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	discmocks "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/discovery/mocks"
+	discmocks "github.com/solo-io/gloo/projects/controller/pkg/discovery/mocks"
 	. "github.com/solo-io/gloo/test/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -18,7 +18,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	. "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/discovery"
+	. "github.com/solo-io/gloo/projects/controller/pkg/discovery"
 )
 
 var _ = Describe("Discovery", func() {

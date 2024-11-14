@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	. "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/bootstrap/clients"
+	. "github.com/solo-io/gloo/projects/controller/pkg/bootstrap/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/file"
 )

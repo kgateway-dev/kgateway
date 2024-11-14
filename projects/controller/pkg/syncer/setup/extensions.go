@@ -2,10 +2,10 @@ package setup
 
 import (
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/servers/iosnapshot"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/syncer"
+	"github.com/solo-io/gloo/projects/controller/pkg/servers/iosnapshot"
+	"github.com/solo-io/gloo/projects/controller/pkg/syncer"
+	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 )
 

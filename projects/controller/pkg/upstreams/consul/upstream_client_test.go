@@ -5,9 +5,9 @@ import (
 	"time"
 
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	consulplugin "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/consul"
+	consulplugin "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/consul"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/defaults"
+	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
 
 	"github.com/golang/mock/gomock"
 	consulapi "github.com/hashicorp/consul/api"
@@ -16,8 +16,8 @@ import (
 	. "github.com/solo-io/gloo/test/gomega"
 
 	"github.com/rotisserie/eris"
-	. "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/upstreams/consul"
-	. "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/upstreams/consul/mocks"
+	. "github.com/solo-io/gloo/projects/controller/pkg/upstreams/consul"
+	. "github.com/solo-io/gloo/projects/controller/pkg/upstreams/consul/mocks"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 

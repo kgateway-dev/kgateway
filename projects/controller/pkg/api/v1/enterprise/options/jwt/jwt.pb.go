@@ -10,7 +10,7 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/filters/http/jwt_authn/v3"
+	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/filters/http/jwt_authn/v3"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -265,7 +265,7 @@ type VhostExtension struct {
 	// For example, if a request requires either JWT auth OR another auth method, this can be enabled to allow a failed JWT auth request to pass through to the other auth method.
 	// Deprecated: use validation_policy instead.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/jwt/jwt.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/jwt/jwt.proto.
 	AllowMissingOrFailedJwt bool `protobuf:"varint,2,opt,name=allow_missing_or_failed_jwt,json=allowMissingOrFailedJwt,proto3" json:"allow_missing_or_failed_jwt,omitempty"`
 	// Optional: Configure how JWT validation works, with the flexibility to handle requests with missing or invalid JWTs.
 	// By default, after applying JWT policy to a route, only requests that authenticate with a valid JWT succeed.
@@ -309,7 +309,7 @@ func (x *VhostExtension) GetProviders() map[string]*Provider {
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/jwt/jwt.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/jwt/jwt.proto.
 func (x *VhostExtension) GetAllowMissingOrFailedJwt() bool {
 	if x != nil {
 		return x.AllowMissingOrFailedJwt

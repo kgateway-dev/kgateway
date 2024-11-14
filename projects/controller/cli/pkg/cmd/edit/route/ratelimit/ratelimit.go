@@ -2,7 +2,7 @@ package ratelimit
 
 import (
 	editRouteOptions "github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/edit/route/options"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/constants"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/spf13/cobra"
 )

@@ -3,9 +3,9 @@ package get
 import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/common"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/constants"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/printers"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/common"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/printers"
 
 	"github.com/spf13/cobra"
 )

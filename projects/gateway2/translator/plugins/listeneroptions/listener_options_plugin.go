@@ -3,10 +3,10 @@ package listeneroptions
 import (
 	"context"
 
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	lisquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/listeneroptions/query"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )

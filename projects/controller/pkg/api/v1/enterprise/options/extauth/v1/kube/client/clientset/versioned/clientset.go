@@ -21,7 +21,7 @@ package versioned
 import (
 	"fmt"
 
-	enterprisev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1/kube/client/clientset/versioned/typed/enterprise.gloo.solo.io/v1"
+	enterprisev1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1/kube/client/clientset/versioned/typed/enterprise.gloo.solo.io/v1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"

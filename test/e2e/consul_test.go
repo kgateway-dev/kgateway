@@ -23,9 +23,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/hashicorp/consul/api"
-	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	consulapi "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/consul"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/upstreams/consul"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	consulapi "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/consul"
+	"github.com/solo-io/gloo/projects/controller/pkg/upstreams/consul"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 )

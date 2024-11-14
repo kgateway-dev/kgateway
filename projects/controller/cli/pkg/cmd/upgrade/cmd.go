@@ -19,7 +19,7 @@ import (
 	"github.com/solo-io/go-utils/versionutils"
 
 	"github.com/google/go-github/github"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -44,7 +44,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	return cmd
 }
 
-var knownTags = map[string]struct{}{"experimental": struct{}{}, "latest": struct{}{}}
+var knownTags = map[string]struct{}{"experimental": {}, "latest": {}}
 
 // timeoutseconds for our http client. This should move along with
 // the client options to a higher place in code and become merely a default setting.

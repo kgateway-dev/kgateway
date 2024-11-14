@@ -16,28 +16,28 @@ import (
 
 	gloo_matchers "github.com/solo-io/gloo/test/gomega/matchers"
 
-	v1snap "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
+	v1snap "github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
 
-	v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3"
+	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/controller/pkg/bootstrap"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/registry"
+	glooutils "github.com/solo-io/gloo/projects/controller/pkg/utils"
+	validationutils "github.com/solo-io/gloo/projects/controller/pkg/utils/validation"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/bootstrap"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/registry"
-	glooutils "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
-	validationutils "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils/validation"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/translator"
+	. "github.com/solo-io/gloo/projects/controller/pkg/translator"
 
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/protoc-gen-ext/pkg/hasher/hashstructure"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"

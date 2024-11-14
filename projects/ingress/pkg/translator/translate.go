@@ -5,14 +5,14 @@ import (
 	"sort"
 
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/ssl"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/ingress/pkg/api/service"
 	"github.com/solo-io/go-utils/contextutils"
 	corev1 "k8s.io/api/core/v1"
 
 	errors "github.com/rotisserie/eris"
-	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	glooutils "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	glooutils "github.com/solo-io/gloo/projects/controller/pkg/utils"
 	"github.com/solo-io/gloo/projects/ingress/pkg/api/ingress"
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
 	"github.com/solo-io/go-utils/log"

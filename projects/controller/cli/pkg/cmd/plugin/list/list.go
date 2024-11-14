@@ -27,7 +27,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/constants"
 	"github.com/spf13/cobra"
 )
 

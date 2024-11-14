@@ -4,7 +4,7 @@ import (
 	"sort"
 
 	"github.com/solo-io/gloo/projects/controller/constants"
-	plugins "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options"
+	plugins "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options"
 )
 
 /*

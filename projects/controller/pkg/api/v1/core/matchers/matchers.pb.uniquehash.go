@@ -39,7 +39,7 @@ func (m *Matcher) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("matchers.core.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers.Matcher")); err != nil {
+	if _, err = hasher.Write([]byte("matchers.core.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers.Matcher")); err != nil {
 		return 0, err
 	}
 
@@ -208,7 +208,7 @@ func (m *HeaderMatcher) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("matchers.core.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers.HeaderMatcher")); err != nil {
+	if _, err = hasher.Write([]byte("matchers.core.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers.HeaderMatcher")); err != nil {
 		return 0, err
 	}
 
@@ -257,7 +257,7 @@ func (m *QueryParameterMatcher) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("matchers.core.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers.QueryParameterMatcher")); err != nil {
+	if _, err = hasher.Write([]byte("matchers.core.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers.QueryParameterMatcher")); err != nil {
 		return 0, err
 	}
 
@@ -298,7 +298,7 @@ func (m *Matcher_ConnectMatcher) HashUnique(hasher hash.Hash64) (uint64, error) 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("matchers.core.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers.Matcher_ConnectMatcher")); err != nil {
+	if _, err = hasher.Write([]byte("matchers.core.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers.Matcher_ConnectMatcher")); err != nil {
 		return 0, err
 	}
 

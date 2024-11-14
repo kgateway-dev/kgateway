@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/aws/ec2"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"

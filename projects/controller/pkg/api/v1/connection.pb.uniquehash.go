@@ -39,7 +39,7 @@ func (m *ConnectionConfig) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.ConnectionConfig")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.ConnectionConfig")); err != nil {
 		return 0, err
 	}
 
@@ -166,7 +166,7 @@ func (m *ConnectionConfig_TcpKeepAlive) HashUnique(hasher hash.Hash64) (uint64, 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.ConnectionConfig_TcpKeepAlive")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.ConnectionConfig_TcpKeepAlive")); err != nil {
 		return 0, err
 	}
 

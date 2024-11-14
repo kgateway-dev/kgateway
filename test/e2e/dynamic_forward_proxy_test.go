@@ -14,12 +14,12 @@ import (
 
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/dynamic_forward_proxy"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
 )
 
 var _ = Describe("dynamic forward proxy", func() {

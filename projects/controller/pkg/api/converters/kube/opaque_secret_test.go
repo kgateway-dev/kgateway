@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kubeconverters "github.com/solo-io/gloo/projects/controller/pkg/api/converters/kube"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -132,7 +132,7 @@ var _ = Describe("Opaque Secret Converter", func() {
 
 })
 
-// example values copied from projects/controllerrollerroller/cli/pkg/cmd/create/secret/secret_test.go
+// example values copied from projects/controller/cli/pkg/cmd/create/secret/secret_test.go
 var (
 	privateKey = `
 -----BEGIN PRIVATE KEY-----

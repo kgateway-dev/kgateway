@@ -38,7 +38,7 @@ func (m *GrpcService) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3.GrpcService")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3.GrpcService")); err != nil {
 		return 0, err
 	}
 
@@ -150,7 +150,7 @@ func (m *GrpcService_EnvoyGrpc) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3.GrpcService_EnvoyGrpc")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3.GrpcService_EnvoyGrpc")); err != nil {
 		return 0, err
 	}
 
@@ -198,7 +198,7 @@ func (m *GrpcService_GoogleGrpc) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3.GrpcService_GoogleGrpc")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3.GrpcService_GoogleGrpc")); err != nil {
 		return 0, err
 	}
 
@@ -334,7 +334,7 @@ func (m *GrpcService_GoogleGrpc_SslCredentials) Hash(hasher hash.Hash64) (uint64
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3.GrpcService_GoogleGrpc_SslCredentials")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3.GrpcService_GoogleGrpc_SslCredentials")); err != nil {
 		return 0, err
 	}
 
@@ -414,7 +414,7 @@ func (m *GrpcService_GoogleGrpc_GoogleLocalCredentials) Hash(hasher hash.Hash64)
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3.GrpcService_GoogleGrpc_GoogleLocalCredentials")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3.GrpcService_GoogleGrpc_GoogleLocalCredentials")); err != nil {
 		return 0, err
 	}
 
@@ -434,7 +434,7 @@ func (m *GrpcService_GoogleGrpc_ChannelCredentials) Hash(hasher hash.Hash64) (ui
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3.GrpcService_GoogleGrpc_ChannelCredentials")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3.GrpcService_GoogleGrpc_ChannelCredentials")); err != nil {
 		return 0, err
 	}
 
@@ -524,7 +524,7 @@ func (m *GrpcService_GoogleGrpc_CallCredentials) Hash(hasher hash.Hash64) (uint6
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3.GrpcService_GoogleGrpc_CallCredentials")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3.GrpcService_GoogleGrpc_CallCredentials")); err != nil {
 		return 0, err
 	}
 
@@ -670,7 +670,7 @@ func (m *GrpcService_GoogleGrpc_ChannelArgs) Hash(hasher hash.Hash64) (uint64, e
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3.GrpcService_GoogleGrpc_ChannelArgs")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3.GrpcService_GoogleGrpc_ChannelArgs")); err != nil {
 		return 0, err
 	}
 
@@ -729,7 +729,7 @@ func (m *GrpcService_GoogleGrpc_CallCredentials_ServiceAccountJWTAccessCredentia
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3.GrpcService_GoogleGrpc_CallCredentials_ServiceAccountJWTAccessCredentials")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3.GrpcService_GoogleGrpc_CallCredentials_ServiceAccountJWTAccessCredentials")); err != nil {
 		return 0, err
 	}
 
@@ -758,7 +758,7 @@ func (m *GrpcService_GoogleGrpc_CallCredentials_GoogleIAMCredentials) Hash(hashe
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3.GrpcService_GoogleGrpc_CallCredentials_GoogleIAMCredentials")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3.GrpcService_GoogleGrpc_CallCredentials_GoogleIAMCredentials")); err != nil {
 		return 0, err
 	}
 
@@ -786,7 +786,7 @@ func (m *GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin) H
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin")); err != nil {
 		return 0, err
 	}
 
@@ -836,7 +836,7 @@ func (m *GrpcService_GoogleGrpc_CallCredentials_StsService) Hash(hasher hash.Has
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3.GrpcService_GoogleGrpc_CallCredentials_StsService")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3.GrpcService_GoogleGrpc_CallCredentials_StsService")); err != nil {
 		return 0, err
 	}
 
@@ -892,7 +892,7 @@ func (m *GrpcService_GoogleGrpc_ChannelArgs_Value) Hash(hasher hash.Hash64) (uin
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3.GrpcService_GoogleGrpc_ChannelArgs_Value")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3.GrpcService_GoogleGrpc_ChannelArgs_Value")); err != nil {
 		return 0, err
 	}
 

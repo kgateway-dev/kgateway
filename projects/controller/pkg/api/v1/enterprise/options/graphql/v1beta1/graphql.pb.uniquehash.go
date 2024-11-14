@@ -39,7 +39,7 @@ func (m *RequestTemplate) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1.RequestTemplate")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1.RequestTemplate")); err != nil {
 		return 0, err
 	}
 
@@ -136,7 +136,7 @@ func (m *ResponseTemplate) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1.ResponseTemplate")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1.ResponseTemplate")); err != nil {
 		return 0, err
 	}
 
@@ -191,7 +191,7 @@ func (m *GrpcRequestTemplate) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1.GrpcRequestTemplate")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1.GrpcRequestTemplate")); err != nil {
 		return 0, err
 	}
 
@@ -273,7 +273,7 @@ func (m *RESTResolver) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1.RESTResolver")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1.RESTResolver")); err != nil {
 		return 0, err
 	}
 
@@ -379,7 +379,7 @@ func (m *GrpcDescriptorRegistry) HashUnique(hasher hash.Hash64) (uint64, error) 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1.GrpcDescriptorRegistry")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1.GrpcDescriptorRegistry")); err != nil {
 		return 0, err
 	}
 
@@ -442,7 +442,7 @@ func (m *GrpcResolver) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1.GrpcResolver")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1.GrpcResolver")); err != nil {
 		return 0, err
 	}
 
@@ -528,7 +528,7 @@ func (m *StitchedSchema) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1.StitchedSchema")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1.StitchedSchema")); err != nil {
 		return 0, err
 	}
 
@@ -577,7 +577,7 @@ func (m *MockResolver) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1.MockResolver")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1.MockResolver")); err != nil {
 		return 0, err
 	}
 
@@ -653,7 +653,7 @@ func (m *Resolution) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1.Resolution")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1.Resolution")); err != nil {
 		return 0, err
 	}
 
@@ -762,7 +762,7 @@ func (m *GraphQLApi) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1.GraphQLApi")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1.GraphQLApi")); err != nil {
 		return 0, err
 	}
 
@@ -926,7 +926,7 @@ func (m *PersistedQueryCacheConfig) HashUnique(hasher hash.Hash64) (uint64, erro
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1.PersistedQueryCacheConfig")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1.PersistedQueryCacheConfig")); err != nil {
 		return 0, err
 	}
 
@@ -953,7 +953,7 @@ func (m *ExecutableSchema) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1.ExecutableSchema")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1.ExecutableSchema")); err != nil {
 		return 0, err
 	}
 
@@ -1019,7 +1019,7 @@ func (m *Executor) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1.Executor")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1.Executor")); err != nil {
 		return 0, err
 	}
 
@@ -1086,7 +1086,7 @@ func (m *GrpcDescriptorRegistry_ProtoRefs) HashUnique(hasher hash.Hash64) (uint6
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1.GrpcDescriptorRegistry_ProtoRefs")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1.GrpcDescriptorRegistry_ProtoRefs")); err != nil {
 		return 0, err
 	}
 
@@ -1135,7 +1135,7 @@ func (m *StitchedSchema_SubschemaConfig) HashUnique(hasher hash.Hash64) (uint64,
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1.StitchedSchema_SubschemaConfig")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1.StitchedSchema_SubschemaConfig")); err != nil {
 		return 0, err
 	}
 
@@ -1210,7 +1210,7 @@ func (m *StitchedSchema_SubschemaConfig_TypeMergeConfig) HashUnique(hasher hash.
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1.StitchedSchema_SubschemaConfig_TypeMergeConfig")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1.StitchedSchema_SubschemaConfig_TypeMergeConfig")); err != nil {
 		return 0, err
 	}
 
@@ -1272,7 +1272,7 @@ func (m *MockResolver_AsyncResponse) HashUnique(hasher hash.Hash64) (uint64, err
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1.MockResolver_AsyncResponse")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1.MockResolver_AsyncResponse")); err != nil {
 		return 0, err
 	}
 
@@ -1331,7 +1331,7 @@ func (m *GraphQLApi_GraphQLApiOptions) HashUnique(hasher hash.Hash64) (uint64, e
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1.GraphQLApi_GraphQLApiOptions")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1.GraphQLApi_GraphQLApiOptions")); err != nil {
 		return 0, err
 	}
 
@@ -1358,7 +1358,7 @@ func (m *Executor_Local) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1.Executor_Local")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1.Executor_Local")); err != nil {
 		return 0, err
 	}
 
@@ -1447,7 +1447,7 @@ func (m *Executor_Remote) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1.Executor_Remote")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1.Executor_Remote")); err != nil {
 		return 0, err
 	}
 
@@ -1551,7 +1551,7 @@ func (m *Executor_Local_LocalExecutorOptions) HashUnique(hasher hash.Hash64) (ui
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1.Executor_Local_LocalExecutorOptions")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1.Executor_Local_LocalExecutorOptions")); err != nil {
 		return 0, err
 	}
 

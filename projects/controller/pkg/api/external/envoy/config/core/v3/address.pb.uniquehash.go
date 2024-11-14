@@ -39,7 +39,7 @@ func (m *Pipe) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3.Pipe")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3.Pipe")); err != nil {
 		return 0, err
 	}
 
@@ -73,7 +73,7 @@ func (m *SocketAddress) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3.SocketAddress")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3.SocketAddress")); err != nil {
 		return 0, err
 	}
 
@@ -145,7 +145,7 @@ func (m *TcpKeepalive) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3.TcpKeepalive")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3.TcpKeepalive")); err != nil {
 		return 0, err
 	}
 
@@ -224,7 +224,7 @@ func (m *BindConfig) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3.BindConfig")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3.BindConfig")); err != nil {
 		return 0, err
 	}
 
@@ -313,7 +313,7 @@ func (m *Address) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3.Address")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3.Address")); err != nil {
 		return 0, err
 	}
 
@@ -380,7 +380,7 @@ func (m *CidrRange) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3.CidrRange")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.core.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3.CidrRange")); err != nil {
 		return 0, err
 	}
 

@@ -4,14 +4,14 @@ import (
 	"errors"
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
-	"github.com/solo-io/gloo/projects/gateway/pkg/translator/utils"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/hcm"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/ssl"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator/utils"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
 
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
 )
 
 // Make sure that aggregate Translator implements our ListenerTranslator interface

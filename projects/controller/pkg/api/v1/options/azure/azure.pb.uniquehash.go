@@ -39,7 +39,7 @@ func (m *UpstreamSpec) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("azure.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/azure.UpstreamSpec")); err != nil {
+	if _, err = hasher.Write([]byte("azure.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/azure.UpstreamSpec")); err != nil {
 		return 0, err
 	}
 
@@ -115,7 +115,7 @@ func (m *DestinationSpec) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("azure.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/azure.DestinationSpec")); err != nil {
+	if _, err = hasher.Write([]byte("azure.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/azure.DestinationSpec")); err != nil {
 		return 0, err
 	}
 
@@ -141,7 +141,7 @@ func (m *UpstreamSpec_FunctionSpec) HashUnique(hasher hash.Hash64) (uint64, erro
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("azure.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/azure.UpstreamSpec_FunctionSpec")); err != nil {
+	if _, err = hasher.Write([]byte("azure.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/azure.UpstreamSpec_FunctionSpec")); err != nil {
 		return 0, err
 	}
 

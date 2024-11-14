@@ -11,8 +11,8 @@ import (
 	sync "sync"
 
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	matchers "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers"
-	ssl "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/ssl"
+	matchers "github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
+	ssl "github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -296,7 +296,7 @@ func (x *VirtualService) GetMetadata() *core.Metadata {
 //
 // If a request is not matched to any virtual host or a route therein, the target proxy will reply with a 404.
 //
-// Unlike the [Gloo Virtual Host]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/proxy.proto.sk/#virtualhost" >}}),
+// Unlike the [Gloo Virtual Host]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/proxy.proto.sk/#virtualhost" >}}),
 // _Gateway_ Virtual Hosts can delegate their routes to `RouteTables`.
 type VirtualHost struct {
 	state         protoimpl.MessageState

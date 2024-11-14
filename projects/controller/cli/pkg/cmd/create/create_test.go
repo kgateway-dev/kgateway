@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/helpers"
-	cliutils "github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/testutils"
+	cliutils "github.com/solo-io/gloo/projects/controller/cli/pkg/testutils"
 	"github.com/solo-io/gloo/test/testutils"
 )
 

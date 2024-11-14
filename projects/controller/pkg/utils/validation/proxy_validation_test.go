@@ -4,14 +4,14 @@ import (
 	"fmt"
 
 	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/grpc/validation"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	. "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils/validation"
+	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/grpc/validation"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	. "github.com/solo-io/gloo/projects/controller/pkg/utils/validation"
 )
 
 var _ = Describe("validation utils", func() {
@@ -79,7 +79,7 @@ var _ = Describe("validation utils", func() {
 				hybridListener.MatchedListeners = append(hybridListener.MatchedListeners, &v1.MatchedListener{
 					Matcher: &v1.Matcher{
 						SourcePrefixRanges: []*v3.CidrRange{
-							&v3.CidrRange{
+							{
 								AddressPrefix: fmt.Sprintf("tcp-%d", l),
 							},
 						},
@@ -103,7 +103,7 @@ var _ = Describe("validation utils", func() {
 				hybridListener.MatchedListeners = append(hybridListener.MatchedListeners, &v1.MatchedListener{
 					Matcher: &v1.Matcher{
 						SourcePrefixRanges: []*v3.CidrRange{
-							&v3.CidrRange{
+							{
 								AddressPrefix: fmt.Sprintf("http-%d", l),
 							},
 						},
@@ -192,7 +192,7 @@ var _ = Describe("validation utils", func() {
 					}
 					expMatcher := &v1.Matcher{
 						SourcePrefixRanges: []*v3.CidrRange{
-							&v3.CidrRange{
+							{
 								AddressPrefix: fmt.Sprintf("%s-%d", matchPrefix, matchNum),
 							},
 						},
@@ -278,7 +278,7 @@ var _ = Describe("validation utils", func() {
 
 			tcpMatcher := &v1.Matcher{
 				SourcePrefixRanges: []*v3.CidrRange{
-					&v3.CidrRange{
+					{
 						AddressPrefix: "tcp-0",
 					},
 				},
@@ -309,7 +309,7 @@ var _ = Describe("validation utils", func() {
 
 			httpMatcher := &v1.Matcher{
 				SourcePrefixRanges: []*v3.CidrRange{
-					&v3.CidrRange{
+					{
 						AddressPrefix: "http-0",
 					},
 				},
@@ -340,14 +340,14 @@ var _ = Describe("validation utils", func() {
 			)
 			tcpMatcher := &v1.Matcher{
 				SourcePrefixRanges: []*v3.CidrRange{
-					&v3.CidrRange{
+					{
 						AddressPrefix: "tcp-0",
 					},
 				},
 			}
 			httpMatcher := &v1.Matcher{
 				SourcePrefixRanges: []*v3.CidrRange{
-					&v3.CidrRange{
+					{
 						AddressPrefix: "http-0",
 					},
 				},

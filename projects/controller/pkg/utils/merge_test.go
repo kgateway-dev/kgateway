@@ -10,8 +10,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ratelimit"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/retries"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ratelimit"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/retries"
 )
 
 var _ = Describe("Merge", func() {

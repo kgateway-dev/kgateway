@@ -39,7 +39,7 @@ func (m *OutlierDetection) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.cluster.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/api/v2/cluster.OutlierDetection")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.cluster.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/api/v2/cluster.OutlierDetection")); err != nil {
 		return 0, err
 	}
 

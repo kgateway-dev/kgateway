@@ -38,7 +38,7 @@ func (m *DatadogRemoteConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.trace.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/trace/v3.DatadogRemoteConfig")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.trace.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/trace/v3.DatadogRemoteConfig")); err != nil {
 		return 0, err
 	}
 
@@ -98,7 +98,7 @@ func (m *DatadogConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.trace.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/trace/v3.DatadogConfig")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.trace.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/trace/v3.DatadogConfig")); err != nil {
 		return 0, err
 	}
 

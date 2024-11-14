@@ -2,14 +2,14 @@ package kubernetes_test
 
 import (
 	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	gloov1kube "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/kubernetes"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/ssl"
+	gloov1kube "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/kubernetes"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/kubernetes"
+	. "github.com/solo-io/gloo/projects/controller/pkg/plugins/kubernetes"
 )
 
 var _ = Describe("Uds", func() {

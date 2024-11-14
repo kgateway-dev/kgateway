@@ -3,7 +3,7 @@ package serviceconverter
 import (
 	"context"
 
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 

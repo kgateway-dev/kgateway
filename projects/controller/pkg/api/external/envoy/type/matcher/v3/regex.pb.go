@@ -11,7 +11,7 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	_ "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/udpa/annotations"
+	_ "github.com/solo-io/gloo/projects/controller/pkg/api/external/udpa/annotations"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -199,7 +199,7 @@ type RegexMatcher_GoogleRE2 struct {
 	// This field is deprecated; regexp validation should be performed on the management server
 	// instead of being done by each individual client.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/type/matcher/v3/regex.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/type/matcher/v3/regex.proto.
 	MaxProgramSize *wrapperspb.UInt32Value `protobuf:"bytes,1,opt,name=max_program_size,json=maxProgramSize,proto3" json:"max_program_size,omitempty"`
 }
 
@@ -233,7 +233,7 @@ func (*RegexMatcher_GoogleRE2) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_type_matcher_v3_regex_proto_rawDescGZIP(), []int{0, 0}
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/type/matcher/v3/regex.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/type/matcher/v3/regex.proto.
 func (x *RegexMatcher_GoogleRE2) GetMaxProgramSize() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.MaxProgramSize

@@ -39,7 +39,7 @@ func (m *Settings) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("waf.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/waf.Settings")); err != nil {
+	if _, err = hasher.Write([]byte("waf.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/waf.Settings")); err != nil {
 		return 0, err
 	}
 
@@ -189,7 +189,7 @@ func (m *RuleSetFromConfigMap) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("waf.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/waf.RuleSetFromConfigMap")); err != nil {
+	if _, err = hasher.Write([]byte("waf.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/waf.RuleSetFromConfigMap")); err != nil {
 		return 0, err
 	}
 
@@ -245,7 +245,7 @@ func (m *CoreRuleSet) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("waf.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/waf.CoreRuleSet")); err != nil {
+	if _, err = hasher.Write([]byte("waf.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/waf.CoreRuleSet")); err != nil {
 		return 0, err
 	}
 

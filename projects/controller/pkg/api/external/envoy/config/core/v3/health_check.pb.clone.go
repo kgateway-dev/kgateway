@@ -13,11 +13,11 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/matcher/v3"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/matcher/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/v3"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_advanced_http "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/advanced_http"
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_advanced_http "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/advanced_http"
 
 	google_golang_org_protobuf_types_known_anypb "google.golang.org/protobuf/types/known/anypb"
 

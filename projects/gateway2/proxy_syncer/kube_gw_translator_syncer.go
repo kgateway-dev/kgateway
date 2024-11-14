@@ -11,10 +11,10 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/grpc/validation"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	v1snap "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/xds"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/xds"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 
 	"go.uber.org/zap/zapcore"
@@ -76,7 +76,7 @@ func (s *ProxyTranslator) buildXdsSnapshot(
 	for _, syncerExtension := range s.syncerExtensions {
 		intermediateReports := make(reporter.ResourceReports)
 		// we use the no-op setter here as we don't actually sync the extensions here,
-		// that is classic edge syncer's job [see: projects/controllerrollerroller/pkg/syncer/translator_syncer.go#Sync(...)]
+		// that is classic edge syncer's job [see: projects/controller/pkg/syncer/translator_syncer.go#Sync(...)]
 		// all we care about is getting the reports, as our `Proxies` will get reports for errors/warns
 		// related to the extension processing
 		syncerExtension.Sync(ctx, snap, settings, s.noopSnapSetter, intermediateReports)

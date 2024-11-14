@@ -39,7 +39,7 @@ func (m *LoadBalancerConfig) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.LoadBalancerConfig")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.LoadBalancerConfig")); err != nil {
 		return 0, err
 	}
 
@@ -266,7 +266,7 @@ func (m *LoadBalancerConfig_RoundRobin) HashUnique(hasher hash.Hash64) (uint64, 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.LoadBalancerConfig_RoundRobin")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.LoadBalancerConfig_RoundRobin")); err != nil {
 		return 0, err
 	}
 
@@ -305,7 +305,7 @@ func (m *LoadBalancerConfig_LeastRequest) HashUnique(hasher hash.Hash64) (uint64
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.LoadBalancerConfig_LeastRequest")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.LoadBalancerConfig_LeastRequest")); err != nil {
 		return 0, err
 	}
 
@@ -352,7 +352,7 @@ func (m *LoadBalancerConfig_Random) HashUnique(hasher hash.Hash64) (uint64, erro
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.LoadBalancerConfig_Random")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.LoadBalancerConfig_Random")); err != nil {
 		return 0, err
 	}
 
@@ -371,7 +371,7 @@ func (m *LoadBalancerConfig_RingHashConfig) HashUnique(hasher hash.Hash64) (uint
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.LoadBalancerConfig_RingHashConfig")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.LoadBalancerConfig_RingHashConfig")); err != nil {
 		return 0, err
 	}
 
@@ -406,7 +406,7 @@ func (m *LoadBalancerConfig_RingHash) HashUnique(hasher hash.Hash64) (uint64, er
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.LoadBalancerConfig_RingHash")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.LoadBalancerConfig_RingHash")); err != nil {
 		return 0, err
 	}
 
@@ -445,7 +445,7 @@ func (m *LoadBalancerConfig_Maglev) HashUnique(hasher hash.Hash64) (uint64, erro
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.LoadBalancerConfig_Maglev")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.LoadBalancerConfig_Maglev")); err != nil {
 		return 0, err
 	}
 
@@ -464,7 +464,7 @@ func (m *LoadBalancerConfig_SlowStartConfig) HashUnique(hasher hash.Hash64) (uin
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.LoadBalancerConfig_SlowStartConfig")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.LoadBalancerConfig_SlowStartConfig")); err != nil {
 		return 0, err
 	}
 

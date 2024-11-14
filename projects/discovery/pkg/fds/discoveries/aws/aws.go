@@ -14,11 +14,11 @@ import (
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 
-	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	plugins "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options"
-	glooaws "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/aws"
-	awsutils "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils/aws"
+	plugins "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options"
+	glooaws "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/aws"
+	awsutils "github.com/solo-io/gloo/projects/controller/pkg/utils/aws"
+	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
 )
 
 const (

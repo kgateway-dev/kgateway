@@ -11,12 +11,12 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3"
-	v31 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/matcher/v3"
-	v34 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/metadata/v3"
-	v33 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/tracing/v3"
-	v32 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/v3"
-	_ "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/udpa/annotations"
+	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
+	v31 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/matcher/v3"
+	v34 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/metadata/v3"
+	v33 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/tracing/v3"
+	v32 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/v3"
+	_ "github.com/solo-io/gloo/projects/controller/pkg/api/external/udpa/annotations"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -138,7 +138,7 @@ func (RouteAction_ClusterNotFoundResponseCode) EnumDescriptor() ([]byte, []int) 
 // Configures internal redirect behavior.
 // [#next-major-version: remove this definition - it's defined in the InternalRedirectPolicy message.]
 //
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/config/route/v3/route_components.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/config/route/v3/route_components.proto.
 type RouteAction_InternalRedirectAction int32
 
 const (
@@ -1435,7 +1435,7 @@ type RouteAction struct {
 	// by :ref:`redirect_response_codes
 	// <envoy_api_field_config.route.v3.InternalRedirectPolicy.redirect_response_codes>`.
 	InternalRedirectPolicy *InternalRedirectPolicy `protobuf:"bytes,34,opt,name=internal_redirect_policy,json=internalRedirectPolicy,proto3" json:"internal_redirect_policy,omitempty"`
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/config/route/v3/route_components.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/config/route/v3/route_components.proto.
 	InternalRedirectAction RouteAction_InternalRedirectAction `protobuf:"varint,26,opt,name=internal_redirect_action,json=internalRedirectAction,proto3,enum=solo.io.envoy.config.route.v3.RouteAction_InternalRedirectAction" json:"internal_redirect_action,omitempty"`
 	// An internal redirect is handled, iff the number of previous internal redirects that a
 	// downstream request has encountered is lower than this value, and
@@ -1452,7 +1452,7 @@ type RouteAction struct {
 	//
 	// If not specified, at most one redirect will be followed.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/config/route/v3/route_components.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/config/route/v3/route_components.proto.
 	MaxInternalRedirects *wrapperspb.UInt32Value `protobuf:"bytes,31,opt,name=max_internal_redirects,json=maxInternalRedirects,proto3" json:"max_internal_redirects,omitempty"`
 	// Indicates that the route has a hedge policy. Note that if this is set,
 	// it'll take precedence over the virtual host level hedge policy entirely
@@ -1672,7 +1672,7 @@ func (x *RouteAction) GetInternalRedirectPolicy() *InternalRedirectPolicy {
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/config/route/v3/route_components.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/config/route/v3/route_components.proto.
 func (x *RouteAction) GetInternalRedirectAction() RouteAction_InternalRedirectAction {
 	if x != nil {
 		return x.InternalRedirectAction
@@ -1680,7 +1680,7 @@ func (x *RouteAction) GetInternalRedirectAction() RouteAction_InternalRedirectAc
 	return RouteAction_PASS_THROUGH_INTERNAL_REDIRECT
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/external/envoy/config/route/v3/route_components.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/external/envoy/config/route/v3/route_components.proto.
 func (x *RouteAction) GetMaxInternalRedirects() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.MaxInternalRedirects

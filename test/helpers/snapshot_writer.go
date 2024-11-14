@@ -7,7 +7,7 @@ import (
 	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
 
 	"github.com/avast/retry-go"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )

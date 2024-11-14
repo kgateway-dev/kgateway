@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	gloo_solo_io "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 
 	"go.opencensus.io/stats"
 	"go.uber.org/zap"

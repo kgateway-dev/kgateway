@@ -39,7 +39,7 @@ func (m *ResponseMatch) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation.ResponseMatch")); err != nil {
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation.ResponseMatch")); err != nil {
 		return 0, err
 	}
 
@@ -115,7 +115,7 @@ func (m *RequestMatch) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation.RequestMatch")); err != nil {
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation.RequestMatch")); err != nil {
 		return 0, err
 	}
 
@@ -202,7 +202,7 @@ func (m *Transformations) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation.Transformations")); err != nil {
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation.Transformations")); err != nil {
 		return 0, err
 	}
 
@@ -269,7 +269,7 @@ func (m *RequestResponseTransformations) HashUnique(hasher hash.Hash64) (uint64,
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation.RequestResponseTransformations")); err != nil {
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation.RequestResponseTransformations")); err != nil {
 		return 0, err
 	}
 
@@ -348,7 +348,7 @@ func (m *TransformationStages) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation.TransformationStages")); err != nil {
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation.TransformationStages")); err != nil {
 		return 0, err
 	}
 
@@ -475,7 +475,7 @@ func (m *Transformation) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation.Transformation")); err != nil {
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation.Transformation")); err != nil {
 		return 0, err
 	}
 
@@ -572,7 +572,7 @@ func (m *Extraction) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation.Extraction")); err != nil {
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation.Extraction")); err != nil {
 		return 0, err
 	}
 
@@ -669,7 +669,7 @@ func (m *TransformationTemplate) HashUnique(hasher hash.Hash64) (uint64, error) 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation.TransformationTemplate")); err != nil {
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation.TransformationTemplate")); err != nil {
 		return 0, err
 	}
 
@@ -1005,7 +1005,7 @@ func (m *InjaTemplate) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation.InjaTemplate")); err != nil {
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation.InjaTemplate")); err != nil {
 		return 0, err
 	}
 
@@ -1031,7 +1031,7 @@ func (m *Passthrough) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation.Passthrough")); err != nil {
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation.Passthrough")); err != nil {
 		return 0, err
 	}
 
@@ -1050,7 +1050,7 @@ func (m *MergeExtractorsToBody) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation.MergeExtractorsToBody")); err != nil {
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation.MergeExtractorsToBody")); err != nil {
 		return 0, err
 	}
 
@@ -1069,7 +1069,7 @@ func (m *MergeJsonKeys) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation.MergeJsonKeys")); err != nil {
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation.MergeJsonKeys")); err != nil {
 		return 0, err
 	}
 
@@ -1130,7 +1130,7 @@ func (m *HeaderBodyTransform) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation.HeaderBodyTransform")); err != nil {
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation.HeaderBodyTransform")); err != nil {
 		return 0, err
 	}
 
@@ -1157,7 +1157,7 @@ func (m *TransformationTemplate_HeaderToAppend) HashUnique(hasher hash.Hash64) (
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation.TransformationTemplate_HeaderToAppend")); err != nil {
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation.TransformationTemplate_HeaderToAppend")); err != nil {
 		return 0, err
 	}
 
@@ -1203,7 +1203,7 @@ func (m *TransformationTemplate_DynamicMetadataValue) HashUnique(hasher hash.Has
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation.TransformationTemplate_DynamicMetadataValue")); err != nil {
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation.TransformationTemplate_DynamicMetadataValue")); err != nil {
 		return 0, err
 	}
 
@@ -1264,7 +1264,7 @@ func (m *TransformationTemplate_SpanTransformer) HashUnique(hasher hash.Hash64) 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation.TransformationTemplate_SpanTransformer")); err != nil {
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation.TransformationTemplate_SpanTransformer")); err != nil {
 		return 0, err
 	}
 
@@ -1303,7 +1303,7 @@ func (m *MergeJsonKeys_OverridableTemplate) HashUnique(hasher hash.Hash64) (uint
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/transformation.MergeJsonKeys_OverridableTemplate")); err != nil {
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation.MergeJsonKeys_OverridableTemplate")); err != nil {
 		return 0, err
 	}
 

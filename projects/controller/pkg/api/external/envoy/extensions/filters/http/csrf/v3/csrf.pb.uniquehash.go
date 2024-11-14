@@ -39,7 +39,7 @@ func (m *CsrfPolicy) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.extensions.filters.http.csrf.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/filters/http/csrf/v3.CsrfPolicy")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.extensions.filters.http.csrf.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/filters/http/csrf/v3.CsrfPolicy")); err != nil {
 		return 0, err
 	}
 

@@ -10,10 +10,10 @@ import (
 
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options/contextoptions"
 
-	v1alpha1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/solo/ratelimit"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/bootstrap/clients/vault"
+	v1alpha1 "github.com/solo-io/gloo/projects/controller/pkg/api/external/solo/ratelimit"
+	"github.com/solo-io/gloo/projects/controller/pkg/bootstrap/clients/vault"
 
-	kubeconverters "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/converters/kube"
+	kubeconverters "github.com/solo-io/gloo/projects/controller/pkg/api/converters/kube"
 
 	"github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
@@ -22,10 +22,10 @@ import (
 	apiexts "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes/fake"
 
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	extauth "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	extauth "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extauth/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/defaults"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"

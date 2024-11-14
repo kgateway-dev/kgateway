@@ -14,11 +14,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	envoytrace_gloo "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/trace/v3"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	v1snap "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/hcm"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/tracing"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	v1snap "github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/hcm"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/tracing"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 

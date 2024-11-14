@@ -39,7 +39,7 @@ func (m *MetadataKey) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.type.metadata.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/metadata/v3.MetadataKey")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.type.metadata.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/metadata/v3.MetadataKey")); err != nil {
 		return 0, err
 	}
 
@@ -95,7 +95,7 @@ func (m *MetadataKind) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.type.metadata.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/metadata/v3.MetadataKind")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.type.metadata.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/metadata/v3.MetadataKind")); err != nil {
 		return 0, err
 	}
 
@@ -206,7 +206,7 @@ func (m *MetadataKey_PathSegment) HashUnique(hasher hash.Hash64) (uint64, error)
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.type.metadata.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/metadata/v3.MetadataKey_PathSegment")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.type.metadata.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/metadata/v3.MetadataKey_PathSegment")); err != nil {
 		return 0, err
 	}
 
@@ -238,7 +238,7 @@ func (m *MetadataKind_Request) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.type.metadata.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/metadata/v3.MetadataKind_Request")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.type.metadata.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/metadata/v3.MetadataKind_Request")); err != nil {
 		return 0, err
 	}
 
@@ -257,7 +257,7 @@ func (m *MetadataKind_Route) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.type.metadata.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/metadata/v3.MetadataKind_Route")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.type.metadata.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/metadata/v3.MetadataKind_Route")); err != nil {
 		return 0, err
 	}
 
@@ -276,7 +276,7 @@ func (m *MetadataKind_Cluster) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.type.metadata.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/metadata/v3.MetadataKind_Cluster")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.type.metadata.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/metadata/v3.MetadataKind_Cluster")); err != nil {
 		return 0, err
 	}
 
@@ -295,7 +295,7 @@ func (m *MetadataKind_Host) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.type.metadata.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/metadata/v3.MetadataKind_Host")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.type.metadata.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/metadata/v3.MetadataKind_Host")); err != nil {
 		return 0, err
 	}
 

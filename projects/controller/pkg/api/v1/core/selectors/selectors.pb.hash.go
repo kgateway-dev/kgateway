@@ -38,7 +38,7 @@ func (m *Selector) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("selectors.core.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/selectors.Selector")); err != nil {
+	if _, err = hasher.Write([]byte("selectors.core.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/selectors.Selector")); err != nil {
 		return 0, err
 	}
 
@@ -113,7 +113,7 @@ func (m *Selector_Expression) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("selectors.core.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/selectors.Selector_Expression")); err != nil {
+	if _, err = hasher.Write([]byte("selectors.core.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/selectors.Selector_Expression")); err != nil {
 		return 0, err
 	}
 

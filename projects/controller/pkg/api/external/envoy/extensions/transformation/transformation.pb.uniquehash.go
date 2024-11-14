@@ -39,7 +39,7 @@ func (m *FilterTransformations) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation.FilterTransformations")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation.FilterTransformations")); err != nil {
 		return 0, err
 	}
 
@@ -104,7 +104,7 @@ func (m *TransformationRule) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation.TransformationRule")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation.TransformationRule")); err != nil {
 		return 0, err
 	}
 
@@ -163,7 +163,7 @@ func (m *RouteTransformations) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation.RouteTransformations")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation.RouteTransformations")); err != nil {
 		return 0, err
 	}
 
@@ -260,7 +260,7 @@ func (m *ResponseMatcher) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation.ResponseMatcher")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation.ResponseMatcher")); err != nil {
 		return 0, err
 	}
 
@@ -329,7 +329,7 @@ func (m *ResponseTransformationRule) HashUnique(hasher hash.Hash64) (uint64, err
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation.ResponseTransformationRule")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation.ResponseTransformationRule")); err != nil {
 		return 0, err
 	}
 
@@ -388,7 +388,7 @@ func (m *Transformation) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation.Transformation")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation.Transformation")); err != nil {
 		return 0, err
 	}
 
@@ -497,7 +497,7 @@ func (m *Extraction) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation.Extraction")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation.Extraction")); err != nil {
 		return 0, err
 	}
 
@@ -594,7 +594,7 @@ func (m *TransformationTemplate) HashUnique(hasher hash.Hash64) (uint64, error) 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation.TransformationTemplate")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation.TransformationTemplate")); err != nil {
 		return 0, err
 	}
 
@@ -918,7 +918,7 @@ func (m *InjaTemplate) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation.InjaTemplate")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation.InjaTemplate")); err != nil {
 		return 0, err
 	}
 
@@ -944,7 +944,7 @@ func (m *Passthrough) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation.Passthrough")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation.Passthrough")); err != nil {
 		return 0, err
 	}
 
@@ -963,7 +963,7 @@ func (m *MergeExtractorsToBody) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation.MergeExtractorsToBody")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation.MergeExtractorsToBody")); err != nil {
 		return 0, err
 	}
 
@@ -982,7 +982,7 @@ func (m *MergeJsonKeys) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation.MergeJsonKeys")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation.MergeJsonKeys")); err != nil {
 		return 0, err
 	}
 
@@ -1043,7 +1043,7 @@ func (m *HeaderBodyTransform) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation.HeaderBodyTransform")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation.HeaderBodyTransform")); err != nil {
 		return 0, err
 	}
 
@@ -1070,7 +1070,7 @@ func (m *TransformationRule_Transformations) HashUnique(hasher hash.Hash64) (uin
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation.TransformationRule_Transformations")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation.TransformationRule_Transformations")); err != nil {
 		return 0, err
 	}
 
@@ -1157,7 +1157,7 @@ func (m *RouteTransformations_RouteTransformation) HashUnique(hasher hash.Hash64
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation.RouteTransformations_RouteTransformation")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation.RouteTransformations_RouteTransformation")); err != nil {
 		return 0, err
 	}
 
@@ -1232,7 +1232,7 @@ func (m *RouteTransformations_RouteTransformation_RequestMatch) HashUnique(hashe
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation.RouteTransformations_RouteTransformation_RequestMatch")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation.RouteTransformations_RouteTransformation_RequestMatch")); err != nil {
 		return 0, err
 	}
 
@@ -1319,7 +1319,7 @@ func (m *RouteTransformations_RouteTransformation_ResponseMatch) HashUnique(hash
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation.RouteTransformations_RouteTransformation_ResponseMatch")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation.RouteTransformations_RouteTransformation_ResponseMatch")); err != nil {
 		return 0, err
 	}
 
@@ -1378,7 +1378,7 @@ func (m *TransformationTemplate_HeaderToAppend) HashUnique(hasher hash.Hash64) (
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation.TransformationTemplate_HeaderToAppend")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation.TransformationTemplate_HeaderToAppend")); err != nil {
 		return 0, err
 	}
 
@@ -1424,7 +1424,7 @@ func (m *TransformationTemplate_DynamicMetadataValue) HashUnique(hasher hash.Has
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation.TransformationTemplate_DynamicMetadataValue")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation.TransformationTemplate_DynamicMetadataValue")); err != nil {
 		return 0, err
 	}
 
@@ -1485,7 +1485,7 @@ func (m *TransformationTemplate_SpanTransformer) HashUnique(hasher hash.Hash64) 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation.TransformationTemplate_SpanTransformer")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation.TransformationTemplate_SpanTransformer")); err != nil {
 		return 0, err
 	}
 
@@ -1524,7 +1524,7 @@ func (m *MergeJsonKeys_OverridableTemplate) HashUnique(hasher hash.Hash64) (uint
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation.MergeJsonKeys_OverridableTemplate")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation.MergeJsonKeys_OverridableTemplate")); err != nil {
 		return 0, err
 	}
 

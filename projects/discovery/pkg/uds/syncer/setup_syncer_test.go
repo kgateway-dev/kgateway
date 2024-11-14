@@ -7,7 +7,7 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/bootstrap"
+	"github.com/solo-io/gloo/projects/controller/pkg/bootstrap"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"

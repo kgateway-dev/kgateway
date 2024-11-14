@@ -15,15 +15,15 @@ import (
 	"knative.dev/pkg/network"
 
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/ssl"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	v1alpha1 "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/headers"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/headers"
 
 	errors "github.com/rotisserie/eris"
-	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	knativev1alpha1 "knative.dev/networking/pkg/apis/networking/v1alpha1"

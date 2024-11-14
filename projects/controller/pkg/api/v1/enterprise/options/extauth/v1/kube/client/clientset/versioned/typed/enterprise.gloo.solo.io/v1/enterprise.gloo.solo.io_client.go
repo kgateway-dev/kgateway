@@ -20,7 +20,7 @@ package v1
 
 import (
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1/kube/apis/enterprise.gloo.solo.io/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extauth/v1/kube/client/clientset/versioned/scheme"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1/kube/client/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
 

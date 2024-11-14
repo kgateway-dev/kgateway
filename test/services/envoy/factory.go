@@ -14,7 +14,7 @@ import (
 	"github.com/solo-io/gloo/test/services"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
 
 	"github.com/onsi/ginkgo/v2"
 	errors "github.com/rotisserie/eris"

@@ -7,9 +7,9 @@ import (
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/rotisserie/eris"
 	envoycluster_gloo "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/api/v2/cluster"
-	envoycore_gloo "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/api/v2/core"
-	v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	envoycore_gloo "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/api/v2/core"
+	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 )
 
 // Converts between Envoy and Gloo/solokit versions of envoy protos

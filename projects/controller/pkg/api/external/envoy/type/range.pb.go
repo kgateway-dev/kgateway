@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.35.1
 // 	protoc        v3.6.1
-// source: github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/range.proto
+// source: github.com/solo-io/gloo/projects/controller/api/external/envoy/type/range.proto
 
 package _type
 

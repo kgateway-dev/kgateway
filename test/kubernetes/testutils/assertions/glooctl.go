@@ -8,9 +8,9 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/check"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd/version"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/printers"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/version"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/printers"
 )
 
 // EventuallyCheckResourcesOk asserts that `glooctl check` eventually responds Ok

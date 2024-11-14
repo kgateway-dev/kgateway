@@ -20,9 +20,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/hashicorp/consul/api"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	vault_client "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/bootstrap/clients/vault"
+	vault_client "github.com/solo-io/gloo/projects/controller/pkg/bootstrap/clients/vault"
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	skclients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -35,12 +35,12 @@ import (
 	. "github.com/solo-io/gloo/test/gomega"
 
 	vaultapi "github.com/hashicorp/vault/api"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/bootstrap/clients"
+	"github.com/solo-io/gloo/projects/controller/pkg/bootstrap/clients"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
-// Kubernetes tests for clients generated from projects/controllerrollerroller/pkg/bootstrap/clients
+// Kubernetes tests for clients generated from projects/controller/pkg/bootstrap/clients
 var _ = Describe("Bootstrap Clients", func() {
 
 	Context("Kube Client Factory", func() {

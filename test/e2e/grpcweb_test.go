@@ -11,8 +11,8 @@ import (
 
 	proto_matchers "github.com/solo-io/solo-kit/test/matchers"
 
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/grpc_web"
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
 	envoy_data_accesslog_v3 "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
 	envoyals "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v3"
@@ -20,9 +20,9 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	static_plugin_gloo "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/static"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	static_plugin_gloo "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/test/e2e"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"

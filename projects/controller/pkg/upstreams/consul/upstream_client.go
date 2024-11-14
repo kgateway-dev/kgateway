@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/upstreams/NoOpUpstreamClient"
+	"github.com/solo-io/gloo/projects/controller/pkg/upstreams/NoOpUpstreamClient"
 	"github.com/solo-io/go-utils/contextutils"
 	skclients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )

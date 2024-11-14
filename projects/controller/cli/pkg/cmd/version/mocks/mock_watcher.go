@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	version "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
+	version "github.com/solo-io/gloo/projects/controller/pkg/api/grpc/version"
 )
 
 // MockServerVersion is a mock of ServerVersion interface.

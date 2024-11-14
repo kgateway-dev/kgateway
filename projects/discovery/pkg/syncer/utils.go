@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/bootstrap"
+	"github.com/solo-io/gloo/projects/controller/pkg/bootstrap"
 )
 
 // ErrorIfDiscoveryServiceUnused returns an error if the discovery service is not used by any upstreams.

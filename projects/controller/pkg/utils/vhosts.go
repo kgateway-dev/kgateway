@@ -2,7 +2,7 @@ package utils
 
 import (
 	"github.com/solo-io/gloo/projects/controller/pkg/api/grpc/validation"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 )
 
 func GetVirtualHostsForListener(listener *v1.Listener) []*v1.VirtualHost {

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	envoytransformation "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
@@ -132,7 +132,7 @@ var _ = Describe("Static bootstrap generation", func() {
 		})
 		Context("convertToStaticClusters", func() {
 			BeforeEach(func() {
-				routedCluster = map[string]struct{}{"foo": struct{}{}, "bar": struct{}{}}
+				routedCluster = map[string]struct{}{"foo": {}, "bar": {}}
 				clusters = []*envoy_config_cluster_v3.Cluster{{
 					Name: "foo",
 					EdsClusterConfig: &envoy_config_cluster_v3.Cluster_EdsClusterConfig{
@@ -155,7 +155,7 @@ var _ = Describe("Static bootstrap generation", func() {
 		})
 		Context("addBlackholeClusters", func() {
 			BeforeEach(func() {
-				routedCluster = map[string]struct{}{"bar": struct{}{}}
+				routedCluster = map[string]struct{}{"bar": {}}
 				clusters = []*envoy_config_cluster_v3.Cluster{{
 					Name: "foo",
 					EdsClusterConfig: &envoy_config_cluster_v3.Cluster_EdsClusterConfig{

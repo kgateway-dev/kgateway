@@ -619,8 +619,8 @@ type GatewayProxyGatewaySettings struct {
 	HttpsHybridGateway       map[string]interface{} `json:"httpsHybridGateway,omitempty" desc:"custom yaml to use for hybrid gateway settings for the https gateway"`
 	CustomHttpGateway        map[string]interface{} `json:"customHttpGateway,omitempty" desc:"custom yaml to use for http gateway settings"`
 	CustomHttpsGateway       map[string]interface{} `json:"customHttpsGateway,omitempty" desc:"custom yaml to use for https gateway settings"`
-	AccessLoggingService     map[string]interface{} `json:"accessLoggingService,omitempty" desc:"custom yaml to use for access logging service (https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/options/als/als.proto.sk/)"`
-	GatewayOptions           map[string]interface{} `json:"options,omitempty" desc:"custom options for http(s) gateways (https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/options.proto.sk/#listeneroptions)"`
+	AccessLoggingService     map[string]interface{} `json:"accessLoggingService,omitempty" desc:"custom yaml to use for access logging service (https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/options/als/als.proto.sk/)"`
+	GatewayOptions           map[string]interface{} `json:"options,omitempty" desc:"custom options for http(s) gateways (https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/options.proto.sk/#listeneroptions)"`
 	HttpGatewayKubeOverride  map[string]interface{} `json:"httpGatewayKubeOverride,omitempty"`
 	HttpsGatewayKubeOverride map[string]interface{} `json:"httpsGatewayKubeOverride,omitempty"`
 	*KubeResourceOverride

@@ -7,7 +7,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/envutils"
 	"github.com/solo-io/gloo/projects/controller/pkg/servers/admin"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/servers/iosnapshot"
+	"github.com/solo-io/gloo/projects/controller/pkg/servers/iosnapshot"
 	"github.com/solo-io/go-utils/stats"
 	"istio.io/istio/pkg/kube/krt"
 
@@ -15,7 +15,7 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/bootstrap"
+	"github.com/solo-io/gloo/projects/controller/pkg/bootstrap"
 )
 
 // StartFunc represents a function that will be called with the initialized bootstrap.Opts

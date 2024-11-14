@@ -4,7 +4,7 @@ import (
 	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	http_connection_managerv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
 )
 
 func CustomNetworkFiltersHTTP(listener *v1.HttpListener) []plugins.StagedFilter[plugins.WellKnownFilterStage, *listenerv3.Filter] {

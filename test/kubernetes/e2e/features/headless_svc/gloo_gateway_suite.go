@@ -6,8 +6,8 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
+	gloo_defaults "github.com/solo-io/gloo/projects/controller/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	gloo_defaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	testutilsresources "github.com/solo-io/gloo/test/kubernetes/testutils/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"

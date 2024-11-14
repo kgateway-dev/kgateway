@@ -4,7 +4,7 @@ clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
-    serviceName: kube-svc:default-kubernetes-443_default-8057429479812104425
+    serviceName: kube-svc:default-kubernetes-443_default-2292338674732162716
   metadata: {}
   name: kube-svc:default-kubernetes-443_default
   transportSocketMatches:
@@ -57,7 +57,7 @@ clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
-    serviceName: kube-svc:gwtest-reviews-8080_gwtest-14235905899168282861
+    serviceName: kube-svc:gwtest-reviews-8080_gwtest-12831301740530346284
   metadata: {}
   name: kube-svc:gwtest-reviews-8080_gwtest
   outlierDetection:
@@ -108,8 +108,20 @@ clusters:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
   type: EDS
 endpoints:
-- clusterName: kube-svc:gwtest-reviews-8080_gwtest-14235905899168282861
+- clusterName: kube-svc:gwtest-reviews-8080_gwtest-12831301740530346284
   endpoints:
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
+            address: 10.244.1.11
+            portValue: 8080
+      loadBalancingWeight: 1
+    loadBalancingWeight: 1
+    locality:
+      region: r1
+      subZone: r1z2s3
+      zone: r1z2
   - lbEndpoints:
     - endpoint:
         address:
@@ -149,18 +161,6 @@ endpoints:
       subZone: r2z1s1
       zone: r2z1
     priority: 3
-  - lbEndpoints:
-    - endpoint:
-        address:
-          socketAddress:
-            address: 10.244.1.11
-            portValue: 8080
-      loadBalancingWeight: 1
-    loadBalancingWeight: 1
-    locality:
-      region: r1
-      subZone: r1z2s3
-      zone: r1z2
 listeners:
 - address:
     socketAddress:
@@ -203,14 +203,14 @@ listeners:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: http-routes-14610285773269467959
+          routeConfigName: http-routes-7637722394321862590
         statPrefix: http
         upgradeConfigs:
         - upgradeType: websocket
   name: http
 routes:
 - ignorePortInHostMatching: true
-  name: http-routes-14610285773269467959
+  name: http-routes-7637722394321862590
   virtualHosts:
   - domains:
     - www.example.com

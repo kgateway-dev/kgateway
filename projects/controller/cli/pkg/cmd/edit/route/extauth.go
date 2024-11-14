@@ -2,12 +2,12 @@ package route
 
 import (
 	"github.com/solo-io/gloo/pkg/cliutil"
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	editRouteOptions "github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/edit/route/options"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/constants"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/flagutils"
-	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	extauthpb "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/flagutils"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	extauthpb "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"

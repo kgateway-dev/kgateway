@@ -10,14 +10,14 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	aws "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/aws"
-	caching "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/caching"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extauth/v1"
-	extproc "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extproc"
-	ratelimit "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/ratelimit"
-	rbac "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/rbac"
-	consul "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/consul"
-	ssl "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/ssl"
+	aws "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/aws"
+	caching "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/caching"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1"
+	extproc "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extproc"
+	ratelimit "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ratelimit"
+	rbac "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/rbac"
+	consul "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/consul"
+	ssl "github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -203,14 +203,14 @@ type Settings struct {
 	// We now support an Admin API on port 9091. See the following guide for more details
 	// https://docs.solo.io/gloo-edge/latest/operations/debugging_gloo/#debugging-the-control-plane
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/settings.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/settings.proto.
 	DevMode bool `protobuf:"varint,13,opt,name=dev_mode,json=devMode,proto3" json:"dev_mode,omitempty"`
 	// Enable automatic linkerd upstream header addition for easier routing to linkerd services
 	Linkerd bool `protobuf:"varint,17,opt,name=linkerd,proto3" json:"linkerd,omitempty"`
 	// Configuration options for the Clusteringress Controller (for Knative).
 	// Deprecated: Will not be available in k8sgateway 1.11
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/settings.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/settings.proto.
 	Knative *Settings_KnativeOptions `protobuf:"bytes,18,opt,name=knative,proto3" json:"knative,omitempty"`
 	// Options for configuring Gloo's Discovery service
 	Discovery *Settings_DiscoveryOptions `protobuf:"bytes,19,opt,name=discovery,proto3" json:"discovery,omitempty"`
@@ -454,7 +454,7 @@ func (x *Settings) GetRefreshRate() *durationpb.Duration {
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/settings.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/settings.proto.
 func (x *Settings) GetDevMode() bool {
 	if x != nil {
 		return x.DevMode
@@ -469,7 +469,7 @@ func (x *Settings) GetLinkerd() bool {
 	return false
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/settings.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/settings.proto.
 func (x *Settings) GetKnative() *Settings_KnativeOptions {
 	if x != nil {
 		return x.Knative
@@ -911,7 +911,7 @@ type GlooOptions struct {
 	// the API snapshot increases which can have a negative impact on the k8sgateway translation time. In addition, load
 	// balancing is done in `kube-proxy` which can have further performance impacts. Using Gloo Upstreams as a routing
 	// destination bypasses `kube-proxy` as the request is routed to the pod directly. Alternatively, you can use
-	// [`Kubernetes`](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/options/kubernetes/kubernetes.proto.sk/)
+	// [`Kubernetes`](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/options/kubernetes/kubernetes.proto.sk/)
 	// Upstream resources as a routing destination to forward requests to the pod directly.
 	//
 	// For more information, see the [docs](https://docs.solo.io/gloo-edge/latest/guides/traffic_management/destination_types/kubernetes_services/).
@@ -1183,7 +1183,7 @@ type GatewayOptions struct {
 	// Deprecated.
 	// This setting is ignored. Maintained for backwards compatibility with settings exposed on 1.2.x branch of Gloo.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/settings.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/settings.proto.
 	AlwaysSortRouteTableRoutes bool `protobuf:"varint,5,opt,name=always_sort_route_table_routes,json=alwaysSortRouteTableRoutes,proto3" json:"always_sort_route_table_routes,omitempty"`
 	// If set, compresses proxy space. This can help make the Proxy CRD smaller to fit in etcd.
 	// This is an advanced option. Use with care.
@@ -1262,7 +1262,7 @@ func (x *GatewayOptions) GetReadGatewaysFromAllNamespaces() bool {
 	return false
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/settings.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/settings.proto.
 func (x *GatewayOptions) GetAlwaysSortRouteTableRoutes() bool {
 	if x != nil {
 		return x.AlwaysSortRouteTableRoutes
@@ -2230,7 +2230,7 @@ type Settings_ConsulConfiguration struct {
 	// Used by service discovery and key-value storage (if-enabled).
 	// Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/settings.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/settings.proto.
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	// Datacenter to use. If not provided, the default agent datacenter is used.
 	Datacenter string `protobuf:"bytes,2,opt,name=datacenter,proto3" json:"datacenter,omitempty"`
@@ -2306,7 +2306,7 @@ func (*Settings_ConsulConfiguration) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_rawDescGZIP(), []int{0, 11}
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/settings.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/settings.proto.
 func (x *Settings_ConsulConfiguration) GetAddress() string {
 	if x != nil {
 		return x.Address
@@ -3303,7 +3303,7 @@ type GlooOptions_IstioOptions struct {
 	// Defaults to true
 	// Warning: This value is deprecated and will be removed in a future release. Also, you cannot use this value with a Kubernetes Gateway API proxy.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/settings.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/settings.proto.
 	AppendXForwardedHost *wrapperspb.BoolValue `protobuf:"bytes,1,opt,name=append_x_forwarded_host,json=appendXForwardedHost,proto3" json:"append_x_forwarded_host,omitempty"`
 	// Set to true to enable automatic mTLS for all upstreams. Istio integration must be enabled for this to take effect.
 	// Defaults to false
@@ -3345,7 +3345,7 @@ func (*GlooOptions_IstioOptions) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_settings_proto_rawDescGZIP(), []int{4, 2}
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/settings.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/settings.proto.
 func (x *GlooOptions_IstioOptions) GetAppendXForwardedHost() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.AppendXForwardedHost
@@ -3387,7 +3387,7 @@ type GatewayOptions_ValidationOptions struct {
 	// Enable the `ignoreGlooValidationFailure` to prevent the Validation server from rejecting
 	// resources due to network errors.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/settings.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/settings.proto.
 	IgnoreGlooValidationFailure bool `protobuf:"varint,5,opt,name=ignore_gloo_validation_failure,json=ignoreGlooValidationFailure,proto3" json:"ignore_gloo_validation_failure,omitempty"`
 	// Always accept resources even if validation produced an error.
 	// Validation will still log the error and increment the validation.gateway.solo.io/resources_rejected stat.
@@ -3406,7 +3406,7 @@ type GatewayOptions_ValidationOptions struct {
 	//   - regex routes that make later routes unreachable
 	//   - duplicate matchers
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/settings.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/settings.proto.
 	WarnRouteShortCircuiting *wrapperspb.BoolValue `protobuf:"bytes,8,opt,name=warn_route_short_circuiting,json=warnRouteShortCircuiting,proto3" json:"warn_route_short_circuiting,omitempty"`
 	// By default gloo will attempt to validate transformations by calling out to a local envoy binary in `validate` mode.
 	// Calling this local envoy binary can become slow when done many times during a single validation.
@@ -3489,7 +3489,7 @@ func (x *GatewayOptions_ValidationOptions) GetValidationWebhookTlsKey() string {
 	return ""
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/settings.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/settings.proto.
 func (x *GatewayOptions_ValidationOptions) GetIgnoreGlooValidationFailure() bool {
 	if x != nil {
 		return x.IgnoreGlooValidationFailure
@@ -3511,7 +3511,7 @@ func (x *GatewayOptions_ValidationOptions) GetAllowWarnings() *wrapperspb.BoolVa
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/settings.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/settings.proto.
 func (x *GatewayOptions_ValidationOptions) GetWarnRouteShortCircuiting() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.WarnRouteShortCircuiting

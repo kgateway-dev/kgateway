@@ -2,8 +2,8 @@ package translator
 
 import (
 	errors "github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/selectors"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/selectors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"

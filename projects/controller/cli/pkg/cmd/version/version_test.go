@@ -11,9 +11,9 @@ import (
 	"github.com/rotisserie/eris"
 	gloo_version "github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
-	mock_version "github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd/version/mocks"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/printers"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/grpc/version"
+	mock_version "github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/version/mocks"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/printers"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/grpc/version"
 )
 
 var _ = Describe("version command", func() {

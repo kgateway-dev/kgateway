@@ -39,7 +39,7 @@ func (m *VirtualHost) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.VirtualHost")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.VirtualHost")); err != nil {
 		return 0, err
 	}
 
@@ -432,7 +432,7 @@ func (m *FilterAction) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.FilterAction")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.FilterAction")); err != nil {
 		return 0, err
 	}
 
@@ -471,7 +471,7 @@ func (m *Route) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.Route")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.Route")); err != nil {
 		return 0, err
 	}
 
@@ -825,7 +825,7 @@ func (m *WeightedCluster) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.WeightedCluster")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.WeightedCluster")); err != nil {
 		return 0, err
 	}
 
@@ -901,7 +901,7 @@ func (m *RouteMatch) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RouteMatch")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RouteMatch")); err != nil {
 		return 0, err
 	}
 
@@ -1126,7 +1126,7 @@ func (m *CorsPolicy) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.CorsPolicy")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.CorsPolicy")); err != nil {
 		return 0, err
 	}
 
@@ -1269,7 +1269,7 @@ func (m *RouteAction) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RouteAction")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RouteAction")); err != nil {
 		return 0, err
 	}
 
@@ -1787,7 +1787,7 @@ func (m *RetryPolicy) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RetryPolicy")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RetryPolicy")); err != nil {
 		return 0, err
 	}
 
@@ -1999,7 +1999,7 @@ func (m *HedgePolicy) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.HedgePolicy")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.HedgePolicy")); err != nil {
 		return 0, err
 	}
 
@@ -2066,7 +2066,7 @@ func (m *RedirectAction) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RedirectAction")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RedirectAction")); err != nil {
 		return 0, err
 	}
 
@@ -2161,7 +2161,7 @@ func (m *DirectResponseAction) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.DirectResponseAction")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.DirectResponseAction")); err != nil {
 		return 0, err
 	}
 
@@ -2208,7 +2208,7 @@ func (m *Decorator) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.Decorator")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.Decorator")); err != nil {
 		return 0, err
 	}
 
@@ -2254,7 +2254,7 @@ func (m *Tracing) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.Tracing")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.Tracing")); err != nil {
 		return 0, err
 	}
 
@@ -2363,7 +2363,7 @@ func (m *VirtualCluster) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.VirtualCluster")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.VirtualCluster")); err != nil {
 		return 0, err
 	}
 
@@ -2419,7 +2419,7 @@ func (m *RateLimit) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RateLimit")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RateLimit")); err != nil {
 		return 0, err
 	}
 
@@ -2515,7 +2515,7 @@ func (m *HeaderMatcher) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.HeaderMatcher")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.HeaderMatcher")); err != nil {
 		return 0, err
 	}
 
@@ -2634,7 +2634,7 @@ func (m *QueryParameterMatcher) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.QueryParameterMatcher")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.QueryParameterMatcher")); err != nil {
 		return 0, err
 	}
 
@@ -2696,7 +2696,7 @@ func (m *InternalRedirectPolicy) HashUnique(hasher hash.Hash64) (uint64, error) 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.InternalRedirectPolicy")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.InternalRedirectPolicy")); err != nil {
 		return 0, err
 	}
 
@@ -2781,7 +2781,7 @@ func (m *WeightedCluster_ClusterWeight) HashUnique(hasher hash.Hash64) (uint64, 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.WeightedCluster_ClusterWeight")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.WeightedCluster_ClusterWeight")); err != nil {
 		return 0, err
 	}
 
@@ -2983,7 +2983,7 @@ func (m *RouteMatch_GrpcRouteMatchOptions) HashUnique(hasher hash.Hash64) (uint6
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RouteMatch_GrpcRouteMatchOptions")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RouteMatch_GrpcRouteMatchOptions")); err != nil {
 		return 0, err
 	}
 
@@ -3002,7 +3002,7 @@ func (m *RouteMatch_TlsContextMatchOptions) HashUnique(hasher hash.Hash64) (uint
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RouteMatch_TlsContextMatchOptions")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RouteMatch_TlsContextMatchOptions")); err != nil {
 		return 0, err
 	}
 
@@ -3061,7 +3061,7 @@ func (m *RouteMatch_ConnectMatcher) HashUnique(hasher hash.Hash64) (uint64, erro
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RouteMatch_ConnectMatcher")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RouteMatch_ConnectMatcher")); err != nil {
 		return 0, err
 	}
 
@@ -3080,7 +3080,7 @@ func (m *RouteAction_RequestMirrorPolicy) HashUnique(hasher hash.Hash64) (uint64
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RouteAction_RequestMirrorPolicy")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RouteAction_RequestMirrorPolicy")); err != nil {
 		return 0, err
 	}
 
@@ -3146,7 +3146,7 @@ func (m *RouteAction_HashPolicy) HashUnique(hasher hash.Hash64) (uint64, error) 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RouteAction_HashPolicy")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RouteAction_HashPolicy")); err != nil {
 		return 0, err
 	}
 
@@ -3287,7 +3287,7 @@ func (m *RouteAction_UpgradeConfig) HashUnique(hasher hash.Hash64) (uint64, erro
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RouteAction_UpgradeConfig")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RouteAction_UpgradeConfig")); err != nil {
 		return 0, err
 	}
 
@@ -3353,7 +3353,7 @@ func (m *RouteAction_HashPolicy_Header) HashUnique(hasher hash.Hash64) (uint64, 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RouteAction_HashPolicy_Header")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RouteAction_HashPolicy_Header")); err != nil {
 		return 0, err
 	}
 
@@ -3399,7 +3399,7 @@ func (m *RouteAction_HashPolicy_Cookie) HashUnique(hasher hash.Hash64) (uint64, 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RouteAction_HashPolicy_Cookie")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RouteAction_HashPolicy_Cookie")); err != nil {
 		return 0, err
 	}
 
@@ -3452,7 +3452,7 @@ func (m *RouteAction_HashPolicy_ConnectionProperties) HashUnique(hasher hash.Has
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RouteAction_HashPolicy_ConnectionProperties")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RouteAction_HashPolicy_ConnectionProperties")); err != nil {
 		return 0, err
 	}
 
@@ -3479,7 +3479,7 @@ func (m *RouteAction_HashPolicy_QueryParameter) HashUnique(hasher hash.Hash64) (
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RouteAction_HashPolicy_QueryParameter")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RouteAction_HashPolicy_QueryParameter")); err != nil {
 		return 0, err
 	}
 
@@ -3505,7 +3505,7 @@ func (m *RouteAction_HashPolicy_FilterState) HashUnique(hasher hash.Hash64) (uin
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RouteAction_HashPolicy_FilterState")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RouteAction_HashPolicy_FilterState")); err != nil {
 		return 0, err
 	}
 
@@ -3531,7 +3531,7 @@ func (m *RouteAction_UpgradeConfig_ConnectConfig) HashUnique(hasher hash.Hash64)
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RouteAction_UpgradeConfig_ConnectConfig")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RouteAction_UpgradeConfig_ConnectConfig")); err != nil {
 		return 0, err
 	}
 
@@ -3570,7 +3570,7 @@ func (m *RetryPolicy_RetryPriority) HashUnique(hasher hash.Hash64) (uint64, erro
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RetryPolicy_RetryPriority")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RetryPolicy_RetryPriority")); err != nil {
 		return 0, err
 	}
 
@@ -3622,7 +3622,7 @@ func (m *RetryPolicy_RetryHostPredicate) HashUnique(hasher hash.Hash64) (uint64,
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RetryPolicy_RetryHostPredicate")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RetryPolicy_RetryHostPredicate")); err != nil {
 		return 0, err
 	}
 
@@ -3674,7 +3674,7 @@ func (m *RetryPolicy_RetryBackOff) HashUnique(hasher hash.Hash64) (uint64, error
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RetryPolicy_RetryBackOff")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RetryPolicy_RetryBackOff")); err != nil {
 		return 0, err
 	}
 
@@ -3733,7 +3733,7 @@ func (m *RateLimit_Action) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RateLimit_Action")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RateLimit_Action")); err != nil {
 		return 0, err
 	}
 
@@ -3910,7 +3910,7 @@ func (m *RateLimit_Override) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RateLimit_Override")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RateLimit_Override")); err != nil {
 		return 0, err
 	}
 
@@ -3955,7 +3955,7 @@ func (m *RateLimit_Action_SourceCluster) HashUnique(hasher hash.Hash64) (uint64,
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RateLimit_Action_SourceCluster")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RateLimit_Action_SourceCluster")); err != nil {
 		return 0, err
 	}
 
@@ -3974,7 +3974,7 @@ func (m *RateLimit_Action_DestinationCluster) HashUnique(hasher hash.Hash64) (ui
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RateLimit_Action_DestinationCluster")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RateLimit_Action_DestinationCluster")); err != nil {
 		return 0, err
 	}
 
@@ -3993,7 +3993,7 @@ func (m *RateLimit_Action_RequestHeaders) HashUnique(hasher hash.Hash64) (uint64
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RateLimit_Action_RequestHeaders")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RateLimit_Action_RequestHeaders")); err != nil {
 		return 0, err
 	}
 
@@ -4034,7 +4034,7 @@ func (m *RateLimit_Action_RemoteAddress) HashUnique(hasher hash.Hash64) (uint64,
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RateLimit_Action_RemoteAddress")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RateLimit_Action_RemoteAddress")); err != nil {
 		return 0, err
 	}
 
@@ -4053,7 +4053,7 @@ func (m *RateLimit_Action_GenericKey) HashUnique(hasher hash.Hash64) (uint64, er
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RateLimit_Action_GenericKey")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RateLimit_Action_GenericKey")); err != nil {
 		return 0, err
 	}
 
@@ -4079,7 +4079,7 @@ func (m *RateLimit_Action_HeaderValueMatch) HashUnique(hasher hash.Hash64) (uint
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RateLimit_Action_HeaderValueMatch")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RateLimit_Action_HeaderValueMatch")); err != nil {
 		return 0, err
 	}
 
@@ -4155,7 +4155,7 @@ func (m *RateLimit_Action_DynamicMetaData) HashUnique(hasher hash.Hash64) (uint6
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RateLimit_Action_DynamicMetaData")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RateLimit_Action_DynamicMetaData")); err != nil {
 		return 0, err
 	}
 
@@ -4201,7 +4201,7 @@ func (m *RateLimit_Override_DynamicMetadata) HashUnique(hasher hash.Hash64) (uin
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/route/v3.RateLimit_Override_DynamicMetadata")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.route.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3.RateLimit_Override_DynamicMetadata")); err != nil {
 		return 0, err
 	}
 

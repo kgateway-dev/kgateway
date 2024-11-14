@@ -39,7 +39,7 @@ func (m *RouteOptions) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.RouteOptions")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.RouteOptions")); err != nil {
 		return 0, err
 	}
 
@@ -923,7 +923,7 @@ func (m *RouteOptions_MaxStreamDuration) HashUnique(hasher hash.Hash64) (uint64,
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1.RouteOptions_MaxStreamDuration")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1.RouteOptions_MaxStreamDuration")); err != nil {
 		return 0, err
 	}
 

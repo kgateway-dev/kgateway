@@ -11,7 +11,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-//go:generate mockgen -destination ./mocks/mock_watcher.go -source watcher.go -aux_files github.com/solo-io/gloo/projects/controllerrollerroller/pkg/upstreams/consul=./consul_client.go
+//go:generate mockgen -destination ./mocks/mock_watcher.go -source watcher.go -aux_files github.com/solo-io/gloo/projects/controller/pkg/upstreams/consul=./consul_client.go
 
 // Data for a single consul service (not serviceInstance)
 type ServiceMeta struct {

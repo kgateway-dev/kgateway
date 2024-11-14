@@ -10,7 +10,7 @@ import (
 	"github.com/solo-io/go-utils/hashutils"
 
 	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	gloov1snap "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/gloosnapshot"
+	gloov1snap "github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"

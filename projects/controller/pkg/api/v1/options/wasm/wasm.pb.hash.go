@@ -38,7 +38,7 @@ func (m *PluginSource) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("wasm.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/wasm.PluginSource")); err != nil {
+	if _, err = hasher.Write([]byte("wasm.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/wasm.PluginSource")); err != nil {
 		return 0, err
 	}
 
@@ -82,7 +82,7 @@ func (m *WasmFilter) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("wasm.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/wasm.WasmFilter")); err != nil {
+	if _, err = hasher.Write([]byte("wasm.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/wasm.WasmFilter")); err != nil {
 		return 0, err
 	}
 
@@ -176,7 +176,7 @@ func (m *FilterStage) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("wasm.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/wasm.FilterStage")); err != nil {
+	if _, err = hasher.Write([]byte("wasm.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/wasm.FilterStage")); err != nil {
 		return 0, err
 	}
 

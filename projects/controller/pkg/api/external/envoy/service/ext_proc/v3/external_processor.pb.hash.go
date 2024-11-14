@@ -38,7 +38,7 @@ func (m *ProcessingRequest) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/service/ext_proc/v3.ProcessingRequest")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/service/ext_proc/v3.ProcessingRequest")); err != nil {
 		return 0, err
 	}
 
@@ -258,7 +258,7 @@ func (m *ProcessingResponse) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/service/ext_proc/v3.ProcessingResponse")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/service/ext_proc/v3.ProcessingResponse")); err != nil {
 		return 0, err
 	}
 
@@ -496,7 +496,7 @@ func (m *HttpHeaders) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/service/ext_proc/v3.HttpHeaders")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/service/ext_proc/v3.HttpHeaders")); err != nil {
 		return 0, err
 	}
 
@@ -580,7 +580,7 @@ func (m *HttpBody) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/service/ext_proc/v3.HttpBody")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/service/ext_proc/v3.HttpBody")); err != nil {
 		return 0, err
 	}
 
@@ -609,7 +609,7 @@ func (m *HttpTrailers) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/service/ext_proc/v3.HttpTrailers")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/service/ext_proc/v3.HttpTrailers")); err != nil {
 		return 0, err
 	}
 
@@ -649,7 +649,7 @@ func (m *HeadersResponse) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/service/ext_proc/v3.HeadersResponse")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/service/ext_proc/v3.HeadersResponse")); err != nil {
 		return 0, err
 	}
 
@@ -689,7 +689,7 @@ func (m *TrailersResponse) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/service/ext_proc/v3.TrailersResponse")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/service/ext_proc/v3.TrailersResponse")); err != nil {
 		return 0, err
 	}
 
@@ -729,7 +729,7 @@ func (m *BodyResponse) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/service/ext_proc/v3.BodyResponse")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/service/ext_proc/v3.BodyResponse")); err != nil {
 		return 0, err
 	}
 
@@ -769,7 +769,7 @@ func (m *CommonResponse) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/service/ext_proc/v3.CommonResponse")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/service/ext_proc/v3.CommonResponse")); err != nil {
 		return 0, err
 	}
 
@@ -859,7 +859,7 @@ func (m *ImmediateResponse) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/service/ext_proc/v3.ImmediateResponse")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/service/ext_proc/v3.ImmediateResponse")); err != nil {
 		return 0, err
 	}
 
@@ -947,7 +947,7 @@ func (m *GrpcStatus) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/service/ext_proc/v3.GrpcStatus")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/service/ext_proc/v3.GrpcStatus")); err != nil {
 		return 0, err
 	}
 
@@ -972,7 +972,7 @@ func (m *HeaderMutation) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/service/ext_proc/v3.HeaderMutation")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/service/ext_proc/v3.HeaderMutation")); err != nil {
 		return 0, err
 	}
 
@@ -1024,7 +1024,7 @@ func (m *BodyMutation) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/service/ext_proc/v3.BodyMutation")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.service.ext_proc.v3.github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/service/ext_proc/v3.BodyMutation")); err != nil {
 		return 0, err
 	}
 

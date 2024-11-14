@@ -13,9 +13,9 @@ import (
 
 	"github.com/rotisserie/eris"
 	linkedversion "github.com/solo-io/gloo/pkg/version"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd/options"
-	versioncmd "github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd/version"
-	versiondiscovery "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/grpc/version"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
+	versioncmd "github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/version"
+	versiondiscovery "github.com/solo-io/gloo/projects/controller/pkg/api/grpc/version"
 	"github.com/solo-io/go-utils/versionutils"
 	"k8s.io/apimachinery/pkg/util/sets"
 

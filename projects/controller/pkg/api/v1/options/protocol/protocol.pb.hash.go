@@ -38,7 +38,7 @@ func (m *HttpProtocolOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("protocol.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/protocol.HttpProtocolOptions")); err != nil {
+	if _, err = hasher.Write([]byte("protocol.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/protocol.HttpProtocolOptions")); err != nil {
 		return 0, err
 	}
 
@@ -108,7 +108,7 @@ func (m *Http1ProtocolOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("protocol.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/protocol.Http1ProtocolOptions")); err != nil {
+	if _, err = hasher.Write([]byte("protocol.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/protocol.Http1ProtocolOptions")); err != nil {
 		return 0, err
 	}
 
@@ -171,7 +171,7 @@ func (m *Http2ProtocolOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("protocol.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/protocol.Http2ProtocolOptions")); err != nil {
+	if _, err = hasher.Write([]byte("protocol.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/protocol.Http2ProtocolOptions")); err != nil {
 		return 0, err
 	}
 

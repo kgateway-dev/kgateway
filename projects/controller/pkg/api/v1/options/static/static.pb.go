@@ -11,7 +11,7 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	options "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options"
+	options "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"

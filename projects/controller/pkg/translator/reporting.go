@@ -6,9 +6,9 @@ import (
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	validationapi "github.com/solo-io/gloo/projects/controller/pkg/api/grpc/validation"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils/validation"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils/validation"
 	"github.com/solo-io/go-utils/contextutils"
 )
 
@@ -142,7 +142,7 @@ func reportVirtualHostPluginProcessingError(
 // reportPluginProcessingError should only be used by components that do not support appending warnings on reports
 // Ideally we would append this err on the report as a Warning
 // To do so requires modifying an internal Proto API:
-// https://github.com/solo-io/gloo/blob/76a49fddacf8a7d26d4bf8dd3b21525a8efe73bd/projects/controllerrollerroller/api/grpc/validation/gloo_validation.proto#L4
+// https://github.com/solo-io/gloo/blob/76a49fddacf8a7d26d4bf8dd3b21525a8efe73bd/projects/controller/api/grpc/validation/gloo_validation.proto#L4
 // This API is a legacy of having separate Gloo and Gateway pods and is cumbersome to update
 // We take a short-cut, defined below
 func reportPluginProcessingError(

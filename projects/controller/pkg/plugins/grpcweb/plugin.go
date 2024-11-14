@@ -5,7 +5,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
 )
 
 var (

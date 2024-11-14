@@ -9,10 +9,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v2 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/filter/http/gzip/v2"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	. "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/gzip"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	. "github.com/solo-io/gloo/projects/controller/pkg/plugins/gzip"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 )
 
 var _ = Describe("Plugin", func() {

@@ -14,14 +14,14 @@ import (
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/xdsinspection"
-	plugins "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/aws/ec2"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/xdsinspection"
+	plugins "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/aws/ec2"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/olekukonko/tablewriter"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 )
 
 // key for the functionNames within the Details field of statuses, to be populated with the names of functions

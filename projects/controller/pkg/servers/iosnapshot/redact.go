@@ -1,7 +1,7 @@
 package iosnapshot
 
 import (
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -55,7 +55,7 @@ func redactGlooArtifactData(element *gloov1.Artifact) {
 // redactGlooResourceMetadata modifies the metadata to remove any sensitive information
 // ref: https://github.com/solo-io/skv2/blob/1583cb716c04eb3f8d01ecb179b0deeabaa6e42b/contrib/pkg/snapshot/redact.go#L20-L26
 func redactAnnotations(annotations map[string]string) {
-	for key, _ := range annotations {
+	for key := range annotations {
 		if key == corev1.LastAppliedConfigAnnotation {
 			annotations[key] = redactedString
 			break

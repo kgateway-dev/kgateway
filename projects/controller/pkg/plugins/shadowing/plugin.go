@@ -5,10 +5,10 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/shadowing"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/internal/common"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/translator"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/shadowing"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/internal/common"
+	"github.com/solo-io/gloo/projects/controller/pkg/translator"
 )
 
 var (

@@ -8,7 +8,7 @@ import (
 	"github.com/rotisserie/eris"
 )
 
-//go:generate mockgen -destination ./mocks/dnsresolver_mock.go github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul DnsResolver
+//go:generate mockgen -destination ./mocks/dnsresolver_mock.go github.com/solo-io/gloo/projects/controller/pkg/plugins/consul DnsResolver
 
 type DnsResolver interface {
 	Resolve(ctx context.Context, address string) ([]net.IPAddr, error)

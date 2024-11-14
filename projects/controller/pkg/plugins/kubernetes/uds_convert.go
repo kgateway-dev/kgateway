@@ -8,13 +8,13 @@ import (
 	"github.com/solo-io/gloo/projects/controller/pkg/plugins/kubernetes/serviceconverter"
 	"github.com/solo-io/go-utils/contextutils"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/utils"
 
 	sanitizer "github.com/solo-io/k8s-utils/kubeutils"
 
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	kubeplugin "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/kubernetes"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/discovery"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	kubeplugin "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/kubernetes"
+	"github.com/solo-io/gloo/projects/controller/pkg/discovery"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	corev1 "k8s.io/api/core/v1"

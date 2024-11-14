@@ -39,7 +39,7 @@ func (m *ServiceSpec) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/graphql.ServiceSpec")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/graphql.ServiceSpec")); err != nil {
 		return 0, err
 	}
 
@@ -78,7 +78,7 @@ func (m *ServiceSpec_Endpoint) HashUnique(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/graphql.ServiceSpec_Endpoint")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/graphql.ServiceSpec_Endpoint")); err != nil {
 		return 0, err
 	}
 

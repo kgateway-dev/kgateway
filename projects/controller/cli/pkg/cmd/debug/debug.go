@@ -10,14 +10,14 @@ import (
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	installcmd "github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/install"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 
 	"github.com/solo-io/go-utils/tarutils"
 	"github.com/spf13/afero"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/helpers"
 	"github.com/solo-io/k8s-utils/debugutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/solo-io/gloo/projects/gloo/constants"
+	"github.com/solo-io/gloo/projects/controller/constants"
 
 	"github.com/solo-io/gloo/test/services/envoy"
 

@@ -16,10 +16,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	kubeplugin "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/kubernetes"
-	kubev1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/kubernetes"
-	mock_kubernetes "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/kubernetes/mocks"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	kubeplugin "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/kubernetes"
+	kubev1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/kubernetes"
+	mock_kubernetes "github.com/solo-io/gloo/projects/controller/pkg/plugins/kubernetes/mocks"
 	mock_cache "github.com/solo-io/gloo/test/mocks/cache"
 )
 

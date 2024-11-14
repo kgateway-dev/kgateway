@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.35.1
 // 	protoc        v3.6.1
-// source: github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/extauth/sanitize.proto
+// source: github.com/solo-io/gloo/projects/controller/api/external/envoy/extensions/extauth/sanitize.proto
 
 package extauth
 

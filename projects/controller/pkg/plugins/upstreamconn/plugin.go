@@ -9,11 +9,11 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/protocol"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/protocol"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/utils/httpprotocolhelpers"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins/utils/httpprotocolhelpers"
 )
 
 var (

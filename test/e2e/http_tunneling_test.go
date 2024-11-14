@@ -28,17 +28,17 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
-	static_plugin_gloo "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/static"
+	static_plugin_gloo "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/static"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/ssl"
 	testhelpers "github.com/solo-io/gloo/test/helpers"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )

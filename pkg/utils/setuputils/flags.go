@@ -4,7 +4,7 @@ import (
 	"flag"
 	"os"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/gloo/projects/controller/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	"k8s.io/apimachinery/pkg/types"
 )

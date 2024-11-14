@@ -2,12 +2,12 @@ package settings
 
 import (
 	editOptions "github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/edit/options"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/constants"
-	flagutilsExt "github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/flagutils"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/helpers"
-	surveyutilsExt "github.com/solo-io/gloo/projects/controllerrollerroller/cli/pkg/surveyutils"
-	extauthpb "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/constants"
+	flagutilsExt "github.com/solo-io/gloo/projects/controller/cli/pkg/flagutils"
+	"github.com/solo-io/gloo/projects/controller/cli/pkg/helpers"
+	surveyutilsExt "github.com/solo-io/gloo/projects/controller/cli/pkg/surveyutils"
+	extauthpb "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"

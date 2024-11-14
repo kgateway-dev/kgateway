@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/projects/controller/pkg/bootstrap"
 )
 
 func TestPlugins(t *testing.T) {

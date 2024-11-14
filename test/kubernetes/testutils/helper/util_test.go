@@ -23,8 +23,8 @@ func TestReturnsLatestPatchForMinor(t *testing.T) {
 	ctx := context.Background()
 	// this is fine because this is a public repo
 	client := githubutils.GetClientWithOrWithoutToken(ctx)
-	minor, err := getLatestReleasedPatchVersion(ctx, client, "gloo", 1, 8)
+	minor, err := getLatestReleasedPatchVersion(ctx, client, "gloo", 1, 9)
 	require.NoError(t, err)
 
-	assert.Equal(t, "v1.8.37", minor.String())
+	assert.Equal(t, "v1.9.30", minor.String())
 }

@@ -4,9 +4,9 @@ import (
 	"context"
 
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/translator"
-	sslutils "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/translator"
+	sslutils "github.com/solo-io/gloo/projects/controller/pkg/utils"
 )
 
 type TranslatorFactory struct {

@@ -3,7 +3,7 @@ package translator
 import (
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
-	usconversions "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/upstreams"
+	usconversions "github.com/solo-io/gloo/projects/controller/pkg/upstreams"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 

@@ -21,8 +21,8 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/projects/controller/constants"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	kubeplugin "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/kubernetes"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	kubeplugin "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/kubernetes"
 )
 
 type PodLabelSource interface {

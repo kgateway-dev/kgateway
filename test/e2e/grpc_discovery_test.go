@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/grpc"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/grpc"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 
@@ -21,8 +21,8 @@ import (
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
 )
 
 var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {

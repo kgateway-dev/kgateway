@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 
-	. "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/plugins/pluginutils"
+	. "github.com/solo-io/gloo/projects/controller/pkg/plugins/pluginutils"
 )
 
 var _ = Describe("ClusterExtensions", func() {

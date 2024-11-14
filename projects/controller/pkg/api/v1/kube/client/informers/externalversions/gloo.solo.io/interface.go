@@ -20,7 +20,7 @@ package gloo
 
 import (
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/kube/client/informers/externalversions/gloo.solo.io/v1"
-	internalinterfaces "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/kube/client/informers/externalversions/internalinterfaces"
+	internalinterfaces "github.com/solo-io/gloo/projects/controller/pkg/api/v1/kube/client/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to each of this group's versions.

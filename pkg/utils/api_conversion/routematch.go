@@ -6,7 +6,7 @@ import (
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	envoyroute_gloo "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/api/v2/route"
-	envoytype_gloo "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type"
+	envoytype_gloo "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type"
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 	envoytype_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/type"
 )

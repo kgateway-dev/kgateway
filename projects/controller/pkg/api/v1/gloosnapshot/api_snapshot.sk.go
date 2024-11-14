@@ -8,11 +8,11 @@ import (
 	"hash/fnv"
 	"log"
 
-	gateway_solo_io "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit "github.com/solo-io/gloo/projects/controller/pkg/api/external/solo/ratelimit"
-	gloo_solo_io "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	enterprise_gloo_solo_io "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/extauth/v1"
-	graphql_gloo_solo_io "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/graphql/v1beta1"
+	gloo_solo_io "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	enterprise_gloo_solo_io "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1"
+	graphql_gloo_solo_io "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1"
+	gateway_solo_io "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"

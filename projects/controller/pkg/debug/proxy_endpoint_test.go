@@ -7,10 +7,10 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	debug_api "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/grpc/debug"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	debug_api "github.com/solo-io/gloo/projects/controller/pkg/api/grpc/debug"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/utils"
+	"github.com/solo-io/gloo/projects/controller/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"

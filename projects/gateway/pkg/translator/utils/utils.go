@@ -3,7 +3,7 @@ package utils
 import (
 	"strconv"
 
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 )
 
 // HashAndStoreHttpOptions will hash the provided httpOptions and store it using the hash as a key in the provided map.

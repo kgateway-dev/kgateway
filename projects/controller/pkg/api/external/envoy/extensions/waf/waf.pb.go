@@ -10,7 +10,7 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	transformation_ee "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation_ee"
+	transformation_ee "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation_ee"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"

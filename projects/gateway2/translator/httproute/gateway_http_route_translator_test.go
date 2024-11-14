@@ -5,11 +5,11 @@ import (
 	. "github.com/onsi/gomega"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/solo-io/gloo/projects/gateway2/parameters"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-	gloov1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/aws"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/azure"
+	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/aws"
+	"github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/azure"
+	"github.com/solo-io/gloo/projects/gateway2/parameters"
 )
 
 const funcName = "my-function"

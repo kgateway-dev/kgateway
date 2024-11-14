@@ -10,12 +10,12 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	v3 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/config/core/v3"
-	v31 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/type/matcher/v3"
-	matchers "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers"
-	filters "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/filters"
-	dynamic_forward_proxy "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/options/dynamic_forward_proxy"
-	ssl "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/ssl"
+	v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
+	v31 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/matcher/v3"
+	matchers "github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
+	filters "github.com/solo-io/gloo/projects/controller/pkg/api/v1/filters"
+	dynamic_forward_proxy "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/dynamic_forward_proxy"
+	ssl "github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -213,7 +213,7 @@ type Listener struct {
 	// Deprecated: prefer setting the listener option.
 	// If configured, the listener option (filter config) overrides any setting here.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/proxy.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/proxy.proto.
 	UseProxyProto *wrapperspb.BoolValue `protobuf:"bytes,7,opt,name=use_proxy_proto,json=useProxyProto,proto3" json:"use_proxy_proto,omitempty"`
 	// top level options
 	Options *ListenerOptions `protobuf:"bytes,8,opt,name=options,proto3" json:"options,omitempty"`
@@ -319,7 +319,7 @@ func (x *Listener) GetSslConfigurations() []*ssl.SslConfig {
 	return nil
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/proxy.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/proxy.proto.
 func (x *Listener) GetUseProxyProto() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.UseProxyProto

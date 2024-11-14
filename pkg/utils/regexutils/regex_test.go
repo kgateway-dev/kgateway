@@ -9,7 +9,7 @@ import (
 	. "github.com/solo-io/gloo/pkg/utils/regexutils"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v32 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/matcher/v3"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 )
 
 var _ = Describe("Regex", func() {

@@ -11,8 +11,8 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	transformation_ee "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/external/envoy/extensions/transformation_ee"
-	matchers "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/core/matchers"
+	transformation_ee "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation_ee"
+	matchers "github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	_type "github.com/solo-io/solo-kit/pkg/api/external/envoy/type"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -552,7 +552,7 @@ type CustomAction struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The list of regex strings which will be applied in order.
 	//
-	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/dlp/dlp.proto.
+	// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/dlp/dlp.proto.
 	Regex []string `protobuf:"bytes,2,rep,name=regex,proto3" json:"regex,omitempty"`
 	// The masking character for the sensitive data.
 	// default value: X
@@ -605,7 +605,7 @@ func (x *CustomAction) GetName() string {
 	return ""
 }
 
-// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controllerrollerroller/api/v1/enterprise/options/dlp/dlp.proto.
+// Deprecated: Marked as deprecated in github.com/solo-io/gloo/projects/controller/api/v1/enterprise/options/dlp/dlp.proto.
 func (x *CustomAction) GetRegex() []string {
 	if x != nil {
 		return x.Regex

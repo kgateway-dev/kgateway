@@ -20,11 +20,11 @@ import (
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/controller/pkg/upstreams/consul"
+	"github.com/solo-io/gloo/projects/controller/pkg/validation"
 	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	ggv2utils "github.com/solo-io/gloo/projects/gateway2/utils"
-	v1 "github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/upstreams/consul"
-	"github.com/solo-io/gloo/projects/controllerrollerroller/pkg/validation"
 	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 )
 

@@ -38,7 +38,7 @@ func (m *JwtStagedVhostExtension) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/jwt.JwtStagedVhostExtension")); err != nil {
+	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/jwt.JwtStagedVhostExtension")); err != nil {
 		return 0, err
 	}
 
@@ -98,7 +98,7 @@ func (m *JwtStagedRouteProvidersExtension) Hash(hasher hash.Hash64) (uint64, err
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/jwt.JwtStagedRouteProvidersExtension")); err != nil {
+	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/jwt.JwtStagedRouteProvidersExtension")); err != nil {
 		return 0, err
 	}
 
@@ -158,7 +158,7 @@ func (m *JwtStagedRouteExtension) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/jwt.JwtStagedRouteExtension")); err != nil {
+	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/jwt.JwtStagedRouteExtension")); err != nil {
 		return 0, err
 	}
 
@@ -218,7 +218,7 @@ func (m *VhostExtension) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/jwt.VhostExtension")); err != nil {
+	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/jwt.VhostExtension")); err != nil {
 		return 0, err
 	}
 
@@ -287,7 +287,7 @@ func (m *RouteExtension) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/jwt.RouteExtension")); err != nil {
+	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/jwt.RouteExtension")); err != nil {
 		return 0, err
 	}
 
@@ -312,7 +312,7 @@ func (m *Provider) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/jwt.Provider")); err != nil {
+	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/jwt.Provider")); err != nil {
 		return 0, err
 	}
 
@@ -433,7 +433,7 @@ func (m *Jwks) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/jwt.Jwks")); err != nil {
+	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/jwt.Jwks")); err != nil {
 		return 0, err
 	}
 
@@ -501,7 +501,7 @@ func (m *RemoteJwks) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/jwt.RemoteJwks")); err != nil {
+	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/jwt.RemoteJwks")); err != nil {
 		return 0, err
 	}
 
@@ -585,7 +585,7 @@ func (m *LocalJwks) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/jwt.LocalJwks")); err != nil {
+	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/jwt.LocalJwks")); err != nil {
 		return 0, err
 	}
 
@@ -609,7 +609,7 @@ func (m *TokenSource) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/jwt.TokenSource")); err != nil {
+	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/jwt.TokenSource")); err != nil {
 		return 0, err
 	}
 
@@ -661,7 +661,7 @@ func (m *ClaimToHeader) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/jwt.ClaimToHeader")); err != nil {
+	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/jwt.ClaimToHeader")); err != nil {
 		return 0, err
 	}
 
@@ -694,7 +694,7 @@ func (m *TokenSource_HeaderSource) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controllerrollerroller/pkg/api/v1/enterprise/options/jwt.TokenSource_HeaderSource")); err != nil {
+	if _, err = hasher.Write([]byte("jwt.options.gloo.solo.io.github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/jwt.TokenSource_HeaderSource")); err != nil {
 		return 0, err
 	}
 
