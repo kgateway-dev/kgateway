@@ -1,7 +1,9 @@
-
-
 <h1 align="center">
-    <img src="/docs/content/img/k8sgateway/logo.svg" alt="K8sGateway" width="800">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="/docs/content/img/k8sgateway/logo-dark.svg" alt="K8sGateway" width="800">
+    <source media="(prefers-color-scheme: light)" srcset="/docs/content/img/k8sgateway/logo.svg" alt="K8sGateway" width="800">
+    <img alt="K8sGateway" src="/docs/content/img/k8sgateway/logo.svg">
+  </picture>
   <br> 
   An Envoy-Powered Kubernetes-Native API Gateway
 </h1>
