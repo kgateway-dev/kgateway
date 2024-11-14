@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/discovery"
@@ -38,7 +39,7 @@ func CRDExists(restConfig *rest.Config, group, version, kind string) (bool, erro
 	groupVersion := fmt.Sprintf("%s/%s", group, version)
 	apiResourceList, err := discoveryClient.ServerResourcesForGroupVersion(groupVersion)
 	if err != nil {
-		if discovery.IsGroupDiscoveryFailedError(err) || meta.IsNoMatchError(err) {
+		if discovery.IsGroupDiscoveryFailedError(err) || meta.IsNoMatchError(err) || apierrors.IsNotFound(err) {
 			return false, nil
 		}
 		return false, err

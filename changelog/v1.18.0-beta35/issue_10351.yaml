@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/k8sgateway/k8sgateway/issues/10351
+    resolvesIssue: true
+    description: >-
+      Adds a `errors.IsNotFound(err)` check to CRDExists() to ensure the default
+      scheme is not extended for Gateway API v1alpha2 if the TCPRoute CRD does not exist.
