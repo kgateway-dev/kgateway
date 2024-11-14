@@ -40,7 +40,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 // TODO: Remove test when a version of Gateway API that includes https://github.com/kubernetes-sigs/gateway-api/pull/3368 is supported
-func (s *testingSuite) TestGatewayClassConditions() {
+func (s *testingSuite) TestGatewayClassStatusConditions() {
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, gwParametersManifestFile)
 		s.NoError(err, "can delete gatewayparameters manifest")

@@ -17,8 +17,11 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/controller"
+	"github.com/solo-io/gloo/projects/gateway2/crds"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
+	"github.com/solo-io/gloo/projects/gateway2/setup"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	istiokube "istio.io/istio/pkg/kube"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -38,6 +41,7 @@ import (
 var (
 	cfg       *rest.Config
 	k8sClient client.Client
+	i8sClient istiokube.Client
 	testEnv   *envtest.Environment
 	ctx       context.Context
 	cancel    context.CancelFunc
@@ -73,7 +77,7 @@ var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
-			filepath.Join("..", "crds"),
+			filepath.Join("..", "crds", "experimental"),
 			filepath.Join("..", "..", "..", "install", "helm", "gloo", "crds"),
 		},
 		ErrorIfCRDPathMissing: true,
@@ -86,10 +90,15 @@ var _ = BeforeSuite(func() {
 	cfg, err = testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
-	scheme := schemes.DefaultScheme()
+
+	scheme := schemes.TestingScheme()
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
+
+	i8sClient, err = setup.CreateKubeClient(cfg)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(i8sClient).NotTo(BeNil())
 
 	webhookInstallOptions := &testEnv.WebhookInstallOptions
 	mgrOpts := ctrl.Options{
@@ -117,6 +126,11 @@ var _ = BeforeSuite(func() {
 		Mgr: mgr,
 	})
 	Expect(err).ToNot(HaveOccurred())
+
+	crdMap, err := crds.GetGatewayCRDs(ctx, i8sClient)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(crdMap).NotTo(BeNil())
+
 	cfg := controller.GatewayConfig{
 		Mgr:            mgr,
 		ControllerName: gatewayControllerName,
@@ -124,6 +138,7 @@ var _ = BeforeSuite(func() {
 		AutoProvision:  true,
 		Kick:           func(ctx context.Context) { return },
 		Extensions:     exts,
+		CRDs:           crdMap,
 	}
 	err = controller.NewBaseGatewayController(ctx, cfg)
 	Expect(err).ToNot(HaveOccurred())

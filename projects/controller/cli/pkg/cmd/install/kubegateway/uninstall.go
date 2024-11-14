@@ -7,7 +7,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gateway2/crds"
+	"github.com/solo-io/gloo/projects/gateway2/crds/experimental"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -51,7 +51,7 @@ func uninstall(opts *options.Options, installOpts *Options) error {
 	}
 
 	fmt.Printf("Deleting Gateway CRDs... ")
-	crds, err := deployer.ConvertYAMLToObjects(cli.Scheme(), crds.GatewayCrds)
+	crds, err := deployer.ConvertYAMLToObjects(cli.Scheme(), experimental.GatewayCrds)
 	if err != nil {
 		fmt.Printf("Failed\n")
 	} else {

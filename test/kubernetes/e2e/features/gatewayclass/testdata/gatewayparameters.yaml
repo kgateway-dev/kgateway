@@ -1,7 +1,7 @@
 apiVersion: gateway.gloo.solo.io/v1alpha1
 kind: GatewayParameters
 metadata:
-  name: gateway-class-feature
+  name: supported-version-params
 spec:
   kube:
     deployment:

@@ -7,7 +7,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/controller/cli/pkg/kubegatewayutils"
-	"github.com/solo-io/gloo/projects/gateway2/crds"
+	"github.com/solo-io/gloo/projects/gateway2/crds/experimental"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/cli/values"
@@ -64,7 +64,7 @@ func install(opts *options.Options, installOpts *Options) error {
 
 	if !crdsExist {
 		fmt.Printf("Applying Gateway CRDs... ")
-		crds, err := deployer.ConvertYAMLToObjects(cli.Scheme(), crds.GatewayCrds)
+		crds, err := deployer.ConvertYAMLToObjects(cli.Scheme(), experimental.GatewayCrds)
 		if err != nil {
 			fmt.Printf("Failed\n")
 			return err

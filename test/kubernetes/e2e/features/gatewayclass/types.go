@@ -13,18 +13,18 @@ import (
 var (
 	gwParametersManifestFile  = filepath.Join(util.MustGetThisDir(), "testdata", "gatewayparameters.yaml")
 	gcManifestFile            = filepath.Join(util.MustGetThisDir(), "testdata", "gatewayclass.yaml")
-	supportedCrdsManifestFile = filepath.Join(util.MustGetThisDir(), "../../../../../projects/gateway2/crds", "gateway-crds.yaml")
+	supportedCrdsManifestFile = filepath.Join(util.MustGetThisDir(), "testdata", "gateway-crds.yaml")
 
 	gwParams = &v1alpha1.GatewayParameters{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "gateway-class-feature",
+			Name:      "supported-version-params",
 			Namespace: "default",
 		},
 	}
 
 	gc = &gwv1.GatewayClass{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "gateway-class-feature",
+			Name:      "supported-version-class",
 			Namespace: "default",
 		},
 	}

@@ -2,7 +2,6 @@ package wellknown
 
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/sets"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 	apiv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -21,6 +20,9 @@ const (
 	// Kind string for TCPRoute resource
 	TCPRouteKind = "TCPRoute"
 
+	// GRPCRouteKind is the name of the TCPRoute kind
+	GRPCRouteKind = "GRPCRoute"
+
 	// Kind string for Gateway resource
 	GatewayKind = "Gateway"
 
@@ -35,15 +37,11 @@ const (
 	GatewayListKind        = "GatewayList"
 	GatewayClassListKind   = "GatewayClassList"
 	ReferenceGrantListKind = "ReferenceGrantList"
-
-	// Gateway API CRD names
-	TCPRouteCRD = "tcproutes.gateway.networking.k8s.io"
 )
 
 var (
 	// SupportedVersions specifies the supported versions of Gateway API.
-	// [TODO] Remove "v1.0.0-rc1" when https://github.com/solo-io/gloo/issues/10115 is fixed.
-	SupportedVersions = []string{"v1.1.0", "v1.0.0", "v1.0.0-rc1"}
+	SupportedVersions = []string{"v1.0.0", "v1.1.0", "v1.2.0"}
 
 	GatewayGVK = schema.GroupVersionKind{
 		Group:   GatewayGroup,
@@ -91,13 +89,4 @@ var (
 		Version: apiv1beta1.GroupVersion.Version,
 		Kind:    ReferenceGrantListKind,
 	}
-
-	// GatewayStandardCRDs defines the set of Gateway API CRDs from the standard release channel.
-	GatewayStandardCRDs = sets.New[string](
-		"gatewayclasses.gateway.networking.k8s.io",
-		"gateways.gateway.networking.k8s.io",
-		"httproutes.gateway.networking.k8s.io",
-		"grpcroutes.gateway.networking.k8s.io",
-		"referencegrants.gateway.networking.k8s.io",
-	)
 )
