@@ -1,7 +1,7 @@
 
 
 <h1 align="center">
-    <img src="https://github.com/k8sgateway/k8sgateway.io/blob/main/static/logo.svg" alt="K8sGateway" width="800">
+    <img src="/docs/content/img/k8sgateway/logo.svg" alt="K8sGateway" width="800">
   <br> 
   An Envoy-Powered Kubernetes-Native API Gateway
 </h1>
@@ -14,7 +14,7 @@ K8sGateway is a feature-rich, fast, and flexible Kubernetes-native ingress contr
 &nbsp; [**Blog**](https://k8sgateway.io/docs/) &nbsp; |
 &nbsp; [**Slack**](https://cloud-native.slack.com/archives/C080D3PJMS4) &nbsp; |
 
-<BR><center><img src="https://github.com/k8sgateway/k8sgateway.io/blob/main/assets/img/component-architecture.svg" alt="K8sGateway Architecture" width="700"></center>
+<BR><center><img src="/docs/content/img/k8sgateway/component-architecture.svg" alt="K8sGateway Architecture" width="700"></center>
 
 ### Using K8sGateway
 - **Kubernetes Gateway API**: K8sGateway is a feature-rich ingress controller, built on top of the Envoy Proxy and fully conformant with the Kubernetes Gateway API.
