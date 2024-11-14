@@ -1,6 +1,6 @@
 name: Unit Tests
 
-# This workflow invokes unit tests for the Gloo Gateway project
+# This workflow invokes unit tests for the k8sgateway project
 # It was introduced during the 1.17 quarter, where we added a new project (projects/gateway2)
 # and therefore we only run those new tests here
 #
@@ -26,7 +26,7 @@ jobs:
       with:
         go-version-file: go.mod
     - name: Build
-      run: go build -v ./projects/gateway2/... ./projects/gloo/cli/cmd
+      run: go build -v ./projects/gateway2/... ./projects/controller/cli/cmd
     - name: Install Test Utils
       shell: bash
       run: make -C ./projects/gateway2/ install-go-tools
