@@ -139,7 +139,7 @@ Notice how the order of VirtualHostOption delegations matters, and that the Virt
 | ----- | ---- | ----------- | 
 | `namespacedStatuses` | [.core.solo.io.NamespacedStatuses](../../../../../../solo-kit/api/v1/status.proto.sk/#namespacedstatuses) | NamespacedStatuses indicates the validation status of this resource. NamespacedStatuses is read-only by clients, and set by gateway during validation. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
-| `options` | [.gloo.solo.io.VirtualHostOptions](../../../../gloo/api/v1/virtual_host_options.proto.sk/#virtualhostoptions) | VirtualHost options. See VirtualHost for delegation behavior. |
+| `options` | [.gloo.solo.io.VirtualHostOptions](../../../../controller/api/v1/virtual_host_options.proto.sk/#virtualhostoptions) | VirtualHost options. See VirtualHost for delegation behavior. |
 | `targetRefs` | [[]core.skv2.solo.io.PolicyTargetReferenceWithSectionName](../../../../../../skv2/api/core/v1/core.proto.sk/#policytargetreferencewithsectionname) | When using Kubernetes Gateway API mode, targetRefs can be used to attach this VirtualHostOption to a gateway.networking.k8s.io/Gateway object. The `options` specified will then be used for all `Listeners` in the `Gateway` unless `targetRef.sectionName` is specified. NOTE: This is a repeated field but currently ONLY supports a single targetRef. If multiple targetRefs are provided, only the first in the list will be used. |
 
 
@@ -261,7 +261,7 @@ Notice how the order of RouteOption delegations matters, and that the Route-leve
 | ----- | ---- | ----------- | 
 | `namespacedStatuses` | [.core.solo.io.NamespacedStatuses](../../../../../../solo-kit/api/v1/status.proto.sk/#namespacedstatuses) | NamespacedStatuses indicates the validation status of this resource. NamespacedStatuses is read-only by clients, and set by gateway during validation. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
-| `options` | [.gloo.solo.io.RouteOptions](../../../../gloo/api/v1/route_options.proto.sk/#routeoptions) | Route options. See Route for delegation behavior. |
+| `options` | [.gloo.solo.io.RouteOptions](../../../../controller/api/v1/route_options.proto.sk/#routeoptions) | Route options. See Route for delegation behavior. |
 | `targetRefs` | [[]core.skv2.solo.io.PolicyTargetReference](../../../../../../skv2/api/core/v1/core.proto.sk/#policytargetreference) | When using Kubernetes Gateway API mode, targetRefs can be used to attach this RouteOption to a gateway.networking.k8s.io/HTTPRoute object. The `options` specified will then be used for all `Rules` in the `HTTPRoute`. NOTE: This is a repeated field but currently ONLY supports a single targetRef. If multiple targetRefs are provided, only the first in the list will be used. |
 
 
@@ -282,7 +282,7 @@ Notice how the order of RouteOption delegations matters, and that the Route-leve
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
-| `options` | [.gloo.solo.io.ListenerOptions](../../../../gloo/api/v1/listener_options.proto.sk/#listeneroptions) | Listener options. |
+| `options` | [.gloo.solo.io.ListenerOptions](../../../../controller/api/v1/listener_options.proto.sk/#listeneroptions) | Listener options. |
 | `targetRefs` | [[]core.skv2.solo.io.PolicyTargetReferenceWithSectionName](../../../../../../skv2/api/core/v1/core.proto.sk/#policytargetreferencewithsectionname) | When using Kubernetes Gateway API mode, targetRefs can be used to attach this ListenerOption to a gateway.networking.k8s.io/Gateway object. The `options` specified will then be used for all `Listeners` in the `Gateway` unless `targetRef.sectionName` is specified. NOTE: This is a repeated field but currently ONLY supports a single targetRef. If multiple targetRefs are provided, only the first in the list will be used. |
 
 
@@ -303,7 +303,7 @@ Notice how the order of RouteOption delegations matters, and that the Route-leve
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
-| `options` | [.gloo.solo.io.HttpListenerOptions](../../../../gloo/api/v1/http_listener_options.proto.sk/#httplisteneroptions) | HttpListener options. |
+| `options` | [.gloo.solo.io.HttpListenerOptions](../../../../controller/api/v1/http_listener_options.proto.sk/#httplisteneroptions) | HttpListener options. |
 | `targetRefs` | [[]core.skv2.solo.io.PolicyTargetReferenceWithSectionName](../../../../../../skv2/api/core/v1/core.proto.sk/#policytargetreferencewithsectionname) | When using Kubernetes Gateway API mode, targetRef can be used to attach this VirtualHostOption to a gateway.networking.k8s.io/Gateway object. The `options` specified will then be used for all `Listeners` in the `Gateway` unless `targetRef.sectionName` is specified. NOTE: This is a repeated field but currently ONLY supports a single targetRef. If multiple targetRefs are provided, only the first in the list will be used. |
 
 

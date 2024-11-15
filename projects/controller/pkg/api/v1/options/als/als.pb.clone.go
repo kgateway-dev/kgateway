@@ -13,11 +13,11 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_route_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_route_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/v3"
 
 	google_golang_org_protobuf_types_known_structpb "google.golang.org/protobuf/types/known/structpb"
 )
@@ -333,9 +333,9 @@ func (m *ComparisonFilter) Clone() proto.Message {
 	target.Op = m.GetOp()
 
 	if h, ok := interface{}(m.GetValue()).(clone.Cloner); ok {
-		target.Value = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.RuntimeUInt32)
+		target.Value = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.RuntimeUInt32)
 	} else {
-		target.Value = proto.Clone(m.GetValue()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.RuntimeUInt32)
+		target.Value = proto.Clone(m.GetValue()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.RuntimeUInt32)
 	}
 
 	return target
@@ -408,9 +408,9 @@ func (m *RuntimeFilter) Clone() proto.Message {
 	target.RuntimeKey = m.GetRuntimeKey()
 
 	if h, ok := interface{}(m.GetPercentSampled()).(clone.Cloner); ok {
-		target.PercentSampled = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3.FractionalPercent)
+		target.PercentSampled = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3.FractionalPercent)
 	} else {
-		target.PercentSampled = proto.Clone(m.GetPercentSampled()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3.FractionalPercent)
+		target.PercentSampled = proto.Clone(m.GetPercentSampled()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3.FractionalPercent)
 	}
 
 	target.UseIndependentRandomness = m.GetUseIndependentRandomness()
@@ -475,9 +475,9 @@ func (m *HeaderFilter) Clone() proto.Message {
 	target = &HeaderFilter{}
 
 	if h, ok := interface{}(m.GetHeader()).(clone.Cloner); ok {
-		target.Header = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_route_v3.HeaderMatcher)
+		target.Header = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_route_v3.HeaderMatcher)
 	} else {
-		target.Header = proto.Clone(m.GetHeader()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_route_v3.HeaderMatcher)
+		target.Header = proto.Clone(m.GetHeader()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_route_v3.HeaderMatcher)
 	}
 
 	return target

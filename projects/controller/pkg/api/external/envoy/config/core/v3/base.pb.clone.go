@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/v3"
 
 	google_golang_org_protobuf_types_known_anypb "google.golang.org/protobuf/types/known/anypb"
 
@@ -59,9 +59,9 @@ func (m *BuildVersion) Clone() proto.Message {
 	target = &BuildVersion{}
 
 	if h, ok := interface{}(m.GetVersion()).(clone.Cloner); ok {
-		target.Version = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3.SemanticVersion)
+		target.Version = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3.SemanticVersion)
 	} else {
-		target.Version = proto.Clone(m.GetVersion()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3.SemanticVersion)
+		target.Version = proto.Clone(m.GetVersion()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3.SemanticVersion)
 	}
 
 	if h, ok := interface{}(m.GetMetadata()).(clone.Cloner); ok {
@@ -485,9 +485,9 @@ func (m *RuntimeFractionalPercent) Clone() proto.Message {
 	target = &RuntimeFractionalPercent{}
 
 	if h, ok := interface{}(m.GetDefaultValue()).(clone.Cloner); ok {
-		target.DefaultValue = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3.FractionalPercent)
+		target.DefaultValue = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3.FractionalPercent)
 	} else {
-		target.DefaultValue = proto.Clone(m.GetDefaultValue()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3.FractionalPercent)
+		target.DefaultValue = proto.Clone(m.GetDefaultValue()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3.FractionalPercent)
 	}
 
 	target.RuntimeKey = m.GetRuntimeKey()

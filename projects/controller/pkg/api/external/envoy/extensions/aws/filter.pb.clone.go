@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
 
 	google_golang_org_protobuf_types_known_durationpb "google.golang.org/protobuf/types/known/durationpb"
 
@@ -54,15 +54,15 @@ func (m *AWSLambdaPerRoute) Clone() proto.Message {
 	target.UnwrapAsAlb = m.GetUnwrapAsAlb()
 
 	if h, ok := interface{}(m.GetTransformerConfig()).(clone.Cloner); ok {
-		target.TransformerConfig = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.TypedExtensionConfig)
+		target.TransformerConfig = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.TypedExtensionConfig)
 	} else {
-		target.TransformerConfig = proto.Clone(m.GetTransformerConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.TypedExtensionConfig)
+		target.TransformerConfig = proto.Clone(m.GetTransformerConfig()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.TypedExtensionConfig)
 	}
 
 	if h, ok := interface{}(m.GetRequestTransformerConfig()).(clone.Cloner); ok {
-		target.RequestTransformerConfig = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.TypedExtensionConfig)
+		target.RequestTransformerConfig = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.TypedExtensionConfig)
 	} else {
-		target.RequestTransformerConfig = proto.Clone(m.GetRequestTransformerConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.TypedExtensionConfig)
+		target.RequestTransformerConfig = proto.Clone(m.GetRequestTransformerConfig()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.TypedExtensionConfig)
 	}
 
 	return target

@@ -45,7 +45,7 @@ weight: 5
 | `virtualServiceSelector` | `map<string, string>` | Select virtual services by their label. If `virtual_service_namespaces` is provided below, this will apply only to virtual services in the namespaces specified. Only one of `virtualServices`, `virtualServiceExpressions` or `virtualServiceSelector` should be provided. If more than one is provided only one will be checked with priority virtualServiceExpressions, virtualServiceSelector, virtualServices. |
 | `virtualServiceExpressions` | [.gateway.solo.io.VirtualServiceSelectorExpressions](../http_gateway.proto.sk/#virtualserviceselectorexpressions) | Select virtual services using expressions. If `virtual_service_namespaces` is provided below, this will apply only to virtual services in the namespaces specified. Only one of `virtualServices`, `virtualServiceExpressions` or `virtualServiceSelector` should be provided. If more than one is provided only one will be checked with priority virtualServiceExpressions, virtualServiceSelector, virtualServices. |
 | `virtualServiceNamespaces` | `[]string` | Restrict the search by providing a list of valid search namespaces here. Setting '*' will search all namespaces, equivalent to omitting this value. |
-| `options` | [.gloo.solo.io.HttpListenerOptions](../../../../gloo/api/v1/http_listener_options.proto.sk/#httplisteneroptions) | HTTP Gateway configuration. |
+| `options` | [.gloo.solo.io.HttpListenerOptions](../../../../controller/api/v1/http_listener_options.proto.sk/#httplisteneroptions) | HTTP Gateway configuration. |
 
 
 

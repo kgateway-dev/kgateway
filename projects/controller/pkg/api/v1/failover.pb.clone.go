@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl "github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_ssl "github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
 
 	google_golang_org_protobuf_types_known_structpb "google.golang.org/protobuf/types/known/structpb"
 
@@ -116,9 +116,9 @@ func (m *LbEndpoint) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetUpstreamSslConfig()).(clone.Cloner); ok {
-		target.UpstreamSslConfig = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl.UpstreamSslConfig)
+		target.UpstreamSslConfig = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_ssl.UpstreamSslConfig)
 	} else {
-		target.UpstreamSslConfig = proto.Clone(m.GetUpstreamSslConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl.UpstreamSslConfig)
+		target.UpstreamSslConfig = proto.Clone(m.GetUpstreamSslConfig()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_ssl.UpstreamSslConfig)
 	}
 
 	if h, ok := interface{}(m.GetLoadBalancingWeight()).(clone.Cloner); ok {

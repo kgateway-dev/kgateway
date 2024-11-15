@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 
 	github_com_solo_io_skv2_pkg_api_core_skv2_solo_io_v1 "github.com/solo-io/skv2/pkg/api/core.skv2.solo.io/v1"
 
@@ -52,9 +52,9 @@ func (m *VirtualHostOption) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetOptions()).(clone.Cloner); ok {
-		target.Options = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.VirtualHostOptions)
+		target.Options = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.VirtualHostOptions)
 	} else {
-		target.Options = proto.Clone(m.GetOptions()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.VirtualHostOptions)
+		target.Options = proto.Clone(m.GetOptions()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.VirtualHostOptions)
 	}
 
 	if m.GetTargetRefs() != nil {
@@ -94,9 +94,9 @@ func (m *RouteOption) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetOptions()).(clone.Cloner); ok {
-		target.Options = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.RouteOptions)
+		target.Options = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.RouteOptions)
 	} else {
-		target.Options = proto.Clone(m.GetOptions()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.RouteOptions)
+		target.Options = proto.Clone(m.GetOptions()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.RouteOptions)
 	}
 
 	if m.GetTargetRefs() != nil {
@@ -130,9 +130,9 @@ func (m *ListenerOption) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetOptions()).(clone.Cloner); ok {
-		target.Options = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.ListenerOptions)
+		target.Options = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.ListenerOptions)
 	} else {
-		target.Options = proto.Clone(m.GetOptions()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.ListenerOptions)
+		target.Options = proto.Clone(m.GetOptions()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.ListenerOptions)
 	}
 
 	if m.GetTargetRefs() != nil {
@@ -166,9 +166,9 @@ func (m *HttpListenerOption) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetOptions()).(clone.Cloner); ok {
-		target.Options = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.HttpListenerOptions)
+		target.Options = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.HttpListenerOptions)
 	} else {
-		target.Options = proto.Clone(m.GetOptions()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.HttpListenerOptions)
+		target.Options = proto.Clone(m.GetOptions()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.HttpListenerOptions)
 	}
 
 	if m.GetTargetRefs() != nil {

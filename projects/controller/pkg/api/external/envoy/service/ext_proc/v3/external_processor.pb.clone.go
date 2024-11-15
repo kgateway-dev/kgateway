@@ -13,11 +13,11 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_ext_proc_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/filters/http/ext_proc/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_filters_http_ext_proc_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/filters/http/ext_proc/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/v3"
 
 	google_golang_org_protobuf_types_known_durationpb "google.golang.org/protobuf/types/known/durationpb"
 
@@ -44,9 +44,9 @@ func (m *ProcessingRequest) Clone() proto.Message {
 	target = &ProcessingRequest{}
 
 	if h, ok := interface{}(m.GetMetadataContext()).(clone.Cloner); ok {
-		target.MetadataContext = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.Metadata)
+		target.MetadataContext = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.Metadata)
 	} else {
-		target.MetadataContext = proto.Clone(m.GetMetadataContext()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.Metadata)
+		target.MetadataContext = proto.Clone(m.GetMetadataContext()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.Metadata)
 	}
 
 	if m.GetAttributes() != nil {
@@ -158,9 +158,9 @@ func (m *ProcessingResponse) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetModeOverride()).(clone.Cloner); ok {
-		target.ModeOverride = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_ext_proc_v3.ProcessingMode)
+		target.ModeOverride = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_filters_http_ext_proc_v3.ProcessingMode)
 	} else {
-		target.ModeOverride = proto.Clone(m.GetModeOverride()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_ext_proc_v3.ProcessingMode)
+		target.ModeOverride = proto.Clone(m.GetModeOverride()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_filters_http_ext_proc_v3.ProcessingMode)
 	}
 
 	if h, ok := interface{}(m.GetOverrideMessageTimeout()).(clone.Cloner); ok {
@@ -269,9 +269,9 @@ func (m *HttpHeaders) Clone() proto.Message {
 	target = &HttpHeaders{}
 
 	if h, ok := interface{}(m.GetHeaders()).(clone.Cloner); ok {
-		target.Headers = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderMap)
+		target.Headers = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderMap)
 	} else {
-		target.Headers = proto.Clone(m.GetHeaders()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderMap)
+		target.Headers = proto.Clone(m.GetHeaders()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderMap)
 	}
 
 	if m.GetAttributes() != nil {
@@ -319,9 +319,9 @@ func (m *HttpTrailers) Clone() proto.Message {
 	target = &HttpTrailers{}
 
 	if h, ok := interface{}(m.GetTrailers()).(clone.Cloner); ok {
-		target.Trailers = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderMap)
+		target.Trailers = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderMap)
 	} else {
-		target.Trailers = proto.Clone(m.GetTrailers()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderMap)
+		target.Trailers = proto.Clone(m.GetTrailers()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderMap)
 	}
 
 	return target
@@ -401,9 +401,9 @@ func (m *CommonResponse) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetTrailers()).(clone.Cloner); ok {
-		target.Trailers = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderMap)
+		target.Trailers = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderMap)
 	} else {
-		target.Trailers = proto.Clone(m.GetTrailers()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderMap)
+		target.Trailers = proto.Clone(m.GetTrailers()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderMap)
 	}
 
 	target.ClearRouteCache = m.GetClearRouteCache()
@@ -420,9 +420,9 @@ func (m *ImmediateResponse) Clone() proto.Message {
 	target = &ImmediateResponse{}
 
 	if h, ok := interface{}(m.GetStatus()).(clone.Cloner); ok {
-		target.Status = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3.HttpStatus)
+		target.Status = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3.HttpStatus)
 	} else {
-		target.Status = proto.Clone(m.GetStatus()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3.HttpStatus)
+		target.Status = proto.Clone(m.GetStatus()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3.HttpStatus)
 	}
 
 	if h, ok := interface{}(m.GetHeaders()).(clone.Cloner); ok {
@@ -469,13 +469,13 @@ func (m *HeaderMutation) Clone() proto.Message {
 	target = &HeaderMutation{}
 
 	if m.GetSetHeaders() != nil {
-		target.SetHeaders = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderValueOption, len(m.GetSetHeaders()))
+		target.SetHeaders = make([]*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderValueOption, len(m.GetSetHeaders()))
 		for idx, v := range m.GetSetHeaders() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.SetHeaders[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
+				target.SetHeaders[idx] = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
 			} else {
-				target.SetHeaders[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
+				target.SetHeaders[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
 			}
 
 		}

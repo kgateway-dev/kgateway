@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_trace_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/trace/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_trace_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/trace/v3"
 
 	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
@@ -94,11 +94,11 @@ func (m *ListenerTracingSettings) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetZipkinConfig()).(clone.Cloner); ok {
 			target.ProviderConfig = &ListenerTracingSettings_ZipkinConfig{
-				ZipkinConfig: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_trace_v3.ZipkinConfig),
+				ZipkinConfig: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_trace_v3.ZipkinConfig),
 			}
 		} else {
 			target.ProviderConfig = &ListenerTracingSettings_ZipkinConfig{
-				ZipkinConfig: proto.Clone(m.GetZipkinConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_trace_v3.ZipkinConfig),
+				ZipkinConfig: proto.Clone(m.GetZipkinConfig()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_trace_v3.ZipkinConfig),
 			}
 		}
 
@@ -106,11 +106,11 @@ func (m *ListenerTracingSettings) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetDatadogConfig()).(clone.Cloner); ok {
 			target.ProviderConfig = &ListenerTracingSettings_DatadogConfig{
-				DatadogConfig: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_trace_v3.DatadogConfig),
+				DatadogConfig: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_trace_v3.DatadogConfig),
 			}
 		} else {
 			target.ProviderConfig = &ListenerTracingSettings_DatadogConfig{
-				DatadogConfig: proto.Clone(m.GetDatadogConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_trace_v3.DatadogConfig),
+				DatadogConfig: proto.Clone(m.GetDatadogConfig()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_trace_v3.DatadogConfig),
 			}
 		}
 
@@ -118,11 +118,11 @@ func (m *ListenerTracingSettings) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetOpenTelemetryConfig()).(clone.Cloner); ok {
 			target.ProviderConfig = &ListenerTracingSettings_OpenTelemetryConfig{
-				OpenTelemetryConfig: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_trace_v3.OpenTelemetryConfig),
+				OpenTelemetryConfig: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_trace_v3.OpenTelemetryConfig),
 			}
 		} else {
 			target.ProviderConfig = &ListenerTracingSettings_OpenTelemetryConfig{
-				OpenTelemetryConfig: proto.Clone(m.GetOpenTelemetryConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_trace_v3.OpenTelemetryConfig),
+				OpenTelemetryConfig: proto.Clone(m.GetOpenTelemetryConfig()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_trace_v3.OpenTelemetryConfig),
 			}
 		}
 
@@ -130,11 +130,11 @@ func (m *ListenerTracingSettings) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetOpenCensusConfig()).(clone.Cloner); ok {
 			target.ProviderConfig = &ListenerTracingSettings_OpenCensusConfig{
-				OpenCensusConfig: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_trace_v3.OpenCensusConfig),
+				OpenCensusConfig: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_trace_v3.OpenCensusConfig),
 			}
 		} else {
 			target.ProviderConfig = &ListenerTracingSettings_OpenCensusConfig{
-				OpenCensusConfig: proto.Clone(m.GetOpenCensusConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_trace_v3.OpenCensusConfig),
+				OpenCensusConfig: proto.Clone(m.GetOpenCensusConfig()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_trace_v3.OpenCensusConfig),
 			}
 		}
 

@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_protocol "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/protocol"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_protocol "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/protocol"
 
 	google_golang_org_protobuf_types_known_durationpb "google.golang.org/protobuf/types/known/durationpb"
 
@@ -60,15 +60,15 @@ func (m *ConnectionConfig) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetCommonHttpProtocolOptions()).(clone.Cloner); ok {
-		target.CommonHttpProtocolOptions = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_protocol.HttpProtocolOptions)
+		target.CommonHttpProtocolOptions = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_protocol.HttpProtocolOptions)
 	} else {
-		target.CommonHttpProtocolOptions = proto.Clone(m.GetCommonHttpProtocolOptions()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_protocol.HttpProtocolOptions)
+		target.CommonHttpProtocolOptions = proto.Clone(m.GetCommonHttpProtocolOptions()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_protocol.HttpProtocolOptions)
 	}
 
 	if h, ok := interface{}(m.GetHttp1ProtocolOptions()).(clone.Cloner); ok {
-		target.Http1ProtocolOptions = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_protocol.Http1ProtocolOptions)
+		target.Http1ProtocolOptions = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_protocol.Http1ProtocolOptions)
 	} else {
-		target.Http1ProtocolOptions = proto.Clone(m.GetHttp1ProtocolOptions()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_protocol.Http1ProtocolOptions)
+		target.Http1ProtocolOptions = proto.Clone(m.GetHttp1ProtocolOptions()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_protocol.Http1ProtocolOptions)
 	}
 
 	return target

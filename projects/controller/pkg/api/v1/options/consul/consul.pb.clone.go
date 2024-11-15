@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options"
 )
 
 // ensure the imports are used
@@ -74,9 +74,9 @@ func (m *UpstreamSpec) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetServiceSpec()).(clone.Cloner); ok {
-		target.ServiceSpec = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options.ServiceSpec)
+		target.ServiceSpec = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options.ServiceSpec)
 	} else {
-		target.ServiceSpec = proto.Clone(m.GetServiceSpec()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options.ServiceSpec)
+		target.ServiceSpec = proto.Clone(m.GetServiceSpec()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options.ServiceSpec)
 	}
 
 	target.ConsistencyMode = m.GetConsistencyMode()

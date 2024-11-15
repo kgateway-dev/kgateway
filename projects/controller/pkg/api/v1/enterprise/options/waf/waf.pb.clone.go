@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_waf "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/waf"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_waf "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/waf"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -48,13 +48,13 @@ func (m *Settings) Clone() proto.Message {
 	}
 
 	if m.GetRuleSets() != nil {
-		target.RuleSets = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_waf.RuleSet, len(m.GetRuleSets()))
+		target.RuleSets = make([]*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_waf.RuleSet, len(m.GetRuleSets()))
 		for idx, v := range m.GetRuleSets() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.RuleSets[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_waf.RuleSet)
+				target.RuleSets[idx] = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_waf.RuleSet)
 			} else {
-				target.RuleSets[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_waf.RuleSet)
+				target.RuleSets[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_waf.RuleSet)
 			}
 
 		}
@@ -74,9 +74,9 @@ func (m *Settings) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetAuditLogging()).(clone.Cloner); ok {
-		target.AuditLogging = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_waf.AuditLogging)
+		target.AuditLogging = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_waf.AuditLogging)
 	} else {
-		target.AuditLogging = proto.Clone(m.GetAuditLogging()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_waf.AuditLogging)
+		target.AuditLogging = proto.Clone(m.GetAuditLogging()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_waf.AuditLogging)
 	}
 
 	target.RequestHeadersOnly = m.GetRequestHeadersOnly()

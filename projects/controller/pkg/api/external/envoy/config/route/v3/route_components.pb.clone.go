@@ -13,15 +13,15 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/matcher/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/matcher/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_metadata_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/metadata/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_metadata_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/metadata/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_tracing_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/tracing/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_tracing_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/tracing/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/v3"
 
 	google_golang_org_protobuf_types_known_anypb "google.golang.org/protobuf/types/known/anypb"
 
@@ -102,13 +102,13 @@ func (m *VirtualHost) Clone() proto.Message {
 	}
 
 	if m.GetRequestHeadersToAdd() != nil {
-		target.RequestHeadersToAdd = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderValueOption, len(m.GetRequestHeadersToAdd()))
+		target.RequestHeadersToAdd = make([]*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderValueOption, len(m.GetRequestHeadersToAdd()))
 		for idx, v := range m.GetRequestHeadersToAdd() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.RequestHeadersToAdd[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
+				target.RequestHeadersToAdd[idx] = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
 			} else {
-				target.RequestHeadersToAdd[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
+				target.RequestHeadersToAdd[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
 			}
 
 		}
@@ -124,13 +124,13 @@ func (m *VirtualHost) Clone() proto.Message {
 	}
 
 	if m.GetResponseHeadersToAdd() != nil {
-		target.ResponseHeadersToAdd = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderValueOption, len(m.GetResponseHeadersToAdd()))
+		target.ResponseHeadersToAdd = make([]*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderValueOption, len(m.GetResponseHeadersToAdd()))
 		for idx, v := range m.GetResponseHeadersToAdd() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.ResponseHeadersToAdd[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
+				target.ResponseHeadersToAdd[idx] = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
 			} else {
-				target.ResponseHeadersToAdd[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
+				target.ResponseHeadersToAdd[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
 			}
 
 		}
@@ -229,9 +229,9 @@ func (m *Route) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetMetadata()).(clone.Cloner); ok {
-		target.Metadata = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.Metadata)
+		target.Metadata = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.Metadata)
 	} else {
-		target.Metadata = proto.Clone(m.GetMetadata()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.Metadata)
+		target.Metadata = proto.Clone(m.GetMetadata()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.Metadata)
 	}
 
 	if h, ok := interface{}(m.GetDecorator()).(clone.Cloner); ok {
@@ -254,13 +254,13 @@ func (m *Route) Clone() proto.Message {
 	}
 
 	if m.GetRequestHeadersToAdd() != nil {
-		target.RequestHeadersToAdd = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderValueOption, len(m.GetRequestHeadersToAdd()))
+		target.RequestHeadersToAdd = make([]*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderValueOption, len(m.GetRequestHeadersToAdd()))
 		for idx, v := range m.GetRequestHeadersToAdd() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.RequestHeadersToAdd[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
+				target.RequestHeadersToAdd[idx] = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
 			} else {
-				target.RequestHeadersToAdd[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
+				target.RequestHeadersToAdd[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
 			}
 
 		}
@@ -276,13 +276,13 @@ func (m *Route) Clone() proto.Message {
 	}
 
 	if m.GetResponseHeadersToAdd() != nil {
-		target.ResponseHeadersToAdd = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderValueOption, len(m.GetResponseHeadersToAdd()))
+		target.ResponseHeadersToAdd = make([]*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderValueOption, len(m.GetResponseHeadersToAdd()))
 		for idx, v := range m.GetResponseHeadersToAdd() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.ResponseHeadersToAdd[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
+				target.ResponseHeadersToAdd[idx] = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
 			} else {
-				target.ResponseHeadersToAdd[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
+				target.ResponseHeadersToAdd[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
 			}
 
 		}
@@ -411,9 +411,9 @@ func (m *RouteMatch) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetRuntimeFraction()).(clone.Cloner); ok {
-		target.RuntimeFraction = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.RuntimeFractionalPercent)
+		target.RuntimeFraction = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.RuntimeFractionalPercent)
 	} else {
-		target.RuntimeFraction = proto.Clone(m.GetRuntimeFraction()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.RuntimeFractionalPercent)
+		target.RuntimeFraction = proto.Clone(m.GetRuntimeFraction()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.RuntimeFractionalPercent)
 	}
 
 	if m.GetHeaders() != nil {
@@ -472,11 +472,11 @@ func (m *RouteMatch) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetSafeRegex()).(clone.Cloner); ok {
 			target.PathSpecifier = &RouteMatch_SafeRegex{
-				SafeRegex: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.RegexMatcher),
+				SafeRegex: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3.RegexMatcher),
 			}
 		} else {
 			target.PathSpecifier = &RouteMatch_SafeRegex{
-				SafeRegex: proto.Clone(m.GetSafeRegex()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.RegexMatcher),
+				SafeRegex: proto.Clone(m.GetSafeRegex()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3.RegexMatcher),
 			}
 		}
 
@@ -506,13 +506,13 @@ func (m *CorsPolicy) Clone() proto.Message {
 	target = &CorsPolicy{}
 
 	if m.GetAllowOriginStringMatch() != nil {
-		target.AllowOriginStringMatch = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.StringMatcher, len(m.GetAllowOriginStringMatch()))
+		target.AllowOriginStringMatch = make([]*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3.StringMatcher, len(m.GetAllowOriginStringMatch()))
 		for idx, v := range m.GetAllowOriginStringMatch() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.AllowOriginStringMatch[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.StringMatcher)
+				target.AllowOriginStringMatch[idx] = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3.StringMatcher)
 			} else {
-				target.AllowOriginStringMatch[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.StringMatcher)
+				target.AllowOriginStringMatch[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3.StringMatcher)
 			}
 
 		}
@@ -533,9 +533,9 @@ func (m *CorsPolicy) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetShadowEnabled()).(clone.Cloner); ok {
-		target.ShadowEnabled = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.RuntimeFractionalPercent)
+		target.ShadowEnabled = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.RuntimeFractionalPercent)
 	} else {
-		target.ShadowEnabled = proto.Clone(m.GetShadowEnabled()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.RuntimeFractionalPercent)
+		target.ShadowEnabled = proto.Clone(m.GetShadowEnabled()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.RuntimeFractionalPercent)
 	}
 
 	switch m.EnabledSpecifier.(type) {
@@ -544,11 +544,11 @@ func (m *CorsPolicy) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetFilterEnabled()).(clone.Cloner); ok {
 			target.EnabledSpecifier = &CorsPolicy_FilterEnabled{
-				FilterEnabled: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.RuntimeFractionalPercent),
+				FilterEnabled: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.RuntimeFractionalPercent),
 			}
 		} else {
 			target.EnabledSpecifier = &CorsPolicy_FilterEnabled{
-				FilterEnabled: proto.Clone(m.GetFilterEnabled()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.RuntimeFractionalPercent),
+				FilterEnabled: proto.Clone(m.GetFilterEnabled()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.RuntimeFractionalPercent),
 			}
 		}
 
@@ -568,17 +568,17 @@ func (m *RouteAction) Clone() proto.Message {
 	target.ClusterNotFoundResponseCode = m.GetClusterNotFoundResponseCode()
 
 	if h, ok := interface{}(m.GetMetadataMatch()).(clone.Cloner); ok {
-		target.MetadataMatch = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.Metadata)
+		target.MetadataMatch = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.Metadata)
 	} else {
-		target.MetadataMatch = proto.Clone(m.GetMetadataMatch()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.Metadata)
+		target.MetadataMatch = proto.Clone(m.GetMetadataMatch()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.Metadata)
 	}
 
 	target.PrefixRewrite = m.GetPrefixRewrite()
 
 	if h, ok := interface{}(m.GetRegexRewrite()).(clone.Cloner); ok {
-		target.RegexRewrite = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.RegexMatchAndSubstitute)
+		target.RegexRewrite = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3.RegexMatchAndSubstitute)
 	} else {
-		target.RegexRewrite = proto.Clone(m.GetRegexRewrite()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.RegexMatchAndSubstitute)
+		target.RegexRewrite = proto.Clone(m.GetRegexRewrite()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3.RegexMatchAndSubstitute)
 	}
 
 	if h, ok := interface{}(m.GetTimeout()).(clone.Cloner); ok {
@@ -864,9 +864,9 @@ func (m *HedgePolicy) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetAdditionalRequestChance()).(clone.Cloner); ok {
-		target.AdditionalRequestChance = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3.FractionalPercent)
+		target.AdditionalRequestChance = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3.FractionalPercent)
 	} else {
-		target.AdditionalRequestChance = proto.Clone(m.GetAdditionalRequestChance()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3.FractionalPercent)
+		target.AdditionalRequestChance = proto.Clone(m.GetAdditionalRequestChance()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3.FractionalPercent)
 	}
 
 	target.HedgeOnPerTryTimeout = m.GetHedgeOnPerTryTimeout()
@@ -936,9 +936,9 @@ func (m *DirectResponseAction) Clone() proto.Message {
 	target.Status = m.GetStatus()
 
 	if h, ok := interface{}(m.GetBody()).(clone.Cloner); ok {
-		target.Body = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.DataSource)
+		target.Body = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.DataSource)
 	} else {
-		target.Body = proto.Clone(m.GetBody()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.DataSource)
+		target.Body = proto.Clone(m.GetBody()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.DataSource)
 	}
 
 	return target
@@ -972,31 +972,31 @@ func (m *Tracing) Clone() proto.Message {
 	target = &Tracing{}
 
 	if h, ok := interface{}(m.GetClientSampling()).(clone.Cloner); ok {
-		target.ClientSampling = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3.FractionalPercent)
+		target.ClientSampling = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3.FractionalPercent)
 	} else {
-		target.ClientSampling = proto.Clone(m.GetClientSampling()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3.FractionalPercent)
+		target.ClientSampling = proto.Clone(m.GetClientSampling()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3.FractionalPercent)
 	}
 
 	if h, ok := interface{}(m.GetRandomSampling()).(clone.Cloner); ok {
-		target.RandomSampling = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3.FractionalPercent)
+		target.RandomSampling = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3.FractionalPercent)
 	} else {
-		target.RandomSampling = proto.Clone(m.GetRandomSampling()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3.FractionalPercent)
+		target.RandomSampling = proto.Clone(m.GetRandomSampling()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3.FractionalPercent)
 	}
 
 	if h, ok := interface{}(m.GetOverallSampling()).(clone.Cloner); ok {
-		target.OverallSampling = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3.FractionalPercent)
+		target.OverallSampling = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3.FractionalPercent)
 	} else {
-		target.OverallSampling = proto.Clone(m.GetOverallSampling()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3.FractionalPercent)
+		target.OverallSampling = proto.Clone(m.GetOverallSampling()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3.FractionalPercent)
 	}
 
 	if m.GetCustomTags() != nil {
-		target.CustomTags = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_tracing_v3.CustomTag, len(m.GetCustomTags()))
+		target.CustomTags = make([]*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_tracing_v3.CustomTag, len(m.GetCustomTags()))
 		for idx, v := range m.GetCustomTags() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.CustomTags[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_tracing_v3.CustomTag)
+				target.CustomTags[idx] = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_tracing_v3.CustomTag)
 			} else {
-				target.CustomTags[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_tracing_v3.CustomTag)
+				target.CustomTags[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_tracing_v3.CustomTag)
 			}
 
 		}
@@ -1093,11 +1093,11 @@ func (m *HeaderMatcher) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetSafeRegexMatch()).(clone.Cloner); ok {
 			target.HeaderMatchSpecifier = &HeaderMatcher_SafeRegexMatch{
-				SafeRegexMatch: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.RegexMatcher),
+				SafeRegexMatch: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3.RegexMatcher),
 			}
 		} else {
 			target.HeaderMatchSpecifier = &HeaderMatcher_SafeRegexMatch{
-				SafeRegexMatch: proto.Clone(m.GetSafeRegexMatch()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.RegexMatcher),
+				SafeRegexMatch: proto.Clone(m.GetSafeRegexMatch()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3.RegexMatcher),
 			}
 		}
 
@@ -1105,11 +1105,11 @@ func (m *HeaderMatcher) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetRangeMatch()).(clone.Cloner); ok {
 			target.HeaderMatchSpecifier = &HeaderMatcher_RangeMatch{
-				RangeMatch: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3.Int64Range),
+				RangeMatch: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3.Int64Range),
 			}
 		} else {
 			target.HeaderMatchSpecifier = &HeaderMatcher_RangeMatch{
-				RangeMatch: proto.Clone(m.GetRangeMatch()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3.Int64Range),
+				RangeMatch: proto.Clone(m.GetRangeMatch()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3.Int64Range),
 			}
 		}
 
@@ -1152,11 +1152,11 @@ func (m *QueryParameterMatcher) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetStringMatch()).(clone.Cloner); ok {
 			target.QueryParameterMatchSpecifier = &QueryParameterMatcher_StringMatch{
-				StringMatch: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.StringMatcher),
+				StringMatch: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3.StringMatcher),
 			}
 		} else {
 			target.QueryParameterMatchSpecifier = &QueryParameterMatcher_StringMatch{
-				StringMatch: proto.Clone(m.GetStringMatch()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.StringMatcher),
+				StringMatch: proto.Clone(m.GetStringMatch()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3.StringMatcher),
 			}
 		}
 
@@ -1195,13 +1195,13 @@ func (m *InternalRedirectPolicy) Clone() proto.Message {
 	}
 
 	if m.GetPredicates() != nil {
-		target.Predicates = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.TypedExtensionConfig, len(m.GetPredicates()))
+		target.Predicates = make([]*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.TypedExtensionConfig, len(m.GetPredicates()))
 		for idx, v := range m.GetPredicates() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Predicates[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.TypedExtensionConfig)
+				target.Predicates[idx] = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.TypedExtensionConfig)
 			} else {
-				target.Predicates[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.TypedExtensionConfig)
+				target.Predicates[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.TypedExtensionConfig)
 			}
 
 		}
@@ -1229,19 +1229,19 @@ func (m *WeightedCluster_ClusterWeight) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetMetadataMatch()).(clone.Cloner); ok {
-		target.MetadataMatch = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.Metadata)
+		target.MetadataMatch = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.Metadata)
 	} else {
-		target.MetadataMatch = proto.Clone(m.GetMetadataMatch()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.Metadata)
+		target.MetadataMatch = proto.Clone(m.GetMetadataMatch()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.Metadata)
 	}
 
 	if m.GetRequestHeadersToAdd() != nil {
-		target.RequestHeadersToAdd = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderValueOption, len(m.GetRequestHeadersToAdd()))
+		target.RequestHeadersToAdd = make([]*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderValueOption, len(m.GetRequestHeadersToAdd()))
 		for idx, v := range m.GetRequestHeadersToAdd() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.RequestHeadersToAdd[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
+				target.RequestHeadersToAdd[idx] = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
 			} else {
-				target.RequestHeadersToAdd[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
+				target.RequestHeadersToAdd[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
 			}
 
 		}
@@ -1257,13 +1257,13 @@ func (m *WeightedCluster_ClusterWeight) Clone() proto.Message {
 	}
 
 	if m.GetResponseHeadersToAdd() != nil {
-		target.ResponseHeadersToAdd = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderValueOption, len(m.GetResponseHeadersToAdd()))
+		target.ResponseHeadersToAdd = make([]*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderValueOption, len(m.GetResponseHeadersToAdd()))
 		for idx, v := range m.GetResponseHeadersToAdd() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.ResponseHeadersToAdd[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
+				target.ResponseHeadersToAdd[idx] = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
 			} else {
-				target.ResponseHeadersToAdd[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
+				target.ResponseHeadersToAdd[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderValueOption)
 			}
 
 		}
@@ -1350,9 +1350,9 @@ func (m *RouteAction_RequestMirrorPolicy) Clone() proto.Message {
 	target.Cluster = m.GetCluster()
 
 	if h, ok := interface{}(m.GetRuntimeFraction()).(clone.Cloner); ok {
-		target.RuntimeFraction = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.RuntimeFractionalPercent)
+		target.RuntimeFraction = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.RuntimeFractionalPercent)
 	} else {
-		target.RuntimeFraction = proto.Clone(m.GetRuntimeFraction()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.RuntimeFractionalPercent)
+		target.RuntimeFraction = proto.Clone(m.GetRuntimeFraction()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.RuntimeFractionalPercent)
 	}
 
 	if h, ok := interface{}(m.GetTraceSampled()).(clone.Cloner); ok {
@@ -1477,9 +1477,9 @@ func (m *RouteAction_HashPolicy_Header) Clone() proto.Message {
 	target.HeaderName = m.GetHeaderName()
 
 	if h, ok := interface{}(m.GetRegexRewrite()).(clone.Cloner); ok {
-		target.RegexRewrite = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.RegexMatchAndSubstitute)
+		target.RegexRewrite = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3.RegexMatchAndSubstitute)
 	} else {
-		target.RegexRewrite = proto.Clone(m.GetRegexRewrite()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.RegexMatchAndSubstitute)
+		target.RegexRewrite = proto.Clone(m.GetRegexRewrite()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3.RegexMatchAndSubstitute)
 	}
 
 	return target
@@ -1554,9 +1554,9 @@ func (m *RouteAction_UpgradeConfig_ConnectConfig) Clone() proto.Message {
 	target = &RouteAction_UpgradeConfig_ConnectConfig{}
 
 	if h, ok := interface{}(m.GetProxyProtocolConfig()).(clone.Cloner); ok {
-		target.ProxyProtocolConfig = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.ProxyProtocolConfig)
+		target.ProxyProtocolConfig = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.ProxyProtocolConfig)
 	} else {
-		target.ProxyProtocolConfig = proto.Clone(m.GetProxyProtocolConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.ProxyProtocolConfig)
+		target.ProxyProtocolConfig = proto.Clone(m.GetProxyProtocolConfig()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.ProxyProtocolConfig)
 	}
 
 	return target
@@ -1875,9 +1875,9 @@ func (m *RateLimit_Action_DynamicMetaData) Clone() proto.Message {
 	target.DescriptorKey = m.GetDescriptorKey()
 
 	if h, ok := interface{}(m.GetMetadataKey()).(clone.Cloner); ok {
-		target.MetadataKey = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_metadata_v3.MetadataKey)
+		target.MetadataKey = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_metadata_v3.MetadataKey)
 	} else {
-		target.MetadataKey = proto.Clone(m.GetMetadataKey()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_metadata_v3.MetadataKey)
+		target.MetadataKey = proto.Clone(m.GetMetadataKey()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_metadata_v3.MetadataKey)
 	}
 
 	return target
@@ -1892,9 +1892,9 @@ func (m *RateLimit_Override_DynamicMetadata) Clone() proto.Message {
 	target = &RateLimit_Override_DynamicMetadata{}
 
 	if h, ok := interface{}(m.GetMetadataKey()).(clone.Cloner); ok {
-		target.MetadataKey = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_metadata_v3.MetadataKey)
+		target.MetadataKey = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_metadata_v3.MetadataKey)
 	} else {
-		target.MetadataKey = proto.Clone(m.GetMetadataKey()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_metadata_v3.MetadataKey)
+		target.MetadataKey = proto.Clone(m.GetMetadataKey()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_metadata_v3.MetadataKey)
 	}
 
 	return target

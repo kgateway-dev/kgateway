@@ -9,9 +9,9 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	v10 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	gloosnapshot "github.com/solo-io/gloo/projects/controller/pkg/api/v1/gloosnapshot"
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	v10 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	reporter "github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
@@ -39,10 +39,10 @@ func (m *MockTranslator) EXPECT() *MockTranslatorMockRecorder {
 }
 
 // Translate mocks base method.
-func (m *MockTranslator) Translate(arg0 context.Context, arg1 string, arg2 *gloosnapshot.ApiSnapshot, arg3 v1.GatewayList) (*v10.Proxy, reporter.ResourceReports) {
+func (m *MockTranslator) Translate(arg0 context.Context, arg1 string, arg2 *gloosnapshot.ApiSnapshot, arg3 v10.GatewayList) (*v1.Proxy, reporter.ResourceReports) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Translate", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(*v10.Proxy)
+	ret0, _ := ret[0].(*v1.Proxy)
 	ret1, _ := ret[1].(reporter.ResourceReports)
 	return ret0, ret1
 }

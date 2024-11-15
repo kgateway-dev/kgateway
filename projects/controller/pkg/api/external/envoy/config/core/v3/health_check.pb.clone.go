@@ -13,11 +13,11 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/matcher/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/matcher/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_advanced_http "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/advanced_http"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_advanced_http "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/advanced_http"
 
 	google_golang_org_protobuf_types_known_anypb "google.golang.org/protobuf/types/known/anypb"
 
@@ -280,13 +280,13 @@ func (m *HealthCheck_HttpHealthCheck) Clone() proto.Message {
 	}
 
 	if m.GetExpectedStatuses() != nil {
-		target.ExpectedStatuses = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3.Int64Range, len(m.GetExpectedStatuses()))
+		target.ExpectedStatuses = make([]*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3.Int64Range, len(m.GetExpectedStatuses()))
 		for idx, v := range m.GetExpectedStatuses() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.ExpectedStatuses[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3.Int64Range)
+				target.ExpectedStatuses[idx] = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3.Int64Range)
 			} else {
-				target.ExpectedStatuses[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_v3.Int64Range)
+				target.ExpectedStatuses[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_v3.Int64Range)
 			}
 
 		}
@@ -295,15 +295,15 @@ func (m *HealthCheck_HttpHealthCheck) Clone() proto.Message {
 	target.CodecClientType = m.GetCodecClientType()
 
 	if h, ok := interface{}(m.GetServiceNameMatcher()).(clone.Cloner); ok {
-		target.ServiceNameMatcher = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.StringMatcher)
+		target.ServiceNameMatcher = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3.StringMatcher)
 	} else {
-		target.ServiceNameMatcher = proto.Clone(m.GetServiceNameMatcher()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.StringMatcher)
+		target.ServiceNameMatcher = proto.Clone(m.GetServiceNameMatcher()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3.StringMatcher)
 	}
 
 	if h, ok := interface{}(m.GetResponseAssertions()).(clone.Cloner); ok {
-		target.ResponseAssertions = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_advanced_http.ResponseAssertions)
+		target.ResponseAssertions = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_advanced_http.ResponseAssertions)
 	} else {
-		target.ResponseAssertions = proto.Clone(m.GetResponseAssertions()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_advanced_http.ResponseAssertions)
+		target.ResponseAssertions = proto.Clone(m.GetResponseAssertions()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_advanced_http.ResponseAssertions)
 	}
 
 	return target

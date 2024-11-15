@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_wasm_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/wasm/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_wasm_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/wasm/v3"
 )
 
 // ensure the imports are used
@@ -36,9 +36,9 @@ func (m *Wasm) Clone() proto.Message {
 	target = &Wasm{}
 
 	if h, ok := interface{}(m.GetConfig()).(clone.Cloner); ok {
-		target.Config = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_wasm_v3.PluginConfig)
+		target.Config = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_wasm_v3.PluginConfig)
 	} else {
-		target.Config = proto.Clone(m.GetConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_wasm_v3.PluginConfig)
+		target.Config = proto.Clone(m.GetConfig()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_wasm_v3.PluginConfig)
 	}
 
 	return target

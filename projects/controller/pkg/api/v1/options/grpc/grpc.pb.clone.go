@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_transformation "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_transformation "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation"
 )
 
 // ensure the imports are used
@@ -71,9 +71,9 @@ func (m *DestinationSpec) Clone() proto.Message {
 	target.Function = m.GetFunction()
 
 	if h, ok := interface{}(m.GetParameters()).(clone.Cloner); ok {
-		target.Parameters = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_transformation.Parameters)
+		target.Parameters = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_transformation.Parameters)
 	} else {
-		target.Parameters = proto.Clone(m.GetParameters()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_transformation.Parameters)
+		target.Parameters = proto.Clone(m.GetParameters()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_transformation.Parameters)
 	}
 
 	return target

@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_metadata_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/metadata/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_metadata_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/metadata/v3"
 )
 
 // ensure the imports are used
@@ -144,15 +144,15 @@ func (m *CustomTag_Metadata) Clone() proto.Message {
 	target = &CustomTag_Metadata{}
 
 	if h, ok := interface{}(m.GetKind()).(clone.Cloner); ok {
-		target.Kind = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_metadata_v3.MetadataKind)
+		target.Kind = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_metadata_v3.MetadataKind)
 	} else {
-		target.Kind = proto.Clone(m.GetKind()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_metadata_v3.MetadataKind)
+		target.Kind = proto.Clone(m.GetKind()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_metadata_v3.MetadataKind)
 	}
 
 	if h, ok := interface{}(m.GetMetadataKey()).(clone.Cloner); ok {
-		target.MetadataKey = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_metadata_v3.MetadataKey)
+		target.MetadataKey = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_metadata_v3.MetadataKey)
 	} else {
-		target.MetadataKey = proto.Clone(m.GetMetadataKey()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_metadata_v3.MetadataKey)
+		target.MetadataKey = proto.Clone(m.GetMetadataKey()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_metadata_v3.MetadataKey)
 	}
 
 	target.DefaultValue = m.GetDefaultValue()

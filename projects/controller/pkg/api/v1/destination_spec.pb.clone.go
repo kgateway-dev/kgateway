@@ -13,13 +13,13 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_aws "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/aws"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_aws "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/aws"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_azure "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/azure"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_azure "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/azure"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_grpc "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/grpc"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_grpc "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/grpc"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_rest "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/rest"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_rest "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/rest"
 )
 
 // ensure the imports are used
@@ -47,11 +47,11 @@ func (m *DestinationSpec) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetAws()).(clone.Cloner); ok {
 			target.DestinationType = &DestinationSpec_Aws{
-				Aws: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_aws.DestinationSpec),
+				Aws: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_aws.DestinationSpec),
 			}
 		} else {
 			target.DestinationType = &DestinationSpec_Aws{
-				Aws: proto.Clone(m.GetAws()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_aws.DestinationSpec),
+				Aws: proto.Clone(m.GetAws()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_aws.DestinationSpec),
 			}
 		}
 
@@ -59,11 +59,11 @@ func (m *DestinationSpec) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetAzure()).(clone.Cloner); ok {
 			target.DestinationType = &DestinationSpec_Azure{
-				Azure: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_azure.DestinationSpec),
+				Azure: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_azure.DestinationSpec),
 			}
 		} else {
 			target.DestinationType = &DestinationSpec_Azure{
-				Azure: proto.Clone(m.GetAzure()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_azure.DestinationSpec),
+				Azure: proto.Clone(m.GetAzure()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_azure.DestinationSpec),
 			}
 		}
 
@@ -71,11 +71,11 @@ func (m *DestinationSpec) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetRest()).(clone.Cloner); ok {
 			target.DestinationType = &DestinationSpec_Rest{
-				Rest: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_rest.DestinationSpec),
+				Rest: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_rest.DestinationSpec),
 			}
 		} else {
 			target.DestinationType = &DestinationSpec_Rest{
-				Rest: proto.Clone(m.GetRest()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_rest.DestinationSpec),
+				Rest: proto.Clone(m.GetRest()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_rest.DestinationSpec),
 			}
 		}
 
@@ -83,11 +83,11 @@ func (m *DestinationSpec) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetGrpc()).(clone.Cloner); ok {
 			target.DestinationType = &DestinationSpec_Grpc{
-				Grpc: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_grpc.DestinationSpec),
+				Grpc: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_grpc.DestinationSpec),
 			}
 		} else {
 			target.DestinationType = &DestinationSpec_Grpc{
-				Grpc: proto.Clone(m.GetGrpc()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_grpc.DestinationSpec),
+				Grpc: proto.Clone(m.GetGrpc()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_grpc.DestinationSpec),
 			}
 		}
 

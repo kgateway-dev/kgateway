@@ -77,11 +77,11 @@ func (x RedirectAction_RedirectResponseCode) String() string {
 }
 
 func (RedirectAction_RedirectResponseCode) Descriptor() protoreflect.EnumDescriptor {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_enumTypes[0].Descriptor()
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_enumTypes[0].Descriptor()
 }
 
 func (RedirectAction_RedirectResponseCode) Type() protoreflect.EnumType {
-	return &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_enumTypes[0]
+	return &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_enumTypes[0]
 }
 
 func (x RedirectAction_RedirectResponseCode) Number() protoreflect.EnumNumber {
@@ -90,7 +90,7 @@ func (x RedirectAction_RedirectResponseCode) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RedirectAction_RedirectResponseCode.Descriptor instead.
 func (RedirectAction_RedirectResponseCode) EnumDescriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{19, 0}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{19, 0}
 }
 
 // A Proxy is a container for the entire set of configuration that will to be applied to one or more Proxy instances.
@@ -124,7 +124,7 @@ type Proxy struct {
 
 func (x *Proxy) Reset() {
 	*x = Proxy{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[0]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -136,7 +136,7 @@ func (x *Proxy) String() string {
 func (*Proxy) ProtoMessage() {}
 
 func (x *Proxy) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[0]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -149,7 +149,7 @@ func (x *Proxy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Proxy.ProtoReflect.Descriptor instead.
 func (*Proxy) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{0}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Proxy) GetCompressedSpec() string {
@@ -228,7 +228,7 @@ type Listener struct {
 
 func (x *Listener) Reset() {
 	*x = Listener{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[1]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -240,7 +240,7 @@ func (x *Listener) String() string {
 func (*Listener) ProtoMessage() {}
 
 func (x *Listener) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[1]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -253,7 +253,7 @@ func (x *Listener) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Listener.ProtoReflect.Descriptor instead.
 func (*Listener) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{1}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *Listener) GetName() string {
@@ -438,7 +438,7 @@ type TcpListener struct {
 
 func (x *TcpListener) Reset() {
 	*x = TcpListener{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[2]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -450,7 +450,7 @@ func (x *TcpListener) String() string {
 func (*TcpListener) ProtoMessage() {}
 
 func (x *TcpListener) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[2]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -463,7 +463,7 @@ func (x *TcpListener) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TcpListener.ProtoReflect.Descriptor instead.
 func (*TcpListener) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{2}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *TcpListener) GetTcpHosts() []*TcpHost {
@@ -508,7 +508,7 @@ type TcpHost struct {
 
 func (x *TcpHost) Reset() {
 	*x = TcpHost{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[3]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -520,7 +520,7 @@ func (x *TcpHost) String() string {
 func (*TcpHost) ProtoMessage() {}
 
 func (x *TcpHost) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[3]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -533,7 +533,7 @@ func (x *TcpHost) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TcpHost.ProtoReflect.Descriptor instead.
 func (*TcpHost) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{3}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *TcpHost) GetName() string {
@@ -584,7 +584,7 @@ type HttpListener struct {
 
 func (x *HttpListener) Reset() {
 	*x = HttpListener{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[4]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -596,7 +596,7 @@ func (x *HttpListener) String() string {
 func (*HttpListener) ProtoMessage() {}
 
 func (x *HttpListener) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[4]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -609,7 +609,7 @@ func (x *HttpListener) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HttpListener.ProtoReflect.Descriptor instead.
 func (*HttpListener) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{4}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *HttpListener) GetVirtualHosts() []*VirtualHost {
@@ -657,7 +657,7 @@ type HybridListener struct {
 
 func (x *HybridListener) Reset() {
 	*x = HybridListener{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[5]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -669,7 +669,7 @@ func (x *HybridListener) String() string {
 func (*HybridListener) ProtoMessage() {}
 
 func (x *HybridListener) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[5]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -682,7 +682,7 @@ func (x *HybridListener) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HybridListener.ProtoReflect.Descriptor instead.
 func (*HybridListener) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{5}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *HybridListener) GetMatchedListeners() []*MatchedListener {
@@ -715,7 +715,7 @@ type MatchedListener struct {
 
 func (x *MatchedListener) Reset() {
 	*x = MatchedListener{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[6]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -727,7 +727,7 @@ func (x *MatchedListener) String() string {
 func (*MatchedListener) ProtoMessage() {}
 
 func (x *MatchedListener) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[6]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -740,7 +740,7 @@ func (x *MatchedListener) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MatchedListener.ProtoReflect.Descriptor instead.
 func (*MatchedListener) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{6}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *MatchedListener) GetMatcher() *Matcher {
@@ -808,7 +808,7 @@ type MatchedTcpListener struct {
 
 func (x *MatchedTcpListener) Reset() {
 	*x = MatchedTcpListener{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[7]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -820,7 +820,7 @@ func (x *MatchedTcpListener) String() string {
 func (*MatchedTcpListener) ProtoMessage() {}
 
 func (x *MatchedTcpListener) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[7]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -833,7 +833,7 @@ func (x *MatchedTcpListener) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MatchedTcpListener.ProtoReflect.Descriptor instead.
 func (*MatchedTcpListener) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{7}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *MatchedTcpListener) GetMatcher() *Matcher {
@@ -875,7 +875,7 @@ type Matcher struct {
 
 func (x *Matcher) Reset() {
 	*x = Matcher{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[8]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -887,7 +887,7 @@ func (x *Matcher) String() string {
 func (*Matcher) ProtoMessage() {}
 
 func (x *Matcher) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[8]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -900,7 +900,7 @@ func (x *Matcher) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Matcher.ProtoReflect.Descriptor instead.
 func (*Matcher) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{8}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Matcher) GetSslConfig() *ssl.SslConfig {
@@ -954,7 +954,7 @@ type AggregateListener struct {
 
 func (x *AggregateListener) Reset() {
 	*x = AggregateListener{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[9]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -966,7 +966,7 @@ func (x *AggregateListener) String() string {
 func (*AggregateListener) ProtoMessage() {}
 
 func (x *AggregateListener) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[9]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -979,7 +979,7 @@ func (x *AggregateListener) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AggregateListener.ProtoReflect.Descriptor instead.
 func (*AggregateListener) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{9}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *AggregateListener) GetHttpResources() *AggregateListener_HttpResources {
@@ -1037,7 +1037,7 @@ type VirtualHost struct {
 
 func (x *VirtualHost) Reset() {
 	*x = VirtualHost{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[10]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1049,7 +1049,7 @@ func (x *VirtualHost) String() string {
 func (*VirtualHost) ProtoMessage() {}
 
 func (x *VirtualHost) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[10]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1062,7 +1062,7 @@ func (x *VirtualHost) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VirtualHost.ProtoReflect.Descriptor instead.
 func (*VirtualHost) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{10}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *VirtualHost) GetName() string {
@@ -1170,7 +1170,7 @@ type Route struct {
 
 func (x *Route) Reset() {
 	*x = Route{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[11]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1182,7 +1182,7 @@ func (x *Route) String() string {
 func (*Route) ProtoMessage() {}
 
 func (x *Route) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[11]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1195,7 +1195,7 @@ func (x *Route) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Route.ProtoReflect.Descriptor instead.
 func (*Route) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{11}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *Route) GetMatchers() []*matchers.Matcher {
@@ -1356,7 +1356,7 @@ type RouteAction struct {
 
 func (x *RouteAction) Reset() {
 	*x = RouteAction{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[12]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1368,7 +1368,7 @@ func (x *RouteAction) String() string {
 func (*RouteAction) ProtoMessage() {}
 
 func (x *RouteAction) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[12]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1381,7 +1381,7 @@ func (x *RouteAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RouteAction.ProtoReflect.Descriptor instead.
 func (*RouteAction) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{12}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{12}
 }
 
 func (m *RouteAction) GetDestination() isRouteAction_Destination {
@@ -1497,7 +1497,7 @@ type Destination struct {
 
 func (x *Destination) Reset() {
 	*x = Destination{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[13]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1509,7 +1509,7 @@ func (x *Destination) String() string {
 func (*Destination) ProtoMessage() {}
 
 func (x *Destination) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[13]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1522,7 +1522,7 @@ func (x *Destination) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Destination.ProtoReflect.Descriptor instead.
 func (*Destination) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{13}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{13}
 }
 
 func (m *Destination) GetDestinationType() isDestination_DestinationType {
@@ -1606,7 +1606,7 @@ type KubernetesServiceDestination struct {
 
 func (x *KubernetesServiceDestination) Reset() {
 	*x = KubernetesServiceDestination{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[14]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1618,7 +1618,7 @@ func (x *KubernetesServiceDestination) String() string {
 func (*KubernetesServiceDestination) ProtoMessage() {}
 
 func (x *KubernetesServiceDestination) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[14]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1631,7 +1631,7 @@ func (x *KubernetesServiceDestination) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KubernetesServiceDestination.ProtoReflect.Descriptor instead.
 func (*KubernetesServiceDestination) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{14}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *KubernetesServiceDestination) GetRef() *core.ResourceRef {
@@ -1669,7 +1669,7 @@ type ConsulServiceDestination struct {
 
 func (x *ConsulServiceDestination) Reset() {
 	*x = ConsulServiceDestination{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[15]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1681,7 +1681,7 @@ func (x *ConsulServiceDestination) String() string {
 func (*ConsulServiceDestination) ProtoMessage() {}
 
 func (x *ConsulServiceDestination) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[15]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1694,7 +1694,7 @@ func (x *ConsulServiceDestination) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConsulServiceDestination.ProtoReflect.Descriptor instead.
 func (*ConsulServiceDestination) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{15}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ConsulServiceDestination) GetServiceName() string {
@@ -1734,7 +1734,7 @@ type UpstreamGroup struct {
 
 func (x *UpstreamGroup) Reset() {
 	*x = UpstreamGroup{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[16]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1746,7 +1746,7 @@ func (x *UpstreamGroup) String() string {
 func (*UpstreamGroup) ProtoMessage() {}
 
 func (x *UpstreamGroup) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[16]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1759,7 +1759,7 @@ func (x *UpstreamGroup) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpstreamGroup.ProtoReflect.Descriptor instead.
 func (*UpstreamGroup) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{16}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *UpstreamGroup) GetDestinations() []*WeightedDestination {
@@ -1797,7 +1797,7 @@ type MultiDestination struct {
 
 func (x *MultiDestination) Reset() {
 	*x = MultiDestination{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[17]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1809,7 +1809,7 @@ func (x *MultiDestination) String() string {
 func (*MultiDestination) ProtoMessage() {}
 
 func (x *MultiDestination) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[17]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1822,7 +1822,7 @@ func (x *MultiDestination) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MultiDestination.ProtoReflect.Descriptor instead.
 func (*MultiDestination) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{17}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *MultiDestination) GetDestinations() []*WeightedDestination {
@@ -1851,7 +1851,7 @@ type WeightedDestination struct {
 
 func (x *WeightedDestination) Reset() {
 	*x = WeightedDestination{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[18]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1863,7 +1863,7 @@ func (x *WeightedDestination) String() string {
 func (*WeightedDestination) ProtoMessage() {}
 
 func (x *WeightedDestination) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[18]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1876,7 +1876,7 @@ func (x *WeightedDestination) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WeightedDestination.ProtoReflect.Descriptor instead.
 func (*WeightedDestination) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{18}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *WeightedDestination) GetDestination() *Destination {
@@ -1928,7 +1928,7 @@ type RedirectAction struct {
 
 func (x *RedirectAction) Reset() {
 	*x = RedirectAction{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[19]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1940,7 +1940,7 @@ func (x *RedirectAction) String() string {
 func (*RedirectAction) ProtoMessage() {}
 
 func (x *RedirectAction) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[19]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1953,7 +1953,7 @@ func (x *RedirectAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RedirectAction.ProtoReflect.Descriptor instead.
 func (*RedirectAction) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{19}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *RedirectAction) GetHostRedirect() string {
@@ -2094,7 +2094,7 @@ type DirectResponseAction struct {
 
 func (x *DirectResponseAction) Reset() {
 	*x = DirectResponseAction{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[20]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2106,7 +2106,7 @@ func (x *DirectResponseAction) String() string {
 func (*DirectResponseAction) ProtoMessage() {}
 
 func (x *DirectResponseAction) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[20]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2119,7 +2119,7 @@ func (x *DirectResponseAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DirectResponseAction.ProtoReflect.Descriptor instead.
 func (*DirectResponseAction) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{20}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *DirectResponseAction) GetStatus() uint32 {
@@ -2151,7 +2151,7 @@ type SourceMetadata struct {
 
 func (x *SourceMetadata) Reset() {
 	*x = SourceMetadata{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[21]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2163,7 +2163,7 @@ func (x *SourceMetadata) String() string {
 func (*SourceMetadata) ProtoMessage() {}
 
 func (x *SourceMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[21]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2176,7 +2176,7 @@ func (x *SourceMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SourceMetadata.ProtoReflect.Descriptor instead.
 func (*SourceMetadata) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{21}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *SourceMetadata) GetSources() []*SourceMetadata_SourceRef {
@@ -2203,7 +2203,7 @@ type CustomEnvoyFilter struct {
 
 func (x *CustomEnvoyFilter) Reset() {
 	*x = CustomEnvoyFilter{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[22]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2215,7 +2215,7 @@ func (x *CustomEnvoyFilter) String() string {
 func (*CustomEnvoyFilter) ProtoMessage() {}
 
 func (x *CustomEnvoyFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[22]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2228,7 +2228,7 @@ func (x *CustomEnvoyFilter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CustomEnvoyFilter.ProtoReflect.Descriptor instead.
 func (*CustomEnvoyFilter) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{22}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *CustomEnvoyFilter) GetFilterStage() *filters.FilterStage {
@@ -2270,7 +2270,7 @@ type TcpHost_TcpAction struct {
 
 func (x *TcpHost_TcpAction) Reset() {
 	*x = TcpHost_TcpAction{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[23]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2282,7 +2282,7 @@ func (x *TcpHost_TcpAction) String() string {
 func (*TcpHost_TcpAction) ProtoMessage() {}
 
 func (x *TcpHost_TcpAction) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[23]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2295,7 +2295,7 @@ func (x *TcpHost_TcpAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TcpHost_TcpAction.ProtoReflect.Descriptor instead.
 func (*TcpHost_TcpAction) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{3, 0}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{3, 0}
 }
 
 func (m *TcpHost_TcpAction) GetDestination() isTcpHost_TcpAction_Destination {
@@ -2380,7 +2380,7 @@ type AggregateListener_HttpResources struct {
 
 func (x *AggregateListener_HttpResources) Reset() {
 	*x = AggregateListener_HttpResources{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[24]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2392,7 +2392,7 @@ func (x *AggregateListener_HttpResources) String() string {
 func (*AggregateListener_HttpResources) ProtoMessage() {}
 
 func (x *AggregateListener_HttpResources) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[24]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2405,7 +2405,7 @@ func (x *AggregateListener_HttpResources) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AggregateListener_HttpResources.ProtoReflect.Descriptor instead.
 func (*AggregateListener_HttpResources) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{9, 0}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{9, 0}
 }
 
 func (x *AggregateListener_HttpResources) GetVirtualHosts() map[string]*VirtualHost {
@@ -2443,7 +2443,7 @@ type AggregateListener_HttpFilterChain struct {
 
 func (x *AggregateListener_HttpFilterChain) Reset() {
 	*x = AggregateListener_HttpFilterChain{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[25]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2455,7 +2455,7 @@ func (x *AggregateListener_HttpFilterChain) String() string {
 func (*AggregateListener_HttpFilterChain) ProtoMessage() {}
 
 func (x *AggregateListener_HttpFilterChain) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[25]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2468,7 +2468,7 @@ func (x *AggregateListener_HttpFilterChain) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use AggregateListener_HttpFilterChain.ProtoReflect.Descriptor instead.
 func (*AggregateListener_HttpFilterChain) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{9, 1}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{9, 1}
 }
 
 func (x *AggregateListener_HttpFilterChain) GetMatcher() *Matcher {
@@ -2521,7 +2521,7 @@ type SourceMetadata_SourceRef struct {
 
 func (x *SourceMetadata_SourceRef) Reset() {
 	*x = SourceMetadata_SourceRef{}
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[28]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2533,7 +2533,7 @@ func (x *SourceMetadata_SourceRef) String() string {
 func (*SourceMetadata_SourceRef) ProtoMessage() {}
 
 func (x *SourceMetadata_SourceRef) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[28]
+	mi := &file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2546,7 +2546,7 @@ func (x *SourceMetadata_SourceRef) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SourceMetadata_SourceRef.ProtoReflect.Descriptor instead.
 func (*SourceMetadata_SourceRef) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{21, 0}
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP(), []int{21, 0}
 }
 
 func (x *SourceMetadata_SourceRef) GetResourceRef() *core.ResourceRef {
@@ -2570,102 +2570,108 @@ func (x *SourceMetadata_SourceRef) GetObservedGeneration() int64 {
 	return 0
 }
 
-var File_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto protoreflect.FileDescriptor
+var File_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto protoreflect.FileDescriptor
 
-var file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDesc = []byte{
-	0x0a, 0x38, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c,
+var file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDesc = []byte{
+	0x0a, 0x3e, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c,
 	0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63,
-	0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x70,
-	0x72, 0x6f, 0x78, 0x79, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x0c, 0x67, 0x6c, 0x6f, 0x6f,
-	0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x1a, 0x1e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65,
-	0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x77, 0x72, 0x61, 0x70, 0x70, 0x65,
-	0x72, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1b, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65,
-	0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x65, 0x6d, 0x70, 0x74, 0x79, 0x2e,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1c, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x2e, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x1a, 0x19, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x62, 0x75, 0x66, 0x2f, 0x61, 0x6e, 0x79, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x12,
-	0x65, 0x78, 0x74, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x65, 0x78, 0x74, 0x2e, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x1a, 0x31, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73,
-	0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x6b, 0x69, 0x74, 0x2f,
-	0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x6d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x2e,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x2f, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f,
-	0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x6b,
-	0x69, 0x74, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73,
-	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x2c, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63,
-	0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d,
-	0x6b, 0x69, 0x74, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x72, 0x65, 0x66, 0x2e, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x31, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d,
-	0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x6b, 0x69,
-	0x74, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x6b, 0x69,
-	0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x43, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e,
-	0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f,
-	0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x61,
-	0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x6c, 0x69, 0x73, 0x74, 0x65, 0x6e, 0x65, 0x72, 0x5f, 0x6f,
-	0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x48, 0x67, 0x69,
-	0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f,
-	0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67,
-	0x6c, 0x6f, 0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x68, 0x74, 0x74, 0x70, 0x5f,
-	0x6c, 0x69, 0x73, 0x74, 0x65, 0x6e, 0x65, 0x72, 0x5f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73,
-	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x47, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63,
-	0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f,
-	0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x61, 0x70,
-	0x69, 0x2f, 0x76, 0x31, 0x2f, 0x74, 0x63, 0x70, 0x5f, 0x6c, 0x69, 0x73, 0x74, 0x65, 0x6e, 0x65,
-	0x72, 0x5f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a,
-	0x47, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f,
-	0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74,
-	0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x76, 0x69,
-	0x72, 0x74, 0x75, 0x61, 0x6c, 0x5f, 0x68, 0x6f, 0x73, 0x74, 0x5f, 0x6f, 0x70, 0x74, 0x69, 0x6f,
-	0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x40, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62,
-	0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f,
-	0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f,
-	0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x72, 0x6f, 0x75, 0x74, 0x65, 0x5f, 0x6f, 0x70, 0x74,
-	0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x4e, 0x67, 0x69, 0x74, 0x68,
-	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67,
-	0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f,
-	0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x72, 0x6f, 0x75, 0x74, 0x65, 0x5f, 0x63,
-	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x6f, 0x70, 0x74,
-	0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x4f, 0x67, 0x69, 0x74, 0x68,
-	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67,
-	0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f,
-	0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x77, 0x65, 0x69, 0x67, 0x68, 0x74, 0x65,
-	0x64, 0x5f, 0x64, 0x65, 0x73, 0x74, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x6f, 0x70,
-	0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x3a, 0x67, 0x69, 0x74,
+	0x74, 0x73, 0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x2f, 0x61, 0x70,
+	0x69, 0x2f, 0x76, 0x31, 0x2f, 0x70, 0x72, 0x6f, 0x78, 0x79, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x12, 0x0c, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x1a, 0x1e,
+	0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f,
+	0x77, 0x72, 0x61, 0x70, 0x70, 0x65, 0x72, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1b,
+	0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f,
+	0x65, 0x6d, 0x70, 0x74, 0x79, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1c, 0x67, 0x6f, 0x6f,
+	0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x73, 0x74, 0x72,
+	0x75, 0x63, 0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x19, 0x67, 0x6f, 0x6f, 0x67, 0x6c,
+	0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x61, 0x6e, 0x79, 0x2e, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x12, 0x65, 0x78, 0x74, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x65,
+	0x78, 0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x31, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62,
+	0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x73, 0x6f, 0x6c,
+	0x6f, 0x2d, 0x6b, 0x69, 0x74, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x6d, 0x65, 0x74,
+	0x61, 0x64, 0x61, 0x74, 0x61, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x2f, 0x67, 0x69, 0x74,
 	0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f,
-	0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c,
-	0x6f, 0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x73, 0x73, 0x6c, 0x2f, 0x73, 0x73,
-	0x6c, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x39, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e,
-	0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f,
-	0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x61,
-	0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x73, 0x75, 0x62, 0x73, 0x65, 0x74, 0x2e, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x1a, 0x43, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73,
-	0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a,
-	0x65, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31,
-	0x2f, 0x64, 0x65, 0x73, 0x74, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x73, 0x70, 0x65,
-	0x63, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x41, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e,
-	0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f,
-	0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x61,
-	0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x73, 0x2f, 0x73, 0x74,
-	0x61, 0x67, 0x65, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x49, 0x67, 0x69, 0x74, 0x68,
-	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67,
-	0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f,
-	0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x63, 0x6f, 0x72, 0x65, 0x2f, 0x6d, 0x61,
-	0x74, 0x63, 0x68, 0x65, 0x72, 0x73, 0x2f, 0x6d, 0x61, 0x74, 0x63, 0x68, 0x65, 0x72, 0x73, 0x2e,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x55, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f,
-	0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70,
-	0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x61, 0x70, 0x69,
-	0x2f, 0x65, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2f,
-	0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2f, 0x63, 0x6f, 0x72, 0x65, 0x2f, 0x76, 0x33, 0x2f, 0x61,
-	0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x66, 0x67, 0x69,
+	0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x6b, 0x69, 0x74, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f,
+	0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x2c, 0x67, 0x69,
 	0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f,
-	0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67,
-	0x6c, 0x6f, 0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x6f, 0x70, 0x74, 0x69, 0x6f,
-	0x6e, 0x73, 0x2f, 0x64, 0x79, 0x6e, 0x61, 0x6d, 0x69, 0x63, 0x5f, 0x66, 0x6f, 0x72, 0x77, 0x61,
-	0x72, 0x64, 0x5f, 0x70, 0x72, 0x6f, 0x78, 0x79, 0x2f, 0x64, 0x79, 0x6e, 0x61, 0x6d, 0x69, 0x63,
-	0x5f, 0x66, 0x6f, 0x72, 0x77, 0x61, 0x72, 0x64, 0x5f, 0x70, 0x72, 0x6f, 0x78, 0x79, 0x2e, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x54, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d,
+	0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x6b, 0x69, 0x74, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31,
+	0x2f, 0x72, 0x65, 0x66, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x31, 0x67, 0x69, 0x74, 0x68,
+	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x73,
+	0x6f, 0x6c, 0x6f, 0x2d, 0x6b, 0x69, 0x74, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x73,
+	0x6f, 0x6c, 0x6f, 0x2d, 0x6b, 0x69, 0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x49, 0x67,
+	0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69,
+	0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f,
+	0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76,
+	0x31, 0x2f, 0x6c, 0x69, 0x73, 0x74, 0x65, 0x6e, 0x65, 0x72, 0x5f, 0x6f, 0x70, 0x74, 0x69, 0x6f,
+	0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x4e, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62,
+	0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f,
+	0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x72,
+	0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x68, 0x74, 0x74,
+	0x70, 0x5f, 0x6c, 0x69, 0x73, 0x74, 0x65, 0x6e, 0x65, 0x72, 0x5f, 0x6f, 0x70, 0x74, 0x69, 0x6f,
+	0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x4d, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62,
+	0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f,
+	0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x72,
+	0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x74, 0x63, 0x70,
+	0x5f, 0x6c, 0x69, 0x73, 0x74, 0x65, 0x6e, 0x65, 0x72, 0x5f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e,
+	0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x4d, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e,
+	0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f,
+	0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f,
+	0x6c, 0x6c, 0x65, 0x72, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x76, 0x69, 0x72, 0x74,
+	0x75, 0x61, 0x6c, 0x5f, 0x68, 0x6f, 0x73, 0x74, 0x5f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x46, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63,
+	0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f,
+	0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c,
+	0x6c, 0x65, 0x72, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x72, 0x6f, 0x75, 0x74, 0x65,
+	0x5f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x54,
+	0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d,
+	0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73,
+	0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x2f, 0x61, 0x70, 0x69, 0x2f,
+	0x76, 0x31, 0x2f, 0x72, 0x6f, 0x75, 0x74, 0x65, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x75,
+	0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x55, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d,
 	0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72,
-	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f,
+	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65,
+	0x72, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x77, 0x65, 0x69, 0x67, 0x68, 0x74, 0x65,
+	0x64, 0x5f, 0x64, 0x65, 0x73, 0x74, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x6f, 0x70,
+	0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x40, 0x67, 0x69, 0x74,
+	0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f,
+	0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x63, 0x6f,
+	0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f,
+	0x73, 0x73, 0x6c, 0x2f, 0x73, 0x73, 0x6c, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x3f, 0x67,
+	0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69,
+	0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f,
+	0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76,
+	0x31, 0x2f, 0x73, 0x75, 0x62, 0x73, 0x65, 0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x49,
+	0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d,
+	0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73,
+	0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x2f, 0x61, 0x70, 0x69, 0x2f,
+	0x76, 0x31, 0x2f, 0x64, 0x65, 0x73, 0x74, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x73,
+	0x70, 0x65, 0x63, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x47, 0x67, 0x69, 0x74, 0x68, 0x75,
+	0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c,
+	0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x63, 0x6f, 0x6e, 0x74,
+	0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x66, 0x69,
+	0x6c, 0x74, 0x65, 0x72, 0x73, 0x2f, 0x73, 0x74, 0x61, 0x67, 0x65, 0x73, 0x2e, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x1a, 0x4f, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73,
+	0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a,
+	0x65, 0x63, 0x74, 0x73, 0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x2f,
+	0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x63, 0x6f, 0x72, 0x65, 0x2f, 0x6d, 0x61, 0x74, 0x63,
+	0x68, 0x65, 0x72, 0x73, 0x2f, 0x6d, 0x61, 0x74, 0x63, 0x68, 0x65, 0x72, 0x73, 0x2e, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x1a, 0x5b, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f,
+	0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f,
+	0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72,
+	0x2f, 0x61, 0x70, 0x69, 0x2f, 0x65, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x65, 0x6e,
+	0x76, 0x6f, 0x79, 0x2f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2f, 0x63, 0x6f, 0x72, 0x65, 0x2f,
+	0x76, 0x33, 0x2f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x1a, 0x6c, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c,
+	0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63,
+	0x74, 0x73, 0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x2f, 0x61, 0x70,
+	0x69, 0x2f, 0x76, 0x31, 0x2f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2f, 0x64, 0x79, 0x6e,
+	0x61, 0x6d, 0x69, 0x63, 0x5f, 0x66, 0x6f, 0x72, 0x77, 0x61, 0x72, 0x64, 0x5f, 0x70, 0x72, 0x6f,
+	0x78, 0x79, 0x2f, 0x64, 0x79, 0x6e, 0x61, 0x6d, 0x69, 0x63, 0x5f, 0x66, 0x6f, 0x72, 0x77, 0x61,
+	0x72, 0x64, 0x5f, 0x70, 0x72, 0x6f, 0x78, 0x79, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x5a,
+	0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d,
+	0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73,
+	0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x2f, 0x61, 0x70, 0x69, 0x2f,
 	0x65, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2f, 0x74,
 	0x79, 0x70, 0x65, 0x2f, 0x6d, 0x61, 0x74, 0x63, 0x68, 0x65, 0x72, 0x2f, 0x76, 0x33, 0x2f, 0x72,
 	0x65, 0x67, 0x65, 0x78, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x8b, 0x02, 0x0a, 0x05, 0x50,
@@ -3139,28 +3145,28 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDesc = []by
 	0x61, 0x6d, 0x65, 0x12, 0x2c, 0x0a, 0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x18, 0x03, 0x20,
 	0x01, 0x28, 0x0b, 0x32, 0x14, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f,
 	0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x41, 0x6e, 0x79, 0x52, 0x06, 0x63, 0x6f, 0x6e, 0x66, 0x69,
-	0x67, 0x42, 0x3e, 0xb8, 0xf5, 0x04, 0x01, 0xc0, 0xf5, 0x04, 0x01, 0xd0, 0xf5, 0x04, 0x01, 0x5a,
-	0x30, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f,
+	0x67, 0x42, 0x44, 0xb8, 0xf5, 0x04, 0x01, 0xc0, 0xf5, 0x04, 0x01, 0xd0, 0xf5, 0x04, 0x01, 0x5a,
+	0x36, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f,
 	0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74,
-	0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76,
-	0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x73, 0x2f, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x6f, 0x6c, 0x6c, 0x65, 0x72, 0x2f, 0x70, 0x6b, 0x67,
+	0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescOnce sync.Once
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescData = file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDesc
+	file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescOnce sync.Once
+	file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescData = file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDesc
 )
 
-func file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP() []byte {
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescOnce.Do(func() {
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescData = protoimpl.X.CompressGZIP(file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescData)
+func file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescGZIP() []byte {
+	file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescOnce.Do(func() {
+		file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescData = protoimpl.X.CompressGZIP(file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescData)
 	})
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescData
+	return file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDescData
 }
 
-var file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
-var file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_goTypes = []any{
+var file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
+var file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_goTypes = []any{
 	(RedirectAction_RedirectResponseCode)(0),  // 0: gloo.solo.io.RedirectAction.RedirectResponseCode
 	(*Proxy)(nil),                             // 1: gloo.solo.io.Proxy
 	(*Listener)(nil),                          // 2: gloo.solo.io.Listener
@@ -3215,7 +3221,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_goTypes = []an
 	(*anypb.Any)(nil),                            // 51: google.protobuf.Any
 	(*emptypb.Empty)(nil),                        // 52: google.protobuf.Empty
 }
-var file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_depIdxs = []int32{
+var file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_depIdxs = []int32{
 	2,  // 0: gloo.solo.io.Proxy.listeners:type_name -> gloo.solo.io.Listener
 	30, // 1: gloo.solo.io.Proxy.namespaced_statuses:type_name -> core.solo.io.NamespacedStatuses
 	31, // 2: gloo.solo.io.Proxy.metadata:type_name -> core.solo.io.Metadata
@@ -3306,21 +3312,21 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_depIdxs = []in
 	0,  // [0:83] is the sub-list for field type_name
 }
 
-func init() { file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_init() }
-func file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_init() {
-	if File_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto != nil {
+func init() { file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_init() }
+func file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_init() {
+	if File_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto != nil {
 		return
 	}
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_listener_options_proto_init()
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_http_listener_options_proto_init()
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_tcp_listener_options_proto_init()
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_virtual_host_options_proto_init()
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_route_options_proto_init()
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_route_configuration_options_proto_init()
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_weighted_destination_options_proto_init()
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_subset_proto_init()
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_destination_spec_proto_init()
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[1].OneofWrappers = []any{
+	file_github_com_solo_io_gloo_projects_controller_api_v1_listener_options_proto_init()
+	file_github_com_solo_io_gloo_projects_controller_api_v1_http_listener_options_proto_init()
+	file_github_com_solo_io_gloo_projects_controller_api_v1_tcp_listener_options_proto_init()
+	file_github_com_solo_io_gloo_projects_controller_api_v1_virtual_host_options_proto_init()
+	file_github_com_solo_io_gloo_projects_controller_api_v1_route_options_proto_init()
+	file_github_com_solo_io_gloo_projects_controller_api_v1_route_configuration_options_proto_init()
+	file_github_com_solo_io_gloo_projects_controller_api_v1_weighted_destination_options_proto_init()
+	file_github_com_solo_io_gloo_projects_controller_api_v1_subset_proto_init()
+	file_github_com_solo_io_gloo_projects_controller_api_v1_destination_spec_proto_init()
+	file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[1].OneofWrappers = []any{
 		(*Listener_HttpListener)(nil),
 		(*Listener_TcpListener)(nil),
 		(*Listener_HybridListener)(nil),
@@ -3328,15 +3334,15 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_init() {
 		(*Listener_Metadata)(nil),
 		(*Listener_MetadataStatic)(nil),
 	}
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[6].OneofWrappers = []any{
+	file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[6].OneofWrappers = []any{
 		(*MatchedListener_HttpListener)(nil),
 		(*MatchedListener_TcpListener)(nil),
 	}
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[10].OneofWrappers = []any{
+	file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[10].OneofWrappers = []any{
 		(*VirtualHost_Metadata)(nil),
 		(*VirtualHost_MetadataStatic)(nil),
 	}
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[11].OneofWrappers = []any{
+	file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[11].OneofWrappers = []any{
 		(*Route_RouteAction)(nil),
 		(*Route_RedirectAction)(nil),
 		(*Route_DirectResponseAction)(nil),
@@ -3344,24 +3350,24 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_init() {
 		(*Route_Metadata)(nil),
 		(*Route_MetadataStatic)(nil),
 	}
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[12].OneofWrappers = []any{
+	file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[12].OneofWrappers = []any{
 		(*RouteAction_Single)(nil),
 		(*RouteAction_Multi)(nil),
 		(*RouteAction_UpstreamGroup)(nil),
 		(*RouteAction_ClusterHeader)(nil),
 		(*RouteAction_DynamicForwardProxy)(nil),
 	}
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[13].OneofWrappers = []any{
+	file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[13].OneofWrappers = []any{
 		(*Destination_Upstream)(nil),
 		(*Destination_Kube)(nil),
 		(*Destination_Consul)(nil),
 	}
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[19].OneofWrappers = []any{
+	file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[19].OneofWrappers = []any{
 		(*RedirectAction_PathRedirect)(nil),
 		(*RedirectAction_PrefixRewrite)(nil),
 		(*RedirectAction_RegexRewrite)(nil),
 	}
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes[23].OneofWrappers = []any{
+	file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes[23].OneofWrappers = []any{
 		(*TcpHost_TcpAction_Single)(nil),
 		(*TcpHost_TcpAction_Multi)(nil),
 		(*TcpHost_TcpAction_UpstreamGroup)(nil),
@@ -3371,19 +3377,19 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDesc,
+			RawDescriptor: file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDesc,
 			NumEnums:      1,
 			NumMessages:   29,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_goTypes,
-		DependencyIndexes: file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_depIdxs,
-		EnumInfos:         file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_enumTypes,
-		MessageInfos:      file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_msgTypes,
+		GoTypes:           file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_goTypes,
+		DependencyIndexes: file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_depIdxs,
+		EnumInfos:         file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_enumTypes,
+		MessageInfos:      file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_msgTypes,
 	}.Build()
-	File_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto = out.File
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDesc = nil
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_goTypes = nil
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_depIdxs = nil
+	File_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto = out.File
+	file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_rawDesc = nil
+	file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_goTypes = nil
+	file_github_com_solo_io_gloo_projects_controller_api_v1_proxy_proto_depIdxs = nil
 }

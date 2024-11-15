@@ -13,11 +13,11 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_matchers "github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_core_matchers "github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl "github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_ssl "github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -50,9 +50,9 @@ func (m *VirtualService) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetSslConfig()).(clone.Cloner); ok {
-		target.SslConfig = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl.SslConfig)
+		target.SslConfig = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_ssl.SslConfig)
 	} else {
-		target.SslConfig = proto.Clone(m.GetSslConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl.SslConfig)
+		target.SslConfig = proto.Clone(m.GetSslConfig()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_ssl.SslConfig)
 	}
 
 	target.DisplayName = m.GetDisplayName()
@@ -103,9 +103,9 @@ func (m *VirtualHost) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetOptions()).(clone.Cloner); ok {
-		target.Options = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.VirtualHostOptions)
+		target.Options = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.VirtualHostOptions)
 	} else {
-		target.Options = proto.Clone(m.GetOptions()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.VirtualHostOptions)
+		target.Options = proto.Clone(m.GetOptions()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.VirtualHostOptions)
 	}
 
 	switch m.ExternalOptionsConfig.(type) {
@@ -136,13 +136,13 @@ func (m *Route) Clone() proto.Message {
 	target = &Route{}
 
 	if m.GetMatchers() != nil {
-		target.Matchers = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_matchers.Matcher, len(m.GetMatchers()))
+		target.Matchers = make([]*github_com_solo_io_gloo_projects_controller_pkg_api_v1_core_matchers.Matcher, len(m.GetMatchers()))
 		for idx, v := range m.GetMatchers() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Matchers[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_matchers.Matcher)
+				target.Matchers[idx] = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_core_matchers.Matcher)
 			} else {
-				target.Matchers[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_matchers.Matcher)
+				target.Matchers[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_core_matchers.Matcher)
 			}
 
 		}
@@ -161,9 +161,9 @@ func (m *Route) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetOptions()).(clone.Cloner); ok {
-		target.Options = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.RouteOptions)
+		target.Options = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.RouteOptions)
 	} else {
-		target.Options = proto.Clone(m.GetOptions()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.RouteOptions)
+		target.Options = proto.Clone(m.GetOptions()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.RouteOptions)
 	}
 
 	target.Name = m.GetName()
@@ -174,11 +174,11 @@ func (m *Route) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetRouteAction()).(clone.Cloner); ok {
 			target.Action = &Route_RouteAction{
-				RouteAction: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.RouteAction),
+				RouteAction: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.RouteAction),
 			}
 		} else {
 			target.Action = &Route_RouteAction{
-				RouteAction: proto.Clone(m.GetRouteAction()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.RouteAction),
+				RouteAction: proto.Clone(m.GetRouteAction()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.RouteAction),
 			}
 		}
 
@@ -186,11 +186,11 @@ func (m *Route) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetRedirectAction()).(clone.Cloner); ok {
 			target.Action = &Route_RedirectAction{
-				RedirectAction: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.RedirectAction),
+				RedirectAction: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.RedirectAction),
 			}
 		} else {
 			target.Action = &Route_RedirectAction{
-				RedirectAction: proto.Clone(m.GetRedirectAction()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.RedirectAction),
+				RedirectAction: proto.Clone(m.GetRedirectAction()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.RedirectAction),
 			}
 		}
 
@@ -198,11 +198,11 @@ func (m *Route) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetDirectResponseAction()).(clone.Cloner); ok {
 			target.Action = &Route_DirectResponseAction{
-				DirectResponseAction: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.DirectResponseAction),
+				DirectResponseAction: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.DirectResponseAction),
 			}
 		} else {
 			target.Action = &Route_DirectResponseAction{
-				DirectResponseAction: proto.Clone(m.GetDirectResponseAction()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.DirectResponseAction),
+				DirectResponseAction: proto.Clone(m.GetDirectResponseAction()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.DirectResponseAction),
 			}
 		}
 

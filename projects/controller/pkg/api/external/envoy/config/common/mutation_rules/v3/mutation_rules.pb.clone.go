@@ -13,9 +13,9 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/matcher/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/matcher/v3"
 
 	google_golang_org_protobuf_types_known_wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
@@ -64,15 +64,15 @@ func (m *HeaderMutationRules) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetAllowExpression()).(clone.Cloner); ok {
-		target.AllowExpression = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.RegexMatcher)
+		target.AllowExpression = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3.RegexMatcher)
 	} else {
-		target.AllowExpression = proto.Clone(m.GetAllowExpression()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.RegexMatcher)
+		target.AllowExpression = proto.Clone(m.GetAllowExpression()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3.RegexMatcher)
 	}
 
 	if h, ok := interface{}(m.GetDisallowExpression()).(clone.Cloner); ok {
-		target.DisallowExpression = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.RegexMatcher)
+		target.DisallowExpression = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3.RegexMatcher)
 	} else {
-		target.DisallowExpression = proto.Clone(m.GetDisallowExpression()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.RegexMatcher)
+		target.DisallowExpression = proto.Clone(m.GetDisallowExpression()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3.RegexMatcher)
 	}
 
 	if h, ok := interface{}(m.GetDisallowIsError()).(clone.Cloner); ok {
@@ -104,11 +104,11 @@ func (m *HeaderMutation) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetAppend()).(clone.Cloner); ok {
 			target.Action = &HeaderMutation_Append{
-				Append: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderValueOption),
+				Append: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderValueOption),
 			}
 		} else {
 			target.Action = &HeaderMutation_Append{
-				Append: proto.Clone(m.GetAppend()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HeaderValueOption),
+				Append: proto.Clone(m.GetAppend()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HeaderValueOption),
 			}
 		}
 

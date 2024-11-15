@@ -13,9 +13,9 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_als "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/als"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_als "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/als"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_proxy_protocol "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/proxy_protocol"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_proxy_protocol "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/proxy_protocol"
 
 	github_com_solo_io_solo_kit_pkg_api_external_envoy_api_v2_core "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 
@@ -42,9 +42,9 @@ func (m *ListenerOptions) Clone() proto.Message {
 	target = &ListenerOptions{}
 
 	if h, ok := interface{}(m.GetAccessLoggingService()).(clone.Cloner); ok {
-		target.AccessLoggingService = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_als.AccessLoggingService)
+		target.AccessLoggingService = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_als.AccessLoggingService)
 	} else {
-		target.AccessLoggingService = proto.Clone(m.GetAccessLoggingService()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_als.AccessLoggingService)
+		target.AccessLoggingService = proto.Clone(m.GetAccessLoggingService()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_als.AccessLoggingService)
 	}
 
 	if h, ok := interface{}(m.GetExtensions()).(clone.Cloner); ok {
@@ -73,9 +73,9 @@ func (m *ListenerOptions) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetProxyProtocol()).(clone.Cloner); ok {
-		target.ProxyProtocol = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_proxy_protocol.ProxyProtocol)
+		target.ProxyProtocol = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_proxy_protocol.ProxyProtocol)
 	} else {
-		target.ProxyProtocol = proto.Clone(m.GetProxyProtocol()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_proxy_protocol.ProxyProtocol)
+		target.ProxyProtocol = proto.Clone(m.GetProxyProtocol()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_proxy_protocol.ProxyProtocol)
 	}
 
 	if h, ok := interface{}(m.GetConnectionBalanceConfig()).(clone.Cloner); ok {
@@ -85,9 +85,9 @@ func (m *ListenerOptions) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetListenerAccessLoggingService()).(clone.Cloner); ok {
-		target.ListenerAccessLoggingService = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_als.AccessLoggingService)
+		target.ListenerAccessLoggingService = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_als.AccessLoggingService)
 	} else {
-		target.ListenerAccessLoggingService = proto.Clone(m.GetListenerAccessLoggingService()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_als.AccessLoggingService)
+		target.ListenerAccessLoggingService = proto.Clone(m.GetListenerAccessLoggingService()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_als.AccessLoggingService)
 	}
 
 	if h, ok := interface{}(m.GetTcpStats()).(clone.Cloner); ok {

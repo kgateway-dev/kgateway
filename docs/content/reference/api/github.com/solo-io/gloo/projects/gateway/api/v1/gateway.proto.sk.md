@@ -56,7 +56,7 @@ and the routing configuration to upstreams that are reachable via a specific por
 | `ssl` | `bool` | if set to false, only use virtual services without ssl configured. if set to true, only use virtual services with ssl configured. this field is ignored if GatewayType is HybridGateway. |
 | `bindAddress` | `string` | the bind address the gateway should serve traffic on. |
 | `bindPort` | `int` | bind ports must not conflict across gateways for a single proxy. |
-| `options` | [.gloo.solo.io.ListenerOptions](../../../../gloo/api/v1/listener_options.proto.sk/#listeneroptions) | top level optional configuration for all routes on the gateway. |
+| `options` | [.gloo.solo.io.ListenerOptions](../../../../controller/api/v1/listener_options.proto.sk/#listeneroptions) | top level optional configuration for all routes on the gateway. |
 | `namespacedStatuses` | [.core.solo.io.NamespacedStatuses](../../../../../../solo-kit/api/v1/status.proto.sk/#namespacedstatuses) | NamespacedStatuses indicates the validation status of this resource. NamespacedStatuses is read-only by clients, and set by gateway during validation. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 | `useProxyProto` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable ProxyProtocol support for this listener. Deprecated: prefer setting the listener option. If configured, the listener option (filter config) overrides any setting here. |
@@ -64,7 +64,7 @@ and the routing configuration to upstreams that are reachable via a specific por
 | `tcpGateway` | [.gateway.solo.io.TcpGateway](../gateway.proto.sk/#tcpgateway) |  Only one of `tcpGateway`, `httpGateway`, or `hybridGateway` can be set. |
 | `hybridGateway` | [.gateway.solo.io.HybridGateway](../gateway.proto.sk/#hybridgateway) |  Only one of `hybridGateway`, `httpGateway`, or `tcpGateway` can be set. |
 | `proxyNames` | `[]string` | Names of the [`Proxy`](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/controller/api/v1/proxy.proto.sk/) resources to generate from this gateway. If other gateways exist which point to the same proxy, Gloo will join them together. Proxies have a one-to-many relationship with Envoy bootstrap configuration. In order to connect to Gloo, the Envoy bootstrap configuration sets a `role` in the [node metadata](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-api-msg-core-node) Envoy instances announce their `role` to Gloo, which maps to the `{{ .Namespace }}~{{ .Name }}` of the Proxy resource. The template for this value can be seen in the [Gloo Helm chart](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/9-gateway-proxy-configmap.yaml#L22) Note: this field also accepts fields written in camel-case. They will be converted to kebab-case in the Proxy name. This allows use of the [Gateway Name Helm value](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/values-gateway-template.yaml#L47) for this field Defaults to `["gateway-proxy"]`. |
-| `routeOptions` | [.gloo.solo.io.RouteConfigurationOptions](../../../../gloo/api/v1/route_configuration_options.proto.sk/#routeconfigurationoptions) | Route configuration options that live under Envoy's [RouteConfigurationOptions](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#config-route-v3-routeconfiguration). |
+| `routeOptions` | [.gloo.solo.io.RouteConfigurationOptions](../../../../controller/api/v1/route_configuration_options.proto.sk/#routeconfigurationoptions) | Route configuration options that live under Envoy's [RouteConfigurationOptions](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#config-route-v3-routeconfiguration). |
 
 
 
@@ -82,8 +82,8 @@ and the routing configuration to upstreams that are reachable via a specific por
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `tcpHosts` | [[]gloo.solo.io.TcpHost](../../../../gloo/api/v1/proxy.proto.sk/#tcphost) | TCP hosts that the gateway can route to. |
-| `options` | [.gloo.solo.io.TcpListenerOptions](../../../../gloo/api/v1/tcp_listener_options.proto.sk/#tcplisteneroptions) | TCP Gateway configuration. |
+| `tcpHosts` | [[]gloo.solo.io.TcpHost](../../../../controller/api/v1/proxy.proto.sk/#tcphost) | TCP hosts that the gateway can route to. |
+| `options` | [.gloo.solo.io.TcpListenerOptions](../../../../controller/api/v1/tcp_listener_options.proto.sk/#tcplisteneroptions) | TCP Gateway configuration. |
 
 
 
@@ -126,10 +126,10 @@ and the routing configuration to upstreams that are reachable via a specific por
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `ref` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Delegate to the resource with the given `name` and `namespace. Only one of `ref` or `selector` can be set. |
-| `selector` | [.selectors.core.gloo.solo.io.Selector](../../../../gloo/api/v1/core/selectors/selectors.proto.sk/#selector) | Delegate to the MatchableHttpGateways that match the given selector. Only one of `selector` or `ref` can be set. |
+| `selector` | [.selectors.core.gloo.solo.io.Selector](../../../../controller/api/v1/core/selectors/selectors.proto.sk/#selector) | Delegate to the MatchableHttpGateways that match the given selector. Only one of `selector` or `ref` can be set. |
 | `preventChildOverrides` | `bool` | Used as a meta modifier to the `http_connection_manager_settings` and `ssl_config` fields in a DelegatedHttpGateway. When set, provided ancestor config cannot be overriden by matched HttpGateways. Useful in a multi-team context, where a controlling team managing a primary Gateway file may want to lock down specific functionality from other teams. For example: (DelegatedHttpGateway, MatchableHttpGateway) = {"a": "a1", "b": "b1"}, {"b": "b2", "c": "c2"} When true: get_config(MatchableHttpGateway) --> {"a": "a1", "b": "b1", "c": "c2"} When false: get_config(MatchableHttpGateway) --> {"a": "a1", "b": "b2", "c": "c2"}. |
-| `httpConnectionManagerSettings` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings](../../../../gloo/api/v1/options/hcm/hcm.proto.sk/#httpconnectionmanagersettings) | Anscestry-level HTTP Gateway configuration. Options specified here will be passed down to each `MatchableHttpGateway` that is matched via `selector` or `ref`. Ultimately, said options will be consumed by instances of `MatchableHttpGateway.http_gateway`. |
-| `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl/ssl.proto.sk/#sslconfig) | Anscestry-level TLS/SSL traffic configuration. Options specified here will be passed down to each `MatchableHttpGateway` that is matched via `selector` or `ref`. From there, they are passed to all VirtualServices associated with said `MatchableHttpGateway`s. |
+| `httpConnectionManagerSettings` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings](../../../../controller/api/v1/options/hcm/hcm.proto.sk/#httpconnectionmanagersettings) | Anscestry-level HTTP Gateway configuration. Options specified here will be passed down to each `MatchableHttpGateway` that is matched via `selector` or `ref`. Ultimately, said options will be consumed by instances of `MatchableHttpGateway.http_gateway`. |
+| `sslConfig` | [.gloo.solo.io.SslConfig](../../../../controller/api/v1/ssl/ssl.proto.sk/#sslconfig) | Anscestry-level TLS/SSL traffic configuration. Options specified here will be passed down to each `MatchableHttpGateway` that is matched via `selector` or `ref`. From there, they are passed to all VirtualServices associated with said `MatchableHttpGateway`s. |
 
 
 
@@ -148,7 +148,7 @@ and the routing configuration to upstreams that are reachable via a specific por
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `ref` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Delegate to the resource with the given `name` and `namespace. Only one of `ref` or `selector` can be set. |
-| `selector` | [.selectors.core.gloo.solo.io.Selector](../../../../gloo/api/v1/core/selectors/selectors.proto.sk/#selector) | Delegate to the MatchableTcpGateways that match the given selector. Only one of `selector` or `ref` can be set. |
+| `selector` | [.selectors.core.gloo.solo.io.Selector](../../../../controller/api/v1/core/selectors/selectors.proto.sk/#selector) | Delegate to the MatchableTcpGateways that match the given selector. Only one of `selector` or `ref` can be set. |
 
 
 
@@ -188,8 +188,8 @@ and the routing configuration to upstreams that are reachable via a specific por
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl/ssl.proto.sk/#sslconfig) | Gloo use SNI domains as matching criteria for Gateway selection The other ssl_config properties will be applied to the outputFilterChain's transport socket SslConfig from VirtualServices will be ignored in a MatchedGateway. |
-| `sourcePrefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../../../gloo/api/external/envoy/config/core/v3/address.proto.sk/#cidrrange) | CidrRange specifies an IP Address and a prefix length to construct the subnet mask for a CIDR range. See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-cidrrange. |
+| `sslConfig` | [.gloo.solo.io.SslConfig](../../../../controller/api/v1/ssl/ssl.proto.sk/#sslconfig) | Gloo use SNI domains as matching criteria for Gateway selection The other ssl_config properties will be applied to the outputFilterChain's transport socket SslConfig from VirtualServices will be ignored in a MatchedGateway. |
+| `sourcePrefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../../../controller/api/external/envoy/config/core/v3/address.proto.sk/#cidrrange) | CidrRange specifies an IP Address and a prefix length to construct the subnet mask for a CIDR range. See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-cidrrange. |
 | `passthroughCipherSuites` | `[]string` | Enterprise-only: Passthrough cipher suites is an allow-list of OpenSSL cipher suite names for which TLS passthrough will be enabled. If a client does not support any ciphers that are natively supported by Envoy, but does support one of the ciphers in the passthrough list, then traffic will be routed via TCP Proxy to a destination specified by the TcpGateway, where TLS can then be terminated. This field is only applicable to TcpGateways. |
 
 

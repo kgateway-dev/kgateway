@@ -13,9 +13,9 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl "github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_ssl "github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
 
 	google_golang_org_protobuf_types_known_durationpb "google.golang.org/protobuf/types/known/durationpb"
 
@@ -50,9 +50,9 @@ func (m *FilterConfig) Clone() proto.Message {
 	target.SaveUpstreamAddress = m.GetSaveUpstreamAddress()
 
 	if h, ok := interface{}(m.GetSslConfig()).(clone.Cloner); ok {
-		target.SslConfig = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl.UpstreamSslConfig)
+		target.SslConfig = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_ssl.UpstreamSslConfig)
 	} else {
-		target.SslConfig = proto.Clone(m.GetSslConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl.UpstreamSslConfig)
+		target.SslConfig = proto.Clone(m.GetSslConfig()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_ssl.UpstreamSslConfig)
 	}
 
 	return target
@@ -116,13 +116,13 @@ func (m *DnsCacheConfig) Clone() proto.Message {
 	}
 
 	if m.GetPreresolveHostnames() != nil {
-		target.PreresolveHostnames = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.SocketAddress, len(m.GetPreresolveHostnames()))
+		target.PreresolveHostnames = make([]*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.SocketAddress, len(m.GetPreresolveHostnames()))
 		for idx, v := range m.GetPreresolveHostnames() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.PreresolveHostnames[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.SocketAddress)
+				target.PreresolveHostnames[idx] = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.SocketAddress)
 			} else {
-				target.PreresolveHostnames[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.SocketAddress)
+				target.PreresolveHostnames[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.SocketAddress)
 			}
 
 		}
@@ -239,13 +239,13 @@ func (m *CaresDnsResolverConfig) Clone() proto.Message {
 	target = &CaresDnsResolverConfig{}
 
 	if m.GetResolvers() != nil {
-		target.Resolvers = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.Address, len(m.GetResolvers()))
+		target.Resolvers = make([]*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.Address, len(m.GetResolvers()))
 		for idx, v := range m.GetResolvers() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Resolvers[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.Address)
+				target.Resolvers[idx] = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.Address)
 			} else {
-				target.Resolvers[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.Address)
+				target.Resolvers[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.Address)
 			}
 
 		}

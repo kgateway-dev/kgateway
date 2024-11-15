@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_jwt_authn_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/filters/http/jwt_authn/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_filters_http_jwt_authn_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/filters/http/jwt_authn/v3"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -260,9 +260,9 @@ func (m *RemoteJwks) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetAsyncFetch()).(clone.Cloner); ok {
-		target.AsyncFetch = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_jwt_authn_v3.JwksAsyncFetch)
+		target.AsyncFetch = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_filters_http_jwt_authn_v3.JwksAsyncFetch)
 	} else {
-		target.AsyncFetch = proto.Clone(m.GetAsyncFetch()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_jwt_authn_v3.JwksAsyncFetch)
+		target.AsyncFetch = proto.Clone(m.GetAsyncFetch()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_filters_http_jwt_authn_v3.JwksAsyncFetch)
 	}
 
 	return target

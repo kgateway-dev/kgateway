@@ -13,9 +13,9 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_transformation "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_transformation "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_transformation "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation"
 )
 
 // ensure the imports are used
@@ -38,13 +38,13 @@ func (m *ServiceSpec) Clone() proto.Message {
 	target = &ServiceSpec{}
 
 	if m.GetTransformations() != nil {
-		target.Transformations = make(map[string]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation.TransformationTemplate, len(m.GetTransformations()))
+		target.Transformations = make(map[string]*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_transformation.TransformationTemplate, len(m.GetTransformations()))
 		for k, v := range m.GetTransformations() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Transformations[k] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation.TransformationTemplate)
+				target.Transformations[k] = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_transformation.TransformationTemplate)
 			} else {
-				target.Transformations[k] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation.TransformationTemplate)
+				target.Transformations[k] = proto.Clone(v).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_transformation.TransformationTemplate)
 			}
 
 		}
@@ -70,15 +70,15 @@ func (m *DestinationSpec) Clone() proto.Message {
 	target.FunctionName = m.GetFunctionName()
 
 	if h, ok := interface{}(m.GetParameters()).(clone.Cloner); ok {
-		target.Parameters = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_transformation.Parameters)
+		target.Parameters = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_transformation.Parameters)
 	} else {
-		target.Parameters = proto.Clone(m.GetParameters()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_transformation.Parameters)
+		target.Parameters = proto.Clone(m.GetParameters()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_transformation.Parameters)
 	}
 
 	if h, ok := interface{}(m.GetResponseTransformation()).(clone.Cloner); ok {
-		target.ResponseTransformation = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation.TransformationTemplate)
+		target.ResponseTransformation = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_transformation.TransformationTemplate)
 	} else {
-		target.ResponseTransformation = proto.Clone(m.GetResponseTransformation()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation.TransformationTemplate)
+		target.ResponseTransformation = proto.Clone(m.GetResponseTransformation()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_transformation.TransformationTemplate)
 	}
 
 	return target

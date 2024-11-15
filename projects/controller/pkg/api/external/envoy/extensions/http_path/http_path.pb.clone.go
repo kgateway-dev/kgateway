@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
 )
 
 // ensure the imports are used
@@ -36,9 +36,9 @@ func (m *HttpPath) Clone() proto.Message {
 	target = &HttpPath{}
 
 	if h, ok := interface{}(m.GetHttpHealthCheck()).(clone.Cloner); ok {
-		target.HttpHealthCheck = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HealthCheck_HttpHealthCheck)
+		target.HttpHealthCheck = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HealthCheck_HttpHealthCheck)
 	} else {
-		target.HttpHealthCheck = proto.Clone(m.GetHttpHealthCheck()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.HealthCheck_HttpHealthCheck)
+		target.HttpHealthCheck = proto.Clone(m.GetHttpHealthCheck()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.HealthCheck_HttpHealthCheck)
 	}
 
 	return target
