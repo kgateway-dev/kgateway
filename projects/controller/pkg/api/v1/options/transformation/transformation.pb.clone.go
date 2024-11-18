@@ -13,9 +13,9 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformers_xslt "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformers/xslt"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_transformers_xslt "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformers/xslt"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_matchers "github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_core_matchers "github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
 
 	google_golang_org_protobuf_types_known_emptypb "google.golang.org/protobuf/types/known/emptypb"
 
@@ -42,13 +42,13 @@ func (m *ResponseMatch) Clone() proto.Message {
 	target = &ResponseMatch{}
 
 	if m.GetMatchers() != nil {
-		target.Matchers = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_matchers.HeaderMatcher, len(m.GetMatchers()))
+		target.Matchers = make([]*github_com_solo_io_gloo_projects_controller_pkg_api_v1_core_matchers.HeaderMatcher, len(m.GetMatchers()))
 		for idx, v := range m.GetMatchers() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Matchers[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_matchers.HeaderMatcher)
+				target.Matchers[idx] = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_core_matchers.HeaderMatcher)
 			} else {
-				target.Matchers[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_matchers.HeaderMatcher)
+				target.Matchers[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_core_matchers.HeaderMatcher)
 			}
 
 		}
@@ -74,9 +74,9 @@ func (m *RequestMatch) Clone() proto.Message {
 	target = &RequestMatch{}
 
 	if h, ok := interface{}(m.GetMatcher()).(clone.Cloner); ok {
-		target.Matcher = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_matchers.Matcher)
+		target.Matcher = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_core_matchers.Matcher)
 	} else {
-		target.Matcher = proto.Clone(m.GetMatcher()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_matchers.Matcher)
+		target.Matcher = proto.Clone(m.GetMatcher()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_core_matchers.Matcher)
 	}
 
 	target.ClearRouteCache = m.GetClearRouteCache()
@@ -241,11 +241,11 @@ func (m *Transformation) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetXsltTransformation()).(clone.Cloner); ok {
 			target.TransformationType = &Transformation_XsltTransformation{
-				XsltTransformation: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformers_xslt.XsltTransformation),
+				XsltTransformation: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_transformers_xslt.XsltTransformation),
 			}
 		} else {
 			target.TransformationType = &Transformation_XsltTransformation{
-				XsltTransformation: proto.Clone(m.GetXsltTransformation()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformers_xslt.XsltTransformation),
+				XsltTransformation: proto.Clone(m.GetXsltTransformation()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_transformers_xslt.XsltTransformation),
 			}
 		}
 

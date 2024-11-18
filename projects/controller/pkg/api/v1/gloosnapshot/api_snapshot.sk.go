@@ -8,7 +8,7 @@ import (
 	"hash/fnv"
 	"log"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit "github.com/solo-io/gloo/projects/controller/pkg/api/external/solo/ratelimit"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_solo_ratelimit "github.com/solo-io/gloo/projects/controller/pkg/api/external/solo/ratelimit"
 	gloo_solo_io "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	enterprise_gloo_solo_io "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1"
 	graphql_gloo_solo_io "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1"
@@ -30,7 +30,7 @@ type ApiSnapshot struct {
 	Secrets            gloo_solo_io.SecretList
 	Upstreams          gloo_solo_io.UpstreamList
 	AuthConfigs        enterprise_gloo_solo_io.AuthConfigList
-	Ratelimitconfigs   github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigList
+	Ratelimitconfigs   github_com_solo_io_gloo_projects_controller_pkg_api_external_solo_ratelimit.RateLimitConfigList
 	VirtualServices    gateway_solo_io.VirtualServiceList
 	RouteTables        gateway_solo_io.RouteTableList
 	Gateways           gateway_solo_io.GatewayList
@@ -295,7 +295,7 @@ func (s *ApiSnapshot) GetResourcesList(resource resources.Resource) (resources.R
 		return s.Upstreams.AsResources(), nil
 	case *enterprise_gloo_solo_io.AuthConfig:
 		return s.AuthConfigs.AsResources(), nil
-	case *github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfig:
+	case *github_com_solo_io_gloo_projects_controller_pkg_api_external_solo_ratelimit.RateLimitConfig:
 		return s.Ratelimitconfigs.AsResources(), nil
 	case *gateway_solo_io.VirtualService:
 		return s.VirtualServices.AsResources(), nil
@@ -384,7 +384,7 @@ func (s *ApiSnapshot) RemoveFromResourceList(resource resources.Resource) error 
 			}
 		}
 		return nil
-	case *github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfig:
+	case *github_com_solo_io_gloo_projects_controller_pkg_api_external_solo_ratelimit.RateLimitConfig:
 
 		for i, res := range s.Ratelimitconfigs {
 			if refKey == res.GetMetadata().Ref().Key() {
@@ -520,7 +520,7 @@ func (s *ApiSnapshot) RemoveMatches(predicate core.Predicate) {
 		}
 	}
 	s.AuthConfigs = AuthConfigs
-	var Ratelimitconfigs github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigList
+	var Ratelimitconfigs github_com_solo_io_gloo_projects_controller_pkg_api_external_solo_ratelimit.RateLimitConfigList
 	for _, res := range s.Ratelimitconfigs {
 		if matches := predicate(res.GetMetadata()); !matches {
 			Ratelimitconfigs = append(Ratelimitconfigs, res)
@@ -679,7 +679,7 @@ func (s *ApiSnapshot) UpsertToResourceList(resource resources.Resource) error {
 		}
 		s.AuthConfigs.Sort()
 		return nil
-	case *github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfig:
+	case *github_com_solo_io_gloo_projects_controller_pkg_api_external_solo_ratelimit.RateLimitConfig:
 		updated := false
 		for i, res := range s.Ratelimitconfigs {
 			if refKey == res.GetMetadata().Ref().Key() {
@@ -941,7 +941,7 @@ var ApiGvkToHashableResource = map[schema.GroupVersionKind]func() resources.Hash
 	gloo_solo_io.SecretGVK:                gloo_solo_io.NewSecretHashableResource,
 	gloo_solo_io.UpstreamGVK:              gloo_solo_io.NewUpstreamHashableResource,
 	enterprise_gloo_solo_io.AuthConfigGVK: enterprise_gloo_solo_io.NewAuthConfigHashableResource,
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigGVK: github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.NewRateLimitConfigHashableResource,
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_solo_ratelimit.RateLimitConfigGVK: github_com_solo_io_gloo_projects_controller_pkg_api_external_solo_ratelimit.NewRateLimitConfigHashableResource,
 	gateway_solo_io.VirtualServiceGVK:       gateway_solo_io.NewVirtualServiceHashableResource,
 	gateway_solo_io.RouteTableGVK:           gateway_solo_io.NewRouteTableHashableResource,
 	gateway_solo_io.GatewayGVK:              gateway_solo_io.NewGatewayHashableResource,

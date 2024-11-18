@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit "github.com/solo-io/gloo/projects/controller/pkg/api/external/solo/ratelimit"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_solo_ratelimit "github.com/solo-io/gloo/projects/controller/pkg/api/external/solo/ratelimit"
 	gloo_solo_io "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	enterprise_gloo_solo_io "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1"
 	graphql_gloo_solo_io "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/graphql/v1beta1"
@@ -93,7 +93,7 @@ type ApiEmitter interface {
 	Secret() gloo_solo_io.SecretClient
 	Upstream() gloo_solo_io.UpstreamClient
 	AuthConfig() enterprise_gloo_solo_io.AuthConfigClient
-	RateLimitConfig() github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient
+	RateLimitConfig() github_com_solo_io_gloo_projects_controller_pkg_api_external_solo_ratelimit.RateLimitConfigClient
 	VirtualService() gateway_solo_io.VirtualServiceClient
 	RouteTable() gateway_solo_io.RouteTableClient
 	Gateway() gateway_solo_io.GatewayClient
@@ -104,11 +104,11 @@ type ApiEmitter interface {
 	GraphQLApi() graphql_gloo_solo_io.GraphQLApiClient
 }
 
-func NewApiEmitter(artifactClient gloo_solo_io.ArtifactClient, endpointClient gloo_solo_io.EndpointClient, proxyClient gloo_solo_io.ProxyClient, upstreamGroupClient gloo_solo_io.UpstreamGroupClient, secretClient gloo_solo_io.SecretClient, upstreamClient gloo_solo_io.UpstreamClient, authConfigClient enterprise_gloo_solo_io.AuthConfigClient, rateLimitConfigClient github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient, virtualServiceClient gateway_solo_io.VirtualServiceClient, routeTableClient gateway_solo_io.RouteTableClient, gatewayClient gateway_solo_io.GatewayClient, virtualHostOptionClient gateway_solo_io.VirtualHostOptionClient, routeOptionClient gateway_solo_io.RouteOptionClient, matchableHttpGatewayClient gateway_solo_io.MatchableHttpGatewayClient, matchableTcpGatewayClient gateway_solo_io.MatchableTcpGatewayClient, graphQLApiClient graphql_gloo_solo_io.GraphQLApiClient) ApiEmitter {
+func NewApiEmitter(artifactClient gloo_solo_io.ArtifactClient, endpointClient gloo_solo_io.EndpointClient, proxyClient gloo_solo_io.ProxyClient, upstreamGroupClient gloo_solo_io.UpstreamGroupClient, secretClient gloo_solo_io.SecretClient, upstreamClient gloo_solo_io.UpstreamClient, authConfigClient enterprise_gloo_solo_io.AuthConfigClient, rateLimitConfigClient github_com_solo_io_gloo_projects_controller_pkg_api_external_solo_ratelimit.RateLimitConfigClient, virtualServiceClient gateway_solo_io.VirtualServiceClient, routeTableClient gateway_solo_io.RouteTableClient, gatewayClient gateway_solo_io.GatewayClient, virtualHostOptionClient gateway_solo_io.VirtualHostOptionClient, routeOptionClient gateway_solo_io.RouteOptionClient, matchableHttpGatewayClient gateway_solo_io.MatchableHttpGatewayClient, matchableTcpGatewayClient gateway_solo_io.MatchableTcpGatewayClient, graphQLApiClient graphql_gloo_solo_io.GraphQLApiClient) ApiEmitter {
 	return NewApiEmitterWithEmit(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, upstreamClient, authConfigClient, rateLimitConfigClient, virtualServiceClient, routeTableClient, gatewayClient, virtualHostOptionClient, routeOptionClient, matchableHttpGatewayClient, matchableTcpGatewayClient, graphQLApiClient, make(chan struct{}))
 }
 
-func NewApiEmitterWithEmit(artifactClient gloo_solo_io.ArtifactClient, endpointClient gloo_solo_io.EndpointClient, proxyClient gloo_solo_io.ProxyClient, upstreamGroupClient gloo_solo_io.UpstreamGroupClient, secretClient gloo_solo_io.SecretClient, upstreamClient gloo_solo_io.UpstreamClient, authConfigClient enterprise_gloo_solo_io.AuthConfigClient, rateLimitConfigClient github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient, virtualServiceClient gateway_solo_io.VirtualServiceClient, routeTableClient gateway_solo_io.RouteTableClient, gatewayClient gateway_solo_io.GatewayClient, virtualHostOptionClient gateway_solo_io.VirtualHostOptionClient, routeOptionClient gateway_solo_io.RouteOptionClient, matchableHttpGatewayClient gateway_solo_io.MatchableHttpGatewayClient, matchableTcpGatewayClient gateway_solo_io.MatchableTcpGatewayClient, graphQLApiClient graphql_gloo_solo_io.GraphQLApiClient, emit <-chan struct{}) ApiEmitter {
+func NewApiEmitterWithEmit(artifactClient gloo_solo_io.ArtifactClient, endpointClient gloo_solo_io.EndpointClient, proxyClient gloo_solo_io.ProxyClient, upstreamGroupClient gloo_solo_io.UpstreamGroupClient, secretClient gloo_solo_io.SecretClient, upstreamClient gloo_solo_io.UpstreamClient, authConfigClient enterprise_gloo_solo_io.AuthConfigClient, rateLimitConfigClient github_com_solo_io_gloo_projects_controller_pkg_api_external_solo_ratelimit.RateLimitConfigClient, virtualServiceClient gateway_solo_io.VirtualServiceClient, routeTableClient gateway_solo_io.RouteTableClient, gatewayClient gateway_solo_io.GatewayClient, virtualHostOptionClient gateway_solo_io.VirtualHostOptionClient, routeOptionClient gateway_solo_io.RouteOptionClient, matchableHttpGatewayClient gateway_solo_io.MatchableHttpGatewayClient, matchableTcpGatewayClient gateway_solo_io.MatchableTcpGatewayClient, graphQLApiClient graphql_gloo_solo_io.GraphQLApiClient, emit <-chan struct{}) ApiEmitter {
 	return &apiEmitter{
 		artifact:             artifactClient,
 		endpoint:             endpointClient,
@@ -139,7 +139,7 @@ type apiEmitter struct {
 	secret               gloo_solo_io.SecretClient
 	upstream             gloo_solo_io.UpstreamClient
 	authConfig           enterprise_gloo_solo_io.AuthConfigClient
-	rateLimitConfig      github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient
+	rateLimitConfig      github_com_solo_io_gloo_projects_controller_pkg_api_external_solo_ratelimit.RateLimitConfigClient
 	virtualService       gateway_solo_io.VirtualServiceClient
 	routeTable           gateway_solo_io.RouteTableClient
 	gateway              gateway_solo_io.GatewayClient
@@ -230,7 +230,7 @@ func (c *apiEmitter) AuthConfig() enterprise_gloo_solo_io.AuthConfigClient {
 	return c.authConfig
 }
 
-func (c *apiEmitter) RateLimitConfig() github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient {
+func (c *apiEmitter) RateLimitConfig() github_com_solo_io_gloo_projects_controller_pkg_api_external_solo_ratelimit.RateLimitConfigClient {
 	return c.rateLimitConfig
 }
 
@@ -340,12 +340,12 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	var initialAuthConfigList enterprise_gloo_solo_io.AuthConfigList
 	/* Create channel for RateLimitConfig */
 	type rateLimitConfigListWithNamespace struct {
-		list      github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigList
+		list      github_com_solo_io_gloo_projects_controller_pkg_api_external_solo_ratelimit.RateLimitConfigList
 		namespace string
 	}
 	rateLimitConfigChan := make(chan rateLimitConfigListWithNamespace)
 
-	var initialRateLimitConfigList github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigList
+	var initialRateLimitConfigList github_com_solo_io_gloo_projects_controller_pkg_api_external_solo_ratelimit.RateLimitConfigList
 	/* Create channel for VirtualService */
 	type virtualServiceListWithNamespace struct {
 		list      gateway_solo_io.VirtualServiceList
@@ -419,7 +419,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	secretsByNamespace := make(map[string]gloo_solo_io.SecretList)
 	upstreamsByNamespace := make(map[string]gloo_solo_io.UpstreamList)
 	authConfigsByNamespace := make(map[string]enterprise_gloo_solo_io.AuthConfigList)
-	ratelimitconfigsByNamespace := make(map[string]github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigList)
+	ratelimitconfigsByNamespace := make(map[string]github_com_solo_io_gloo_projects_controller_pkg_api_external_solo_ratelimit.RateLimitConfigList)
 	virtualServicesByNamespace := make(map[string]gateway_solo_io.VirtualServiceList)
 	routeTablesByNamespace := make(map[string]gateway_solo_io.RouteTableList)
 	gatewaysByNamespace := make(map[string]gateway_solo_io.GatewayList)
@@ -1142,7 +1142,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 
 				// merge lists by namespace
 				ratelimitconfigsByNamespace[namespace] = rateLimitConfigNamespacedList.list
-				var rateLimitConfigList github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigList
+				var rateLimitConfigList github_com_solo_io_gloo_projects_controller_pkg_api_external_solo_ratelimit.RateLimitConfigList
 				for _, ratelimitconfigs := range ratelimitconfigsByNamespace {
 					rateLimitConfigList = append(rateLimitConfigList, ratelimitconfigs...)
 				}

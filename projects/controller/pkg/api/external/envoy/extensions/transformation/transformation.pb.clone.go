@@ -13,11 +13,11 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_route_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_route_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/route/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/matcher/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/type/matcher/v3"
 
 	google_golang_org_protobuf_types_known_emptypb "google.golang.org/protobuf/types/known/emptypb"
 
@@ -72,9 +72,9 @@ func (m *TransformationRule) Clone() proto.Message {
 	target = &TransformationRule{}
 
 	if h, ok := interface{}(m.GetMatch()).(clone.Cloner); ok {
-		target.Match = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_route_v3.RouteMatch)
+		target.Match = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_route_v3.RouteMatch)
 	} else {
-		target.Match = proto.Clone(m.GetMatch()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_route_v3.RouteMatch)
+		target.Match = proto.Clone(m.GetMatch()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_route_v3.RouteMatch)
 	}
 
 	if h, ok := interface{}(m.GetRouteTransformations()).(clone.Cloner); ok {
@@ -133,22 +133,22 @@ func (m *ResponseMatcher) Clone() proto.Message {
 	target = &ResponseMatcher{}
 
 	if m.GetHeaders() != nil {
-		target.Headers = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_route_v3.HeaderMatcher, len(m.GetHeaders()))
+		target.Headers = make([]*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_route_v3.HeaderMatcher, len(m.GetHeaders()))
 		for idx, v := range m.GetHeaders() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Headers[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_route_v3.HeaderMatcher)
+				target.Headers[idx] = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_route_v3.HeaderMatcher)
 			} else {
-				target.Headers[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_route_v3.HeaderMatcher)
+				target.Headers[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_route_v3.HeaderMatcher)
 			}
 
 		}
 	}
 
 	if h, ok := interface{}(m.GetResponseCodeDetails()).(clone.Cloner); ok {
-		target.ResponseCodeDetails = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.StringMatcher)
+		target.ResponseCodeDetails = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3.StringMatcher)
 	} else {
-		target.ResponseCodeDetails = proto.Clone(m.GetResponseCodeDetails()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.StringMatcher)
+		target.ResponseCodeDetails = proto.Clone(m.GetResponseCodeDetails()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_type_matcher_v3.StringMatcher)
 	}
 
 	return target
@@ -221,11 +221,11 @@ func (m *Transformation) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetTransformerConfig()).(clone.Cloner); ok {
 			target.TransformationType = &Transformation_TransformerConfig{
-				TransformerConfig: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.TypedExtensionConfig),
+				TransformerConfig: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.TypedExtensionConfig),
 			}
 		} else {
 			target.TransformationType = &Transformation_TransformerConfig{
-				TransformerConfig: proto.Clone(m.GetTransformerConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.TypedExtensionConfig),
+				TransformerConfig: proto.Clone(m.GetTransformerConfig()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.TypedExtensionConfig),
 			}
 		}
 
@@ -570,9 +570,9 @@ func (m *RouteTransformations_RouteTransformation_RequestMatch) Clone() proto.Me
 	target = &RouteTransformations_RouteTransformation_RequestMatch{}
 
 	if h, ok := interface{}(m.GetMatch()).(clone.Cloner); ok {
-		target.Match = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_route_v3.RouteMatch)
+		target.Match = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_route_v3.RouteMatch)
 	} else {
-		target.Match = proto.Clone(m.GetMatch()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_route_v3.RouteMatch)
+		target.Match = proto.Clone(m.GetMatch()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_route_v3.RouteMatch)
 	}
 
 	if h, ok := interface{}(m.GetRequestTransformation()).(clone.Cloner); ok {

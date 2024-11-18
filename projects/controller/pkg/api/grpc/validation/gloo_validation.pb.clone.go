@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -38,9 +38,9 @@ func (m *GlooValidationServiceRequest) Clone() proto.Message {
 	target = &GlooValidationServiceRequest{}
 
 	if h, ok := interface{}(m.GetProxy()).(clone.Cloner); ok {
-		target.Proxy = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.Proxy)
+		target.Proxy = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.Proxy)
 	} else {
-		target.Proxy = proto.Clone(m.GetProxy()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.Proxy)
+		target.Proxy = proto.Clone(m.GetProxy()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.Proxy)
 	}
 
 	switch m.Resources.(type) {
@@ -107,13 +107,13 @@ func (m *ModifiedResources) Clone() proto.Message {
 	target = &ModifiedResources{}
 
 	if m.GetUpstreams() != nil {
-		target.Upstreams = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.Upstream, len(m.GetUpstreams()))
+		target.Upstreams = make([]*github_com_solo_io_gloo_projects_controller_pkg_api_v1.Upstream, len(m.GetUpstreams()))
 		for idx, v := range m.GetUpstreams() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Upstreams[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.Upstream)
+				target.Upstreams[idx] = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.Upstream)
 			} else {
-				target.Upstreams[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.Upstream)
+				target.Upstreams[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.Upstream)
 			}
 
 		}
@@ -187,9 +187,9 @@ func (m *ValidationReport) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetProxy()).(clone.Cloner); ok {
-		target.Proxy = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.Proxy)
+		target.Proxy = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.Proxy)
 	} else {
-		target.Proxy = proto.Clone(m.GetProxy()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.Proxy)
+		target.Proxy = proto.Clone(m.GetProxy()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.Proxy)
 	}
 
 	return target
@@ -693,9 +693,9 @@ func (m *HttpListenerReport_Error) Clone() proto.Message {
 	target.Reason = m.GetReason()
 
 	if h, ok := interface{}(m.GetMetadata()).(clone.Cloner); ok {
-		target.Metadata = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.SourceMetadata)
+		target.Metadata = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.SourceMetadata)
 	} else {
-		target.Metadata = proto.Clone(m.GetMetadata()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.SourceMetadata)
+		target.Metadata = proto.Clone(m.GetMetadata()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.SourceMetadata)
 	}
 
 	return target
@@ -714,9 +714,9 @@ func (m *VirtualHostReport_Error) Clone() proto.Message {
 	target.Reason = m.GetReason()
 
 	if h, ok := interface{}(m.GetMetadata()).(clone.Cloner); ok {
-		target.Metadata = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.SourceMetadata)
+		target.Metadata = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.SourceMetadata)
 	} else {
-		target.Metadata = proto.Clone(m.GetMetadata()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.SourceMetadata)
+		target.Metadata = proto.Clone(m.GetMetadata()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.SourceMetadata)
 	}
 
 	return target
@@ -735,9 +735,9 @@ func (m *RouteReport_Error) Clone() proto.Message {
 	target.Reason = m.GetReason()
 
 	if h, ok := interface{}(m.GetMetadata()).(clone.Cloner); ok {
-		target.Metadata = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.SourceMetadata)
+		target.Metadata = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.SourceMetadata)
 	} else {
-		target.Metadata = proto.Clone(m.GetMetadata()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1.SourceMetadata)
+		target.Metadata = proto.Clone(m.GetMetadata()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1.SourceMetadata)
 	}
 
 	return target

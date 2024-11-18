@@ -13,29 +13,29 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_api_v2_cluster "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/api/v2/cluster"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_api_v2_cluster "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/api/v2/cluster"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_api_v2_core "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/api/v2/core"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_api_v2_core "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/api/v2/core"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ai "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_enterprise_options_ai "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/ai"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_gcp "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/gcp"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_enterprise_options_gcp "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/gcp"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_aws "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/aws"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_aws "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/aws"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_aws_ec2 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/aws/ec2"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_aws_ec2 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/aws/ec2"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_azure "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/azure"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_azure "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/azure"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_consul "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/consul"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_consul "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/consul"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_kubernetes "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/kubernetes"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_kubernetes "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/kubernetes"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_pipe "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/pipe"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_pipe "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/pipe"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_static "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/static"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_static "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/static"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl "github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_ssl "github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -82,9 +82,9 @@ func (m *Upstream) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetSslConfig()).(clone.Cloner); ok {
-		target.SslConfig = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl.UpstreamSslConfig)
+		target.SslConfig = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_ssl.UpstreamSslConfig)
 	} else {
-		target.SslConfig = proto.Clone(m.GetSslConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl.UpstreamSslConfig)
+		target.SslConfig = proto.Clone(m.GetSslConfig()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_ssl.UpstreamSslConfig)
 	}
 
 	if h, ok := interface{}(m.GetCircuitBreakers()).(clone.Cloner); ok {
@@ -100,22 +100,22 @@ func (m *Upstream) Clone() proto.Message {
 	}
 
 	if m.GetHealthChecks() != nil {
-		target.HealthChecks = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_api_v2_core.HealthCheck, len(m.GetHealthChecks()))
+		target.HealthChecks = make([]*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_api_v2_core.HealthCheck, len(m.GetHealthChecks()))
 		for idx, v := range m.GetHealthChecks() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.HealthChecks[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_api_v2_core.HealthCheck)
+				target.HealthChecks[idx] = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_api_v2_core.HealthCheck)
 			} else {
-				target.HealthChecks[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_api_v2_core.HealthCheck)
+				target.HealthChecks[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_api_v2_core.HealthCheck)
 			}
 
 		}
 	}
 
 	if h, ok := interface{}(m.GetOutlierDetection()).(clone.Cloner); ok {
-		target.OutlierDetection = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_api_v2_cluster.OutlierDetection)
+		target.OutlierDetection = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_api_v2_cluster.OutlierDetection)
 	} else {
-		target.OutlierDetection = proto.Clone(m.GetOutlierDetection()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_api_v2_cluster.OutlierDetection)
+		target.OutlierDetection = proto.Clone(m.GetOutlierDetection()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_api_v2_cluster.OutlierDetection)
 	}
 
 	if h, ok := interface{}(m.GetFailover()).(clone.Cloner); ok {
@@ -169,9 +169,9 @@ func (m *Upstream) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetHttpConnectSslConfig()).(clone.Cloner); ok {
-		target.HttpConnectSslConfig = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl.UpstreamSslConfig)
+		target.HttpConnectSslConfig = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_ssl.UpstreamSslConfig)
 	} else {
-		target.HttpConnectSslConfig = proto.Clone(m.GetHttpConnectSslConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl.UpstreamSslConfig)
+		target.HttpConnectSslConfig = proto.Clone(m.GetHttpConnectSslConfig()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_ssl.UpstreamSslConfig)
 	}
 
 	if m.GetHttpConnectHeaders() != nil {
@@ -229,11 +229,11 @@ func (m *Upstream) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetKube()).(clone.Cloner); ok {
 			target.UpstreamType = &Upstream_Kube{
-				Kube: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_kubernetes.UpstreamSpec),
+				Kube: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_kubernetes.UpstreamSpec),
 			}
 		} else {
 			target.UpstreamType = &Upstream_Kube{
-				Kube: proto.Clone(m.GetKube()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_kubernetes.UpstreamSpec),
+				Kube: proto.Clone(m.GetKube()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_kubernetes.UpstreamSpec),
 			}
 		}
 
@@ -241,11 +241,11 @@ func (m *Upstream) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetStatic()).(clone.Cloner); ok {
 			target.UpstreamType = &Upstream_Static{
-				Static: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_static.UpstreamSpec),
+				Static: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_static.UpstreamSpec),
 			}
 		} else {
 			target.UpstreamType = &Upstream_Static{
-				Static: proto.Clone(m.GetStatic()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_static.UpstreamSpec),
+				Static: proto.Clone(m.GetStatic()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_static.UpstreamSpec),
 			}
 		}
 
@@ -253,11 +253,11 @@ func (m *Upstream) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetPipe()).(clone.Cloner); ok {
 			target.UpstreamType = &Upstream_Pipe{
-				Pipe: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_pipe.UpstreamSpec),
+				Pipe: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_pipe.UpstreamSpec),
 			}
 		} else {
 			target.UpstreamType = &Upstream_Pipe{
-				Pipe: proto.Clone(m.GetPipe()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_pipe.UpstreamSpec),
+				Pipe: proto.Clone(m.GetPipe()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_pipe.UpstreamSpec),
 			}
 		}
 
@@ -265,11 +265,11 @@ func (m *Upstream) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetAws()).(clone.Cloner); ok {
 			target.UpstreamType = &Upstream_Aws{
-				Aws: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_aws.UpstreamSpec),
+				Aws: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_aws.UpstreamSpec),
 			}
 		} else {
 			target.UpstreamType = &Upstream_Aws{
-				Aws: proto.Clone(m.GetAws()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_aws.UpstreamSpec),
+				Aws: proto.Clone(m.GetAws()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_aws.UpstreamSpec),
 			}
 		}
 
@@ -277,11 +277,11 @@ func (m *Upstream) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetAzure()).(clone.Cloner); ok {
 			target.UpstreamType = &Upstream_Azure{
-				Azure: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_azure.UpstreamSpec),
+				Azure: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_azure.UpstreamSpec),
 			}
 		} else {
 			target.UpstreamType = &Upstream_Azure{
-				Azure: proto.Clone(m.GetAzure()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_azure.UpstreamSpec),
+				Azure: proto.Clone(m.GetAzure()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_azure.UpstreamSpec),
 			}
 		}
 
@@ -289,11 +289,11 @@ func (m *Upstream) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetConsul()).(clone.Cloner); ok {
 			target.UpstreamType = &Upstream_Consul{
-				Consul: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_consul.UpstreamSpec),
+				Consul: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_consul.UpstreamSpec),
 			}
 		} else {
 			target.UpstreamType = &Upstream_Consul{
-				Consul: proto.Clone(m.GetConsul()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_consul.UpstreamSpec),
+				Consul: proto.Clone(m.GetConsul()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_consul.UpstreamSpec),
 			}
 		}
 
@@ -301,11 +301,11 @@ func (m *Upstream) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetAwsEc2()).(clone.Cloner); ok {
 			target.UpstreamType = &Upstream_AwsEc2{
-				AwsEc2: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_aws_ec2.UpstreamSpec),
+				AwsEc2: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_aws_ec2.UpstreamSpec),
 			}
 		} else {
 			target.UpstreamType = &Upstream_AwsEc2{
-				AwsEc2: proto.Clone(m.GetAwsEc2()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_aws_ec2.UpstreamSpec),
+				AwsEc2: proto.Clone(m.GetAwsEc2()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_aws_ec2.UpstreamSpec),
 			}
 		}
 
@@ -313,11 +313,11 @@ func (m *Upstream) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetGcp()).(clone.Cloner); ok {
 			target.UpstreamType = &Upstream_Gcp{
-				Gcp: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_gcp.UpstreamSpec),
+				Gcp: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_enterprise_options_gcp.UpstreamSpec),
 			}
 		} else {
 			target.UpstreamType = &Upstream_Gcp{
-				Gcp: proto.Clone(m.GetGcp()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_gcp.UpstreamSpec),
+				Gcp: proto.Clone(m.GetGcp()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_enterprise_options_gcp.UpstreamSpec),
 			}
 		}
 
@@ -325,11 +325,11 @@ func (m *Upstream) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetAi()).(clone.Cloner); ok {
 			target.UpstreamType = &Upstream_Ai{
-				Ai: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ai.UpstreamSpec),
+				Ai: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_enterprise_options_ai.UpstreamSpec),
 			}
 		} else {
 			target.UpstreamType = &Upstream_Ai{
-				Ai: proto.Clone(m.GetAi()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ai.UpstreamSpec),
+				Ai: proto.Clone(m.GetAi()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_enterprise_options_ai.UpstreamSpec),
 			}
 		}
 

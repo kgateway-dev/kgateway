@@ -13,15 +13,15 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_buffer_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_filters_http_buffer_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_csrf_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_filters_http_csrf_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extauth_v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_enterprise_options_extauth_v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/enterprise/options/extauth/v1"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_headers "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/headers"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_headers "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/headers"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_transformation "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_transformation "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/transformation"
 )
 
 // ensure the imports are used
@@ -44,15 +44,15 @@ func (m *WeightedDestinationOptions) Clone() proto.Message {
 	target = &WeightedDestinationOptions{}
 
 	if h, ok := interface{}(m.GetHeaderManipulation()).(clone.Cloner); ok {
-		target.HeaderManipulation = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_headers.HeaderManipulation)
+		target.HeaderManipulation = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_headers.HeaderManipulation)
 	} else {
-		target.HeaderManipulation = proto.Clone(m.GetHeaderManipulation()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_headers.HeaderManipulation)
+		target.HeaderManipulation = proto.Clone(m.GetHeaderManipulation()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_headers.HeaderManipulation)
 	}
 
 	if h, ok := interface{}(m.GetTransformations()).(clone.Cloner); ok {
-		target.Transformations = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_transformation.Transformations)
+		target.Transformations = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_transformation.Transformations)
 	} else {
-		target.Transformations = proto.Clone(m.GetTransformations()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_transformation.Transformations)
+		target.Transformations = proto.Clone(m.GetTransformations()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_transformation.Transformations)
 	}
 
 	if h, ok := interface{}(m.GetExtensions()).(clone.Cloner); ok {
@@ -62,27 +62,27 @@ func (m *WeightedDestinationOptions) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetExtauth()).(clone.Cloner); ok {
-		target.Extauth = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extauth_v1.ExtAuthExtension)
+		target.Extauth = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_enterprise_options_extauth_v1.ExtAuthExtension)
 	} else {
-		target.Extauth = proto.Clone(m.GetExtauth()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extauth_v1.ExtAuthExtension)
+		target.Extauth = proto.Clone(m.GetExtauth()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_enterprise_options_extauth_v1.ExtAuthExtension)
 	}
 
 	if h, ok := interface{}(m.GetBufferPerRoute()).(clone.Cloner); ok {
-		target.BufferPerRoute = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_buffer_v3.BufferPerRoute)
+		target.BufferPerRoute = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_filters_http_buffer_v3.BufferPerRoute)
 	} else {
-		target.BufferPerRoute = proto.Clone(m.GetBufferPerRoute()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_buffer_v3.BufferPerRoute)
+		target.BufferPerRoute = proto.Clone(m.GetBufferPerRoute()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_filters_http_buffer_v3.BufferPerRoute)
 	}
 
 	if h, ok := interface{}(m.GetCsrf()).(clone.Cloner); ok {
-		target.Csrf = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_csrf_v3.CsrfPolicy)
+		target.Csrf = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_filters_http_csrf_v3.CsrfPolicy)
 	} else {
-		target.Csrf = proto.Clone(m.GetCsrf()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_csrf_v3.CsrfPolicy)
+		target.Csrf = proto.Clone(m.GetCsrf()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_filters_http_csrf_v3.CsrfPolicy)
 	}
 
 	if h, ok := interface{}(m.GetStagedTransformations()).(clone.Cloner); ok {
-		target.StagedTransformations = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_transformation.TransformationStages)
+		target.StagedTransformations = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_transformation.TransformationStages)
 	} else {
-		target.StagedTransformations = proto.Clone(m.GetStagedTransformations()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_transformation.TransformationStages)
+		target.StagedTransformations = proto.Clone(m.GetStagedTransformations()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_transformation.TransformationStages)
 	}
 
 	return target

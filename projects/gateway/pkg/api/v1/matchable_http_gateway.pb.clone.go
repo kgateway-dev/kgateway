@@ -13,9 +13,9 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/config/core/v3"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl "github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_ssl "github.com/solo-io/gloo/projects/controller/pkg/api/v1/ssl"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -75,22 +75,22 @@ func (m *MatchableHttpGateway_Matcher) Clone() proto.Message {
 	target = &MatchableHttpGateway_Matcher{}
 
 	if m.GetSourcePrefixRanges() != nil {
-		target.SourcePrefixRanges = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.CidrRange, len(m.GetSourcePrefixRanges()))
+		target.SourcePrefixRanges = make([]*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.CidrRange, len(m.GetSourcePrefixRanges()))
 		for idx, v := range m.GetSourcePrefixRanges() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.SourcePrefixRanges[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.CidrRange)
+				target.SourcePrefixRanges[idx] = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.CidrRange)
 			} else {
-				target.SourcePrefixRanges[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.CidrRange)
+				target.SourcePrefixRanges[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_config_core_v3.CidrRange)
 			}
 
 		}
 	}
 
 	if h, ok := interface{}(m.GetSslConfig()).(clone.Cloner); ok {
-		target.SslConfig = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl.SslConfig)
+		target.SslConfig = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_ssl.SslConfig)
 	} else {
-		target.SslConfig = proto.Clone(m.GetSslConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl.SslConfig)
+		target.SslConfig = proto.Clone(m.GetSslConfig()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_ssl.SslConfig)
 	}
 
 	return target

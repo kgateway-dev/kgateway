@@ -13,13 +13,13 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_headers "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/headers"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_headers "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/headers"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_protocol "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/protocol"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_protocol "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/protocol"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_protocol_upgrade "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/protocol_upgrade"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_protocol_upgrade "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/protocol_upgrade"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_tracing "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/tracing"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_tracing "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/tracing"
 
 	google_golang_org_protobuf_types_known_durationpb "google.golang.org/protobuf/types/known/durationpb"
 
@@ -160,9 +160,9 @@ func (m *HttpConnectionManagerSettings) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetTracing()).(clone.Cloner); ok {
-		target.Tracing = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_tracing.ListenerTracingSettings)
+		target.Tracing = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_tracing.ListenerTracingSettings)
 	} else {
-		target.Tracing = proto.Clone(m.GetTracing()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_tracing.ListenerTracingSettings)
+		target.Tracing = proto.Clone(m.GetTracing()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_tracing.ListenerTracingSettings)
 	}
 
 	target.ForwardClientCertDetails = m.GetForwardClientCertDetails()
@@ -180,13 +180,13 @@ func (m *HttpConnectionManagerSettings) Clone() proto.Message {
 	}
 
 	if m.GetUpgrades() != nil {
-		target.Upgrades = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_protocol_upgrade.ProtocolUpgradeConfig, len(m.GetUpgrades()))
+		target.Upgrades = make([]*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_protocol_upgrade.ProtocolUpgradeConfig, len(m.GetUpgrades()))
 		for idx, v := range m.GetUpgrades() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Upgrades[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_protocol_upgrade.ProtocolUpgradeConfig)
+				target.Upgrades[idx] = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_protocol_upgrade.ProtocolUpgradeConfig)
 			} else {
-				target.Upgrades[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_protocol_upgrade.ProtocolUpgradeConfig)
+				target.Upgrades[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_protocol_upgrade.ProtocolUpgradeConfig)
 			}
 
 		}
@@ -243,9 +243,9 @@ func (m *HttpConnectionManagerSettings) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetHttp2ProtocolOptions()).(clone.Cloner); ok {
-		target.Http2ProtocolOptions = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_protocol.Http2ProtocolOptions)
+		target.Http2ProtocolOptions = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_protocol.Http2ProtocolOptions)
 	} else {
-		target.Http2ProtocolOptions = proto.Clone(m.GetHttp2ProtocolOptions()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_protocol.Http2ProtocolOptions)
+		target.Http2ProtocolOptions = proto.Clone(m.GetHttp2ProtocolOptions()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_protocol.Http2ProtocolOptions)
 	}
 
 	if h, ok := interface{}(m.GetInternalAddressConfig()).(clone.Cloner); ok {
@@ -261,9 +261,9 @@ func (m *HttpConnectionManagerSettings) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetEarlyHeaderManipulation()).(clone.Cloner); ok {
-		target.EarlyHeaderManipulation = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_headers.EarlyHeaderManipulation)
+		target.EarlyHeaderManipulation = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_headers.EarlyHeaderManipulation)
 	} else {
-		target.EarlyHeaderManipulation = proto.Clone(m.GetEarlyHeaderManipulation()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_headers.EarlyHeaderManipulation)
+		target.EarlyHeaderManipulation = proto.Clone(m.GetEarlyHeaderManipulation()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_headers.EarlyHeaderManipulation)
 	}
 
 	switch m.HeaderFormat.(type) {

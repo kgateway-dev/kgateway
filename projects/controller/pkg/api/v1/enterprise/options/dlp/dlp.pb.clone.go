@@ -13,9 +13,9 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation_ee "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation_ee"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_transformation_ee "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation_ee"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_matchers "github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_core_matchers "github.com/solo-io/gloo/projects/controller/pkg/api/v1/core/matchers"
 
 	github_com_solo_io_solo_kit_pkg_api_external_envoy_type "github.com/solo-io/solo-kit/pkg/api/external/envoy/type"
 )
@@ -66,9 +66,9 @@ func (m *DlpRule) Clone() proto.Message {
 	target = &DlpRule{}
 
 	if h, ok := interface{}(m.GetMatcher()).(clone.Cloner); ok {
-		target.Matcher = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_matchers.Matcher)
+		target.Matcher = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_core_matchers.Matcher)
 	} else {
-		target.Matcher = proto.Clone(m.GetMatcher()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_matchers.Matcher)
+		target.Matcher = proto.Clone(m.GetMatcher()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_core_matchers.Matcher)
 	}
 
 	if m.GetActions() != nil {
@@ -168,13 +168,13 @@ func (m *CustomAction) Clone() proto.Message {
 	}
 
 	if m.GetRegexActions() != nil {
-		target.RegexActions = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation_ee.RegexAction, len(m.GetRegexActions()))
+		target.RegexActions = make([]*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_transformation_ee.RegexAction, len(m.GetRegexActions()))
 		for idx, v := range m.GetRegexActions() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.RegexActions[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation_ee.RegexAction)
+				target.RegexActions[idx] = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_transformation_ee.RegexAction)
 			} else {
-				target.RegexActions[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation_ee.RegexAction)
+				target.RegexActions[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_transformation_ee.RegexAction)
 			}
 
 		}

@@ -13,13 +13,13 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_graphql "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/graphql"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_graphql "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/graphql"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_grpc "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/grpc"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_grpc "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/grpc"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_grpc_json "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/grpc_json"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_grpc_json "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/grpc_json"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_rest "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/rest"
+	github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_rest "github.com/solo-io/gloo/projects/controller/pkg/api/v1/options/rest"
 )
 
 // ensure the imports are used
@@ -47,11 +47,11 @@ func (m *ServiceSpec) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetRest()).(clone.Cloner); ok {
 			target.PluginType = &ServiceSpec_Rest{
-				Rest: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_rest.ServiceSpec),
+				Rest: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_rest.ServiceSpec),
 			}
 		} else {
 			target.PluginType = &ServiceSpec_Rest{
-				Rest: proto.Clone(m.GetRest()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_rest.ServiceSpec),
+				Rest: proto.Clone(m.GetRest()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_rest.ServiceSpec),
 			}
 		}
 
@@ -59,11 +59,11 @@ func (m *ServiceSpec) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetGrpc()).(clone.Cloner); ok {
 			target.PluginType = &ServiceSpec_Grpc{
-				Grpc: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_grpc.ServiceSpec),
+				Grpc: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_grpc.ServiceSpec),
 			}
 		} else {
 			target.PluginType = &ServiceSpec_Grpc{
-				Grpc: proto.Clone(m.GetGrpc()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_grpc.ServiceSpec),
+				Grpc: proto.Clone(m.GetGrpc()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_grpc.ServiceSpec),
 			}
 		}
 
@@ -71,11 +71,11 @@ func (m *ServiceSpec) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetGrpcJsonTranscoder()).(clone.Cloner); ok {
 			target.PluginType = &ServiceSpec_GrpcJsonTranscoder{
-				GrpcJsonTranscoder: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_grpc_json.GrpcJsonTranscoder),
+				GrpcJsonTranscoder: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_grpc_json.GrpcJsonTranscoder),
 			}
 		} else {
 			target.PluginType = &ServiceSpec_GrpcJsonTranscoder{
-				GrpcJsonTranscoder: proto.Clone(m.GetGrpcJsonTranscoder()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_grpc_json.GrpcJsonTranscoder),
+				GrpcJsonTranscoder: proto.Clone(m.GetGrpcJsonTranscoder()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_grpc_json.GrpcJsonTranscoder),
 			}
 		}
 
@@ -83,11 +83,11 @@ func (m *ServiceSpec) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetGraphql()).(clone.Cloner); ok {
 			target.PluginType = &ServiceSpec_Graphql{
-				Graphql: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_graphql.ServiceSpec),
+				Graphql: h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_graphql.ServiceSpec),
 			}
 		} else {
 			target.PluginType = &ServiceSpec_Graphql{
-				Graphql: proto.Clone(m.GetGraphql()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_graphql.ServiceSpec),
+				Graphql: proto.Clone(m.GetGraphql()).(*github_com_solo_io_gloo_projects_controller_pkg_api_v1_options_graphql.ServiceSpec),
 			}
 		}
 

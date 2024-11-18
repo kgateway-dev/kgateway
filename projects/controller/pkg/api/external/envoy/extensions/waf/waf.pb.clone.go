@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation_ee "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation_ee"
+	github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_transformation_ee "github.com/solo-io/gloo/projects/controller/pkg/api/external/envoy/extensions/transformation_ee"
 )
 
 // ensure the imports are used
@@ -80,9 +80,9 @@ func (m *ModSecurity) Clone() proto.Message {
 	target.RegressionLogs = m.GetRegressionLogs()
 
 	if h, ok := interface{}(m.GetDlpTransformation()).(clone.Cloner); ok {
-		target.DlpTransformation = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation_ee.DlpTransformation)
+		target.DlpTransformation = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_transformation_ee.DlpTransformation)
 	} else {
-		target.DlpTransformation = proto.Clone(m.GetDlpTransformation()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation_ee.DlpTransformation)
+		target.DlpTransformation = proto.Clone(m.GetDlpTransformation()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_transformation_ee.DlpTransformation)
 	}
 
 	return target
@@ -148,9 +148,9 @@ func (m *ModSecurityPerRoute) Clone() proto.Message {
 	target.ResponseHeadersOnly = m.GetResponseHeadersOnly()
 
 	if h, ok := interface{}(m.GetDlpTransformation()).(clone.Cloner); ok {
-		target.DlpTransformation = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation_ee.DlpTransformation)
+		target.DlpTransformation = h.Clone().(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_transformation_ee.DlpTransformation)
 	} else {
-		target.DlpTransformation = proto.Clone(m.GetDlpTransformation()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation_ee.DlpTransformation)
+		target.DlpTransformation = proto.Clone(m.GetDlpTransformation()).(*github_com_solo_io_gloo_projects_controller_pkg_api_external_envoy_extensions_transformation_ee.DlpTransformation)
 	}
 
 	return target
