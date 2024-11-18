@@ -82,6 +82,13 @@ GOLANG_ALPINE_IMAGE_NAME = golang:$(shell go version | egrep -o '([0-9]+\.[0-9]+
 
 TEST_ASSET_DIR ?= $(ROOTDIR)/_test
 
+# Directory to store downloaded conformance tests for different versions
+CONFORMANCE_DIR ?= $(TEST_ASSET_DIR)/conformance
+# Gateway API version used for conformance testing
+GATEWAY_API_VERSION ?= v1.2.0
+# Fetch the module directory for the specified version of the Gateway API
+GATEWAY_API_MODULE_DIR := $(shell go list -m -json sigs.k8s.io/gateway-api@$(GATEWAY_API_VERSION) | jq -r '.Dir')
+
 # This is the location where assets are placed after a test failure
 # This is used by our e2e tests to emit information about the running instance of Gloo Gateway
 BUG_REPORT_DIR := $(TEST_ASSET_DIR)/bug_report
@@ -340,6 +347,7 @@ clean:
 	rm -rf docs/site*
 	rm -rf docs/themes
 	rm -rf docs/resources
+	rm -rf $(CONFORMANCE_DIR)
 	git clean -f -X install
 
 .PHONY: clean-tests
@@ -1233,26 +1241,40 @@ build-test-chart: ## Build the Helm chart and place it in the _test directory
 # Targets for running Kubernetes Gateway API conformance tests
 #----------------------------------------------------------------------------------
 
-# Pull the conformance test suite from the k8s gateway api repo and copy it into the test dir.
-$(TEST_ASSET_DIR)/conformance/conformance_test.go:
-	mkdir -p $(TEST_ASSET_DIR)/conformance
-	echo "//go:build conformance" > $@
-	cat $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/conformance_test.go >> $@
-	go fmt $@
+# Download and prepare the conformance test suite for a specific Gateway API version
+$(CONFORMANCE_DIR)/$(GATEWAY_API_VERSION)/conformance_test.go:
+	mkdir -p $(CONFORMANCE_DIR)/$(GATEWAY_API_VERSION)
+	go mod download sigs.k8s.io/gateway-api@$(GATEWAY_API_VERSION)
+	cp $(GATEWAY_API_MODULE_DIR)/conformance/conformance_test.go $@
 
+# Install the correct version of Gateway API CRDs in the Kubernetes cluster
+install-crds:
+	kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/$(GATEWAY_API_VERSION)/experimental-install.yaml
+
+# Update go.mod to replace Gateway API module with the version used for conformance testing
+update-mod:
+	go mod edit -replace=sigs.k8s.io/gateway-api=$(GATEWAY_API_MODULE_DIR)
+
+# Reset go.mod to remove the replace directive for Gateway API conformance testing
+reset-mod:
+	go mod edit -dropreplace=sigs.k8s.io/gateway-api
+	go mod tidy
+
+# Common arguments for conformance testing
 CONFORMANCE_SUPPORTED_FEATURES ?= -supported-features=Gateway,ReferenceGrant,HTTPRoute,HTTPRouteQueryParamMatching,HTTPRouteMethodMatching,HTTPRouteResponseHeaderModification,HTTPRoutePortRedirect,HTTPRouteHostRewrite,HTTPRouteSchemeRedirect,HTTPRoutePathRedirect,HTTPRouteHostRewrite,HTTPRoutePathRewrite,HTTPRouteRequestMirror
 CONFORMANCE_SUPPORTED_PROFILES ?= -conformance-profiles=GATEWAY-HTTP
-CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSION)-report.yaml -organization=solo.io -project=gloo-gateway -version=$(VERSION) -url=github.com/solo-io/gloo -contact=github.com/solo-io/gloo/issues/new/choose
+CONFORMANCE_REPORT_ARGS ?= -report-output=$(CONFORMANCE_DIR)/$(GATEWAY_API_VERSION)/$(VERSION)-report.yaml -organization=solo.io -project=gloo-gateway -version=$(VERSION) -url=github.com/solo-io/gloo -contact=github.com/solo-io/gloo/issues/new/choose
 CONFORMANCE_ARGS := -gateway-class=gloo-gateway $(CONFORMANCE_SUPPORTED_FEATURES) $(CONFORMANCE_SUPPORTED_PROFILES) $(CONFORMANCE_REPORT_ARGS)
 
-.PHONY: conformance ## Run the conformance test suite
-conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go
-	go test -mod=mod -ldflags=$(LDFLAGS) -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS)
+# Run conformance tests for the specified Gateway API version
+.PHONY: conformance
+conformance: $(CONFORMANCE_DIR)/$(GATEWAY_API_VERSION)/conformance_test.go install-crds update-mod
+	@trap "make reset-mod" EXIT; \
+	go test -mod=mod -ldflags=$(LDFLAGS) -tags conformance -test.v $(CONFORMANCE_DIR)/$(GATEWAY_API_VERSION)/... -args $(CONFORMANCE_ARGS)
 
-# Run only the specified conformance test. The name must correspond to the ShortName of one of the k8s gateway api
-# conformance tests.
-conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
-	go test -mod=mod -ldflags=$(LDFLAGS) -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS) \
+.PHONY: conformance-% ## Run the conformance test suite
+conformance-%: $(CONFORMANCE_DIR)/$(GATEWAY_API_VERSION)/conformance_test.go
+	go test -mod=mod -ldflags=$(LDFLAGS) -tags conformance -test.v $(CONFORMANCE_DIR)/$(GATEWAY_API_VERSION)/... -args $(CONFORMANCE_ARGS) \
 	-run-test=$*
 
 #----------------------------------------------------------------------------------

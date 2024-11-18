@@ -1,5 +1,9 @@
 name: Conformance Tests
-description: run kubernetes gateway api conformance tests
+description: Run Kubernetes Gateway API conformance tests for multiple versions
+inputs:
+  gateway-api-version:
+    description: "The version of Gateway API to test."
+    required: true
 runs:
   using: "composite"
   steps:
@@ -53,6 +57,8 @@ runs:
       fi
   - name: Run the kubernetes gateway API conformance tests
     shell: bash
+    env:
+      GATEWAY_API_VERSION: ${{ inputs.gateway-api-version }}
     run: make conformance
   - name: Capture debug information when tests fail
     if: ${{ failure() }}

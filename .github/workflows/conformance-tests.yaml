@@ -18,9 +18,11 @@ on:
 
 jobs:
   run-conformance-tests:
+    name: Conformance Tests for ${{ matrix.gateway-api-version }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        gateway-api-version: [v1.1.0, v1.2.0]
         # TODO(tim): Avoid hardcoding versions here. It's a bit tricky based on
         # how this was setup and there's a limited # of dispatch inputs that GH
         # supports. We can revisit this later.
@@ -37,8 +39,14 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Export GATEWAY_API_VERSION
+        shell: bash
+        run: echo "GATEWAY_API_VERSION=${{ matrix.gateway-api-version }}" >> $GITHUB_ENV
+
       - name: Run Conformance Tests
         uses: ./.github/workflows/composite-actions/kube-gateway-api-conformance-tests
+        with:
+          gateway-api-version: ${{ matrix.gateway-api-version }}
 
       # TODO(tim): Add support for downloading the test results and creating
       # a pull request whenever a new release > 1.17+ is cut.

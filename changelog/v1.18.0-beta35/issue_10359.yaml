@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/k8sgateway/k8sgateway/issues/10359
+    resolvesIssue: true
+    description: >-
+      Updates the Makefile and conformance GitHub action to support multiple Gateway API versions.
