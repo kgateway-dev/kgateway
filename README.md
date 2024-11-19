@@ -8,6 +8,10 @@
   An Envoy-Powered Kubernetes-Native API Gateway
 </h1>
 
+
+# 🚧 NOTE: This project is in the process of being donated to the CNCF. It is being re-factored as part of the process. 🚧
+Please see [the plan](https://github.com/k8sgateway/k8sgateway/issues/10363) for more information and current status.
+
 ## About K8sGateway
 K8sGateway is a feature-rich, fast, and flexible Kubernetes-native ingress controller and next-generation API gateway that is built on top of [Envoy proxy](https://www.envoyproxy.io) and the Kubernetes Gateway API. It excels in function-level routing, supports legacy apps, microservices and serverless, offers robust discovery capabilities, integrates seamlessly with open-source projects, and is designed to support hybrid applications with various technologies, architectures, protocols, and clouds. 
 
