@@ -8,16 +8,14 @@ import (
 	"github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+	"github.com/solo-io/gloo/projects/gateway2/query/mocks"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/mirror"
-	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/mirror/mocks"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
-
-//go:generate go run github.com/golang/mock/mockgen -destination mocks/mock_queries.go -package mocks github.com/solo-io/gloo/projects/gateway2/query GatewayQueries
 
 func TestSingleMirror(t *testing.T) {
 	g := gomega.NewWithT(t)

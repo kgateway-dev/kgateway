@@ -55,8 +55,8 @@ func mergeGWListeners(
 ) *MergedListeners {
 	ml := &MergedListeners{
 		parentGw:         parentGw,
-		gatewayNamespace: gatewayNamespace,
-		queries:          queries,
+		GatewayNamespace: gatewayNamespace,
+		Queries:          queries,
 	}
 	for _, listener := range listeners {
 		result, ok := routesForGw.ListenerResults[string(listener.Name)]
@@ -76,10 +76,10 @@ func mergeGWListeners(
 }
 
 type MergedListeners struct {
-	gatewayNamespace string
+	GatewayNamespace string
 	parentGw         gwv1.Gateway
 	Listeners        []*MergedListener
-	queries          query.GatewayQueries
+	Queries          query.GatewayQueries
 }
 
 func (ml *MergedListeners) AppendListener(
@@ -135,7 +135,7 @@ func (ml *MergedListeners) appendHttpListener(
 	// create a new filter chain for the listener
 	ml.Listeners = append(ml.Listeners, &MergedListener{
 		name:             listenerName,
-		gatewayNamespace: ml.gatewayNamespace,
+		gatewayNamespace: ml.GatewayNamespace,
 		port:             finalPort,
 		httpFilterChain:  fc,
 		listenerReporter: reporter,
@@ -155,7 +155,7 @@ func (ml *MergedListeners) appendHttpsListener(
 		sniDomain:           listener.Hostname,
 		tls:                 listener.TLS,
 		routesWithHosts:     routesWithHosts,
-		queries:             ml.queries,
+		queries:             ml.Queries,
 	}
 
 	// Perform the port transformation away from privileged ports only once to use
@@ -174,7 +174,7 @@ func (ml *MergedListeners) appendHttpsListener(
 	}
 	ml.Listeners = append(ml.Listeners, &MergedListener{
 		name:              listenerName,
-		gatewayNamespace:  ml.gatewayNamespace,
+		gatewayNamespace:  ml.GatewayNamespace,
 		port:              finalPort,
 		httpsFilterChains: []httpsFilterChain{mfc},
 		listenerReporter:  reporter,
@@ -236,7 +236,7 @@ func (ml *MergedListeners) AppendTcpListener(
 	// create a new filter chain for the listener
 	ml.Listeners = append(ml.Listeners, &MergedListener{
 		name:             listenerName,
-		gatewayNamespace: ml.gatewayNamespace,
+		gatewayNamespace: ml.GatewayNamespace,
 		port:             finalPort,
 		TcpFilterChains:  []tcpFilterChain{fc},
 		listenerReporter: reporter,
@@ -331,7 +331,7 @@ func buildTcpHost(
 	} else if len(weightedDestinations) == 1 {
 		tcpHost.Destination = &v1.TcpHost_TcpAction{
 			Destination: &v1.TcpHost_TcpAction_Single{
-				Single: weightedDestinations[0].Destination,
+				Single: weightedDestinations[0].GetDestination(),
 			},
 		}
 	} else {
