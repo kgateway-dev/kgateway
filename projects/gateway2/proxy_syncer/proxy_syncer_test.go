@@ -69,6 +69,14 @@ func TestIsRouteStatusEqual(t *testing.T) {
 					Namespace: ptr.To[gwv1.Namespace](gwv1.Namespace("default")),
 				},
 			},
+			{
+				ParentRef: gwv1.ParentReference{
+					Group:     ptr.To[gwv1.Group](gwv1.Group(wellknown.GatewayGroup)),
+					Kind:      ptr.To[gwv1.Kind](gwv1.Kind(wellknown.TCPRouteKind)),
+					Name:      "parent",
+					Namespace: ptr.To[gwv1.Namespace](gwv1.Namespace("default")),
+				},
+			},
 		},
 	}
 	// Same as status1
@@ -82,6 +90,14 @@ func TestIsRouteStatusEqual(t *testing.T) {
 					Namespace: ptr.To[gwv1.Namespace](gwv1.Namespace("default")),
 				},
 			},
+			{
+				ParentRef: gwv1.ParentReference{
+					Group:     ptr.To[gwv1.Group](gwv1.Group(wellknown.GatewayGroup)),
+					Kind:      ptr.To[gwv1.Kind](gwv1.Kind(wellknown.TCPRouteKind)),
+					Name:      "parent",
+					Namespace: ptr.To[gwv1.Namespace](gwv1.Namespace("default")),
+				},
+			},
 		},
 	}
 	// Different from status1
@@ -91,6 +107,14 @@ func TestIsRouteStatusEqual(t *testing.T) {
 				ParentRef: gwv1.ParentReference{
 					Group:     ptr.To[gwv1.Group](gwv1.Group(wellknown.GatewayGroup)),
 					Kind:      ptr.To[gwv1.Kind](gwv1.Kind(wellknown.HTTPRouteKind)),
+					Name:      "parent",
+					Namespace: ptr.To[gwv1.Namespace](gwv1.Namespace("my-other-ns")),
+				},
+			},
+			{
+				ParentRef: gwv1.ParentReference{
+					Group:     ptr.To[gwv1.Group](gwv1.Group(wellknown.GatewayGroup)),
+					Kind:      ptr.To[gwv1.Kind](gwv1.Kind(wellknown.TCPRouteKind)),
 					Name:      "parent",
 					Namespace: ptr.To[gwv1.Namespace](gwv1.Namespace("my-other-ns")),
 				},

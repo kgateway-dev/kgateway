@@ -11,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 )
@@ -115,7 +116,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				Name:      "example-gateway",
 			}}),
 	Entry(
-		"route with missing backend reports correctly",
+		"httproute with missing backend reports correctly",
 		translatorTestCase{
 			inputFile:  "http-routing-missing-backend",
 			outputFile: "http-routing-missing-backend.yaml",
@@ -139,7 +140,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			},
 		}),
 	Entry(
-		"route with invalid backend reports correctly",
+		"httproute with invalid backend reports correctly",
 		translatorTestCase{
 			inputFile:  "http-routing-invalid-backend",
 			outputFile: "http-routing-invalid-backend.yaml",
@@ -180,6 +181,71 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			gwNN: types.NamespacedName{
 				Namespace: "default",
 				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				route := &gwv1a2.TCPRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-tcp-route",
+						Namespace: "default",
+					},
+				}
+				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, "")
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
+				Expect(resolvedRefs).NotTo(BeNil())
+				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
+				Expect(resolvedRefs.Reason).To(Equal(string(gwv1.RouteReasonResolvedRefs)))
+			},
+		}),
+	Entry(
+		"tcproute with missing backend reports correctly",
+		translatorTestCase{
+			inputFile:  "tcp-routing/missing-backend.yaml",
+			outputFile: "tcp-routing/missing-backend.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				route := &gwv1a2.TCPRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-tcp-route",
+						Namespace: "default",
+					},
+				}
+				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, "")
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
+				Expect(resolvedRefs).NotTo(BeNil())
+				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionFalse))
+				Expect(resolvedRefs.Message).To(Equal("services \"example-tcp-svc\" not found"))
+			},
+		}),
+	Entry(
+		"tcproute with invalid backend reports correctly",
+		translatorTestCase{
+			inputFile:  "tcp-routing/invalid-backend.yaml",
+			outputFile: "tcp-routing/invalid-backend.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				route := &gwv1a2.TCPRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-tcp-route",
+						Namespace: "default",
+					},
+				}
+				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, "")
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
+				Expect(resolvedRefs).NotTo(BeNil())
+				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionFalse))
+				Expect(resolvedRefs.Message).To(Equal("unknown backend kind"))
 			},
 		}),
 	Entry(
