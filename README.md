@@ -9,7 +9,7 @@
 </h1>
 
 
-# 🚧 NOTE: This project is in the process of being donated to the CNCF. It is being re-factored as part of the process. 🚧
+# 🚧 NOTE: This project is in the process of being donated to the CNCF and not affiliated with the Kubernetes project. 🚧
 Please see [the plan](https://github.com/k8sgateway/k8sgateway/issues/10363) for more information and current status.
 
 ## About K8sGateway
