@@ -195,8 +195,8 @@ func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kct
 				logger.Warn(warn)
 			}
 		}()
-		logger := logger.With(zap.String("upstream", us.Inner.GetMetadata().Ref().Key()))
 
+		logger := logger.With(zap.String("upstream", us.Inner.GetMetadata().Ref().Key()))
 		logger.Debug("building endpoints")
 
 		kubeUpstream, ok := us.Inner.GetUpstreamType().(*v1.Upstream_Kube)
@@ -222,13 +222,7 @@ func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kct
 
 		endpointSlices := krt.Fetch(kctx, inputs.EndpointSlices, krt.FilterIndex(inputs.EndpointSlicesByService, key))
 		if len(endpointSlices) == 0 {
-			warnsToLog = append(warnsToLog, fmt.Sprintf("EndpointSlices not found for service %v/%v", svcNs, svcName))
-			return nil
-		}
-
-		if len(endpointSlices) == 0 {
-			warnsToLog = append(warnsToLog, fmt.Sprintf("EndpointSlices not found for service %v/%v", svcNs, svcName))
-			logger.Debug("EndpointSlices not found for service")
+			warnsToLog = append(warnsToLog, fmt.Sprintf("EndpointSlices not found for service %s", key.String()))
 			return nil
 		}
 
