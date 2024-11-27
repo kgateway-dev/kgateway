@@ -327,7 +327,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					Expect(gwpKube.GetService().GetExtraLabels()).To(matchers.ContainMapElements(map[string]string{"svclabel1": "a"}))
 					Expect(gwpKube.GetService().GetExtraAnnotations()).To(matchers.ContainMapElements(map[string]string{"svcanno1": "b"}))
 
-					Expect(gwpKube.GetService().GetExternalTrafficPolicy()).To(Equal(corev1.ServiceExternalTrafficPolicyLocal))
+					Expect(gwpKube.GetService().GetExternalTrafficPolicy()).To(HaveValue(Equal(corev1.ServiceExternalTrafficPolicyLocal)))
 
 					Expect(gwpKube.GetServiceAccount().GetExtraLabels()).To(matchers.ContainMapElements(map[string]string{"label1": "a"}))
 					Expect(gwpKube.GetServiceAccount().GetExtraAnnotations()).To(matchers.ContainMapElements(map[string]string{"anno1": "b"}))
