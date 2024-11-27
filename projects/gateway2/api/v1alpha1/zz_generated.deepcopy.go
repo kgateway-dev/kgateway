@@ -739,7 +739,7 @@ func (in *Service) DeepCopyInto(out *Service) {
 	}
 	if in.ExternalTrafficPolicy != nil {
 		in, out := &in.ExternalTrafficPolicy, &out.ExternalTrafficPolicy
-		*out = new(string)
+		*out = new(v1.ServiceExternalTrafficPolicy)
 		**out = **in
 	}
 }

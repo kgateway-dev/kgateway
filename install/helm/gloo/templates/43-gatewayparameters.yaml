@@ -24,13 +24,20 @@ spec:
     deployment:
       replicas: {{ $replicas }}
 {{- $serviceType := "LoadBalancer" -}}
+{{- $externalTrafficPolicy := "Cluster" -}}
 {{- if $gg.service -}}
 {{- if $gg.service.type -}}
 {{- $serviceType = $gg.service.type -}}
 {{- end -}}{{/* if $gg.service.type */}}
+
+{{- if $gg.service.externalTrafficPolicy -}}
+{{- $externalTrafficPolicy = $gg.service.externalTrafficPolicy -}}
+{{- end -}}{{/* if $gg.service.externalTrafficPolicy */}}
+
 {{- end }}{{/* if $gg.service */}}
     service:
       type: {{ $serviceType }}
+      externalTrafficPolicy: {{ $externalTrafficPolicy }}
       {{- with ($gg.service).extraLabels }}
       extraLabels:
         {{- toYaml . | nindent 8 }}

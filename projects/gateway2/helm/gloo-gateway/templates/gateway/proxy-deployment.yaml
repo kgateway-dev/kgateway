@@ -369,6 +369,7 @@ metadata:
     {{- end }}
 spec:
   type: {{ $gateway.service.type }}
+  externalTrafficPolicy: {{ $gateway.service.externalTrafficPolicy }}
   {{- with $gateway.service.clusterIP }}
   clusterIP: {{ . }}
   {{- end }}

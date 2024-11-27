@@ -206,7 +206,7 @@ var _ = Describe("Deployer", func() {
 							},
 						},
 						Service: &gw2_v1alpha1.Service{
-							Type:      ptr.To(corev1.ServiceTypeClusterIP),
+							Type:      ptr.To(corev1.ServiceTypeNodePort),
 							ClusterIP: ptr.To("99.99.99.99"),
 							ExtraLabels: map[string]string{
 								"foo-label": "bar-label",
@@ -214,7 +214,7 @@ var _ = Describe("Deployer", func() {
 							ExtraAnnotations: map[string]string{
 								"foo": "bar",
 							},
-							ExternalTrafficPolicy: ptr.To(string("Local")),
+							ExternalTrafficPolicy: ptr.To(corev1.ServiceExternalTrafficPolicyCluster),
 						},
 						ServiceAccount: &gw2_v1alpha1.ServiceAccount{
 							ExtraLabels: map[string]string{
@@ -589,7 +589,7 @@ var _ = Describe("Deployer", func() {
 								},
 							},
 							Service: &gw2_v1alpha1.Service{
-								Type:      ptr.To(corev1.ServiceTypeClusterIP),
+								Type:      ptr.To(corev1.ServiceTypeNodePort),
 								ClusterIP: ptr.To("99.99.99.99"),
 								ExtraLabels: map[string]string{
 									"override-foo-label": "override-bar-label",
@@ -597,7 +597,7 @@ var _ = Describe("Deployer", func() {
 								ExtraAnnotations: map[string]string{
 									"override-foo": "override-bar",
 								},
-								ExternalTrafficPolicy: ptr.To(string("Local")),
+								ExternalTrafficPolicy: ptr.To(corev1.ServiceExternalTrafficPolicyLocal),
 							},
 							ServiceAccount: &gw2_v1alpha1.ServiceAccount{
 								ExtraLabels: map[string]string{
@@ -655,7 +655,7 @@ var _ = Describe("Deployer", func() {
 								},
 							},
 							Service: &gw2_v1alpha1.Service{
-								Type:      ptr.To(corev1.ServiceTypeClusterIP),
+								Type:      ptr.To(corev1.ServiceTypeNodePort),
 								ClusterIP: ptr.To("99.99.99.99"),
 								ExtraLabels: map[string]string{
 									"foo-label":          "bar-label",
@@ -665,6 +665,7 @@ var _ = Describe("Deployer", func() {
 									"foo":          "bar",
 									"override-foo": "override-bar",
 								},
+								ExternalTrafficPolicy: ptr.To(corev1.ServiceExternalTrafficPolicyLocal),
 							},
 							ServiceAccount: &gw2_v1alpha1.ServiceAccount{
 								ExtraLabels: map[string]string{
@@ -816,12 +817,12 @@ var _ = Describe("Deployer", func() {
 				Expect(svc.GetAnnotations()).ToNot(BeNil())
 				Expect(svc.GetAnnotations()).To(matchers.ContainMapElements(expectedGwp.Service.ExtraAnnotations))
 
-				Expect(svc.Spec.ExternalTrafficPolicy).To(matchers.BeEquivalentToDiff(expectedGwp.Service.ExternalTrafficPolicy))
-
 				Expect(svc.GetLabels()).ToNot(BeNil())
 				Expect(svc.GetLabels()).To(matchers.ContainMapElements(expectedGwp.Service.ExtraLabels))
 				Expect(svc.Spec.Type).To(Equal(*expectedGwp.Service.Type))
 				Expect(svc.Spec.ClusterIP).To(Equal(*expectedGwp.Service.ClusterIP))
+
+				Expect(svc.Spec.ExternalTrafficPolicy).To(Equal(*expectedGwp.Service.ExternalTrafficPolicy))
 
 				sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
 				Expect(sa).ToNot(BeNil())
@@ -938,6 +939,8 @@ var _ = Describe("Deployer", func() {
 			Expect(svc.GetLabels()).To(matchers.ContainMapElements(expectedGwp.Service.ExtraLabels))
 			Expect(svc.Spec.Type).To(Equal(*expectedGwp.Service.Type))
 			Expect(svc.Spec.ClusterIP).To(Equal(*expectedGwp.Service.ClusterIP))
+
+			Expect(svc.Spec.ExternalTrafficPolicy).To(Equal(*expectedGwp.Service.ExternalTrafficPolicy))
 
 			sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
 			Expect(sa).ToNot(BeNil())
@@ -1505,7 +1508,7 @@ func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.Gateway
 					}},
 				},
 				Service: &gw2_v1alpha1.Service{
-					Type:      ptr.To(corev1.ServiceTypeClusterIP),
+					Type:      ptr.To(corev1.ServiceTypeNodePort),
 					ClusterIP: ptr.To("99.99.99.99"),
 					ExtraAnnotations: map[string]string{
 						"service-anno": "foo",
@@ -1513,6 +1516,7 @@ func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.Gateway
 					ExtraLabels: map[string]string{
 						"service-label": "foo",
 					},
+					ExternalTrafficPolicy: ptr.To(corev1.ServiceExternalTrafficPolicyLocal),
 				},
 				ServiceAccount: &gw2_v1alpha1.ServiceAccount{
 					ExtraLabels: map[string]string{

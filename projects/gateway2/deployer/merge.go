@@ -311,6 +311,10 @@ func deepMergeService(dst, src *v1alpha1.Service) *v1alpha1.Service {
 	dst.ExtraLabels = deepMergeMaps(dst.GetExtraLabels(), src.GetExtraLabels())
 	dst.ExtraAnnotations = deepMergeMaps(dst.GetExtraAnnotations(), src.GetExtraAnnotations())
 
+	if src.GetExternalTrafficPolicy() != nil {
+		dst.ExternalTrafficPolicy = src.GetExternalTrafficPolicy()
+	}
+
 	return dst
 }
 

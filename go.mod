@@ -41,7 +41,7 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/ginkgo/v2 v2.20.2
-	github.com/onsi/gomega v1.35.0
+	github.com/onsi/gomega v1.36.0
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
 	github.com/pkg/errors v0.9.1
 	github.com/rotisserie/eris v0.5.4

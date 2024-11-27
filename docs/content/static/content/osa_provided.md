@@ -37,7 +37,7 @@ Name|Version|License
 [go-httpbin/v2](https://github.com/mccutchen/go-httpbin)|v2.15.0|MIT License
 [olekukonko/tablewriter](https://github.com/olekukonko/tablewriter)|v0.0.5|MIT License
 [ginkgo/v2](https://github.com/onsi/ginkgo)|v2.20.2|MIT License
-[onsi/gomega](https://github.com/onsi/gomega)|v1.35.0|MIT License
+[onsi/gomega](https://github.com/onsi/gomega)|v1.36.0|MIT License
 [pkg/browser](https://github.com/pkg/browser)|v0.0.0-20180916011732-0a3d74bf9ce4|BSD 2-clause "Simplified" License
 [pkg/errors](https://github.com/pkg/errors)|v0.9.1|BSD 2-clause "Simplified" License
 [go-ruleguard/dsl](https://github.com/quasilyte/go-ruleguard)|v0.3.22|BSD 3-clause "New" or "Revised" License
