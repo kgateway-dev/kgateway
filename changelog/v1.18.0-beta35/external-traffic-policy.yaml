@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/k8sgateway/k8sgateway/issues/9879
+    resolvesIssue: true
+    description: >-
+      Add ability to configure proxy service External Traffic Policy via Gateway Params

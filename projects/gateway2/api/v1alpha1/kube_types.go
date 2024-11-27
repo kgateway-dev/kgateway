@@ -96,6 +96,11 @@ type Service struct {
 	//
 	// +kubebuilder:validation:Optional
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
+
+	// External Traffic Policy on the Service object.
+	//
+	// +kubebuilder:validation:Optional
+	ExternalTrafficPolicy *string `json:"externalTrafficPolicy,omitempty"`
 }
 
 func (in *Service) GetType() *corev1.ServiceType {
