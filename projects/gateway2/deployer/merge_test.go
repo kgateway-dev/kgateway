@@ -56,7 +56,6 @@ var _ = Describe("deepMergeGatewayParameters", func() {
 				Kube: &gw2_v1alpha1.KubernetesProxyConfig{
 					Service: &gw2_v1alpha1.Service{
 						ExternalTrafficPolicy: &externalTrafficPolicy,
-						
 					},
 				},
 			},
@@ -73,7 +72,7 @@ var _ = Describe("deepMergeGatewayParameters", func() {
 
 		out := deepMergeGatewayParameters(dst, src)
 		Expect(out.Spec.Kube.Service.ExternalTrafficPolicy).To(Equal(&externalTrafficPolicy))
-    })
+	})
 
 	It("merges maps", func() {
 		dst := &gw2_v1alpha1.GatewayParameters{
