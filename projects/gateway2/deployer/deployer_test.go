@@ -25,7 +25,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/utils/pointer"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -761,6 +763,18 @@ var _ = Describe("Deployer", func() {
 				return fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
 			}
 
+			fullyDefinedGatewayParamsWithProbes = func() *gw2_v1alpha1.GatewayParameters {
+				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
+				params.Spec.Kube.PodTemplate.LivenessProbe = generateLivenessProbe()
+				params.Spec.Kube.PodTemplate.ReadinessProbe = generateReadinessProbe()
+				params.Spec.Kube.PodTemplate.TerminationGracePeriodSeconds = pointer.Int(5)
+				params.Spec.Kube.PodTemplate.GracefulShutdown = &gw2_v1alpha1.GracefulShutdownSpec{
+					Enabled:          pointer.Bool(true),
+					SleepTimeSeconds: pointer.Int(7),
+				}
+				return params
+			}
+
 			fullyDefinedGatewayParamsWithFloatingUserId = func() *gw2_v1alpha1.GatewayParameters {
 				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
 				params.Spec.Kube.FloatingUserId = ptr.To(true)
@@ -804,6 +818,7 @@ var _ = Describe("Deployer", func() {
 					Expect(dep.Spec.Template.Spec.Containers[0].Image).To(ContainSubstring(":" + version.Version))
 				}
 				Expect(dep.Spec.Template.Spec.Containers[0].ImagePullPolicy).To(Equal(*expectedGwp.EnvoyContainer.Image.PullPolicy))
+
 				Expect(dep.Spec.Template.Annotations).To(matchers.ContainMapElements(expectedGwp.PodTemplate.ExtraAnnotations))
 				Expect(dep.Spec.Template.Annotations).To(HaveKeyWithValue("prometheus.io/scrape", "true"))
 				Expect(dep.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(expectedGwp.PodTemplate.SecurityContext.RunAsUser))
@@ -982,6 +997,27 @@ var _ = Describe("Deployer", func() {
 			return nil
 		}
 
+		fullyDefinedValidationWithProbes := func(objs clientObjects, inp *input) error {
+			err := fullyDefinedValidationWithoutRunAsUser(objs, inp)
+			if err != nil {
+				return err
+			}
+
+			dep := objs.findDeployment(defaultNamespace, defaultDeploymentName)
+			Expect(*dep.Spec.Template.Spec.TerminationGracePeriodSeconds).To(Equal(int64(5)))
+
+			envoyContainer := dep.Spec.Template.Spec.Containers[0]
+			Expect(envoyContainer.LivenessProbe).To(BeEquivalentTo(generateLivenessProbe()))
+			Expect(envoyContainer.ReadinessProbe).To(BeEquivalentTo(generateReadinessProbe()))
+			Expect(envoyContainer.Lifecycle.PreStop.Exec.Command).To(BeEquivalentTo([]string{
+				"/bin/sh",
+				"-c",
+				"wget --post-data \"\" -O /dev/null 127.0.0.1:19000/healthcheck/fail; sleep 7",
+			}))
+
+			return nil
+		}
+
 		fullyDefinedValidationFloatingUserId := func(objs clientObjects, inp *input) error {
 			err := fullyDefinedValidationWithoutRunAsUser(objs, inp)
 			if err != nil {
@@ -1152,6 +1188,14 @@ var _ = Describe("Deployer", func() {
 			}, &expectedOutput{
 				validationFunc: fullyDefinedValidation,
 			}),
+			Entry("Fully defined GatewayParameters with probes", &input{
+				dInputs:    istioEnabledDeployerInputs(),
+				gw:         defaultGateway(),
+				defaultGwp: fullyDefinedGatewayParamsWithProbes(),
+			}, &expectedOutput{
+				validationFunc: fullyDefinedValidationWithProbes,
+			}),
+
 			Entry("Fully defined GatewayParameters with floating user id", &input{
 				dInputs:    istioEnabledDeployerInputs(),
 				gw:         defaultGateway(),
@@ -1557,5 +1601,40 @@ func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.Gateway
 				},
 			},
 		},
+	}
+}
+
+func generateLivenessProbe() *corev1.Probe {
+	return &corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{
+			Exec: &corev1.ExecAction{
+				Command: []string{
+					"wget",
+					"-O",
+					"/dev/null",
+					"127.0.0.1:19000/server_info",
+				},
+			},
+		},
+		InitialDelaySeconds: 3,
+		PeriodSeconds:       10,
+		FailureThreshold:    3,
+	}
+}
+
+func generateReadinessProbe() *corev1.Probe {
+	return &corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Scheme: "HTTP",
+				Port: intstr.IntOrString{
+					IntVal: 8082,
+				},
+				Path: "/envoy-hc",
+			},
+		},
+		InitialDelaySeconds: 5,
+		PeriodSeconds:       5,
+		FailureThreshold:    2,
 	}
 }

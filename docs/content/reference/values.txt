@@ -184,6 +184,53 @@
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.ports[].protocol|string|||
 |kubeGateway.gatewayParameters.glooGateway.aiExtension.ports[].hostIP|string|||
 |kubeGateway.gatewayParameters.glooGateway.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container. Default is false.|
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.gracefulShutdown.enabled|bool||Enable grace period before shutdown to finish current requests while Envoy health checks fail to e.g. notify external load balancers. *NOTE:* This will not have any effect if you have not defined health checks via the health check filter|
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.gracefulShutdown.sleepTimeSeconds|int||Time (in seconds) for the preStop hook to wait before allowing Envoy to terminate|
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.terminationGracePeriodSeconds|int||Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#istio-lifecycle) for more info.|
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.probes|bool||Set to true to enable a readiness probe (default is false). Then, you can also enable a liveness probe.|
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.livenessProbeEnabled|bool||Set to true to enable a liveness probe (default is false).|
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.exec.command[]|string|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.httpGet.path|string|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.httpGet.port|int64|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.httpGet.port|int32|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.httpGet.port|string|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.httpGet.host|string|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.httpGet.scheme|string|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.httpGet.httpHeaders[].name|string|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.httpGet.httpHeaders[].value|string|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.tcpSocket.port|int64|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.tcpSocket.port|int32|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.tcpSocket.port|string|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.tcpSocket.host|string|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.grpc.port|int32|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.grpc.service|string|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.initialDelaySeconds|int32|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.timeoutSeconds|int32|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.periodSeconds|int32|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.successThreshold|int32|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.failureThreshold|int32|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.terminationGracePeriodSeconds|int64|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.exec.command[]|string|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.httpGet.path|string|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.httpGet.port|int64|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.httpGet.port|int32|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.httpGet.port|string|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.httpGet.host|string|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.httpGet.scheme|string|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.httpGet.httpHeaders[].name|string|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.httpGet.httpHeaders[].value|string|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.tcpSocket.port|int64|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.tcpSocket.port|int32|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.tcpSocket.port|string|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.tcpSocket.host|string|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.grpc.port|int32|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.grpc.service|string|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.initialDelaySeconds|int32|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.timeoutSeconds|int32|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.periodSeconds|int32|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.successThreshold|int32|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.failureThreshold|int32|||
+|kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.terminationGracePeriodSeconds|int64|||
 |kubeGateway.portal.enabled|bool|false|Enable the Gloo Gateway Portal controller and web server.|
 |settings.watchNamespaces[]|string||whitelist of namespaces for k8sgateway to watch for services and CRDs. Empty list means all namespaces. If this and WatchNamespaceSelectors are specified, this takes precedence and WatchNamespaceSelectors is ignored|
 |settings.watchNamespaceSelectors|interface||A list of Kubernetes selectors that specify the set of namespaces to restrict the namespaces that Gloo controllers take into consideration when watching for resources. Elements in the list are disjunctive (OR semantics), i.e. a namespace will be included if it matches any selector. An empty list means all namespaces. If this and WatchNamespaces are specified, WatchNamespaces takes precedence and this is ignored|

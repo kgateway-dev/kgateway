@@ -3,6 +3,7 @@ package deployer
 import (
 	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // mergePointers will decide whether to use dst or src without dereferencing or recursing
@@ -47,6 +48,15 @@ func deepMergeSlices[T any](dst, src []T) []T {
 	dst = append(dst, src...)
 
 	return dst
+}
+
+func overrideSlices[T any](dst, src []T) []T {
+	// nil src override means just use dst
+	if src == nil {
+		return dst
+	}
+
+	return src
 }
 
 // Check against base value
@@ -130,6 +140,10 @@ func deepMergePodTemplate(dst, src *v1alpha1.Pod) *v1alpha1.Pod {
 	dst.NodeSelector = deepMergeMaps(dst.GetNodeSelector(), src.GetNodeSelector())
 	dst.Affinity = deepMergeAffinity(dst.GetAffinity(), src.GetAffinity())
 	dst.Tolerations = deepMergeSlices(dst.GetTolerations(), src.GetTolerations())
+	dst.GracefulShutdown = deepMergeGracefulShutdown(dst.GetGracefulShutdown(), src.GetGracefulShutdown())
+	dst.TerminationGracePeriodSeconds = mergePointers(dst.TerminationGracePeriodSeconds, src.TerminationGracePeriodSeconds)
+	dst.ReadinessProbe = deepMergeProbe(dst.GetReadinessProbe(), src.GetReadinessProbe())
+	dst.LivenessProbe = deepMergeProbe(dst.GetLivenessProbe(), src.GetLivenessProbe())
 
 	return dst
 }
@@ -286,6 +300,124 @@ func deepMergePodAntiAffinity(dst, src *corev1.PodAntiAffinity) *corev1.PodAntiA
 
 	dst.RequiredDuringSchedulingIgnoredDuringExecution = deepMergeSlices(dst.RequiredDuringSchedulingIgnoredDuringExecution, src.RequiredDuringSchedulingIgnoredDuringExecution)
 	dst.PreferredDuringSchedulingIgnoredDuringExecution = deepMergeSlices(dst.PreferredDuringSchedulingIgnoredDuringExecution, src.PreferredDuringSchedulingIgnoredDuringExecution)
+
+	return dst
+}
+
+func deepMergeProbe(dst, src *corev1.Probe) *corev1.Probe {
+	// nil src override means just use dst
+	if src == nil {
+		return dst
+	}
+
+	if dst == nil {
+		return src
+	}
+
+	dst.ProbeHandler = deepMergeProbeHandler(dst.ProbeHandler, src.ProbeHandler)
+	dst.InitialDelaySeconds = mergeComparable(dst.InitialDelaySeconds, src.InitialDelaySeconds)
+	dst.TimeoutSeconds = mergeComparable(dst.TimeoutSeconds, src.TimeoutSeconds)
+	dst.PeriodSeconds = mergeComparable(dst.PeriodSeconds, src.PeriodSeconds)
+	dst.SuccessThreshold = mergeComparable(dst.SuccessThreshold, src.SuccessThreshold)
+	dst.FailureThreshold = mergeComparable(dst.FailureThreshold, src.FailureThreshold)
+	dst.TerminationGracePeriodSeconds = mergePointers(dst.TerminationGracePeriodSeconds, src.TerminationGracePeriodSeconds)
+
+	return dst
+}
+
+func deepMergeProbeHandler(dst, src corev1.ProbeHandler) corev1.ProbeHandler {
+	dst.Exec = deepMergeExecAction(dst.Exec, src.Exec)
+	dst.HTTPGet = deepMergeHTTPGetAction(dst.HTTPGet, src.HTTPGet)
+	dst.TCPSocket = deepMergeTCPSocketAction(dst.TCPSocket, src.TCPSocket)
+	dst.GRPC = deepMergeGRPCAction(dst.GRPC, src.GRPC)
+
+	return dst
+}
+
+func deepMergeExecAction(dst, src *corev1.ExecAction) *corev1.ExecAction {
+	// nil src override means just use dst
+	if src == nil {
+		return dst
+	}
+
+	if dst == nil {
+		return src
+	}
+
+	// Don't merge the command string as that can break the entire probe
+	dst.Command = overrideSlices(dst.Command, src.Command)
+
+	return dst
+}
+
+func deepMergeHTTPGetAction(dst, src *corev1.HTTPGetAction) *corev1.HTTPGetAction {
+	// nil src override means just use dst
+	if src == nil {
+		return dst
+	}
+
+	if dst == nil {
+		return src
+	}
+
+	dst.Path = mergeComparable(dst.Path, src.Path)
+	dst.Port = mergeIntOrString(dst.Port, src.Port)
+	dst.Host = mergeComparable(dst.Host, src.Host)
+	dst.Scheme = mergeComparable(dst.Scheme, src.Scheme)
+	dst.HTTPHeaders = deepMergeSlices(dst.HTTPHeaders, src.HTTPHeaders)
+
+	return dst
+}
+
+func mergeIntOrString(dst, src intstr.IntOrString) intstr.IntOrString {
+	// Do not deep merge as this can cause a conflict between the name and number of the port to access on the container
+	return mergeComparable(dst, src)
+}
+
+func deepMergeTCPSocketAction(dst, src *corev1.TCPSocketAction) *corev1.TCPSocketAction {
+	// nil src override means just use dst
+	if src == nil {
+		return dst
+	}
+
+	if dst == nil {
+		return src
+	}
+
+	dst.Port = mergeIntOrString(dst.Port, src.Port)
+	dst.Host = mergeComparable(dst.Host, src.Host)
+
+	return dst
+}
+
+func deepMergeGRPCAction(dst, src *corev1.GRPCAction) *corev1.GRPCAction {
+	// nil src override means just use dst
+	if src == nil {
+		return dst
+	}
+
+	if dst == nil {
+		return src
+	}
+
+	dst.Port = mergeComparable(dst.Port, src.Port)
+	dst.Service = mergePointers(dst.Service, src.Service)
+
+	return dst
+}
+
+func deepMergeGracefulShutdown(dst, src *v1alpha1.GracefulShutdownSpec) *v1alpha1.GracefulShutdownSpec {
+	// nil src override means just use dst
+	if src == nil {
+		return dst
+	}
+
+	if dst == nil {
+		return src
+	}
+
+	dst.Enabled = mergePointers(dst.Enabled, src.Enabled)
+	dst.SleepTimeSeconds = mergePointers(dst.SleepTimeSeconds, src.SleepTimeSeconds)
 
 	return dst
 }

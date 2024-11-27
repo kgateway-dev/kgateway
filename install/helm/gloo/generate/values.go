@@ -339,7 +339,18 @@ type GatewayParameters struct {
 	Stats           *GatewayParamsStatsConfig  `json:"stats,omitempty" desc:"Config used to manage the stats endpoints exposed on the deployed proxies"`
 	AIExtension     *GatewayParamsAIExtension  `json:"aiExtension,omitempty" desc:"Config used to manage the Gloo Gateway AI extension."`
 	FloatingUserId  *bool                      `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container. Default is false."`
+	PodTemplate     *GatewayParamsPodTemplate  `json:"podTemplate,omitempty"`
 	// TODO(npolshak): Add support for GlooMtls
+}
+
+// GatewayProxyPodTemplate contains the Helm API available to configure the PodTemplate on the gateway Deployment
+type GatewayParamsPodTemplate struct {
+	GracefulShutdown              *GracefulShutdownSpec `json:"gracefulShutdown,omitempty"`
+	TerminationGracePeriodSeconds *int                  `json:"terminationGracePeriodSeconds,omitempty" desc:"Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#istio-lifecycle) for more info."`
+	Probes                        *bool                 `json:"probes,omitempty" desc:"Set to true to enable a readiness probe (default is false). Then, you can also enable a liveness probe."`
+	LivenessProbeEnabled          *bool                 `json:"livenessProbeEnabled,omitempty" desc:"Set to true to enable a liveness probe (default is false)."`
+	CustomReadinessProbe          *corev1.Probe         `json:"customReadinessProbe,omitempty"`
+	CustomLivenessProbe           *corev1.Probe         `json:"customLivenessProbe,omitempty"`
 }
 
 type GatewayParamsStatsConfig struct {

@@ -15,6 +15,8 @@ import (
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/utils/pointer"
 )
 
 var _ = Describe("Kubernetes Gateway API integration", func() {
@@ -354,6 +356,148 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					Entry("locally undefined, globally false", false, "global.securitySettings.floatingUserId=false"),
 					Entry("locally undefined, globally undefined", false),
 				)
+			})
+
+			Context("probes and graceful shutdown", func() {
+				When("nothing is specified", func() {
+					It("does not render probes and graceful shutdown", func() {
+						gwp := getDefaultGatewayParameters(testManifest)
+
+						gwpPT := gwp.Spec.Kube.PodTemplate
+						Expect(gwpPT).ToNot(BeNil())
+
+						Expect(gwpPT.LivenessProbe).To(BeNil())
+						Expect(gwpPT.ReadinessProbe).To(BeNil())
+						Expect(gwpPT.GracefulShutdown).To(BeNil())
+						Expect(gwpPT.TerminationGracePeriodSeconds).To(BeNil())
+					})
+				})
+
+				When("probes are enabled", func() {
+					BeforeEach(func() {
+						extraValuesArgs := []string{
+							"kubeGateway.gatewayParameters.glooGateway.podTemplate.probes=true",
+							"kubeGateway.gatewayParameters.glooGateway.podTemplate.livenessProbeEnabled=true",
+						}
+
+						valuesArgs = append(valuesArgs, extraValuesArgs...)
+					})
+
+					It("sets the default values of the probes", func() {
+						gwp := getDefaultGatewayParameters(testManifest)
+						gwpPT := gwp.Spec.Kube.PodTemplate
+						Expect(*gwpPT.LivenessProbe).To(BeEquivalentTo(corev1.Probe{
+							ProbeHandler: corev1.ProbeHandler{
+								Exec: &corev1.ExecAction{
+									Command: []string{
+										"wget",
+										"-O",
+										"/dev/null",
+										"127.0.0.1:19000/server_info",
+									},
+								},
+							},
+							InitialDelaySeconds: 3,
+							PeriodSeconds:       10,
+							FailureThreshold:    3,
+						}))
+						Expect(*gwpPT.ReadinessProbe).To(BeEquivalentTo(corev1.Probe{
+							ProbeHandler: corev1.ProbeHandler{
+								HTTPGet: &corev1.HTTPGetAction{
+									Scheme: "HTTP",
+									Port: intstr.IntOrString{
+										IntVal: 8082,
+									},
+									Path: "/envoy-hc",
+								},
+							},
+							InitialDelaySeconds: 5,
+							PeriodSeconds:       5,
+							FailureThreshold:    2,
+						}))
+
+					})
+				})
+
+				When("custom probes are defined", func() {
+					BeforeEach(func() {
+						extraValuesArgs := []string{
+							"kubeGateway.gatewayParameters.glooGateway.podTemplate.probes=true",
+							"kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.httpGet.scheme=HTTP",
+							"kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.httpGet.port=9090",
+							"kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.httpGet.path=/custom-readiness",
+							"kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.failureThreshold=1",
+							"kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.initialDelaySeconds=2",
+							"kubeGateway.gatewayParameters.glooGateway.podTemplate.customReadinessProbe.periodSeconds=3",
+							"kubeGateway.gatewayParameters.glooGateway.podTemplate.livenessProbeEnabled=true",
+							"kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.exec.command[0]=wget",
+							"kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.exec.command[1]=-O",
+							"kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.exec.command[2]=/dev/null",
+							"kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.exec.command[3]=127.0.0.1:9090/custom-liveness",
+							"kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.failureThreshold=4",
+							"kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.initialDelaySeconds=5",
+							"kubeGateway.gatewayParameters.glooGateway.podTemplate.customLivenessProbe.periodSeconds=6",
+						}
+
+						valuesArgs = append(valuesArgs, extraValuesArgs...)
+					})
+
+					It("sets the custom values of the probes", func() {
+						gwp := getDefaultGatewayParameters(testManifest)
+						gwpPT := gwp.Spec.Kube.PodTemplate
+						Expect(*gwpPT.ReadinessProbe).To(BeEquivalentTo(corev1.Probe{
+							ProbeHandler: corev1.ProbeHandler{
+								HTTPGet: &corev1.HTTPGetAction{
+									Scheme: "HTTP",
+									Port: intstr.IntOrString{
+										IntVal: 9090,
+									},
+									Path: "/custom-readiness",
+								},
+							},
+							FailureThreshold:    1,
+							InitialDelaySeconds: 2,
+							PeriodSeconds:       3,
+						}))
+						Expect(*gwpPT.LivenessProbe).To(BeEquivalentTo(corev1.Probe{
+							ProbeHandler: corev1.ProbeHandler{
+								Exec: &corev1.ExecAction{
+									Command: []string{
+										"wget",
+										"-O",
+										"/dev/null",
+										"127.0.0.1:9090/custom-liveness",
+									},
+								},
+							},
+							FailureThreshold:    4,
+							InitialDelaySeconds: 5,
+							PeriodSeconds:       6,
+						}))
+					})
+				})
+
+				When("gracefulShutdown and terminationGracePeriod is enabled", func() {
+					BeforeEach(func() {
+						extraValuesArgs := []string{
+							"kubeGateway.gatewayParameters.glooGateway.podTemplate.terminationGracePeriodSeconds=7",
+							"kubeGateway.gatewayParameters.glooGateway.podTemplate.gracefulShutdown.enabled=true",
+							"kubeGateway.gatewayParameters.glooGateway.podTemplate.gracefulShutdown.sleepTimeSeconds=5",
+						}
+
+						valuesArgs = append(valuesArgs, extraValuesArgs...)
+					})
+
+					It("sets the custom values", func() {
+						gwp := getDefaultGatewayParameters(testManifest)
+						gwpPT := gwp.Spec.Kube.PodTemplate
+						Expect(*gwpPT.TerminationGracePeriodSeconds).To(Equal(7))
+						Expect(*gwpPT.GracefulShutdown).To(BeEquivalentTo(v1alpha1.GracefulShutdownSpec{
+							Enabled:          pointer.Bool(true),
+							SleepTimeSeconds: pointer.Int(5),
+						}))
+					})
+				})
 			})
 		})
 

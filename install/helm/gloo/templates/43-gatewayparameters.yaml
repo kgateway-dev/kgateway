@@ -72,7 +72,46 @@ spec:
 {{- end }}{{/* if $gg.envoyContainer */}}
     podTemplate:
       extraLabels:
-        {{- include "gloo-gateway.constLabels" . | nindent 8 }}
+      {{- include "gloo-gateway.constLabels" . | nindent 8 }}
+{{- if $gg.podTemplate }}
+{{- if $gg.podTemplate.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ $gg.podTemplate.terminationGracePeriodSeconds }}
+{{- end }}{{/* if $gg.podTemplate.terminationGracePeriodSeconds */}}
+{{- if $gg.podTemplate.gracefulShutdown }}
+      gracefulShutdown:
+        {{- toYaml $gg.podTemplate.gracefulShutdown | nindent 8 }}
+{{- end }}{{/* if $gg.podTemplate.gracefulShutdown */}}
+{{- if $gg.podTemplate.probes }}
+      readinessProbe:
+{{- if $gg.podTemplate.customReadinessProbe }}
+{{ toYaml $gg.podTemplate.customReadinessProbe | indent 8}}
+{{- else }}
+        httpGet:
+          scheme: HTTP
+          port: 8082
+          path: /envoy-hc
+        initialDelaySeconds: 5
+        periodSeconds: 5
+        failureThreshold: 2
+{{- end}}{{/* if $gg.podTemplate.customReadinessProbe */}}
+{{- if $gg.podTemplate.livenessProbeEnabled }}
+      livenessProbe:
+{{- if $gg.podTemplate.customLivenessProbe }}
+{{ toYaml $gg.podTemplate.customLivenessProbe | indent 8}}
+{{- else }}
+        exec:
+          command:
+          - wget
+          - -O
+          - /dev/null
+          - 127.0.0.1:19000/server_info
+        initialDelaySeconds: 3
+        periodSeconds: 10
+        failureThreshold: 3
+{{- end }}{{/*if $gg.podTemplate.customLivenessProbe*/}}
+{{- end }}{{/*if $gg.podTemplate.livenessProbeEnabled*/}}
+{{- end }}{{/*if $gg.podTemplate.probes*/}}
+{{- end }}{{/*if $gg.podTemplate */}}
 {{- if $gg.sdsContainer }}
     sdsContainer:
       image:

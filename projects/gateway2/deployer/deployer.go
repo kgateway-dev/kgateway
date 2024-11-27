@@ -326,6 +326,10 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	gateway.NodeSelector = podConfig.GetNodeSelector()
 	gateway.Affinity = podConfig.GetAffinity()
 	gateway.Tolerations = podConfig.GetTolerations()
+	gateway.ReadinessProbe = podConfig.GetReadinessProbe()
+	gateway.LivenessProbe = podConfig.GetLivenessProbe()
+	gateway.GracefulShutdown = podConfig.GetGracefulShutdown()
+	gateway.TerminationGracePeriodSeconds = podConfig.GetTerminationGracePeriodSeconds()
 
 	// envoy container values
 	logLevel := envoyContainerConfig.GetBootstrap().GetLogLevel()
