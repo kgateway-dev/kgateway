@@ -78,10 +78,11 @@ func getServiceValues(svcConfig *v1alpha1.Service) *helmService {
 		svcType = ptr.To(string(*svcConfig.GetType()))
 	}
 	return &helmService{
-		Type:             svcType,
-		ClusterIP:        svcConfig.GetClusterIP(),
-		ExtraAnnotations: svcConfig.GetExtraAnnotations(),
-		ExtraLabels:      svcConfig.GetExtraLabels(),
+		Type:                  svcType,
+		ClusterIP:             svcConfig.GetClusterIP(),
+		ExtraAnnotations:      svcConfig.GetExtraAnnotations(),
+		ExtraLabels:           svcConfig.GetExtraLabels(),
+		ExternalTrafficPolicy: svcConfig.GetExternalTrafficPolicy(),
 	}
 }
 

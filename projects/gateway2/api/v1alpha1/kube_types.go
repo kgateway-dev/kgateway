@@ -131,6 +131,13 @@ func (in *Service) GetExtraAnnotations() map[string]string {
 	return in.ExtraAnnotations
 }
 
+func (in *Service) GetExternalTrafficPolicy() *string {
+	if in == nil {
+		return nil
+	}
+	return in.ExternalTrafficPolicy
+}
+
 type ServiceAccount struct {
 	// Additional labels to add to the ServiceAccount object metadata.
 	//

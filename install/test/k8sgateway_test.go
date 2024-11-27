@@ -152,6 +152,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 						"kubeGateway.gatewayParameters.glooGateway.proxyDeployment.replicas=5",
 						"kubeGateway.gatewayParameters.glooGateway.service.type=ClusterIP",
 						"kubeGateway.gatewayParameters.glooGateway.service.extraLabels.svclabel1=x",
+						"kubeGateway.gatewayParameters.glooGateway.service.externalTrafficPolicy=Local",
 						"kubeGateway.gatewayParameters.glooGateway.service.extraAnnotations.svcanno1=y",
 						"kubeGateway.gatewayParameters.glooGateway.serviceAccount.extraLabels.label1=a",
 						"kubeGateway.gatewayParameters.glooGateway.serviceAccount.extraAnnotations.anno1=b",
@@ -282,6 +283,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 						"kubeGateway.gatewayParameters.glooGateway.service.type=ClusterIP",
 						"kubeGateway.gatewayParameters.glooGateway.service.extraLabels.svclabel1=a",
 						"kubeGateway.gatewayParameters.glooGateway.service.extraAnnotations.svcanno1=b",
+						"kubeGateway.gatewayParameters.glooGateway.service.externalTrafficPolicy=Local",
 						"kubeGateway.gatewayParameters.glooGateway.serviceAccount.extraLabels.label1=a",
 						"kubeGateway.gatewayParameters.glooGateway.serviceAccount.extraAnnotations.anno1=b",
 						"kubeGateway.gatewayParameters.glooGateway.sdsContainer.image.tag=sds-override-tag",
@@ -324,6 +326,8 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 					Expect(*gwpKube.GetService().GetType()).To(Equal(corev1.ServiceTypeClusterIP))
 					Expect(gwpKube.GetService().GetExtraLabels()).To(matchers.ContainMapElements(map[string]string{"svclabel1": "a"}))
 					Expect(gwpKube.GetService().GetExtraAnnotations()).To(matchers.ContainMapElements(map[string]string{"svcanno1": "b"}))
+
+					Expect(gwpKube.GetService().GetExternalTrafficPolicy()).To(matchers.BeEquivalentToDiff([]string{"Local"}))
 
 					Expect(gwpKube.GetServiceAccount().GetExtraLabels()).To(matchers.ContainMapElements(map[string]string{"label1": "a"}))
 					Expect(gwpKube.GetServiceAccount().GetExtraAnnotations()).To(matchers.ContainMapElements(map[string]string{"anno1": "b"}))

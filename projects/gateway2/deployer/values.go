@@ -80,10 +80,11 @@ type helmImage struct {
 }
 
 type helmService struct {
-	Type             *string           `json:"type,omitempty"`
-	ClusterIP        *string           `json:"clusterIP,omitempty"`
-	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
-	ExtraLabels      map[string]string `json:"extraLabels,omitempty"`
+	Type                  *string           `json:"type,omitempty"`
+	ClusterIP             *string           `json:"clusterIP,omitempty"`
+	ExtraAnnotations      map[string]string `json:"extraAnnotations,omitempty"`
+	ExtraLabels           map[string]string `json:"extraLabels,omitempty"`
+	ExternalTrafficPolicy *string           `json:"externalTrafficPolicy,omitempty"`
 }
 
 type helmServiceAccount struct {
