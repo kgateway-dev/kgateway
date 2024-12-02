@@ -488,7 +488,7 @@ jobs:
           go-version-file: go.mod
       - name: Send Slack Message
         env:
-          PARENT_JOB_URL: https://github.com/solo-io/gloo/actions/runs/${{github.run_id}} # parent job hyperlink
+          PARENT_JOB_URL: https://github.com/solo-io/k8sgateway/actions/runs/${{github.run_id}} # parent job hyperlink
           PREAMBLE: ${{ steps.compute-preamble.outputs.preamble }}  # text to hyperlink at start of slack message
           SLACKBOT_BEARER: ${{ secrets.SLACKBOT_BEARER }}
         run: |
