@@ -30,7 +30,7 @@ steps:
   args:
   - '-c'
   - |
-    { # try to pull release assets first
+    { # try to pull release assets first!
       # release assets are in v1.x.y (semver, prefixed with a literal v) format
       ENVOY_VERSION=v$$(make print-ENVOY_GLOO_IMAGE | cut -d: -f2)
       gsutil cp gs://solo-public-artifacts.solo.io/envoy/$$ENVOY_VERSION/envoy.stripped /workspace/envoy
