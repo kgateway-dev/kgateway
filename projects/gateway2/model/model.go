@@ -32,7 +32,7 @@ type Upstream struct {
 	// for things that integrate with destination rule, we need to know what hostname to use.
 	CanonicalHostname string
 	// original object. Opaque to us other than metadata.
-	Obj metav1.ObjectMetaAccessor
+	Obj metav1.Object
 }
 
 func (c Upstream) ResourceName() string {
@@ -41,14 +41,14 @@ func (c Upstream) ResourceName() string {
 
 func (c Upstream) Equals(in Upstream) bool {
 	var versionEquals bool
-	if c.Obj.GetObjectMeta().GetGeneration() != 0 && in.Obj.GetObjectMeta().GetGeneration() != 0 {
-		versionEquals = c.Obj.GetObjectMeta().GetGeneration() == in.Obj.GetObjectMeta().GetGeneration()
+	if c.Obj.GetGeneration() != 0 && in.Obj.GetGeneration() != 0 {
+		versionEquals = c.Obj.GetGeneration() == in.Obj.GetGeneration()
 	} else {
-		versionEquals = c.Obj.GetObjectMeta().GetResourceVersion() == in.Obj.GetObjectMeta().GetResourceVersion()
+		versionEquals = c.Obj.GetResourceVersion() == in.Obj.GetResourceVersion()
 	}
 
 	return c.ObjectSource.Equals(in.ObjectSource) &&
-		versionEquals && c.Obj.GetObjectMeta().GetUID() == in.Obj.GetObjectMeta().GetUID()
+		versionEquals && c.Obj.GetUID() == in.Obj.GetUID()
 }
 
 /*
