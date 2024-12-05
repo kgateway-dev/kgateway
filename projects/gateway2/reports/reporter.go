@@ -114,22 +114,26 @@ func (r *ReportMap) newRouteReport(obj client.Object) *RouteReport {
 }
 
 func (g *GatewayReport) Listener(listener *gwv1.Listener) ListenerReporter {
-	return g.listener(listener)
+	return g.listener(string(listener.Name))
 }
 
-func (g *GatewayReport) listener(listener *gwv1.Listener) *ListenerReport {
+func (g *GatewayReport) ListenerName(listenerName string) ListenerReporter {
+	return g.listener(listenerName)
+}
+
+func (g *GatewayReport) listener(listenerName string) *ListenerReport {
 	if g.listeners == nil {
 		g.listeners = make(map[string]*ListenerReport)
 	}
 
 	// Return the ListenerReport if it already exists
-	if lr, exists := g.listeners[string(listener.Name)]; exists {
+	if lr, exists := g.listeners[listenerName]; exists {
 		return lr
 	}
 
 	// Create and add the new ListenerReport if it doesn't exist
-	lr := NewListenerReport(string(listener.Name))
-	g.listeners[string(listener.Name)] = lr
+	lr := NewListenerReport(listenerName)
+	g.listeners[listenerName] = lr
 	return lr
 }
 
@@ -274,6 +278,7 @@ type Reporter interface {
 
 type GatewayReporter interface {
 	Listener(listener *gwv1.Listener) ListenerReporter
+	ListenerName(listenerName string) ListenerReporter
 	SetCondition(condition GatewayCondition)
 }
 

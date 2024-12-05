@@ -69,11 +69,46 @@ type AttachedPolicies[P Policy] struct {
 }
 
 type Backend struct {
-	//Upstream    Upstream
 	ClusterName string
 	Weight      uint32
+
+	// upstream could be nil if not found or no ref grant
+	Upstream Upstream
+	// extension refs on the backend
+	AttachedPolicies AttachedPolicies[HttpPolicy]
 }
 
+/*
+(aws) upstream plugin:
+
+	ContributesPolicies map[GroupKind:"kgw/Parameters"]struct {
+		AttachmentPoints          []{BackendAttachmentPoint}
+		NewGatewayTranslationPass func(ctx context.Context, tctx GwTranslationCtx) ProxyTranslationPass{
+
+		ProcessBackend: func(ctx context.Context, Backend, RefPolicy) ProxyTranslationPass{
+			// check backend upstream to be aws
+			// check ref policy to be aws
+		}
+		Policies                  krt.Collection[model.Policy]
+		PoliciesFetch(name, namespace) Policy {return RefPolicy{...}}
+	}
+
+	ContributesUpstreams map[GroupKind:"kgw/Upstream"]struct {
+		ProcessUpstream: func(ctx context.Context, in model.Upstream, out *envoy_config_cluster_v3.Cluster){
+			ourUs, ok := in.Obj.(*kgw.Upstream)
+			if !ok {
+				// log - should never happen
+				return
+			}
+			if ourUs.aws != nil {
+				do stuff and update the cluster
+			}
+		}
+		Upstreams       krt.Collection[model.Upstream]
+		Endpoints       []krt.Collection[krtcollections.EndpointsForUpstream]
+	}
+	ContributesGwClasses map[string]translator.K8sGwTranslator
+*/
 type HttpBackend struct {
 	Backend
 	AttachedPolicies[HttpPolicy]

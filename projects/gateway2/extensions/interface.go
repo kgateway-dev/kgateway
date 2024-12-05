@@ -6,6 +6,7 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/model"
 	"github.com/solo-io/gloo/projects/gateway2/translator"
@@ -23,6 +24,7 @@ type RouteContext struct {
 }
 
 type ProxyTranslationPass interface {
+	Name() string
 	// called 1 time for each listener
 	ApplyListenerPlugin(
 		ctx context.Context,
@@ -43,7 +45,8 @@ type ProxyTranslationPass interface {
 	// called 1 time per listener
 	// if a plugin emits new filters, they must be with a plugin unique name.
 	// any filter returned from route config must be disabled, so it doesnt impact other routes.
-	HttpFilters(ctx context.Context)
+	HttpFilters(ctx context.Context) ([]plugins.StagedHttpFilter, error)
+	UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error)
 	// called 1 time (per envoy proxy). replaces GeneratedResources
 	ResourcesToAdd(ctx context.Context) Resources
 }
