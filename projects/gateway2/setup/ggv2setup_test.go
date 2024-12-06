@@ -104,7 +104,7 @@ func TestScenarios(t *testing.T) {
 	os.Setenv("POD_NAMESPACE", "gwtest")
 	testEnv := &envtest.Environment{
 		CRDDirectoryPaths: []string{
-			filepath.Join("..", "crds"),
+			filepath.Join("..", "crds", "experimental"),
 			filepath.Join("..", "..", "..", "install", "helm", "gloo", "crds"),
 			filepath.Join("testdata", "istiocrds"),
 		},

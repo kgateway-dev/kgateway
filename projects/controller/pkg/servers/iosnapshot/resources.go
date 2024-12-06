@@ -17,6 +17,10 @@ var (
 		wellknownkube.ConfigMapGVK,
 	}
 
+	KubernetesExtGVKs = []schema.GroupVersionKind{
+		wellknownkube.CrdGVK,
+	}
+
 	GlooGVKs = []schema.GroupVersionKind{
 		gloov1.SettingsGVK,
 		gloov1.UpstreamGVK,
@@ -68,5 +72,6 @@ var (
 		EdgeOnlyInputSnapshotGVKs,
 		KubernetesGatewayGVKs,
 		KubernetesGatewayIntegrationPolicyGVKs,
+		KubernetesExtGVKs,
 	)
 )

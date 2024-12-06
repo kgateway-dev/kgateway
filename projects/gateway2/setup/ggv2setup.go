@@ -22,6 +22,7 @@ import (
 	"github.com/solo-io/gloo/projects/controller/pkg/upstreams/kubernetes"
 	gateway "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway2/controller"
+	"github.com/solo-io/gloo/projects/gateway2/crds"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
@@ -47,7 +48,7 @@ var (
 	settingsGVR = glookubev1.SchemeGroupVersion.WithResource("settings")
 )
 
-func createKubeClient(restConfig *rest.Config) (istiokube.Client, error) {
+func CreateKubeClient(restConfig *rest.Config) (istiokube.Client, error) {
 	restCfg := istiokube.NewClientConfigForRestConfig(restConfig)
 	client, err := istiokube.NewClient(restCfg, "")
 	if err != nil {
@@ -104,7 +105,7 @@ func StartGGv2WithConfig(ctx context.Context,
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Info("starting gloo gateway")
 
-	kubeClient, err := createKubeClient(restConfig)
+	kubeClient, err := CreateKubeClient(restConfig)
 	if err != nil {
 		return err
 	}
@@ -145,6 +146,13 @@ func StartGGv2WithConfig(ctx context.Context,
 		SidecarOnGatewayEnabled: envutils.IsEnvTruthy(constants.IstioInjectionEnabled),
 		SvcCollection:           services,
 	}
+
+	// Initialize the set of supported Gateway API CRDs
+	crds, err := crds.GetGatewayCRDs(ctx, kubeClient)
+	if err != nil {
+		return err
+	}
+
 	logger.Info("initializing controller")
 	c, err := controller.NewControllerBuilder(ctx, controller.StartConfig{
 		ExtensionsFactory:    extensionsFactory,
@@ -162,6 +170,7 @@ func StartGGv2WithConfig(ctx context.Context,
 		// Dev flag may be useful for development purposes; not currently tied to any user-facing API
 		Dev:      false,
 		Debugger: setupOpts.KrtDebugger,
+		CRDs:     crds,
 	})
 	if err != nil {
 		return err

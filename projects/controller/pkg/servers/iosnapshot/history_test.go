@@ -13,6 +13,7 @@ import (
 	wellknownkube "github.com/solo-io/gloo/projects/controller/pkg/api/v1/kube/wellknown"
 
 	corev1 "k8s.io/api/core/v1"
+	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	skmatchers "github.com/solo-io/solo-kit/test/matchers"
 
@@ -185,6 +186,16 @@ var _ = Describe("History", func() {
 					Data: map[string]string{
 						"key": "value",
 					},
+				},
+				&apiextv1.CustomResourceDefinition{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "kube-crd",
+						Namespace: "crd",
+						ManagedFields: []metav1.ManagedFieldsEntry{{
+							Manager: "manager",
+						}},
+					},
+					Spec: apiextv1.CustomResourceDefinitionSpec{},
 				},
 				&apiv1.Gateway{
 					ObjectMeta: metav1.ObjectMeta{
@@ -418,6 +429,19 @@ var _ = Describe("History", func() {
 						})),
 					),
 				), fmt.Sprintf("results should contain %v %s.%s", wellknownkube.ConfigMapGVK, "configmap", "kube-configmap"))
+			})
+
+			It("Includes CustomResourceDefinitions", func() {
+				returnedResources := getInputSnapshotObjects(ctx, history)
+				Expect(returnedResources).To(ContainElement(
+					matchers.MatchClientObject(
+						wellknownkube.CrdGVK,
+						types.NamespacedName{
+							Name:      "kube-crd",
+							Namespace: "crd",
+						},
+					),
+				), fmt.Sprintf("results should contain %v %s.%s", wellknownkube.CrdGVK, "crd", "kube-crd"))
 			})
 
 		})
