@@ -81,6 +81,7 @@ type AttachedPolicies[P Policy] struct {
 
 type Backend struct {
 	ClusterName string
+	Port        uint32
 	Weight      uint32
 
 	// upstream could be nil if not found or no ref grant
@@ -137,6 +138,28 @@ type HttpRouteRuleIR struct {
 	ExtensionRefs    AttachedPolicies[HttpPolicy]
 	AttachedPolicies AttachedPolicies[HttpPolicy]
 
+	Backends []HttpBackend
+}
+
+// TODO: this is the structure we probably want,
+// and maybe change name -- it's not a Rule, it's a Match
+// type HttpRouteRuleIR struct {
+// 	Parent     *HttpRouteIR
+// 	SourceRule *gwv1.HTTPRouteRule
+
+// 	Name             string
+// 	Match            gwv1.HTTPRouteMatch
+// 	ExtensionRefs    AttachedPolicies[HttpPolicy]
+// 	AttachedPolicies AttachedPolicies[HttpPolicy]
+// 	Backends      []HttpBackend
+// }
+
+// TODO: temporary structure to represent an individual Match (equiv. to gloov1.Route)
+// need to remove in favor of commented out HttpRouteRuleIR above
+type HttpRouteRuleMatchIR struct {
+	Match    gwv1.HTTPRouteMatch
+	Name     string // not sure if we actually need this anymore
+	Parent   HttpRouteRuleIR
 	Backends []HttpBackend
 }
 

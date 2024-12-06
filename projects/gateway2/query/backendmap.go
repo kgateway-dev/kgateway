@@ -48,7 +48,7 @@ func (bm BackendMap[T]) AddError(backendRef gwv1.BackendObjectReference, err err
 	bm.errors[key] = err
 }
 
-func (bm BackendMap[T]) get(backendRef gwv1.BackendObjectReference, def T) (T, error) {
+func (bm BackendMap[T]) Get(backendRef gwv1.BackendObjectReference, def T) (T, error) {
 	key := backendToRefKey(backendRef)
 	if err, ok := bm.errors[key]; ok {
 		return def, err
