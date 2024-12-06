@@ -3,6 +3,8 @@ package model
 import (
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	"google.golang.org/protobuf/types/known/anypb"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -61,6 +63,7 @@ type Policies []Policy
 
 //type AttachedPolicies map[string]Policies
 
+type NetworkPolicy Policy
 type HttpPolicy Policy
 type ListenerPolicy Policy
 
@@ -138,7 +141,7 @@ type ListenerIR struct {
 	AttachedPolicies AttachedPolicies[HttpPolicy]
 
 	HttpFilterChain []HttpFilterChainIR
-	Tcp             []TcpIR
+	TcpFilterChain  []TcpIR
 }
 
 type VirtualHost struct {
@@ -148,19 +151,37 @@ type VirtualHost struct {
 }
 
 type FilterChainMatch struct {
-	ServerName string
+	SniDomains []string
 }
+type TlsBundle struct {
+	//	CA            []byte
+	PrivateKey    []byte
+	CertChain     []byte
+	AlpnProtocols []string
+}
+
 type FitlerChainCommon struct {
-	Matcher         FilterChainMatch
-	FilterChainName string
-	ParentRef       gwv1.ParentReference
+	Matcher              FilterChainMatch
+	FilterChainName      string
+	ParentRef            gwv1.ParentReference
+	CustomNetworkFilters []CustomEnvoyFilter
+	TLS                  *TlsBundle
+}
+type CustomEnvoyFilter struct {
+	// Determines filter ordering.
+	FilterStage plugins.FilterStage[plugins.WellKnownFilterStage]
+	// The name of the filter configuration.
+	Name string
+	// Filter specific configuration.
+	Config *anypb.Any
 }
 
 type HttpFilterChainIR struct {
 	FitlerChainCommon
-	Vhosts           []*VirtualHost
-	ParentRef        gwv1.ParentReference
-	AttachedPolicies AttachedPolicies[HttpPolicy]
+	Vhosts                  []*VirtualHost
+	ParentRef               gwv1.ParentReference
+	AttachedPolicies        AttachedPolicies[HttpPolicy]
+	AttachedNetworkPolicies AttachedPolicies[NetworkPolicy]
 }
 
 type TcpIR struct {

@@ -47,6 +47,8 @@ type ProxyTranslationPass interface {
 	// any filter returned from route config must be disabled, so it doesnt impact other routes.
 	HttpFilters(ctx context.Context) ([]plugins.StagedHttpFilter, error)
 	UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error)
+
+	NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error)
 	// called 1 time (per envoy proxy). replaces GeneratedResources
 	ResourcesToAdd(ctx context.Context) Resources
 }

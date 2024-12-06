@@ -10,11 +10,15 @@ import (
 	routerv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
 	codecv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/upstream_codec/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"go.uber.org/zap"
 
+	envoy_tls_inspector "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/listener/tls_inspector/v3"
 	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
+	"github.com/solo-io/gloo/projects/controller/pkg/translator"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/model"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
@@ -42,32 +46,171 @@ type filterChainTranslator struct {
 	PluginPass               map[schema.GroupKind]extensions.ProxyTranslationPass
 }
 
-func (h *filterChainTranslator) ComputeFilterChains(ctx context.Context, l model.ListenerIR, reporter reports.GatewayReporter) []*envoy_config_listener_v3.FilterChain {
-	for _, hfc := range l.HttpFilterChain {
-		h.computeHttpFilterChain(ctx, hfc, reporter.ListenerName(hfc.FilterChainName))
+func (h *filterChainTranslator) ComputeListener(ctx context.Context, l model.ListenerIR, reporter reports.GatewayReporter) *envoy_config_listener_v3.Listener {
+	hasTls := false
+
+	ret := &envoy_config_listener_v3.Listener{
+		Name:    l.Name,
+		Address: computeListenerAddress(l.BindAddress, l.BindPort, reporter),
 	}
-	panic("TODO")
+	for _, hfc := range l.HttpFilterChain {
+		rl := reporter.ListenerName(hfc.FilterChainName)
+		fc := h.initFilterChain(ctx, hfc.FitlerChainCommon, rl)
+		fc.Filters = h.computeHttpFilters(ctx, hfc, rl)
+		ret.FilterChains = append(ret.FilterChains, fc)
+		if len(hfc.Matcher.SniDomains) > 0 {
+			hasTls = true
+		}
+	}
+	for _, tfc := range l.TcpFilterChain {
+		rl := reporter.ListenerName(tfc.FilterChainName)
+		fc := h.initFilterChain(ctx, tfc.FitlerChainCommon, rl)
+		fc.Filters = h.computeTcpFilters(ctx, tfc, rl)
+		ret.FilterChains = append(ret.FilterChains, fc)
+		if len(tfc.Matcher.SniDomains) > 0 {
+			hasTls = true
+		}
+	}
+	if hasTls {
+		ret.ListenerFilters = append(ret.GetListenerFilters(), tlsInspectorFilter())
+	}
+	return ret
 }
 
-func (h *filterChainTranslator) computeHttpFilterChain(ctx context.Context, l model.HttpFilterChainIR, reporter reports.ListenerReporter) []*envoy_config_listener_v3.FilterChain {
+func computeListenerAddress(bindAddress string, port uint32, reporter reports.GatewayReporter) *envoy_config_core_v3.Address {
+	_, isIpv4Address, err := translator.IsIpv4Address(bindAddress)
+	if err != nil {
+		// TODO: return error ????
+		reporter.SetCondition(reports.GatewayCondition{
+			Type:    gwv1.GatewayConditionProgrammed,
+			Reason:  gwv1.GatewayReasonInvalid,
+			Status:  metav1.ConditionFalse,
+			Message: "Error processing listener: " + err.Error(),
+		})
+	}
 
-	h.computeNetworkFilters(ctx, l, reporter)
-	panic("TODO")
+	return &envoy_config_core_v3.Address{
+		Address: &envoy_config_core_v3.Address_SocketAddress{
+			SocketAddress: &envoy_config_core_v3.SocketAddress{
+				Protocol: envoy_config_core_v3.SocketAddress_TCP,
+				Address:  bindAddress,
+				PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
+					PortValue: port,
+				},
+				// As of Envoy 1.22: https://www.envoyproxy.io/docs/envoy/latest/version_history/v1.22/v1.22.0.html
+				// the Ipv4Compat flag can only be set on Ipv6 address and Ipv4-mapped Ipv6 address.
+				// Check if this is a non-padded pure ipv4 address and unset the compat flag if so.
+				Ipv4Compat: !isIpv4Address,
+			},
+		},
+	}
 }
 
-func (n *filterChainTranslator) computeNetworkFilters(ctx context.Context, l model.HttpFilterChainIR, reporter reports.ListenerReporter) ([]*envoy_config_listener_v3.Filter, error) {
+func tlsInspectorFilter() *envoy_config_listener_v3.ListenerFilter {
+	configEnvoy := &envoy_tls_inspector.TlsInspector{}
+	msg, _ := anypb.New(configEnvoy)
+	return &envoy_config_listener_v3.ListenerFilter{
+		Name: wellknown.TlsInspector,
+		ConfigType: &envoy_config_listener_v3.ListenerFilter_TypedConfig{
+			TypedConfig: msg,
+		},
+	}
+}
+
+func (h *filterChainTranslator) initFilterChain(ctx context.Context, fcc model.FitlerChainCommon, reporter reports.ListenerReporter) *envoy_config_listener_v3.FilterChain {
+	info := &FilterChainInfo{
+		Match: fcc.Matcher,
+		TLS:   fcc.TLS,
+	}
+
+	fc := &envoy_config_listener_v3.FilterChain{
+		Name:             fcc.FilterChainName,
+		FilterChainMatch: info.toMatch(),
+		TransportSocket:  info.toTransportSocket(),
+	}
+
+	return fc
+}
+func (h *filterChainTranslator) computeHttpFilters(ctx context.Context, l model.HttpFilterChainIR, reporter reports.ListenerReporter) []*envoy_config_listener_v3.Filter {
+	log := contextutils.LoggerFrom(ctx).Desugar()
+
+	// 1. Generate all the network filters (including the HttpConnectionManager)
+	networkFilters, err := h.computeNetworkFiltersForHttp(ctx, l, reporter)
+	if err != nil {
+		log.DPanic("error computing network filters", zap.Error(err))
+		// TODO: report? return error?
+		return nil
+	}
+	if len(networkFilters) == 0 {
+		return nil
+	}
+
+	return networkFilters
+}
+
+func (n *filterChainTranslator) computeNetworkFiltersForHttp(ctx context.Context, l model.HttpFilterChainIR, reporter reports.ListenerReporter) ([]*envoy_config_listener_v3.Filter, error) {
 	hcm := hcmNetworkFilterTranslator{
 		routeConfigName: l.FilterChainName,
 		PluginPass:      n.PluginPass,
 		reporter:        reporter,
 	}
-	var networkFilters []*envoy_config_listener_v3.Filter
+	networkFilters := sortNetworkFilters(n.computePreHCMFilters(ctx, l, reporter))
 	networkFilter, err := hcm.computeNetworkFilters(ctx, l)
 	if err != nil {
 		return nil, err
 	}
 	networkFilters = append(networkFilters, networkFilter)
 	return networkFilters, nil
+}
+func (n *filterChainTranslator) computePreHCMFilters(ctx context.Context, l model.HttpFilterChainIR, reporter reports.ListenerReporter) []plugins.StagedNetworkFilter {
+	var networkFilters []plugins.StagedNetworkFilter
+	// Process the network filters.
+	for _, plug := range n.PluginPass {
+		stagedFilters, err := plug.NetworkFilters(ctx)
+		if err != nil {
+			reporter.SetCondition(reports.ListenerCondition{
+				Type:    gwv1.ListenerConditionProgrammed,
+				Reason:  gwv1.ListenerReasonInvalid,
+				Status:  metav1.ConditionFalse,
+				Message: "Error processing network plugin: " + err.Error(),
+			})
+			// TODO: return error?
+		}
+
+		for _, nf := range stagedFilters {
+			if nf.Filter == nil {
+				continue
+			}
+			networkFilters = append(networkFilters, nf)
+		}
+	}
+	networkFilters = append(networkFilters, convertCustomNetworkFilters(l.CustomNetworkFilters)...)
+	return networkFilters
+}
+
+func convertCustomNetworkFilters(customNetworkFilters []model.CustomEnvoyFilter) []plugins.StagedNetworkFilter {
+
+	var out []plugins.StagedNetworkFilter
+	for _, customFilter := range customNetworkFilters {
+		out = append(out, plugins.StagedNetworkFilter{
+			Filter: &envoy_config_listener_v3.Filter{
+				Name: customFilter.Name,
+				ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
+					TypedConfig: customFilter.Config,
+				},
+			},
+			Stage: customFilter.FilterStage,
+		})
+	}
+	return out
+}
+func sortNetworkFilters(filters plugins.StagedNetworkFilterList) []*envoy_config_listener_v3.Filter {
+	sort.Sort(filters)
+	var sortedFilters []*envoy_config_listener_v3.Filter
+	for _, filter := range filters {
+		sortedFilters = append(sortedFilters, filter.Filter)
+	}
+	return sortedFilters
 }
 
 type hcmNetworkFilterTranslator struct {
@@ -272,8 +415,61 @@ func sortHttpFilters(filters plugins.StagedHttpFilterList) []*envoyhttp.HttpFilt
 	return sortedFilters
 }
 
-func NewFilterWithTypedConfig(name string, config proto.Message) (*envoy_config_listener_v3.Filter, error) {
+func (h *filterChainTranslator) computeTcpFilters(ctx context.Context, l model.TcpIR, reporter reports.ListenerReporter) []*envoy_config_listener_v3.Filter {
+	networkFilters := sortNetworkFilters(h.computeNetworkFiltersForTcp(l))
 
+	cfg := &envoytcp.TcpProxy{
+		StatPrefix: l.FilterChainName,
+	}
+	if len(l.BackendRefs) == 1 {
+		cfg.ClusterSpecifier = &envoytcp.TcpProxy_Cluster{
+			Cluster: l.BackendRefs[0].ClusterName,
+		}
+	} else {
+		var wc envoytcp.TcpProxy_WeightedCluster
+		for _, route := range l.BackendRefs {
+			w := route.Weight
+			if w == 0 {
+				w = 1
+			}
+			wc.Clusters = append(wc.Clusters, &envoytcp.TcpProxy_WeightedCluster_ClusterWeight{
+				Name:   route.ClusterName,
+				Weight: w,
+			})
+		}
+		cfg.ClusterSpecifier = &envoytcp.TcpProxy_WeightedClusters{
+			WeightedClusters: &wc,
+		}
+	}
+
+	tcpFilter, _ := NewFilterWithTypedConfig(wellknown.TCPProxy, cfg)
+
+	return append(networkFilters, tcpFilter)
+}
+
+func (t *filterChainTranslator) computeNetworkFiltersForTcp(l model.TcpIR) []plugins.StagedNetworkFilter {
+	var networkFilters []plugins.StagedNetworkFilter
+	// Process the network filters.
+	//for _, plug := range t.networkPlugins {
+	//	stagedFilters, err := plug.NetworkFiltersTCP(params, t.listener)
+	//	if err != nil {
+	//		validation.AppendTCPListenerError(t.report, validationapi.TcpListenerReport_Error_ProcessingError, err.Error())
+	//	}
+	//
+	//	for _, nf := range stagedFilters {
+	//		if nf.Filter == nil {
+	//			log.Warnf("plugin %v implements NetworkFilters() but returned nil", plug.Name())
+	//			continue
+	//		}
+	//		networkFilters = append(networkFilters, nf)
+	//	}
+	//}
+
+	networkFilters = append(networkFilters, convertCustomNetworkFilters(l.CustomNetworkFilters)...)
+	return networkFilters
+}
+
+func NewFilterWithTypedConfig(name string, config proto.Message) (*envoy_config_listener_v3.Filter, error) {
 	s := &envoy_config_listener_v3.Filter{
 		Name: name,
 	}
@@ -291,4 +487,81 @@ func NewFilterWithTypedConfig(name string, config proto.Message) (*envoy_config_
 	}
 
 	return s, nil
+}
+
+type SslConfig struct {
+	Bundle     TlsBundle
+	SniDomains []string
+}
+type TlsBundle struct {
+	CA         []byte
+	PrivateKey []byte
+	CertChain  []byte
+}
+
+type FilterChainInfo struct {
+	Match model.FilterChainMatch
+	TLS   *model.TlsBundle
+}
+
+func (info *FilterChainInfo) toMatch() *envoy_config_listener_v3.FilterChainMatch {
+	if info == nil {
+		return nil
+	}
+	return &envoy_config_listener_v3.FilterChainMatch{
+		ServerNames: info.Match.SniDomains,
+	}
+}
+
+func (info *FilterChainInfo) toTransportSocket() *envoy_config_core_v3.TransportSocket {
+	if info == nil {
+		return nil
+	}
+	ssl := info.TLS
+	if ssl == nil {
+		return nil
+	}
+
+	common := &envoyauth.CommonTlsContext{
+		// default params
+		TlsParams:     &envoyauth.TlsParameters{},
+		AlpnProtocols: ssl.AlpnProtocols,
+	}
+
+	common.TlsCertificates = []*envoyauth.TlsCertificate{
+		{
+			CertificateChain: bytesDataSource(ssl.CertChain),
+			PrivateKey:       bytesDataSource(ssl.PrivateKey),
+		},
+	}
+
+	//	var requireClientCert *wrappers.BoolValue
+	//	if common.GetValidationContextType() != nil {
+	//		requireClientCert = &wrappers.BoolValue{Value: !dc.GetOneWayTls().GetValue()}
+	//	}
+
+	// default alpn for downstreams.
+	//	if len(common.GetAlpnProtocols()) == 0 {
+	//		common.AlpnProtocols = []string{"h2", "http/1.1"}
+	//	} else if len(common.GetAlpnProtocols()) == 1 && common.GetAlpnProtocols()[0] == AllowEmpty { // allow override for advanced usage to set to a dangerous setting
+	//		common.AlpnProtocols = []string{}
+	//	}
+
+	out := &envoyauth.DownstreamTlsContext{
+		CommonTlsContext: common,
+	}
+	typedConfig, _ := anypb.New(out)
+
+	return &envoy_config_core_v3.TransportSocket{
+		Name:       wellknown.TransportSocketTls,
+		ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
+	}
+}
+func bytesDataSource(s []byte) *envoy_config_core_v3.DataSource {
+	return &envoy_config_core_v3.DataSource{
+		Specifier: &envoy_config_core_v3.DataSource_InlineBytes{
+			InlineBytes: s,
+		},
+	}
+
 }
