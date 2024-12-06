@@ -127,7 +127,7 @@ func initializeCluster(u model.Upstream) *envoy_config_cluster_v3.Cluster {
 }
 
 func UpstreamToClusterName(in model.Upstream) string {
-	return fmt.Sprintf("%s~%s", in.GetName(), in.GetNamespace())
+	return fmt.Sprintf("%s~%s", in.Name, in.Namespace)
 }
 
 func setHttp2options(c *envoy_config_cluster_v3.Cluster) {

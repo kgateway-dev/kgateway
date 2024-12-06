@@ -116,10 +116,18 @@ func (p *plugin2) ApplyForRoute(ctx context.Context, pCtx *extensions.RouteConte
 	return nil
 }
 
+func (p *plugin2) ApplyForRouteBackend(
+	ctx context.Context,
+	pCtx *extensions.RouteBackendContext,
+	policy metav1.Object,
+) error {
+	return nil
+}
+
 // called 1 time per listener
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
-func (p *plugin2) HttpFilters(ctx context.Context) ([]plugins.StagedHttpFilter, error) {
+func (p *plugin2) HttpFilters(ctx context.Context, fcc model.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	return nil, nil
 }
 
