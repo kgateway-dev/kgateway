@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"regexp"
 	"slices"
 
@@ -26,6 +27,7 @@ import (
 type httpRouteConfigurationTranslator struct {
 	gw       model.GatewayIR
 	listener model.ListenerIR
+	fc       model.FilterChainCommon
 
 	parentRef                gwv1.ParentReference
 	routeConfigName          string
@@ -123,7 +125,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 
 	for i := range out {
 		if len(in.BackendRefs) > 0 {
-			out[i].Action = translateRouteAction(in)
+			out[i].Action = h.translateRouteAction(in, out[i])
 		}
 		// run plugins here that may set actoin
 		err := h.runRoutePlugins(ctx, routeReport, in, out[i])
@@ -206,8 +208,29 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(ctx context.Context, 
 	return errors.Join(errs...)
 }
 
-func translateRouteAction(
+func (h *httpRouteConfigurationTranslator) runBackendPolicies(ctx context.Context, in model.HttpBackend, pCtx *extensions.RouteBackendContext) error {
+	var errs []error
+	for gk, pols := range in.AttachedPolicies.Policies {
+		pass := h.PluginPass[gk]
+		if pass == nil {
+			// TODO: should never happen, log error and report condition
+			continue
+		}
+		for _, pol := range pols {
+
+			err := pass.ApplyForRouteBackend(ctx, pCtx, pol.Obj())
+			if err != nil {
+				errs = append(errs, err)
+			}
+			// TODO: check return value, if error returned, log error and report condition
+		}
+	}
+	return errors.Join(errs...)
+}
+
+func (h *httpRouteConfigurationTranslator) translateRouteAction(
 	in model.HttpRouteRuleIR,
+	outRoute *envoy_config_route_v3.Route,
 ) *envoy_config_route_v3.Route_Route {
 	var clusters []*envoy_config_route_v3.WeightedCluster_ClusterWeight
 
@@ -224,11 +247,22 @@ func translateRouteAction(
 
 		// get backend for ref - we must do it to make sure we have permissions to access it.
 		// also we need the service so we can translate its name correctly.
-
-		clusters = append(clusters, &envoy_config_route_v3.WeightedCluster_ClusterWeight{
+		cw := &envoy_config_route_v3.WeightedCluster_ClusterWeight{
 			Name:   clusterName,
 			Weight: weight,
-		})
+		}
+		pCtx := extensions.RouteBackendContext{
+			FilterChainName:  h.fc.FilterChainName,
+			Upstream:         backend.Upstream,
+			TypedFiledConfig: &cw.TypedPerFilterConfig,
+		}
+
+		h.runBackendPolicies(
+			context.TODO(),
+			backend,
+			&pCtx,
+		)
+		clusters = append(clusters, cw)
 	}
 
 	action := &envoy_config_route_v3.RouteAction{
@@ -243,6 +277,13 @@ func translateRouteAction(
 	case 1:
 		action.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{
 			Cluster: clusters[0].GetName(),
+		}
+		if clusters[0].TypedPerFilterConfig != nil {
+			if outRoute.TypedPerFilterConfig == nil {
+				outRoute.TypedPerFilterConfig = clusters[0].TypedPerFilterConfig
+			} else {
+				maps.Copy(outRoute.TypedPerFilterConfig, clusters[0].TypedPerFilterConfig)
+			}
 		}
 
 	default:

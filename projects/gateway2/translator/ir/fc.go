@@ -55,7 +55,7 @@ func (h *filterChainTranslator) ComputeListener(ctx context.Context, l model.Lis
 	}
 	for _, hfc := range l.HttpFilterChain {
 		rl := reporter.ListenerName(hfc.FilterChainName)
-		fc := h.initFilterChain(ctx, hfc.FitlerChainCommon, rl)
+		fc := h.initFilterChain(ctx, hfc.FilterChainCommon, rl)
 		fc.Filters = h.computeHttpFilters(ctx, hfc, rl)
 		ret.FilterChains = append(ret.FilterChains, fc)
 		if len(hfc.Matcher.SniDomains) > 0 {
@@ -64,7 +64,7 @@ func (h *filterChainTranslator) ComputeListener(ctx context.Context, l model.Lis
 	}
 	for _, tfc := range l.TcpFilterChain {
 		rl := reporter.ListenerName(tfc.FilterChainName)
-		fc := h.initFilterChain(ctx, tfc.FitlerChainCommon, rl)
+		fc := h.initFilterChain(ctx, tfc.FilterChainCommon, rl)
 		fc.Filters = h.computeTcpFilters(ctx, tfc, rl)
 		ret.FilterChains = append(ret.FilterChains, fc)
 		if len(tfc.Matcher.SniDomains) > 0 {
@@ -117,7 +117,7 @@ func tlsInspectorFilter() *envoy_config_listener_v3.ListenerFilter {
 	}
 }
 
-func (h *filterChainTranslator) initFilterChain(ctx context.Context, fcc model.FitlerChainCommon, reporter reports.ListenerReporter) *envoy_config_listener_v3.FilterChain {
+func (h *filterChainTranslator) initFilterChain(ctx context.Context, fcc model.FilterChainCommon, reporter reports.ListenerReporter) *envoy_config_listener_v3.FilterChain {
 	info := &FilterChainInfo{
 		Match: fcc.Matcher,
 		TLS:   fcc.TLS,
@@ -285,7 +285,7 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(ctx context.Context, l m
 
 	// run the HttpFilter Plugins
 	for _, plug := range h.PluginPass {
-		stagedFilters, err := plug.HttpFilters(ctx)
+		stagedFilters, err := plug.HttpFilters(ctx, l.FilterChainCommon)
 		if err != nil {
 			// what to do with errors here? ignore the listener??
 			h.reporter.SetCondition(reports.ListenerCondition{

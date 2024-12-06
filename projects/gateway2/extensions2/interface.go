@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/model"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
+	anypb "google.golang.org/protobuf/types/known/anypb"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -20,6 +21,20 @@ type ListenerContext struct{}
 type VirtualHostContext struct {
 	Policy metav1.Object
 }
+type RouteBackendContext struct {
+	FilterChainName string
+	Upstream        model.Upstream
+	// todo: make this not public
+	TypedFiledConfig *map[string]*anypb.Any
+}
+
+func (r *RouteBackendContext) AddTypedConfig(key string, v *anypb.Any) {
+	if *r.TypedFiledConfig == nil {
+		*r.TypedFiledConfig = make(map[string]*anypb.Any)
+	}
+	(*r.TypedFiledConfig)[key] = v
+}
+
 type RouteContext struct {
 	Policy   metav1.Object
 	Reporter reports.ParentRefReporter
@@ -44,10 +59,15 @@ type ProxyTranslationPass interface {
 		ctx context.Context,
 		pCtx *RouteContext,
 		out *envoy_config_route_v3.Route) error
+	ApplyForRouteBackend(
+		ctx context.Context,
+		pCtx *RouteBackendContext,
+		policy metav1.Object,
+	) error
 	// called 1 time per listener
 	// if a plugin emits new filters, they must be with a plugin unique name.
 	// any filter returned from route config must be disabled, so it doesnt impact other routes.
-	HttpFilters(ctx context.Context) ([]plugins.StagedHttpFilter, error)
+	HttpFilters(ctx context.Context, fc model.FilterChainCommon) ([]plugins.StagedHttpFilter, error)
 	UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error)
 
 	NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error)
@@ -65,11 +85,12 @@ type PolicyImpl struct {
 	AttachmentPoints          []model.AttachmentPoints
 	NewGatewayTranslationPass func(ctx context.Context, tctx GwTranslationCtx) ProxyTranslationPass
 	Policies                  krt.Collection[model.Policy]
+	PoliciesFetch             func(n, ns string) model.Policy
 }
 type UpstreamImpl struct {
 	ProcessUpstream func(ctx context.Context, in model.Upstream, out *envoy_config_cluster_v3.Cluster)
 	Upstreams       krt.Collection[model.Upstream]
-	Endpoints       []krt.Collection[krtcollections.EndpointsForUpstream]
+	Endpoints       krt.Collection[krtcollections.EndpointsForUpstream]
 }
 type Plugin struct {
 	ContributesPolicies  map[schema.GroupKind]PolicyImpl

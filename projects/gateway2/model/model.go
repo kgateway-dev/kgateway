@@ -32,7 +32,8 @@ type Upstream struct {
 	// for things that integrate with destination rule, we need to know what hostname to use.
 	CanonicalHostname string
 	// original object. Opaque to us other than metadata.
-	Obj metav1.Object
+	Obj   metav1.Object
+	ObjIr interface{ Equals(any) bool }
 }
 
 func (c Upstream) ResourceName() string {
@@ -48,7 +49,7 @@ func (c Upstream) Equals(in Upstream) bool {
 	}
 
 	return c.ObjectSource.Equals(in.ObjectSource) &&
-		versionEquals && c.Obj.GetUID() == in.Obj.GetUID()
+		versionEquals && c.Obj.GetUID() == in.Obj.GetUID() && c.ObjIr.Equals(in.ObjIr)
 }
 
 /*

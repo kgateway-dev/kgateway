@@ -15,7 +15,8 @@ import (
 type AttachmentPoints int
 
 const (
-	HttpAttachmentPoint AttachmentPoints = iota
+	HttpAttachmentPoint           AttachmentPoints = iota
+	HttpBackendRefAttachmentPoint AttachmentPoints = iota
 	ListenerAttachmentPoint
 )
 
@@ -69,6 +70,7 @@ type Policies []Policy
 
 type NetworkPolicy Policy
 type HttpPolicy Policy
+type HttpBackendPolicy Policy
 type ListenerPolicy Policy
 
 type AttachedPolicies[P Policy] struct {
@@ -81,8 +83,6 @@ type Backend struct {
 
 	// upstream could be nil if not found or no ref grant
 	Upstream Upstream
-	// extension refs on the backend
-	AttachedPolicies AttachedPolicies[HttpPolicy]
 }
 
 /*
@@ -118,7 +118,7 @@ type Backend struct {
 */
 type HttpBackend struct {
 	Backend
-	AttachedPolicies[HttpPolicy]
+	AttachedPolicies[HttpBackendPolicy]
 }
 
 type HttpRouteIR struct {
@@ -164,7 +164,7 @@ type TlsBundle struct {
 	AlpnProtocols []string
 }
 
-type FitlerChainCommon struct {
+type FilterChainCommon struct {
 	Matcher              FilterChainMatch
 	FilterChainName      string
 	ParentRef            gwv1.ParentReference
@@ -181,7 +181,7 @@ type CustomEnvoyFilter struct {
 }
 
 type HttpFilterChainIR struct {
-	FitlerChainCommon
+	FilterChainCommon
 	Vhosts                  []*VirtualHost
 	ParentRef               gwv1.ParentReference
 	AttachedPolicies        AttachedPolicies[HttpPolicy]
@@ -189,7 +189,7 @@ type HttpFilterChainIR struct {
 }
 
 type TcpIR struct {
-	FitlerChainCommon
+	FilterChainCommon
 	BackendRefs []Backend
 }
 
