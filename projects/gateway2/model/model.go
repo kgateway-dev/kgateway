@@ -34,6 +34,8 @@ type Upstream struct {
 	// original object. Opaque to us other than metadata.
 	Obj   metav1.Object
 	ObjIr interface{ Equals(any) bool }
+
+	AttachedPolicies AttachedPolicies[UpstreamPolicy]
 }
 
 func (c Upstream) ResourceName() string {

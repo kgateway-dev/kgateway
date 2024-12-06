@@ -15,9 +15,10 @@ import (
 type AttachmentPoints int
 
 const (
-	HttpAttachmentPoint           AttachmentPoints = iota
-	HttpBackendRefAttachmentPoint AttachmentPoints = iota
+	HttpAttachmentPoint AttachmentPoints = iota
+	HttpBackendRefAttachmentPoint
 	ListenerAttachmentPoint
+	UpstreamAttachmentPoint
 )
 
 type PolicyTargetRef struct {
@@ -70,6 +71,7 @@ type Policies []Policy
 
 type NetworkPolicy Policy
 type HttpPolicy Policy
+type UpstreamPolicy Policy
 type HttpBackendPolicy Policy
 type ListenerPolicy Policy
 

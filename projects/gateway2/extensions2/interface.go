@@ -86,6 +86,7 @@ type PolicyImpl struct {
 	NewGatewayTranslationPass func(ctx context.Context, tctx GwTranslationCtx) ProxyTranslationPass
 	Policies                  krt.Collection[model.Policy]
 	PoliciesFetch             func(n, ns string) model.Policy
+	ProcessUpstream           func(ctx context.Context, policy metav1.Object, in model.Upstream, out *envoy_config_cluster_v3.Cluster)
 }
 type UpstreamImpl struct {
 	ProcessUpstream func(ctx context.Context, in model.Upstream, out *envoy_config_cluster_v3.Cluster)

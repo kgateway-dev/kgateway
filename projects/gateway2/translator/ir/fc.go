@@ -13,8 +13,8 @@ import (
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	envoy_tls_inspector "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/listener/tls_inspector/v3"
 	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
@@ -224,11 +224,10 @@ func (h *hcmNetworkFilterTranslator) initializeHCM() *envoyhttp.HttpConnectionMa
 	}
 
 	return &envoyhttp.HttpConnectionManager{
-		CodecType:  envoyhttp.HttpConnectionManager_AUTO,
-		StatPrefix: statPrefix,
-		NormalizePath: &wrappers.BoolValue{
-			Value: true,
-		},
+		CodecType:     envoyhttp.HttpConnectionManager_AUTO,
+		StatPrefix:    statPrefix,
+		NormalizePath: wrapperspb.Bool(true),
+		MergeSlashes:  true,
 		RouteSpecifier: &envoyhttp.HttpConnectionManager_Rds{
 			Rds: &envoyhttp.Rds{
 				ConfigSource: &envoy_config_core_v3.ConfigSource{
