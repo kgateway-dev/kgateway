@@ -11,7 +11,7 @@ import (
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	"github.com/solo-io/gloo/projects/controller/pkg/utils"
-	"github.com/solo-io/gloo/projects/gateway2/extensions"
+	extensions "github.com/solo-io/gloo/projects/gateway2/extensions2"
 	"github.com/solo-io/gloo/projects/gateway2/model"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/routeutils"
@@ -126,7 +126,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 			out[i].Action = translateRouteAction(in)
 		}
 		// run plugins here that may set actoin
-		err := h.runRoutePlugins(ctx, in, out[i])
+		err := h.runRoutePlugins(ctx, routeReport, in, out[i])
 
 		if err == nil {
 			err = validateEnvoyRoute(out[i])
@@ -171,7 +171,7 @@ func (h *httpRouteConfigurationTranslator) runVostPlugins(ctx context.Context, o
 	}
 }
 
-func (h *httpRouteConfigurationTranslator) runRoutePlugins(ctx context.Context, in model.HttpRouteRuleIR, out *envoy_config_route_v3.Route) error {
+func (h *httpRouteConfigurationTranslator) runRoutePlugins(ctx context.Context, routeReport reports.ParentRefReporter, in model.HttpRouteRuleIR, out *envoy_config_route_v3.Route) error {
 
 	// all policies up to listener have been applied as vhost polices; we need to apply the httproute policies and below
 
@@ -192,7 +192,8 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(ctx context.Context, 
 			}
 			for _, pol := range pols {
 				pctx := &extensions.RouteContext{
-					Policy: pol.Obj(),
+					Policy:   pol.Obj(),
+					Reporter: routeReport,
 				}
 				err := pass.ApplyForRoute(ctx, pctx, out)
 				if err != nil {

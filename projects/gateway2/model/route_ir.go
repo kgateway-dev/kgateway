@@ -35,24 +35,28 @@ type PolicyWrapper struct {
 
 	// original object. ideally with structural errors removed.
 	// Opaque to us other than metadata.
-	Obj metav1.Object
+	Policy metav1.Object
 
 	TargetRefs []PolicyTargetRef
 }
 
 func (c PolicyWrapper) ResourceName() string {
-	return fmt.Sprintf("%s/%s/%s/%s", c.GK.Group, c.GK.Kind, c.Obj.GetNamespace(), c.Obj.GetName())
+	return fmt.Sprintf("%s/%s/%s/%s", c.GK.Group, c.GK.Kind, c.Policy.GetNamespace(), c.Policy.GetName())
+}
+
+func (c PolicyWrapper) Obj() metav1.Object {
+	return c.Policy
 }
 
 func (c PolicyWrapper) Equals(in PolicyWrapper) bool {
 	var versionEquals bool
-	if c.Obj.GetGeneration() != 0 && in.Obj.GetGeneration() != 0 {
-		versionEquals = c.Obj.GetGeneration() == in.Obj.GetGeneration()
+	if c.Policy.GetGeneration() != 0 && in.Policy.GetGeneration() != 0 {
+		versionEquals = c.Policy.GetGeneration() == in.Policy.GetGeneration()
 	} else {
-		versionEquals = c.Obj.GetResourceVersion() == in.Obj.GetResourceVersion()
+		versionEquals = c.Policy.GetResourceVersion() == in.Policy.GetResourceVersion()
 	}
 
-	return versionEquals && c.Obj.GetUID() == in.Obj.GetUID()
+	return versionEquals && c.Policy.GetUID() == in.Policy.GetUID()
 }
 
 type Policy interface {

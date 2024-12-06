@@ -24,7 +24,7 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) *gwv1.Ga
 
 	finalListeners := make([]gwv1.ListenerStatus, 0, len(gw.Spec.Listeners))
 	for _, lis := range gw.Spec.Listeners {
-		lisReport := gwReport.listener(&lis)
+		lisReport := gwReport.listener(string(lis.Name))
 		addMissingListenerConditions(lisReport)
 
 		finalConditions := make([]metav1.Condition, 0, len(lisReport.Status.Conditions))

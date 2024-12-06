@@ -9,10 +9,11 @@ import (
 	"github.com/solo-io/gloo/projects/controller/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/model"
-	"github.com/solo-io/gloo/projects/gateway2/translator"
+	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 type ListenerContext struct{}
@@ -20,7 +21,8 @@ type VirtualHostContext struct {
 	Policy metav1.Object
 }
 type RouteContext struct {
-	Policy metav1.Object
+	Policy   metav1.Object
+	Reporter reports.ParentRefReporter
 }
 
 type ProxyTranslationPass interface {
@@ -59,19 +61,30 @@ type Resources struct {
 
 type GwTranslationCtx struct{}
 
+type PolicyImpl struct {
+	AttachmentPoints          []model.AttachmentPoints
+	NewGatewayTranslationPass func(ctx context.Context, tctx GwTranslationCtx) ProxyTranslationPass
+	Policies                  krt.Collection[model.Policy]
+}
+type UpstreamImpl struct {
+	ProcessUpstream func(ctx context.Context, in model.Upstream, out *envoy_config_cluster_v3.Cluster)
+	Upstreams       krt.Collection[model.Upstream]
+	Endpoints       []krt.Collection[krtcollections.EndpointsForUpstream]
+}
 type Plugin struct {
-	ContributesPolicies map[schema.GroupKind]struct {
-		AttachmentPoints          []model.AttachmentPoints
-		NewGatewayTranslationPass func(ctx context.Context, tctx GwTranslationCtx) ProxyTranslationPass
-		Policies                  krt.Collection[model.Policy]
+	ContributesPolicies  map[schema.GroupKind]PolicyImpl
+	ContributesUpstreams map[schema.GroupKind]UpstreamImpl
+	ContributesGwClasses map[string]interface {
+		// TranslateProxy This function is called by the reconciler when a K8s Gateway resource is created or updated.
+		// It returns an instance of the k8sgateway Proxy resource, that should configure a target k8sgateway Proxy workload.
+		// A null return value indicates the K8s Gateway resource failed to translate into a k8sgateway Proxy. The error will be reported on the provided reporter.
+		TranslateProxy(
+			ctx context.Context,
+			gateway *gwv1.Gateway,
+			writeNamespace string,
+			reporter reports.Reporter,
+		) *model.GatewayIR
 	}
-
-	ContributesUpstreams map[schema.GroupKind]struct {
-		ProcessUpstream func(ctx context.Context, in model.Upstream, out *envoy_config_cluster_v3.Cluster)
-		Upstreams       krt.Collection[model.Upstream]
-		Endpoints       []krt.Collection[krtcollections.EndpointsForUpstream]
-	}
-	ContributesGwClasses map[string]translator.K8sGwTranslator
 }
 
 type K8sGatewayExtensions2 struct {
