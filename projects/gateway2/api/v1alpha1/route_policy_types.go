@@ -149,8 +149,14 @@ type AwsUpstream struct {
 	SecretRef corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 type StaticUpstream struct {
-	// +kubebuilder:validation:XValidation:message="There must one and only one upstream type set",rule="1 == (self.aws != null?1:0) + (self.static != null?1:0)"
-	Hostname gwv1.Hostname `json:"hostname,omitempty"`
+	Hosts []Host `json:"hosts,omitempty"`
+}
+
+type Host struct {
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
+	Host string          `json:"host"`
+	Port gwv1.PortNumber `json:"port"`
 }
 
 type UpstreamStatus struct {
