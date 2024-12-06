@@ -184,7 +184,7 @@ jobs:
       env:
         SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
       run: |
-        JOB_URL=https://github.com/solo-io/k8sgateway/actions/runs/${GITHUB_RUN_ID}
+        JOB_URL=https://github.com/k8sgateway/k8sgateway/actions/runs/${GITHUB_RUN_ID}
         MESSAGE="❌ *Failure:* Automated copy of reference docs for ${{ steps.version-variables.outputs.minor }} failed. <${JOB_URL}|Review the workflow failure>"
 
         curl \

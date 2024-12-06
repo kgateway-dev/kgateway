@@ -48,5 +48,5 @@ jobs:
         run : |
           curl -X POST\
                -H 'Content-type: application/json'\
-               --data '{"text":"Gloo Edge Vulnerability Scan has failed, visit https://github.com/solo-io/k8sgateway/actions/runs/${{github.run_id}} to view logs."}'\
+               --data '{"text":"Gloo Edge Vulnerability Scan has failed, visit https://github.com/k8sgateway/k8sgateway/actions/runs/${{github.run_id}} to view logs."}'\
                ${{ env.SLACK_DEBUG_TESTING == true && secrets.SLACK_INTEGRATION_TESTING_WEBHOOK || secrets.EDGE_TEAM_BOTS_WEBHOOK }}

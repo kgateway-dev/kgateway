@@ -136,5 +136,5 @@ jobs:
       run : |
         curl -X POST\
              -H 'Content-type: application/json'\
-             --data '{"text":"Gloo Edge has <https://github.com/solo-io/k8sgateway/actions/runs/${{github.run_id}}|failed a docs build> on `main` branch"}'\
+             --data '{"text":"Gloo Edge has <https://github.com/k8sgateway/k8sgateway/actions/runs/${{github.run_id}}|failed a docs build> on `main` branch"}'\
              ${{ env.SLACK_DEBUG_TESTING == true && secrets.SLACK_INTEGRATION_TESTING_WEBHOOK || secrets.EDGE_TEAM_BOTS_WEBHOOK }}
