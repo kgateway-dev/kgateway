@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Fix URLs in Slack notifications for GHAs such that they correctly link to actions in this repo.
