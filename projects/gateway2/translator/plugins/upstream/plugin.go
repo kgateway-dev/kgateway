@@ -180,7 +180,7 @@ func processUpstream(ctx context.Context, in model.Upstream, out *envoy_config_c
 func hostname(in *v1alpha1.Upstream) string {
 	if in.Spec.Static != nil {
 		if len(in.Spec.Static.Hosts) > 0 {
-			return string(in.Spec.Static.Hosts[0].Hostname)
+			return string(in.Spec.Static.Hosts[0].Host)
 		}
 	}
 	return ""

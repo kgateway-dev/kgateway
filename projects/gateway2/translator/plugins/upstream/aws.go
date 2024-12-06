@@ -2,8 +2,10 @@ package upstream
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
+	"unicode/utf8"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -17,6 +19,12 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"google.golang.org/protobuf/types/known/anypb"
 	corev1 "k8s.io/api/core/v1"
+)
+
+const (
+	AccessKey    = "accessKey"
+	SessionToken = "sessionToken"
+	SecretKey    = "secretKey"
 )
 
 func processAws(ctx context.Context, in *v1alpha1.AwsUpstream, ir *UpstreamIr, out *envoy_config_cluster_v3.Cluster) {
@@ -131,29 +139,29 @@ type staticSecretDerivation struct {
 // deriveStaticSecret from ingest if we are using a kubernetes secretref
 // Named returns with the derived string contents or an error due to retrieval or format.
 func deriveStaticSecret(awsSecrets *corev1.Secret) (staticSecretDerivation, error) {
-	panic("TODO")
-	//	derived := staticSecretDerivation{
-	//		access:  awsSecrets.Aws.GetAccessKey(),
-	//		session: awsSecrets.Aws.GetSessionToken(),
-	//		secret:  awsSecrets.Aws.GetSecretKey(),
-	//	}
-	//
-	// // validate that the secret has field in string format and has an access_key and secret_key
-	//
-	//	if derived.access == "" || !utf8.Valid([]byte(derived.access)) {
-	//		// err is nil here but this is still safe
-	//		err = multierror.Append(err, errors.Errorf("access_key is not a valid string"))
-	//	}
-	//
-	//	if derived.secret == "" || !utf8.Valid([]byte(derived.secret)) {
-	//		err = multierror.Append(err, errors.Errorf("secret_key is not a valid string"))
-	//	}
-	//
-	// // Session key is optional
-	//
-	//	if derived.session != "" && !utf8.Valid([]byte(derived.session)) {
-	//		err = multierror.Append(err, errors.Errorf("session_key is not a valid string"))
-	//	}
-	//
-	// return derived, err
+	var errs []error
+	derived := staticSecretDerivation{
+		access:  string(awsSecrets.Data[AccessKey]),
+		session: string(awsSecrets.Data[SessionToken]),
+		secret:  string(awsSecrets.Data[SecretKey]),
+	}
+
+	// validate that the secret has field in string format and has an access_key and secret_key
+
+	if derived.access == "" || !utf8.Valid([]byte(derived.access)) {
+		// err is nil here but this is still safe
+		errs = append(errs, errors.New("access_key is not a valid string"))
+	}
+
+	if derived.secret == "" || !utf8.Valid([]byte(derived.secret)) {
+		errs = append(errs, errors.New("secret_key is not a valid string"))
+	}
+
+	// Session key is optional
+
+	if derived.session != "" && !utf8.Valid([]byte(derived.session)) {
+		errs = append(errs, errors.New("session_key is not a valid string"))
+	}
+
+	return derived, errors.Join(errs...)
 }

@@ -36,45 +36,10 @@ const (
 )
 
 type filterChainTranslator struct {
-	gw       model.GatewayIR
-	listener model.ListenerIR
+	listener        model.ListenerIR
+	routeConfigName string
 
-	parentRef                gwv1.ParentReference
-	routeConfigName          string
-	reporter                 reports.Reporter
-	requireTlsOnVirtualHosts bool
-	PluginPass               map[schema.GroupKind]extensions.ProxyTranslationPass
-}
-
-func (h *filterChainTranslator) ComputeListener(ctx context.Context, l model.ListenerIR, reporter reports.GatewayReporter) *envoy_config_listener_v3.Listener {
-	hasTls := false
-
-	ret := &envoy_config_listener_v3.Listener{
-		Name:    l.Name,
-		Address: computeListenerAddress(l.BindAddress, l.BindPort, reporter),
-	}
-	for _, hfc := range l.HttpFilterChain {
-		rl := reporter.ListenerName(hfc.FilterChainName)
-		fc := h.initFilterChain(ctx, hfc.FilterChainCommon, rl)
-		fc.Filters = h.computeHttpFilters(ctx, hfc, rl)
-		ret.FilterChains = append(ret.FilterChains, fc)
-		if len(hfc.Matcher.SniDomains) > 0 {
-			hasTls = true
-		}
-	}
-	for _, tfc := range l.TcpFilterChain {
-		rl := reporter.ListenerName(tfc.FilterChainName)
-		fc := h.initFilterChain(ctx, tfc.FilterChainCommon, rl)
-		fc.Filters = h.computeTcpFilters(ctx, tfc, rl)
-		ret.FilterChains = append(ret.FilterChains, fc)
-		if len(tfc.Matcher.SniDomains) > 0 {
-			hasTls = true
-		}
-	}
-	if hasTls {
-		ret.ListenerFilters = append(ret.GetListenerFilters(), tlsInspectorFilter())
-	}
-	return ret
+	PluginPass map[schema.GroupKind]extensions.ProxyTranslationPass
 }
 
 func computeListenerAddress(bindAddress string, port uint32, reporter reports.GatewayReporter) *envoy_config_core_v3.Address {
@@ -150,7 +115,7 @@ func (h *filterChainTranslator) computeHttpFilters(ctx context.Context, l model.
 
 func (n *filterChainTranslator) computeNetworkFiltersForHttp(ctx context.Context, l model.HttpFilterChainIR, reporter reports.ListenerReporter) ([]*envoy_config_listener_v3.Filter, error) {
 	hcm := hcmNetworkFilterTranslator{
-		routeConfigName: l.FilterChainName,
+		routeConfigName: n.routeConfigName,
 		PluginPass:      n.PluginPass,
 		reporter:        reporter,
 	}

@@ -36,7 +36,7 @@ type httpRouteConfigurationTranslator struct {
 	PluginPass               map[schema.GroupKind]extensions.ProxyTranslationPass
 }
 
-func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context.Context, vhosts []*model.VirtualHost) []*envoy_config_route_v3.RouteConfiguration {
+func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context.Context, vhosts []*model.VirtualHost) *envoy_config_route_v3.RouteConfiguration {
 	ctx = contextutils.WithLogger(ctx, "compute_route_config."+h.routeConfigName)
 	cfg := &envoy_config_route_v3.RouteConfiguration{
 		Name:         h.routeConfigName,
@@ -51,7 +51,7 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context
 	//		cfg.MostSpecificHeaderMutationsWins = mostSpecificVal.GetValue()
 	//	}
 
-	return []*envoy_config_route_v3.RouteConfiguration{cfg}
+	return cfg
 }
 
 func (h *httpRouteConfigurationTranslator) computeVirtualHosts(ctx context.Context, virtualHosts []*model.VirtualHost) []*envoy_config_route_v3.VirtualHost {
