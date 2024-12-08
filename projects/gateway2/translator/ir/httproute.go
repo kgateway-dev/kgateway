@@ -338,7 +338,8 @@ func (r *gatewayQueries) fetchChildRoutes(
 }
 
 // this is projects/gateway2/translator/listener/gateway_listener_translator.go#buildRoutesPerHost()
-func (q *gatewayQueries) GetFlattenedRoutes(routeInfos []*RouteInfo) {
+func (q *gatewayQueries) GetFlattenedRoutes(routeInfos []*RouteInfo) map[string][]*model.HttpRouteRuleMatchIR {
+	routesByHost := map[string][]*model.HttpRouteRuleMatchIR{}
 	for _, routeWithHosts := range routeInfos {
 		// TODO: reporter
 
@@ -355,15 +356,18 @@ func (q *gatewayQueries) GetFlattenedRoutes(routeInfos []*RouteInfo) {
 			continue
 		}
 
-		// hostnames := routeWithHosts.Hostnames()
-		// if len(hostnames) == 0 {
-		// 	hostnames = []string{"*"}
-		// }
+		hostnames := routeWithHosts.Hostnames()
+		if len(hostnames) == 0 {
+			hostnames = []string{"*"}
+		}
 
-		// for _, host := range hostnames {
-		// 	routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(routeWithHosts.Object, routes)...)
-		// }
+		for _, host := range hostnames {
+			routesByHost[host] = append(routesByHost[host], routes...)
+		}
 	}
+	return routesByHost
+	// still need to convert to sortableRoutes
+	// routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(routeWithHosts.Object, routes)...)
 }
 
 // this is projects/gateway2/translator/httproute/gateway_http_route_translator.go#TranslateGatewayHTTPRouteRules
@@ -420,7 +424,6 @@ func translateRouteRulesUtil(
 			ruleIdx,
 			outputs,
 			routesVisited,
-			hostnames,
 			delegationChain,
 		)
 		for _, outputRoute := range outputRoutes {
@@ -441,7 +444,7 @@ func translateGatewayHTTPRouteRule(
 	ruleIdx int,
 	outputs *[]*model.HttpRouteRuleMatchIR,
 	routesVisited sets.Set[types.NamespacedName],
-	hostnames []gwv1.Hostname,
+	// hostnames []gwv1.Hostname, // TODO: what are hostnameOverrides?
 	delegationChain *list.List,
 ) []*model.HttpRouteRuleMatchIR {
 	routes := make([]*model.HttpRouteRuleMatchIR, len(rule.Matches))

@@ -17,6 +17,7 @@ import (
 	apiv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
+	"github.com/solo-io/gloo/projects/gateway2/model"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 )
@@ -131,7 +132,7 @@ type GatewayQueries interface {
 	// GetRouteChain resolves backends and delegated routes for a the provided xRoute object
 	GetRouteChain(ctx context.Context, obj client.Object, hostnames []string, parentRef apiv1.ParentReference) *RouteInfo
 
-	GetFlattenedRoutes(routeInfos []*RouteInfo)
+	GetFlattenedRoutes(routeInfos []*RouteInfo) map[string][]*model.HttpRouteRuleMatchIR
 }
 
 type RoutesForGwResult struct {
