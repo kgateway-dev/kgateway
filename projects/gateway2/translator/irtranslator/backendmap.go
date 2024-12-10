@@ -1,4 +1,4 @@
-package query
+package irtranslator
 
 import (
 	"github.com/solo-io/gloo/projects/gateway2/ir"
@@ -48,7 +48,7 @@ func (bm BackendMap[T]) AddError(backendRef ir.ObjectSource, err error) {
 	bm.errors[key] = err
 }
 
-func (bm BackendMap[T]) get(backendRef ir.ObjectSource, def T) (T, error) {
+func (bm BackendMap[T]) Get(backendRef ir.ObjectSource, def T) (T, error) {
 	key := backendToRefKey(backendRef)
 	if err, ok := bm.errors[key]; ok {
 		return def, err

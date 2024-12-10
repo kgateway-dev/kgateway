@@ -41,8 +41,10 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
+	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
+	"github.com/solo-io/gloo/projects/gateway2/translator/irtranslator"
 	gwplugins "github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
@@ -95,6 +97,8 @@ type ProxySyncer struct {
 	translator setup.TranslatorFactory
 
 	waitForSync []cache.InformerSynced
+
+	irtranslator *irtranslator.Translator
 }
 
 type GatewayInputChannels struct {
@@ -400,15 +404,13 @@ func (s *ProxySyncer) Init(ctx context.Context, dbg *krt.DebugHandler) error {
 	// alternatively we could start as not synced, and mark ready once ctrl-runtime caches are synced
 	s.proxyTrigger = krt.NewRecomputeTrigger(true)
 
-	glooProxies := krt.NewCollection(kubeGateways, func(kctx krt.HandlerContext, gw *gwv1.Gateway) *glooProxy {
+	s.mostXdsSnapshots := krt.NewCollection(kubeGateways, func(kctx krt.HandlerContext, gw *gwv1.Gateway) *glooProxy {
 		logger.Debugf("building proxy for kube gw %s version %s", client.ObjectKeyFromObject(gw), gw.GetResourceVersion())
 		s.proxyTrigger.MarkDependant(kctx)
-		proxy := s.buildProxy(ctx, gw)
-		return proxy
-	}, withDebug, krt.WithName("GlooProxies"))
-	s.mostXdsSnapshots = krt.NewCollection(glooProxies, func(kctx krt.HandlerContext, proxy glooProxy) *XdsSnapWrapper {
+		proxy := s.buildProxy(kctx, ctx, gw)
+
 		// we are recomputing xds snapshots as proxies have changed, signal that we need to sync xds with these new snapshots
-		xdsSnap := s.translateProxy(
+		xdsSnap := s.irtranslator.Translate(proxy, report)(
 			ctx,
 			kctx,
 			logger,
@@ -625,7 +627,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 }
 
 // buildProxy performs translation of a kube Gateway -> gloov1.Proxy (really a wrapper type)
-func (s *ProxySyncer) buildProxy(ctx context.Context, gw *gwv1.Gateway) *glooProxy {
+func (s *ProxySyncer) buildProxy(kctx krt.HandlerContext, ctx context.Context, gw *ir.Gateway) *ir.GatewayIR {
 	stopwatch := statsutils.NewTranslatorStopWatch("ProxySyncer")
 	stopwatch.Start()
 
@@ -639,7 +641,7 @@ func (s *ProxySyncer) buildProxy(ctx context.Context, gw *gwv1.Gateway) *glooPro
 		contextutils.LoggerFrom(ctx).Errorf("no translator found for Gateway %s (gatewayClass %s)", gw.Name, gw.Spec.GatewayClassName)
 		return nil
 	}
-	proxy := gatewayTranslator.TranslateProxy(ctx, gw, s.writeNamespace, r)
+	proxy := gatewayTranslator.TranslateProxy(kctx, ctx, gw, s.writeNamespace, r)
 	if proxy == nil {
 		return nil
 	}
@@ -651,9 +653,9 @@ func (s *ProxySyncer) buildProxy(ctx context.Context, gw *gwv1.Gateway) *glooPro
 	contextutils.LoggerFrom(ctx).Debugf("translated proxy %s/%s in %s", proxy.GetMetadata().GetNamespace(), proxy.GetMetadata().GetName(), duration.String())
 
 	// TODO: these are likely unnecessary and should be removed!
-	applyPostTranslationPlugins(ctx, pluginRegistry, &gwplugins.PostTranslationContext{
-		TranslatedGateways: translatedGateways,
-	})
+	//	applyPostTranslationPlugins(ctx, pluginRegistry, &gwplugins.PostTranslationContext{
+	//		TranslatedGateways: translatedGateways,
+	//	})
 
 	return &glooProxy{
 		Proxy:          proxy,

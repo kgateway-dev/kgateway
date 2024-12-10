@@ -1,14 +1,15 @@
-package query
+package irtranslator
 
 import (
+	"container/list"
 	"context"
 	"errors"
 	"fmt"
 	"strings"
 
-	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/ptr"
@@ -72,12 +73,16 @@ func (r *RouteInfo) Hostnames() []string {
 		return []string{}
 	}
 
-	return httpRoute.Hostnames
+	strs := make([]string, 0, len(httpRoute.Hostnames))
+	for _, v := range httpRoute.Hostnames {
+		strs = append(strs, string(v))
+	}
+	return strs
 }
 
 // GetChildrenForRef fetches child routes for a given BackendObjectReference.
 func (r *RouteInfo) GetChildrenForRef(backendRef ir.ObjectSource) ([]*RouteInfo, error) {
-	return r.Children.get(backendRef, nil)
+	return r.Children.Get(backendRef, nil)
 }
 
 // Clone creates a deep copy of the RouteInfo object.
@@ -87,10 +92,9 @@ func (r *RouteInfo) Clone() *RouteInfo {
 	}
 	// TODO (danehans): Why are hostnameOverrides not being cloned?
 	return &RouteInfo{
-		Object:            r.Object,
-		ParentRef:         r.ParentRef,
-		ListenerParentRef: r.ListenerParentRef,
-		Children:          r.Children,
+		Object:    r.Object,
+		ParentRef: r.ParentRef,
+		Children:  r.Children,
 	}
 }
 
@@ -100,10 +104,10 @@ func (r *RouteInfo) UniqueRouteName(ruleIdx, matchIdx int) string {
 	return fmt.Sprintf("%s-%s-%s-%d-%d", strings.ToLower(r.GetKind()), r.GetName(), r.GetNamespace(), ruleIdx, matchIdx)
 }
 
+// ENTRYPOINT!!
 // GetRouteChain recursively resolves all backends for the given route object.
 // It handles delegation of HTTPRoutes and resolves child routes.
-func (r *gatewayQueries) GetRouteChain(
-	kctx krt.HandlerContext,
+func (r *gatewayQueries) GetRouteChain(kctx krt.HandlerContext,
 	ctx context.Context,
 	route ir.Route,
 	hostnames []string,
@@ -113,8 +117,10 @@ func (r *gatewayQueries) GetRouteChain(
 
 	switch typedRoute := route.(type) {
 	case *ir.HttpRouteIR:
-		children = r.getDelegatedChildren(kctx, ctx, typedRoute, nil)
+		panic("TODO: add errors if we have errors on the backends")
+		children = r.getDelegatedChildren(kctx, ctx, typedRoute, parentRef, nil)
 	case *ir.TcpRouteIR:
+		panic("TODO: add errors if we have errors on the backends")
 		// TODO (danehans): Should TCPRoute delegation support be added in the future?
 	default:
 		return nil
@@ -128,7 +134,7 @@ func (r *gatewayQueries) GetRouteChain(
 	}
 }
 
-func (r *gatewayQueries) allowedRoutes(gw *gwv1.Gateway, l *gwv1.Listener) (func(krt.HandlerContext, string) bool, []metav1.GroupKind, error) {
+func (r *gatewayQueries) allowedRoutes(gw *gwv1.Gateway, l *gwv1.Listener) (func(string) bool, []metav1.GroupKind, error) {
 	var allowedKinds []metav1.GroupKind
 
 	// Determine the allowed route kinds based on the listener's protocol
@@ -185,10 +191,10 @@ func (r *gatewayQueries) allowedRoutes(gw *gwv1.Gateway, l *gwv1.Listener) (func
 	return allowedNs, allowedKinds, nil
 }
 
-func (r *gatewayQueries) getDelegatedChildren(
-	kctx krt.HandlerContext,
+func (r *gatewayQueries) getDelegatedChildren(kctx krt.HandlerContext,
 	ctx context.Context,
 	parent *ir.HttpRouteIR,
+	listenerRef gwv1.ParentReference,
 	visited sets.Set[types.NamespacedName],
 ) BackendMap[[]*RouteInfo] {
 	// Initialize the set of visited routes if it hasn't been initialized yet
@@ -196,13 +202,7 @@ func (r *gatewayQueries) getDelegatedChildren(
 		visited = sets.New[types.NamespacedName]()
 	}
 	parentRef := namespacedName(parent)
-	// `visited` is used to detect cyclic references to routes in the delegation chain.
-	// It is important to remove the route from the set once all its children have been evaluated
-	// in the recursion stack, because a route may have multiple parents that have the same ancestor:
-	// e.g., A -> B1, A -> B2, B1 -> C, B2 -> C. So in this case, even though C is visited twice,
-	// the delegation chain is valid as it is evaluated only once for each parent.
 	visited.Insert(parentRef)
-	defer visited.Delete(parentRef)
 
 	children := NewBackendMap[[]*RouteInfo]()
 	for _, parentRule := range parent.Rules {
@@ -214,7 +214,7 @@ func (r *gatewayQueries) getDelegatedChildren(
 			}
 			ref := *backendRef.Delegate
 			// Fetch child routes based on the backend reference
-			referencedRoutes, err := r.fetchChildRoutes(kctx, ctx, parent.Namespace, backendRef)
+			referencedRoutes, err := r.fetchChildRoutes(kctx, ctx, backendRef)
 			if err != nil {
 				children.AddError(ref, err)
 				continue
@@ -222,7 +222,7 @@ func (r *gatewayQueries) getDelegatedChildren(
 			for _, childRoute := range referencedRoutes {
 				childRef := namespacedName(&childRoute)
 				if visited.Has(childRef) {
-					err := fmt.Errorf("ignoring child route %s for parent %s: %w", childRef, parentRef, ErrCyclicReference)
+					err := fmt.Errorf("ignoring child route %s for parent %s: %w", parentRef, childRef, ErrCyclicReference)
 					children.AddError(ref, err)
 					// Don't resolve invalid child route
 					continue
@@ -236,7 +236,8 @@ func (r *gatewayQueries) getDelegatedChildren(
 						Namespace: ptr.To(gwv1.Namespace(parent.Namespace)),
 						Name:      gwv1.ObjectName(parent.Name),
 					},
-					Children: r.getDelegatedChildren(kctx, ctx, &childRoute, visited),
+					ListenerParentRef: listenerRef,
+					Children:          r.getDelegatedChildren(kctx, ctx, &childRoute, listenerRef, visited),
 				}
 				refChildren = append(refChildren, routeInfo)
 			}
@@ -250,10 +251,8 @@ func (r *gatewayQueries) getDelegatedChildren(
 func (r *gatewayQueries) fetchChildRoutes(
 	kctx krt.HandlerContext,
 	ctx context.Context,
-	parentNamespace string,
 	backend ir.HttpBackendOrDelegate,
 ) ([]ir.HttpRouteIR, error) {
-
 	if backend.Delegate == nil {
 		return nil, nil
 	}
@@ -265,6 +264,7 @@ func (r *gatewayQueries) fetchChildRoutes(
 		// Handle wildcard references by listing all HTTPRoutes in the specified namespace
 		routes := r.routes.ListHttp(kctx, delegatedNs)
 		refChildren = append(refChildren, routes...)
+		panic("TODO: give krt context")
 	} else {
 		// Lookup a specific child route by its name
 		route := r.routes.FetchHttp(kctx, delegatedNs, string(backendRef.Name))
@@ -272,6 +272,7 @@ func (r *gatewayQueries) fetchChildRoutes(
 			return nil, errors.New("not found")
 		}
 		refChildren = append(refChildren, *route)
+		panic("TODO: give krt context")
 	}
 	// Check if no child routes were resolved and log an error if needed
 	if len(refChildren) == 0 {
@@ -281,23 +282,269 @@ func (r *gatewayQueries) fetchChildRoutes(
 	return refChildren, nil
 }
 
+// ENTRYPOINT!!
+// this is projects/gateway2/translator/listener/gateway_listener_translator.go#buildRoutesPerHost()
+func (q *gatewayQueries) GetFlattenedRoutes(routeInfos []*RouteInfo) {
+	for _, routeWithHosts := range routeInfos {
+		// TODO: reporter
+
+		//		// Only HTTPRoute types should be translated.
+		//		_, ok := routeWithHosts.Object.(*gwv1.HTTPRoute)
+		//		if !ok {
+		//			// TODO:
+		//		}
+
+		routes := translateRouteRules(routeWithHosts)
+
+		if len(routes) == 0 {
+			// TODO report
+			continue
+		}
+
+		hostnames := routeWithHosts.Hostnames()
+		if len(hostnames) == 0 {
+			hostnames = []string{"*"}
+		}
+
+		//		for _, host := range hostnames {
+		//TODO:		 	routesByHost[host] = append(routesByHost[host], routeutils.ToSortable(routeWithHosts.Object, routes)...)
+		//		}
+	}
+}
+
+// ENTRYPOINT!!!!!!!!!!!!!!!!!!!!
+// this is projects/gateway2/translator/httproute/gateway_http_route_translator.go#TranslateGatewayHTTPRouteRules
+func translateRouteRules(
+	// gwListener gwv1.Listener,
+	routeInfo *RouteInfo,
+) []*ir.HttpRouteRuleMatchIR {
+	var finalRoutes []*ir.HttpRouteRuleMatchIR
+
+	// Only HTTPRoute types should be translated.
+	route, ok := routeInfo.Object.(*ir.HttpRouteIR)
+	if !ok {
+		return finalRoutes
+	}
+
+	// Hostnames need to be explicitly passed to the plugins since they
+	// are required by delegatee (child) routes of delegated routes that
+	// won't have spec.Hostnames set.
+	hostnames := make([]string, len(route.Hostnames))
+	copy(hostnames, route.Hostnames)
+
+	routesVisited := sets.New[types.NamespacedName]()
+	delegationChain := list.New()
+
+	translateRouteRulesUtil(
+		routeInfo, &finalRoutes, routesVisited, hostnames, delegationChain)
+	return finalRoutes
+}
+
+func translateRouteRulesUtil(
+	// gwListener gwv1.Listener,
+	routeInfo *RouteInfo,
+	outputs *[]*ir.HttpRouteRuleMatchIR,
+	routesVisited sets.Set[types.NamespacedName],
+	hostnames []string,
+	delegationChain *list.List,
+) {
+	// this is already done earlier, maybe consolidate
+	route, ok := routeInfo.Object.(*ir.HttpRouteIR)
+	if !ok {
+		return
+	}
+
+	for ruleIdx, rule := range route.Rules {
+		rule := rule
+		if rule.Matches == nil {
+			// from the spec:
+			// If no matches are specified, the default is a prefix path match on “/”, which has the effect of matching every HTTP request.
+			rule.Matches = []gwv1.HTTPRouteMatch{{}}
+		}
+
+		outputRoutes := translateGatewayHTTPRouteRule(
+			routeInfo,
+			rule,
+			ruleIdx,
+			outputs,
+			routesVisited,
+			hostnames,
+			delegationChain,
+		)
+		for _, outputRoute := range outputRoutes {
+			// The above function will return a nil route if it delegates and thus we have no actual route to add
+			if outputRoute == nil {
+				continue
+			}
+
+			*outputs = append(*outputs, outputRoute)
+		}
+	}
+}
+
+func translateGatewayHTTPRouteRule(
+	// gwListener gwv1.Listener,
+	gwroute *RouteInfo,
+	rule ir.HttpRouteRuleIR,
+	ruleIdx int,
+	outputs *[]*ir.HttpRouteRuleMatchIR,
+	routesVisited sets.Set[types.NamespacedName],
+	hostnames []string,
+	delegationChain *list.List,
+) []*ir.HttpRouteRuleMatchIR {
+	routes := make([]*ir.HttpRouteRuleMatchIR, len(rule.Matches))
+	// Only HTTPRoutes should be translated.
+	_, ok := gwroute.Object.(*ir.HttpRouteIR)
+	if !ok {
+		return routes
+	}
+
+	for idx, match := range rule.Matches {
+		match := match // pike
+		// HTTPRoute names are being introduced to upstream as part of https://github.com/kubernetes-sigs/gateway-api/issues/995
+		// For now, the HTTPRoute needs a unique name for each Route to support features that require the route name
+		// set (basic ratelimit, route-level jwt, etc.). The unique name is generated by appending the index of the route to the
+		// HTTPRoute name.namespace.
+		uniqueRouteName := gwroute.UniqueRouteName(ruleIdx, idx)
+		var outputRoute ir.HttpRouteRuleMatchIR
+		outputRoute.HttpRouteRuleCommonIR = rule.HttpRouteRuleCommonIR
+		outputRoute.ParentRef = gwroute.ListenerParentRef
+		outputRoute.Name = uniqueRouteName
+		outputRoute.Backends = nil
+		outputRoute.MatchIndex = idx
+		outputRoute.Match = match
+
+		var delegatedRoutes []*ir.HttpRouteRuleMatchIR
+		var delegates bool
+		if len(rule.Backends) > 0 {
+			delegates = setRouteAction(
+				gwroute,
+				rule,
+				&outputRoute,
+				outputRoute.Match,
+				&delegatedRoutes,
+				routesVisited,
+				delegationChain,
+			)
+		}
+
+		// TODO (major todo!): handle attachment processing
+
+		// rtCtx := &plugins.RouteContext{
+		// 	// Listener:        &gwListener,
+		// 	HTTPRoute:       route,
+		// 	Hostnames:       hostnames,
+		// 	DelegationChain: delegationChain,
+		// 	Rule:            &rule,
+		// 	Match:           &match,
+		// 	// Reporter:        reporter,
+		// }
+
+		// Apply the plugins for this route
+		// for _, plugin := range pluginRegistry.GetRoutePlugins() {
+		// 	err := plugin.ApplyRoutePlugin(ctx, rtCtx, outputRoute)
+		// 	if err != nil {
+		// 		contextutils.LoggerFrom(ctx).Errorf("error in RoutePlugin: %v", err)
+		// 	}
+
+		// 	// If this parent route has delegatee routes, override any applied policies
+		// 	// that are on the child with the parent's policies.
+		// 	// When a plugin is invoked on a route, it must override the existing route.
+		// 	for _, child := range delegatedRoutes {
+		// 		err := plugin.ApplyRoutePlugin(ctx, rtCtx, child)
+		// 		if err != nil {
+		// 			contextutils.LoggerFrom(ctx).Errorf("error applying RoutePlugin to child route %s: %v", child.GetName(), err)
+		// 		}
+		// 	}
+		// }
+
+		// Add the delegatee output routes to the final output list
+		*outputs = append(*outputs, delegatedRoutes...)
+
+		// It is possible for a parent route to not produce an output route action
+		// if it only delegates and does not directly route to a backend.
+		// We should only set a direct response action when there is no output action
+		// for a parent rule and when there are no delegated routes because this would
+		// otherwise result in a top level matcher with a direct response action for the
+		// path that the parent is delegating for.
+		if len(outputRoute.Backends) == 0 && !delegates {
+			// TODO: figure out how to mark this backend with a 500 error
+
+			// outputRoute.Action = &v1.Route_DirectResponseAction{
+			// 	DirectResponseAction: &v1.DirectResponseAction{
+			// 		Status: http.StatusInternalServerError,
+			// 	},
+			// }
+		}
+
+		// A parent route that delegates to a child route should not have an output route
+		// action (outputRoute.Action) as the routes are derived from the child route.
+		// So this conditional ensures that we do not create a top level route matcher
+		// for the parent route when it delegates to a child route.
+		if len(outputRoute.Backends) > 0 {
+			routes[idx] = &outputRoute
+			// TODO: I think this was redundant/obsolete
+			// outputRoute.Matchers = []*matchers.Matcher{translateGlooMatcher(match)}
+		}
+	}
+	return routes
+}
+
+func setRouteAction(
+	gwroute *RouteInfo,
+	rule ir.HttpRouteRuleIR,
+	outputRoute *ir.HttpRouteRuleMatchIR,
+	match gwv1.HTTPRouteMatch,
+	outputs *[]*ir.HttpRouteRuleMatchIR,
+	routesVisited sets.Set[types.NamespacedName],
+	delegationChain *list.List,
+) bool {
+	backends := rule.Backends
+	delegates := false
+
+	for _, backend := range backends {
+		// If the backend is an HTTPRoute, it implies route delegation
+		// for which delegated routes are recursively flattened and translated
+		if backend.Delegate != nil {
+			delegates = true
+			// Flatten delegated HTTPRoute references
+			err := flattenDelegatedRoutes(
+				gwroute,
+				backend,
+				match,
+				outputs,
+				routesVisited,
+				delegationChain,
+			)
+			if err != nil {
+				// query.ProcessBackendError(err, reporter)
+			}
+			continue
+		}
+
+		httpBackend := ir.HttpBackend{
+			Backend:          *backend.Backend, // TODO: Nil check?
+			AttachedPolicies: backend.AttachedPolicies,
+		}
+
+		// FIXME: handle this stuff
+		// for _, bp := range pluginRegistry.GetBackendPlugins() {
+
+		//	var port uint32
+		//	if backendRef.Port != nil {
+		//		port = uint32(*backendRef.Port)
+		//	}
+
+		outputRoute.Backends = append(outputRoute.Backends, httpBackend)
+	}
+
+	return delegates
+}
+
 func (r *gatewayQueries) GetRoutesForGateway(kctx krt.HandlerContext, ctx context.Context, gw *gwv1.Gateway) (*RoutesForGwResult, error) {
 	nns := types.NamespacedName{
 		Namespace: gw.Namespace,
 		Name:      gw.Name,
-	}
-
-	// List of route types to process based on installed CRDs
-	routeListTypes := []client.ObjectList{&gwv1.HTTPRouteList{}}
-
-	// Conditionally include TCPRouteList
-	tcpRouteGVK := schema.GroupVersionKind{
-		Group:   gwv1a2.GroupVersion.Group,
-		Version: gwv1a2.GroupVersion.Version,
-		Kind:    wellknown.TCPRouteKind,
-	}
-	if r.scheme.Recognizes(tcpRouteGVK) {
-		routeListTypes = append(routeListTypes, &gwv1a2.TCPRouteList{})
 	}
 
 	// Process each route
@@ -314,11 +561,10 @@ func (r *gatewayQueries) GetRoutesForGateway(kctx krt.HandlerContext, ctx contex
 // fetchRoutes is a helper function to fetch routes and add to the routes slice.
 func fetchRoutes(kctx krt.HandlerContext, r *gatewayQueries, nns types.NamespacedName) []ir.Route {
 	return r.routes.RoutesForGateway(kctx, nns)
+
 }
 
-func (r *gatewayQueries) processRoute(
-	kctx krt.HandlerContext,
-	ctx context.Context, gw *gwv1.Gateway, route ir.Route, ret *RoutesForGwResult) error {
+func (r *gatewayQueries) processRoute(kctx krt.HandlerContext, ctx context.Context, gw *gwv1.Gateway, route ir.Route, ret *RoutesForGwResult) error {
 	refs := getParentRefsForGw(gw, route)
 	routeKind := route.GetGroupKind().Kind
 
@@ -346,7 +592,7 @@ func (r *gatewayQueries) processRoute(
 			}
 
 			// Check if the namespace of the route is allowed by the listener
-			if !allowedNs(kctx, route.GetNamespace()) {
+			if !allowedNs(route.GetNamespace()) {
 				continue
 			}
 			anyRoutesAllowed = true
@@ -362,7 +608,7 @@ func (r *gatewayQueries) processRoute(
 			if routeKind == wellknown.HTTPRouteKind {
 				if hr, ok := route.(*ir.HttpRouteIR); ok {
 					var ok bool
-					ok, hostnames = hostnameIntersect(&l, hr)
+					ok, hostnames = hostnameIntersect(&l, hr.Hostnames)
 					if !ok {
 						continue
 					}
@@ -377,19 +623,19 @@ func (r *gatewayQueries) processRoute(
 		// Handle route errors based on checks
 		if !anyRoutesAllowed {
 			ret.RouteErrors = append(ret.RouteErrors, &RouteError{
-				Route:     route,
+				Route:     route.GetSourceObject(),
 				ParentRef: ref,
 				Error:     Error{E: ErrNotAllowedByListeners, Reason: gwv1.RouteReasonNotAllowedByListeners},
 			})
 		} else if !anyListenerMatched {
 			ret.RouteErrors = append(ret.RouteErrors, &RouteError{
-				Route:     route,
+				Route:     route.GetSourceObject(),
 				ParentRef: ref,
 				Error:     Error{E: ErrNoMatchingParent, Reason: gwv1.RouteReasonNoMatchingParent},
 			})
 		} else if routeKind == wellknown.HTTPRouteKind && !anyHostsMatch {
 			ret.RouteErrors = append(ret.RouteErrors, &RouteError{
-				Route:     route,
+				Route:     route.GetSourceObject(),
 				ParentRef: ref,
 				Error:     Error{E: ErrNoMatchingListenerHostname, Reason: gwv1.RouteReasonNoMatchingListenerHostname},
 			})

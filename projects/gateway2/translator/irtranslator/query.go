@@ -1,4 +1,4 @@
-package query
+package irtranslator
 
 import (
 	"context"
@@ -6,10 +6,13 @@ import (
 	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -17,6 +20,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
+	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 )
 
@@ -121,18 +125,20 @@ type GatewayQueries interface {
 	// return value depends on the group/kind in the backendRef.
 	GetBackendForRef(ctx context.Context, obj From, backendRef *apiv1.BackendObjectReference) (client.Object, error)
 
-	GetSecretForRef(kctx krt.HandlerContext, ctx context.Context, fromGk schema.GroupKind, fromns string, secretRef apiv1.SecretObjectReference) (*ir.Secret, error)
+	GetSecretForRef(ctx context.Context, obj From, secretRef apiv1.SecretObjectReference) (client.Object, error)
 
 	GetLocalObjRef(ctx context.Context, from From, localObjRef apiv1.LocalObjectReference) (client.Object, error)
 
 	// GetRoutesForGateway finds the top level xRoutes attached to the provided Gateway
-	GetRoutesForGateway(kctx krt.HandlerContext, ctx context.Context, gw *gwv1.Gateway) (*RoutesForGwResult, error)
+	GetRoutesForGateway(kctx krt.HandlerContext, ctx context.Context, gw *apiv1.Gateway) (*RoutesForGwResult, error)
 	// GetRouteChain resolves backends and delegated routes for a the provided xRoute object
 	GetRouteChain(kctx krt.HandlerContext,
 		ctx context.Context,
 		route ir.Route,
 		hostnames []string,
 		parentRef gwv1.ParentReference) *RouteInfo
+
+	GetFlattenedRoutes(routeInfos []*RouteInfo)
 }
 
 type RoutesForGwResult struct {
@@ -147,7 +153,7 @@ type ListenerResult struct {
 }
 
 type RouteError struct {
-	Route     ir.Route
+	Route     metav1.Object
 	ParentRef apiv1.ParentReference
 	Error     Error
 }
@@ -167,7 +173,7 @@ func WithBackendRefResolvers(
 }
 
 func NewData(
-	routes *krtcollections.RoutesIndex,
+	c client.Client,
 	scheme *runtime.Scheme,
 	opts ...Option,
 ) GatewayQueries {
@@ -176,7 +182,7 @@ func NewData(
 		opt(builtOpts)
 	}
 	return &gatewayQueries{
-		routes:                 routes,
+		client:                 c,
 		scheme:                 scheme,
 		customBackendResolvers: builtOpts.customBackendResolvers,
 	}
@@ -191,14 +197,20 @@ func NewRoutesForGwResult() *RoutesForGwResult {
 }
 
 type gatewayQueries struct {
-	routes     *krtcollections.RoutesIndex
-	secrets    *krtcollections.SecretIndex
-	namespaces krt.Collection[krtcollections.NamespaceMetadata]
-
-	refGrants *krtcollections.RefGrantIndex
-
+	client                 client.Client
+	routes                 *krtcollections.RoutesIndex
 	scheme                 *runtime.Scheme
 	customBackendResolvers []BackendRefResolver
+}
+
+func (r *gatewayQueries) referenceAllowed(ctx context.Context, from metav1.GroupKind, fromns string, to metav1.GroupKind, tons, toname string) (bool, error) {
+	var list apiv1beta1.ReferenceGrantList
+	err := r.client.List(ctx, &list, client.InNamespace(tons), client.MatchingFieldsSelector{Selector: fields.OneTermEqualSelector(query.ReferenceGrantFromField, fromns)})
+	if err != nil {
+		return false, err
+	}
+
+	return ReferenceAllowed(ctx, from, fromns, to, toname, list.Items), nil
 }
 
 func (r *gatewayQueries) ObjToFrom(obj client.Object) From {
@@ -253,13 +265,13 @@ func isParentRefForGw(pRef *apiv1.ParentReference, gw *apiv1.Gateway, defaultNs 
 	return ns == gw.Namespace && string(pRef.Name) == gw.Name
 }
 
-func hostnameIntersect(l *apiv1.Listener, hr *ir.HttpRouteIR) (bool, []string) {
+func hostnameIntersect(l *apiv1.Listener, routeHostnames []string) (bool, []string) {
 	var hostnames []string
-	if l == nil || hr == nil {
+	if l == nil || routeHostnames == nil {
 		return false, hostnames
 	}
 	if l.Hostname == nil {
-		for _, h := range hr.Hostnames {
+		for _, h := range routeHostnames {
 			hostnames = append(hostnames, string(h))
 		}
 		return true, hostnames
@@ -267,11 +279,11 @@ func hostnameIntersect(l *apiv1.Listener, hr *ir.HttpRouteIR) (bool, []string) {
 	var listenerHostname string = string(*l.Hostname)
 
 	if strings.HasPrefix(listenerHostname, "*.") {
-		if hr.Hostnames == nil {
+		if routeHostnames == nil {
 			return true, []string{listenerHostname}
 		}
 
-		for _, hostname := range hr.Hostnames {
+		for _, hostname := range routeHostnames {
 			hrHost := string(hostname)
 			if strings.HasSuffix(hrHost, listenerHostname[1:]) {
 				hostnames = append(hostnames, hrHost)
@@ -279,10 +291,10 @@ func hostnameIntersect(l *apiv1.Listener, hr *ir.HttpRouteIR) (bool, []string) {
 		}
 		return len(hostnames) > 0, hostnames
 	} else {
-		if len(hr.Hostnames) == 0 {
+		if len(routeHostnames) == 0 {
 			return true, []string{listenerHostname}
 		}
-		for _, hostname := range hr.Hostnames {
+		for _, hostname := range routeHostnames {
 			hrHost := string(hostname)
 			if hrHost == listenerHostname {
 				return true, []string{listenerHostname}
@@ -300,20 +312,55 @@ func hostnameIntersect(l *apiv1.Listener, hr *ir.HttpRouteIR) (bool, []string) {
 	return false, nil
 }
 
-func (r *gatewayQueries) GetSecretForRef(kctx krt.HandlerContext, ctx context.Context, fromGk schema.GroupKind, fromns string, secretRef apiv1.SecretObjectReference) (*ir.Secret, error) {
-	f := krtcollections.From{
-		GroupKind: fromGk,
-		Namespace: fromns,
+func (r *gatewayQueries) GetSecretForRef(ctx context.Context, obj From, secretRef apiv1.SecretObjectReference) (client.Object, error) {
+	secretKind := "Secret"
+	secretGroup := ""
+
+	if secretRef.Group != nil {
+		secretGroup = string(*secretRef.Group)
 	}
-	return r.secrets.GetSecret(kctx, f, secretRef)
+	if secretRef.Kind != nil {
+		secretKind = string(*secretRef.Kind)
+	}
+	secretGK := metav1.GroupKind{Group: secretGroup, Kind: secretKind}
+
+	return r.getRef(ctx, obj, string(secretRef.Name), secretRef.Namespace, secretGK)
 }
 
 func (r *gatewayQueries) GetLocalObjRef(ctx context.Context, obj From, localObjRef apiv1.LocalObjectReference) (client.Object, error) {
-	panic("this will be removed")
+	refGroup := ""
+	if localObjRef.Group != "" {
+		refGroup = string(localObjRef.Group)
+	}
+
+	if localObjRef.Kind == "" {
+		return nil, ErrLocalObjRefMissingKind
+	}
+	refKind := localObjRef.Kind
+
+	localObjGK := metav1.GroupKind{Group: refGroup, Kind: string(refKind)}
+	return r.getRef(ctx, obj, string(localObjRef.Name), nil, localObjGK)
 }
 
 func (r *gatewayQueries) GetBackendForRef(ctx context.Context, obj From, backend *apiv1.BackendObjectReference) (client.Object, error) {
-	panic("this will be removed")
+	for _, cr := range r.customBackendResolvers {
+		if o, err, ok := cr.GetBackendForRef(ctx, obj, backend); ok {
+			return o, err
+		}
+	}
+
+	backendKind := "Service"
+	backendGroup := ""
+
+	if backend.Group != nil {
+		backendGroup = string(*backend.Group)
+	}
+	if backend.Kind != nil {
+		backendKind = string(*backend.Kind)
+	}
+	backendGK := metav1.GroupKind{Group: backendGroup, Kind: backendKind}
+
+	return r.getRef(ctx, obj, string(backend.Name), backend.Namespace, backendGK)
 }
 
 // BackendRefResolver allows resolution of backendRefs with a custom format.
@@ -323,21 +370,69 @@ type BackendRefResolver interface {
 	GetBackendForRef(ctx context.Context, obj From, backend *apiv1.BackendObjectReference) (client.Object, error, bool)
 }
 
-func SameNamespace(ns string) func(krt.HandlerContext, string) bool {
-	return func(_ krt.HandlerContext, s string) bool {
+func (r *gatewayQueries) getRef(ctx context.Context, from From, backendName string, backendNS *apiv1.Namespace, backendGK metav1.GroupKind) (client.Object, error) {
+	fromNs := from.Namespace()
+	if fromNs == "" {
+		fromNs = "default"
+	}
+	ns := fromNs
+	if backendNS != nil {
+		ns = string(*backendNS)
+	}
+	if ns != fromNs {
+		fromgk, err := from.GroupKind()
+		if err != nil {
+			return nil, err
+		}
+		// check if we're allowed to reference this namespace
+		allowed, err := r.referenceAllowed(ctx, fromgk, fromNs, backendGK, ns, backendName)
+		if err != nil {
+			return nil, err
+		}
+		if !allowed {
+			return nil, ErrMissingReferenceGrant
+		}
+	}
+
+	gk := schema.GroupKind{Group: backendGK.Group, Kind: backendGK.Kind}
+
+	versions := r.scheme.VersionsForGroupKind(gk)
+	// versions are prioritized by order in the scheme, so we can just take the first one
+	if len(versions) == 0 {
+		return nil, ErrUnknownBackendKind
+	}
+	newObj, err := r.scheme.New(gk.WithVersion(versions[0].Version))
+	if err != nil {
+		return nil, err
+	}
+	ret, ok := newObj.(client.Object)
+	if !ok {
+		return nil, fmt.Errorf("new object is not a client.Object")
+	}
+
+	err = r.client.Get(ctx, types.NamespacedName{Namespace: ns, Name: backendName}, ret)
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
+}
+
+func SameNamespace(ns string) func(string) bool {
+	return func(s string) bool {
 		return ns == s
 	}
 }
 
-func AllNamespace() func(krt.HandlerContext, string) bool {
-	return func(krt.HandlerContext, string) bool {
+func AllNamespace() func(string) bool {
+	return func(s string) bool {
 		return true
 	}
 }
 
-func (r *gatewayQueries) NamespaceSelector(sel labels.Selector) func(krt.HandlerContext, string) bool {
-	return func(kctx krt.HandlerContext, s string) bool {
-		ns := krt.FetchOne(kctx, r.namespaces, krt.FilterKey(s))
+func (r *gatewayQueries) NamespaceSelector(sel labels.Selector) func(string) bool {
+	return func(s string) bool {
+		var ns corev1.Namespace
+		r.client.Get(context.TODO(), types.NamespacedName{Name: s}, &ns)
 		return sel.Matches(labels.Set(ns.Labels))
 	}
 }

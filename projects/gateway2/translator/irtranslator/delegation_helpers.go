@@ -1,4 +1,4 @@
-package httproute
+package irtranslator
 
 import (
 	"path"
@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
@@ -40,10 +39,10 @@ const inheritMatcherAnnotation = "delegation.gateway.solo.io/inherit-parent-matc
 func filterDelegatedChildren(
 	parentRef types.NamespacedName,
 	parentMatch gwv1.HTTPRouteMatch,
-	children []*query.RouteInfo,
-) []*query.RouteInfo {
+	children []*RouteInfo,
+) []*RouteInfo {
 	// Select the child routes that match the parent
-	var selected []*query.RouteInfo
+	var selected []*RouteInfo
 	for _, c := range children {
 		// make a copy; multiple parents can delegate to the same child so we can't modify a shared reference
 		clone := c.Clone()

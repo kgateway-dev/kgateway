@@ -7,7 +7,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
@@ -55,20 +54,24 @@ func NewReportMap() ReportMap {
 	}
 }
 
+func key(obj metav1.Object) types.NamespacedName {
+	return types.NamespacedName{Namespace: obj.GetNamespace(), Name: obj.GetName()}
+}
+
 // Returns a GatewayReport for the provided Gateway, nil if there is not a report present.
 // This is different than the Reporter.Gateway() method, as we need to understand when
 // reports are not generated for a Gateway that has been translated.
 //
 // NOTE: Exported for unit testing, validation_test.go should be refactored to reduce this visibility
 func (r *ReportMap) Gateway(gateway *gwv1.Gateway) *GatewayReport {
-	key := client.ObjectKeyFromObject(gateway)
+	key := key(gateway)
 	return r.Gateways[key]
 }
 
 func (r *ReportMap) newGatewayReport(gateway *gwv1.Gateway) *GatewayReport {
 	gr := &GatewayReport{}
 	gr.observedGeneration = gateway.Generation
-	key := client.ObjectKeyFromObject(gateway)
+	key := key(gateway)
 	r.Gateways[key] = gr
 	return gr
 }
@@ -79,8 +82,8 @@ func (r *ReportMap) newGatewayReport(gateway *gwv1.Gateway) *GatewayReport {
 //
 // * HTTPRoute
 // * TCPRoute
-func (r *ReportMap) route(obj client.Object) *RouteReport {
-	key := client.ObjectKeyFromObject(obj)
+func (r *ReportMap) route(obj metav1.Object) *RouteReport {
+	key := key(obj)
 
 	switch obj.(type) {
 	case *gwv1.HTTPRoute:
@@ -93,12 +96,12 @@ func (r *ReportMap) route(obj client.Object) *RouteReport {
 	}
 }
 
-func (r *ReportMap) newRouteReport(obj client.Object) *RouteReport {
+func (r *ReportMap) newRouteReport(obj metav1.Object) *RouteReport {
 	rr := &RouteReport{
 		observedGeneration: obj.GetGeneration(),
 	}
 
-	key := client.ObjectKeyFromObject(obj)
+	key := key(obj)
 
 	switch obj.(type) {
 	case *gwv1.HTTPRoute:
@@ -114,22 +117,26 @@ func (r *ReportMap) newRouteReport(obj client.Object) *RouteReport {
 }
 
 func (g *GatewayReport) Listener(listener *gwv1.Listener) ListenerReporter {
-	return g.listener(listener)
+	return g.listener(string(listener.Name))
 }
 
-func (g *GatewayReport) listener(listener *gwv1.Listener) *ListenerReport {
+func (g *GatewayReport) ListenerName(listenerName string) ListenerReporter {
+	return g.listener(listenerName)
+}
+
+func (g *GatewayReport) listener(listenerName string) *ListenerReport {
 	if g.listeners == nil {
 		g.listeners = make(map[string]*ListenerReport)
 	}
 
 	// Return the ListenerReport if it already exists
-	if lr, exists := g.listeners[string(listener.Name)]; exists {
+	if lr, exists := g.listeners[string(listenerName)]; exists {
 		return lr
 	}
 
 	// Create and add the new ListenerReport if it doesn't exist
-	lr := NewListenerReport(string(listener.Name))
-	g.listeners[string(listener.Name)] = lr
+	lr := NewListenerReport(string(listenerName))
+	g.listeners[string(listenerName)] = lr
 	return lr
 }
 
@@ -186,7 +193,7 @@ func (r *reporter) Gateway(gateway *gwv1.Gateway) GatewayReporter {
 	return gr
 }
 
-func (r *reporter) Route(obj client.Object) RouteReporter {
+func (r *reporter) Route(obj metav1.Object) RouteReporter {
 	rr := r.report.route(obj)
 	if rr == nil {
 		rr = r.report.newRouteReport(obj)
@@ -269,11 +276,12 @@ func NewReporter(reportMap *ReportMap) Reporter {
 
 type Reporter interface {
 	Gateway(gateway *gwv1.Gateway) GatewayReporter
-	Route(obj client.Object) RouteReporter
+	Route(obj metav1.Object) RouteReporter
 }
 
 type GatewayReporter interface {
 	Listener(listener *gwv1.Listener) ListenerReporter
+	ListenerName(listenerName string) ListenerReporter
 	SetCondition(condition GatewayCondition)
 }
 

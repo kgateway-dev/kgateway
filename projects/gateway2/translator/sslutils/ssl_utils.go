@@ -10,9 +10,8 @@ import (
 )
 
 var (
-	InvalidTlsSecretError = func(secret *corev1.Secret, err error) error {
-		errorString := fmt.Sprintf("%v.%v is not a valid TLS secret", secret.Namespace, secret.Name)
-		return eris.Wrapf(err, errorString)
+	InvalidTlsSecretError = func(n, ns string, err error) error {
+		return fmt.Errorf("%v.%v is not a valid TLS secret: %w", ns, n, err)
 	}
 
 	NoCertificateFoundError = eris.New("no certificate information found")
@@ -20,14 +19,17 @@ var (
 
 // ValidateTlsSecret and return a cleaned cert
 func ValidateTlsSecret(sslSecret *corev1.Secret) (cleanedCertChain string, err error) {
+	return ValidateTlsSecretData(sslSecret.Name, sslSecret.Namespace, sslSecret.Data)
+}
+func ValidateTlsSecretData(n, ns string, sslSecretData map[string][]byte) (cleanedCertChain string, err error) {
 
-	certChain := string(sslSecret.Data[corev1.TLSCertKey])
-	privateKey := string(sslSecret.Data[corev1.TLSPrivateKeyKey])
-	rootCa := string(sslSecret.Data[corev1.ServiceAccountRootCAKey])
+	certChain := string(sslSecretData[corev1.TLSCertKey])
+	privateKey := string(sslSecretData[corev1.TLSPrivateKeyKey])
+	rootCa := string(sslSecretData[corev1.ServiceAccountRootCAKey])
 
 	cleanedCertChain, err = cleanedSslKeyPair(certChain, privateKey, rootCa)
 	if err != nil {
-		err = InvalidTlsSecretError(sslSecret, err)
+		err = InvalidTlsSecretError(n, ns, err)
 	}
 	return cleanedCertChain, err
 }

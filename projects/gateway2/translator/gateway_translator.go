@@ -5,17 +5,17 @@ import (
 	"fmt"
 
 	"github.com/solo-io/gloo/pkg/utils/statsutils"
+	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	"github.com/solo-io/go-utils/contextutils"
+	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/listener"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -25,11 +25,12 @@ type K8sGwTranslator interface {
 	// It returns an instance of the Gloo Edge Proxy resource, that should configure a target Gloo Edge Proxy workload.
 	// A null return value indicates the K8s Gateway resource failed to translate into a Gloo Edge Proxy. The error will be reported on the provided reporter.
 	TranslateProxy(
+		kctx krt.HandlerContext,
 		ctx context.Context,
-		gateway *gwv1.Gateway,
+		gateway *ir.Gateway,
 		writeNamespace string,
 		reporter reports.Reporter,
-	) *v1.Proxy
+	) *ir.GatewayIR
 }
 
 func NewTranslator(queries query.GatewayQueries, pluginRegistry registry.PluginRegistry) K8sGwTranslator {
@@ -45,27 +46,28 @@ type translator struct {
 }
 
 func (t *translator) TranslateProxy(
+	kctx krt.HandlerContext,
 	ctx context.Context,
-	gateway *gwv1.Gateway,
+	gateway *ir.Gateway,
 	writeNamespace string,
 	reporter reports.Reporter,
-) *v1.Proxy {
+) *ir.GatewayIR {
 	stopwatch := statsutils.NewTranslatorStopWatch("TranslateProxy")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
 	ctx = contextutils.WithLogger(ctx, "k8s-gateway-translator")
 	logger := contextutils.LoggerFrom(ctx)
-	routesForGw, err := t.queries.GetRoutesForGateway(ctx, gateway)
+	routesForGw, err := t.queries.GetRoutesForGateway(kctx, ctx, gateway.Obj)
 	if err != nil {
-		logger.Errorf("failed to get routes for gateway %s: %v", client.ObjectKeyFromObject(gateway), err)
+		logger.Errorf("failed to get routes for gateway %.%ss: %v", gateway.Namespace, gateway.Name, err)
 		// TODO: decide how/if to report this error on Gateway
 		// reporter.Gateway(gateway).Err(err.Error())
 		return nil
 	}
 
 	for _, rErr := range routesForGw.RouteErrors {
-		reporter.Route(rErr.Route).ParentRef(&rErr.ParentRef).SetCondition(reports.RouteCondition{
+		reporter.Route(rErr.Route.GetSourceObject()).ParentRef(&rErr.ParentRef).SetCondition(reports.RouteCondition{
 			Type:   gwv1.RouteConditionAccepted,
 			Status: metav1.ConditionFalse,
 			Reason: rErr.Error.Reason,
@@ -73,16 +75,17 @@ func (t *translator) TranslateProxy(
 		})
 	}
 
-	for _, listener := range gateway.Spec.Listeners {
+	for _, listener := range gateway.Listeners {
 		availRoutes := 0
 		if res, ok := routesForGw.ListenerResults[string(listener.Name)]; ok {
 			// TODO we've never checked if the ListenerResult has an error.. is it already on RouteErrors?
 			availRoutes = len(res.Routes)
 		}
-		reporter.Gateway(gateway).Listener(&listener).SetAttachedRoutes(uint(availRoutes))
+		reporter.Gateway(gateway.Obj).ListenerName(string(listener.Name)).SetAttachedRoutes(uint(availRoutes))
 	}
 
 	listeners := listener.TranslateListeners(
+		kctx,
 		ctx,
 		t.queries,
 		t.pluginRegistry,
@@ -91,9 +94,10 @@ func (t *translator) TranslateProxy(
 		reporter,
 	)
 
-	return &v1.Proxy{
-		Metadata:  proxyMetadata(gateway, writeNamespace),
-		Listeners: listeners,
+	panic("TODO: handle gw policy attachment")
+	return &ir.GatewayIR{
+		SourceObject: gateway.Obj,
+		Listeners:    listeners,
 	}
 }
 

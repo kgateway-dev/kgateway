@@ -22,19 +22,22 @@ func BuildIndexedFakeClient(objs []client.Object, funcs ...IndexIteratorFunc) cl
 }
 
 func BuildGatewayQueriesWithClient(fakeClient client.Client, opts ...query.Option) query.GatewayQueries {
-	return query.NewData(fakeClient, schemes.GatewayScheme(), opts...)
+	panic("TODO: fixme")
+	//	return query.NewData(fakeClient, schemes.GatewayScheme(), opts...)
 }
 
 func BuildGatewayQueries(
 	objs []client.Object,
 ) query.GatewayQueries {
+	panic("TODO: fixme")
 	builder := fake.NewClientBuilder().WithScheme(schemes.GatewayScheme())
 	query.IterateIndices(func(o client.Object, f string, fun client.IndexerFunc) error {
 		builder.WithIndex(o, f, fun)
 		return nil
 	})
 
-	fakeClient := builder.WithObjects(objs...).Build()
+	//fakeClient := builder.WithObjects(objs...).Build()
 
-	return query.NewData(fakeClient, schemes.GatewayScheme())
+	//return query.NewData(fakeClient, schemes.GatewayScheme())
+	return nil
 }

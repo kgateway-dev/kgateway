@@ -57,9 +57,10 @@ func NewK8sGatewayExtensions(
 	_ context.Context,
 	params K8sGatewayExtensionsFactoryParameters,
 ) (K8sGatewayExtensions, error) {
+	panic("TODO: fixme")
 	queries := query.NewData(
-		params.Mgr.GetClient(),
-		params.Mgr.GetScheme(),
+		nil, //	params.Mgr.GetClient(),
+		nil, //params.Mgr.GetScheme(),
 	)
 
 	return &k8sGatewayExtensions{

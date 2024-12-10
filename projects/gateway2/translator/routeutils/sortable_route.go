@@ -1,15 +1,15 @@
 package routeutils
 
 import (
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/gateway2/ir"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 type SortableRoute struct {
-	GlooRoute   *v1.Route
-	RouteObject client.Object
+	Route       ir.HttpRouteRuleMatchIR
+	RouteObject metav1.Object
 	Idx         int
 }
 
@@ -19,19 +19,19 @@ func (a SortableRoutes) Len() int           { return len(a) }
 func (a SortableRoutes) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a SortableRoutes) Less(i, j int) bool { return !routeWrapperLessFunc(a[i], a[j]) }
 
-func (a SortableRoutes) ToRoutes() []*v1.Route {
-	var routes []*v1.Route
+func (a SortableRoutes) ToRoutes() []ir.HttpRouteRuleMatchIR {
+	routes := make([]ir.HttpRouteRuleMatchIR, 0, len(a))
 	for _, route := range a {
-		routes = append(routes, route.GlooRoute)
+		routes = append(routes, route.Route)
 	}
 	return routes
 }
 
-func ToSortable(obj client.Object, routes []*v1.Route) SortableRoutes {
+func ToSortable(obj metav1.Object, routes []ir.HttpRouteRuleMatchIR) SortableRoutes {
 	var wrappers SortableRoutes
-	for i, glooRoute := range routes {
+	for i, route := range routes {
 		wrappers = append(wrappers, &SortableRoute{
-			GlooRoute:   glooRoute,
+			Route:       route,
 			RouteObject: obj,
 			Idx:         i,
 		})
@@ -39,62 +39,88 @@ func ToSortable(obj client.Object, routes []*v1.Route) SortableRoutes {
 	return wrappers
 }
 
+func ParsePath(path *gwv1.HTTPPathMatch) (gwv1.PathMatchType, string) {
+	pathType := gwv1.PathMatchPathPrefix
+	pathValue := "/"
+	if path != nil && path.Type != nil {
+		pathType = *path.Type
+	}
+	if path != nil && path.Value != nil {
+		pathValue = *path.Value
+	}
+	return pathType, pathValue
+}
+
+func lessPath(a, b *gwv1.HTTPPathMatch) bool {
+	atype, avalue := ParsePath(a)
+	btype, bvalue := ParsePath(b)
+
+	switch atype {
+	case gwv1.PathMatchPathPrefix:
+		// If they are both prefix, then check length
+		switch btype {
+		case gwv1.PathMatchPathPrefix:
+			if len(avalue) != len(bvalue) {
+				return len(avalue) < len(bvalue)
+			}
+		// Exact and Regex always takes precedence over prefix
+		case gwv1.PathMatchExact, gwv1.PathMatchRegularExpression:
+			return true
+		}
+
+	case gwv1.PathMatchExact:
+		switch btype {
+		case gwv1.PathMatchExact:
+			if len(avalue) != len(bvalue) {
+				return len(avalue) < len(bvalue)
+			}
+
+		// Exact always takes precedence over regex and prefix
+		case gwv1.PathMatchRegularExpression, gwv1.PathMatchPathPrefix:
+			return false
+		}
+
+	case gwv1.PathMatchRegularExpression:
+		switch btype {
+		// Regex always takes precedence over prefix
+		case gwv1.PathMatchPathPrefix:
+			return false
+		// Exact always takes precedence over regex
+		case gwv1.PathMatchExact:
+			return true
+		case gwv1.PathMatchRegularExpression:
+			// Don't prioritize one regex over another based on their lengths
+			// as it doesn't make sense to do so and would be quite arbitrary,
+			// so prioritize on the remaining criteria evaluated below instead.
+			return false
+		}
+	}
+	// TODO: log dpanic here, this should never happen
+	return false
+}
+
 // Return true if A is lower priority than B
 // https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io%2fv1.HTTPRouteRule
 func routeWrapperLessFunc(wrapperA, wrapperB *SortableRoute) bool {
 	// We know there's always a single matcher because of the route translator below
-	matchA, matchB := wrapperA.GlooRoute.GetMatchers()[0], wrapperB.GlooRoute.GetMatchers()[0]
-	switch typedPathA := matchA.GetPathSpecifier().(type) {
-	case *matchers.Matcher_Prefix:
-		// If they are both prefix, then check length
-		switch typedPathB := matchB.GetPathSpecifier().(type) {
-		case *matchers.Matcher_Prefix:
-			if len(typedPathA.Prefix) != len(typedPathB.Prefix) {
-				return len(typedPathA.Prefix) < len(typedPathB.Prefix)
-			}
-		// Exact and Regex always takes precedence over prefix
-		case *matchers.Matcher_Exact, *matchers.Matcher_Regex:
-			return true
-		}
+	matchA, matchB := wrapperA.Route.Match, wrapperB.Route.Match
 
-	case *matchers.Matcher_Exact:
-		switch typedPathB := matchB.GetPathSpecifier().(type) {
-		case *matchers.Matcher_Exact:
-			if len(typedPathA.Exact) != len(typedPathB.Exact) {
-				return len(typedPathA.Exact) < len(typedPathB.Exact)
-			}
-
-		// Exact always takes precedence over regex and prefix
-		case *matchers.Matcher_Regex, *matchers.Matcher_Prefix:
-			return false
-		}
-
-	case *matchers.Matcher_Regex:
-		switch matchB.GetPathSpecifier().(type) {
-		// Regex always takes precedence over prefix
-		case *matchers.Matcher_Prefix:
-			return false
-		// Exact always takes precedence over regex
-		case *matchers.Matcher_Exact:
-			return true
-		case *matchers.Matcher_Regex:
-			// Don't prioritize one regex over another based on their lengths
-			// as it doesn't make sense to do so and would be quite arbitrary,
-			// so prioritize on the remaining criteria evaluated below instead.
-		}
+	pathCompare := lessPath(matchA.Path, matchB.Path)
+	if pathCompare {
+		return true
 	}
 
 	// If this matcher doesn't have a method match, then it's lower priority
-	if len(matchA.GetMethods()) != len(matchB.GetMethods()) {
-		return len(matchA.GetMethods()) < len(matchB.GetMethods())
+	if (matchA.Method == nil) != (matchB.Method == nil) {
+		return matchA.Method != nil
 	}
 
-	if len(matchA.GetHeaders()) != len(matchB.GetHeaders()) {
-		return len(matchA.GetHeaders()) < len(matchB.GetHeaders())
+	if len(matchA.Headers) != len(matchB.Headers) {
+		return len(matchA.Headers) < len(matchB.Headers)
 	}
 
-	if len(matchA.GetQueryParameters()) != len(matchB.GetQueryParameters()) {
-		return len(matchA.GetQueryParameters()) < len(matchB.GetQueryParameters())
+	if len(matchA.QueryParams) != len(matchB.QueryParams) {
+		return len(matchA.QueryParams) < len(matchB.QueryParams)
 	}
 
 	if !wrapperA.RouteObject.GetCreationTimestamp().Time.Equal(wrapperB.RouteObject.GetCreationTimestamp().Time) {
