@@ -1,24 +1,25 @@
 package proxy_syncer
 
 import (
+	"context"
 	"fmt"
-	"hash/fnv"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	"github.com/solo-io/gloo/projects/gateway2/endpoints"
+	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
+	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"go.uber.org/zap"
-	"istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pkg/kube/krt"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 type EndpointResources struct {
 	Endpoints        envoycache.Resource
 	EndpointsVersion uint64
-	UpstreamRef      types.NamespacedName
+	UpstreamRef      ir.ObjectSource
 }
 
 func (c EndpointResources) ResourceName() string {
@@ -106,15 +107,34 @@ func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerConte
 
 func NewPerClientEnvoyEndpoints(logger *zap.Logger, dbg *krt.DebugHandler, uccs krt.Collection[krtcollections.UniqlyConnectedClient],
 	glooEndpoints krt.Collection[krtcollections.EndpointsForUpstream],
-	destinationRulesIndex DestinationRuleIndex,
+	plugins []extensionsplug.EndpointPlugin,
 ) PerClientEnvoyEndpoints {
 	clas := krt.NewManyCollection(glooEndpoints, func(kctx krt.HandlerContext, ep krtcollections.EndpointsForUpstream) []UccWithEndpoints {
 		uccs := krt.Fetch(kctx, uccs)
 		uccWithEndpointsRet := make([]UccWithEndpoints, 0, len(uccs))
 		for _, ucc := range uccs {
-			destrule := destinationRulesIndex.FetchDestRulesFor(kctx, ucc.Namespace, ep.Hostname, ucc.Labels)
-			uccWithEp := PrioritizeEndpoints(logger, destrule, ep, ucc)
-			uccWithEndpointsRet = append(uccWithEndpointsRet, uccWithEp)
+
+			// check if we have a plugin to do it
+			cla, additionalHash := proccessWithPlugins(plugins, kctx, context.TODO(), ucc, ep)
+			if cla != nil {
+				uccWithEp := UccWithEndpoints{
+					Client:        ucc,
+					Endpoints:     resource.NewEnvoyResource(cla),
+					EndpointsHash: ep.LbEpsEqualityHash ^ additionalHash,
+					endpointsName: ep.ResourceName(),
+				}
+
+				uccWithEndpointsRet = append(uccWithEndpointsRet, uccWithEp)
+			} else {
+				cla := endpoints.PrioritizeEndpoints(logger, nil, ep, ucc)
+				uccWithEp := UccWithEndpoints{
+					Client:        ucc,
+					Endpoints:     resource.NewEnvoyResource(cla),
+					EndpointsHash: ep.LbEpsEqualityHash,
+					endpointsName: ep.ResourceName(),
+				}
+				uccWithEndpointsRet = append(uccWithEndpointsRet, uccWithEp)
+			}
 		}
 		return uccWithEndpointsRet
 	}, krt.WithName("PerClientEnvoyEndpoints"), krt.WithDebugging(dbg))
@@ -128,39 +148,12 @@ func NewPerClientEnvoyEndpoints(logger *zap.Logger, dbg *krt.DebugHandler, uccs 
 	}
 }
 
-func PrioritizeEndpoints(logger *zap.Logger, destrule *DestinationRuleWrapper, ep krtcollections.EndpointsForUpstream, ucc krtcollections.UniqlyConnectedClient) UccWithEndpoints {
-	var additionalHash uint64
-	var priorityInfo *PriorityInfo
-
-	if destrule != nil {
-		trafficPolicy := getTrafficPolicy(destrule, ep.Port)
-		localityLb := getLocalityLbSetting(trafficPolicy)
-		if localityLb != nil {
-			priorityInfo = getPriorityInfoFromDestrule(localityLb)
-			hasher := fnv.New64()
-			hasher.Write([]byte(destrule.UID))
-			hasher.Write([]byte(fmt.Sprintf("%v", destrule.Generation)))
-			additionalHash = hasher.Sum64()
+func proccessWithPlugins(plugins []extensionsplug.EndpointPlugin, kctx krt.HandlerContext, ctx context.Context, ucc krtcollections.UniqlyConnectedClient, in krtcollections.EndpointsForUpstream) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64) {
+	for _, processEnddpoints := range plugins {
+		cla, additionalHash := processEnddpoints(kctx, context.TODO(), ucc, in)
+		if cla != nil {
+			return cla, additionalHash
 		}
 	}
-	lbInfo := LoadBalancingInfo{
-		PodLabels:    ucc.Labels,
-		PodLocality:  ucc.Locality,
-		PriorityInfo: priorityInfo,
-	}
-
-	cla := prioritizeWithLbInfo(logger, ep, lbInfo)
-	return UccWithEndpoints{
-		Client:        ucc,
-		Endpoints:     resource.NewEnvoyResource(cla),
-		EndpointsHash: ep.LbEpsEqualityHash ^ additionalHash,
-		endpointsName: ep.ResourceName(),
-	}
-}
-
-func getPriorityInfoFromDestrule(localityLb *v1alpha3.LocalityLoadBalancerSetting) *PriorityInfo {
-	return &PriorityInfo{
-		FailoverPriority: NewPriorities(localityLb.GetFailoverPriority()),
-		Failover:         localityLb.GetFailover(),
-	}
+	return nil, 0
 }

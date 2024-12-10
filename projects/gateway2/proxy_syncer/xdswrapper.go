@@ -8,11 +8,8 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/envutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"istio.io/istio/pkg/kube/krt"
 
-	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
-	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -27,11 +24,8 @@ var (
 )
 
 type XdsSnapWrapper struct {
-	snap            *xds.EnvoySnapshot
-	proxyKey        string
-	proxyWithReport translatorutils.ProxyWithReports
-	pluginRegistry  registry.PluginRegistry
-	fullReports     reporter.ResourceReports
+	snap     *xds.EnvoySnapshot
+	proxyKey string
 }
 
 func (p XdsSnapWrapper) WithSnapshot(snap *xds.EnvoySnapshot) XdsSnapWrapper {
@@ -55,17 +49,11 @@ func (p XdsSnapWrapper) MarshalJSON() (out []byte, err error) {
 	if !UseDetailedUnmarshalling {
 		// use a new struct to prevent infinite recursion
 		return json.Marshal(struct {
-			snap            *xds.EnvoySnapshot
-			proxyKey        string
-			proxyWithReport translatorutils.ProxyWithReports
-			pluginRegistry  registry.PluginRegistry
-			fullReports     reporter.ResourceReports
+			snap     *xds.EnvoySnapshot
+			proxyKey string
 		}{
-			snap:            p.snap,
-			proxyKey:        p.proxyKey,
-			proxyWithReport: p.proxyWithReport,
-			pluginRegistry:  p.pluginRegistry,
-			fullReports:     p.fullReports,
+			snap:     p.snap,
+			proxyKey: p.proxyKey,
 		})
 	}
 

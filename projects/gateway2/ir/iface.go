@@ -9,7 +9,6 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	anypb "google.golang.org/protobuf/types/known/anypb"
-	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -123,13 +122,4 @@ var (
 type PolicyRun interface {
 	NewGatewayTranslationPass(ctx context.Context, tctx GwTranslationCtx) ProxyTranslationPass
 	ProcessUpstream(ctx context.Context, in Upstream, out *envoy_config_cluster_v3.Cluster) error
-}
-
-type PolicyImpl struct {
-	Name                      string
-	NewGatewayTranslationPass func(ctx context.Context, tctx GwTranslationCtx) ProxyTranslationPass
-	ProcessUpstream           func(ctx context.Context, pol PolicyIR, in Upstream, out *envoy_config_cluster_v3.Cluster)
-
-	Policies      krt.Collection[PolicyWrapper]
-	PoliciesFetch func(n, ns string) PolicyIR
 }

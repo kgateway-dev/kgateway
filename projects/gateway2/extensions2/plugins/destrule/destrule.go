@@ -1,4 +1,4 @@
-package proxy_syncer
+package destrule
 
 import (
 	"fmt"

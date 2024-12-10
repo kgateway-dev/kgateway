@@ -3,9 +3,7 @@ package proxy_syncer
 import (
 	"fmt"
 
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
-	ggv2utils "github.com/solo-io/gloo/projects/gateway2/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"go.uber.org/zap"
@@ -13,7 +11,7 @@ import (
 )
 
 func snapshotPerClient(l *zap.Logger, dbg *krt.DebugHandler, uccCol krt.Collection[krtcollections.UniqlyConnectedClient],
-	mostXdsSnapshots krt.Collection[XdsSnapWrapper], endpoints PerClientEnvoyEndpoints, clusters PerClientEnvoyClusters) krt.Collection[XdsSnapWrapper] {
+	mostXdsSnapshots krt.Collection[GatewayXdsResources], endpoints PerClientEnvoyEndpoints, clusters PerClientEnvoyClusters) krt.Collection[XdsSnapWrapper] {
 
 	xdsSnapshotsForUcc := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc krtcollections.UniqlyConnectedClient) *XdsSnapWrapper {
 		maybeMostlySnap := krt.FetchOne(kctx, mostXdsSnapshots, krt.FilterKey(ucc.Role))
@@ -21,15 +19,16 @@ func snapshotPerClient(l *zap.Logger, dbg *krt.DebugHandler, uccCol krt.Collecti
 			l.Debug("snapshotPerClient - snapshot missing", zap.String("proxyKey", ucc.Role))
 			return nil
 		}
-		genericSnap := maybeMostlySnap.snap
 		clustersForUcc := clusters.FetchClustersForClient(kctx, ucc)
 
-		clustersProto := make([]envoycache.Resource, 0, len(clustersForUcc))
+		clustersProto := make([]envoycache.Resource, 0, len(clustersForUcc)+len(maybeMostlySnap.Clusters))
 		var clustersHash uint64
-		for _, ep := range clustersForUcc {
-			clustersProto = append(clustersProto, ep.Cluster)
-			clustersHash ^= ep.ClusterVersion
+		for _, c := range clustersForUcc {
+			clustersProto = append(clustersProto, c.Cluster)
+			clustersHash ^= c.ClusterVersion
 		}
+		clustersProto = append(clustersProto, maybeMostlySnap.Clusters...)
+		clustersHash ^= maybeMostlySnap.ClustersHash
 		clustersVersion := fmt.Sprintf("%d", clustersHash)
 
 		endpointsForUcc := endpoints.FetchEndpointsForClient(kctx, ucc)
@@ -40,40 +39,25 @@ func snapshotPerClient(l *zap.Logger, dbg *krt.DebugHandler, uccCol krt.Collecti
 			endpointsHash ^= ep.EndpointsHash
 		}
 
-		mostlySnap := *maybeMostlySnap
+		snap := XdsSnapWrapper{}
 
 		clusterResources := envoycache.NewResources(clustersVersion, clustersProto)
-		// add missing generated resource from GeneratedResources plugins.
-		// To be able to do individual upstream translation, We need to redo the GeneratedResources,
-		// so they don't take as input the entire xds snapshot. the main offender is the tunneling plugin.
-		//
-		// for now, a manual audit showed that these only add clusters and listeners. As we don't touch the listeners,
-		// we just need to account for potentially missing clusters.
-		for name, cluster := range genericSnap.Clusters.Items {
-			// only copy clusters that don't exist. as we do cluster translation per client,
-			// our clusters might be slightly different.
-			if _, ok := clusterResources.Items[name]; !ok {
-				clusterResources.Items[name] = cluster
-				clustersHash ^= ggv2utils.HashProto(cluster.ResourceProto().(*envoy_config_cluster_v3.Cluster))
-			}
-		}
-		clusterResources.Version = fmt.Sprintf("%d", clustersHash)
 
-		mostlySnap.proxyKey = ucc.ResourceName()
-		mostlySnap.snap = &xds.EnvoySnapshot{
+		snap.proxyKey = ucc.ResourceName()
+		snap.snap = &xds.EnvoySnapshot{
 			Clusters:  clusterResources,
 			Endpoints: envoycache.NewResources(fmt.Sprintf("%s-%d", clustersVersion, endpointsHash), endpointsProto),
-			Routes:    genericSnap.Routes,
-			Listeners: genericSnap.Listeners,
+			Routes:    maybeMostlySnap.Routes,
+			Listeners: maybeMostlySnap.Listeners,
 		}
-		l.Debug("snapshotPerClient", zap.String("proxyKey", mostlySnap.proxyKey),
-			zap.Stringer("Listeners", resourcesStringer(mostlySnap.snap.Listeners)),
-			zap.Stringer("Clusters", resourcesStringer(mostlySnap.snap.Clusters)),
-			zap.Stringer("Routes", resourcesStringer(mostlySnap.snap.Routes)),
-			zap.Stringer("Endpoints", resourcesStringer(mostlySnap.snap.Endpoints)),
+		l.Debug("snapshotPerClient", zap.String("proxyKey", snap.proxyKey),
+			zap.Stringer("Listeners", resourcesStringer(maybeMostlySnap.Listeners)),
+			zap.Stringer("Clusters", resourcesStringer(snap.snap.Clusters)),
+			zap.Stringer("Routes", resourcesStringer(maybeMostlySnap.Routes)),
+			zap.Stringer("Endpoints", resourcesStringer(snap.snap.Endpoints)),
 		)
 
-		return &mostlySnap
+		return &snap
 	}, krt.WithDebugging(dbg), krt.WithName("PerClientXdsSnapshots"))
 	return xdsSnapshotsForUcc
 }

@@ -29,7 +29,6 @@ import (
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
-	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	httplisoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/httplisteneroptions/query"
 	lisoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/listeneroptions/query"
@@ -56,7 +55,6 @@ type GatewayConfig struct {
 	IstioIntegrationEnabled bool
 	Aws                     *deployer.AwsInfo
 
-	Extensions extensions.K8sGatewayExtensions
 	// CRDs defines the set of discovered Gateway API CRDs
 	CRDs sets.Set[string]
 }

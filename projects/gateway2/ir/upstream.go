@@ -1,8 +1,10 @@
 package ir
 
 import (
+	"encoding/json"
 	"fmt"
 
+	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -92,6 +94,24 @@ func (c Secret) ResourceName() string {
 
 func (c Secret) Equals(in Secret) bool {
 	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj)
+}
+
+var _ krt.ResourceNamer = Secret{}
+var _ krt.Equaler[Secret] = Secret{}
+var _ json.Marshaler = Secret{}
+
+func (l Secret) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Name      string
+		Namespace string
+		Kind      string
+		Data      string
+	}{
+		Name:      l.Name,
+		Namespace: l.Namespace,
+		Kind:      fmt.Sprintf("%T", l.Obj),
+		Data:      "[REDACTED]",
+	})
 }
 
 type Listener struct {

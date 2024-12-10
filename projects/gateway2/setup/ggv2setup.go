@@ -14,7 +14,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/controller"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
-	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
+	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
@@ -112,7 +112,7 @@ func StartGGv2WithConfig(ctx context.Context,
 
 	logger.Info("creating krt collections")
 	augmentedPods := krtcollections.NewPodsCollection(ctx, kubeClient, setupOpts.KrtDebugger)
-	setting := proxy_syncer.SetupCollectionDynamic[glookubev1.Settings](
+	setting := krtutil.SetupCollectionDynamic[glookubev1.Settings](
 		ctx,
 		kubeClient,
 		settingsGVR,

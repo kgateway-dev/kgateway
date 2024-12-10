@@ -10,6 +10,7 @@ import (
 	glooschemes "github.com/solo-io/gloo/pkg/schemes"
 	"github.com/solo-io/go-utils/contextutils"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -18,14 +19,15 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
-	gatewaykubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	ext "github.com/solo-io/gloo/projects/gateway2/extensions"
+	"github.com/solo-io/gloo/projects/gateway2/extensions2/common"
+	"github.com/solo-io/gloo/projects/gateway2/extensions2/registry"
+	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-	extauthkubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1/kube/apis/enterprise.gloo.solo.io/v1"
 	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
@@ -33,7 +35,9 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	uzap "go.uber.org/zap"
 	istiokube "istio.io/istio/pkg/kube"
+	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -132,39 +136,50 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	// TODO: replace this with something that checks that we have xds snapshot ready (or that we don't need one).
 	mgr.AddReadyzCheck("ready-ping", healthz.Ping)
 
-	virtualHostOptionCollection := proxy_syncer.SetupCollectionDynamic[gatewaykubev1.VirtualHostOption](
-		ctx,
-		cfg.Client,
-		gatewaykubev1.SchemeGroupVersion.WithResource("virtualhostoptions"),
-		krt.WithName("VirtualHostOption"))
-
-	routeOptionCollection := proxy_syncer.SetupCollectionDynamic[gatewaykubev1.RouteOption](
-		ctx,
-		cfg.Client,
-		gatewaykubev1.SchemeGroupVersion.WithResource("routeoptions"),
-		krt.WithName("RouteOption"))
-
-	authConfigCollection := proxy_syncer.SetupCollectionDynamic[extauthkubev1.AuthConfig](
-		ctx,
-		cfg.Client,
-		gatewaykubev1.SchemeGroupVersion.WithResource("authconfigs"),
-		krt.WithName("AuthConfig"))
+	//	virtualHostOptionCollection := proxy_syncer.SetupCollectionDynamic[gatewaykubev1.VirtualHostOption](
+	//		ctx,
+	//		cfg.Client,
+	//		gatewaykubev1.SchemeGroupVersion.WithResource("virtualhostoptions"),
+	//		krt.WithName("VirtualHostOption"))
+	//	routeOptionCollection := proxy_syncer.SetupCollectionDynamic[gatewaykubev1.RouteOption](
+	//		ctx,
+	//		cfg.Client,
+	//		gatewaykubev1.SchemeGroupVersion.WithResource("routeoptions"),
+	//		krt.WithName("RouteOption"))
+	//	authConfigCollection := proxy_syncer.SetupCollectionDynamic[extauthkubev1.AuthConfig](
+	//		ctx,
+	//		cfg.Client,
+	//		gatewaykubev1.SchemeGroupVersion.WithResource("authconfigs"),
+	//		krt.WithName("AuthConfig"))
 
 	inputChannels := proxy_syncer.NewGatewayInputChannels()
 
 	setupLog.Info("initializing k8sgateway extensions")
-	k8sGwExtensions, err := cfg.ExtensionsFactory(ctx, ext.K8sGatewayExtensionsFactoryParameters{
-		Mgr:         mgr,
-		IstioClient: cfg.Client,
-		CoreCollections: ext.CoreCollections{
-			AugmentedPods:               cfg.AugmentedPods,
-			RouteOptionCollection:       routeOptionCollection,
-			VirtualHostOptionCollection: virtualHostOptionCollection,
-			AuthConfigCollection:        authConfigCollection,
-		},
-		StatusReporter: cfg.KubeGwStatusReporter,
-		KickXds:        inputChannels.Kick,
-	})
+	secretClient := kclient.New[*corev1.Secret](cfg.Client)
+	k8sSecretsRaw := krt.WrapClient(secretClient, krt.WithName("Secrets") /* no debug here - we don't want raw secrets printed*/)
+	k8sSecrets := krt.NewCollection(k8sSecretsRaw, func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
+		res := ir.Secret{
+			ObjectSource: ir.ObjectSource{
+				Group:     "",
+				Kind:      "Secret",
+				Namespace: i.Namespace,
+				Name:      i.Name,
+			},
+			Obj:  i,
+			Data: i.Data,
+		}
+		return &res
+	}, krt.WithDebugging(cfg.Debugger))
+	secrets := map[schema.GroupKind]krt.Collection[ir.Secret]{
+		schema.GroupKind{Group: "", Kind: "Secret"}: k8sSecrets,
+	}
+	commoncol := common.CommonCollections{
+		Client:  cfg.Client,
+		KrtDbg:  cfg.Debugger,
+		Secrets: krtcollections.NewSecretIndex(secrets),
+	}
+	k8sGwExtensions := registry.AllPlugins(ctx, commoncol)
+
 	if err != nil {
 		setupLog.Error(err, "unable to create k8s gw extensions")
 		return nil, err
@@ -197,11 +212,10 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	}
 
 	return &ControllerBuilder{
-		proxySyncer:     proxySyncer,
-		inputChannels:   inputChannels,
-		cfg:             cfg,
-		k8sGwExtensions: k8sGwExtensions,
-		mgr:             mgr,
+		proxySyncer:   proxySyncer,
+		inputChannels: inputChannels,
+		cfg:           cfg,
+		mgr:           mgr,
 	}, nil
 }
 
@@ -256,7 +270,6 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 		IstioIntegrationEnabled: integrationEnabled,
 		Aws:                     awsInfo,
 		Kick:                    c.inputChannels.Kick,
-		Extensions:              c.k8sGwExtensions,
 		CRDs:                    crds,
 	}
 	if err := NewBaseGatewayController(ctx, gwCfg); err != nil {

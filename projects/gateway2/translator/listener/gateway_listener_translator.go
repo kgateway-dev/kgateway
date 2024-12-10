@@ -20,7 +20,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	route "github.com/solo-io/gloo/projects/gateway2/translator/httproute"
-	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	"github.com/solo-io/gloo/projects/gateway2/translator/routeutils"
 	"github.com/solo-io/gloo/projects/gateway2/translator/sslutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
@@ -32,7 +31,6 @@ func TranslateListeners(
 	kctx krt.HandlerContext,
 	ctx context.Context,
 	queries query.GatewayQueries,
-	pluginRegistry registry.PluginRegistry,
 	gateway *ir.Gateway,
 	routesForGw *query.RoutesForGwResult,
 	reporter reports.Reporter,
@@ -40,7 +38,7 @@ func TranslateListeners(
 	validatedListeners := validateListeners(gateway, reporter.Gateway(gateway.Obj))
 
 	mergedListeners := mergeGWListeners(queries, gateway.Namespace, validatedListeners, *gateway, routesForGw, reporter.Gateway(gateway.Obj))
-	translatedListeners := mergedListeners.translateListeners(kctx, ctx, pluginRegistry, queries, reporter)
+	translatedListeners := mergedListeners.translateListeners(kctx, ctx, queries, reporter)
 	return translatedListeners
 }
 
@@ -254,13 +252,12 @@ func getWeight(backendRef gwv1.BackendRef) *wrapperspb.UInt32Value {
 func (ml *MergedListeners) translateListeners(
 	kctx krt.HandlerContext,
 	ctx context.Context,
-	pluginRegistry registry.PluginRegistry,
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
 ) []ir.ListenerIR {
 	var listeners []ir.ListenerIR
 	for _, mergedListener := range ml.Listeners {
-		listener := mergedListener.TranslateListener(kctx, ctx, pluginRegistry, queries, reporter)
+		listener := mergedListener.TranslateListener(kctx, ctx, queries, reporter)
 
 		// run listener plugins
 		panic("TODO: handle listener policy attachment")
@@ -295,7 +292,6 @@ type MergedListener struct {
 func (ml *MergedListener) TranslateListener(
 	kctx krt.HandlerContext,
 	ctx context.Context,
-	pluginRegistry registry.PluginRegistry,
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
 ) ir.ListenerIR {
@@ -310,7 +306,6 @@ func (ml *MergedListener) TranslateListener(
 			ctx,
 			ml.name,
 			ml.listener,
-			pluginRegistry,
 			reporter,
 		)
 		httpFilterChains = append(httpFilterChains, httpFilterChain)
@@ -333,7 +328,6 @@ func (ml *MergedListener) TranslateListener(
 		httpsFilterChain := mfc.translateHttpsFilterChain(
 			kctx,
 			ctx,
-			pluginRegistry,
 			mfc.gatewayListenerName,
 			ml.gatewayNamespace,
 			ml.listener,
@@ -490,7 +484,6 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 	ctx context.Context,
 	parentName string,
 	listener ir.Listener,
-	pluginRegistry registry.PluginRegistry,
 	reporter reports.Reporter,
 ) ir.HttpFilterChainIR {
 	routesByHost := map[string]routeutils.SortableRoutes{}
@@ -500,7 +493,6 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 			routesByHost,
 			parent.routesWithHosts,
 			listener,
-			pluginRegistry,
 			reporter,
 		)
 	}
@@ -546,7 +538,6 @@ type httpsFilterChain struct {
 func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 	kctx krt.HandlerContext,
 	ctx context.Context,
-	pluginRegistry registry.PluginRegistry,
 	parentName string,
 	gatewayNamespace string,
 	listener ir.Listener,
@@ -561,7 +552,6 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 		routesByHost,
 		httpsFilterChain.routesWithHosts,
 		listener,
-		pluginRegistry,
 		reporter,
 	)
 
@@ -630,15 +620,13 @@ func buildRoutesPerHost(
 	routesByHost map[string]routeutils.SortableRoutes,
 	routes []*query.RouteInfo,
 	gwListener ir.Listener,
-	pluginRegistry registry.PluginRegistry,
 	reporter reports.Reporter,
 ) {
-	panic("TODO: handle policy attachment")
+	func() { panic("TODO: handle policy attachment") }()
 	for _, routeWithHosts := range routes {
 		parentRefReporter := reporter.Route(routeWithHosts.Object.GetSourceObject()).ParentRef(&routeWithHosts.ParentRef)
 		routes := route.TranslateGatewayHTTPRouteRules(
 			ctx,
-			pluginRegistry,
 			gwListener.Listener,
 			routeWithHosts,
 			parentRefReporter,

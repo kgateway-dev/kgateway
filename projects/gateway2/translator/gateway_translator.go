@@ -2,9 +2,9 @@ package translator
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/solo-io/gloo/pkg/utils/statsutils"
+	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	"github.com/solo-io/go-utils/contextutils"
@@ -13,43 +13,24 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/listener"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-// K8sGwTranslator This translator Translates K8s Gateway resources into Gloo Edge Proxies.
-type K8sGwTranslator interface {
-	// TranslateProxy This function is called by the reconciler when a K8s Gateway resource is created or updated.
-	// It returns an instance of the Gloo Edge Proxy resource, that should configure a target Gloo Edge Proxy workload.
-	// A null return value indicates the K8s Gateway resource failed to translate into a Gloo Edge Proxy. The error will be reported on the provided reporter.
-	TranslateProxy(
-		kctx krt.HandlerContext,
-		ctx context.Context,
-		gateway *ir.Gateway,
-		writeNamespace string,
-		reporter reports.Reporter,
-	) *ir.GatewayIR
-}
-
-func NewTranslator(queries query.GatewayQueries, pluginRegistry registry.PluginRegistry) K8sGwTranslator {
+func NewTranslator(queries query.GatewayQueries, pluginRegistry registry.PluginRegistry) extensionsplug.K8sGwTranslator {
 	return &translator{
-		pluginRegistry: pluginRegistry,
-		queries:        queries,
+		queries: queries,
 	}
 }
 
 type translator struct {
-	pluginRegistry registry.PluginRegistry
-	queries        query.GatewayQueries
+	queries query.GatewayQueries
 }
 
-func (t *translator) TranslateProxy(
+func (t *translator) Translate(
 	kctx krt.HandlerContext,
 	ctx context.Context,
 	gateway *ir.Gateway,
-	writeNamespace string,
 	reporter reports.Reporter,
 ) *ir.GatewayIR {
 	stopwatch := statsutils.NewTranslatorStopWatch("TranslateProxy")
@@ -88,34 +69,14 @@ func (t *translator) TranslateProxy(
 		kctx,
 		ctx,
 		t.queries,
-		t.pluginRegistry,
 		gateway,
 		routesForGw,
 		reporter,
 	)
 
-	panic("TODO: handle gw policy attachment")
+	func() { panic("TODO: handle gw policy attachment") }()
 	return &ir.GatewayIR{
 		SourceObject: gateway.Obj,
 		Listeners:    listeners,
-	}
-}
-
-func proxyMetadata(gateway *gwv1.Gateway, writeNamespace string) *core.Metadata {
-	return &core.Metadata{
-		// Add the gateway name to the proxy name to ensure uniqueness of proxies
-		// TODO(Law): should this match the deployer generated name instead?
-		Name: fmt.Sprintf("%s-%s", gateway.GetNamespace(), gateway.GetName()),
-
-		// This needs to match the writeNamespace because the proxyClient will only look at namespaces in the whitelisted namespace list
-		Namespace: writeNamespace,
-
-		// All proxies are created in the writeNamespace (ie. gloo-system).
-		// We apply a label to maintain a reference to where the originating Gateway was defined
-		Labels: map[string]string{
-			// the proxy type key/value must stay in sync with the one defined in projects/gateway2/proxy_syncer/proxy_syncer.go
-			utils.ProxyTypeKey:        utils.GatewayApiProxyValue,
-			utils.GatewayNamespaceKey: gateway.GetNamespace(),
-		},
 	}
 }

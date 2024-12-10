@@ -1,16 +1,34 @@
-package proxy_syncer
+package endpoints
 
 import (
 	"sort"
 	"strings"
 
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"go.uber.org/zap"
 	"istio.io/api/networking/v1alpha3"
+
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	"github.com/golang/protobuf/ptypes/wrappers"
 )
+
+func PrioritizeEndpoints(logger *zap.Logger, priorityInfo *PriorityInfo, ep krtcollections.EndpointsForUpstream, ucc krtcollections.UniqlyConnectedClient) *envoy_config_endpoint_v3.ClusterLoadAssignment {
+	lbInfo := LoadBalancingInfo{
+		PodLabels:    ucc.Labels,
+		PodLocality:  ucc.Locality,
+		PriorityInfo: priorityInfo,
+	}
+
+	return prioritizeWithLbInfo(logger, ep, lbInfo)
+}
+
+func getPriorityInfoFromDestrule(localityLb *v1alpha3.LocalityLoadBalancerSetting) *PriorityInfo {
+	return &PriorityInfo{
+		FailoverPriority: NewPriorities(localityLb.GetFailoverPriority()),
+		Failover:         localityLb.GetFailover(),
+	}
+}
 
 type LoadBalancingInfo struct {
 	// pod info:

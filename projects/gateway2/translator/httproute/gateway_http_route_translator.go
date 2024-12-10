@@ -12,7 +12,6 @@ import (
 
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
-	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 )
 
 var (
@@ -23,7 +22,6 @@ var (
 
 func TranslateGatewayHTTPRouteRules(
 	ctx context.Context,
-	pluginRegistry registry.PluginRegistry,
 	gwListener gwv1.Listener,
 	routeInfo *query.RouteInfo,
 	reporter reports.ParentRefReporter,
@@ -46,7 +44,7 @@ func TranslateGatewayHTTPRouteRules(
 	delegationChain := list.New()
 
 	translateGatewayHTTPRouteRulesUtil(
-		ctx, pluginRegistry, gwListener, routeInfo, reporter, baseReporter, &finalRoutes, routesVisited, hostnames, delegationChain)
+		ctx, gwListener, routeInfo, reporter, baseReporter, &finalRoutes, routesVisited, hostnames, delegationChain)
 	return finalRoutes
 }
 
@@ -54,7 +52,6 @@ func TranslateGatewayHTTPRouteRules(
 // In case of route delegation, this function is recursively invoked to flatten the delegated route tree.
 func translateGatewayHTTPRouteRulesUtil(
 	ctx context.Context,
-	pluginRegistry registry.PluginRegistry,
 	gwListener gwv1.Listener,
 	routeInfo *query.RouteInfo,
 	reporter reports.ParentRefReporter,
@@ -80,7 +77,6 @@ func translateGatewayHTTPRouteRulesUtil(
 
 		outputRoutes := translateGatewayHTTPRouteRule(
 			ctx,
-			pluginRegistry,
 			gwListener,
 			routeInfo,
 			rule,
@@ -107,7 +103,6 @@ func translateGatewayHTTPRouteRulesUtil(
 // MARK: translate rules
 func translateGatewayHTTPRouteRule(
 	ctx context.Context,
-	pluginRegistry registry.PluginRegistry,
 	gwListener gwv1.Listener,
 	gwroute *query.RouteInfo,
 	rule ir.HttpRouteRuleIR,
@@ -148,7 +143,6 @@ func translateGatewayHTTPRouteRule(
 				outputRoute,
 				reporter,
 				baseReporter,
-				pluginRegistry,
 				gwListener,
 				match,
 				&delegatedRoutes,
@@ -226,7 +220,6 @@ func setRouteAction(
 	outputRoute ir.HttpRouteRuleMatchIR,
 	reporter reports.ParentRefReporter,
 	baseReporter reports.Reporter,
-	pluginRegistry registry.PluginRegistry,
 	gwListener gwv1.Listener,
 	match gwv1.HTTPRouteMatch,
 	outputs *[]ir.HttpRouteRuleMatchIR,
@@ -248,7 +241,6 @@ func setRouteAction(
 				backend,
 				reporter,
 				baseReporter,
-				pluginRegistry,
 				gwListener,
 				match,
 				outputs,

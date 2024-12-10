@@ -17,7 +17,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
-	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/go-utils/contextutils"
 )
@@ -33,7 +32,6 @@ func flattenDelegatedRoutes(
 	backend ir.HttpBackendOrDelegate,
 	parentReporter reports.ParentRefReporter,
 	baseReporter reports.Reporter,
-	pluginRegistry registry.PluginRegistry,
 	gwListener gwv1.Listener,
 	parentMatch gwv1.HTTPRouteMatch,
 	outputs *[]ir.HttpRouteRuleMatchIR,
@@ -110,7 +108,7 @@ func flattenDelegatedRoutes(
 		}
 
 		translateGatewayHTTPRouteRulesUtil(
-			ctx, pluginRegistry, gwListener, child, reporter, baseReporter, outputs, routesVisited, hostnames, delegationChain)
+			ctx, gwListener, child, reporter, baseReporter, outputs, routesVisited, hostnames, delegationChain)
 	}
 
 	return nil

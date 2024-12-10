@@ -22,10 +22,53 @@ var (
 
 type UpstreamIndex struct {
 	availableUpstreams map[schema.GroupKind]krt.Collection[ir.Upstream]
+	policies           *PolicyIndex
 }
 
-func NewUpstreamIndex(upstreams map[schema.GroupKind]krt.Collection[ir.Upstream]) *UpstreamIndex {
-	return &UpstreamIndex{availableUpstreams: upstreams}
+func NewUpstreamIndex(policies *PolicyIndex) *UpstreamIndex {
+	return &UpstreamIndex{policies: policies}
+}
+
+func (ui *UpstreamIndex) Upstreams() []krt.Collection[ir.Upstream] {
+	ret := make([]krt.Collection[ir.Upstream], 0, len(ui.availableUpstreams))
+	for _, u := range ui.availableUpstreams {
+		ret = append(ret, u)
+	}
+	return ret
+}
+
+func (ui *UpstreamIndex) AddUpstreams(gk schema.GroupKind, col krt.Collection[ir.Upstream]) {
+	ucol := krt.NewCollection(col, func(kctx krt.HandlerContext, u ir.Upstream) *ir.Upstream {
+		u.AttachedPolicies = toAttachedPolicies(ui.policies.GetTargetingPolicies(kctx, u.ObjectSource, ""))
+		return &u
+	})
+	ui.availableUpstreams[gk] = ucol
+}
+
+func AddUpstreamMany[T metav1.Object](ui *UpstreamIndex, gk schema.GroupKind, col krt.Collection[T], build func(kctx krt.HandlerContext, svc T) []ir.Upstream, opts ...krt.CollectionOption) krt.Collection[ir.Upstream] {
+	ucol := krt.NewManyCollection(col, func(kctx krt.HandlerContext, svc T) []ir.Upstream {
+		upstreams := build(kctx, svc)
+		for i := range upstreams {
+			u := &upstreams[i]
+			u.AttachedPolicies = toAttachedPolicies(ui.policies.GetTargetingPolicies(kctx, u.ObjectSource, ""))
+		}
+		return upstreams
+	}, opts...)
+	ui.availableUpstreams[gk] = ucol
+	return ucol
+}
+
+func AddUpstream[T metav1.Object](ui *UpstreamIndex, gk schema.GroupKind, col krt.Collection[T], build func(kctx krt.HandlerContext, svc T) *ir.Upstream) {
+	ucol := krt.NewCollection(col, func(kctx krt.HandlerContext, svc T) *ir.Upstream {
+		upstream := build(kctx, svc)
+		if upstream == nil {
+			return nil
+		}
+		upstream.AttachedPolicies = toAttachedPolicies(ui.policies.GetTargetingPolicies(kctx, upstream.ObjectSource, ""))
+
+		return upstream
+	})
+	ui.availableUpstreams[gk] = ucol
 }
 
 // if we want to make this function public, make it do ref grants
@@ -70,12 +113,12 @@ func (i *UpstreamIndex) getUpstreamFromRef(kctx krt.HandlerContext, localns stri
 
 type GatweayIndex struct {
 	policies *PolicyIndex
-	gateways krt.Collection[ir.Gateway]
+	Gateways krt.Collection[ir.Gateway]
 }
 
 func NewGatweayIndex(policies *PolicyIndex, gws krt.Collection[*gwv1.Gateway]) *GatweayIndex {
 	h := &GatweayIndex{policies: policies}
-	h.gateways = krt.NewCollection(gws, func(kctx krt.HandlerContext, i *gwv1.Gateway) *ir.Gateway {
+	h.Gateways = krt.NewCollection(gws, func(kctx krt.HandlerContext, i *gwv1.Gateway) *ir.Gateway {
 		out := ir.Gateway{
 			ObjectSource: ir.ObjectSource{
 				Group:     gwv1.SchemeGroupVersion.Group,

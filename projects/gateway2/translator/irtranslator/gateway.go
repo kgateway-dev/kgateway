@@ -1,6 +1,7 @@
 package irtranslator
 
 import (
+	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
@@ -11,16 +12,18 @@ import (
 )
 
 type Translator struct {
-	Plugins extensionsplug.Plugin
+	ContributedPolicies map[schema.GroupKind]extensionsplug.PolicyPlugin
 }
 
 type TranslationPassPlugins map[schema.GroupKind]*TranslationPass
 
 type TranslationResult struct {
-	Routes    []*envoy_config_route_v3.RouteConfiguration
-	Listeners []*envoy_config_listener_v3.Listener
+	Routes        []*envoy_config_route_v3.RouteConfiguration
+	Listeners     []*envoy_config_listener_v3.Listener
+	ExtraClusters []*envoy_config_cluster_v3.Cluster
 }
 
+// Translate IR to gateway. IR is self contained, so no need for krt context
 func (t *Translator) Translate(gw ir.GatewayIR, reporter reports.Reporter) TranslationResult {
 	pass := t.newPass()
 	var res TranslationResult
@@ -98,7 +101,7 @@ func (h *Translator) ComputeListener(ctx context.Context, pass TranslationPassPl
 
 func (t *Translator) newPass() TranslationPassPlugins {
 	ret := TranslationPassPlugins{}
-	for k, v := range t.Plugins.ContributesPolicies {
+	for k, v := range t.ContributedPolicies {
 		tp := v.NewGatewayTranslationPass(context.TODO(), ir.GwTranslationCtx{})
 		if tp != nil {
 			ret[k] = &TranslationPass{

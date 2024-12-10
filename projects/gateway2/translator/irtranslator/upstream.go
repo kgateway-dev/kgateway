@@ -10,17 +10,22 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"istio.io/istio/pkg/kube/krt"
 
+	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
+	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type UpstreamTranslator struct {
 	ContributedUpstreams map[schema.GroupKind]ir.UpstreamInit
-	ContributedPolicies  map[schema.GroupKind]ir.PolicyImpl
+	ContributedPolicies  map[schema.GroupKind]extensionsplug.PolicyPlugin
 }
 
-func (t *UpstreamTranslator) TranslateUpstream(u ir.Upstream) *envoy_config_cluster_v3.Cluster {
+// func (d *destrulePlugin) processUpstream(kctx krt.HandlerContext, ctx context.Context, ucc krtcollections.UniqlyConnectedClient, in ir.Upstream, outCluster *envoy_config_cluster_v3.Cluster) {
+
+func (t *UpstreamTranslator) TranslateUpstream(kctx krt.HandlerContext, ucc krtcollections.UniqlyConnectedClient, u ir.Upstream) *envoy_config_cluster_v3.Cluster {
 	gk := schema.GroupKind{
 		Group: u.Group,
 		Kind:  u.Kind,
@@ -41,12 +46,16 @@ func (t *UpstreamTranslator) TranslateUpstream(u ir.Upstream) *envoy_config_clus
 	process.InitUpstream(context.TODO(), u, out)
 
 	// now process upstream policies:
-	t.runPlugins(context.TODO(), u, out)
+	t.runPlugins(kctx, context.TODO(), ucc, u, out)
 	return out
 }
 
-func (t *UpstreamTranslator) runPlugins(ctx context.Context, u ir.Upstream, out *envoy_config_cluster_v3.Cluster) {
+func (t *UpstreamTranslator) runPlugins(kctx krt.HandlerContext, ctx context.Context, ucc krtcollections.UniqlyConnectedClient, u ir.Upstream, out *envoy_config_cluster_v3.Cluster) {
 	for gk, polImpl := range t.ContributedPolicies {
+		if polImpl.PerClientProcessUpstream != nil {
+			polImpl.PerClientProcessUpstream(kctx, ctx, ucc, u, out)
+		}
+
 		if polImpl.ProcessUpstream == nil {
 			continue
 		}
