@@ -287,6 +287,16 @@ func testScenario(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler,
 		t.Log("deleted yamls", t.Name())
 	})
 
+	if err != nil {
+		t.Fatalf("failed to apply yaml: %v", err)
+	}
+	t.Log("applied yamls", t.Name())
+	// make sure all yamls reached the control plane
+	time.Sleep(time.Second)
+
+	dumper := newXdsDumper(t, ctx, xdsPort, testgwname)
+	t.Cleanup(dumper.Close)
+
 	t.Cleanup(func() {
 		if t.Failed() {
 			j, err := kdbg.MarshalJSON()
@@ -298,15 +308,6 @@ func testScenario(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler,
 		}
 	})
 
-	if err != nil {
-		t.Fatalf("failed to apply yaml: %v", err)
-	}
-	t.Log("applied yamls", t.Name())
-	// make sure all yamls reached the control plane
-	time.Sleep(time.Second)
-
-	dumper := newXdsDumper(t, ctx, xdsPort, testgwname)
-	defer dumper.Close()
 	dump := dumper.Dump(t, ctx)
 	if len(dump.Listeners) == 0 {
 		xdsDump := iosnapshot.GetXdsSnapshotDataFromCache(snapCache).MarshalJSONString()

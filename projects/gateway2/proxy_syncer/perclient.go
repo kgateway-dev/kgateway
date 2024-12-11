@@ -47,7 +47,7 @@ func snapshotPerClient(l *zap.Logger, krtopts krtutil.KrtOptions, uccCol krt.Col
 		snap.proxyKey = ucc.ResourceName()
 		snap.snap = &xds.EnvoySnapshot{
 			Clusters:  clusterResources,
-			Endpoints: envoycache.NewResources(fmt.Sprintf("%s-%d", clustersVersion, endpointsHash), endpointsProto),
+			Endpoints: envoycache.NewResources(fmt.Sprintf("%d", endpointsHash), endpointsProto),
 			Routes:    maybeMostlySnap.Routes,
 			Listeners: maybeMostlySnap.Listeners,
 		}

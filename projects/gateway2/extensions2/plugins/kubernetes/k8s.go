@@ -8,6 +8,7 @@ import (
 	"knative.dev/pkg/network"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/common"
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
@@ -62,5 +63,15 @@ func NewPlugin(ctx context.Context, commoncol common.CommonCollections) extensio
 }
 
 func processUpstream(ctx context.Context, in ir.Upstream, out *envoy_config_cluster_v3.Cluster) {
-
+	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
+		Type: envoy_config_cluster_v3.Cluster_EDS,
+	}
+	out.EdsClusterConfig = &envoy_config_cluster_v3.Cluster_EdsClusterConfig{
+		EdsConfig: &envoy_config_core_v3.ConfigSource{
+			ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
+			ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_Ads{
+				Ads: &envoy_config_core_v3.AggregatedConfigSource{},
+			},
+		},
+	}
 }
