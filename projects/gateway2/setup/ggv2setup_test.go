@@ -456,6 +456,9 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) xdsDump {
 		if c.GetEdsClusterConfig() != nil {
 			if c.GetEdsClusterConfig().GetServiceName() != "" {
 				s := c.GetEdsClusterConfig().GetServiceName()
+				if s == "" {
+					s = c.GetName()
+				}
 				return &s
 			}
 			return &c.Name
@@ -504,7 +507,7 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) xdsDump {
 						t.Errorf("failed to unmarshal cla: %v", err)
 					}
 					// remove kube endpoints, as with envtests we will get random ports, so we cant assert on them
-					if !strings.Contains(cla.ClusterName, "kube-svc:default-kubernetes") {
+					if !strings.Contains(cla.ClusterName, "kubernetes") {
 						endpoints = append(endpoints, &cla)
 					}
 				}

@@ -187,7 +187,7 @@ func (e *EndpointsForUpstream) Add(l PodLocality, emd EndpointWithMd) {
 }
 
 func (c EndpointsForUpstream) ResourceName() string {
-	return c.UpstreamRef.String()
+	return c.UpstreamRef.ResourceName()
 }
 
 func (c EndpointsForUpstream) Equals(in EndpointsForUpstream) bool {

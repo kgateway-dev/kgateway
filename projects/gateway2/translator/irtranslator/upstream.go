@@ -2,7 +2,6 @@ package irtranslator
 
 import (
 	"context"
-	"fmt"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -69,7 +68,7 @@ func initializeCluster(u ir.Upstream) *envoy_config_cluster_v3.Cluster {
 
 	// circuitBreakers := t.settings.GetGloo().GetCircuitBreakers()
 	out := &envoy_config_cluster_v3.Cluster{
-		Name:     UpstreamToClusterName(u),
+		Name:     u.ClusterName(),
 		Metadata: new(envoy_config_core_v3.Metadata),
 		//	CircuitBreakers:  getCircuitBreakers(upstream.GetCircuitBreakers(), circuitBreakers),
 		//	LbSubsetConfig:   createLbConfig(upstream),
@@ -132,10 +131,6 @@ func initializeCluster(u ir.Upstream) *envoy_config_cluster_v3.Cluster {
 	//		xds.SetEdsOnCluster(out, t.settings)
 	//	}
 	return out
-}
-
-func UpstreamToClusterName(in ir.Upstream) string {
-	return fmt.Sprintf("%s~%s", in.Name, in.Namespace)
 }
 
 func setHttp2options(c *envoy_config_cluster_v3.Cluster) {
