@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"google.golang.org/protobuf/proto"
 	"istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
@@ -54,9 +55,9 @@ func (c DestinationRuleWrapper) Equals(k DestinationRuleWrapper) bool {
 	return proto.Equal(&c.Spec, &k.Spec)
 }
 
-func NewDestRuleIndex(istioClient kube.Client, dbg *krt.DebugHandler) DestinationRuleIndex {
+func NewDestRuleIndex(istioClient kube.Client, krtopts *krtutil.KrtOptions) DestinationRuleIndex {
 	destRuleClient := kclient.NewDelayedInformer[*networkingclient.DestinationRule](istioClient, gvr.DestinationRule, kubetypes.StandardInformer, kclient.Filter{})
-	rawDestrules := krt.WrapClient(destRuleClient, krt.WithName("DestinationRules"), krt.WithDebugging(dbg))
+	rawDestrules := krt.WrapClient(destRuleClient, krtopts.ToOptions("DestinationRules")...)
 	destrules := krt.NewCollection(rawDestrules, func(kctx krt.HandlerContext, dr *networkingclient.DestinationRule) *DestinationRuleWrapper {
 		return &DestinationRuleWrapper{dr}
 	})

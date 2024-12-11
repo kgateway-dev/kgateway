@@ -27,6 +27,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
+	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
@@ -77,7 +78,7 @@ type StartConfig struct {
 	InitialSettings *glookubev1.Settings
 	Settings        krt.Singleton[glookubev1.Settings]
 
-	Debugger *krt.DebugHandler
+	KrtOptions krtutil.KrtOptions
 }
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
@@ -149,7 +150,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 
 	setupLog.Info("initializing k8sgateway extensions")
 	secretClient := kclient.New[*corev1.Secret](cfg.Client)
-	k8sSecretsRaw := krt.WrapClient(secretClient, krt.WithName("Secrets") /* no debug here - we don't want raw secrets printed*/)
+	k8sSecretsRaw := krt.WrapClient(secretClient, krt.WithStop(ctx.Done()), krt.WithName("Secrets") /* no debug here - we don't want raw secrets printed*/)
 	k8sSecrets := krt.NewCollection(k8sSecretsRaw, func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
 		res := ir.Secret{
 			ObjectSource: ir.ObjectSource{
@@ -162,13 +163,13 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 			Data: i.Data,
 		}
 		return &res
-	}, krt.WithDebugging(cfg.Debugger))
+	}, cfg.KrtOptions.ToOptions("secrets")...)
 	secrets := map[schema.GroupKind]krt.Collection[ir.Secret]{
 		{Group: "", Kind: "Secret"}: k8sSecrets,
 	}
 	commoncol := common.CommonCollections{
 		Client:   cfg.Client,
-		KrtDbg:   cfg.Debugger,
+		KrtOpts:  cfg.KrtOptions,
 		Secrets:  krtcollections.NewSecretIndex(secrets),
 		Pods:     cfg.AugmentedPods,
 		Settings: cfg.Settings,
@@ -194,7 +195,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.SetupOpts.Cache,
 		cfg.SetupOpts.ProxyReconcileQueue,
 	)
-	proxySyncer.Init(ctx, cfg.Debugger)
+	proxySyncer.Init(ctx, cfg.KrtOptions)
 	if err := mgr.Add(proxySyncer); err != nil {
 		setupLog.Error(err, "unable to add proxySyncer runnable")
 		return nil, err

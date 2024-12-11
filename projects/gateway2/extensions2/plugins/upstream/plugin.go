@@ -72,7 +72,7 @@ func NewPlugin(ctx context.Context, commoncol common.CommonCollections) extensio
 		ctx,
 		commoncol.Client,
 		v1alpha1.GroupVersion.WithResource("upstreams"),
-		krt.WithName("Upstreams"), krt.WithDebugging(commoncol.KrtDbg),
+		commoncol.KrtOpts.ToOptions("Upstreams")...,
 	)
 	gk := v1alpha1.UpstreamGVK.GroupKind()
 	translate := buildTranslateFunc(commoncol.Secrets)

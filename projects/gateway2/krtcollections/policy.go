@@ -6,6 +6,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/translator/backendref"
+	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -303,17 +304,17 @@ func (h *RoutesIndex) HasSynced() bool {
 	return h.httpRoutes.Synced().HasSynced() && h.routes.Synced().HasSynced()
 }
 
-func NewRoutesIndex(dbg *krt.DebugHandler, httproutes krt.Collection[*gwv1.HTTPRoute], tcproutes krt.Collection[*gwv1a2.TCPRoute], policies *PolicyIndex, upstreams *UpstreamIndex, refgrants *RefGrantIndex) *RoutesIndex {
+func NewRoutesIndex(krtopts krtutil.KrtOptions, httproutes krt.Collection[*gwv1.HTTPRoute], tcproutes krt.Collection[*gwv1a2.TCPRoute], policies *PolicyIndex, upstreams *UpstreamIndex, refgrants *RefGrantIndex) *RoutesIndex {
 
 	h := &RoutesIndex{policies: policies, refgrants: refgrants, upstreams: upstreams}
-	h.httpRoutes = krt.NewCollection(httproutes, h.transformHttpRoute, krt.WithDebugging(dbg), krt.WithName("http-routes-with-policy"))
+	h.httpRoutes = krt.NewCollection(httproutes, h.transformHttpRoute, krtopts.ToOptions("http-routes-with-policy")...)
 	hr := krt.NewCollection(h.httpRoutes, func(kctx krt.HandlerContext, i ir.HttpRouteIR) *RouteWrapper {
 		return &RouteWrapper{Route: &i}
-	}, krt.WithDebugging(dbg), krt.WithName("routes-http-routes-with-policy"))
+	}, krtopts.ToOptions("routes-http-routes-with-policy")...)
 	tr := krt.NewCollection(tcproutes, func(kctx krt.HandlerContext, i *gwv1a2.TCPRoute) *RouteWrapper {
 		t := h.transformTcpRoute(kctx, i)
 		return &RouteWrapper{Route: t}
-	}, krt.WithDebugging(dbg), krt.WithName("routes-tcp-routes-with-policy"))
+	}, krtopts.ToOptions("routes-tcp-routes-with-policy")...)
 	h.routes = krt.JoinCollection([]krt.Collection[RouteWrapper]{hr, tr})
 
 	httpByNamespace := krt.NewIndex(h.httpRoutes, func(i ir.HttpRouteIR) []string {

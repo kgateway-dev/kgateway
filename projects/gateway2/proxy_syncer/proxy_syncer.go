@@ -229,9 +229,7 @@ func (p proxyList) Equals(in proxyList) bool {
 	})
 }
 
-func (s *ProxySyncer) initUpstreams(ctx context.Context, upstreamIndex *krtcollections.UpstreamIndex, dbg *krt.DebugHandler) (krt.Collection[ir.Upstream], krt.Collection[krtcollections.EndpointsForUpstream]) {
-
-	withDebug := krt.WithDebugging(dbg)
+func (s *ProxySyncer) initUpstreams(ctx context.Context, upstreamIndex *krtcollections.UpstreamIndex, krtopts krtutil.KrtOptions) (krt.Collection[ir.Upstream], krt.Collection[krtcollections.EndpointsForUpstream]) {
 
 	allEndpoints := []krt.Collection[krtcollections.EndpointsForUpstream]{}
 	for k, col := range s.extensions.ContributesUpstreams {
@@ -243,18 +241,17 @@ func (s *ProxySyncer) initUpstreams(ctx context.Context, upstreamIndex *krtcolle
 		}
 	}
 
-	finalUpstreams := krt.JoinCollection(upstreamIndex.Upstreams(), withDebug, krt.WithName("FinalUpstreams"))
+	finalUpstreams := krt.JoinCollection(upstreamIndex.Upstreams(), krtopts.ToOptions("FinalUpstreams")...)
 
 	// build Endpoint intermediate representation from kubernetes service and extensions
 	// TODO move kube service to be an extension
-	endpointIRs := krt.JoinCollection(allEndpoints, withDebug, krt.WithName("EndpointIRs"))
+	endpointIRs := krt.JoinCollection(allEndpoints, krtopts.ToOptions("EndpointIRs")...)
 	return finalUpstreams, endpointIRs
 }
 
-func (s *ProxySyncer) Init(ctx context.Context, dbg *krt.DebugHandler) error {
+func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) error {
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
 	logger := contextutils.LoggerFrom(ctx)
-	withDebug := krt.WithDebugging(dbg)
 
 	var policycols []krt.Collection[ir.PolicyWrapper]
 	for _, ext := range s.extensions.ContributesPolicies {
@@ -265,33 +262,33 @@ func (s *ProxySyncer) Init(ctx context.Context, dbg *krt.DebugHandler) error {
 	}
 	policies := krtcollections.NewPolicyIndex(krt.JoinCollection(policycols))
 
-	refgrantsCol := krt.WrapClient(kclient.New[*gwv1beta1.ReferenceGrant](s.istioClient), krt.WithName("RefGrants"), withDebug)
+	refgrantsCol := krt.WrapClient(kclient.New[*gwv1beta1.ReferenceGrant](s.istioClient), krtopts.ToOptions("RefGrants")...)
 	refgrants := krtcollections.NewRefGrantIndex(refgrantsCol)
 
 	httpRoutes := krtutil.SetupCollectionDynamic[gwv1.HTTPRoute](
 		ctx,
 		s.istioClient,
 		istiogvr.HTTPRoute_v1,
-		krt.WithName("HTTPRoute"), withDebug,
+		krtopts.ToOptions("HTTPRoute")...,
 	)
 
 	tcproutes := krtutil.SetupCollectionDynamic[gwv1a2.TCPRoute](
 		ctx,
 		s.istioClient,
 		istiogvr.TCPRoute,
-		krt.WithName("TCPRoute"), withDebug,
+		krtopts.ToOptions("TCPRoute")...,
 	)
 
 	upstreamIndex := krtcollections.NewUpstreamIndex(policies)
-	finalUpstreams, endpointIRs := s.initUpstreams(ctx, upstreamIndex, dbg)
+	finalUpstreams, endpointIRs := s.initUpstreams(ctx, upstreamIndex, krtopts)
 
-	routes := krtcollections.NewRoutesIndex(dbg, httpRoutes, tcproutes, policies, upstreamIndex, refgrants)
+	routes := krtcollections.NewRoutesIndex(krtopts, httpRoutes, tcproutes, policies, upstreamIndex, refgrants)
 
 	kubeRawGateways := krtutil.SetupCollectionDynamic[gwv1.Gateway](
 		ctx,
 		s.istioClient,
 		istiogvr.KubernetesGateway_v1,
-		krt.WithName("KubeGateways"), withDebug,
+		krtopts.ToOptions("KubeGateways")...,
 	)
 	kubeGateways := krtcollections.NewGatweayIndex(policies, kubeRawGateways)
 
@@ -325,7 +322,7 @@ func (s *ProxySyncer) Init(ctx context.Context, dbg *krt.DebugHandler) error {
 		xdsSnap := s.irtranslator.Translate(*gwir, r)
 
 		return toResources(gw, xdsSnap, rm)
-	}, withDebug, krt.WithName("MostXdsSnapshots"))
+	}, krtopts.ToOptions("MostXdsSnapshots")...)
 	// TODO: disable dest rule plugin if we have setting
 	//	if s.initialSettings.Spec.GetGloo().GetIstioOptions().GetEnableIntegration().GetValue() {
 	//		s.destRules = NewDestRuleIndex(s.istioClient, dbg)
@@ -340,9 +337,9 @@ func (s *ProxySyncer) Init(ctx context.Context, dbg *krt.DebugHandler) error {
 		}
 	}
 
-	epPerClient := NewPerClientEnvoyEndpoints(logger.Desugar(), dbg, s.uniqueClients, endpointIRs, endpointPlugins)
-	clustersPerClient := NewPerClientEnvoyClusters(ctx, dbg, s.upstreamTranslator, finalUpstreams, s.uniqueClients)
-	s.perclientSnapCollection = snapshotPerClient(logger.Desugar(), dbg, s.uniqueClients, s.mostXdsSnapshots, epPerClient, clustersPerClient)
+	epPerClient := NewPerClientEnvoyEndpoints(logger.Desugar(), krtopts, s.uniqueClients, endpointIRs, endpointPlugins)
+	clustersPerClient := NewPerClientEnvoyClusters(ctx, krtopts, s.upstreamTranslator, finalUpstreams, s.uniqueClients)
+	s.perclientSnapCollection = snapshotPerClient(logger.Desugar(), krtopts, s.uniqueClients, s.mostXdsSnapshots, epPerClient, clustersPerClient)
 
 	// as proxies are created, they also contain a reportMap containing status for the Gateway and associated xRoutes (really parentRefs)
 	// here we will merge reports that are per-Proxy to a singleton Report used to persist to k8s on a timer

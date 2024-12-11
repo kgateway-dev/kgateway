@@ -9,6 +9,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/translator/irtranslator"
 	ggv2utils "github.com/solo-io/gloo/projects/gateway2/utils"
+	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"github.com/solo-io/go-utils/contextutils"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
@@ -42,7 +43,7 @@ func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext
 
 func NewPerClientEnvoyClusters(
 	ctx context.Context,
-	dbg *krt.DebugHandler,
+	krtopts krtutil.KrtOptions,
 	translator *irtranslator.UpstreamTranslator,
 	upstreams krt.Collection[ir.Upstream],
 	uccs krt.Collection[krtcollections.UniqlyConnectedClient],
@@ -70,7 +71,7 @@ func NewPerClientEnvoyClusters(
 			})
 		}
 		return uccWithClusterRet
-	}, krt.WithName("PerClientEnvoyClusters"), krt.WithDebugging(dbg))
+	}, krtopts.ToOptions("PerClientEnvoyClusters")...)
 	idx := krt.NewIndex(clusters, func(ucc uccWithCluster) []string {
 		return []string{ucc.Client.ResourceName()}
 	})

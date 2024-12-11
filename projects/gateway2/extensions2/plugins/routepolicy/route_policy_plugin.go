@@ -31,7 +31,7 @@ func NewPlugin(ctx context.Context, commoncol common.CommonCollections) extensio
 		ctx,
 		commoncol.Client,
 		v1alpha1.GroupVersion.WithResource("routepolicies"),
-		krt.WithName("RoutePolicy"), krt.WithDebugging(commoncol.KrtDbg),
+		commoncol.KrtOpts.ToOptions("RoutePolicy")...,
 	)
 	gk := v1alpha1.RoutePolicyGVK.GroupKind()
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.RoutePolicy) *ir.PolicyWrapper {

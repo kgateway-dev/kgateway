@@ -31,7 +31,7 @@ func NewPlugin(ctx context.Context, commoncol common.CommonCollections) extensio
 		ctx,
 		commoncol.Client,
 		v1alpha1.GroupVersion.WithResource("directresponses"),
-		krt.WithName("DirectResponse"), krt.WithDebugging(commoncol.KrtDbg),
+		commoncol.KrtOpts.ToOptions("DirectResponse")...,
 	)
 	gk := v1alpha1.DirectResponseGVK.GroupKind()
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.DirectResponse) *ir.PolicyWrapper {

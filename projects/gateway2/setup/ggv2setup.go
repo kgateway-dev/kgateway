@@ -132,6 +132,9 @@ func StartGGv2WithConfig(ctx context.Context,
 	glooReporter := NewGenericStatusReporter(kubeClient, defaults.GlooReporter)
 
 	logger.Info("initializing controller")
+
+	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
+
 	c, err := controller.NewControllerBuilder(ctx, controller.StartConfig{
 		ExtensionsFactory:    extensionsFactory,
 		RestConfig:           restConfig,
@@ -145,8 +148,8 @@ func StartGGv2WithConfig(ctx context.Context,
 		InitialSettings: initialSettings,
 		Settings:        settingsSingle,
 		// Dev flag may be useful for development purposes; not currently tied to any user-facing API
-		Dev:      false,
-		Debugger: setupOpts.KrtDebugger,
+		Dev:        false,
+		KrtOptions: krtOpts,
 	})
 	if err != nil {
 		logger.Error("failed initializing controller: ", err)

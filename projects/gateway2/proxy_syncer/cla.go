@@ -10,6 +10,7 @@ import (
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
+	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"go.uber.org/zap"
@@ -105,7 +106,7 @@ func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerConte
 	return krt.Fetch(kctx, ie.endpoints, krt.FilterIndex(ie.index, ucc.ResourceName()))
 }
 
-func NewPerClientEnvoyEndpoints(logger *zap.Logger, dbg *krt.DebugHandler, uccs krt.Collection[krtcollections.UniqlyConnectedClient],
+func NewPerClientEnvoyEndpoints(logger *zap.Logger, krtopts krtutil.KrtOptions, uccs krt.Collection[krtcollections.UniqlyConnectedClient],
 	glooEndpoints krt.Collection[krtcollections.EndpointsForUpstream],
 	plugins []extensionsplug.EndpointPlugin,
 ) PerClientEnvoyEndpoints {
@@ -137,7 +138,7 @@ func NewPerClientEnvoyEndpoints(logger *zap.Logger, dbg *krt.DebugHandler, uccs 
 			}
 		}
 		return uccWithEndpointsRet
-	}, krt.WithName("PerClientEnvoyEndpoints"), krt.WithDebugging(dbg))
+	}, krtopts.ToOptions("PerClientEnvoyEndpoints")...)
 	idx := krt.NewIndex(clas, func(ucc UccWithEndpoints) []string {
 		return []string{ucc.Client.ResourceName()}
 	})

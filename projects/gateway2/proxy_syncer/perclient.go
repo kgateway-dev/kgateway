@@ -4,13 +4,14 @@ import (
 	"fmt"
 
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
+	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"go.uber.org/zap"
 	"istio.io/istio/pkg/kube/krt"
 )
 
-func snapshotPerClient(l *zap.Logger, dbg *krt.DebugHandler, uccCol krt.Collection[krtcollections.UniqlyConnectedClient],
+func snapshotPerClient(l *zap.Logger, krtopts krtutil.KrtOptions, uccCol krt.Collection[krtcollections.UniqlyConnectedClient],
 	mostXdsSnapshots krt.Collection[GatewayXdsResources], endpoints PerClientEnvoyEndpoints, clusters PerClientEnvoyClusters) krt.Collection[XdsSnapWrapper] {
 
 	xdsSnapshotsForUcc := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc krtcollections.UniqlyConnectedClient) *XdsSnapWrapper {
@@ -58,6 +59,6 @@ func snapshotPerClient(l *zap.Logger, dbg *krt.DebugHandler, uccCol krt.Collecti
 		)
 
 		return &snap
-	}, krt.WithDebugging(dbg), krt.WithName("PerClientXdsSnapshots"))
+	}, krtopts.ToOptions("PerClientXdsSnapshots")...)
 	return xdsSnapshotsForUcc
 }

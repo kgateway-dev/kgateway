@@ -32,7 +32,7 @@ func NewPlugin(ctx context.Context, commoncol common.CommonCollections) extensio
 		Kind:  "DestinationRule",
 	}
 	d := &destrulePlugin{
-		destinationRulesIndex: NewDestRuleIndex(commoncol.Client, commoncol.KrtDbg),
+		destinationRulesIndex: NewDestRuleIndex(commoncol.Client, &commoncol.KrtOpts),
 	}
 	return extensionsplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{

@@ -18,10 +18,8 @@ import (
 )
 
 func NewPlugin(ctx context.Context, commoncol common.CommonCollections) extensionsplug.Plugin {
-	withDebug := krt.WithDebugging(commoncol.KrtDbg)
-
 	serviceClient := kclient.New[*corev1.Service](commoncol.Client)
-	services := krt.WrapClient(serviceClient, krt.WithName("Services"), withDebug)
+	services := krt.WrapClient(serviceClient, commoncol.KrtOpts.ToOptions("Services")...)
 
 	gk := schema.GroupKind{
 		Group: corev1.GroupName,
@@ -45,9 +43,9 @@ func NewPlugin(ctx context.Context, commoncol common.CommonCollections) extensio
 			})
 		}
 		return uss
-	}, krt.WithName("KubernetesServiceUpstreams"), withDebug)
+	}, commoncol.KrtOpts.ToOptions("KubernetesServiceUpstreams")...)
 
-	inputs := krtcollections.NewGlooK8sEndpointInputs(commoncol.Settings, commoncol.Client, commoncol.KrtDbg, commoncol.Pods, k8sServiceUpstreams)
+	inputs := krtcollections.NewGlooK8sEndpointInputs(commoncol.Settings, commoncol.Client, commoncol.KrtOpts, commoncol.Pods, k8sServiceUpstreams)
 	k8sServiceEndpoints := krtcollections.NewGlooK8sEndpoints(ctx, inputs)
 
 	return extensionsplug.Plugin{

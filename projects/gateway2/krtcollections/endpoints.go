@@ -15,6 +15,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	ggv2utils "github.com/solo-io/gloo/projects/gateway2/utils"
+	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	"github.com/solo-io/go-utils/contextutils"
@@ -55,25 +56,24 @@ type EndpointsInputs struct {
 	Pods                    krt.Collection[LocalityPod]
 	EndpointsSettings       krt.Singleton[EndpointsSettings]
 
-	Debugger *krt.DebugHandler
+	KrtOpts krtutil.KrtOptions
 }
 
 func NewGlooK8sEndpointInputs(
 	settings krt.Singleton[glookubev1.Settings],
 	istioClient kube.Client,
-	dbg *krt.DebugHandler,
+	krtopts krtutil.KrtOptions,
 	pods krt.Collection[LocalityPod],
 	k8supstreams krt.Collection[ir.Upstream],
 ) EndpointsInputs {
-	withDebug := krt.WithDebugging(dbg)
 	epSliceClient := kclient.New[*discoveryv1.EndpointSlice](istioClient)
-	endpointSlices := krt.WrapClient(epSliceClient, krt.WithName("EndpointSlices"), withDebug)
+	endpointSlices := krt.WrapClient(epSliceClient, krtopts.ToOptions("EndpointSlices")...)
 	endpointSettings := krt.NewSingleton(func(ctx krt.HandlerContext) *EndpointsSettings {
 		settings := krt.FetchOne(ctx, settings.AsCollection())
 		return &EndpointsSettings{
 			EnableAutoMtls: settings.Spec.GetGloo().GetIstioOptions().GetEnableAutoMtls().GetValue(),
 		}
-	}, withDebug)
+	}, krtopts.ToOptions("EndpointSettings")...)
 
 	// Create index on EndpointSlices by service name and endpointslice namespace
 	endpointSlicesByService := krt.NewIndex(endpointSlices, func(es *discoveryv1.EndpointSlice) []types.NamespacedName {
@@ -93,7 +93,7 @@ func NewGlooK8sEndpointInputs(
 		EndpointSlicesByService: endpointSlicesByService,
 		Pods:                    pods,
 		EndpointsSettings:       endpointSettings,
-		Debugger:                dbg,
+		KrtOpts:                 krtopts,
 	}
 }
 
@@ -195,7 +195,7 @@ func (c EndpointsForUpstream) Equals(in EndpointsForUpstream) bool {
 }
 
 func NewGlooK8sEndpoints(ctx context.Context, inputs EndpointsInputs) krt.Collection[EndpointsForUpstream] {
-	return krt.NewCollection(inputs.Upstreams, transformK8sEndpoints(ctx, inputs), krt.WithName("GlooK8sEndpoints"), krt.WithDebugging(inputs.Debugger))
+	return krt.NewCollection(inputs.Upstreams, transformK8sEndpoints(ctx, inputs), inputs.KrtOpts.ToOptions("GlooK8sEndpoints")...)
 }
 
 func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kctx krt.HandlerContext, us ir.Upstream) *EndpointsForUpstream {
