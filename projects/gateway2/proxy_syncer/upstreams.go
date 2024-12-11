@@ -57,7 +57,6 @@ func NewPerClientEnvoyClusters(
 
 		for _, ucc := range uccs {
 			logger.Debug("applying destination rules for upstream", zap.String("ucc", ucc.ResourceName()))
-			func() { panic("implement CanonicalHostname") }()
 
 			c, version := translate(kctx, ucc, ctx, translator, up)
 			if c == nil {

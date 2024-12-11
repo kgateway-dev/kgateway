@@ -133,21 +133,20 @@ func NewEndpointsForUpstream(us ir.Upstream, svc *corev1.Service, logger *zap.Lo
 	// start with a hash of the cluster name. technically we dont need it for krt, as we can compare the upstream name. but it helps later
 	// to compute the hash we present envoy with.
 	// add the upstream hash to the clustername, so that if it changes the envoy cluster will become warm again.
-	clusterName := GetEndpointClusterName(us)
 
-	h := fnv.New64()
+	h := fnv.New64a()
+	h.Write([]byte(us.Group))
+	h.Write([]byte{0})
+	h.Write([]byte(us.Kind))
+	h.Write([]byte{0})
 	h.Write([]byte(us.Name))
 	h.Write([]byte{0})
 	h.Write([]byte(us.Namespace))
-	// As long as we hash the upstream in the cluster name (due to envoy cluster warming bug), we
-	// also need to include that in the hash
-	// see: https://github.com/envoyproxy/envoy/issues/13009
-	h.Write([]byte(clusterName))
 	upstreamHash := h.Sum64()
 
 	return &EndpointsForUpstream{
 		LbEps:             make(map[PodLocality][]EndpointWithMd),
-		ClusterName:       clusterName,
+		ClusterName:       us.ClusterName(),
 		UpstreamRef:       us.ObjectSource,
 		Port:              uint32(us.Port),
 		Hostname:          network.GetServiceHostname(svc.Name, svc.Namespace),
@@ -410,17 +409,4 @@ func findPortInEndpointSlice(endpointSlice *discoveryv1.EndpointSlice, singlePor
 		}
 	}
 	return port
-}
-
-// TODO: use exported version from translator?
-func GetEndpointClusterName(upstream ir.Upstream) string {
-	panic("TODO: cluster name")
-	// clusterName := translator.UpstreamToClusterName(upstream.GetMetadata().Ref())
-	// endpointClusterName, err := translator.GetEndpointClusterName(clusterName, upstream)
-	//
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//
-	// return endpointClusterName
 }

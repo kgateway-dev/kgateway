@@ -54,7 +54,6 @@ func NewPlugin(ctx context.Context, commoncol common.CommonCollections) extensio
 			v1alpha1.DirectResponseGVK.GroupKind(): {
 				Name: "directresponse",
 				//	AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
-				//	NewGatewayTranslationPass: newPlug,
 				Policies: policyCol,
 				//				AttachmentPoints:          []ir.AttachmentPoints{ir.HttpAttachmentPoint},
 				NewGatewayTranslationPass: NewGatewayTranslationPass,

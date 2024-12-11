@@ -15,7 +15,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
@@ -45,7 +44,7 @@ func startSetupLoop(ctx context.Context) error {
 	// pass that in to the setup func
 	if k8sgw {
 		setupOpts.ProxyReconcileQueue = ggv2utils.NewAsyncQueue[gloov1.ProxyList]()
-		go ggv2setup.StartGGv2(ctx, setupOpts, builder, extensions.NewK8sGatewayExtensions, registry.GetPluginRegistryFactory)
+		go ggv2setup.StartGGv2(ctx, setupOpts, builder, extensions.NewK8sGatewayExtensions)
 	}
 
 	return setuputils.Main(setuputils.SetupOpts{

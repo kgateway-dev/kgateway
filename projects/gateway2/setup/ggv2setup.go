@@ -15,14 +15,10 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
-	"github.com/solo-io/gloo/projects/gloo/constants"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/shared"
@@ -31,9 +27,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	istiokube "istio.io/istio/pkg/kube"
-	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
-	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -80,11 +74,10 @@ func StartGGv2(ctx context.Context,
 	setupOpts *bootstrap.SetupOpts,
 	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
 	extensionsFactory extensions.K8sGatewayExtensionsFactory,
-	pluginRegistryFactory func(opts registry.PluginOpts) plugins.PluginRegistryFactory,
 ) error {
 	restConfig := ctrl.GetConfigOrDie()
 
-	return StartGGv2WithConfig(ctx, setupOpts, restConfig, uccBuilder, extensionsFactory, pluginRegistryFactory, setuputils.SetupNamespaceName())
+	return StartGGv2WithConfig(ctx, setupOpts, restConfig, uccBuilder, extensionsFactory, setuputils.SetupNamespaceName())
 }
 
 func StartGGv2WithConfig(ctx context.Context,
@@ -92,7 +85,6 @@ func StartGGv2WithConfig(ctx context.Context,
 	restConfig *rest.Config,
 	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
 	extensionsFactory extensions.K8sGatewayExtensionsFactory,
-	pluginRegistryFactory func(opts registry.PluginOpts) plugins.PluginRegistryFactory,
 	settingsNns types.NamespacedName,
 ) error {
 	ctx = contextutils.WithLogger(ctx, "k8s")
@@ -134,25 +126,17 @@ func StartGGv2WithConfig(ctx context.Context,
 		return nil
 	}, krt.WithName("GlooSettingsSingleton"))
 
-	serviceClient := kclient.New[*corev1.Service](kubeClient)
-	services := krt.WrapClient(serviceClient, krt.WithName("Services"))
-
 	logger.Info("creating reporter")
 	kubeGwStatusReporter := NewGenericStatusReporter(kubeClient, defaults.KubeGatewayReporter)
 
 	glooReporter := NewGenericStatusReporter(kubeClient, defaults.GlooReporter)
-	pluginOpts := registry.PluginOpts{
-		Ctx:                     ctx,
-		SidecarOnGatewayEnabled: envutils.IsEnvTruthy(constants.IstioInjectionEnabled),
-		SvcCollection:           services,
-	}
+
 	logger.Info("initializing controller")
 	c, err := controller.NewControllerBuilder(ctx, controller.StartConfig{
 		ExtensionsFactory:    extensionsFactory,
 		RestConfig:           restConfig,
 		SetupOpts:            setupOpts,
 		KubeGwStatusReporter: kubeGwStatusReporter,
-		Translator:           setup.TranslatorFactory{PluginRegistry: pluginRegistryFactory(pluginOpts)},
 		GlooStatusReporter:   glooReporter,
 		Client:               kubeClient,
 		AugmentedPods:        augmentedPods,

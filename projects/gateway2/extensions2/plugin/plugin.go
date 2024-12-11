@@ -19,9 +19,9 @@ type EndpointPlugin func(kctx krt.HandlerContext, ctx context.Context, ucc krtco
 type PolicyPlugin struct {
 	Name                      string
 	NewGatewayTranslationPass func(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass
+	ProcessUpstream           func(ctx context.Context, pol ir.PolicyIR, in ir.Upstream, out *envoy_config_cluster_v3.Cluster)
 	PerClientProcessUpstream  func(kctx krt.HandlerContext, ctx context.Context, ucc krtcollections.UniqlyConnectedClient, in ir.Upstream, out *envoy_config_cluster_v3.Cluster)
 	PerClientProcessEndpoints EndpointPlugin
-	ProcessUpstream           func(ctx context.Context, pol ir.PolicyIR, in ir.Upstream, out *envoy_config_cluster_v3.Cluster)
 
 	Policies      krt.Collection[ir.PolicyWrapper]
 	PoliciesFetch func(n, ns string) ir.PolicyIR

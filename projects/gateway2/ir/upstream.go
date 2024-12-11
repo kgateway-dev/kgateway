@@ -74,7 +74,11 @@ func (c Upstream) ResourceName() string {
 
 func (c Upstream) Equals(in Upstream) bool {
 	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj)
+}
 
+func (c Upstream) ClusterName() string {
+	// TODO: fix this to somthing that's friendly to stats
+	return fmt.Sprintf("%s~%s:%d", c.GvPrefix, c.ObjectSource.ResourceName(), c.Port)
 }
 
 type Secret struct {

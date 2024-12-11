@@ -38,7 +38,6 @@ import (
 	ggv2utils "github.com/solo-io/gloo/projects/gateway2/utils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
 	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 	gloosetup "github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
@@ -209,7 +208,6 @@ func TestScenarios(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		ggv2setup.StartGGv2WithConfig(ctx, setupOpts, cfg, builder, extensions.NewK8sGatewayExtensions,
-			registry.GetPluginRegistryFactory,
 			types.NamespacedName{Name: "default", Namespace: "default"},
 		)
 	}()
@@ -233,12 +231,6 @@ func TestScenarios(t *testing.T) {
 				t.Cleanup(func() {
 					writer.set(parentT)
 				})
-				t.Cleanup(func() {
-					if t.Failed() {
-						j, _ := setupOpts.KrtDebugger.MarshalJSON()
-						t.Logf("krt state for failed test: %s %s", t.Name(), string(j))
-					}
-				})
 				//sadly tests can't run yet in parallel, as ggv2 will add all the k8s services as clusters. this means
 				// that we get test pollution.
 				// once we change it to only include the ones in the proxy, we can re-enable this
@@ -250,7 +242,8 @@ func TestScenarios(t *testing.T) {
 	}
 }
 
-func testScenario(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, snapCache cache.SnapshotCache, client istiokube.CLIClient, xdsPort int, f string) {
+func testScenario(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler,
+	snapCache cache.SnapshotCache, client istiokube.CLIClient, xdsPort int, f string) {
 	fext := filepath.Ext(f)
 	fpre := strings.TrimSuffix(f, fext)
 	fout := fpre + "-out" + fext
@@ -284,14 +277,22 @@ func testScenario(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler, sna
 	os.WriteFile(yamlfile, []byte(testyaml), 0644)
 
 	err = client.ApplyYAMLFiles("", yamlfile)
-	defer func() {
+
+	t.Cleanup(func() {
+		if t.Failed() {
+			j, _ := kdbg.MarshalJSON()
+			t.Logf("krt state for failed test: %s %s", t.Name(), string(j))
+		}
+	})
+
+	t.Cleanup(func() {
 		// always delete yamls, even if there was an error applying them; to prevent test pollution.
 		err := client.DeleteYAMLFiles("", yamlfile)
 		if err != nil {
 			t.Fatalf("failed to delete yaml: %v", err)
 		}
 		t.Log("deleted yamls", t.Name())
-	}()
+	})
 	if err != nil {
 		t.Fatalf("failed to apply yaml: %v", err)
 	}

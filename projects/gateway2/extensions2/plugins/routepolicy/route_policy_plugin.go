@@ -23,7 +23,6 @@ type routeOptsPlugin struct {
 	spec v1alpha1.RoutePolicySpec
 }
 type routeOptsPluginGwPass struct {
-	dr *routeOptsPlugin
 }
 
 func NewPlugin(ctx context.Context, commoncol common.CommonCollections) extensionplug.Plugin {
@@ -54,8 +53,8 @@ func NewPlugin(ctx context.Context, commoncol common.CommonCollections) extensio
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			v1alpha1.RoutePolicyGVK.GroupKind(): {
 				//AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
-				//NewGatewayTranslationPass: newPlug,
-				Policies: policyCol,
+				NewGatewayTranslationPass: NewGatewayTranslationPass,
+				Policies:                  policyCol,
 			},
 		},
 	}
@@ -69,8 +68,8 @@ func convert(targetRef v1alpha1.LocalPolicyTargetReference) []ir.PolicyTargetRef
 	}}
 }
 
-func (d *routeOptsPlugin) NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {
-	return &routeOptsPluginGwPass{dr: d}
+func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {
+	return &routeOptsPluginGwPass{}
 }
 func (p *routeOptsPlugin) Name() string {
 	return "routepolicies"
@@ -85,9 +84,13 @@ func (p *routeOptsPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *ir.V
 
 // called 0 or more times
 func (p *routeOptsPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoy_config_route_v3.Route) error {
+	policy, ok := pCtx.Policy.(*routeOptsPlugin)
+	if !ok {
+		return nil
+	}
 
-	if p.dr.spec.Timeout > 0 && outputRoute.GetRoute() != nil {
-		outputRoute.GetRoute().Timeout = durationpb.New(time.Second * time.Duration(p.dr.spec.Timeout))
+	if policy.spec.Timeout > 0 && outputRoute.GetRoute() != nil {
+		outputRoute.GetRoute().Timeout = durationpb.New(time.Second * time.Duration(policy.spec.Timeout))
 	}
 
 	return nil

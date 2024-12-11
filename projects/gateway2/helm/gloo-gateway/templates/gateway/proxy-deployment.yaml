@@ -419,6 +419,13 @@ data:
     admin:
       address:
         socket_address: { address: 127.0.0.1, port_value: 19000 }
+    layered_runtime:
+      layers:
+      - name: static_layer
+        static_layer:
+          envoy.restart_features.use_eds_cache_for_ads: true
+      - name: admin_layer
+        admin_layer: {}
     node:
       cluster: {{ include "gloo-gateway.gateway.fullname" . }}.{{ .Release.Namespace }}
       metadata:
@@ -562,7 +569,7 @@ data:
                         address: 127.0.0.1
                         port_value: 8234
         {{- end }} {{/* if $gateway.istio.enabled */}}
-        {{- if ($gateway.aws).enableServiceAccountCredentials }}
+        {{- if ($gateway.aws).enableServiceAccountCredentials }} 
         - name: {{ $gateway.aws.stsClusterName }}
           connect_timeout: 5.000s
           type: LOGICAL_DNS

@@ -2,6 +2,7 @@ package krtcollections
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/translator/backendref"
@@ -26,7 +27,7 @@ type UpstreamIndex struct {
 }
 
 func NewUpstreamIndex(policies *PolicyIndex) *UpstreamIndex {
-	return &UpstreamIndex{policies: policies}
+	return &UpstreamIndex{policies: policies, availableUpstreams: map[schema.GroupKind]krt.Collection[ir.Upstream]{}}
 }
 
 func (ui *UpstreamIndex) Upstreams() []krt.Collection[ir.Upstream] {
@@ -131,9 +132,9 @@ func NewGatweayIndex(policies *PolicyIndex, gws krt.Collection[*gwv1.Gateway]) *
 		}
 
 		// TODO: http polic
-		panic("TODO: implement http policies")
+		//		panic("TODO: implement http policies not just listener")
 		out.AttachedListenerPolicies = toAttachedPolicies(h.policies.GetTargetingPolicies(kctx, out.ObjectSource, ""))
-
+		out.AttachedHttpPolicies = out.AttachedListenerPolicies // see if i can find a better way to segment the listener level and http level policies
 		for _, l := range i.Spec.Listeners {
 			out.Listeners = append(out.Listeners, ir.Listener{
 				Listener:         l,
@@ -149,6 +150,10 @@ func NewGatweayIndex(policies *PolicyIndex, gws krt.Collection[*gwv1.Gateway]) *
 type targetRefIndexKey struct {
 	ir.PolicyTargetRef
 	Namespace string
+}
+
+func (k targetRefIndexKey) String() string {
+	return fmt.Sprintf("%s/%s/%s/%s", k.Group, k.Kind, k.Name, k.Namespace)
 }
 
 type PolicyIndex struct {
@@ -194,6 +199,11 @@ type refGrantIndexKey struct {
 	FromGK     schema.GroupKind
 	FromNs     string
 }
+
+func (k refGrantIndexKey) String() string {
+	return fmt.Sprintf("%s/%s/%s/%s/%s", k.ToGK.Group, k.ToGK.Kind, k.ToName, k.FromGK.Group, k.FromGK.Kind)
+}
+
 type RefGrantIndex struct {
 	refgrants     krt.Collection[*gwv1beta1.ReferenceGrant]
 	refGrantIndex krt.Index[refGrantIndexKey, *gwv1beta1.ReferenceGrant]
@@ -275,14 +285,18 @@ type RoutesIndex struct {
 	upstreams *UpstreamIndex
 }
 
-func NewRoutes(httproutes krt.Collection[*gwv1.HTTPRoute], tcproutes krt.Collection[*gwv1a2.TCPRoute], policies *PolicyIndex, upstreams *UpstreamIndex, refgrants *RefGrantIndex) *RoutesIndex {
+func NewRoutesIndex(httproutes krt.Collection[*gwv1.HTTPRoute], tcproutes krt.Collection[*gwv1a2.TCPRoute], policies *PolicyIndex, upstreams *UpstreamIndex, refgrants *RefGrantIndex) *RoutesIndex {
 
 	h := &RoutesIndex{policies: policies, refgrants: refgrants, upstreams: upstreams}
 	h.httpRoutes = krt.NewCollection(httproutes, h.transformHttpRoute)
 	hr := krt.NewCollection(h.httpRoutes, func(kctx krt.HandlerContext, i ir.HttpRouteIR) *RouteWrapper {
 		return &RouteWrapper{Route: &i}
 	})
-	h.routes = krt.JoinCollection([]krt.Collection[RouteWrapper]{hr})
+	tr := krt.NewCollection(tcproutes, func(kctx krt.HandlerContext, i *gwv1a2.TCPRoute) *RouteWrapper {
+		t := h.transformTcpRoute(kctx, i)
+		return &RouteWrapper{Route: t}
+	})
+	h.routes = krt.JoinCollection([]krt.Collection[RouteWrapper]{hr, tr})
 
 	httpByNamespace := krt.NewIndex(h.httpRoutes, func(i ir.HttpRouteIR) []string {
 		return []string{i.GetNamespace()}
@@ -301,7 +315,6 @@ func NewRoutes(httproutes krt.Collection[*gwv1.HTTPRoute], tcproutes krt.Collect
 	})
 	h.httpByNamespace = httpByNamespace
 	h.byTargetRef = byTargetRef
-	panic("TODO: implement tcp routes")
 	return h
 }
 
@@ -340,6 +353,25 @@ func (h *RoutesIndex) Fetch(kctx krt.HandlerContext, gk schema.GroupKind, n, ns 
 	return krt.FetchOne(kctx, h.routes, krt.FilterKey(src.ResourceName()))
 }
 
+func (h *RoutesIndex) transformTcpRoute(kctx krt.HandlerContext, i *gwv1a2.TCPRoute) *ir.TcpRouteIR {
+	src := ir.ObjectSource{
+		Group:     gwv1a2.SchemeGroupVersion.Group,
+		Kind:      "TCPRoute",
+		Namespace: i.Namespace,
+		Name:      i.Name,
+	}
+	var backends []gwv1.BackendRef
+	if len(i.Spec.Rules) > 0 {
+		backends = i.Spec.Rules[0].BackendRefs
+	}
+	return &ir.TcpRouteIR{
+		ObjectSource:     src,
+		SourceObject:     i,
+		ParentRefs:       i.Spec.ParentRefs,
+		Backends:         h.getTcpBackends(kctx, src, backends),
+		AttachedPolicies: toAttachedPolicies(h.policies.GetTargetingPolicies(kctx, src, "")),
+	}
+}
 func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRoute) *ir.HttpRouteIR {
 	src := ir.ObjectSource{
 		Group:     gwv1.SchemeGroupVersion.Group,
@@ -414,7 +446,7 @@ func (h *RoutesIndex) getExtensionRefs2(kctx krt.HandlerContext, ns string, r []
 	}
 	for _, ext := range r {
 		if ext.ExtensionRef == nil {
-			panic("TODO: handle built in extensions")
+			// panic("TODO: handle built in extensions")
 			continue
 		}
 		ref := *ext.ExtensionRef
@@ -470,8 +502,7 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 		}
 		clusterName := "blackhole-cluster"
 		if upstream != nil {
-			panic("TODO: figure out cluster name")
-			//			clusterName = ir.UpstreamToClusterName(upstream)
+			clusterName = upstream.ClusterName()
 		}
 		backends = append(backends, ir.HttpBackendOrDelegate{
 			Backend: &ir.Backend{
@@ -481,6 +512,43 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 				Err:         err,
 			},
 			AttachedPolicies: extensionRefs,
+		})
+	}
+	return backends
+}
+
+func (h *RoutesIndex) getTcpBackends(kctx krt.HandlerContext, src ir.ObjectSource, i []gwv1.BackendRef) []ir.Backend {
+	backends := make([]ir.Backend, 0, len(i))
+	for _, ref := range i {
+		fromns := src.Namespace
+
+		to := ir.ObjectSource{
+			Group:     strOr(ref.Group, ""),
+			Kind:      strOr(ref.Kind, "Service"),
+			Namespace: strOr(ref.Namespace, fromns),
+			Name:      string(ref.Name),
+		}
+
+		var upstream *ir.Upstream
+		fromgk := schema.GroupKind{
+			Group: src.Group,
+			Kind:  src.Kind,
+		}
+		var err error
+		if h.refgrants.ReferenceAllowed(kctx, fromgk, fromns, to) {
+			upstream, err = h.upstreams.getUpstreamFromRef(kctx, src.Namespace, ref.BackendObjectReference)
+		} else {
+			err = ErrMissingReferenceGrant
+		}
+		clusterName := "blackhole-cluster"
+		if upstream != nil {
+			clusterName = upstream.ClusterName()
+		}
+		backends = append(backends, ir.Backend{
+			Upstream:    upstream,
+			ClusterName: clusterName,
+			Weight:      weight(ref.Weight),
+			Err:         err,
 		})
 	}
 	return backends

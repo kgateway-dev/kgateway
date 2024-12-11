@@ -6,7 +6,6 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
 	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/kube/krt"
 
@@ -17,7 +16,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-func NewTranslator(queries query.GatewayQueries, pluginRegistry registry.PluginRegistry) extensionsplug.K8sGwTranslator {
+func NewTranslator(queries query.GatewayQueries) extensionsplug.K8sGwTranslator {
 	return &translator{
 		queries: queries,
 	}

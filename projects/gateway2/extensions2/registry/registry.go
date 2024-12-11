@@ -7,6 +7,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/common"
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/plugins/directresponse"
+	"github.com/solo-io/gloo/projects/gateway2/extensions2/plugins/kubernetes"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/plugins/routepolicy"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/plugins/upstream"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -16,6 +17,9 @@ import (
 func mergedGw(funcs []extensionsplug.GwTranslatorFactory) extensionsplug.GwTranslatorFactory {
 	return func(gw *gwv1.Gateway) extensionsplug.K8sGwTranslator {
 		for _, f := range funcs {
+			if f == nil {
+				continue
+			}
 			ret := f(gw)
 			if ret != nil {
 				return ret
@@ -47,6 +51,7 @@ func Plugins(ctx context.Context, commoncol common.CommonCollections) []extensio
 		upstream.NewPlugin(ctx, commoncol),
 		routepolicy.NewPlugin(ctx, commoncol),
 		directresponse.NewPlugin(ctx, commoncol),
+		kubernetes.NewPlugin(ctx, commoncol),
 	}
 }
 

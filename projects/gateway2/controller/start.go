@@ -31,7 +31,6 @@ import (
 	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	uzap "go.uber.org/zap"
 	istiokube "istio.io/istio/pkg/kube"
@@ -66,9 +65,6 @@ type StartConfig struct {
 	// TODO: as mentioned above, this should be removed: https://github.com/solo-io/solo-projects/issues/7055
 	KubeGwStatusReporter reporter.StatusReporter
 
-	// Translator is an instance of the Gloo translator used to translate Proxy -> xDS Snapshot
-	Translator setup.TranslatorFactory
-
 	// SyncerExtensions is a list of extensions, the kube gw controller will use these to get extension-specific
 	// errors & warnings for any Proxies it generates
 	SyncerExtensions []syncer.TranslatorSyncerExtension
@@ -89,7 +85,6 @@ type StartConfig struct {
 // context is cancelled
 type ControllerBuilder struct {
 	proxySyncer     *proxy_syncer.ProxySyncer
-	inputChannels   *proxy_syncer.GatewayInputChannels
 	cfg             StartConfig
 	k8sGwExtensions ext.K8sGatewayExtensions
 	mgr             ctrl.Manager
@@ -152,8 +147,6 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	//		gatewaykubev1.SchemeGroupVersion.WithResource("authconfigs"),
 	//		krt.WithName("AuthConfig"))
 
-	inputChannels := proxy_syncer.NewGatewayInputChannels()
-
 	setupLog.Info("initializing k8sgateway extensions")
 	secretClient := kclient.New[*corev1.Secret](cfg.Client)
 	k8sSecretsRaw := krt.WrapClient(secretClient, krt.WithName("Secrets") /* no debug here - we don't want raw secrets printed*/)
@@ -171,15 +164,16 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		return &res
 	}, krt.WithDebugging(cfg.Debugger))
 	secrets := map[schema.GroupKind]krt.Collection[ir.Secret]{
-		schema.GroupKind{Group: "", Kind: "Secret"}: k8sSecrets,
+		{Group: "", Kind: "Secret"}: k8sSecrets,
 	}
 	commoncol := common.CommonCollections{
-		Client:  cfg.Client,
-		KrtDbg:  cfg.Debugger,
-		Secrets: krtcollections.NewSecretIndex(secrets),
+		Client:   cfg.Client,
+		KrtDbg:   cfg.Debugger,
+		Secrets:  krtcollections.NewSecretIndex(secrets),
+		Pods:     cfg.AugmentedPods,
+		Settings: cfg.Settings,
 	}
 	k8sGwExtensions := registry.AllPlugins(ctx, commoncol)
-
 	if err != nil {
 		setupLog.Error(err, "unable to create k8s gw extensions")
 		return nil, err
@@ -192,17 +186,12 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.InitialSettings,
 		cfg.Settings,
 		wellknown.GatewayControllerName,
-		setup.GetWriteNamespace(&cfg.InitialSettings.Spec),
-		inputChannels,
 		mgr,
 		cfg.Client,
 		cfg.AugmentedPods,
 		cfg.UniqueClients,
 		k8sGwExtensions,
-		cfg.Translator,
 		cfg.SetupOpts.Cache,
-		cfg.SyncerExtensions,
-		cfg.GlooStatusReporter,
 		cfg.SetupOpts.ProxyReconcileQueue,
 	)
 	proxySyncer.Init(ctx, cfg.Debugger)
@@ -212,10 +201,9 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	}
 
 	return &ControllerBuilder{
-		proxySyncer:   proxySyncer,
-		inputChannels: inputChannels,
-		cfg:           cfg,
-		mgr:           mgr,
+		proxySyncer: proxySyncer,
+		cfg:         cfg,
+		mgr:         mgr,
 	}, nil
 }
 
@@ -269,7 +257,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 		// TODO pass in the settings so that the deloyer can register to it for changes.
 		IstioIntegrationEnabled: integrationEnabled,
 		Aws:                     awsInfo,
-		Kick:                    c.inputChannels.Kick,
+		Kick:                    func(context.Context) {},
 		CRDs:                    crds,
 	}
 	if err := NewBaseGatewayController(ctx, gwCfg); err != nil {

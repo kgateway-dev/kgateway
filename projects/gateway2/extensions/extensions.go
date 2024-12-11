@@ -81,7 +81,7 @@ type k8sGatewayExtensions struct {
 }
 
 func (e *k8sGatewayExtensions) GetTranslator(_ context.Context, _ *apiv1.Gateway, pluginRegistry registry.PluginRegistry) any {
-	return translator.NewTranslator(e.queries, pluginRegistry)
+	return translator.NewTranslator(e.queries)
 }
 
 func (e *k8sGatewayExtensions) CreatePluginRegistry(_ context.Context) registry.PluginRegistry {
