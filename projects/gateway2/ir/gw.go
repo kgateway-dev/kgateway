@@ -2,6 +2,7 @@ package ir
 
 import (
 	"context"
+	"encoding/json"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -42,6 +43,15 @@ func (c PolicyAtt) TargetRef() PolicyTargetRef {
 
 type AttachedPolicies struct {
 	Policies map[schema.GroupKind][]PolicyAtt
+}
+
+func (l AttachedPolicies) MarshalJSON() ([]byte, error) {
+	m := map[string][]PolicyAtt{}
+	for k, v := range l.Policies {
+		m[k.String()] = v
+	}
+
+	return json.Marshal(m)
 }
 
 type Backend struct {

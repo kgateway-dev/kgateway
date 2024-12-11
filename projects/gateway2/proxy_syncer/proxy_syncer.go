@@ -90,7 +90,7 @@ type ProxySyncer struct {
 type GatewayXdsResources struct {
 	types.NamespacedName
 
-	Reports reports.ReportMap
+	reports reports.ReportMap
 	// Clusters are items in the CDS response payload.
 	Clusters     []envoycache.Resource
 	ClustersHash uint64
@@ -106,7 +106,7 @@ func (r GatewayXdsResources) ResourceName() string {
 	return xds.OwnerNamespaceNameID(glooutils.GatewayApiProxyValue, r.Namespace, r.Name)
 }
 func (r GatewayXdsResources) Equals(in GatewayXdsResources) bool {
-	return r.NamespacedName == in.NamespacedName && report{r.Reports}.Equals(report{in.Reports}) && r.ClustersHash == in.ClustersHash &&
+	return r.NamespacedName == in.NamespacedName && report{r.reports}.Equals(report{in.reports}) && r.ClustersHash == in.ClustersHash &&
 		r.Routes.Version == in.Routes.Version && r.Listeners.Version == in.Listeners.Version
 }
 func sliceToResourcesHash[T proto.Message](slice []T) ([]envoycache.Resource, uint64) {
@@ -136,7 +136,7 @@ func toResources(gw ir.Gateway, xdsSnap irtranslator.TranslationResult, r report
 			Namespace: gw.Obj.GetNamespace(),
 			Name:      gw.Obj.GetName(),
 		},
-		Reports:      r,
+		reports:      r,
 		ClustersHash: ch,
 		Clusters:     c,
 		Routes:       sliceToResources(xdsSnap.Routes),
@@ -191,7 +191,8 @@ type glooProxy struct {
 }
 
 type report struct {
-	reports.ReportMap
+	// lower case so krt doesn't error in debug handler
+	reportMap reports.ReportMap
 }
 
 func (r report) ResourceName() string {
@@ -200,13 +201,13 @@ func (r report) ResourceName() string {
 
 // do we really need this for a singleton?
 func (r report) Equals(in report) bool {
-	if !maps.Equal(r.ReportMap.Gateways, in.ReportMap.Gateways) {
+	if !maps.Equal(r.reportMap.Gateways, in.reportMap.Gateways) {
 		return false
 	}
-	if !maps.Equal(r.ReportMap.HTTPRoutes, in.ReportMap.HTTPRoutes) {
+	if !maps.Equal(r.reportMap.HTTPRoutes, in.reportMap.HTTPRoutes) {
 		return false
 	}
-	if !maps.Equal(r.ReportMap.TCPRoutes, in.ReportMap.TCPRoutes) {
+	if !maps.Equal(r.reportMap.TCPRoutes, in.reportMap.TCPRoutes) {
 		return false
 	}
 	return true
@@ -350,10 +351,10 @@ func (s *ProxySyncer) Init(ctx context.Context, dbg *krt.DebugHandler) error {
 		merged := reports.NewReportMap()
 		for _, p := range proxies {
 			// 1. merge GW Reports for all Proxies' status reports
-			maps.Copy(merged.Gateways, p.Reports.Gateways)
+			maps.Copy(merged.Gateways, p.reports.Gateways)
 
 			// 2. merge httproute parentRefs into RouteReports
-			for rnn, rr := range p.Reports.HTTPRoutes {
+			for rnn, rr := range p.reports.HTTPRoutes {
 				// if we haven't encountered this route, just copy it over completely
 				old := merged.HTTPRoutes[rnn]
 				if old == nil {
@@ -362,11 +363,11 @@ func (s *ProxySyncer) Init(ctx context.Context, dbg *krt.DebugHandler) error {
 				}
 				// else, let's merge our parentRefs into the existing map
 				// obsGen will stay as-is...
-				maps.Copy(p.Reports.HTTPRoutes[rnn].Parents, rr.Parents)
+				maps.Copy(p.reports.HTTPRoutes[rnn].Parents, rr.Parents)
 			}
 
 			// 3. merge tcproute parentRefs into RouteReports
-			for rnn, rr := range p.Reports.TCPRoutes {
+			for rnn, rr := range p.reports.TCPRoutes {
 				// if we haven't encountered this route, just copy it over completely
 				old := merged.TCPRoutes[rnn]
 				if old == nil {
@@ -375,7 +376,7 @@ func (s *ProxySyncer) Init(ctx context.Context, dbg *krt.DebugHandler) error {
 				}
 				// else, let's merge our parentRefs into the existing map
 				// obsGen will stay as-is...
-				maps.Copy(p.Reports.TCPRoutes[rnn].Parents, rr.Parents)
+				maps.Copy(p.reports.TCPRoutes[rnn].Parents, rr.Parents)
 			}
 		}
 		return &report{merged}
@@ -390,6 +391,9 @@ func (s *ProxySyncer) Init(ctx context.Context, dbg *krt.DebugHandler) error {
 		s.perclientSnapCollection.Synced().HasSynced,
 		s.mostXdsSnapshots.Synced().HasSynced,
 		s.extensions.HasSynced,
+		routes.HasSynced,
+		policies.HasSynced,
+		refgrants.HasSynced,
 	}
 	return nil
 }
@@ -422,7 +426,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			// TODO: handle garbage collection (see: https://github.com/solo-io/solo-projects/issues/7086)
 			return
 		}
-		latestReportQueue.Enqueue(o.Latest().ReportMap)
+		latestReportQueue.Enqueue(o.Latest().reportMap)
 	})
 
 	//	// handler to reconcile ProxyList for in-memory proxy client
@@ -521,10 +525,12 @@ func (s *ProxySyncer) buildProxy(kctx krt.HandlerContext, ctx context.Context, g
 	stopwatch.Start()
 	var gatewayTranslator extensionsplug.K8sGwTranslator = s.gwtranslator
 	if s.extensions.ContributesGwTranslator != nil {
-		gatewayTranslator = s.extensions.ContributesGwTranslator(gw.Obj)
-		if gatewayTranslator == nil {
-			contextutils.LoggerFrom(ctx).Errorf("no translator found for Gateway %s (gatewayClass %s)", gw.Name, gw.Obj.Spec.GatewayClassName)
-			return nil
+		maybeGatewayTranslator := s.extensions.ContributesGwTranslator(gw.Obj)
+		if maybeGatewayTranslator != nil {
+			// TODO: need better error handling here
+			// and filtering out of our gateway classes, like before
+			// contextutils.LoggerFrom(ctx).Errorf("no translator found for Gateway %s (gatewayClass %s)", gw.Name, gw.Obj.Spec.GatewayClassName)
+			gatewayTranslator = maybeGatewayTranslator
 		}
 	} else {
 

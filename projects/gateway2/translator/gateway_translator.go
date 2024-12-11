@@ -73,7 +73,7 @@ func (t *translator) Translate(
 		reporter,
 	)
 
-	func() { panic("TODO: handle gw policy attachment") }()
+	//	func() { panic("TODO: handle gw policy attachment") }()
 	return &ir.GatewayIR{
 		SourceObject: gateway.Obj,
 		Listeners:    listeners,

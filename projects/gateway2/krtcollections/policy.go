@@ -161,6 +161,10 @@ type PolicyIndex struct {
 	targetRefIndex krt.Index[targetRefIndexKey, ir.PolicyWrapper]
 }
 
+func (h *PolicyIndex) HasSynced() bool {
+	return h.policies.Synced().HasSynced()
+}
+
 func NewPolicyIndex(policies krt.Collection[ir.PolicyWrapper]) *PolicyIndex {
 	targetRefIndex := krt.NewIndex(policies, func(p ir.PolicyWrapper) []targetRefIndexKey {
 		ret := make([]targetRefIndexKey, len(p.TargetRefs))
@@ -207,6 +211,10 @@ func (k refGrantIndexKey) String() string {
 type RefGrantIndex struct {
 	refgrants     krt.Collection[*gwv1beta1.ReferenceGrant]
 	refGrantIndex krt.Index[refGrantIndexKey, *gwv1beta1.ReferenceGrant]
+}
+
+func (h *RefGrantIndex) HasSynced() bool {
+	return h.refgrants.Synced().HasSynced()
 }
 
 func NewRefGrantIndex(refgrants krt.Collection[*gwv1beta1.ReferenceGrant]) *RefGrantIndex {
@@ -283,6 +291,10 @@ type RoutesIndex struct {
 	policies  *PolicyIndex
 	refgrants *RefGrantIndex
 	upstreams *UpstreamIndex
+}
+
+func (h *RoutesIndex) HasSynced() bool {
+	return h.httpRoutes.Synced().HasSynced() && h.routes.Synced().HasSynced()
 }
 
 func NewRoutesIndex(httproutes krt.Collection[*gwv1.HTTPRoute], tcproutes krt.Collection[*gwv1a2.TCPRoute], policies *PolicyIndex, upstreams *UpstreamIndex, refgrants *RefGrantIndex) *RoutesIndex {

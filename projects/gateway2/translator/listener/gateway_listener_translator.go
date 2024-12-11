@@ -260,7 +260,7 @@ func (ml *MergedListeners) translateListeners(
 		listener := mergedListener.TranslateListener(kctx, ctx, queries, reporter)
 
 		// run listener plugins
-		panic("TODO: handle listener policy attachment")
+		//		panic("TODO: handle listener policy attachment")
 		// for _, listenerPlugin := range pluginRegistry.GetListenerPlugins() {
 		// err := listenerPlugin.ApplyListenerPlugin(ctx, &plugins.ListenerContext{
 		// 	Gateway:    &ml.parentGw,
@@ -362,7 +362,7 @@ func (ml *MergedListener) TranslateListener(
 	}
 
 	// Create and return the listener with all filter chains and TCP listeners
-	panic("TODO: handle listener policy attachment")
+	//	panic("TODO: handle listener policy attachment")
 	return ir.ListenerIR{
 		Name:             ml.name,
 		BindAddress:      "::",
@@ -513,7 +513,7 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 				Rules:    vhostRoutes.ToRoutes(),
 				// TODO: figurout attached polices
 			}
-			panic("TODO: handle vhost policy attachment")
+			//			panic("TODO: handle vhost policy attachment")
 
 			virtualHosts = append(virtualHosts, virtualHost)
 		}
@@ -569,7 +569,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 				Hostname: host,
 				Rules:    vhostRoutes.ToRoutes(),
 			}
-			panic("TODO: handle vhost policy attachment")
+			//			panic("TODO: handle vhost policy attachment")
 			virtualHosts = append(virtualHosts, virtualHost)
 		}
 	}
@@ -622,7 +622,7 @@ func buildRoutesPerHost(
 	gwListener ir.Listener,
 	reporter reports.Reporter,
 ) {
-	func() { panic("TODO: handle policy attachment") }()
+	//func() { panic("TODO: handle policy attachment") }()
 	for _, routeWithHosts := range routes {
 		parentRefReporter := reporter.Route(routeWithHosts.Object.GetSourceObject()).ParentRef(&routeWithHosts.ParentRef)
 		routes := route.TranslateGatewayHTTPRouteRules(

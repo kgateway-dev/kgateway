@@ -8,7 +8,6 @@ import (
 
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/ptr"
@@ -287,22 +286,10 @@ func (r *gatewayQueries) GetRoutesForGateway(kctx krt.HandlerContext, ctx contex
 		Name:      gw.Name,
 	}
 
-	// List of route types to process based on installed CRDs
-	routeListTypes := []client.ObjectList{&gwv1.HTTPRouteList{}}
-
-	// Conditionally include TCPRouteList
-	tcpRouteGVK := schema.GroupVersionKind{
-		Group:   gwv1a2.GroupVersion.Group,
-		Version: gwv1a2.GroupVersion.Version,
-		Kind:    wellknown.TCPRouteKind,
-	}
-	if r.scheme.Recognizes(tcpRouteGVK) {
-		routeListTypes = append(routeListTypes, &gwv1a2.TCPRouteList{})
-	}
-
 	// Process each route
 	ret := NewRoutesForGwResult()
-	for _, route := range fetchRoutes(kctx, r, nns) {
+	routes := fetchRoutes(kctx, r, nns)
+	for _, route := range routes {
 		if err := r.processRoute(kctx, ctx, gw, route, ret); err != nil {
 			return nil, err
 		}

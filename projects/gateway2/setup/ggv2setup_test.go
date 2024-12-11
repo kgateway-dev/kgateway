@@ -279,13 +279,6 @@ func testScenario(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler,
 	err = client.ApplyYAMLFiles("", yamlfile)
 
 	t.Cleanup(func() {
-		if t.Failed() {
-			j, _ := kdbg.MarshalJSON()
-			t.Logf("krt state for failed test: %s %s", t.Name(), string(j))
-		}
-	})
-
-	t.Cleanup(func() {
 		// always delete yamls, even if there was an error applying them; to prevent test pollution.
 		err := client.DeleteYAMLFiles("", yamlfile)
 		if err != nil {
@@ -293,6 +286,18 @@ func testScenario(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler,
 		}
 		t.Log("deleted yamls", t.Name())
 	})
+
+	t.Cleanup(func() {
+		if t.Failed() {
+			j, err := kdbg.MarshalJSON()
+			if err != nil {
+				t.Logf("failed to marshal krt state: %v", err)
+			} else {
+				t.Logf("krt state for failed test: %s %s", t.Name(), string(j))
+			}
+		}
+	})
+
 	if err != nil {
 		t.Fatalf("failed to apply yaml: %v", err)
 	}
