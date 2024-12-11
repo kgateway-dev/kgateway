@@ -65,7 +65,6 @@ type Backend struct {
 }
 
 type HttpRouteRuleCommonIR struct {
-	Parent           *HttpRouteIR
 	SourceRule       *gwv1.HTTPRouteRule
 	ExtensionRefs    AttachedPolicies
 	AttachedPolicies AttachedPolicies
@@ -91,6 +90,7 @@ type HttpRouteRuleIR struct {
 
 type HttpRouteRuleMatchIR struct {
 	HttpRouteRuleCommonIR
+	Parent *HttpRouteIR
 	// if there's an error, the listener where to report it.
 	ParentRef  gwv1.ParentReference
 	Backends   []HttpBackend

@@ -69,7 +69,7 @@ func translateGatewayHTTPRouteRulesUtil(
 
 	for ruleIdx, rule := range route.Rules {
 		rule := rule
-		if rule.Matches == nil {
+		if rule.Matches == nil { //TODO: should this check len() == 0?
 			// from the spec:
 			// If no matches are specified, the default is a prefix path match on “/”, which has the effect of matching every HTTP request.
 			rule.Matches = []gwv1.HTTPRouteMatch{{}}
@@ -79,6 +79,7 @@ func translateGatewayHTTPRouteRulesUtil(
 			ctx,
 			gwListener,
 			routeInfo,
+			route,
 			rule,
 			ruleIdx,
 			reporter,
@@ -105,6 +106,7 @@ func translateGatewayHTTPRouteRule(
 	ctx context.Context,
 	gwListener gwv1.Listener,
 	gwroute *query.RouteInfo,
+	parent *ir.HttpRouteIR,
 	rule ir.HttpRouteRuleIR,
 	ruleIdx int,
 	reporter reports.ParentRefReporter,
@@ -126,6 +128,7 @@ func translateGatewayHTTPRouteRule(
 
 		outputRoute := ir.HttpRouteRuleMatchIR{
 			HttpRouteRuleCommonIR: rule.HttpRouteRuleCommonIR,
+			Parent:                parent,
 			ParentRef:             gwroute.ListenerParentRef,
 			Name:                  uniqueRouteName,
 			Backends:              nil,
@@ -140,7 +143,7 @@ func translateGatewayHTTPRouteRule(
 				ctx,
 				gwroute,
 				rule,
-				outputRoute,
+				&outputRoute,
 				reporter,
 				baseReporter,
 				gwListener,
@@ -217,7 +220,7 @@ func setRouteAction(
 	ctx context.Context,
 	gwroute *query.RouteInfo,
 	rule ir.HttpRouteRuleIR,
-	outputRoute ir.HttpRouteRuleMatchIR,
+	outputRoute *ir.HttpRouteRuleMatchIR,
 	reporter reports.ParentRefReporter,
 	baseReporter reports.Reporter,
 	gwListener gwv1.Listener,

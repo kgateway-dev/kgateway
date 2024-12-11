@@ -10,6 +10,7 @@ import (
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/kubetypes"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/solo-io/go-utils/contextutils"
@@ -28,7 +29,17 @@ func SetupCollectionDynamic[T any](
 ) krt.Collection[*T] {
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Infof("setting up dynamic collection for %s", gvr.String())
-	delayedClient := kclient.NewDelayedInformer[*unstructured.Unstructured](client, gvr, kubetypes.DynamicInformer, kclient.Filter{})
+	delayedClient := kclient.NewDelayedInformer[*unstructured.Unstructured](client, gvr, kubetypes.DynamicInformer, kclient.Filter{
+		ObjectTransform: func(obj any) (any, error) {
+			t, ok := obj.(metav1.ObjectMetaAccessor)
+			if !ok {
+				// shouldn't happen
+				return obj, nil
+			}
+			// ManagedFields is large and we never use it
+			t.GetObjectMeta().SetManagedFields(nil)
+			return obj, nil
+		}})
 	mapper := krt.WrapClient(delayedClient, opts...)
 	return krt.NewCollection(mapper, func(krtctx krt.HandlerContext, i *unstructured.Unstructured) **T {
 		var empty T

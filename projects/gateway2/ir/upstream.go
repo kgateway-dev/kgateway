@@ -69,7 +69,11 @@ type Upstream struct {
 }
 
 func (c Upstream) ResourceName() string {
-	return fmt.Sprintf("%s:%d", c.ObjectSource.ResourceName(), c.Port)
+	return UpstreamResourceName(c.ObjectSource, c.Port)
+}
+
+func UpstreamResourceName(objSource ObjectSource, port int32) string {
+	return fmt.Sprintf("%s:%d", objSource.ResourceName(), port)
 }
 
 func (c Upstream) Equals(in Upstream) bool {

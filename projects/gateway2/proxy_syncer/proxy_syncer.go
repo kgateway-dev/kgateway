@@ -285,7 +285,7 @@ func (s *ProxySyncer) Init(ctx context.Context, dbg *krt.DebugHandler) error {
 	upstreamIndex := krtcollections.NewUpstreamIndex(policies)
 	finalUpstreams, endpointIRs := s.initUpstreams(ctx, upstreamIndex, dbg)
 
-	routes := krtcollections.NewRoutesIndex(httpRoutes, tcproutes, policies, upstreamIndex, refgrants)
+	routes := krtcollections.NewRoutesIndex(dbg, httpRoutes, tcproutes, policies, upstreamIndex, refgrants)
 
 	kubeRawGateways := krtutil.SetupCollectionDynamic[gwv1.Gateway](
 		ctx,
