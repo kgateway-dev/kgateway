@@ -470,6 +470,12 @@ func (info *FilterChainInfo) toMatch() *envoy_config_listener_v3.FilterChainMatc
 	if info == nil {
 		return nil
 	}
+
+	// right now only sni domains is in the match, so if empty, return a nil match
+	if len(info.Match.SniDomains) == 0 {
+		return nil
+	}
+
 	return &envoy_config_listener_v3.FilterChainMatch{
 		ServerNames: info.Match.SniDomains,
 	}

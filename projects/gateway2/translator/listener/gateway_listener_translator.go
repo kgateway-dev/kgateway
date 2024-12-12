@@ -372,7 +372,7 @@ func (ml *MergedListener) TranslateListener(
 		Name:             ml.name,
 		BindAddress:      "::",
 		BindPort:         uint32(ml.port),
-		AttachedPolicies: ir.AttachedPolicies{}, // TODO: find policies attached to listener and attach them
+		AttachedPolicies: ir.AttachedPolicies{}, // TODO: find policies attached to listener and attach them <- this might not be possilbe due to listener merging. also a gw listener ~= envoy filter chain; and i don't believe we need policies there
 		HttpFilterChain:  httpFilterChains,
 		TcpFilterChain:   matchedTcpListeners,
 	}

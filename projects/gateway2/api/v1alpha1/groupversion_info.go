@@ -15,6 +15,7 @@ const (
 	DirectResponseKind = "DirectResponse"
 	UpstreamKind       = "Upstream"
 	RoutePolicyKind    = "RoutePolicy"
+	ListenerPolicyKind = "ListenerPolicy"
 )
 
 var (
@@ -47,5 +48,10 @@ var (
 		Group:   Group,
 		Version: Version,
 		Kind:    RoutePolicyKind,
+	}
+	ListenerPolicyGVK = schema.GroupVersionKind{
+		Group:   Group,
+		Version: Version,
+		Kind:    ListenerPolicyKind,
 	}
 )

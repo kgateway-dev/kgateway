@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/plugins/directresponse"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/plugins/istio"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/plugins/kubernetes"
+	"github.com/solo-io/gloo/projects/gateway2/extensions2/plugins/listenerpolicy"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/plugins/routepolicy"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/plugins/upstream"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -56,6 +57,7 @@ func Plugins(ctx context.Context, commoncol common.CommonCollections) []extensio
 		kubernetes.NewPlugin(ctx, commoncol),
 		istio.NewPlugin(ctx, commoncol),
 		destrule.NewPlugin(ctx, commoncol),
+		listenerpolicy.NewPlugin(ctx, commoncol),
 	}
 }
 

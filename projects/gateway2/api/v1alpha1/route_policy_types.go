@@ -130,7 +130,8 @@ type ListenerPolicyList struct {
 }
 
 type ListenerPolicySpec struct {
-	ConnectionBufferBytes uint32 `json:"connection_buffer_bytes,omitempty"`
+	TargetRef                     LocalPolicyTargetReference `json:"targetRef,omitempty"`
+	PerConnectionBufferLimitBytes uint32                     `json:"perConnectionBufferLimitBytes,omitempty"`
 }
 
 // +kubebuilder:object:root=true

@@ -38,7 +38,7 @@ func (t *Translator) Translate(gw ir.GatewayIR, reporter reports.Reporter) Trans
 	return res
 }
 
-func (h *Translator) ComputeListener(ctx context.Context, pass TranslationPassPlugins, gw ir.GatewayIR, l ir.ListenerIR, reporter reports.Reporter) (*envoy_config_listener_v3.Listener, []*envoy_config_route_v3.RouteConfiguration) {
+func (t *Translator) ComputeListener(ctx context.Context, pass TranslationPassPlugins, gw ir.GatewayIR, l ir.ListenerIR, reporter reports.Reporter) (*envoy_config_listener_v3.Listener, []*envoy_config_route_v3.RouteConfiguration) {
 	hasTls := false
 	gwreporter := reporter.Gateway(gw.SourceObject)
 	var routes []*envoy_config_route_v3.RouteConfiguration
@@ -46,6 +46,8 @@ func (h *Translator) ComputeListener(ctx context.Context, pass TranslationPassPl
 		Name:    l.Name,
 		Address: computeListenerAddress(l.BindAddress, l.BindPort, gwreporter),
 	}
+	t.runListenerPlugins(ctx, pass, gw, l, ret)
+
 	for _, hfc := range l.HttpFilterChain {
 		fct := filterChainTranslator{
 			listener:        l,
@@ -69,6 +71,8 @@ func (h *Translator) ComputeListener(ctx context.Context, pass TranslationPassPl
 		}
 
 		// compute chains
+
+		// TODO: make sure that all matchers are unique
 
 		rl := gwreporter.ListenerName(hfc.FilterChainName)
 		fc := fct.initFilterChain(ctx, hfc.FilterChainCommon, rl)
@@ -96,7 +100,31 @@ func (h *Translator) ComputeListener(ctx context.Context, pass TranslationPassPl
 	if hasTls {
 		ret.ListenerFilters = append(ret.GetListenerFilters(), tlsInspectorFilter())
 	}
+
 	return ret, routes
+}
+
+func (t *Translator) runListenerPlugins(ctx context.Context, pass TranslationPassPlugins, gw ir.GatewayIR, l ir.ListenerIR, out *envoy_config_listener_v3.Listener) {
+	attachedPoliciesSlice := []ir.AttachedPolicies{
+		l.AttachedPolicies,
+		gw.AttachedPolicies,
+	}
+	for _, attachedPolicies := range attachedPoliciesSlice {
+		for gk, pols := range attachedPolicies.Policies {
+			pass := pass[gk]
+			if pass == nil {
+				// TODO: user error - they attached a non http policy
+				continue
+			}
+			for _, pol := range pols {
+				pctx := &ir.ListenerContext{
+					Policy: pol.PolicyIr,
+				}
+				pass.ApplyListenerPlugin(ctx, pctx, out)
+				// TODO: check return value, if error returned, log error and report condition
+			}
+		}
+	}
 }
 
 func (t *Translator) newPass() TranslationPassPlugins {

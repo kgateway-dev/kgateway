@@ -75,7 +75,9 @@ func (t *translator) Translate(
 
 	//	func() { panic("TODO: handle gw policy attachment") }()
 	return &ir.GatewayIR{
-		SourceObject: gateway.Obj,
-		Listeners:    listeners,
+		SourceObject:         gateway.Obj,
+		Listeners:            listeners,
+		AttachedPolicies:     gateway.AttachedListenerPolicies,
+		AttachedHttpPolicies: gateway.AttachedHttpPolicies,
 	}
 }
