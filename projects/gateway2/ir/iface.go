@@ -12,7 +12,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type ListenerContext struct{}
+type ListenerContext struct {
+	Policy PolicyIR
+}
 type VirtualHostContext struct {
 	Policy PolicyIR
 }
@@ -73,7 +75,8 @@ type Resources struct {
 	Clusters []envoy_config_cluster_v3.Cluster
 }
 
-type GwTranslationCtx struct{}
+type GwTranslationCtx struct {
+}
 
 type PolicyIR any
 

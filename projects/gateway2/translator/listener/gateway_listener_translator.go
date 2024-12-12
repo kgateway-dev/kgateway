@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"slices"
 	"sort"
+	"strings"
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
@@ -106,7 +107,9 @@ func (ml *MergedListeners) appendHttpListener(
 ) {
 	parent := httpFilterChainParent{
 		gatewayListenerName: string(listener.Name),
+		gatewayListener:     listener,
 		routesWithHosts:     routesWithHosts,
+		attachedPolicies:    listener.AttachedPolicies,
 	}
 
 	fc := &httpFilterChain{
@@ -119,6 +122,7 @@ func (ml *MergedListeners) appendHttpListener(
 		if lis.port == finalPort {
 			// concatenate the names on the parent output listener/filterchain
 			// TODO is this valid listener name?
+			// TODO: listener name should include the bind address and port (otherwise envoy goes crazy if they change)
 			lis.name += "~" + listenerName
 			if lis.httpFilterChain != nil {
 				lis.httpFilterChain.parents = append(lis.httpFilterChain.parents, parent)
@@ -153,6 +157,7 @@ func (ml *MergedListeners) appendHttpsListener(
 		tls:                 listener.TLS,
 		routesWithHosts:     routesWithHosts,
 		queries:             ml.Queries,
+		attachedPolicies:    listener.AttachedPolicies,
 	}
 
 	// Perform the port transformation away from privileged ports only once to use
@@ -475,9 +480,24 @@ type httpFilterChain struct {
 	parents []httpFilterChainParent
 }
 
+func isHostContained(host string, maybeLhost *gwv1.Hostname) bool {
+	if maybeLhost == nil {
+		return true
+	}
+	listenerHostname := string(*maybeLhost)
+	if strings.HasPrefix(listenerHostname, "*.") {
+		if strings.HasSuffix(host, listenerHostname[1:]) {
+			return true
+		}
+	}
+	return host == listenerHostname
+}
+
 type httpFilterChainParent struct {
 	gatewayListenerName string
+	gatewayListener     ir.Listener
 	routesWithHosts     []*query.RouteInfo
+	attachedPolicies    ir.AttachedPolicies
 }
 
 func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
@@ -502,19 +522,34 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 		virtualHosts     = []*ir.VirtualHost{}
 	)
 	for host, vhostRoutes := range routesByHost {
+
+		// find the parent this host belongs to, and use its policies
+		var attachedPolicies ir.AttachedPolicies
+		maxHostnameLen := -1
+		for _, p := range httpFilterChain.parents {
+			if isHostContained(host, p.gatewayListener.Hostname) {
+				hostnameLen := 0
+				if p.gatewayListener.Hostname != nil {
+					hostnameLen = len(string(*p.gatewayListener.Hostname))
+				}
+				if hostnameLen > maxHostnameLen {
+					attachedPolicies = p.attachedPolicies
+					maxHostnameLen = hostnameLen
+				}
+			}
+		}
+
 		sort.Stable(vhostRoutes)
 		vhostName := makeVhostName(ctx, parentName, host)
 		if !virtualHostNames[vhostName] {
 
 			virtualHostNames[vhostName] = true
 			virtualHost := &ir.VirtualHost{
-				Name:     vhostName,
-				Hostname: host,
-				Rules:    vhostRoutes.ToRoutes(),
-				// TODO: figurout attached polices
+				Name:             vhostName,
+				Hostname:         host,
+				Rules:            vhostRoutes.ToRoutes(),
+				AttachedPolicies: attachedPolicies,
 			}
-			//			panic("TODO: handle vhost policy attachment")
-
 			virtualHosts = append(virtualHosts, virtualHost)
 		}
 	}
@@ -533,6 +568,7 @@ type httpsFilterChain struct {
 	tls                 *gwv1.GatewayTLSConfig
 	routesWithHosts     []*query.RouteInfo
 	queries             query.GatewayQueries
+	attachedPolicies    ir.AttachedPolicies
 }
 
 func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
@@ -565,11 +601,11 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 		if !virtualHostNames[vhostName] {
 			virtualHostNames[vhostName] = true
 			virtualHost := &ir.VirtualHost{
-				Name:     vhostName,
-				Hostname: host,
-				Rules:    vhostRoutes.ToRoutes(),
+				Name:             vhostName,
+				Hostname:         host,
+				Rules:            vhostRoutes.ToRoutes(),
+				AttachedPolicies: listener.AttachedPolicies,
 			}
-			//			panic("TODO: handle vhost policy attachment")
 			virtualHosts = append(virtualHosts, virtualHost)
 		}
 	}

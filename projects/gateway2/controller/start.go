@@ -73,7 +73,7 @@ type StartConfig struct {
 	Client istiokube.Client
 
 	AugmentedPods krt.Collection[krtcollections.LocalityPod]
-	UniqueClients krt.Collection[krtcollections.UniqlyConnectedClient]
+	UniqueClients krt.Collection[ir.UniqlyConnectedClient]
 
 	InitialSettings *glookubev1.Settings
 	Settings        krt.Singleton[glookubev1.Settings]
@@ -193,7 +193,6 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.UniqueClients,
 		k8sGwExtensions,
 		cfg.SetupOpts.Cache,
-		cfg.SetupOpts.ProxyReconcileQueue,
 	)
 	proxySyncer.Init(ctx, cfg.KrtOptions)
 	if err := mgr.Add(proxySyncer); err != nil {

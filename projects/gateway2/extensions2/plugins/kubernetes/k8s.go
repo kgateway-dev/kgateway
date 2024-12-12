@@ -40,6 +40,7 @@ func NewPlugin(ctx context.Context, commoncol common.CommonCollections) extensio
 				},
 				Obj:               svc,
 				Port:              port.Port,
+				GvPrefix:          "kube",
 				CanonicalHostname: fmt.Sprintf("%s.%s.svc.%s", svc.Name, svc.Namespace, clusterDomain),
 			})
 		}

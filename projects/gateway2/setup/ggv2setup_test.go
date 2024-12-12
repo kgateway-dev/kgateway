@@ -35,8 +35,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 	ggv2setup "github.com/solo-io/gloo/projects/gateway2/setup"
-	ggv2utils "github.com/solo-io/gloo/projects/gateway2/utils"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 	gloosetup "github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
@@ -200,10 +198,6 @@ func TestScenarios(t *testing.T) {
 	}()
 
 	// start ggv2
-	// (note: we don't have gloo-edge working, so nothing will reconcile the proxies.
-	// that's mostly ok, as we don't test the features that require these proxies in gloo-edge)
-	setupOpts.ProxyReconcileQueue = ggv2utils.NewAsyncQueue[gloov1.ProxyList]()
-
 	wg.Add(1)
 	go func() {
 		defer wg.Done()

@@ -2,19 +2,14 @@ package krtcollections
 
 import (
 	"context"
-	"encoding/binary"
-	"encoding/json"
-	"hash/fnv"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-	"knative.dev/pkg/network"
 
 	"github.com/solo-io/gloo/projects/gateway2/ir"
-	ggv2utils "github.com/solo-io/gloo/projects/gateway2/utils"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
@@ -26,10 +21,6 @@ import (
 	discoveryv1 "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
-
-type EndpointMetadata struct {
-	Labels map[string]string
-}
 
 type EndpointsSettings struct {
 	EnableAutoMtls bool
@@ -97,113 +88,16 @@ func NewGlooK8sEndpointInputs(
 	}
 }
 
-type EndpointWithMd struct {
-	*envoy_config_endpoint_v3.LbEndpoint
-	EndpointMd EndpointMetadata
-}
-
-type LocalityLbMap map[PodLocality][]EndpointWithMd
-
-// MarshalJSON implements json.Marshaler. for krt.DebugHandler
-func (l LocalityLbMap) MarshalJSON() ([]byte, error) {
-	out := map[string][]EndpointWithMd{}
-	for locality, eps := range l {
-		out[locality.String()] = eps
-	}
-	return json.Marshal(out)
-}
-
-var _ json.Marshaler = LocalityLbMap{}
-
-type EndpointsForUpstream struct {
-	LbEps LocalityLbMap
-	// Note - in theory, cluster name should be a function of the UpstreamRef.
-	// But due to an upstream envoy bug, the cluster name also includes the upstream hash.
-	ClusterName string
-	UpstreamRef ir.ObjectSource
-	Port        uint32
-	Hostname    string
-
-	LbEpsEqualityHash uint64
-	upstreamHash      uint64
-	epsEqualityHash   uint64
-}
-
-func NewEndpointsForUpstream(us ir.Upstream, svc *corev1.Service, logger *zap.Logger) *EndpointsForUpstream {
-	// start with a hash of the cluster name. technically we dont need it for krt, as we can compare the upstream name. but it helps later
-	// to compute the hash we present envoy with.
-	// add the upstream hash to the clustername, so that if it changes the envoy cluster will become warm again.
-
-	h := fnv.New64a()
-	h.Write([]byte(us.Group))
-	h.Write([]byte{0})
-	h.Write([]byte(us.Kind))
-	h.Write([]byte{0})
-	h.Write([]byte(us.Name))
-	h.Write([]byte{0})
-	h.Write([]byte(us.Namespace))
-	upstreamHash := h.Sum64()
-
-	return &EndpointsForUpstream{
-		LbEps:             make(map[PodLocality][]EndpointWithMd),
-		ClusterName:       us.ClusterName(),
-		UpstreamRef:       us.ObjectSource,
-		Port:              uint32(us.Port),
-		Hostname:          network.GetServiceHostname(svc.Name, svc.Namespace),
-		LbEpsEqualityHash: upstreamHash,
-		upstreamHash:      upstreamHash,
-	}
-}
-
-func hashEndpoints(l PodLocality, emd EndpointWithMd) uint64 {
-	hasher := fnv.New64a()
-	hasher.Write([]byte(l.Region))
-	hasher.Write([]byte(l.Zone))
-	hasher.Write([]byte(l.Subzone))
-
-	ggv2utils.HashUint64(hasher, ggv2utils.HashLabels(emd.EndpointMd.Labels))
-	ggv2utils.HashProtoWithHasher(hasher, emd.LbEndpoint)
-	return hasher.Sum64()
-}
-
-func hash(a, b uint64) uint64 {
-	hasher := fnv.New64a()
-	var buf [16]byte
-	binary.LittleEndian.PutUint64(buf[:8], a)
-	binary.LittleEndian.PutUint64(buf[8:], b)
-	hasher.Write(buf[:])
-	return hasher.Sum64()
-}
-
-func (e *EndpointsForUpstream) Add(l PodLocality, emd EndpointWithMd) {
-	// xor it as we dont care about order - if we have the same endpoints in the same locality
-	// we are good.
-	e.epsEqualityHash ^= hashEndpoints(l, emd)
-	// we can't xor the endpoint hash with the upstream hash, because upstreams with
-	// different names and similar endpoints will cancel out, so endpoint changes
-	// won't result in different equality hashes.
-	e.LbEpsEqualityHash = hash(e.epsEqualityHash, e.upstreamHash)
-	e.LbEps[l] = append(e.LbEps[l], emd)
-}
-
-func (c EndpointsForUpstream) ResourceName() string {
-	return c.UpstreamRef.ResourceName()
-}
-
-func (c EndpointsForUpstream) Equals(in EndpointsForUpstream) bool {
-	return c.UpstreamRef == in.UpstreamRef && c.ClusterName == in.ClusterName && c.Port == in.Port && c.LbEpsEqualityHash == in.LbEpsEqualityHash && c.Hostname == in.Hostname
-}
-
-func NewGlooK8sEndpoints(ctx context.Context, inputs EndpointsInputs) krt.Collection[EndpointsForUpstream] {
+func NewGlooK8sEndpoints(ctx context.Context, inputs EndpointsInputs) krt.Collection[ir.EndpointsForUpstream] {
 	return krt.NewCollection(inputs.Upstreams, transformK8sEndpoints(ctx, inputs), inputs.KrtOpts.ToOptions("GlooK8sEndpoints")...)
 }
 
-func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kctx krt.HandlerContext, us ir.Upstream) *EndpointsForUpstream {
+func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kctx krt.HandlerContext, us ir.Upstream) *ir.EndpointsForUpstream {
 	augmentedPods := inputs.Pods
 
 	logger := contextutils.LoggerFrom(ctx).Desugar()
 
-	return func(kctx krt.HandlerContext, us ir.Upstream) *EndpointsForUpstream {
+	return func(kctx krt.HandlerContext, us ir.Upstream) *ir.EndpointsForUpstream {
 		var warnsToLog []string
 		defer func() {
 			for _, warn := range warnsToLog {
@@ -255,7 +149,7 @@ func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kct
 		// Initialize the returned EndpointsForUpstream
 		settings := krt.FetchOne(kctx, inputs.EndpointsSettings.AsCollection())
 		enableAutoMtls := settings.EnableAutoMtls
-		ret := NewEndpointsForUpstream(us, kubeUpstream, logger)
+		ret := ir.NewEndpointsForUpstream(us)
 
 		// Handle deduplication of endpoint addresses
 		seenAddresses := make(map[string]struct{})
@@ -296,7 +190,7 @@ func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kct
 					}
 
 					var augmentedLabels map[string]string
-					var l PodLocality
+					var l ir.PodLocality
 					if podName != "" {
 						maybePod := krt.FetchOne(kctx, augmentedPods, krt.FilterObjectName(types.NamespacedName{
 							Namespace: podNamespace,
@@ -309,9 +203,9 @@ func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kct
 					}
 					ep := CreateLBEndpoint(addr, port, augmentedLabels, enableAutoMtls)
 
-					ret.Add(l, EndpointWithMd{
+					ret.Add(l, ir.EndpointWithMd{
 						LbEndpoint: ep,
-						EndpointMd: EndpointMetadata{
+						EndpointMd: ir.EndpointMetadata{
 							Labels: augmentedLabels,
 						},
 					})

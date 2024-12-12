@@ -7,6 +7,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/common"
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/plugins/directresponse"
+	"github.com/solo-io/gloo/projects/gateway2/extensions2/plugins/istio"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/plugins/kubernetes"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/plugins/routepolicy"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/plugins/upstream"
@@ -52,6 +53,7 @@ func Plugins(ctx context.Context, commoncol common.CommonCollections) []extensio
 		routepolicy.NewPlugin(ctx, commoncol),
 		directresponse.NewPlugin(ctx, commoncol),
 		kubernetes.NewPlugin(ctx, commoncol),
+		istio.NewPlugin(ctx, commoncol),
 	}
 }
 

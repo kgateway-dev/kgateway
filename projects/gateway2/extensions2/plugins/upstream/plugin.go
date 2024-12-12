@@ -94,7 +94,7 @@ func NewPlugin(ctx context.Context, commoncol common.CommonCollections) extensio
 		}
 	})
 
-	epndpoints := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Upstream) *krtcollections.EndpointsForUpstream {
+	epndpoints := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Upstream) *ir.EndpointsForUpstream {
 		return processEndpoints(i)
 	})
 	return extensionsplug.Plugin{
@@ -174,7 +174,7 @@ func hostname(in *v1alpha1.Upstream) string {
 	return ""
 }
 
-func processEndpoints(up *v1alpha1.Upstream) *krtcollections.EndpointsForUpstream {
+func processEndpoints(up *v1alpha1.Upstream) *ir.EndpointsForUpstream {
 
 	spec := up.Spec
 

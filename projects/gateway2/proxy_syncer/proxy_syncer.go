@@ -70,9 +70,7 @@ type ProxySyncer struct {
 	proxyTranslator ProxyTranslator
 
 	augmentedPods krt.Collection[krtcollections.LocalityPod]
-	uniqueClients krt.Collection[krtcollections.UniqlyConnectedClient]
-
-	proxyReconcileQueue ggv2utils.AsyncQueue[gloov1.ProxyList]
+	uniqueClients krt.Collection[ir.UniqlyConnectedClient]
 
 	statusReport            krt.Singleton[report]
 	mostXdsSnapshots        krt.Collection[GatewayXdsResources]
@@ -154,22 +152,20 @@ func NewProxySyncer(
 	mgr manager.Manager,
 	client kube.Client,
 	augmentedPods krt.Collection[krtcollections.LocalityPod],
-	uniqueClients krt.Collection[krtcollections.UniqlyConnectedClient],
+	uniqueClients krt.Collection[ir.UniqlyConnectedClient],
 	extensions extensionsplug.Plugin,
 	xdsCache envoycache.SnapshotCache,
-	proxyReconcileQueue ggv2utils.AsyncQueue[gloov1.ProxyList],
 ) *ProxySyncer {
 	return &ProxySyncer{
-		initialSettings:     initialSettings,
-		settings:            settings,
-		controllerName:      controllerName,
-		extensions:          extensions,
-		mgr:                 mgr,
-		istioClient:         client,
-		proxyTranslator:     NewProxyTranslator(xdsCache),
-		augmentedPods:       augmentedPods,
-		uniqueClients:       uniqueClients,
-		proxyReconcileQueue: proxyReconcileQueue,
+		initialSettings: initialSettings,
+		settings:        settings,
+		controllerName:  controllerName,
+		extensions:      extensions,
+		mgr:             mgr,
+		istioClient:     client,
+		proxyTranslator: NewProxyTranslator(xdsCache),
+		augmentedPods:   augmentedPods,
+		uniqueClients:   uniqueClients,
 	}
 }
 
@@ -229,9 +225,9 @@ func (p proxyList) Equals(in proxyList) bool {
 	})
 }
 
-func (s *ProxySyncer) initUpstreams(ctx context.Context, upstreamIndex *krtcollections.UpstreamIndex, krtopts krtutil.KrtOptions) (krt.Collection[ir.Upstream], krt.Collection[krtcollections.EndpointsForUpstream]) {
+func (s *ProxySyncer) initUpstreams(ctx context.Context, upstreamIndex *krtcollections.UpstreamIndex, krtopts krtutil.KrtOptions) (krt.Collection[ir.Upstream], krt.Collection[ir.EndpointsForUpstream]) {
 
-	allEndpoints := []krt.Collection[krtcollections.EndpointsForUpstream]{}
+	allEndpoints := []krt.Collection[ir.EndpointsForUpstream]{}
 	for k, col := range s.extensions.ContributesUpstreams {
 		if col.Upstreams != nil {
 			upstreamIndex.AddUpstreams(k, col.Upstreams)
@@ -253,14 +249,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
 	logger := contextutils.LoggerFrom(ctx)
 
-	var policycols []krt.Collection[ir.PolicyWrapper]
-	for _, ext := range s.extensions.ContributesPolicies {
-		if ext.Policies == nil {
-			continue
-		}
-		policycols = append(policycols, ext.Policies)
-	}
-	policies := krtcollections.NewPolicyIndex(krt.JoinCollection(policycols))
+	policies := krtcollections.NewPolicyIndex(krtopts, s.extensions.ContributesPolicies)
 
 	refgrantsCol := krt.WrapClient(kclient.New[*gwv1beta1.ReferenceGrant](s.istioClient), krtopts.ToOptions("RefGrants")...)
 	refgrants := krtcollections.NewRefGrantIndex(refgrantsCol)
@@ -279,7 +268,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 		krtopts.ToOptions("TCPRoute")...,
 	)
 
-	upstreamIndex := krtcollections.NewUpstreamIndex(policies)
+	upstreamIndex := krtcollections.NewUpstreamIndex(krtopts, policies)
 	finalUpstreams, endpointIRs := s.initUpstreams(ctx, upstreamIndex, krtopts)
 
 	routes := krtcollections.NewRoutesIndex(krtopts, httpRoutes, tcproutes, policies, upstreamIndex, refgrants)
@@ -290,7 +279,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 		istiogvr.KubernetesGateway_v1,
 		krtopts.ToOptions("KubeGateways")...,
 	)
-	kubeGateways := krtcollections.NewGatweayIndex(policies, kubeRawGateways)
+	kubeGateways := krtcollections.NewGatweayIndex(krtopts, policies, kubeRawGateways)
 
 	queries := query.NewData(
 		routes,
@@ -719,7 +708,6 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMa
 // 2. For debug tooling, notably the debug.ProxyEndpointServer
 func (s *ProxySyncer) reconcileProxies(proxyList gloov1.ProxyList) {
 	// gloo edge v1 will read from this queue
-	s.proxyReconcileQueue.Enqueue(proxyList)
 }
 
 func applyPostTranslationPlugins(ctx context.Context, pluginRegistry registry.PluginRegistry, translationContext *gwplugins.PostTranslationContext) {

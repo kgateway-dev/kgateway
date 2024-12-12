@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/translator/backendref"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
@@ -25,10 +26,11 @@ var (
 type UpstreamIndex struct {
 	availableUpstreams map[schema.GroupKind]krt.Collection[ir.Upstream]
 	policies           *PolicyIndex
+	krtopts            krtutil.KrtOptions
 }
 
-func NewUpstreamIndex(policies *PolicyIndex) *UpstreamIndex {
-	return &UpstreamIndex{policies: policies, availableUpstreams: map[schema.GroupKind]krt.Collection[ir.Upstream]{}}
+func NewUpstreamIndex(krtopts krtutil.KrtOptions, policies *PolicyIndex) *UpstreamIndex {
+	return &UpstreamIndex{policies: policies, availableUpstreams: map[schema.GroupKind]krt.Collection[ir.Upstream]{}, krtopts: krtopts}
 }
 
 func (ui *UpstreamIndex) Upstreams() []krt.Collection[ir.Upstream] {
@@ -41,21 +43,21 @@ func (ui *UpstreamIndex) Upstreams() []krt.Collection[ir.Upstream] {
 
 func (ui *UpstreamIndex) AddUpstreams(gk schema.GroupKind, col krt.Collection[ir.Upstream]) {
 	ucol := krt.NewCollection(col, func(kctx krt.HandlerContext, u ir.Upstream) *ir.Upstream {
-		u.AttachedPolicies = toAttachedPolicies(ui.policies.GetTargetingPolicies(kctx, u.ObjectSource, ""))
+		u.AttachedPolicies = toAttachedPolicies(ui.policies.getTargetingPolicies(kctx, extensionsplug.UpstreamAttachmentPoint, u.ObjectSource, ""))
 		return &u
-	})
+	}, ui.krtopts.ToOptions("")...)
 	ui.availableUpstreams[gk] = ucol
 }
 
-func AddUpstreamMany[T metav1.Object](ui *UpstreamIndex, gk schema.GroupKind, col krt.Collection[T], build func(kctx krt.HandlerContext, svc T) []ir.Upstream, opts ...krt.CollectionOption) krt.Collection[ir.Upstream] {
+func AddUpstreamMany[T metav1.Object](ui *UpstreamIndex, gk schema.GroupKind, col krt.Collection[T], build func(kctx krt.HandlerContext, svc T) []ir.Upstream) krt.Collection[ir.Upstream] {
 	ucol := krt.NewManyCollection(col, func(kctx krt.HandlerContext, svc T) []ir.Upstream {
 		upstreams := build(kctx, svc)
 		for i := range upstreams {
 			u := &upstreams[i]
-			u.AttachedPolicies = toAttachedPolicies(ui.policies.GetTargetingPolicies(kctx, u.ObjectSource, ""))
+			u.AttachedPolicies = toAttachedPolicies(ui.policies.getTargetingPolicies(kctx, extensionsplug.UpstreamAttachmentPoint, u.ObjectSource, ""))
 		}
 		return upstreams
-	}, opts...)
+	}, ui.krtopts.ToOptions("")...)
 	ui.availableUpstreams[gk] = ucol
 	return ucol
 }
@@ -66,10 +68,10 @@ func AddUpstream[T metav1.Object](ui *UpstreamIndex, gk schema.GroupKind, col kr
 		if upstream == nil {
 			return nil
 		}
-		upstream.AttachedPolicies = toAttachedPolicies(ui.policies.GetTargetingPolicies(kctx, upstream.ObjectSource, ""))
+		upstream.AttachedPolicies = toAttachedPolicies(ui.policies.getTargetingPolicies(kctx, extensionsplug.UpstreamAttachmentPoint, upstream.ObjectSource, ""))
 
 		return upstream
-	})
+	}, ui.krtopts.ToOptions("")...)
 	ui.availableUpstreams[gk] = ucol
 }
 
@@ -124,7 +126,7 @@ type GatweayIndex struct {
 	Gateways krt.Collection[ir.Gateway]
 }
 
-func NewGatweayIndex(policies *PolicyIndex, gws krt.Collection[*gwv1.Gateway]) *GatweayIndex {
+func NewGatweayIndex(krtopts krtutil.KrtOptions, policies *PolicyIndex, gws krt.Collection[*gwv1.Gateway]) *GatweayIndex {
 	h := &GatweayIndex{policies: policies}
 	h.Gateways = krt.NewCollection(gws, func(kctx krt.HandlerContext, i *gwv1.Gateway) *ir.Gateway {
 		out := ir.Gateway{
@@ -140,17 +142,17 @@ func NewGatweayIndex(policies *PolicyIndex, gws krt.Collection[*gwv1.Gateway]) *
 
 		// TODO: http polic
 		//		panic("TODO: implement http policies not just listener")
-		out.AttachedListenerPolicies = toAttachedPolicies(h.policies.GetTargetingPolicies(kctx, out.ObjectSource, ""))
+		out.AttachedListenerPolicies = toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.GatewayAttachmentPoint, out.ObjectSource, ""))
 		out.AttachedHttpPolicies = out.AttachedListenerPolicies // see if i can find a better way to segment the listener level and http level policies
 		for _, l := range i.Spec.Listeners {
 			out.Listeners = append(out.Listeners, ir.Listener{
 				Listener:         l,
-				AttachedPolicies: toAttachedPolicies(h.policies.GetTargetingPolicies(kctx, out.ObjectSource, string(l.Name))),
+				AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, out.ObjectSource, string(l.Name))),
 			})
 		}
 
 		return &out
-	})
+	}, krtopts.ToOptions("gateways")...)
 	return h
 }
 
@@ -163,8 +165,15 @@ func (k targetRefIndexKey) String() string {
 	return fmt.Sprintf("%s/%s/%s/%s", k.Group, k.Kind, k.Name, k.Namespace)
 }
 
+type globalPolicy struct {
+	schema.GroupKind
+	ir     func(extensionsplug.AttachmentPoints) ir.PolicyIR
+	points extensionsplug.AttachmentPoints
+}
 type PolicyIndex struct {
 	policies       krt.Collection[ir.PolicyWrapper]
+	policiesFetch  map[schema.GroupKind]func(n string, ns string) ir.PolicyIR
+	globalPolicies []globalPolicy
 	targetRefIndex krt.Index[targetRefIndexKey, ir.PolicyWrapper]
 }
 
@@ -172,8 +181,26 @@ func (h *PolicyIndex) HasSynced() bool {
 	return h.policies.Synced().HasSynced()
 }
 
-func NewPolicyIndex(policies krt.Collection[ir.PolicyWrapper]) *PolicyIndex {
-	targetRefIndex := krt.NewIndex(policies, func(p ir.PolicyWrapper) []targetRefIndexKey {
+func NewPolicyIndex(krtopts krtutil.KrtOptions, contributesPolicies extensionsplug.ContributesPolicies) *PolicyIndex {
+
+	h := &PolicyIndex{policiesFetch: map[schema.GroupKind]func(n string, ns string) ir.PolicyIR{}}
+
+	var policycols []krt.Collection[ir.PolicyWrapper]
+	for gk, ext := range contributesPolicies {
+		if ext.Policies != nil {
+			policycols = append(policycols, ext.Policies)
+		}
+		if ext.PoliciesFetch != nil {
+			h.policiesFetch[gk] = ext.PoliciesFetch
+		}
+		if ext.GlobalPolicies != nil {
+			h.globalPolicies = append(h.globalPolicies, globalPolicy{GroupKind: gk, ir: ext.GlobalPolicies, points: ext.AttachmentPoints()})
+		}
+	}
+
+	h.policies = krt.JoinCollection(policycols, krtopts.ToOptions("policies")...)
+
+	h.targetRefIndex = krt.NewIndex(h.policies, func(p ir.PolicyWrapper) []targetRefIndexKey {
 		ret := make([]targetRefIndexKey, len(p.TargetRefs))
 		for i, tr := range p.TargetRefs {
 			ret[i] = targetRefIndexKey{
@@ -183,24 +210,62 @@ func NewPolicyIndex(policies krt.Collection[ir.PolicyWrapper]) *PolicyIndex {
 		}
 		return ret
 	})
-	return &PolicyIndex{policies: policies, targetRefIndex: targetRefIndex}
+	return h
 }
 
-func (p *PolicyIndex) GetTargetingPolicies(kctx krt.HandlerContext, ref ir.ObjectSource, sectionName string) []ir.PolicyWrapper {
+// Attachment happens during collection creation (i.e. this file), and not translation. so these methods don't need to be public!
+// note: we may want to change that for global policies maybe.
+func (p *PolicyIndex) getTargetingPolicies(kctx krt.HandlerContext, pnt extensionsplug.AttachmentPoints, targetRef ir.ObjectSource, sectionName string) []ir.PolicyAtt {
+
+	var ret []ir.PolicyAtt
+
+	for _, gp := range p.globalPolicies {
+		if gp.points.Has(pnt) {
+			if p := gp.ir(pnt); p != nil {
+				ret = append(ret, ir.PolicyAtt{PolicyIr: p, GroupKind: gp.GroupKind})
+			}
+		}
+	}
+
 	// no need for ref grants here as target refs are namespace local
 	targetRefIndexKey := targetRefIndexKey{
 		PolicyTargetRef: ir.PolicyTargetRef{
-			Group: ref.Group,
-			Kind:  ref.Kind,
-			Name:  ref.Name,
+			Group: targetRef.Group,
+			Kind:  targetRef.Kind,
+			Name:  targetRef.Name,
 		},
-		Namespace: ref.Namespace,
+		Namespace: targetRef.Namespace,
 	}
-	return krt.Fetch(kctx, p.policies, krt.FilterIndex(p.targetRefIndex, targetRefIndexKey))
+	policies := krt.Fetch(kctx, p.policies, krt.FilterIndex(p.targetRefIndex, targetRefIndexKey))
+	targetRefIndexKey.SectionName = sectionName
+	sectionNamePolicies := krt.Fetch(kctx, p.policies, krt.FilterIndex(p.targetRefIndex, targetRefIndexKey))
+
+	for _, p := range policies {
+		ret = append(ret, ir.PolicyAtt{PolicyIr: p, GroupKind: p.GetGroupKind(), PolicyTargetRef: &ir.PolicyTargetRef{
+			Group: p.Group,
+			Kind:  p.Kind,
+			Name:  p.Name,
+		}})
+	}
+	for _, p := range sectionNamePolicies {
+		ret = append(ret, ir.PolicyAtt{PolicyIr: p, GroupKind: p.GetGroupKind(), PolicyTargetRef: &ir.PolicyTargetRef{
+			Group:       p.Group,
+			Kind:        p.Kind,
+			Name:        p.Name,
+			SectionName: sectionName,
+		}})
+	}
+	return ret
 }
 
-func (p *PolicyIndex) FetchPolicy(kctx krt.HandlerContext, ref ir.ObjectSource) *ir.PolicyWrapper {
-	return krt.FetchOne(kctx, p.policies, krt.FilterKey(ref.ResourceName()))
+func (p *PolicyIndex) fetchPolicy(kctx krt.HandlerContext, policyRef ir.ObjectSource) *ir.PolicyWrapper {
+	gk := policyRef.GetGroupKind()
+	if f, ok := p.policiesFetch[gk]; ok {
+		if polIr := f(policyRef.Name, policyRef.Namespace); polIr != nil {
+			return &ir.PolicyWrapper{PolicyIR: polIr}
+		}
+	}
+	return krt.FetchOne(kctx, p.policies, krt.FilterKey(policyRef.ResourceName()))
 }
 
 type refGrantIndexKey struct {
@@ -388,7 +453,7 @@ func (h *RoutesIndex) transformTcpRoute(kctx krt.HandlerContext, i *gwv1a2.TCPRo
 		SourceObject:     i,
 		ParentRefs:       i.Spec.ParentRefs,
 		Backends:         h.getTcpBackends(kctx, src, backends),
-		AttachedPolicies: toAttachedPolicies(h.policies.GetTargetingPolicies(kctx, src, "")),
+		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "")),
 	}
 }
 func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRoute) *ir.HttpRouteIR {
@@ -405,7 +470,7 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 		ParentRefs:       i.Spec.ParentRefs,
 		Hostnames:        tostr(i.Spec.Hostnames),
 		Rules:            h.transformRules(kctx, src, i.Spec.Rules),
-		AttachedPolicies: toAttachedPolicies(h.policies.GetTargetingPolicies(kctx, src, "")),
+		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "")),
 	}
 }
 func (h *RoutesIndex) transformRules(kctx krt.HandlerContext, src ir.ObjectSource, i []gwv1.HTTPRouteRule) []ir.HttpRouteRuleIR {
@@ -415,7 +480,7 @@ func (h *RoutesIndex) transformRules(kctx krt.HandlerContext, src ir.ObjectSourc
 		extensionRefs := h.getExtensionRefs(kctx, src.Namespace, r)
 		var policies ir.AttachedPolicies
 		if r.Name != nil {
-			policies = toAttachedPolicies(h.policies.GetTargetingPolicies(kctx, src, string(*r.Name)))
+			policies = toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, string(*r.Name)))
 		}
 
 		rules = append(rules, ir.HttpRouteRuleIR{
@@ -451,7 +516,7 @@ func (h *RoutesIndex) getExtensionRefs(kctx krt.HandlerContext, ns string, r gwv
 			Namespace: ns,
 			Name:      string(ref.Name),
 		}
-		policy := h.policies.FetchPolicy(kctx, key)
+		policy := h.policies.fetchPolicy(kctx, key)
 		if policy != nil {
 			ret.Policies[gk] = append(ret.Policies[gk], ir.PolicyAtt{PolicyIr: policy /*direct attachment - no target ref*/})
 		}
@@ -479,7 +544,7 @@ func (h *RoutesIndex) getExtensionRefs2(kctx krt.HandlerContext, ns string, r []
 			Namespace: ns,
 			Name:      string(ref.Name),
 		}
-		policy := h.policies.FetchPolicy(kctx, key)
+		policy := h.policies.fetchPolicy(kctx, key)
 		if policy != nil {
 			ret.Policies[gk] = append(ret.Policies[gk], ir.PolicyAtt{PolicyIr: policy /*direct attachment - no target ref*/})
 		}
@@ -599,7 +664,7 @@ type GwIndex struct {
 //		ParentRefs:       i.Spec.ParentRefs,
 //		Hostnames:        tostr(i.Spec.Hostnames),
 //		Rules:            h.transformRules(kctx, src, i.Spec.Rules),
-//		AttachedPolicies: toAttachedPolicies(h.policies.GetTargetingPolicies(kctx, src, "")),
+//		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, src, "")),
 //	}
 //}
 
@@ -617,16 +682,16 @@ func weight(w *int32) uint32 {
 	return uint32(*w)
 }
 
-func toAttachedPolicies(policies []ir.PolicyWrapper) ir.AttachedPolicies {
+func toAttachedPolicies(policies []ir.PolicyAtt) ir.AttachedPolicies {
 	ret := ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
 	for _, p := range policies {
 		gk := schema.GroupKind{
-			Group: p.Group,
-			Kind:  p.Kind,
+			Group: p.GroupKind.Group,
+			Kind:  p.GroupKind.Kind,
 		}
-		ret.Policies[gk] = append(ret.Policies[gk], ir.PolicyAtt{PolicyIr: p.PolicyIR})
+		ret.Policies[gk] = append(ret.Policies[gk], ir.PolicyAtt{PolicyIr: p.PolicyIr, PolicyTargetRef: p.PolicyTargetRef})
 	}
 	return ret
 }

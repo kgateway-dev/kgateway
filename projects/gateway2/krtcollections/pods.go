@@ -2,9 +2,9 @@ package krtcollections
 
 import (
 	"context"
-	"fmt"
 	"maps"
 
+	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"istio.io/api/label"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"
@@ -17,16 +17,6 @@ import (
 type NodeMetadata struct {
 	name   string
 	labels map[string]string
-}
-
-type PodLocality struct {
-	Region  string
-	Zone    string
-	Subzone string
-}
-
-func (c PodLocality) String() string {
-	return fmt.Sprintf("%s/%s/%s", c.Region, c.Zone, c.Subzone)
 }
 
 func (c NodeMetadata) ResourceName() string {
@@ -44,7 +34,7 @@ var (
 
 type LocalityPod struct {
 	krt.Named
-	Locality        PodLocality
+	Locality        ir.PodLocality
 	AugmentedLabels map[string]string
 	Addresses       []string
 }
@@ -98,7 +88,7 @@ func augmentPodLabels(nodes krt.Collection[NodeMetadata]) func(kctx krt.HandlerC
 			labels = make(map[string]string)
 		}
 		nodeName := pod.Spec.NodeName
-		var l PodLocality
+		var l ir.PodLocality
 		if nodeName != "" {
 			maybeNode := krt.FetchOne(kctx, nodes, krt.FilterObjectName(types.NamespacedName{
 				Name: nodeName,
@@ -124,18 +114,18 @@ func augmentPodLabels(nodes krt.Collection[NodeMetadata]) func(kctx krt.HandlerC
 	}
 }
 
-func LocalityFromLabels(labels map[string]string) PodLocality {
+func LocalityFromLabels(labels map[string]string) ir.PodLocality {
 	region := labels[corev1.LabelTopologyRegion]
 	zone := labels[corev1.LabelTopologyZone]
 	subzone := labels[label.TopologySubzone.Name]
-	return PodLocality{
+	return ir.PodLocality{
 		Region:  region,
 		Zone:    zone,
 		Subzone: subzone,
 	}
 }
 
-func AugmentLabels(locality PodLocality, labels map[string]string) {
+func AugmentLabels(locality ir.PodLocality, labels map[string]string) {
 	// augment labels
 	if locality.Region != "" {
 		labels[corev1.LabelTopologyRegion] = locality.Region

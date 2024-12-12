@@ -1344,7 +1344,7 @@ func constructOpts(ctx context.Context, setup *bootstrap.SetupOpts, params const
 		GatewayControllerEnabled:     gatewayMode,
 		ProxyCleanup:                 proxyCleanup,
 		GlooGateway:                  constructGlooGatewayBootstrapOpts(params.settings),
-		ProxyReconcileQueue:          setup.ProxyReconcileQueue,
+		ProxyReconcileQueue:          nil,
 	}, nil
 }
 

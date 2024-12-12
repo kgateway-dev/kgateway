@@ -190,7 +190,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(ctx context.Context, 
 			}
 			for _, pol := range pols {
 				pctx := &ir.RouteContext{
-					Policy: pol,
+					Policy: pol.PolicyIr,
 				}
 				err := pass.ApplyForRoute(ctx, pctx, out)
 				if err != nil {

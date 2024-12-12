@@ -6,7 +6,6 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/solo-io/gloo/projects/gateway2/reports"
@@ -14,23 +13,40 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-type EndpointPlugin func(kctx krt.HandlerContext, ctx context.Context, ucc krtcollections.UniqlyConnectedClient, in krtcollections.EndpointsForUpstream) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64)
+type AttachmentPoints uint
+
+const (
+	UpstreamAttachmentPoint AttachmentPoints = 1 << iota
+	GatewayAttachmentPoint
+	RouteAttachmentPoint
+)
+
+func (a AttachmentPoints) Has(p AttachmentPoints) bool {
+	return a&p != 0
+}
+
+type EndpointPlugin func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.EndpointsForUpstream) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64)
 
 type PolicyPlugin struct {
 	Name                      string
 	NewGatewayTranslationPass func(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass
 	ProcessUpstream           func(ctx context.Context, pol ir.PolicyIR, in ir.Upstream, out *envoy_config_cluster_v3.Cluster)
-	PerClientProcessUpstream  func(kctx krt.HandlerContext, ctx context.Context, ucc krtcollections.UniqlyConnectedClient, in ir.Upstream, out *envoy_config_cluster_v3.Cluster)
+	// TODO: consider changing PerClientProcessUpstream too look like this:
+	// PerClientProcessUpstream  func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.Upstream)
+	// so that it only attaches the policy to the upstream, and doesn't modify the upstream (except for attached policies) or the cluster itself.
+	// leaving as is for now as this requires better understanding of how krt would handle this.
+	PerClientProcessUpstream  func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.Upstream, out *envoy_config_cluster_v3.Cluster)
 	PerClientProcessEndpoints EndpointPlugin
 
-	Policies      krt.Collection[ir.PolicyWrapper]
-	PoliciesFetch func(n, ns string) ir.PolicyIR
+	Policies       krt.Collection[ir.PolicyWrapper]
+	GlobalPolicies func(AttachmentPoints) ir.PolicyIR
+	PoliciesFetch  func(n, ns string) ir.PolicyIR
 }
 
 type UpstreamPlugin struct {
 	ir.UpstreamInit
 	Upstreams krt.Collection[ir.Upstream]
-	Endpoints krt.Collection[krtcollections.EndpointsForUpstream]
+	Endpoints krt.Collection[ir.EndpointsForUpstream]
 }
 
 type K8sGwTranslator interface {
@@ -43,10 +59,23 @@ type K8sGwTranslator interface {
 		reporter reports.Reporter) *ir.GatewayIR
 }
 type GwTranslatorFactory func(gw *gwv1.Gateway) K8sGwTranslator
+type ContributesPolicies map[schema.GroupKind]PolicyPlugin
+
 type Plugin struct {
-	ContributesPolicies     map[schema.GroupKind]PolicyPlugin
+	ContributesPolicies
 	ContributesUpstreams    map[schema.GroupKind]UpstreamPlugin
 	ContributesGwTranslator GwTranslatorFactory
+}
+
+func (p PolicyPlugin) AttachmentPoints() AttachmentPoints {
+	var ret AttachmentPoints
+	if p.ProcessUpstream != nil {
+		ret = ret | UpstreamAttachmentPoint
+	}
+	if p.NewGatewayTranslationPass != nil {
+		ret = ret | GatewayAttachmentPoint
+	}
+	return ret
 }
 
 func (p Plugin) HasSynced() bool {

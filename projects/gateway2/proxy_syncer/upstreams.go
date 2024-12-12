@@ -6,7 +6,6 @@ import (
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/translator/irtranslator"
 	ggv2utils "github.com/solo-io/gloo/projects/gateway2/utils"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
@@ -18,7 +17,7 @@ import (
 )
 
 type uccWithCluster struct {
-	Client         krtcollections.UniqlyConnectedClient
+	Client         ir.UniqlyConnectedClient
 	Cluster        envoycache.Resource
 	ClusterVersion uint64
 	upstreamName   string
@@ -37,7 +36,7 @@ type PerClientEnvoyClusters struct {
 	index    krt.Index[string, uccWithCluster]
 }
 
-func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext, ucc krtcollections.UniqlyConnectedClient) []uccWithCluster {
+func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient) []uccWithCluster {
 	return krt.Fetch(kctx, iu.clusters, krt.FilterIndex(iu.index, ucc.ResourceName()))
 }
 
@@ -46,7 +45,7 @@ func NewPerClientEnvoyClusters(
 	krtopts krtutil.KrtOptions,
 	translator *irtranslator.UpstreamTranslator,
 	upstreams krt.Collection[ir.Upstream],
-	uccs krt.Collection[krtcollections.UniqlyConnectedClient],
+	uccs krt.Collection[ir.UniqlyConnectedClient],
 ) PerClientEnvoyClusters {
 	ctx = contextutils.WithLogger(ctx, "upstream-translator")
 	logger := contextutils.LoggerFrom(ctx).Desugar()
@@ -82,7 +81,7 @@ func NewPerClientEnvoyClusters(
 	}
 }
 
-func translate(kctx krt.HandlerContext, ucc krtcollections.UniqlyConnectedClient, ctx context.Context, translator *irtranslator.UpstreamTranslator, up ir.Upstream) (*envoy_config_cluster_v3.Cluster, uint64) {
+func translate(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, ctx context.Context, translator *irtranslator.UpstreamTranslator, up ir.Upstream) (*envoy_config_cluster_v3.Cluster, uint64) {
 
 	// false here should be ok - plugins should set eds on eds clusters.
 	cluster := translator.TranslateUpstream(kctx, ucc, up)

@@ -30,7 +30,6 @@ import (
 
 type SetupOpts struct {
 	Cache               cache.SnapshotCache
-	ProxyReconcileQueue ggv2utils.AsyncQueue[v1.ProxyList]
 	ExtraGatewayClasses []string
 	ExtraCallbacks      xdsserver.Callbacks
 

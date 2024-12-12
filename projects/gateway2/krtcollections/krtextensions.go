@@ -1,13 +1,14 @@
 package krtcollections
 
 import (
+	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"istio.io/istio/pkg/kube/krt"
 )
 
 // KRTExtensions allows appending to the core KRT collections used for XDS.
 type KRTExtensions interface {
 	Synced() krt.Syncer
-	Endpoints() []krt.Collection[EndpointsForUpstream]
+	Endpoints() []krt.Collection[ir.EndpointsForUpstream]
 	Upstreams() []krt.Collection[UpstreamWrapper]
 }
 
@@ -22,7 +23,7 @@ func Aggregate(
 
 type aggregate []KRTExtensions
 
-func (a aggregate) Endpoints() (out []krt.Collection[EndpointsForUpstream]) {
+func (a aggregate) Endpoints() (out []krt.Collection[ir.EndpointsForUpstream]) {
 	for _, e := range a {
 		out = append(out, e.Endpoints()...)
 	}

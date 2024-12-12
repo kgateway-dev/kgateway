@@ -3,6 +3,7 @@ package ir
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -82,7 +83,12 @@ func (c Upstream) Equals(in Upstream) bool {
 
 func (c Upstream) ClusterName() string {
 	// TODO: fix this to somthing that's friendly to stats
-	return fmt.Sprintf("%s~%s:%d", c.GvPrefix, c.ObjectSource.ResourceName(), c.Port)
+	gvPrefix := c.GvPrefix
+	if c.GvPrefix == "" {
+		gvPrefix = strings.ToLower(c.Kind)
+	}
+	return fmt.Sprintf("%s_%s_%s_%d", gvPrefix, c.Namespace, c.Name, c.Port)
+	// return fmt.Sprintf("%s~%s:%d", c.GvPrefix, c.ObjectSource.ResourceName(), c.Port)
 }
 
 type Secret struct {

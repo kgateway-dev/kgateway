@@ -102,6 +102,9 @@ func (h *Translator) ComputeListener(ctx context.Context, pass TranslationPassPl
 func (t *Translator) newPass() TranslationPassPlugins {
 	ret := TranslationPassPlugins{}
 	for k, v := range t.ContributedPolicies {
+		if v.NewGatewayTranslationPass == nil {
+			continue
+		}
 		tp := v.NewGatewayTranslationPass(context.TODO(), ir.GwTranslationCtx{})
 		if tp != nil {
 			ret[k] = &TranslationPass{

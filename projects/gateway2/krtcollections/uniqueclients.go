@@ -4,14 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"strings"
 	"sync"
 	"sync/atomic"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-	"github.com/solo-io/gloo/projects/gateway2/utils"
+	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
@@ -38,55 +37,13 @@ func newConnectedClient(uniqueClientName string) ConnectedClient {
 // This collection is populated using xds server callbacks. When an envoy connects to us,
 // we grab it's pod name/namesspace from the requests node->id.
 // We then fetch that pod to get its labels, create a UniqlyConnectedClient and it them to the collection.
-type UniqlyConnectedClient struct {
-	Role      string
-	Labels    map[string]string
-	Locality  PodLocality
-	Namespace string
-
-	// modified role that includes the namespace and the hash of the labels.
-	// we set the client's role to this value in the node metadata. so the snapshot key in the cache
-	// should also be set to this value.
-	resourceName string
-}
-
-func (c UniqlyConnectedClient) ResourceName() string {
-	return c.resourceName
-}
-
-var _ krt.Equaler[UniqlyConnectedClient] = new(UniqlyConnectedClient)
-
-func (c UniqlyConnectedClient) Equals(k UniqlyConnectedClient) bool {
-	return c.Role == k.Role && c.Namespace == k.Namespace && c.Locality == k.Locality && maps.Equal(c.Labels, k.Labels)
-}
-
-func labeledRole(role string, labels map[string]string) string {
-	return fmt.Sprintf("%s%s%d", role, xds.KeyDelimiter, utils.HashLabels(labels))
-}
-
-// note: if `ns“ is empty, we assume the user doesn't want to use pod locality info, so we won't modify the role.
-func newUniqlyConnectedClient(node *envoy_config_core_v3.Node, ns string, labels map[string]string, locality PodLocality) UniqlyConnectedClient {
-	role := node.GetMetadata().GetFields()[xds.RoleKey].GetStringValue()
-	resourceName := role
-	if ns != "" {
-		snapshotKey := labeledRole(role, labels)
-		resourceName = fmt.Sprintf("%s%s%s", snapshotKey, xds.KeyDelimiter, ns)
-	}
-	return UniqlyConnectedClient{
-		Role:         role,
-		Namespace:    ns,
-		Locality:     locality,
-		Labels:       labels,
-		resourceName: resourceName,
-	}
-}
 
 type callbacksCollection struct {
 	logger           *zap.Logger
 	augmentedPods    krt.Collection[LocalityPod]
 	clients          map[int64]ConnectedClient
 	uniqClientsCount map[string]uint64
-	uniqClients      map[string]UniqlyConnectedClient
+	uniqClients      map[string]ir.UniqlyConnectedClient
 	stateLock        sync.RWMutex
 
 	trigger *krt.RecomputeTrigger
@@ -97,7 +54,7 @@ type callbacks struct {
 }
 
 // If augmentedPods is nil, we won't use the pod locality info, and all pods for the same gateway will receive the same config.
-type UniquelyConnectedClientsBulider func(ctx context.Context, handler *krt.DebugHandler, augmentedPods krt.Collection[LocalityPod]) krt.Collection[UniqlyConnectedClient]
+type UniquelyConnectedClientsBulider func(ctx context.Context, handler *krt.DebugHandler, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniqlyConnectedClient]
 
 // THIS IS THE SET OF THINGS WE RUN TRANSLATION FOR
 // add returned callbacks to the xds server.
@@ -108,20 +65,20 @@ func NewUniquelyConnectedClients() (xdsserver.Callbacks, UniquelyConnectedClient
 }
 
 func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBulider {
-	return func(ctx context.Context, handler *krt.DebugHandler, augmentedPods krt.Collection[LocalityPod]) krt.Collection[UniqlyConnectedClient] {
+	return func(ctx context.Context, handler *krt.DebugHandler, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniqlyConnectedClient] {
 		trigger := krt.NewRecomputeTrigger(true)
 		col := &callbacksCollection{
 			logger:           contextutils.LoggerFrom(ctx).Desugar(),
 			augmentedPods:    augmentedPods,
 			clients:          make(map[int64]ConnectedClient),
 			uniqClientsCount: make(map[string]uint64),
-			uniqClients:      make(map[string]UniqlyConnectedClient),
+			uniqClients:      make(map[string]ir.UniqlyConnectedClient),
 			trigger:          trigger,
 		}
 
 		callbacks.collection.Store(col)
 		return krt.NewManyFromNothing(
-			func(ctx krt.HandlerContext) []UniqlyConnectedClient {
+			func(ctx krt.HandlerContext) []ir.UniqlyConnectedClient {
 				trigger.MarkDependant(ctx)
 
 				return col.getClients()
@@ -156,7 +113,7 @@ func (x *callbacksCollection) streamClosed(sid int64) {
 	}
 }
 
-func (x *callbacksCollection) del(sid int64) *UniqlyConnectedClient {
+func (x *callbacksCollection) del(sid int64) *ir.UniqlyConnectedClient {
 	x.stateLock.Lock()
 	defer x.stateLock.Unlock()
 
@@ -176,6 +133,10 @@ func (x *callbacksCollection) del(sid int64) *UniqlyConnectedClient {
 	return nil
 }
 
+func roleFromRequest(r *envoy_service_discovery_v3.DiscoveryRequest) string {
+	return r.GetNode().GetMetadata().GetFields()[xds.RoleKey].GetStringValue()
+}
+
 func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest) (string, bool, error) {
 
 	var pod *LocalityPod
@@ -191,7 +152,7 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 	defer x.stateLock.Unlock()
 	c, ok := x.clients[sid]
 	if !ok {
-		var locality PodLocality
+		var locality ir.PodLocality
 		var ns string
 		var labels map[string]string
 		if usePod {
@@ -204,15 +165,16 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 				labels = pod.AugmentedLabels
 			}
 		}
-		x.logger.Debug("adding xds client", zap.Any("locality", locality), zap.String("ns", ns), zap.Any("labels", labels))
+		role := roleFromRequest(r)
+		x.logger.Debug("adding xds client", zap.Any("locality", locality), zap.String("ns", ns), zap.Any("labels", labels), zap.String("role", role))
 		// TODO: modify request to include the label that are relevant for the client?
-		ucc := newUniqlyConnectedClient(r.GetNode(), ns, labels, locality)
-		c = newConnectedClient(ucc.resourceName)
+		ucc := ir.NewUniqlyConnectedClient(role, ns, labels, locality)
+		c = newConnectedClient(ucc.ResourceName())
 		x.clients[sid] = c
-		currentUnique := x.uniqClientsCount[ucc.resourceName]
-		x.uniqClientsCount[ucc.resourceName] = currentUnique + 1
+		currentUnique := x.uniqClientsCount[ucc.ResourceName()]
+		x.uniqClientsCount[ucc.ResourceName()] = currentUnique + 1
 		if currentUnique == 0 {
-			x.uniqClients[ucc.resourceName] = ucc
+			x.uniqClients[ucc.ResourceName()] = ucc
 			addedNew = true
 		}
 	}
@@ -223,7 +185,7 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 // OnStreamRequest is called once a request is received on a stream.
 // Returning an error will end processing and close the stream. OnStreamClosed will still be called.
 func (x *callbacks) OnStreamRequest(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest) error {
-	role := r.GetNode().GetMetadata().GetFields()[xds.RoleKey].GetStringValue()
+	role := roleFromRequest(r)
 	// as gloo-edge and ggv2 share a control plane, check that this collection only handles ggv2 clients
 	if !xds.IsKubeGatewayCacheKey(role) {
 		return nil
@@ -263,10 +225,10 @@ func (x *callbacksCollection) newStream(sid int64, r *envoy_service_discovery_v3
 	return nil
 }
 
-func (x *callbacksCollection) getClients() []UniqlyConnectedClient {
+func (x *callbacksCollection) getClients() []ir.UniqlyConnectedClient {
 	x.stateLock.RLock()
 	defer x.stateLock.RUnlock()
-	clients := make([]UniqlyConnectedClient, 0, len(x.uniqClients))
+	clients := make([]ir.UniqlyConnectedClient, 0, len(x.uniqClients))
 	for _, c := range x.uniqClients {
 		clients = append(clients, c)
 	}
@@ -303,7 +265,7 @@ func (x *callbacksCollection) fetchRequest(_ context.Context, r *envoy_service_d
 	podRef := getRef(r.GetNode())
 	k := krt.Key[LocalityPod](krt.Named{Name: podRef.Name, Namespace: podRef.Namespace}.ResourceName())
 	pod = x.augmentedPods.GetKey(k)
-	ucc := newUniqlyConnectedClient(r.GetNode(), pod.Namespace, pod.AugmentedLabels, pod.Locality)
+	ucc := ir.NewUniqlyConnectedClient(roleFromRequest(r), pod.Namespace, pod.AugmentedLabels, pod.Locality)
 
 	nodeMd := r.GetNode().GetMetadata()
 	if nodeMd == nil {
@@ -313,11 +275,11 @@ func (x *callbacksCollection) fetchRequest(_ context.Context, r *envoy_service_d
 		nodeMd.Fields = map[string]*structpb.Value{}
 	}
 
-	x.logger.Debug("augmenting role in node metadata", zap.String("resourceName", ucc.resourceName))
+	x.logger.Debug("augmenting role in node metadata", zap.String("resourceName", ucc.ResourceName()))
 	// NOTE: this changes the role to include the unique client. This is coupled
 	// with how the snapshot is inserted to the cache for the proxy - it needs to be done with
 	// the unique client resource name as well.
-	nodeMd.GetFields()[xds.RoleKey] = structpb.NewStringValue(ucc.resourceName)
+	nodeMd.GetFields()[xds.RoleKey] = structpb.NewStringValue(ucc.ResourceName())
 	r.GetNode().Metadata = nodeMd
 	return nil
 }
@@ -332,7 +294,7 @@ func (x *callbacksCollection) Synced() krt.Syncer {
 
 // GetKey returns an object by its key, if present. Otherwise, nil is returned.
 
-func (x *callbacksCollection) GetKey(k krt.Key[UniqlyConnectedClient]) *UniqlyConnectedClient {
+func (x *callbacksCollection) GetKey(k krt.Key[ir.UniqlyConnectedClient]) *ir.UniqlyConnectedClient {
 	x.stateLock.RLock()
 	defer x.stateLock.RUnlock()
 	u, ok := x.uniqClients[string(k)]
@@ -345,7 +307,7 @@ func (x *callbacksCollection) GetKey(k krt.Key[UniqlyConnectedClient]) *UniqlyCo
 // List returns all objects in the collection.
 // Order of the list is undefined.
 
-func (x *callbacksCollection) List() []UniqlyConnectedClient { return x.getClients() }
+func (x *callbacksCollection) List() []ir.UniqlyConnectedClient { return x.getClients() }
 
 type simpleSyncer struct{}
 

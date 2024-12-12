@@ -9,7 +9,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/endpoints"
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
@@ -33,14 +32,14 @@ func (c EndpointResources) Equals(in EndpointResources) bool {
 
 // TODO: this is needed temporary while we don't have the per-upstream translation done.
 // once the plugins are fixed to support it, we can have the proxy translation skip upstreams/endpoints and remove this collection
-func newEnvoyEndpoints(glooEndpoints krt.Collection[krtcollections.EndpointsForUpstream], dbg *krt.DebugHandler) krt.Collection[EndpointResources] {
-	clas := krt.NewCollection(glooEndpoints, func(_ krt.HandlerContext, ep krtcollections.EndpointsForUpstream) *EndpointResources {
+func newEnvoyEndpoints(glooEndpoints krt.Collection[ir.EndpointsForUpstream], dbg *krt.DebugHandler) krt.Collection[EndpointResources] {
+	clas := krt.NewCollection(glooEndpoints, func(_ krt.HandlerContext, ep ir.EndpointsForUpstream) *EndpointResources {
 		return TransformEndpointToResources(ep)
 	}, krt.WithDebugging(dbg), krt.WithName("EnvoyEndpoints"))
 	return clas
 }
 
-func TransformEndpointToResources(ep krtcollections.EndpointsForUpstream) *EndpointResources {
+func TransformEndpointToResources(ep ir.EndpointsForUpstream) *EndpointResources {
 	cla := prioritize(ep)
 	return &EndpointResources{
 		Endpoints:        resource.NewEnvoyResource(cla),
@@ -49,13 +48,13 @@ func TransformEndpointToResources(ep krtcollections.EndpointsForUpstream) *Endpo
 	}
 }
 
-func prioritize(ep krtcollections.EndpointsForUpstream) *envoy_config_endpoint_v3.ClusterLoadAssignment {
+func prioritize(ep ir.EndpointsForUpstream) *envoy_config_endpoint_v3.ClusterLoadAssignment {
 	cla := &envoy_config_endpoint_v3.ClusterLoadAssignment{
 		ClusterName: ep.ClusterName,
 	}
 	for loc, eps := range ep.LbEps {
 		var l *envoy_config_core_v3.Locality
-		if loc != (krtcollections.PodLocality{}) {
+		if loc != (ir.PodLocality{}) {
 			l = &envoy_config_core_v3.Locality{
 				Region:  loc.Region,
 				Zone:    loc.Zone,
@@ -83,7 +82,7 @@ func prioritize(ep krtcollections.EndpointsForUpstream) *envoy_config_endpoint_v
 }
 
 type UccWithEndpoints struct {
-	Client        krtcollections.UniqlyConnectedClient
+	Client        ir.UniqlyConnectedClient
 	Endpoints     envoycache.Resource
 	EndpointsHash uint64
 	endpointsName string
@@ -102,15 +101,15 @@ type PerClientEnvoyEndpoints struct {
 	index     krt.Index[string, UccWithEndpoints]
 }
 
-func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerContext, ucc krtcollections.UniqlyConnectedClient) []UccWithEndpoints {
+func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient) []UccWithEndpoints {
 	return krt.Fetch(kctx, ie.endpoints, krt.FilterIndex(ie.index, ucc.ResourceName()))
 }
 
-func NewPerClientEnvoyEndpoints(logger *zap.Logger, krtopts krtutil.KrtOptions, uccs krt.Collection[krtcollections.UniqlyConnectedClient],
-	glooEndpoints krt.Collection[krtcollections.EndpointsForUpstream],
+func NewPerClientEnvoyEndpoints(logger *zap.Logger, krtopts krtutil.KrtOptions, uccs krt.Collection[ir.UniqlyConnectedClient],
+	glooEndpoints krt.Collection[ir.EndpointsForUpstream],
 	plugins []extensionsplug.EndpointPlugin,
 ) PerClientEnvoyEndpoints {
-	clas := krt.NewManyCollection(glooEndpoints, func(kctx krt.HandlerContext, ep krtcollections.EndpointsForUpstream) []UccWithEndpoints {
+	clas := krt.NewManyCollection(glooEndpoints, func(kctx krt.HandlerContext, ep ir.EndpointsForUpstream) []UccWithEndpoints {
 		uccs := krt.Fetch(kctx, uccs)
 		uccWithEndpointsRet := make([]UccWithEndpoints, 0, len(uccs))
 		for _, ucc := range uccs {
@@ -149,7 +148,7 @@ func NewPerClientEnvoyEndpoints(logger *zap.Logger, krtopts krtutil.KrtOptions, 
 	}
 }
 
-func proccessWithPlugins(plugins []extensionsplug.EndpointPlugin, kctx krt.HandlerContext, ctx context.Context, ucc krtcollections.UniqlyConnectedClient, in krtcollections.EndpointsForUpstream) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64) {
+func proccessWithPlugins(plugins []extensionsplug.EndpointPlugin, kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.EndpointsForUpstream) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64) {
 	for _, processEnddpoints := range plugins {
 		cla, additionalHash := processEnddpoints(kctx, context.TODO(), ucc, in)
 		if cla != nil {

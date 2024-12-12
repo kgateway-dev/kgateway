@@ -13,7 +13,6 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	awspb "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
@@ -98,7 +97,7 @@ func getLambdaHostname(in *v1alpha1.AwsUpstream) string {
 	return fmt.Sprintf("lambda.%s.amazonaws.com", in.Region)
 }
 
-func processEndpointsAws(in *v1alpha1.AwsUpstream) *krtcollections.EndpointsForUpstream {
+func processEndpointsAws(in *v1alpha1.AwsUpstream) *ir.EndpointsForUpstream {
 	return nil
 }
 
