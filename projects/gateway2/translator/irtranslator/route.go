@@ -102,7 +102,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 		}
 		for _, pol := range pols {
 			pctx := &ir.VirtualHostContext{
-				Policy: pol,
+				Policy: pol.PolicyIr,
 			}
 			pass.ApplyVhostPlugin(ctx, pctx, out)
 			// TODO: check return value, if error returned, log error and report condition
@@ -160,7 +160,7 @@ func (h *httpRouteConfigurationTranslator) runVostPlugins(ctx context.Context, o
 			}
 			for _, pol := range pols {
 				pctx := &ir.VirtualHostContext{
-					Policy: pol,
+					Policy: pol.PolicyIr,
 				}
 				pass.ApplyVhostPlugin(ctx, pctx, out)
 				// TODO: check return value, if error returned, log error and report condition
@@ -223,7 +223,7 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(ctx context.Contex
 		}
 		for _, pol := range pols {
 
-			err := pass.ApplyForRouteBackend(ctx, pol, pCtx)
+			err := pass.ApplyForRouteBackend(ctx, pol.PolicyIr, pCtx)
 			if err != nil {
 				errs = append(errs, err)
 			}

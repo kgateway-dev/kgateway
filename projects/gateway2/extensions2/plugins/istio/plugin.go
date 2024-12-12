@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -29,6 +30,18 @@ var (
 	}
 )
 
+type empty struct {
+}
+
+// in case multiple policies attached to the same resouce, we sort by policy creation time.
+func (empty) CreationTime() time.Time {
+	return time.Time{}
+}
+
+func (empty) Equals(in any) bool {
+	return true
+}
+
 func NewPlugin(ctx context.Context, commoncol common.CommonCollections) extensionsplug.Plugin {
 	p := plugin{
 		enabledIstioIntegration: true,
@@ -40,7 +53,7 @@ func NewPlugin(ctx context.Context, commoncol common.CommonCollections) extensio
 				Name:            "istio",
 				ProcessUpstream: p.processUpstream,
 				GlobalPolicies: func(attachmentPoints extensionsplug.AttachmentPoints) ir.PolicyIR {
-					return struct{}{}
+					return empty{}
 				},
 			},
 		},

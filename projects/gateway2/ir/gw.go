@@ -40,8 +40,40 @@ func (c PolicyAtt) TargetRef() *PolicyTargetRef {
 	return c.PolicyTargetRef
 }
 
+func (c PolicyAtt) Equals(in PolicyAtt) bool {
+	return c.GroupKind == in.GroupKind && ptrEquals(c.PolicyTargetRef, in.PolicyTargetRef) && c.PolicyIr.Equals(in.PolicyIr)
+}
+
+func ptrEquals[T comparable](a, b *T) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
+}
+
 type AttachedPolicies struct {
 	Policies map[schema.GroupKind][]PolicyAtt
+}
+
+func (a AttachedPolicies) Equals(b AttachedPolicies) bool {
+	if len(a.Policies) != len(b.Policies) {
+		return false
+	}
+	for k, v := range a.Policies {
+		v2 := b.Policies[k]
+		if len(v) != len(v2) {
+			return false
+		}
+		for i, v := range v {
+			if !v.Equals(v2[i]) {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func (l AttachedPolicies) MarshalJSON() ([]byte, error) {

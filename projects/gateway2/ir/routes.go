@@ -42,7 +42,8 @@ func (c HttpRouteIR) ResourceName() string {
 }
 
 func (c HttpRouteIR) Equals(in HttpRouteIR) bool {
-	return c.ObjectSource == in.ObjectSource && versionEquals(c.SourceObject, in.SourceObject)
+	// TODO: equals should take the attached policies to account too!
+	return c.ObjectSource == in.ObjectSource && versionEquals(c.SourceObject, in.SourceObject) && c.AttachedPolicies.Equals(in.AttachedPolicies)
 }
 
 var _ Route = &HttpRouteIR{}
@@ -66,7 +67,7 @@ func (c TcpRouteIR) ResourceName() string {
 }
 
 func (c TcpRouteIR) Equals(in TcpRouteIR) bool {
-	return c.ObjectSource == in.ObjectSource && versionEquals(c.SourceObject, in.SourceObject)
+	return c.ObjectSource == in.ObjectSource && versionEquals(c.SourceObject, in.SourceObject) && c.AttachedPolicies.Equals(in.AttachedPolicies)
 }
 
 var _ Route = &TcpRouteIR{}

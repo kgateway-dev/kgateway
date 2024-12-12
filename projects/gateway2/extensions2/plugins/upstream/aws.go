@@ -104,7 +104,7 @@ func processEndpointsAws(in *v1alpha1.AwsUpstream) *ir.EndpointsForUpstream {
 func (p *plugin2) processBackendAws(
 	ctx context.Context,
 	pCtx *ir.RouteBackendContext,
-	dest *UpstreamDestination,
+	dest *upstreamDestination,
 ) error {
 
 	functionName := dest.FunctionName

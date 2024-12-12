@@ -78,7 +78,7 @@ func UpstreamResourceName(objSource ObjectSource, port int32) string {
 }
 
 func (c Upstream) Equals(in Upstream) bool {
-	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj)
+	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj) && c.AttachedPolicies.Equals(in.AttachedPolicies)
 }
 
 func (c Upstream) ClusterName() string {
@@ -147,5 +147,5 @@ func (c Gateway) ResourceName() string {
 }
 
 func (c Gateway) Equals(in Gateway) bool {
-	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj)
+	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj) && c.AttachedListenerPolicies.Equals(in.AttachedListenerPolicies) && c.AttachedHttpPolicies.Equals(in.AttachedHttpPolicies)
 }

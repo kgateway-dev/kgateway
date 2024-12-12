@@ -3,6 +3,7 @@ package ir
 import (
 	"context"
 	"fmt"
+	"time"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -78,7 +79,11 @@ type Resources struct {
 type GwTranslationCtx struct {
 }
 
-type PolicyIR any
+type PolicyIR interface {
+	// in case multiple policies attached to the same resouce, we sort by policy creation time.
+	CreationTime() time.Time
+	Equals(in any) bool
+}
 
 type PolicyWrapper struct {
 	ObjectSource `json:",inline"`

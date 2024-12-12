@@ -3,6 +3,7 @@ package krtcollections
 import (
 	"errors"
 	"fmt"
+	"slices"
 
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
@@ -240,21 +241,25 @@ func (p *PolicyIndex) getTargetingPolicies(kctx krt.HandlerContext, pnt extensio
 	targetRefIndexKey.SectionName = sectionName
 	sectionNamePolicies := krt.Fetch(kctx, p.policies, krt.FilterIndex(p.targetRefIndex, targetRefIndexKey))
 
+	// TODO: sort by priority/creation timestamp
 	for _, p := range policies {
-		ret = append(ret, ir.PolicyAtt{PolicyIr: p, GroupKind: p.GetGroupKind(), PolicyTargetRef: &ir.PolicyTargetRef{
+		ret = append(ret, ir.PolicyAtt{PolicyIr: p.PolicyIR, GroupKind: p.GetGroupKind(), PolicyTargetRef: &ir.PolicyTargetRef{
 			Group: p.Group,
 			Kind:  p.Kind,
 			Name:  p.Name,
 		}})
 	}
 	for _, p := range sectionNamePolicies {
-		ret = append(ret, ir.PolicyAtt{PolicyIr: p, GroupKind: p.GetGroupKind(), PolicyTargetRef: &ir.PolicyTargetRef{
+		ret = append(ret, ir.PolicyAtt{PolicyIr: p.PolicyIR, GroupKind: p.GetGroupKind(), PolicyTargetRef: &ir.PolicyTargetRef{
 			Group:       p.Group,
 			Kind:        p.Kind,
 			Name:        p.Name,
 			SectionName: sectionName,
 		}})
 	}
+	slices.SortFunc(ret, func(a, b ir.PolicyAtt) int {
+		return a.PolicyIr.CreationTime().Compare(b.PolicyIr.CreationTime())
+	})
 	return ret
 }
 
@@ -518,7 +523,7 @@ func (h *RoutesIndex) getExtensionRefs(kctx krt.HandlerContext, ns string, r gwv
 		}
 		policy := h.policies.fetchPolicy(kctx, key)
 		if policy != nil {
-			ret.Policies[gk] = append(ret.Policies[gk], ir.PolicyAtt{PolicyIr: policy /*direct attachment - no target ref*/})
+			ret.Policies[gk] = append(ret.Policies[gk], ir.PolicyAtt{PolicyIr: policy.PolicyIR /*direct attachment - no target ref*/})
 		}
 
 	}
@@ -546,7 +551,7 @@ func (h *RoutesIndex) getExtensionRefs2(kctx krt.HandlerContext, ns string, r []
 		}
 		policy := h.policies.fetchPolicy(kctx, key)
 		if policy != nil {
-			ret.Policies[gk] = append(ret.Policies[gk], ir.PolicyAtt{PolicyIr: policy /*direct attachment - no target ref*/})
+			ret.Policies[gk] = append(ret.Policies[gk], ir.PolicyAtt{PolicyIr: policy.PolicyIR /*direct attachment - no target ref*/})
 		}
 
 	}

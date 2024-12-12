@@ -2,6 +2,7 @@ package krtutil
 
 import (
 	"context"
+	"fmt"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -29,6 +30,8 @@ func SetupCollectionDynamic[T any](
 ) krt.Collection[*T] {
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Infof("setting up dynamic collection for %s", gvr.String())
+	var dummy T
+	typeName := fmt.Sprintf("dyn_%T", dummy)
 	delayedClient := kclient.NewDelayedInformer[*unstructured.Unstructured](client, gvr, kubetypes.DynamicInformer, kclient.Filter{
 		ObjectTransform: func(obj any) (any, error) {
 			t, ok := obj.(metav1.ObjectMetaAccessor)
@@ -39,8 +42,9 @@ func SetupCollectionDynamic[T any](
 			// ManagedFields is large and we never use it
 			t.GetObjectMeta().SetManagedFields(nil)
 			return obj, nil
-		}})
-	mapper := krt.WrapClient(delayedClient, opts...)
+		},
+	})
+	mapper := krt.WrapClient(delayedClient, krt.WithName(typeName))
 	return krt.NewCollection(mapper, func(krtctx krt.HandlerContext, i *unstructured.Unstructured) **T {
 		var empty T
 		out := &empty
@@ -50,5 +54,5 @@ func SetupCollectionDynamic[T any](
 			return nil
 		}
 		return &out
-	})
+	}, opts...)
 }

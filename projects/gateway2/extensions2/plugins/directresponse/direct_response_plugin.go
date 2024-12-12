@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -20,8 +21,23 @@ import (
 )
 
 type directResponse struct {
+	ct   time.Time
 	spec v1alpha1.DirectResponseSpec
 }
+
+// in case multiple policies attached to the same resouce, we sort by policy creation time.
+func (d *directResponse) CreationTime() time.Time {
+	return d.ct
+}
+
+func (d *directResponse) Equals(in any) bool {
+	d2, ok := in.(*directResponse)
+	if !ok {
+		return false
+	}
+	return d.spec == d2.spec
+}
+
 type directResponseGwPass struct {
 }
 
@@ -43,7 +59,7 @@ func NewPlugin(ctx context.Context, commoncol common.CommonCollections) extensio
 				Name:      i.Name,
 			},
 			Policy:   i,
-			PolicyIR: &directResponse{spec: i.Spec},
+			PolicyIR: &directResponse{ct: i.CreationTimestamp.Time, spec: i.Spec},
 			// no target refs for direct response
 		}
 		return pol

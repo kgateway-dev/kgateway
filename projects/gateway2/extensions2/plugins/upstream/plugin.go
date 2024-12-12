@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"maps"
+	"time"
 
 	awspb "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -38,9 +39,22 @@ var (
 	}
 )
 
-type UpstreamDestination struct {
+type upstreamDestination struct {
 	FunctionName string
 }
+
+func (d *upstreamDestination) CreationTime() time.Time {
+	return time.Time{}
+}
+
+func (d *upstreamDestination) Equals(in any) bool {
+	d2, ok := in.(*upstreamDestination)
+	if !ok {
+		return false
+	}
+	return d.FunctionName == d2.FunctionName
+}
+
 type UpstreamIr struct {
 	AwsSecret *ir.Secret
 }
@@ -114,7 +128,7 @@ func NewPlugin(ctx context.Context, commoncol common.CommonCollections) extensio
 				//			AttachmentPoints: []ir.AttachmentPoints{ir.HttpBackendRefAttachmentPoint},
 				PoliciesFetch: func(n, ns string) ir.PolicyIR {
 					// virtual policy - we don't have a real policy object
-					return &UpstreamDestination{
+					return &upstreamDestination{
 						FunctionName: n,
 					}
 				},
@@ -212,10 +226,10 @@ func (p *plugin2) ApplyForRouteBackend(
 	ctx context.Context, policy ir.PolicyIR,
 	pCtx *ir.RouteBackendContext,
 ) error {
-	pol, ok := policy.(*UpstreamDestination)
+	pol, ok := policy.(*upstreamDestination)
 	if !ok {
 		return nil
-		// todo: should we return fmt.Errorf("internal error: policy is not a UpstreamDestination")
+		// todo: should we return fmt.Errorf("internal error: policy is not a upstreamDestination")
 	}
 	return p.processBackendAws(ctx, pCtx, pol)
 }

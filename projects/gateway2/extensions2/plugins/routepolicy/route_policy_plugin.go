@@ -20,8 +20,22 @@ import (
 )
 
 type routeOptsPlugin struct {
+	ct   time.Time
 	spec v1alpha1.RoutePolicySpec
 }
+
+func (d *routeOptsPlugin) CreationTime() time.Time {
+	return d.ct
+}
+
+func (d *routeOptsPlugin) Equals(in any) bool {
+	d2, ok := in.(*routeOptsPlugin)
+	if !ok {
+		return false
+	}
+	return d.spec == d2.spec
+}
+
 type routeOptsPluginGwPass struct {
 }
 
@@ -43,7 +57,7 @@ func NewPlugin(ctx context.Context, commoncol common.CommonCollections) extensio
 				Name:      i.Name,
 			},
 			Policy:     i,
-			PolicyIR:   &routeOptsPlugin{spec: i.Spec},
+			PolicyIR:   &routeOptsPlugin{ct: i.CreationTimestamp.Time, spec: i.Spec},
 			TargetRefs: convert(i.Spec.TargetRef),
 		}
 		return pol
