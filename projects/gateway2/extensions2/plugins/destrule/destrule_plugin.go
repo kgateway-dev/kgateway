@@ -15,7 +15,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/common"
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pkg/config/schema/gvr"
@@ -49,7 +48,7 @@ type destrulePlugin struct {
 	destinationRulesIndex DestinationRuleIndex
 }
 
-func (d *destrulePlugin) processEnddpoints(kctx krt.HandlerContext, ctx context.Context, ucc krtcollections.UniqlyConnectedClient, in krtcollections.EndpointsForUpstream) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64) {
+func (d *destrulePlugin) processEnddpoints(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.EndpointsForUpstream) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64) {
 	destrule := d.destinationRulesIndex.FetchDestRulesFor(kctx, ucc.Namespace, in.Hostname, ucc.Labels)
 	if destrule == nil {
 		return nil, 0
@@ -70,7 +69,7 @@ func (d *destrulePlugin) processEnddpoints(kctx krt.HandlerContext, ctx context.
 	return endpoints.PrioritizeEndpoints(logger, priorityInfo, in, ucc), additionalHash
 }
 
-func (d *destrulePlugin) processUpstream(kctx krt.HandlerContext, ctx context.Context, ucc krtcollections.UniqlyConnectedClient, in ir.Upstream, outCluster *envoy_config_cluster_v3.Cluster) {
+func (d *destrulePlugin) processUpstream(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.Upstream, outCluster *envoy_config_cluster_v3.Cluster) {
 	destrule := d.destinationRulesIndex.FetchDestRulesFor(kctx, ucc.Namespace, in.CanonicalHostname, ucc.Labels)
 
 	if destrule != nil {
