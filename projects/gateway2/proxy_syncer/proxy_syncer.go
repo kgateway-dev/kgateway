@@ -268,7 +268,14 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 		krtopts.ToOptions("TCPRoute")...,
 	)
 
-	upstreamIndex := krtcollections.NewUpstreamIndex(krtopts, policies)
+	var backendRefPlugins []extensionsplug.GetBackendForRefPlugin
+	for _, ext := range s.extensions.ContributesPolicies {
+		if ext.GetBackendForRef != nil {
+			backendRefPlugins = append(backendRefPlugins, ext.GetBackendForRef)
+		}
+	}
+
+	upstreamIndex := krtcollections.NewUpstreamIndex(krtopts, backendRefPlugins, policies)
 	finalUpstreams, endpointIRs := s.initUpstreams(ctx, upstreamIndex, krtopts)
 
 	routes := krtcollections.NewRoutesIndex(krtopts, httpRoutes, tcproutes, policies, upstreamIndex, refgrants)

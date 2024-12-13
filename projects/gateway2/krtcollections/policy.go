@@ -25,13 +25,19 @@ var (
 )
 
 type UpstreamIndex struct {
-	availableUpstreams map[schema.GroupKind]krt.Collection[ir.Upstream]
-	policies           *PolicyIndex
-	krtopts            krtutil.KrtOptions
+	availableUpstreams  map[schema.GroupKind]krt.Collection[ir.Upstream]
+	backendRefExtension []extensionsplug.GetBackendForRefPlugin
+	policies            *PolicyIndex
+	krtopts             krtutil.KrtOptions
 }
 
-func NewUpstreamIndex(krtopts krtutil.KrtOptions, policies *PolicyIndex) *UpstreamIndex {
-	return &UpstreamIndex{policies: policies, availableUpstreams: map[schema.GroupKind]krt.Collection[ir.Upstream]{}, krtopts: krtopts}
+func NewUpstreamIndex(krtopts krtutil.KrtOptions, backendRefExtension []extensionsplug.GetBackendForRefPlugin, policies *PolicyIndex) *UpstreamIndex {
+	return &UpstreamIndex{
+		policies:            policies,
+		availableUpstreams:  map[schema.GroupKind]krt.Collection[ir.Upstream]{},
+		krtopts:             krtopts,
+		backendRefExtension: backendRefExtension,
+	}
 }
 
 func (ui *UpstreamIndex) Upstreams() []krt.Collection[ir.Upstream] {
@@ -92,6 +98,12 @@ func (i *UpstreamIndex) getUpstream(kctx krt.HandlerContext, gk schema.GroupKind
 	var port int32
 	if gwport != nil {
 		port = int32(*gwport)
+	}
+
+	for _, getBackendRcol := range i.backendRefExtension {
+		if up := getBackendRcol(kctx, key, port); up != nil {
+			return up, nil
+		}
 	}
 
 	up := krt.FetchOne(kctx, col, krt.FilterKey(ir.UpstreamResourceName(key, port)))

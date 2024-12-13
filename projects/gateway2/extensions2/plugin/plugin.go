@@ -26,11 +26,14 @@ func (a AttachmentPoints) Has(p AttachmentPoints) bool {
 }
 
 type EndpointPlugin func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.EndpointsForUpstream) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64)
+type GetBackendForRefPlugin func(kctx krt.HandlerContext, key ir.ObjectSource, port int32) *ir.Upstream
 
 type PolicyPlugin struct {
 	Name                      string
 	NewGatewayTranslationPass func(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass
-	ProcessUpstream           func(ctx context.Context, pol ir.PolicyIR, in ir.Upstream, out *envoy_config_cluster_v3.Cluster)
+
+	GetBackendForRef GetBackendForRefPlugin
+	ProcessUpstream  func(ctx context.Context, pol ir.PolicyIR, in ir.Upstream, out *envoy_config_cluster_v3.Cluster)
 	// TODO: consider changing PerClientProcessUpstream too look like this:
 	// PerClientProcessUpstream  func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.Upstream)
 	// so that it only attaches the policy to the upstream, and doesn't modify the upstream (except for attached policies) or the cluster itself.
