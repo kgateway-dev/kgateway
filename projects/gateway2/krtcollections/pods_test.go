@@ -6,6 +6,7 @@ import (
 
 	"github.com/onsi/gomega"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	. "github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"istio.io/istio/pkg/kube/krt"
@@ -52,7 +53,7 @@ func TestPods(t *testing.T) {
 					Name:      "name",
 					Namespace: "ns",
 				},
-				Locality: PodLocality{
+				Locality: ir.PodLocality{
 					Region:  "region",
 					Zone:    "zone",
 					Subzone: "",
@@ -101,7 +102,7 @@ func TestPods(t *testing.T) {
 					Name:      "name",
 					Namespace: "ns",
 				},
-				Locality: PodLocality{
+				Locality: ir.PodLocality{
 					Region:  "region",
 					Zone:    "zone",
 					Subzone: "",
@@ -143,7 +144,7 @@ func TestPods(t *testing.T) {
 					Name:      "name",
 					Namespace: "ns",
 				},
-				Locality: PodLocality{
+				Locality: ir.PodLocality{
 					Region:  "region",
 					Zone:    "zone",
 					Subzone: "",

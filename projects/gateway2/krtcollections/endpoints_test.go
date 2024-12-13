@@ -6,11 +6,11 @@ import (
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	"github.com/fgrosse/zaptest"
 	"github.com/onsi/gomega"
 	. "github.com/onsi/gomega"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
-	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/gloo/projects/gateway2/ir"
+	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
@@ -24,20 +24,31 @@ import (
 func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 	g := gomega.NewWithT(t)
 
-	us := UpstreamWrapper{
-		Inner: &gloov1.Upstream{
-			Metadata: &core.Metadata{Name: "name", Namespace: "ns"},
-			UpstreamType: &gloov1.Upstream_Kube{
-				Kube: &kubernetes.UpstreamSpec{
-					ServiceName:      "svc",
-					ServiceNamespace: "ns",
-					ServicePort:      8080,
+	us := ir.Upstream{
+		ObjectSource: ir.ObjectSource{
+			Namespace: "ns",
+			Name:      "svc",
+			Group:     "",
+			Kind:      "Service",
+		},
+		Port: 8080,
+		Obj: &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "svc",
+				Namespace: "ns",
+			},
+			Spec: corev1.ServiceSpec{
+				Ports: []corev1.ServicePort{
+					{
+						Name: "http",
+						Port: 8080,
+					},
 				},
 			},
 		},
 	}
 	// input
-	emd1 := EndpointWithMd{
+	emd1 := ir.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
 			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
 				Endpoint: &endpointv3.Endpoint{
@@ -54,14 +65,14 @@ func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 				},
 			},
 		},
-		EndpointMd: EndpointMetadata{
+		EndpointMd: ir.EndpointMetadata{
 			Labels: map[string]string{
 				corev1.LabelTopologyRegion: "region",
 				corev1.LabelTopologyZone:   "zone",
 			},
 		},
 	}
-	emd2 := EndpointWithMd{
+	emd2 := ir.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
 			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
 				Endpoint: &endpointv3.Endpoint{
@@ -78,90 +89,112 @@ func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 				},
 			},
 		},
-		EndpointMd: EndpointMetadata{
+		EndpointMd: ir.EndpointMetadata{
 			Labels: map[string]string{
 				corev1.LabelTopologyRegion: "region2",
 				corev1.LabelTopologyZone:   "zone2",
 			},
 		},
 	}
-	result1 := NewEndpointsForUpstream(us, nil)
-	result1.Add(PodLocality{
+	result1 := ir.NewEndpointsForUpstream(us)
+	result1.Add(ir.PodLocality{
 		Region: "region",
 		Zone:   "zone",
 	}, emd1)
-	result1.Add(PodLocality{
+	result1.Add(ir.PodLocality{
 		Region: "region2",
 		Zone:   "zone2",
 	}, emd2)
 
-	result2 := NewEndpointsForUpstream(us, nil)
-	result2.Add(PodLocality{
+	result2 := ir.NewEndpointsForUpstream(us)
+	result2.Add(ir.PodLocality{
 		Region: "region2",
 		Zone:   "zone2",
 	}, emd2)
-	result2.Add(PodLocality{
+	result2.Add(ir.PodLocality{
 		Region: "region",
 		Zone:   "zone",
 	}, emd1)
 	g.Expect(result1.Equals(*result2)).To(BeTrue(), "expected %v, got %v", result1, result2)
 
 	// test with non matching locality
-	result3 := NewEndpointsForUpstream(us, nil)
-	result3.Add(PodLocality{
+	result3 := ir.NewEndpointsForUpstream(us)
+	result3.Add(ir.PodLocality{
 		Region: "region",
 		Zone:   "zone",
 	}, emd1)
-	result3.Add(PodLocality{
+	result3.Add(ir.PodLocality{
 		Region: "region",
 		Zone:   "zone",
 	}, emd2)
 	g.Expect(result1.Equals(*result3)).To(BeFalse(), "not expected %v, got %v", result1, result2)
 
 	// test with non matching labels
-	result4 := NewEndpointsForUpstream(us, nil)
-	result4.Add(PodLocality{
+	result4 := ir.NewEndpointsForUpstream(us)
+	result4.Add(ir.PodLocality{
 		Region: "region",
 		Zone:   "zone",
 	}, emd1)
 
 	emd2.EndpointMd.Labels["extra"] = "label"
-	result4.Add(PodLocality{
+	result4.Add(ir.PodLocality{
 		Region: "region2",
 		Zone:   "zone2",
 	}, emd2)
 	g.Expect(result1.Equals(*result4)).To(BeFalse(), "not expected %v, got %v", result1, result2)
 }
 
-func TestEndpointsForUpstreamWithDiscoveredUpstream(t *testing.T) {
+func TestEndpointsForUpstreamWithDifferentNameButSameEndpoints(t *testing.T) {
 	g := gomega.NewWithT(t)
 
-	us := UpstreamWrapper{
-		Inner: &gloov1.Upstream{
-			Metadata: &core.Metadata{Name: "name", Namespace: "ns"},
-			UpstreamType: &gloov1.Upstream_Kube{
-				Kube: &kubernetes.UpstreamSpec{
-					ServiceName:      "svc",
-					ServiceNamespace: "ns",
-					ServicePort:      8080,
+	us := ir.Upstream{
+		ObjectSource: ir.ObjectSource{
+			Namespace: "ns",
+			Name:      "svc",
+			Group:     "",
+			Kind:      "Service",
+		},
+		Port: 8080,
+		Obj: &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "svc",
+				Namespace: "ns",
+			},
+			Spec: corev1.ServiceSpec{
+				Ports: []corev1.ServicePort{
+					{
+						Name: "http",
+						Port: 8080,
+					},
 				},
 			},
 		},
 	}
-	usd := UpstreamWrapper{
-		Inner: &gloov1.Upstream{
-			Metadata: &core.Metadata{Name: "discovered-name", Namespace: "ns"},
-			UpstreamType: &gloov1.Upstream_Kube{
-				Kube: &kubernetes.UpstreamSpec{
-					ServiceName:      "svc",
-					ServiceNamespace: "ns",
-					ServicePort:      8080,
+	usd := ir.Upstream{
+		ObjectSource: ir.ObjectSource{
+			Namespace: "ns",
+			Name:      "discovered-name",
+			Group:     "",
+			Kind:      "Service",
+		},
+		Port: 8080,
+		Obj: &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "discovered-name",
+				Namespace: "ns",
+			},
+			Spec: corev1.ServiceSpec{
+				Ports: []corev1.ServicePort{
+					{
+						Name: "http",
+						Port: 8080,
+					},
 				},
 			},
 		},
 	}
 	// input
-	emd1 := EndpointWithMd{
+	emd1 := ir.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
 			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
 				Endpoint: &endpointv3.Endpoint{
@@ -178,14 +211,14 @@ func TestEndpointsForUpstreamWithDiscoveredUpstream(t *testing.T) {
 				},
 			},
 		},
-		EndpointMd: EndpointMetadata{
+		EndpointMd: ir.EndpointMetadata{
 			Labels: map[string]string{
 				corev1.LabelTopologyRegion: "region",
 				corev1.LabelTopologyZone:   "zone",
 			},
 		},
 	}
-	emd2 := EndpointWithMd{
+	emd2 := ir.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
 			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
 				Endpoint: &endpointv3.Endpoint{
@@ -202,7 +235,7 @@ func TestEndpointsForUpstreamWithDiscoveredUpstream(t *testing.T) {
 				},
 			},
 		},
-		EndpointMd: EndpointMetadata{
+		EndpointMd: ir.EndpointMetadata{
 			Labels: map[string]string{
 				corev1.LabelTopologyRegion: "region",
 				corev1.LabelTopologyZone:   "zone",
@@ -210,26 +243,26 @@ func TestEndpointsForUpstreamWithDiscoveredUpstream(t *testing.T) {
 		},
 	}
 
-	result1 := NewEndpointsForUpstream(us, nil)
-	result1.Add(PodLocality{
+	result1 := ir.NewEndpointsForUpstream(us)
+	result1.Add(ir.PodLocality{
 		Region: "region",
 		Zone:   "zone",
 	}, emd1)
 
-	result2 := NewEndpointsForUpstream(usd, nil)
-	result2.Add(PodLocality{
+	result2 := ir.NewEndpointsForUpstream(usd)
+	result2.Add(ir.PodLocality{
 		Region: "region",
 		Zone:   "zone",
 	}, emd1)
 
-	result3 := NewEndpointsForUpstream(us, nil)
-	result3.Add(PodLocality{
+	result3 := ir.NewEndpointsForUpstream(us)
+	result3.Add(ir.PodLocality{
 		Region: "region",
 		Zone:   "zone",
 	}, emd2)
 
-	result4 := NewEndpointsForUpstream(usd, nil)
-	result4.Add(PodLocality{
+	result4 := ir.NewEndpointsForUpstream(usd)
+	result4.Add(ir.PodLocality{
 		Region: "region",
 		Zone:   "zone",
 	}, emd2)
@@ -240,45 +273,16 @@ func TestEndpointsForUpstreamWithDiscoveredUpstream(t *testing.T) {
 	g.Expect(h1).NotTo(Equal(h2), "not expected %v, got %v", h1, h2)
 }
 
-// Note: if we find out the envoy bug was fixed (where changed clusters don't warm until EDS updates)
-// this test can be removed.
-func TestEndpointsForUpstreamWhenUpstreamLabelsAdded(t *testing.T) {
-	g := gomega.NewWithT(t)
-
-	usGen := func() UpstreamWrapper {
-		return UpstreamWrapper{
-			Inner: &gloov1.Upstream{
-				Metadata: &core.Metadata{Name: "name", Namespace: "ns"},
-				UpstreamType: &gloov1.Upstream_Kube{
-					Kube: &kubernetes.UpstreamSpec{
-						ServiceName:      "svc",
-						ServiceNamespace: "ns",
-						ServicePort:      8080,
-					},
-				},
-			},
-		}
-	}
-	// 2 copies
-	us1 := usGen()
-	us2 := usGen()
-	us2.Inner.DiscoveryMetadata = &gloov1.DiscoveryMetadata{
-		Labels: map[string]string{
-			"extra": "label",
-		},
-	}
-	efu1 := NewEndpointsForUpstream(us1, nil)
-	efu2 := NewEndpointsForUpstream(us2, nil)
-
-	g.Expect(efu1.LbEpsEqualityHash).NotTo(Equal(efu2.LbEpsEqualityHash))
-}
-
 func TestEndpoints(t *testing.T) {
+
+	logger := zaptest.Logger(t)
+	contextutils.SetFallbackLogger(logger.Sugar())
+
 	testCases := []struct {
 		name     string
 		inputs   []any
-		upstream UpstreamWrapper
-		result   func(UpstreamWrapper) *EndpointsForUpstream
+		upstream ir.Upstream
+		result   func(ir.Upstream) *ir.EndpointsForUpstream
 	}{
 		{
 			name: "basic",
@@ -336,7 +340,17 @@ func TestEndpoints(t *testing.T) {
 						},
 					},
 				},
-				&corev1.Service{
+			},
+
+			upstream: ir.Upstream{
+				ObjectSource: ir.ObjectSource{
+					Namespace: "ns",
+					Name:      "svc",
+					Group:     "",
+					Kind:      "Service",
+				},
+				Port: 8080,
+				Obj: &corev1.Service{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "svc",
 						Namespace: "ns",
@@ -351,21 +365,9 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			upstream: UpstreamWrapper{
-				Inner: &gloov1.Upstream{
-					Metadata: &core.Metadata{Name: "name", Namespace: "ns"},
-					UpstreamType: &gloov1.Upstream_Kube{
-						Kube: &kubernetes.UpstreamSpec{
-							ServiceName:      "svc",
-							ServiceNamespace: "ns",
-							ServicePort:      8080,
-						},
-					},
-				},
-			},
-			result: func(us UpstreamWrapper) *EndpointsForUpstream {
+			result: func(us ir.Upstream) *ir.EndpointsForUpstream {
 				// output
-				emd := EndpointWithMd{
+				emd := ir.EndpointWithMd{
 					LbEndpoint: &endpointv3.LbEndpoint{
 						LoadBalancingWeight: wrapperspb.UInt32(1),
 						HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
@@ -383,15 +385,15 @@ func TestEndpoints(t *testing.T) {
 							},
 						},
 					},
-					EndpointMd: EndpointMetadata{
+					EndpointMd: ir.EndpointMetadata{
 						Labels: map[string]string{
 							corev1.LabelTopologyRegion: "region",
 							corev1.LabelTopologyZone:   "zone",
 						},
 					},
 				}
-				result := NewEndpointsForUpstream(us, nil)
-				result.Add(PodLocality{
+				result := ir.NewEndpointsForUpstream(us)
+				result.Add(ir.PodLocality{
 					Region: "region",
 					Zone:   "zone",
 				}, emd)
@@ -488,7 +490,17 @@ func TestEndpoints(t *testing.T) {
 						},
 					},
 				},
-				&corev1.Service{
+			},
+
+			upstream: ir.Upstream{
+				ObjectSource: ir.ObjectSource{
+					Namespace: "ns",
+					Name:      "svc",
+					Group:     "",
+					Kind:      "Service",
+				},
+				Port: 8080,
+				Obj: &corev1.Service{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "svc",
 						Namespace: "ns",
@@ -503,25 +515,13 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			upstream: UpstreamWrapper{
-				Inner: &gloov1.Upstream{
-					Metadata: &core.Metadata{Name: "name", Namespace: "ns"},
-					UpstreamType: &gloov1.Upstream_Kube{
-						Kube: &kubernetes.UpstreamSpec{
-							ServiceName:      "svc",
-							ServiceNamespace: "ns",
-							ServicePort:      8080,
-						},
-					},
-				},
-			},
-			result: func(us UpstreamWrapper) *EndpointsForUpstream {
+			result: func(us ir.Upstream) *ir.EndpointsForUpstream {
 				// output
-				result := NewEndpointsForUpstream(us, nil)
-				result.Add(PodLocality{
+				result := ir.NewEndpointsForUpstream(us)
+				result.Add(ir.PodLocality{
 					Region: "region",
 					Zone:   "zone",
-				}, EndpointWithMd{
+				}, ir.EndpointWithMd{
 					LbEndpoint: &endpointv3.LbEndpoint{
 						LoadBalancingWeight: wrapperspb.UInt32(1),
 						HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
@@ -539,17 +539,17 @@ func TestEndpoints(t *testing.T) {
 							},
 						},
 					},
-					EndpointMd: EndpointMetadata{
+					EndpointMd: ir.EndpointMetadata{
 						Labels: map[string]string{
 							corev1.LabelTopologyRegion: "region",
 							corev1.LabelTopologyZone:   "zone",
 						},
 					},
 				})
-				result.Add(PodLocality{
+				result.Add(ir.PodLocality{
 					Region: "region",
 					Zone:   "zone2",
-				}, EndpointWithMd{
+				}, ir.EndpointWithMd{
 					LbEndpoint: &endpointv3.LbEndpoint{
 						LoadBalancingWeight: wrapperspb.UInt32(1),
 						HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
@@ -567,7 +567,7 @@ func TestEndpoints(t *testing.T) {
 							},
 						},
 					},
-					EndpointMd: EndpointMetadata{
+					EndpointMd: ir.EndpointMetadata{
 						Labels: map[string]string{
 							corev1.LabelTopologyRegion: "region",
 							corev1.LabelTopologyZone:   "zone2",
@@ -639,7 +639,16 @@ func TestEndpoints(t *testing.T) {
 						},
 					},
 				},
-				&corev1.Service{
+			},
+			upstream: ir.Upstream{
+				ObjectSource: ir.ObjectSource{
+					Namespace: "ns",
+					Name:      "svc",
+					Group:     "",
+					Kind:      "Service",
+				},
+				Port: 8080,
+				Obj: &corev1.Service{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "svc",
 						Namespace: "ns",
@@ -654,21 +663,9 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			upstream: UpstreamWrapper{
-				Inner: &gloov1.Upstream{
-					Metadata: &core.Metadata{Name: "name", Namespace: "ns"},
-					UpstreamType: &gloov1.Upstream_Kube{
-						Kube: &kubernetes.UpstreamSpec{
-							ServiceName:      "svc",
-							ServiceNamespace: "ns",
-							ServicePort:      8080,
-						},
-					},
-				},
-			},
-			result: func(us UpstreamWrapper) *EndpointsForUpstream {
+			result: func(us ir.Upstream) *ir.EndpointsForUpstream {
 				// output
-				emd := EndpointWithMd{
+				emd := ir.EndpointWithMd{
 					LbEndpoint: &endpointv3.LbEndpoint{
 						LoadBalancingWeight: wrapperspb.UInt32(1),
 						HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
@@ -686,7 +683,7 @@ func TestEndpoints(t *testing.T) {
 							},
 						},
 					},
-					EndpointMd: EndpointMetadata{
+					EndpointMd: ir.EndpointMetadata{
 						Labels: map[string]string{
 							corev1.LabelTopologyRegion: "region",
 							corev1.LabelTopologyZone:   "zone",
@@ -694,8 +691,8 @@ func TestEndpoints(t *testing.T) {
 						},
 					},
 				}
-				result := NewEndpointsForUpstream(us, nil)
-				result.Add(PodLocality{
+				result := ir.NewEndpointsForUpstream(us)
+				result.Add(ir.PodLocality{
 					Region: "region",
 					Zone:   "zone",
 				}, emd)
@@ -733,10 +730,10 @@ func TestEndpoints(t *testing.T) {
 				},
 				&discoveryv1.EndpointSlice{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc1-slice1",
+						Name:      "svc-slice1",
 						Namespace: "ns",
 						Labels: map[string]string{
-							"kubernetes.io/service-name": "svc1",
+							"kubernetes.io/service-name": "svc",
 						},
 					},
 					AddressType: discoveryv1.AddressTypeIPv4,
@@ -763,10 +760,10 @@ func TestEndpoints(t *testing.T) {
 				},
 				&discoveryv1.EndpointSlice{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc1-slice2",
+						Name:      "svc-slice2",
 						Namespace: "ns",
 						Labels: map[string]string{
-							"kubernetes.io/service-name": "svc1",
+							"kubernetes.io/service-name": "svc",
 						},
 					},
 					AddressType: discoveryv1.AddressTypeIPv4,
@@ -791,9 +788,18 @@ func TestEndpoints(t *testing.T) {
 						},
 					},
 				},
-				&corev1.Service{
+			},
+			upstream: ir.Upstream{
+				ObjectSource: ir.ObjectSource{
+					Namespace: "ns",
+					Name:      "svc",
+					Group:     "",
+					Kind:      "Service",
+				},
+				Port: 8080,
+				Obj: &corev1.Service{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc1",
+						Name:      "svc",
 						Namespace: "ns",
 					},
 					Spec: corev1.ServiceSpec{
@@ -806,21 +812,9 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			upstream: UpstreamWrapper{
-				Inner: &gloov1.Upstream{
-					Metadata: &core.Metadata{Name: "name", Namespace: "ns"},
-					UpstreamType: &gloov1.Upstream_Kube{
-						Kube: &kubernetes.UpstreamSpec{
-							ServiceName:      "svc1",
-							ServiceNamespace: "ns",
-							ServicePort:      8080,
-						},
-					},
-				},
-			},
-			result: func(us UpstreamWrapper) *EndpointsForUpstream {
+			result: func(us ir.Upstream) *ir.EndpointsForUpstream {
 				// Only one endpoint should be present after deduplication
-				emd := EndpointWithMd{
+				emd := ir.EndpointWithMd{
 					LbEndpoint: &endpointv3.LbEndpoint{
 						LoadBalancingWeight: wrapperspb.UInt32(1),
 						HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
@@ -838,7 +832,7 @@ func TestEndpoints(t *testing.T) {
 							},
 						},
 					},
-					EndpointMd: EndpointMetadata{
+					EndpointMd: ir.EndpointMetadata{
 						Labels: map[string]string{
 							corev1.LabelTopologyRegion: "region1",
 							corev1.LabelTopologyZone:   "zone1",
@@ -846,8 +840,8 @@ func TestEndpoints(t *testing.T) {
 						},
 					},
 				}
-				result := NewEndpointsForUpstream(us, nil)
-				result.Add(PodLocality{
+				result := ir.NewEndpointsForUpstream(us)
+				result.Add(ir.PodLocality{
 					Region: "region1",
 					Zone:   "zone1",
 				}, emd)
@@ -885,10 +879,10 @@ func TestEndpoints(t *testing.T) {
 				},
 				&discoveryv1.EndpointSlice{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc1-slice-unready",
+						Name:      "svc-slice-unready",
 						Namespace: "ns",
 						Labels: map[string]string{
-							"kubernetes.io/service-name": "svc1",
+							"kubernetes.io/service-name": "svc",
 						},
 					},
 					AddressType: discoveryv1.AddressTypeIPv4,
@@ -913,9 +907,18 @@ func TestEndpoints(t *testing.T) {
 						},
 					},
 				},
-				&corev1.Service{
+			},
+			upstream: ir.Upstream{
+				ObjectSource: ir.ObjectSource{
+					Namespace: "ns",
+					Name:      "svc",
+					Group:     "",
+					Kind:      "Service",
+				},
+				Port: 8080,
+				Obj: &corev1.Service{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "svc1",
+						Name:      "svc",
 						Namespace: "ns",
 					},
 					Spec: corev1.ServiceSpec{
@@ -928,21 +931,9 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			upstream: UpstreamWrapper{
-				Inner: &gloov1.Upstream{
-					Metadata: &core.Metadata{Name: "name", Namespace: "ns"},
-					UpstreamType: &gloov1.Upstream_Kube{
-						Kube: &kubernetes.UpstreamSpec{
-							ServiceName:      "svc1",
-							ServiceNamespace: "ns",
-							ServicePort:      8080,
-						},
-					},
-				},
-			},
-			result: func(us UpstreamWrapper) *EndpointsForUpstream {
+			result: func(us ir.Upstream) *ir.EndpointsForUpstream {
 				// The result should be empty since no ready endpoints are available.
-				result := NewEndpointsForUpstream(us, nil)
+				result := ir.NewEndpointsForUpstream(us)
 				return result
 			},
 		},
@@ -976,12 +967,11 @@ func TestEndpoints(t *testing.T) {
 			})
 
 			ei := EndpointsInputs{
-				Upstreams:               krttest.GetMockCollection[UpstreamWrapper](mock),
+				Upstreams:               krttest.GetMockCollection[ir.Upstream](mock),
 				EndpointSlices:          endpointSlices,
 				EndpointSlicesByService: endpointSlicesByService,
 				Pods:                    pods,
 				EndpointsSettings:       endpointSettings,
-				Services:                krttest.GetMockCollection[*corev1.Service](mock),
 			}
 
 			builder := transformK8sEndpoints(context.Background(), ei)

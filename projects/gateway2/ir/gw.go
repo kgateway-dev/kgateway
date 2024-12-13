@@ -96,7 +96,6 @@ type Backend struct {
 }
 
 type HttpRouteRuleCommonIR struct {
-	SourceRule       *gwv1.HTTPRouteRule
 	ExtensionRefs    AttachedPolicies
 	AttachedPolicies AttachedPolicies
 }
@@ -104,11 +103,6 @@ type HttpRouteRuleCommonIR struct {
 type HttpBackendOrDelegate struct {
 	Backend  *Backend
 	Delegate *ObjectSource
-	AttachedPolicies
-}
-
-type HttpBackend struct {
-	Backend Backend
 	AttachedPolicies
 }
 

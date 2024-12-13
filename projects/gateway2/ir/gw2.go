@@ -6,12 +6,20 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-// types here are not in krt collections, so no need for equals
+// This is the IR that is used in the translation to XDS. it is self contained and no IO/krt is
+// needed to process it to xDS.
+
+// As types here are not in krt collections, so no need for equals and resource name.
+
+type HttpBackend struct {
+	Backend Backend
+	AttachedPolicies
+}
 
 type HttpRouteRuleMatchIR struct {
 	HttpRouteRuleCommonIR
 	Parent *HttpRouteIR
-	// if there's an error, the listener where to report it.
+	// if there's an error, the gw-api listener to report it in.
 	ParentRef  gwv1.ParentReference
 	Backends   []HttpBackend
 	Match      gwv1.HTTPRouteMatch

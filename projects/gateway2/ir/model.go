@@ -105,7 +105,8 @@ type EndpointsForUpstream struct {
 func NewEndpointsForUpstream(us Upstream) *EndpointsForUpstream {
 	// start with a hash of the cluster name. technically we dont need it for krt, as we can compare the upstream name. but it helps later
 	// to compute the hash we present envoy with.
-	// add the upstream hash to the clustername, so that if it changes the envoy cluster will become warm again.
+	// note: we no longer need to add the upstream body hash to the clustername, as we applied `use_eds_cache_for_ads`
+	// to mitigate https://github.com/envoyproxy/envoy/issues/13070 / https://github.com/envoyproxy/envoy/issues/13009
 
 	h := fnv.New64a()
 	h.Write([]byte(us.Group))
