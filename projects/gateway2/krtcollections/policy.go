@@ -397,7 +397,7 @@ func NewRoutesIndex(krtopts krtutil.KrtOptions, httproutes krt.Collection[*gwv1.
 		t := h.transformTcpRoute(kctx, i)
 		return &RouteWrapper{Route: t}
 	}, krtopts.ToOptions("routes-tcp-routes-with-policy")...)
-	h.routes = krt.JoinCollection([]krt.Collection[RouteWrapper]{hr, tr})
+	h.routes = krt.JoinCollection([]krt.Collection[RouteWrapper]{hr, tr}, krtopts.ToOptions(name: "all-routes-with-policy")...)
 
 	httpByNamespace := krt.NewIndex(h.httpRoutes, func(i ir.HttpRouteIR) []string {
 		return []string{i.GetNamespace()}
