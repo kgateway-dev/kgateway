@@ -180,10 +180,3 @@ type UpstreamStatus struct {
 	// +kubebuilder:validation:MaxItems=8
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
-
-func init() {
-	SchemeBuilder.Register(&RoutePolicy{}, &RoutePolicyList{})
-	SchemeBuilder.Register(&HttpListenerPolicy{}, &HttpListenerPolicyList{})
-	SchemeBuilder.Register(&ListenerPolicy{}, &ListenerPolicyList{})
-	SchemeBuilder.Register(&Upstream{}, &UpstreamList{})
-}

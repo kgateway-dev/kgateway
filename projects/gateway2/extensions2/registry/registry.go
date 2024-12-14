@@ -48,7 +48,7 @@ func MergePlugins(plug ...extensionsplug.Plugin) extensionsplug.Plugin {
 	return ret
 }
 
-func Plugins(ctx context.Context, commoncol common.CommonCollections) []extensionsplug.Plugin {
+func Plugins(ctx context.Context, commoncol *common.CommonCollections) []extensionsplug.Plugin {
 	return []extensionsplug.Plugin{
 		// Add plugins here
 		upstream.NewPlugin(ctx, commoncol),
@@ -61,6 +61,6 @@ func Plugins(ctx context.Context, commoncol common.CommonCollections) []extensio
 	}
 }
 
-func AllPlugins(ctx context.Context, commoncol common.CommonCollections) extensionsplug.Plugin {
+func AllPlugins(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
 	return MergePlugins(Plugins(ctx, commoncol)...)
 }

@@ -725,7 +725,3 @@ func (in *CustomLabel) GetKeyDelimiter() *string {
 	}
 	return in.KeyDelimiter
 }
-
-func init() {
-	SchemeBuilder.Register(&GatewayParameters{}, &GatewayParametersList{})
-}

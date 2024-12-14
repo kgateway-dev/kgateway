@@ -42,7 +42,7 @@ func (empty) Equals(in any) bool {
 	return true
 }
 
-func NewPlugin(ctx context.Context, commoncol common.CommonCollections) extensionsplug.Plugin {
+func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
 	p := plugin{
 		enabledIstioIntegration: true,
 		enabledAutoMTLS:         true,

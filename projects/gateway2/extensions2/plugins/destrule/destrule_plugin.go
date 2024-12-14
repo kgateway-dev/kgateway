@@ -25,7 +25,7 @@ const (
 	ExtensionName = "Destrule"
 )
 
-func NewPlugin(ctx context.Context, commoncol common.CommonCollections) extensionsplug.Plugin {
+func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
 	gk := schema.GroupKind{
 		Group: gvr.DestinationRule.Group,
 		Kind:  "DestinationRule",

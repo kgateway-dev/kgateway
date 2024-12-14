@@ -39,12 +39,12 @@ func (d *routeOptsPlugin) Equals(in any) bool {
 type routeOptsPluginGwPass struct {
 }
 
-func NewPlugin(ctx context.Context, commoncol common.CommonCollections) extensionplug.Plugin {
+func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionplug.Plugin {
 
 	col := krtutil.SetupCollectionDynamic[v1alpha1.RoutePolicy](
 		ctx,
 		commoncol.Client,
-		v1alpha1.GroupVersion.WithResource("routepolicies"),
+		v1alpha1.SchemeGroupVersion.WithResource("routepolicies"),
 		commoncol.KrtOpts.ToOptions("RoutePolicy")...,
 	)
 	gk := v1alpha1.RoutePolicyGVK.GroupKind()

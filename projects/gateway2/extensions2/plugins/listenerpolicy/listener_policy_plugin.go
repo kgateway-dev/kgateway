@@ -39,12 +39,12 @@ func (d *listenerOptsPlugin) Equals(in any) bool {
 type listenerOptsPluginGwPass struct {
 }
 
-func NewPlugin(ctx context.Context, commoncol common.CommonCollections) extensionplug.Plugin {
+func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionplug.Plugin {
 
 	col := krtutil.SetupCollectionDynamic[v1alpha1.ListenerPolicy](
 		ctx,
 		commoncol.Client,
-		v1alpha1.GroupVersion.WithResource("listenerpolicies"),
+		v1alpha1.SchemeGroupVersion.WithResource("listenerpolicies"),
 		commoncol.KrtOpts.ToOptions("ListenerPolicy")...,
 	)
 	gk := v1alpha1.ListenerPolicyGVK.GroupKind()

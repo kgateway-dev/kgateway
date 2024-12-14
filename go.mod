@@ -78,7 +78,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.31.2
 	k8s.io/apimachinery v0.31.2
 	k8s.io/client-go v0.31.2
-	k8s.io/code-generator v0.31.1
+	k8s.io/code-generator v0.31.2
 	k8s.io/component-base v0.31.2
 	k8s.io/kubectl v0.31.2
 	k8s.io/utils v0.0.0-20240921022957-49e7df575cb6
@@ -92,6 +92,7 @@ require (
 require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.1-0.20240214155107-6cf1ede4da61
 	github.com/avast/retry-go/v4 v4.3.3
+	github.com/fgrosse/zaptest v1.1.0
 	github.com/go-logr/zapr v1.3.0
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/golang/mock v1.6.0
@@ -166,7 +167,6 @@ require (
 	github.com/exponent-io/jsonpath v0.0.0-20210407135951-1de76d718b3f // indirect
 	github.com/fatih/camelcase v1.0.0 // indirect
 	github.com/fatih/color v1.18.0 // indirect
-	github.com/fgrosse/zaptest v1.1.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/gertd/go-pluralize v0.1.1 // indirect
 	github.com/getkin/kin-openapi v0.123.0 // indirect

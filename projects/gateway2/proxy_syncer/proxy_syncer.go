@@ -24,6 +24,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/solo-io/gloo/pkg/utils/statsutils"
+	extensions "github.com/solo-io/gloo/projects/gateway2/extensions2"
+	"github.com/solo-io/gloo/projects/gateway2/extensions2/common"
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
@@ -58,10 +60,12 @@ const gatewayV1A2Version = "v1alpha2"
 type ProxySyncer struct {
 	controllerName string
 
-	initialSettings *glookubev1.Settings
-	settings        krt.Singleton[glookubev1.Settings]
-	mgr             manager.Manager
-	extensions      extensionsplug.Plugin
+	initialSettings   *glookubev1.Settings
+	settings          krt.Singleton[glookubev1.Settings]
+	mgr               manager.Manager
+	extensionsFactory extensions.K8sGatewayExtensionsFactory
+	extensions        extensionsplug.Plugin
+	commonCols        common.CommonCollections
 
 	istioClient     kube.Client
 	proxyTranslator ProxyTranslator
@@ -150,19 +154,21 @@ func NewProxySyncer(
 	client kube.Client,
 	augmentedPods krt.Collection[krtcollections.LocalityPod],
 	uniqueClients krt.Collection[ir.UniqlyConnectedClient],
-	extensions extensionsplug.Plugin,
+	extensionsFactory extensions.K8sGatewayExtensionsFactory,
+	commoncol common.CommonCollections,
 	xdsCache envoycache.SnapshotCache,
 ) *ProxySyncer {
 	return &ProxySyncer{
-		initialSettings: initialSettings,
-		settings:        settings,
-		controllerName:  controllerName,
-		extensions:      extensions,
-		mgr:             mgr,
-		istioClient:     client,
-		proxyTranslator: NewProxyTranslator(xdsCache),
-		augmentedPods:   augmentedPods,
-		uniqueClients:   uniqueClients,
+		initialSettings:   initialSettings,
+		settings:          settings,
+		controllerName:    controllerName,
+		extensionsFactory: extensionsFactory,
+		commonCols:        commoncol,
+		mgr:               mgr,
+		istioClient:       client,
+		proxyTranslator:   NewProxyTranslator(xdsCache),
+		augmentedPods:     augmentedPods,
+		uniqueClients:     uniqueClients,
 	}
 }
 
@@ -225,6 +231,9 @@ func (p proxyList) Equals(in proxyList) bool {
 func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) error {
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
 	logger := contextutils.LoggerFrom(ctx)
+
+	s.extensions = s.extensionsFactory(ctx, &s.commonCols)
+
 	kubeGateways, routes, finalUpstreams, endpointIRs := krtcollections.InitCollections(ctx, s.extensions, s.istioClient, krtopts)
 	queries := query.NewData(
 		routes,

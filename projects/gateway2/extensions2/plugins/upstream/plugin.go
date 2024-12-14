@@ -80,12 +80,12 @@ type plugin2 struct {
 	needFilter map[string]bool
 }
 
-func NewPlugin(ctx context.Context, commoncol common.CommonCollections) extensionsplug.Plugin {
+func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
 
 	col := krtutil.SetupCollectionDynamic[v1alpha1.Upstream](
 		ctx,
 		commoncol.Client,
-		v1alpha1.GroupVersion.WithResource("upstreams"),
+		v1alpha1.SchemeGroupVersion.WithResource("upstreams"),
 		commoncol.KrtOpts.ToOptions("Upstreams")...,
 	)
 	gk := v1alpha1.UpstreamGVK.GroupKind()

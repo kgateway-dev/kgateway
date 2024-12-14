@@ -114,24 +114,8 @@ func (i *UpstreamIndex) getUpstream(kctx krt.HandlerContext, gk schema.GroupKind
 }
 
 func (i *UpstreamIndex) getUpstreamFromRef(kctx krt.HandlerContext, localns string, ref gwv1.BackendObjectReference) (*ir.Upstream, error) {
-	group := ""
-	if ref.Group != nil {
-		group = string(*ref.Group)
-	}
-	kind := "Service"
-	if ref.Kind != nil {
-		kind = string(*ref.Kind)
-	}
-	ns := localns
-	if ref.Namespace != nil {
-		ns = string(*ref.Namespace)
-	}
-
-	gk := schema.GroupKind{
-		Group: group,
-		Kind:  kind,
-	}
-	return i.getUpstream(kctx, gk, types.NamespacedName{Namespace: ns, Name: string(ref.Name)}, ref.Port)
+	resolved := toFromBackendRef(localns, ref)
+	return i.getUpstream(kctx, resolved.GetGroupKind(), types.NamespacedName{Namespace: resolved.Namespace, Name: resolved.Name}, ref.Port)
 }
 
 type GatweayIndex struct {
@@ -513,47 +497,43 @@ func (h *RoutesIndex) transformRules(kctx krt.HandlerContext, src ir.ObjectSourc
 	return rules
 
 }
+
 func (h *RoutesIndex) getExtensionRefs(kctx krt.HandlerContext, ns string, r gwv1.HTTPRouteRule) ir.AttachedPolicies {
 	ret := ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
 	for _, ext := range r.Filters {
-		if ext.ExtensionRef == nil {
-			continue
-		}
-		ref := *ext.ExtensionRef
-		gk := schema.GroupKind{
-			Group: string(ref.Group),
-			Kind:  string(ref.Kind),
-		}
-		key := ir.ObjectSource{
-			Group:     string(ref.Group),
-			Kind:      string(ref.Kind),
-			Namespace: ns,
-			Name:      string(ref.Name),
-		}
-		policy := h.policies.fetchPolicy(kctx, key)
+		gk, policy := h.resolveExtension(kctx, ns, ext)
 		if policy != nil {
-			ret.Policies[gk] = append(ret.Policies[gk], ir.PolicyAtt{PolicyIr: policy.PolicyIR /*direct attachment - no target ref*/})
+			ret.Policies[gk] = append(ret.Policies[gk], ir.PolicyAtt{PolicyIr: policy /*direct attachment - no target ref*/})
 		}
 
 	}
 	return ret
 }
+
 func (h *RoutesIndex) getExtensionRefs2(kctx krt.HandlerContext, ns string, r []gwv1.HTTPRouteFilter) ir.AttachedPolicies {
 	ret := ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
 	for _, ext := range r {
+		gk, policy := h.resolveExtension(kctx, ns, ext)
+		if policy != nil {
+			ret.Policies[gk] = append(ret.Policies[gk], ir.PolicyAtt{PolicyIr: policy /*direct attachment - no target ref*/})
+		}
+
+	}
+	return ret
+}
+
+func (h *RoutesIndex) resolveExtension(kctx krt.HandlerContext, ns string, ext gwv1.HTTPRouteFilter) (schema.GroupKind, ir.PolicyIR) {
+	if ext.Type == gwv1.HTTPRouteFilterExtensionRef {
 		if ext.ExtensionRef == nil {
-			// panic("TODO: handle built in extensions")
-			continue
+			// TODO: report error!!
+			return schema.GroupKind{}, nil
 		}
+		// panic("TODO: handle built in extensions")
 		ref := *ext.ExtensionRef
-		gk := schema.GroupKind{
-			Group: string(ref.Group),
-			Kind:  string(ref.Kind),
-		}
 		key := ir.ObjectSource{
 			Group:     string(ref.Group),
 			Kind:      string(ref.Kind),
@@ -561,12 +541,33 @@ func (h *RoutesIndex) getExtensionRefs2(kctx krt.HandlerContext, ns string, r []
 			Name:      string(ref.Name),
 		}
 		policy := h.policies.fetchPolicy(kctx, key)
-		if policy != nil {
-			ret.Policies[gk] = append(ret.Policies[gk], ir.PolicyAtt{PolicyIr: policy.PolicyIR /*direct attachment - no target ref*/})
+		if policy == nil {
+			// TODO: report error!!
+			return schema.GroupKind{}, nil
 		}
 
+		gk := schema.GroupKind{
+			Group: string(ref.Group),
+			Kind:  string(ref.Kind),
+		}
+		return gk, policy.PolicyIR
 	}
-	return ret
+
+	fromGK := schema.GroupKind{
+		Group: gwv1.SchemeGroupVersion.Group,
+		Kind:  "HTTPRoute",
+	}
+
+	return VirtualBuiltInGK, NewBuiltInIr(kctx, ext, fromGK, ns, h.refgrants, h.upstreams)
+}
+
+func toFromBackendRef(fromns string, ref gwv1.BackendObjectReference) ir.ObjectSource {
+	return ir.ObjectSource{
+		Group:     strOr(ref.Group, ""),
+		Kind:      strOr(ref.Kind, "Service"),
+		Namespace: strOr(ref.Namespace, fromns),
+		Name:      string(ref.Name),
+	}
 }
 
 func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, i []gwv1.HTTPBackendRef) []ir.HttpBackendOrDelegate {
@@ -575,12 +576,7 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 		extensionRefs := h.getExtensionRefs2(kctx, src.Namespace, ref.Filters)
 		fromns := src.Namespace
 
-		to := ir.ObjectSource{
-			Group:     strOr(ref.BackendRef.Group, ""),
-			Kind:      strOr(ref.BackendRef.Kind, "Service"),
-			Namespace: strOr(ref.BackendRef.Namespace, fromns),
-			Name:      string(ref.BackendRef.Name),
-		}
+		to := toFromBackendRef(fromns, ref.BackendObjectReference)
 		if backendref.RefIsHTTPRoute(ref.BackendRef.BackendObjectReference) {
 			backends = append(backends, ir.HttpBackendOrDelegate{
 				Delegate:         &to,
@@ -626,13 +622,7 @@ func (h *RoutesIndex) getTcpBackends(kctx krt.HandlerContext, src ir.ObjectSourc
 	for _, ref := range i {
 		fromns := src.Namespace
 
-		to := ir.ObjectSource{
-			Group:     strOr(ref.Group, ""),
-			Kind:      strOr(ref.Kind, "Service"),
-			Namespace: strOr(ref.Namespace, fromns),
-			Name:      string(ref.Name),
-		}
-
+		to := toFromBackendRef(fromns, ref.BackendObjectReference)
 		var upstream *ir.Upstream
 		fromgk := schema.GroupKind{
 			Group: src.Group,

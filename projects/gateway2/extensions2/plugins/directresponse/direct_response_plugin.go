@@ -41,12 +41,12 @@ func (d *directResponse) Equals(in any) bool {
 type directResponseGwPass struct {
 }
 
-func NewPlugin(ctx context.Context, commoncol common.CommonCollections) extensionplug.Plugin {
+func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionplug.Plugin {
 
 	col := krtutil.SetupCollectionDynamic[v1alpha1.DirectResponse](
 		ctx,
 		commoncol.Client,
-		v1alpha1.GroupVersion.WithResource("directresponses"),
+		v1alpha1.SchemeGroupVersion.WithResource("directresponses"),
 		commoncol.KrtOpts.ToOptions("DirectResponse")...,
 	)
 	gk := v1alpha1.DirectResponseGVK.GroupKind()

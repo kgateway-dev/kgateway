@@ -23,6 +23,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	ext "github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/common"
+	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/registry"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
@@ -174,11 +175,6 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		Pods:     cfg.AugmentedPods,
 		Settings: cfg.Settings,
 	}
-	k8sGwExtensions := registry.AllPlugins(ctx, commoncol)
-	if err != nil {
-		setupLog.Error(err, "unable to create k8s gw extensions")
-		return nil, err
-	}
 
 	// Create the proxy syncer for the Gateway API resources
 	setupLog.Info("initializing proxy syncer")
@@ -191,7 +187,8 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.Client,
 		cfg.AugmentedPods,
 		cfg.UniqueClients,
-		k8sGwExtensions,
+		pluginFactoryWithBuiltin,
+		commoncol,
 		cfg.SetupOpts.Cache,
 	)
 	proxySyncer.Init(ctx, cfg.KrtOptions)
@@ -205,6 +202,12 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg:         cfg,
 		mgr:         mgr,
 	}, nil
+}
+
+func pluginFactoryWithBuiltin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
+	plugins := registry.Plugins(ctx, commoncol)
+	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
+	return registry.MergePlugins(plugins...)
 }
 
 func (c *ControllerBuilder) Start(ctx context.Context) error {

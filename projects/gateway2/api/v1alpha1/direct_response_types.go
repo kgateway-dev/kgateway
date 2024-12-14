@@ -59,7 +59,3 @@ func (in *DirectResponse) GetBody() string {
 	}
 	return in.Spec.Body
 }
-
-func init() {
-	SchemeBuilder.Register(&DirectResponse{}, &DirectResponseList{})
-}
