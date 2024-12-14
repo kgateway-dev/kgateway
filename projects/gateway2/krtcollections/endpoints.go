@@ -14,8 +14,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	"github.com/solo-io/go-utils/contextutils"
-	"istio.io/istio/pkg/kube"
-	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
@@ -52,13 +50,11 @@ type EndpointsInputs struct {
 
 func NewGlooK8sEndpointInputs(
 	settings krt.Singleton[glookubev1.Settings],
-	istioClient kube.Client,
 	krtopts krtutil.KrtOptions,
+	endpointSlices krt.Collection[*discoveryv1.EndpointSlice],
 	pods krt.Collection[LocalityPod],
 	k8supstreams krt.Collection[ir.Upstream],
 ) EndpointsInputs {
-	epSliceClient := kclient.New[*discoveryv1.EndpointSlice](istioClient)
-	endpointSlices := krt.WrapClient(epSliceClient, krtopts.ToOptions("EndpointSlices")...)
 	endpointSettings := krt.NewSingleton(func(ctx krt.HandlerContext) *EndpointsSettings {
 		settings := krt.FetchOne(ctx, settings.AsCollection())
 		return &EndpointsSettings{

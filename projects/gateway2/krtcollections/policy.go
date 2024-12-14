@@ -600,6 +600,10 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 		} else {
 			err = ErrMissingReferenceGrant
 		}
+		// TODO: if we can't find the upstream, should we
+		// still use its cluster name in case it comes up later?
+		// if so we need to think about the way create cluster names,
+		// so it only depends on the backend-ref
 		clusterName := "blackhole-cluster"
 		if upstream != nil {
 			clusterName = upstream.ClusterName()

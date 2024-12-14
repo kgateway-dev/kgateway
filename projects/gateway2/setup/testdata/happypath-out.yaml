@@ -4,9 +4,8 @@ clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
-    serviceName: kube-svc:default-kubernetes-443_default-8057429479812104425
   metadata: {}
-  name: kube-svc:default-kubernetes-443_default
+  name: kube_default_kubernetes_443
   transportSocketMatches:
   - match:
       tlsMode: istio
@@ -54,9 +53,8 @@ clusters:
     edsConfig:
       ads: {}
       resourceApiVersion: V3
-    serviceName: kube-svc:gwtest-reviews-8080_gwtest-14235905899168282861
   metadata: {}
-  name: kube-svc:gwtest-reviews-8080_gwtest
+  name: kube_gwtest_reviews_8080
   transportSocketMatches:
   - match:
       tlsMode: istio
@@ -100,7 +98,7 @@ clusters:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
   type: EDS
 endpoints:
-- clusterName: kube-svc:gwtest-reviews-8080_gwtest-14235905899168282861
+- clusterName: kube_gwtest_reviews_8080
   endpoints:
   - lbEndpoints:
     - endpoint:
@@ -122,44 +120,22 @@ listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
-        - name: envoy.filters.http.fault
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault
-        - name: envoy.filters.http.cors
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.http.cors.v3.Cors
-        - name: envoy.filters.http.local_ratelimit
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-            stage: 3
-            statPrefix: http_local_ratelimit
-        - name: envoy.filters.http.grpc_web
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.http.grpc_web.v3.GrpcWeb
-        - name: io.solo.transformation
-          typedConfig:
-            '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
-        - name: envoy.filters.http.csrf
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.http.csrf.v3.CsrfPolicy
-            filterEnabled:
-              defaultValue: {}
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
         normalizePath: true
         rds:
           configSource:
             ads: {}
             resourceApiVersion: V3
-          routeConfigName: http-routes-14610285773269467959
+          routeConfigName: http
         statPrefix: http
-        upgradeConfigs:
-        - upgradeType: websocket
+    name: http
   name: http
 routes:
 - ignorePortInHostMatching: true
-  name: http-routes-14610285773269467959
+  name: http
   virtualHosts:
   - domains:
     - www.example.com
@@ -169,5 +145,5 @@ routes:
         prefix: /
       name: http~www_example_com-route-0-httproute-happypath-gwtest-0-0-matcher-0
       route:
-        cluster: kube-svc:gwtest-reviews-8080_gwtest
+        cluster: kube_gwtest_reviews_8080
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR

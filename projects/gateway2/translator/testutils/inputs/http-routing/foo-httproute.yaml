@@ -16,7 +16,7 @@ spec:
         value: /login
     backendRefs:
     - name: foo-svc
-      port: 8080
+      port: 80
 ---
 apiVersion: v1
 kind: Service

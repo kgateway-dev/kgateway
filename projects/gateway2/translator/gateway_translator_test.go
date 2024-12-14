@@ -2,6 +2,8 @@ package translator_test
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -14,6 +16,7 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/solo-io/gloo/projects/gateway2/reports"
+	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
 )
 
 type translatorTestCase struct {
@@ -25,18 +28,30 @@ type translatorTestCase struct {
 
 var _ = DescribeTable("Basic GatewayTranslator Tests",
 	func(in translatorTestCase) {
-		ctx := context.TODO()
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 		dir := util.MustGetThisDir()
 
 		results, err := TestCase{
 			InputFiles: []string{filepath.Join(dir, "testutils/inputs/", in.inputFile)},
-		}.Run(ctx)
-
+		}.Run(GinkgoT(), ctx)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(results).To(HaveLen(1))
 		Expect(results).To(HaveKey(in.gwNN))
 		result := results[in.gwNN]
 		expectedProxyFile := filepath.Join(dir, "testutils/outputs/", in.outputFile)
+		fmt.Fprintf(GinkgoWriter, "Comparing expected proxy from %s to actual proxy generated from %s\n", in.outputFile, in.inputFile)
+		if os.Getenv("UPDATE_OUTPUTS") == "1" {
+			d, err := testutils.MarshalAnyYaml(result.Proxy)
+			Expect(err).NotTo(HaveOccurred())
+			os.WriteFile(expectedProxyFile, d, 0644)
+		}
+
+		//// do a json round trip to normalize the output (i.e. things like omit empty)
+		//b, _ := json.Marshal(result.Proxy)
+		//var proxy ir.GatewayIR
+		//Expect(json.Unmarshal(b, &proxy)).NotTo(HaveOccurred())
+
 		Expect(CompareProxy(expectedProxyFile, result.Proxy)).To(BeEmpty())
 
 		if in.assertReports != nil {
@@ -291,7 +306,7 @@ var _ = DescribeTable("Route Delegation translator",
 
 		results, err := TestCase{
 			InputFiles: []string{filepath.Join(dir, "testutils/inputs/delegation", inputFile)},
-		}.Run(ctx)
+		}.Run(GinkgoT(), ctx)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(results).To(HaveLen(1))

@@ -15,10 +15,8 @@ import (
 	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 
-	istiogvr "istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/controllers"
-	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/avast/retry-go/v4"
@@ -51,7 +49,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 const gatewayV1A2Version = "v1alpha2"
@@ -225,72 +222,12 @@ func (p proxyList) Equals(in proxyList) bool {
 	})
 }
 
-func (s *ProxySyncer) initUpstreams(ctx context.Context, upstreamIndex *krtcollections.UpstreamIndex, krtopts krtutil.KrtOptions) (krt.Collection[ir.Upstream], krt.Collection[ir.EndpointsForUpstream]) {
-
-	allEndpoints := []krt.Collection[ir.EndpointsForUpstream]{}
-	for k, col := range s.extensions.ContributesUpstreams {
-		if col.Upstreams != nil {
-			upstreamIndex.AddUpstreams(k, col.Upstreams)
-		}
-		if col.Endpoints != nil {
-			allEndpoints = append(allEndpoints, col.Endpoints)
-		}
-	}
-
-	finalUpstreams := krt.JoinCollection(upstreamIndex.Upstreams(), krtopts.ToOptions("FinalUpstreams")...)
-
-	// build Endpoint intermediate representation from kubernetes service and extensions
-	// TODO move kube service to be an extension
-	endpointIRs := krt.JoinCollection(allEndpoints, krtopts.ToOptions("EndpointIRs")...)
-	return finalUpstreams, endpointIRs
-}
-
 func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) error {
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
 	logger := contextutils.LoggerFrom(ctx)
-
-	policies := krtcollections.NewPolicyIndex(krtopts, s.extensions.ContributesPolicies)
-
-	refgrantsCol := krt.WrapClient(kclient.New[*gwv1beta1.ReferenceGrant](s.istioClient), krtopts.ToOptions("RefGrants")...)
-	refgrants := krtcollections.NewRefGrantIndex(refgrantsCol)
-
-	httpRoutes := krtutil.SetupCollectionDynamic[gwv1.HTTPRoute](
-		ctx,
-		s.istioClient,
-		istiogvr.HTTPRoute_v1,
-		krtopts.ToOptions("HTTPRoute")...,
-	)
-
-	tcproutes := krtutil.SetupCollectionDynamic[gwv1a2.TCPRoute](
-		ctx,
-		s.istioClient,
-		istiogvr.TCPRoute,
-		krtopts.ToOptions("TCPRoute")...,
-	)
-
-	var backendRefPlugins []extensionsplug.GetBackendForRefPlugin
-	for _, ext := range s.extensions.ContributesPolicies {
-		if ext.GetBackendForRef != nil {
-			backendRefPlugins = append(backendRefPlugins, ext.GetBackendForRef)
-		}
-	}
-
-	upstreamIndex := krtcollections.NewUpstreamIndex(krtopts, backendRefPlugins, policies)
-	finalUpstreams, endpointIRs := s.initUpstreams(ctx, upstreamIndex, krtopts)
-
-	routes := krtcollections.NewRoutesIndex(krtopts, httpRoutes, tcproutes, policies, upstreamIndex, refgrants)
-
-	kubeRawGateways := krtutil.SetupCollectionDynamic[gwv1.Gateway](
-		ctx,
-		s.istioClient,
-		istiogvr.KubernetesGateway_v1,
-		krtopts.ToOptions("KubeGateways")...,
-	)
-	kubeGateways := krtcollections.NewGatweayIndex(krtopts, policies, kubeRawGateways)
-
+	kubeGateways, routes, finalUpstreams, endpointIRs := krtcollections.InitCollections(ctx, s.extensions, s.istioClient, krtopts)
 	queries := query.NewData(
 		routes,
-		s.mgr.GetScheme(), // TODO: remove scheme when we clean up the code
 	)
 	s.gwtranslator = translator.NewTranslator(queries)
 	s.irtranslator = &irtranslator.Translator{
@@ -385,8 +322,6 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 		s.mostXdsSnapshots.Synced().HasSynced,
 		s.extensions.HasSynced,
 		routes.HasSynced,
-		policies.HasSynced,
-		refgrants.HasSynced,
 	}
 	return nil
 }

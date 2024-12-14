@@ -14,7 +14,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gateway2/translator/irtranslator"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -153,13 +153,14 @@ func truncateString(str string, num int) string {
 	return result
 }
 
-func ReadProxyFromFile(filename string) (*v1.Proxy, error) {
+func ReadProxyFromFile(filename string) (*irtranslator.TranslationResult, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, eris.Wrapf(err, "reading proxy file")
 	}
-	var proxy v1.Proxy
-	if err := protoutils.UnmarshalYaml(data, &proxy); err != nil {
+	var proxy irtranslator.TranslationResult
+
+	if err := UnmarshalAnyYaml(data, &proxy); err != nil {
 		return nil, eris.Wrapf(err, "parsing proxy from file")
 	}
 	return &proxy, nil
@@ -178,4 +179,13 @@ func MarshalAnyYaml(m any) ([]byte, error) {
 		return nil, err
 	}
 	return yaml.JSONToYAML(jsn)
+}
+
+func UnmarshalAnyYaml(data []byte, into any) error {
+	jsn, err := yaml.YAMLToJSON(data)
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(jsn, into)
 }

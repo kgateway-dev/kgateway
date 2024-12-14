@@ -114,16 +114,7 @@ func (f FromGkNs) Namespace() string {
 }
 
 type GatewayQueries interface {
-	ObjToFrom(obj client.Object) From
-
-	// Given a backendRef that resides in namespace obj, return the service that backs it.
-	// This will error with `ErrMissingReferenceGrant` if there is no reference grant allowing the reference
-	// return value depends on the group/kind in the backendRef.
-	GetBackendForRef(ctx context.Context, obj From, backendRef *apiv1.BackendObjectReference) (client.Object, error)
-
 	GetSecretForRef(kctx krt.HandlerContext, ctx context.Context, fromGk schema.GroupKind, fromns string, secretRef apiv1.SecretObjectReference) (*ir.Secret, error)
-
-	GetLocalObjRef(ctx context.Context, from From, localObjRef apiv1.LocalObjectReference) (client.Object, error)
 
 	// GetRoutesForGateway finds the top level xRoutes attached to the provided Gateway
 	GetRoutesForGateway(kctx krt.HandlerContext, ctx context.Context, gw *gwv1.Gateway) (*RoutesForGwResult, error)
@@ -153,22 +144,12 @@ type RouteError struct {
 }
 
 type options struct {
-	customBackendResolvers []BackendRefResolver
 }
 
 type Option func(*options)
 
-func WithBackendRefResolvers(
-	customBackendResolvers ...BackendRefResolver,
-) Option {
-	return func(o *options) {
-		o.customBackendResolvers = append(o.customBackendResolvers, customBackendResolvers...)
-	}
-}
-
 func NewData(
 	routes *krtcollections.RoutesIndex,
-	scheme *runtime.Scheme,
 	opts ...Option,
 ) GatewayQueries {
 	builtOpts := &options{}
@@ -176,9 +157,7 @@ func NewData(
 		opt(builtOpts)
 	}
 	return &gatewayQueries{
-		routes:                 routes,
-		scheme:                 scheme,
-		customBackendResolvers: builtOpts.customBackendResolvers,
+		routes: routes,
 	}
 }
 
@@ -194,15 +173,7 @@ type gatewayQueries struct {
 	routes     *krtcollections.RoutesIndex
 	secrets    *krtcollections.SecretIndex
 	namespaces krt.Collection[krtcollections.NamespaceMetadata]
-
-	refGrants *krtcollections.RefGrantIndex
-
-	scheme                 *runtime.Scheme
-	customBackendResolvers []BackendRefResolver
-}
-
-func (r *gatewayQueries) ObjToFrom(obj client.Object) From {
-	return FromObject{Object: obj, Scheme: r.scheme}
+	refGrants  *krtcollections.RefGrantIndex
 }
 
 func parentRefMatchListener(ref *apiv1.ParentReference, l *apiv1.Listener) bool {
@@ -306,21 +277,6 @@ func (r *gatewayQueries) GetSecretForRef(kctx krt.HandlerContext, ctx context.Co
 		Namespace: fromns,
 	}
 	return r.secrets.GetSecret(kctx, f, secretRef)
-}
-
-func (r *gatewayQueries) GetLocalObjRef(ctx context.Context, obj From, localObjRef apiv1.LocalObjectReference) (client.Object, error) {
-	panic("this will be removed")
-}
-
-func (r *gatewayQueries) GetBackendForRef(ctx context.Context, obj From, backend *apiv1.BackendObjectReference) (client.Object, error) {
-	panic("this will be removed")
-}
-
-// BackendRefResolver allows resolution of backendRefs with a custom format.
-type BackendRefResolver interface {
-	// GetBackendForRef resolves a custom reference. When the bool return is false,
-	// indicates that the resolver is not responsible for the given ref.
-	GetBackendForRef(ctx context.Context, obj From, backend *apiv1.BackendObjectReference) (client.Object, error, bool)
 }
 
 func SameNamespace(ns string) func(krt.HandlerContext, string) bool {

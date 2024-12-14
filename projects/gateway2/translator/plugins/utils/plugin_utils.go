@@ -87,7 +87,7 @@ func GetExtensionRefObj[T client.Object](
 	queries query.GatewayQueries,
 	extensionRef *gwv1.LocalObjectReference,
 ) (T, error) {
-	return GetExtensionRefObjFrom[T](ctx, queries.ObjToFrom(route), queries, extensionRef)
+	panic("will be deleted soon")
 }
 
 func GetExtensionRefObjFrom[T client.Object](
@@ -96,20 +96,7 @@ func GetExtensionRefObjFrom[T client.Object](
 	queries query.GatewayQueries,
 	extensionRef *gwv1.LocalObjectReference,
 ) (T, error) {
-	var t T
-	localObj, err := queries.GetLocalObjRef(ctx, from, *extensionRef)
-	if err != nil {
-		return t, err
-	}
-
-	typed, ok := localObj.(T)
-	if !ok {
-		return t, fmt.Errorf(
-			"%w: generic object typeOf: '%T' localObj typeOf: '%T'",
-			ErrTypesNotEqual, t, localObj,
-		)
-	}
-	return typed, nil
+	panic("will be deleted soon")
 }
 
 // PolicyWithSectionedTargetRefs is a wrapper type to represent policy objects

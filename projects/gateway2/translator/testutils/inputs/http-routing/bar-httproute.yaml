@@ -17,10 +17,10 @@ spec:
         value: canary
     backendRefs:
     - name: bar-svc-canary
-      port: 8080
+      port: 80
   - backendRefs:
     - name: bar-svc
-      port: 8080
+      port: 80
 ---
 apiVersion: v1
 kind: Service
