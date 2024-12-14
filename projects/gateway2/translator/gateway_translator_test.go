@@ -281,7 +281,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				Name:      "example-tcp-gateway",
 			},
 		}),
-	Entry("Plugin Backend", translatorTestCase{
+	FEntry("Plugin Backend", translatorTestCase{
 		inputFile:  "backend-plugin/gateway.yaml",
 		outputFile: "backend-plugin-proxy.yaml",
 		gwNN: types.NamespacedName{

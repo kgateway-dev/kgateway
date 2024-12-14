@@ -90,10 +90,6 @@ func (i *UpstreamIndex) getUpstream(kctx krt.HandlerContext, gk schema.GroupKind
 		Namespace: n.Namespace,
 		Name:      n.Name,
 	}
-	col := i.availableUpstreams[gk]
-	if col == nil {
-		return nil, ErrUnknownBackendKind
-	}
 
 	var port int32
 	if gwport != nil {
@@ -104,6 +100,11 @@ func (i *UpstreamIndex) getUpstream(kctx krt.HandlerContext, gk schema.GroupKind
 		if up := getBackendRcol(kctx, key, port); up != nil {
 			return up, nil
 		}
+	}
+
+	col := i.availableUpstreams[gk]
+	if col == nil {
+		return nil, ErrUnknownBackendKind
 	}
 
 	up := krt.FetchOne(kctx, col, krt.FilterKey(ir.UpstreamResourceName(key, port)))

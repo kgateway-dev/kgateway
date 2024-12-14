@@ -190,9 +190,9 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		Settings: settingsSingle,
 	}
 
-	extensions := registry.AllPlugins(ctx, commoncol)
+	extensions := registry.AllPlugins(ctx, &commoncol)
 	gk := schema.GroupKind{
-		Group: "test",
+		Group: "",
 		Kind:  "test-backend-plugin"}
 	extensions.ContributesPolicies[gk] = extensionsplug.PolicyPlugin{
 		Name:             "test-backend-plugin",
