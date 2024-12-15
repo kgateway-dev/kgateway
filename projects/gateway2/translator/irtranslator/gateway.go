@@ -113,7 +113,7 @@ func (t *Translator) runListenerPlugins(ctx context.Context, pass TranslationPas
 		for gk, pols := range attachedPolicies.Policies {
 			pass := pass[gk]
 			if pass == nil {
-				// TODO: user error - they attached a non http policy
+				// TODO: report user error - they attached a non http policy
 				continue
 			}
 			for _, pol := range pols {

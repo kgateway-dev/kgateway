@@ -3,6 +3,7 @@ package translator_test
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync"
 
 	"github.com/google/go-cmp/cmp"
@@ -38,6 +39,7 @@ import (
 	"istio.io/istio/pkg/kube/kclient/clienttest"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
+	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 type TestCase struct {
@@ -50,6 +52,14 @@ type ActualTestResult struct {
 }
 
 func CompareProxy(expectedFile string, actualProxy *irtranslator.TranslationResult) (string, error) {
+	if os.Getenv("UPDATE_OUTPUTS") == "1" {
+		d, err := testutils.MarshalAnyYaml(actualProxy)
+		if err != nil {
+			return "", err
+		}
+		os.WriteFile(expectedFile, d, 0644)
+	}
+
 	expectedProxy, err := testutils.ReadProxyFromFile(expectedFile)
 	if err != nil {
 		return "", err
@@ -145,6 +155,9 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		Stop: ctx.Done(),
 	}
 
+	refgrantsCol := krt.WrapClient(kclient.New[*gwv1beta1.ReferenceGrant](cli), krtOpts.ToOptions("RefGrants")...)
+	refGrants := krtcollections.NewRefGrantIndex(refgrantsCol)
+
 	secretClient := kclient.New[*corev1.Secret](cli)
 	k8sSecretsRaw := krt.WrapClient(secretClient, krt.WithStop(ctx.Done()), krt.WithName("Secrets") /* no debug here - we don't want raw secrets printed*/)
 	k8sSecrets := krt.NewCollection(k8sSecretsRaw, func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
@@ -182,13 +195,16 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		}
 		return nil
 	}, krt.WithName("GlooSettingsSingleton"))
+	secretsIdx := krtcollections.NewSecretIndex(secrets, refGrants)
 	commoncol := common.CommonCollections{
-		Client:   cli,
-		KrtOpts:  krtOpts,
-		Secrets:  krtcollections.NewSecretIndex(secrets),
-		Pods:     augmentedPods,
-		Settings: settingsSingle,
+		Client:    cli,
+		KrtOpts:   krtOpts,
+		Secrets:   secretsIdx,
+		Pods:      augmentedPods,
+		Settings:  settingsSingle,
+		RefGrants: refGrants,
 	}
+	nsCol := krtcollections.NewNamespaceCollection(ctx, cli, krtOpts)
 
 	extensions := registry.AllPlugins(ctx, &commoncol)
 	gk := schema.GroupKind{
@@ -204,15 +220,16 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 	httpRoutes := krt.WrapClient(kclient.New[*gwv1.HTTPRoute](cli), krtOpts.ToOptions("httpRoutes")...)
 	tcpRoutes := krt.WrapClient(kclient.New[*gwv1a2.TCPRoute](cli), krtOpts.ToOptions("tcpRoutes")...)
 
-	gi, ri, ui, ei := krtcollections.InitCollectionsWithGateways(ctx, rawGateways, httpRoutes, tcpRoutes, extensions, cli, krtOpts)
+	gi, ri, ui, ei := krtcollections.InitCollectionsWithGateways(ctx, rawGateways, httpRoutes, tcpRoutes, refGrants, extensions, cli, krtOpts)
 	cli.RunAndWait(ctx.Done())
 	gi.Gateways.Synced().WaitUntilSynced(ctx.Done())
 	kubeclient.WaitForCacheSync("routes", ctx.Done(), ri.HasSynced)
 	kubeclient.WaitForCacheSync("extensions", ctx.Done(), extensions.HasSynced)
 	kubeclient.WaitForCacheSync("upstreams", ctx.Done(), ui.Synced().HasSynced)
 	kubeclient.WaitForCacheSync("endpoints", ctx.Done(), ei.Synced().HasSynced)
+	kubeclient.WaitForCacheSync("namespaces", ctx.Done(), nsCol.Synced().HasSynced)
 
-	queries := query.NewData(ri) // testutils.BuildGatewayQueriesWithClient(fakeClient, query.WithBackendRefResolvers(&testBackendPlugin{}))
+	queries := query.NewData(ri, secretsIdx, nsCol) // testutils.BuildGatewayQueriesWithClient(fakeClient, query.WithBackendRefResolvers(&testBackendPlugin{}))
 
 	results := make(map[types.NamespacedName]ActualTestResult)
 

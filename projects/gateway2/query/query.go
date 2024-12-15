@@ -150,6 +150,8 @@ type Option func(*options)
 
 func NewData(
 	routes *krtcollections.RoutesIndex,
+	secrets *krtcollections.SecretIndex,
+	namespaces krt.Collection[krtcollections.NamespaceMetadata],
 	opts ...Option,
 ) GatewayQueries {
 	builtOpts := &options{}
@@ -157,7 +159,9 @@ func NewData(
 		opt(builtOpts)
 	}
 	return &gatewayQueries{
-		routes: routes,
+		routes:     routes,
+		secrets:    secrets,
+		namespaces: namespaces,
 	}
 }
 
@@ -173,7 +177,6 @@ type gatewayQueries struct {
 	routes     *krtcollections.RoutesIndex
 	secrets    *krtcollections.SecretIndex
 	namespaces krt.Collection[krtcollections.NamespaceMetadata]
-	refGrants  *krtcollections.RefGrantIndex
 }
 
 func parentRefMatchListener(ref *apiv1.ParentReference, l *apiv1.Listener) bool {

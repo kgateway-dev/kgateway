@@ -234,9 +234,13 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 
 	s.extensions = s.extensionsFactory(ctx, &s.commonCols)
 
-	kubeGateways, routes, finalUpstreams, endpointIRs := krtcollections.InitCollections(ctx, s.extensions, s.istioClient, krtopts)
+	nsCol := krtcollections.NewNamespaceCollection(ctx, s.istioClient, krtopts)
+
+	kubeGateways, routes, finalUpstreams, endpointIRs := krtcollections.InitCollections(ctx, s.extensions, s.istioClient, s.commonCols.RefGrants, krtopts)
 	queries := query.NewData(
 		routes,
+		s.commonCols.Secrets,
+		nsCol,
 	)
 	s.gwtranslator = translator.NewTranslator(queries)
 	s.irtranslator = &irtranslator.Translator{

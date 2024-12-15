@@ -39,6 +39,7 @@ import (
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
+	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 const (
@@ -168,12 +169,17 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	secrets := map[schema.GroupKind]krt.Collection[ir.Secret]{
 		{Group: "", Kind: "Secret"}: k8sSecrets,
 	}
+
+	refgrantsCol := krt.WrapClient(kclient.New[*gwv1beta1.ReferenceGrant](cfg.Client), cfg.KrtOptions.ToOptions("RefGrants")...)
+	refgrants := krtcollections.NewRefGrantIndex(refgrantsCol)
+
 	commoncol := common.CommonCollections{
-		Client:   cfg.Client,
-		KrtOpts:  cfg.KrtOptions,
-		Secrets:  krtcollections.NewSecretIndex(secrets),
-		Pods:     cfg.AugmentedPods,
-		Settings: cfg.Settings,
+		Client:    cfg.Client,
+		KrtOpts:   cfg.KrtOptions,
+		Secrets:   krtcollections.NewSecretIndex(secrets, refgrants),
+		Pods:      cfg.AugmentedPods,
+		Settings:  cfg.Settings,
+		RefGrants: refgrants,
 	}
 
 	// Create the proxy syncer for the Gateway API resources

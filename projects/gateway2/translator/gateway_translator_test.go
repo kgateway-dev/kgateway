@@ -3,7 +3,6 @@ package translator_test
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -16,7 +15,6 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/solo-io/gloo/projects/gateway2/reports"
-	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
 )
 
 type translatorTestCase struct {
@@ -41,11 +39,6 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 		result := results[in.gwNN]
 		expectedProxyFile := filepath.Join(dir, "testutils/outputs/", in.outputFile)
 		fmt.Fprintf(GinkgoWriter, "Comparing expected proxy from %s to actual proxy generated from %s\n", in.outputFile, in.inputFile)
-		if os.Getenv("UPDATE_OUTPUTS") == "1" {
-			d, err := testutils.MarshalAnyYaml(result.Proxy)
-			Expect(err).NotTo(HaveOccurred())
-			os.WriteFile(expectedProxyFile, d, 0644)
-		}
 
 		//// do a json round trip to normalize the output (i.e. things like omit empty)
 		//b, _ := json.Marshal(result.Proxy)
@@ -281,7 +274,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				Name:      "example-tcp-gateway",
 			},
 		}),
-	FEntry("Plugin Backend", translatorTestCase{
+	Entry("Plugin Backend", translatorTestCase{
 		inputFile:  "backend-plugin/gateway.yaml",
 		outputFile: "backend-plugin-proxy.yaml",
 		gwNN: types.NamespacedName{

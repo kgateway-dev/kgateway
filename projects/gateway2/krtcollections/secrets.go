@@ -17,8 +17,8 @@ type SecretIndex struct {
 	refgrants *RefGrantIndex
 }
 
-func NewSecretIndex(secrets map[schema.GroupKind]krt.Collection[ir.Secret]) *SecretIndex {
-	return &SecretIndex{secrets: secrets}
+func NewSecretIndex(secrets map[schema.GroupKind]krt.Collection[ir.Secret], refgrants *RefGrantIndex) *SecretIndex {
+	return &SecretIndex{secrets: secrets, refgrants: refgrants}
 }
 
 // if we want to make this function public, make it do ref grants

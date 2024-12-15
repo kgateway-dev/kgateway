@@ -9,9 +9,10 @@ import (
 )
 
 type CommonCollections struct {
-	Client   kube.Client
-	KrtOpts  krtutil.KrtOptions
-	Secrets  *krtcollections.SecretIndex
-	Pods     krt.Collection[krtcollections.LocalityPod]
-	Settings krt.Singleton[glookubev1.Settings]
+	Client    kube.Client
+	KrtOpts   krtutil.KrtOptions
+	Secrets   *krtcollections.SecretIndex
+	Pods      krt.Collection[krtcollections.LocalityPod]
+	Settings  krt.Singleton[glookubev1.Settings]
+	RefGrants *krtcollections.RefGrantIndex
 }

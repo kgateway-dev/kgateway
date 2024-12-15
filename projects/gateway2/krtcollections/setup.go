@@ -5,7 +5,6 @@ import (
 
 	istiogvr "istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube"
-	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
@@ -13,19 +12,17 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 func InitCollectionsWithGateways(ctx context.Context,
 	kubeRawGateways krt.Collection[*gwv1.Gateway],
 	httpRoutes krt.Collection[*gwv1.HTTPRoute],
 	tcproutes krt.Collection[*gwv1a2.TCPRoute],
+	refgrants *RefGrantIndex,
 	extensions extensionsplug.Plugin, istioClient kube.Client, krtopts krtutil.KrtOptions) (*GatweayIndex, *RoutesIndex, krt.Collection[ir.Upstream], krt.Collection[ir.EndpointsForUpstream]) {
 
 	policies := NewPolicyIndex(krtopts, extensions.ContributesPolicies)
 
-	refgrantsCol := krt.WrapClient(kclient.New[*gwv1beta1.ReferenceGrant](istioClient), krtopts.ToOptions("RefGrants")...)
-	refgrants := NewRefGrantIndex(refgrantsCol)
 	var backendRefPlugins []extensionsplug.GetBackendForRefPlugin
 	for _, ext := range extensions.ContributesPolicies {
 		if ext.GetBackendForRef != nil {
@@ -43,7 +40,10 @@ func InitCollectionsWithGateways(ctx context.Context,
 }
 
 func InitCollections(ctx context.Context,
-	extensions extensionsplug.Plugin, istioClient kube.Client, krtopts krtutil.KrtOptions) (*GatweayIndex, *RoutesIndex, krt.Collection[ir.Upstream], krt.Collection[ir.EndpointsForUpstream]) {
+	extensions extensionsplug.Plugin,
+	istioClient kube.Client,
+	refgrants *RefGrantIndex,
+	krtopts krtutil.KrtOptions) (*GatweayIndex, *RoutesIndex, krt.Collection[ir.Upstream], krt.Collection[ir.EndpointsForUpstream]) {
 
 	kubeRawGateways := krtutil.SetupCollectionDynamic[gwv1.Gateway](
 		ctx,
@@ -65,7 +65,7 @@ func InitCollections(ctx context.Context,
 		krtopts.ToOptions("TCPRoute")...,
 	)
 
-	return InitCollectionsWithGateways(ctx, kubeRawGateways, httpRoutes, tcproutes, extensions, istioClient, krtopts)
+	return InitCollectionsWithGateways(ctx, kubeRawGateways, httpRoutes, tcproutes, refgrants, extensions, istioClient, krtopts)
 }
 
 func initUpstreams(ctx context.Context,
