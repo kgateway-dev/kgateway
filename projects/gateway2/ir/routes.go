@@ -1,6 +1,7 @@
 package ir
 
 import (
+	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -40,6 +41,9 @@ func (c *HttpRouteIR) GetSourceObject() metav1.Object {
 func (c HttpRouteIR) ResourceName() string {
 	return c.ObjectSource.ResourceName()
 }
+
+var _ krt.ResourceNamer = &HttpRouteIR{}
+var _ krt.ResourceNamer = HttpRouteIR{}
 
 func (c HttpRouteIR) Equals(in HttpRouteIR) bool {
 	// TODO: equals should take the attached policies to account too!

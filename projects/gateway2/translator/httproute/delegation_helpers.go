@@ -52,7 +52,11 @@ func filterDelegatedChildren(
 		if !ok {
 			continue
 		}
-		child := &(*origChild)
+		cloneChild := *origChild
+		child := &cloneChild
+		// make sure we don't overwite the original rules
+		child.Rules = make([]ir.HttpRouteRuleIR, len(origChild.Rules))
+		copy(child.Rules, origChild.Rules)
 
 		inheritMatcher := shouldInheritMatcher(child)
 
@@ -74,6 +78,7 @@ func filterDelegatedChildren(
 			}
 
 			for _, match := range rule.Matches {
+				match := *match.DeepCopy()
 				if inheritMatcher {
 					// When inheriting the parent's matcher, all matches are valid.
 					// In this case, the child inherits the parents matcher so we merge

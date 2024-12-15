@@ -45,7 +45,7 @@ func (s *SecretIndex) GetSecret(kctx krt.HandlerContext, from From, secretRef gw
 		return nil, ErrUnknownBackendKind
 	}
 
-	if s.refgrants.ReferenceAllowed(kctx, from.GroupKind, from.Namespace, to) {
+	if !s.refgrants.ReferenceAllowed(kctx, from.GroupKind, from.Namespace, to) {
 		return nil, ErrMissingReferenceGrant
 	}
 	up := krt.FetchOne(kctx, col, krt.FilterKey(to.ResourceName()))

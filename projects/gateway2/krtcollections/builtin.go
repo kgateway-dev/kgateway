@@ -74,8 +74,43 @@ func convert(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.Grou
 	switch f.Type {
 	case gwv1.HTTPRouteFilterRequestMirror:
 		return convertMirror(kctx, f.RequestMirror, fromgk, fromns, refgrants, ups)
+	case gwv1.HTTPRouteFilterRequestHeaderModifier:
+		return convertHeaderModifier(kctx, f.RequestHeaderModifier)
 	}
 	return nil
+}
+
+func convertHeaderModifier(kctx krt.HandlerContext, f *gwv1.HTTPHeaderFilter) func(outputRoute *envoy_config_route_v3.Route) error {
+	if f == nil {
+		return nil
+	}
+	var headersToAddd []*envoy_config_core_v3.HeaderValueOption
+	// TODO: add validation for header names/values with CheckForbiddenCustomHeaders
+	for _, h := range f.Add {
+		headersToAddd = append(headersToAddd, &envoy_config_core_v3.HeaderValueOption{
+			Header: &envoy_config_core_v3.HeaderValue{
+				Key:   string(h.Name),
+				Value: h.Value,
+			},
+			AppendAction: envoy_config_core_v3.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD,
+		})
+	}
+	for _, h := range f.Set {
+		headersToAddd = append(headersToAddd, &envoy_config_core_v3.HeaderValueOption{
+			Header: &envoy_config_core_v3.HeaderValue{
+				Key:   string(h.Name),
+				Value: h.Value,
+			},
+			AppendAction: envoy_config_core_v3.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD,
+		})
+	}
+	toremove := f.Remove
+
+	return func(outputRoute *envoy_config_route_v3.Route) error {
+		outputRoute.RequestHeadersToAdd = append(outputRoute.RequestHeadersToAdd, headersToAddd...)
+		outputRoute.RequestHeadersToRemove = append(outputRoute.RequestHeadersToRemove, toremove...)
+		return nil
+	}
 }
 
 func convertMirror(kctx krt.HandlerContext, f *gwv1.HTTPRequestMirrorFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *UpstreamIndex) func(outputRoute *envoy_config_route_v3.Route) error {

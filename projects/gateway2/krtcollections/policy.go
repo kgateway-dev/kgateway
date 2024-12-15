@@ -312,18 +312,22 @@ func NewRefGrantIndex(refgrants krt.Collection[*gwv1beta1.ReferenceGrant]) *RefG
 }
 
 func (r *RefGrantIndex) ReferenceAllowed(kctx krt.HandlerContext, fromgk schema.GroupKind, fromns string, to ir.ObjectSource) bool {
+	if fromns == to.Namespace {
+		return true
+	}
+
 	key := refGrantIndexKey{
 		RefGrantNs: to.Namespace,
 		ToGK:       schema.GroupKind{Group: to.Group, Kind: to.Kind},
 		FromGK:     fromgk,
 		FromNs:     fromns,
 	}
-	if krt.Fetch(kctx, r.refgrants, krt.FilterIndex(r.refGrantIndex, key)) != nil {
+	if len(krt.Fetch(kctx, r.refgrants, krt.FilterIndex(r.refGrantIndex, key))) != 0 {
 		return true
 	}
 	// try with name:
 	key.ToName = to.Name
-	if krt.Fetch(kctx, r.refgrants, krt.FilterIndex(r.refGrantIndex, key)) != nil {
+	if len(krt.Fetch(kctx, r.refgrants, krt.FilterIndex(r.refGrantIndex, key))) != 0 {
 		return true
 	}
 	return false
@@ -417,7 +421,7 @@ func (h *RoutesIndex) RoutesForGateway(kctx krt.HandlerContext, nns types.Namesp
 	return ret
 }
 
-func (h *RoutesIndex) FetchHttp(kctx krt.HandlerContext, n, ns string) *ir.HttpRouteIR {
+func (h *RoutesIndex) FetchHttp(kctx krt.HandlerContext, ns, n string) *ir.HttpRouteIR {
 	// TODO: maybe the key shouldnt include g and k?
 	src := ir.ObjectSource{
 		Group:     gwv1.SchemeGroupVersion.Group,
@@ -425,7 +429,8 @@ func (h *RoutesIndex) FetchHttp(kctx krt.HandlerContext, n, ns string) *ir.HttpR
 		Namespace: ns,
 		Name:      n,
 	}
-	return krt.FetchOne(kctx, h.httpRoutes, krt.FilterKey(src.ResourceName()))
+	route := krt.FetchOne(kctx, h.httpRoutes, krt.FilterKey(src.ResourceName()))
+	return route
 }
 
 func (h *RoutesIndex) Fetch(kctx krt.HandlerContext, gk schema.GroupKind, n, ns string) *RouteWrapper {

@@ -50,8 +50,11 @@ func ParsePath(path *gwv1.HTTPPathMatch) (gwv1.PathMatchType, string) {
 	}
 	return pathType, pathValue
 }
+func ptr(b bool) *bool {
+	return &b
+}
 
-func lessPath(a, b *gwv1.HTTPPathMatch) bool {
+func lessPath(a, b *gwv1.HTTPPathMatch) *bool {
 	atype, avalue := ParsePath(a)
 	btype, bvalue := ParsePath(b)
 
@@ -61,42 +64,41 @@ func lessPath(a, b *gwv1.HTTPPathMatch) bool {
 		switch btype {
 		case gwv1.PathMatchPathPrefix:
 			if len(avalue) != len(bvalue) {
-				return len(avalue) < len(bvalue)
+				return ptr(len(avalue) < len(bvalue))
 			}
 		// Exact and Regex always takes precedence over prefix
 		case gwv1.PathMatchExact, gwv1.PathMatchRegularExpression:
-			return true
+			return ptr(true)
 		}
 
 	case gwv1.PathMatchExact:
 		switch btype {
 		case gwv1.PathMatchExact:
 			if len(avalue) != len(bvalue) {
-				return len(avalue) < len(bvalue)
+				return ptr(len(avalue) < len(bvalue))
 			}
 
 		// Exact always takes precedence over regex and prefix
 		case gwv1.PathMatchRegularExpression, gwv1.PathMatchPathPrefix:
-			return false
+			return ptr(false)
 		}
 
 	case gwv1.PathMatchRegularExpression:
 		switch btype {
 		// Regex always takes precedence over prefix
 		case gwv1.PathMatchPathPrefix:
-			return false
+			return ptr(false)
 		// Exact always takes precedence over regex
 		case gwv1.PathMatchExact:
-			return true
+			return ptr(true)
 		case gwv1.PathMatchRegularExpression:
 			// Don't prioritize one regex over another based on their lengths
 			// as it doesn't make sense to do so and would be quite arbitrary,
 			// so prioritize on the remaining criteria evaluated below instead.
-			return false
 		}
 	}
 	// TODO: log dpanic here, this should never happen
-	return false
+	return nil
 }
 
 // Return true if A is lower priority than B
@@ -106,8 +108,8 @@ func routeWrapperLessFunc(wrapperA, wrapperB *SortableRoute) bool {
 	matchA, matchB := wrapperA.Route.Match, wrapperB.Route.Match
 
 	pathCompare := lessPath(matchA.Path, matchB.Path)
-	if pathCompare {
-		return true
+	if pathCompare != nil {
+		return *pathCompare
 	}
 
 	// If this matcher doesn't have a method match, then it's lower priority

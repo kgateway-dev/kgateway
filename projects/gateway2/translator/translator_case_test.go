@@ -205,8 +205,10 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		RefGrants: refGrants,
 	}
 	nsCol := krtcollections.NewNamespaceCollection(ctx, cli, krtOpts)
-
-	extensions := registry.AllPlugins(ctx, &commoncol)
+	plugins := registry.Plugins(ctx, &commoncol)
+	// TODO: consider moving the common code to a util that both proxy syncer and this test call
+	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
+	extensions := registry.MergePlugins(plugins...)
 	gk := schema.GroupKind{
 		Group: "",
 		Kind:  "test-backend-plugin"}
