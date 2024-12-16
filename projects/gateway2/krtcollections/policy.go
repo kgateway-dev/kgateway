@@ -21,8 +21,15 @@ import (
 var (
 	ErrMissingReferenceGrant = errors.New("missing reference grant")
 	ErrUnknownBackendKind    = errors.New("unknown backend kind")
-	ErrNotFound              = errors.New("not found")
 )
+
+type NotFoundError struct {
+	Obj ir.ObjectSource
+}
+
+func (n *NotFoundError) Error() string {
+	return fmt.Sprintf("%s \"%s\" not found", n.Obj.Kind, n.Obj.Name)
+}
 
 type UpstreamIndex struct {
 	availableUpstreams  map[schema.GroupKind]krt.Collection[ir.Upstream]
@@ -109,7 +116,7 @@ func (i *UpstreamIndex) getUpstream(kctx krt.HandlerContext, gk schema.GroupKind
 
 	up := krt.FetchOne(kctx, col, krt.FilterKey(ir.UpstreamResourceName(key, port)))
 	if up == nil {
-		return nil, ErrNotFound
+		return nil, &NotFoundError{Obj: key}
 	}
 	return up, nil
 }
@@ -609,6 +616,8 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 		clusterName := "blackhole-cluster"
 		if upstream != nil {
 			clusterName = upstream.ClusterName()
+		} else if err == nil {
+			err = &NotFoundError{Obj: to}
 		}
 		backends = append(backends, ir.HttpBackendOrDelegate{
 			Backend: &ir.Backend{
@@ -643,6 +652,8 @@ func (h *RoutesIndex) getTcpBackends(kctx krt.HandlerContext, src ir.ObjectSourc
 		clusterName := "blackhole-cluster"
 		if upstream != nil {
 			clusterName = upstream.ClusterName()
+		} else if err == nil {
+			err = &NotFoundError{Obj: to}
 		}
 		backends = append(backends, ir.Backend{
 			Upstream:    upstream,

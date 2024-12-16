@@ -6,6 +6,9 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
+	"github.com/solo-io/go-utils/contextutils"
+	"go.uber.org/zap"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -206,6 +209,7 @@ func setRouteAction(
 ) bool {
 	backends := rule.Backends
 	delegates := false
+	logger := contextutils.LoggerFrom(ctx).Desugar()
 
 	for _, backend := range backends {
 		// If the backend is an HTTPRoute, it implies route delegation
@@ -229,6 +233,16 @@ func setRouteAction(
 				query.ProcessBackendError(err, reporter)
 			}
 			continue
+		}
+
+		if err := backend.Backend.Err; err != nil {
+			reporter.SetCondition(reports.RouteCondition{
+				Type:    gwv1.RouteConditionResolvedRefs,
+				Status:  metav1.ConditionFalse,
+				Reason:  gwv1.RouteReasonBackendNotFound,
+				Message: err.Error(),
+			})
+			logger.Debug("error on backend upstream", zap.Error(err))
 		}
 
 		httpBackend := ir.HttpBackend{
