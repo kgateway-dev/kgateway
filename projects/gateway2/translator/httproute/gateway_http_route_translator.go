@@ -130,13 +130,14 @@ func translateGatewayHTTPRouteRule(
 		uniqueRouteName := gwroute.UniqueRouteName(ruleIdx, idx)
 
 		outputRoute := ir.HttpRouteRuleMatchIR{
-			HttpRouteRuleCommonIR: rule.HttpRouteRuleCommonIR,
-			Parent:                parent,
-			ParentRef:             gwroute.ListenerParentRef,
-			Name:                  uniqueRouteName,
-			Backends:              nil,
-			MatchIndex:            idx,
-			Match:                 match,
+			ExtensionRefs:    rule.ExtensionRefs,
+			AttachedPolicies: rule.AttachedPolicies,
+			Parent:           parent,
+			ParentRef:        gwroute.ListenerParentRef,
+			Name:             uniqueRouteName,
+			Backends:         nil,
+			MatchIndex:       idx,
+			Match:            match,
 		}
 
 		var delegatedRoutes []ir.HttpRouteRuleMatchIR

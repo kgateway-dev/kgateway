@@ -20,8 +20,8 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
-	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	ext "github.com/solo-io/gloo/projects/gateway2/extensions"
+	"github.com/solo-io/gloo/projects/gateway2/extensions2"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/common"
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/registry"
@@ -57,7 +57,7 @@ type StartConfig struct {
 	RestConfig *rest.Config
 	// ExtensionsFactory is the factory function which will return an extensions.K8sGatewayExtensions
 	// This is responsible for producing the extension points that this controller requires
-	ExtensionsFactory extensions.K8sGatewayExtensionsFactory
+	ExtraPlugins []extensionsplug.Plugin
 
 	// GlooStatusReporter is the shared reporter from setup_syncer that reports as 'gloo',
 	// it is used to report on Upstreams and Proxies after xds translation.
@@ -198,7 +198,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.Client,
 		cfg.AugmentedPods,
 		cfg.UniqueClients,
-		pluginFactoryWithBuiltin,
+		pluginFactoryWithBuiltin(cfg.ExtraPlugins),
 		commoncol,
 		cfg.SetupOpts.Cache,
 	)
@@ -215,10 +215,13 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	}, nil
 }
 
-func pluginFactoryWithBuiltin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
-	plugins := registry.Plugins(ctx, commoncol)
-	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
-	return registry.MergePlugins(plugins...)
+func pluginFactoryWithBuiltin(extraPlugins []extensionsplug.Plugin) extensions2.K8sGatewayExtensionsFactory {
+	return func(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
+		plugins := registry.Plugins(ctx, commoncol)
+		plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
+		plugins = append(plugins, extraPlugins...)
+		return registry.MergePlugins(plugins...)
+	}
 }
 
 func (c *ControllerBuilder) Start(ctx context.Context) error {

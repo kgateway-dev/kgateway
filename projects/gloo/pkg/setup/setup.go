@@ -8,7 +8,6 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/namespaces"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	"github.com/solo-io/gloo/pkg/version"
-	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	ggv2setup "github.com/solo-io/gloo/projects/gateway2/setup"
 	"github.com/solo-io/gloo/projects/gloo/constants"
@@ -42,7 +41,7 @@ func startSetupLoop(ctx context.Context) error {
 	// pass that in to the setup func
 	if k8sgw {
 		//setupOpts.ProxyReconcileQueue = ggv2utils.NewAsyncQueue[gloov1.ProxyList]()
-		go ggv2setup.StartGGv2(ctx, setupOpts, builder, extensions.NewK8sGatewayExtensions)
+		go ggv2setup.StartGGv2(ctx, setupOpts, builder, nil)
 	}
 
 	return setuputils.Main(setuputils.SetupOpts{

@@ -95,11 +95,6 @@ type Backend struct {
 	Err error
 }
 
-type HttpRouteRuleCommonIR struct {
-	ExtensionRefs    AttachedPolicies
-	AttachedPolicies AttachedPolicies
-}
-
 type HttpBackendOrDelegate struct {
 	Backend  *Backend
 	Delegate *ObjectSource
@@ -107,8 +102,9 @@ type HttpBackendOrDelegate struct {
 }
 
 type HttpRouteRuleIR struct {
-	HttpRouteRuleCommonIR
-	Backends []HttpBackendOrDelegate
-	Matches  []gwv1.HTTPRouteMatch
-	Name     string
+	ExtensionRefs    AttachedPolicies
+	AttachedPolicies AttachedPolicies
+	Backends         []HttpBackendOrDelegate
+	Matches          []gwv1.HTTPRouteMatch
+	Name             string
 }

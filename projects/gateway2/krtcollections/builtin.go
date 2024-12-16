@@ -31,6 +31,7 @@ type builtinPlugin struct {
 }
 
 func (d *builtinPlugin) CreationTime() time.Time {
+	// should this be infinity?
 	return time.Time{}
 }
 
@@ -128,6 +129,10 @@ func convertMirror(kctx krt.HandlerContext, f *gwv1.HTTPRequestMirrorFilter, fro
 		return nil
 	}
 	fraction := getFactionPercent(*f)
+	mirror := &envoy_config_route_v3.RouteAction_RequestMirrorPolicy{
+		Cluster:         up.ClusterName(),
+		RuntimeFraction: fraction,
+	}
 	return func(outputRoute *envoy_config_route_v3.Route) error {
 
 		route := outputRoute.GetRoute()
@@ -135,12 +140,7 @@ func convertMirror(kctx krt.HandlerContext, f *gwv1.HTTPRequestMirrorFilter, fro
 			// TODO: report error
 			return nil
 		}
-
-		route.RequestMirrorPolicies = append(route.RequestMirrorPolicies, &envoy_config_route_v3.RouteAction_RequestMirrorPolicy{
-			Cluster:         up.ClusterName(),
-			RuntimeFraction: fraction,
-		})
-
+		route.RequestMirrorPolicies = append(route.RequestMirrorPolicies, mirror)
 		return nil
 	}
 }
@@ -165,12 +165,8 @@ func getFactionPercent(f gwv1.HTTPRequestMirrorFilter) *envoy_config_core_v3.Run
 		}
 	}
 
-	return &envoy_config_core_v3.RuntimeFractionalPercent{
-		DefaultValue: &envoytype.FractionalPercent{
-			Numerator:   uint32(100),
-			Denominator: envoytype.FractionalPercent_HUNDRED,
-		},
-	}
+	// nil means 100%
+	return nil
 }
 
 func toEnvoyPercentage(percentage float64) *envoytype.FractionalPercent {

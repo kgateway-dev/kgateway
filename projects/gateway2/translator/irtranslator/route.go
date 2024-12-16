@@ -288,11 +288,11 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 		action.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{
 			Cluster: clusters[0].GetName(),
 		}
-		if clusters[0].TypedPerFilterConfig != nil {
-			if outRoute.TypedPerFilterConfig == nil {
-				outRoute.TypedPerFilterConfig = clusters[0].TypedPerFilterConfig
+		if clusters[0].GetTypedPerFilterConfig() != nil {
+			if outRoute.GetTypedPerFilterConfig() == nil {
+				outRoute.TypedPerFilterConfig = clusters[0].GetTypedPerFilterConfig()
 			} else {
-				maps.Copy(outRoute.TypedPerFilterConfig, clusters[0].TypedPerFilterConfig)
+				maps.Copy(outRoute.TypedPerFilterConfig, clusters[0].GetTypedPerFilterConfig())
 			}
 		}
 

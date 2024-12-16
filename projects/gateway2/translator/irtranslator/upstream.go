@@ -132,7 +132,7 @@ func initializeCluster(u ir.Upstream) *envoy_config_cluster_v3.Cluster {
 
 func setHttp2options(c *envoy_config_cluster_v3.Cluster) {
 
-	if c.TypedExtensionProtocolOptions == nil {
+	if c.GetTypedExtensionProtocolOptions() == nil {
 		c.TypedExtensionProtocolOptions = map[string]*anypb.Any{}
 	}
 	http2ProtocolOptions := &envoy_config_core_v3.Http2ProtocolOptions{}
@@ -151,6 +151,6 @@ func setHttp2options(c *envoy_config_cluster_v3.Cluster) {
 		panic(err)
 	}
 
-	c.TypedExtensionProtocolOptions["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"] = a
+	c.GetTypedExtensionProtocolOptions()["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"] = a
 
 }

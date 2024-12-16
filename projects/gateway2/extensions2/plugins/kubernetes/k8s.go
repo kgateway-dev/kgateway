@@ -39,7 +39,7 @@ func NewPluginFromCollections(ctx context.Context, krtOpts krtutil.KrtOptions,
 	}
 
 	clusterDomain := network.GetClusterDomainName()
-	k8sServiceUpstreams := krt.NewManyCollection[*corev1.Service](services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.Upstream {
+	k8sServiceUpstreams := krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.Upstream {
 		uss := []ir.Upstream{}
 		for _, port := range svc.Spec.Ports {
 			uss = append(uss, ir.Upstream{

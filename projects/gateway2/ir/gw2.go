@@ -17,8 +17,9 @@ type HttpBackend struct {
 }
 
 type HttpRouteRuleMatchIR struct {
-	HttpRouteRuleCommonIR
-	Parent *HttpRouteIR
+	ExtensionRefs    AttachedPolicies
+	AttachedPolicies AttachedPolicies
+	Parent           *HttpRouteIR
 	// the rule that delegated to us
 	DelegateParent *HttpRouteRuleIR
 	// if there's an error, the gw-api listener to report it in.

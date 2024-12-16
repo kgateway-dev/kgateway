@@ -498,13 +498,11 @@ func (h *RoutesIndex) transformRules(kctx krt.HandlerContext, src ir.ObjectSourc
 		}
 
 		rules = append(rules, ir.HttpRouteRuleIR{
-			HttpRouteRuleCommonIR: ir.HttpRouteRuleCommonIR{
-				ExtensionRefs:    extensionRefs,
-				AttachedPolicies: policies,
-			},
-			Backends: h.getBackends(kctx, src, r.BackendRefs),
-			Matches:  r.Matches,
-			Name:     emptyIfNil(r.Name),
+			ExtensionRefs:    extensionRefs,
+			AttachedPolicies: policies,
+			Backends:         h.getBackends(kctx, src, r.BackendRefs),
+			Matches:          r.Matches,
+			Name:             emptyIfNil(r.Name),
 		})
 	}
 	return rules

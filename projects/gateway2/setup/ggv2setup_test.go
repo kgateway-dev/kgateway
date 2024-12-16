@@ -31,7 +31,6 @@ import (
 
 	discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/go-logr/zapr"
-	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 	ggv2setup "github.com/solo-io/gloo/projects/gateway2/setup"
@@ -201,7 +200,7 @@ func TestScenarios(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		ggv2setup.StartGGv2WithConfig(ctx, setupOpts, cfg, builder, extensions.NewK8sGatewayExtensions,
+		ggv2setup.StartGGv2WithConfig(ctx, setupOpts, cfg, builder, nil,
 			types.NamespacedName{Name: "default", Namespace: "default"},
 		)
 	}()

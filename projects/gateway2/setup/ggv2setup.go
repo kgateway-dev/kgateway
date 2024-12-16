@@ -12,7 +12,7 @@ import (
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 	gateway "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway2/controller"
-	"github.com/solo-io/gloo/projects/gateway2/extensions"
+	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -73,18 +73,18 @@ func getInitialSettings(ctx context.Context, c istiokube.Client, nns types.Names
 func StartGGv2(ctx context.Context,
 	setupOpts *bootstrap.SetupOpts,
 	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
-	extensionsFactory extensions.K8sGatewayExtensionsFactory,
+	extraPlugins []extensionsplug.Plugin,
 ) error {
 	restConfig := ctrl.GetConfigOrDie()
 
-	return StartGGv2WithConfig(ctx, setupOpts, restConfig, uccBuilder, extensionsFactory, setuputils.SetupNamespaceName())
+	return StartGGv2WithConfig(ctx, setupOpts, restConfig, uccBuilder, extraPlugins, setuputils.SetupNamespaceName())
 }
 
 func StartGGv2WithConfig(ctx context.Context,
 	setupOpts *bootstrap.SetupOpts,
 	restConfig *rest.Config,
 	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
-	extensionsFactory extensions.K8sGatewayExtensionsFactory,
+	extraPlugins []extensionsplug.Plugin,
 	settingsNns types.NamespacedName,
 ) error {
 	ctx = contextutils.WithLogger(ctx, "k8s")
@@ -136,7 +136,7 @@ func StartGGv2WithConfig(ctx context.Context,
 	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
 
 	c, err := controller.NewControllerBuilder(ctx, controller.StartConfig{
-		ExtensionsFactory:    extensionsFactory,
+		ExtraPlugins:         extraPlugins,
 		RestConfig:           restConfig,
 		SetupOpts:            setupOpts,
 		KubeGwStatusReporter: kubeGwStatusReporter,

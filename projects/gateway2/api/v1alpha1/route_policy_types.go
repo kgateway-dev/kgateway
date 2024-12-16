@@ -41,7 +41,8 @@ type LocalPolicyTargetReference struct {
 
 type RoutePolicySpec struct {
 	TargetRef LocalPolicyTargetReference `json:"targetRef,omitempty"`
-	Timeout   int                        `json:"timeout,omitempty"`
+	// +kubebuilder:validation:Minimum=1
+	Timeout int `json:"timeout,omitempty"`
 }
 
 type PolicyStatus struct {

@@ -395,7 +395,7 @@ func (h *filterChainTranslator) computeTcpFilters(ctx context.Context, l ir.TcpI
 			if w == 0 {
 				w = 1
 			}
-			wc.Clusters = append(wc.Clusters, &envoytcp.TcpProxy_WeightedCluster_ClusterWeight{
+			wc.Clusters = append(wc.GetClusters(), &envoytcp.TcpProxy_WeightedCluster_ClusterWeight{
 				Name:   route.ClusterName,
 				Weight: w,
 			})

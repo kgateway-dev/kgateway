@@ -77,7 +77,7 @@ func (t *Translator) ComputeListener(ctx context.Context, pass TranslationPassPl
 		rl := gwreporter.ListenerName(hfc.FilterChainName)
 		fc := fct.initFilterChain(ctx, hfc.FilterChainCommon, rl)
 		fc.Filters = fct.computeHttpFilters(ctx, hfc, rl)
-		ret.FilterChains = append(ret.FilterChains, fc)
+		ret.FilterChains = append(ret.GetFilterChains(), fc)
 		if len(hfc.Matcher.SniDomains) > 0 {
 			hasTls = true
 		}
@@ -92,7 +92,7 @@ func (t *Translator) ComputeListener(ctx context.Context, pass TranslationPassPl
 		rl := gwreporter.ListenerName(tfc.FilterChainName)
 		fc := fct.initFilterChain(ctx, tfc.FilterChainCommon, rl)
 		fc.Filters = fct.computeTcpFilters(ctx, tfc, rl)
-		ret.FilterChains = append(ret.FilterChains, fc)
+		ret.FilterChains = append(ret.GetFilterChains(), fc)
 		if len(tfc.Matcher.SniDomains) > 0 {
 			hasTls = true
 		}
