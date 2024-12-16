@@ -153,37 +153,12 @@ func translateGatewayHTTPRouteRule(
 				delegationChain,
 			)
 		}
-		/*
-			plugins now happen in the IR translator, and policy attachment happens when the IR is
-			constructed.. so this can probably be removed
-					rtCtx := &plugins.RouteContext{
-						Listener:        &gwListener,
-						HTTPRoute:       route,
-						Hostnames:       hostnames,
-						DelegationChain: delegationChain,
-						Rule:            &rule,
-						Match:           &match,
-						Reporter:        reporter,
-					}
 
-					// Apply the plugins for this route
-					for _, plugin := range pluginRegistry.GetRoutePlugins() {
-						err := plugin.ApplyRoutePlugin(ctx, rtCtx, outputRoute)
-						if err != nil {
-							contextutils.LoggerFrom(ctx).Errorf("error in RoutePlugin: %v", err)
-						}
-
-						// If this parent route has delegatee routes, override any applied policies
-						// that are on the child with the parent's policies.
-						// When a plugin is invoked on a route, it must override the existing route.
-						for _, child := range delegatedRoutes {
-							err := plugin.ApplyRoutePlugin(ctx, rtCtx, child)
-							if err != nil {
-								contextutils.LoggerFrom(ctx).Errorf("error applying RoutePlugin to child route %s: %v", child.GetName(), err)
-							}
-						}
-					}
-		*/
+		// If this parent route has delegatee routes, set the parent on it
+		// so that later when applying plugins we can access and apply policies from it
+		for _, child := range delegatedRoutes {
+			child.DelegateParent = &rule
+		}
 
 		// Add the delegatee output routes to the final output list
 		*outputs = append(*outputs, delegatedRoutes...)

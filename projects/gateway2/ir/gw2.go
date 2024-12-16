@@ -19,6 +19,8 @@ type HttpBackend struct {
 type HttpRouteRuleMatchIR struct {
 	HttpRouteRuleCommonIR
 	Parent *HttpRouteIR
+	// the rule that delegated to us
+	DelegateParent *HttpRouteRuleIR
 	// if there's an error, the gw-api listener to report it in.
 	ParentRef  gwv1.ParentReference
 	Backends   []HttpBackend

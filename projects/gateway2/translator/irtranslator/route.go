@@ -172,11 +172,16 @@ func (h *httpRouteConfigurationTranslator) runVostPlugins(ctx context.Context, o
 func (h *httpRouteConfigurationTranslator) runRoutePlugins(ctx context.Context, routeReport reports.ParentRefReporter, in ir.HttpRouteRuleMatchIR, out *envoy_config_route_v3.Route) error {
 
 	// all policies up to listener have been applied as vhost polices; we need to apply the httproute policies and below
+	var policiesFromDelegateParent ir.AttachedPolicies
+	if in.DelegateParent != nil {
+		policiesFromDelegateParent = in.DelegateParent.AttachedPolicies
+	}
 
 	attachedPoliciesSlice := []ir.AttachedPolicies{
 		in.Parent.AttachedPolicies,
 		in.AttachedPolicies,
 		in.ExtensionRefs,
+		policiesFromDelegateParent,
 	}
 
 	var errs []error
