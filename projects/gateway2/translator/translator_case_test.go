@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sync"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -23,11 +22,13 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/common"
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/registry"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
+	"github.com/solo-io/gloo/projects/gateway2/pkg/client/clientset/versioned/fake"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	. "github.com/solo-io/gloo/projects/gateway2/translator"
@@ -90,7 +91,7 @@ func (tp testBackendPlugin) GetBackendForRefPlugin(kctx krt.HandlerContext, key 
 	}
 }
 
-func registerTypes() {
+func registerTypes(ourCli *fake.Clientset) {
 	skubeclient.Register[*gwv1.HTTPRoute](
 		gvr.HTTPRoute_v1,
 		gvk.HTTPRoute_v1.Kubernetes(),
@@ -113,14 +114,12 @@ func registerTypes() {
 	)
 }
 
-var registerOnce sync.Once
-
 func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.NamespacedName]ActualTestResult, error) {
 	var (
 		anyObjs  []runtime.Object
+		ourObjs  []runtime.Object
 		gateways []*gwv1.Gateway
 	)
-	registerOnce.Do(registerTypes)
 	for _, file := range tc.InputFiles {
 		objs, err := testutils.LoadFromFiles(ctx, file)
 		if err != nil {
@@ -132,12 +131,17 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 				// due to a problem with the test pluralizer making the gateway resource be `gatewaies`
 				// we don't use gateways in the fake client, creating a static collection instead
 				gateways = append(gateways, obj)
+
+			case *v1alpha1.Upstream:
+				ourObjs = append(ourObjs, obj)
 			default:
 				anyObjs = append(anyObjs, objs[i])
 			}
 		}
 	}
 
+	ourCli := fake.NewClientset(ourObjs...)
+	registerTypes(ourCli)
 	cli := kubeclient.NewFakeClient(anyObjs...)
 	for _, crd := range []schema.GroupVersionResource{
 		gvr.KubernetesGateway_v1,
@@ -197,6 +201,7 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 	}, krt.WithName("GlooSettingsSingleton"))
 	secretsIdx := krtcollections.NewSecretIndex(secrets, refGrants)
 	commoncol := common.CommonCollections{
+		OurClient: ourCli,
 		Client:    cli,
 		KrtOpts:   krtOpts,
 		Secrets:   secretsIdx,

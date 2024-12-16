@@ -35,7 +35,7 @@ type helmGateway struct {
 	PodSecurityContext            *corev1.PodSecurityContext     `json:"podSecurityContext,omitempty"`
 	NodeSelector                  map[string]string              `json:"nodeSelector,omitempty"`
 	Affinity                      *corev1.Affinity               `json:"affinity,omitempty"`
-	Tolerations                   []*corev1.Toleration           `json:"tolerations,omitempty"`
+	Tolerations                   []corev1.Toleration            `json:"tolerations,omitempty"`
 	ReadinessProbe                *corev1.Probe                  `json:"readinessProbe,omitempty"`
 	LivenessProbe                 *corev1.Probe                  `json:"livenessProbe,omitempty"`
 	GracefulShutdown              *v1alpha1.GracefulShutdownSpec `json:"gracefulShutdown,omitempty"`
@@ -150,8 +150,8 @@ type helmAIExtension struct {
 	Image           *helmImage                   `json:"image,omitempty"`
 	SecurityContext *corev1.SecurityContext      `json:"securityContext,omitempty"`
 	Resources       *corev1.ResourceRequirements `json:"resources,omitempty"`
-	Env             []*corev1.EnvVar             `json:"env,omitempty"`
-	Ports           []*corev1.ContainerPort      `json:"ports,omitempty"`
+	Env             []corev1.EnvVar              `json:"env,omitempty"`
+	Ports           []corev1.ContainerPort       `json:"ports,omitempty"`
 	Stats           []byte                       `json:"stats,omitempty"`
 }
 

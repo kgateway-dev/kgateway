@@ -35,25 +35,15 @@ func (in *AiExtension) DeepCopyInto(out *AiExtension) {
 	}
 	if in.Env != nil {
 		in, out := &in.Env, &out.Env
-		*out = make([]*v1.EnvVar, len(*in))
+		*out = make([]v1.EnvVar, len(*in))
 		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(v1.EnvVar)
-				(*in).DeepCopyInto(*out)
-			}
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 	if in.Ports != nil {
 		in, out := &in.Ports, &out.Ports
-		*out = make([]*v1.ContainerPort, len(*in))
-		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(v1.ContainerPort)
-				**out = **in
-			}
-		}
+		*out = make([]v1.ContainerPort, len(*in))
+		copy(*out, *in)
 	}
 	if in.Stats != nil {
 		in, out := &in.Stats, &out.Stats
@@ -603,13 +593,9 @@ func (in *IstioIntegration) DeepCopyInto(out *IstioIntegration) {
 	}
 	if in.CustomSidecars != nil {
 		in, out := &in.CustomSidecars, &out.CustomSidecars
-		*out = make([]*v1.Container, len(*in))
+		*out = make([]v1.Container, len(*in))
 		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(v1.Container)
-				(*in).DeepCopyInto(*out)
-			}
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 }
@@ -820,13 +806,9 @@ func (in *Pod) DeepCopyInto(out *Pod) {
 	}
 	if in.Tolerations != nil {
 		in, out := &in.Tolerations, &out.Tolerations
-		*out = make([]*v1.Toleration, len(*in))
+		*out = make([]v1.Toleration, len(*in))
 		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(v1.Toleration)
-				(*in).DeepCopyInto(*out)
-			}
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 	if in.GracefulShutdown != nil {

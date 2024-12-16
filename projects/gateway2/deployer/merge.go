@@ -514,9 +514,9 @@ func deepMergeIstioIntegration(dst, src *v1alpha1.IstioIntegration) *v1alpha1.Is
 }
 
 // mergeCustomSidecars will decide whether to use dst or src custom sidecar containers
-func mergeCustomSidecars(dst, src []*corev1.Container) []*corev1.Container {
+func mergeCustomSidecars(dst, src []corev1.Container) []corev1.Container {
 	// nil src override means just use dst
-	if src == nil {
+	if len(src) == 0 {
 		return dst
 	}
 

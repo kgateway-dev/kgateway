@@ -4,9 +4,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	"sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
+// +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:metadata:labels={app=gateway,app.kubernetes.io/name=gateway}
 // +kubebuilder:resource:categories=gateway,shortName=rp
@@ -59,7 +59,7 @@ type PolicyStatus struct {
 type PolicyAncestorStatus struct {
 	// AncestorRef corresponds with a ParentRef in the spec that this
 	// PolicyAncestorStatus struct describes the status of.
-	AncestorRef v1alpha2.ParentReference `json:"ancestorRef"`
+	AncestorRef gwv1.ParentReference `json:"ancestorRef"`
 
 	// ControllerName is a domain/path string that indicates the name of the
 	// controller that wrote this status. This corresponds with the
@@ -85,6 +85,7 @@ type PolicyAncestorStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
+// +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:metadata:labels={app=gateway,app.kubernetes.io/name=gateway}
 // +kubebuilder:resource:categories=gateway,shortName=hlp
@@ -109,6 +110,7 @@ type HttpListenerPolicySpec struct {
 	Compress bool `json:"compress,omitempty"`
 }
 
+// +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:metadata:labels={app=gateway,app.kubernetes.io/name=gateway}
 // +kubebuilder:resource:categories=gateway,shortName=lp
@@ -134,6 +136,7 @@ type ListenerPolicySpec struct {
 	PerConnectionBufferLimitBytes uint32                     `json:"perConnectionBufferLimitBytes,omitempty"`
 }
 
+// +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:metadata:labels={app=gateway,app.kubernetes.io/name=gateway}
 // +kubebuilder:resource:categories=gateway,shortName=up

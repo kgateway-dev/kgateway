@@ -7,7 +7,9 @@ import (
 	"time"
 
 	awspb "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/watch"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -17,9 +19,12 @@ import (
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
-	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
+	"github.com/solo-io/gloo/projects/gateway2/pkg/client/clientset/versioned"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
+	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -80,14 +85,25 @@ type plugin2 struct {
 	needFilter map[string]bool
 }
 
+func registerTypes(ourCli versioned.Interface) {
+	skubeclient.Register[*v1alpha1.Upstream](
+		v1alpha1.UpstreamGVK.GroupVersion().WithResource("upstreams"),
+		v1alpha1.UpstreamGVK,
+		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return ourCli.GatewayV1alpha1().Upstreams(namespace).List(context.Background(), o)
+		},
+		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return ourCli.GatewayV1alpha1().Upstreams(namespace).Watch(context.Background(), o)
+		},
+	)
+}
+
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
 
-	col := krtutil.SetupCollectionDynamic[v1alpha1.Upstream](
-		ctx,
-		commoncol.Client,
-		v1alpha1.SchemeGroupVersion.WithResource("upstreams"),
-		commoncol.KrtOpts.ToOptions("Upstreams")...,
-	)
+	registerTypes(commoncol.OurClient)
+
+	col := krt.WrapClient(kclient.New[*v1alpha1.Upstream](commoncol.Client), commoncol.KrtOpts.ToOptions("Upstreams")...)
+
 	gk := v1alpha1.UpstreamGVK.GroupKind()
 	translate := buildTranslateFunc(commoncol.Secrets)
 	ucol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Upstream) *ir.Upstream {
@@ -150,7 +166,7 @@ func buildTranslateFunc(secrets *krtcollections.SecretIndex) func(krtctx krt.Han
 			if secret != nil {
 				ir.AwsSecret = secret
 			}
-			panic("handle error and write it to status")
+			//			panic("handle error and write it to status")
 		}
 		return &ir
 	}

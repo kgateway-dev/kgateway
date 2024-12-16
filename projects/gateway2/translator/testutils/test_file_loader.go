@@ -14,6 +14,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
+	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/translator/irtranslator"
 
 	"github.com/ghodss/yaml"
@@ -87,6 +88,9 @@ func LoadFromFiles(ctx context.Context, filename string) ([]client.Object, error
 
 func parseFile(ctx context.Context, filename string) ([]runtime.Object, error) {
 	scheme := schemes.GatewayScheme()
+	if err := v1alpha1.Install(scheme); err != nil {
+		return nil, err
+	}
 	file, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err

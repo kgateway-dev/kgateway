@@ -6,6 +6,7 @@ import (
 
 // DirectResponse contains configuration for defining direct response routes.
 //
+// +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:metadata:labels={app=gloo-gateway,app.kubernetes.io/name=gloo-gateway}
 // +kubebuilder:resource:categories=gloo-gateway,shortName=dr

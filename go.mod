@@ -109,6 +109,9 @@ require (
 	istio.io/api v1.24.0-alpha.0.0.20241106042855-9e26cdd3450a
 	istio.io/client-go v1.24.0-alpha.0.0.20241106043554-b5828356941f
 	istio.io/istio v0.0.0-20241107203726-094b9e700412
+	k8s.io/gengo v0.0.0-20230829151522-9cce18d56c01
+	k8s.io/klog/v2 v2.130.1
+	k8s.io/kube-openapi v0.0.0-20240423202451-8948a665c108
 	sigs.k8s.io/controller-tools v0.16.5
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1
 )
@@ -337,10 +340,7 @@ require (
 	k8s.io/apiserver v0.31.2 // indirect
 	k8s.io/cli-runtime v0.31.2 // indirect
 	k8s.io/component-helpers v0.31.1 // indirect
-	k8s.io/gengo v0.0.0-20230829151522-9cce18d56c01 // indirect
-	k8s.io/gengo/v2 v2.0.0-20240826214909-a7b603a56eb7 // indirect
-	k8s.io/klog/v2 v2.130.1 // indirect
-	k8s.io/kube-openapi v0.0.0-20240423202451-8948a665c108 // indirect
+	k8s.io/gengo/v2 v2.0.0-20240228010128-51d4e06bde70 // indirect
 	k8s.io/metrics v0.31.1 // indirect
 	oras.land/oras-go v1.2.5 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
@@ -390,7 +390,7 @@ replace (
 	k8s.io/component-base => k8s.io/component-base v0.31.1
 	k8s.io/component-helpers => k8s.io/component-helpers v0.31.1
 	// version of kube-openapi used by client-go v0.31.1
-	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20240827152857-f7e401e7b4c2
+	//	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20240827152857-f7e401e7b4c2
 	k8s.io/kubectl => k8s.io/kubectl v0.31.1
 	k8s.io/metrics => k8s.io/metrics v0.31.1
 	k8s.io/utils => k8s.io/utils v0.0.0-20240711033017-18e509b52bc8

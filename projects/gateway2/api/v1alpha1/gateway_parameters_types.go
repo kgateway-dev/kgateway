@@ -9,6 +9,7 @@ import (
 // provision Gloo Gateway's data plane (Envoy proxy instance), based on a
 // Kubernetes Gateway.
 //
+// +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:metadata:labels={app=gloo-gateway,app.kubernetes.io/name=gloo-gateway}
 // +kubebuilder:resource:categories=gloo-gateway,shortName=gwp
@@ -384,10 +385,11 @@ type IstioIntegration struct {
 	// +kubebuilder:validation:Optional
 	IstioProxyContainer *IstioContainer `json:"istioProxyContainer,omitempty"`
 
+	// do not use slice of pointers: https://github.com/kubernetes/code-generator/issues/166
 	// Override the default Istio sidecar in gateway-proxy with a custom container.
 	//
 	// +kubebuilder:validation:Optional
-	CustomSidecars []*corev1.Container `json:"customSidecars,omitempty"`
+	CustomSidecars []corev1.Container `json:"customSidecars,omitempty"`
 }
 
 func (in *IstioIntegration) GetIstioProxyContainer() *IstioContainer {
@@ -397,7 +399,7 @@ func (in *IstioIntegration) GetIstioProxyContainer() *IstioContainer {
 	return in.IstioProxyContainer
 }
 
-func (in *IstioIntegration) GetCustomSidecars() []*corev1.Container {
+func (in *IstioIntegration) GetCustomSidecars() []corev1.Container {
 	if in == nil {
 		return nil
 	}
@@ -577,15 +579,17 @@ type AiExtension struct {
 	// +kubebuilder:validation:Optional
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 
+	// do not use slice of pointers: https://github.com/kubernetes/code-generator/issues/166
+
 	// The extension's container environment variables.
 	//
 	// +kubebuilder:validation:Optional
-	Env []*corev1.EnvVar `json:"env,omitempty"`
+	Env []corev1.EnvVar `json:"env,omitempty"`
 
 	// The extensions's container ports.
 	//
 	// +kubebuilder:validation:Optional
-	Ports []*corev1.ContainerPort `json:"ports,omitempty"`
+	Ports []corev1.ContainerPort `json:"ports,omitempty"`
 
 	// Additional stats config for AI Extension.
 	// This config can be useful for adding custom labels to the request metrics.
@@ -633,14 +637,14 @@ func (in *AiExtension) GetResources() *corev1.ResourceRequirements {
 	return in.Resources
 }
 
-func (in *AiExtension) GetEnv() []*corev1.EnvVar {
+func (in *AiExtension) GetEnv() []corev1.EnvVar {
 	if in == nil {
 		return nil
 	}
 	return in.Env
 }
 
-func (in *AiExtension) GetPorts() []*corev1.ContainerPort {
+func (in *AiExtension) GetPorts() []corev1.ContainerPort {
 	if in == nil {
 		return nil
 	}

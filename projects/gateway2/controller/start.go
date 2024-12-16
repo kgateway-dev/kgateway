@@ -27,6 +27,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/registry"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
+	"github.com/solo-io/gloo/projects/gateway2/pkg/client/clientset/versioned"
 	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
@@ -172,8 +173,12 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 
 	refgrantsCol := krt.WrapClient(kclient.New[*gwv1beta1.ReferenceGrant](cfg.Client), cfg.KrtOptions.ToOptions("RefGrants")...)
 	refgrants := krtcollections.NewRefGrantIndex(refgrantsCol)
-
+	cli, err := versioned.NewForConfig(cfg.RestConfig)
+	if err != nil {
+		return nil, err
+	}
 	commoncol := common.CommonCollections{
+		OurClient: cli,
 		Client:    cfg.Client,
 		KrtOpts:   cfg.KrtOptions,
 		Secrets:   krtcollections.NewSecretIndex(secrets, refgrants),

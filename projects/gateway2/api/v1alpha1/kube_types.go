@@ -193,12 +193,13 @@ type Pod struct {
 	// +kubebuilder:validation:Optional
 	Affinity *corev1.Affinity `json:"affinity,omitempty"`
 
+	// do not use slice of pointers: https://github.com/kubernetes/code-generator/issues/166
 	// If specified, the pod's tolerations. See
 	// https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#toleration-v1-core
 	// for details.
 	//
 	// +kubebuilder:validation:Optional
-	Tolerations []*corev1.Toleration `json:"tolerations,omitempty"`
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 
 	// If specified, the pod's graceful shutdown spec.
 	//
@@ -271,7 +272,7 @@ func (in *Pod) GetAffinity() *corev1.Affinity {
 	return in.Affinity
 }
 
-func (in *Pod) GetTolerations() []*corev1.Toleration {
+func (in *Pod) GetTolerations() []corev1.Toleration {
 	if in == nil {
 		return nil
 	}
