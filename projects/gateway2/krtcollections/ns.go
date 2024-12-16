@@ -26,7 +26,7 @@ func (n NamespaceMetadata) Equals(in NamespaceMetadata) bool {
 
 func NewNamespaceCollection(ctx context.Context, istioClient kube.Client, krtOpts krtutil.KrtOptions) krt.Collection[NamespaceMetadata] {
 	client := kclient.NewFiltered[*corev1.Namespace](istioClient, kclient.Filter{
-		ObjectTransform: kube.StripPodUnusedFields,
+		// ObjectTransform: ...,
 	})
 	col := krt.WrapClient(client, krtOpts.ToOptions("Namespaces")...)
 	return krt.NewCollection(col, func(ctx krt.HandlerContext, ns *corev1.Namespace) *NamespaceMetadata {
