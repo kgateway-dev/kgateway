@@ -6,19 +6,21 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 func (s *ProxyTranslator) syncXds(
 	ctx context.Context,
-	snap *xds.EnvoySnapshot,
-	proxyKey string,
+	snapWrap XdsSnapWrapper,
 ) {
 	ctx = contextutils.WithLogger(ctx, "kube-gateway-xds-syncer")
 	logger := contextutils.LoggerFrom(ctx).Desugar()
+
+	snap := snapWrap.snap
+	proxyKey := snapWrap.proxyKey
+
+	// TODO: handle errored clusters by fetching them from the previous snapshot and using the old cluster
 
 	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
 	// string if we're not even going to log it anyway

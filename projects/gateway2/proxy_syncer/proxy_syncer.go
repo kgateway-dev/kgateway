@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"slices"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -13,7 +12,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/controllers"
@@ -39,7 +37,6 @@ import (
 	ggv2utils "github.com/solo-io/gloo/projects/gateway2/utils"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
@@ -76,8 +73,6 @@ type ProxySyncer struct {
 	statusReport            krt.Singleton[report]
 	mostXdsSnapshots        krt.Collection[GatewayXdsResources]
 	perclientSnapCollection krt.Collection[XdsSnapWrapper]
-
-	translator setup.TranslatorFactory
 
 	waitForSync []cache.InformerSynced
 
@@ -210,22 +205,6 @@ func (r report) Equals(in report) bool {
 		return false
 	}
 	return true
-}
-
-type proxyList struct {
-	list gloov1.ProxyList
-}
-
-func (p proxyList) ResourceName() string {
-	return "proxyList"
-}
-
-func (p proxyList) Equals(in proxyList) bool {
-	sorted := p.list.Sort()
-	sortedIn := in.list.Sort()
-	return slices.EqualFunc(sorted, sortedIn, func(x, y *gloov1.Proxy) bool {
-		return proto.Equal(x, y)
-	})
 }
 
 func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) error {
@@ -370,15 +349,6 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		latestReportQueue.Enqueue(o.Latest().reportMap)
 	})
 
-	//	// handler to reconcile ProxyList for in-memory proxy client
-	//	s.proxiesToReconcile.Register(func(o krt.Event[proxyList]) {
-	//		var l gloov1.ProxyList
-	//		if o.Event != controllers.EventDelete {
-	//			l = o.Latest().list
-	//		}
-	//		s.reconcileProxies(l)
-	//	})
-
 	go func() {
 		timer := time.NewTicker(time.Second * 1)
 		for {
@@ -415,7 +385,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 		for _, e := range o {
 			if e.Event != controllers.EventDelete {
 				snapWrap := e.Latest()
-				s.proxyTranslator.syncXds(ctx, snapWrap.snap, snapWrap.proxyKey)
+				s.proxyTranslator.syncXds(ctx, snapWrap)
 			} else {
 				// key := e.Latest().proxyKey
 				// if _, err := s.proxyTranslator.xdsCache.GetSnapshot(key); err == nil {
@@ -424,28 +394,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 			}
 		}
 	}, true)
-	/* probably not needed
-	go func() {
-		timer := time.NewTicker(time.Second * 1)
-		needsProxyRecompute := false
-		for {
-			select {
-			case <-ctx.Done():
-				logger.Debug("context done, stopping proxy recompute")
-				return
-			case <-timer.C:
-				if needsProxyRecompute {
-					needsProxyRecompute = false
-					//s.proxyTrigger.TriggerRecomputation()
-				}
-			case <-s.inputs.genericEvent.Next():
-				// event from ctrl-rtime, signal that we need to recompute proxies on next tick
-				// this will not be necessary once we switch the "front side" of translation to krt
-				needsProxyRecompute = true
-			}
-		}
-	}()
-	*/
+
 	go func() {
 		for {
 			latestReport, err := latestReportQueue.Dequeue(ctx)
@@ -649,20 +598,6 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMa
 	}
 	duration := stopwatch.Stop(ctx)
 	logger.Debugf("synced gw status for %d gateways in %s", len(rm.Gateways), duration.String())
-}
-
-// reconcileProxies persists the provided proxies by reconciling them with the proxyReconciler.
-// as the Kube GW impl does not support reading Proxies from etcd, the expectation is these prox ies are
-// written and persisted to the in-memory cache.
-// The list MUST contain all valid kube Gw proxies, as the edge reconciler expects the full set; proxies that
-// are not added to this list will be garbage collected by the solo-kit base reconciler, so this list must be the
-// full SotW.
-// The Gloo Xds translator_syncer will receive these proxies via List() using a MultiResourceClient.
-// There are two reasons we must make these proxies available to legacy syncer:
-// 1. To allow Rate Limit extensions to work, as it only syncs RL configs it finds used on Proxies in the snapshots
-// 2. For debug tooling, notably the debug.ProxyEndpointServer
-func (s *ProxySyncer) reconcileProxies(proxyList gloov1.ProxyList) {
-	// gloo edge v1 will read from this queue
 }
 
 func applyPostTranslationPlugins(ctx context.Context, pluginRegistry registry.PluginRegistry, translationContext *gwplugins.PostTranslationContext) {

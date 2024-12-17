@@ -24,9 +24,14 @@ func snapshotPerClient(l *zap.Logger, krtopts krtutil.KrtOptions, uccCol krt.Col
 
 		clustersProto := make([]envoycache.Resource, 0, len(clustersForUcc)+len(maybeMostlySnap.Clusters))
 		var clustersHash uint64
+		var erroredClusters []string
 		for _, c := range clustersForUcc {
-			clustersProto = append(clustersProto, c.Cluster)
-			clustersHash ^= c.ClusterVersion
+			if c.Error != nil {
+				clustersProto = append(clustersProto, c.Cluster)
+				clustersHash ^= c.ClusterVersion
+			} else {
+				erroredClusters = append(erroredClusters, c.Name)
+			}
 		}
 		clustersProto = append(clustersProto, maybeMostlySnap.Clusters...)
 		clustersHash ^= maybeMostlySnap.ClustersHash
@@ -43,7 +48,7 @@ func snapshotPerClient(l *zap.Logger, krtopts krtutil.KrtOptions, uccCol krt.Col
 		snap := XdsSnapWrapper{}
 
 		clusterResources := envoycache.NewResources(clustersVersion, clustersProto)
-
+		snap.erroredClusters = erroredClusters
 		snap.proxyKey = ucc.ResourceName()
 		snap.snap = &xds.EnvoySnapshot{
 			Clusters:  clusterResources,

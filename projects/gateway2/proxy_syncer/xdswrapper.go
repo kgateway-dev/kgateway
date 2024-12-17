@@ -25,8 +25,9 @@ var (
 )
 
 type XdsSnapWrapper struct {
-	snap     *xds.EnvoySnapshot
-	proxyKey string
+	snap            *xds.EnvoySnapshot
+	erroredClusters []string
+	proxyKey        string
 }
 
 func (p XdsSnapWrapper) WithSnapshot(snap *xds.EnvoySnapshot) XdsSnapWrapper {

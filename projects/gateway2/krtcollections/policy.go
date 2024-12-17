@@ -92,7 +92,7 @@ func AddUpstream[T metav1.Object](ui *UpstreamIndex, gk schema.GroupKind, col kr
 // if we want to make this function public, make it do ref grants
 func (i *UpstreamIndex) getUpstream(kctx krt.HandlerContext, gk schema.GroupKind, n types.NamespacedName, gwport *gwv1.PortNumber) (*ir.Upstream, error) {
 	key := ir.ObjectSource{
-		Group:     gk.Group,
+		Group:     emptyIfCore(gk.Group),
 		Kind:      gk.Kind,
 		Namespace: n.Namespace,
 		Name:      n.Name,
@@ -285,7 +285,7 @@ type refGrantIndexKey struct {
 }
 
 func (k refGrantIndexKey) String() string {
-	return fmt.Sprintf("%s/%s/%s/%s/%s", k.ToGK.Group, k.ToGK.Kind, k.ToName, k.FromGK.Group, k.FromGK.Kind)
+	return fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s", k.RefGrantNs, k.FromNs, k.ToGK.Group, k.ToGK.Kind, k.ToName, k.FromGK.Group, k.FromGK.Kind)
 }
 
 type RefGrantIndex struct {
@@ -305,9 +305,9 @@ func NewRefGrantIndex(refgrants krt.Collection[*gwv1beta1.ReferenceGrant]) *RefG
 
 				ret = append(ret, refGrantIndexKey{
 					RefGrantNs: p.Namespace,
-					ToGK:       schema.GroupKind{Group: string(to.Group), Kind: string(to.Kind)},
+					ToGK:       schema.GroupKind{Group: emptyIfCore(string(to.Group)), Kind: string(to.Kind)},
 					ToName:     strOr(to.Name, ""),
-					FromGK:     schema.GroupKind{Group: string(from.Group), Kind: string(from.Kind)},
+					FromGK:     schema.GroupKind{Group: emptyIfCore(string(from.Group)), Kind: string(from.Kind)},
 					FromNs:     string(from.Namespace),
 				})
 			}
@@ -321,6 +321,8 @@ func (r *RefGrantIndex) ReferenceAllowed(kctx krt.HandlerContext, fromgk schema.
 	if fromns == to.Namespace {
 		return true
 	}
+	to.Group = emptyIfCore(to.Group)
+	fromgk.Group = emptyIfCore(fromgk.Group)
 
 	key := refGrantIndexKey{
 		RefGrantNs: to.Namespace,
@@ -328,7 +330,8 @@ func (r *RefGrantIndex) ReferenceAllowed(kctx krt.HandlerContext, fromgk schema.
 		FromGK:     fromgk,
 		FromNs:     fromns,
 	}
-	if len(krt.Fetch(kctx, r.refgrants, krt.FilterIndex(r.refGrantIndex, key))) != 0 {
+	matchingGrants := krt.Fetch(kctx, r.refgrants, krt.FilterIndex(r.refGrantIndex, key))
+	if len(matchingGrants) != 0 {
 		return true
 	}
 	// try with name:
@@ -689,4 +692,10 @@ func tostr(in []gwv1.Hostname) []string {
 		out[i] = string(h)
 	}
 	return out
+}
+func emptyIfCore(s string) string {
+	if s == "core" {
+		return ""
+	}
+	return s
 }

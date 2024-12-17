@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/translator/irtranslator"
 	ggv2utils "github.com/solo-io/gloo/projects/gateway2/utils"
@@ -20,11 +19,12 @@ type uccWithCluster struct {
 	Client         ir.UniqlyConnectedClient
 	Cluster        envoycache.Resource
 	ClusterVersion uint64
-	upstreamName   string
+	Name           string
+	Error          error
 }
 
 func (c uccWithCluster) ResourceName() string {
-	return fmt.Sprintf("%s/%s", c.Client.ResourceName(), c.upstreamName)
+	return fmt.Sprintf("%s/%s", c.Client.ResourceName(), c.Name)
 }
 
 func (c uccWithCluster) Equals(in uccWithCluster) bool {
@@ -58,15 +58,16 @@ func NewPerClientEnvoyClusters(
 		for _, ucc := range uccs {
 			logger.Debug("applying destination rules for upstream", zap.String("ucc", ucc.ResourceName()))
 
-			c, version := translate(kctx, ucc, ctx, translator, up)
+			c, err := translator.TranslateUpstream(kctx, ucc, up)
 			if c == nil {
 				continue
 			}
 			uccWithClusterRet = append(uccWithClusterRet, uccWithCluster{
 				Client:         ucc,
 				Cluster:        resource.NewEnvoyResource(c),
-				ClusterVersion: version,
-				upstreamName:   up.ResourceName(),
+				Name:           c.Name,
+				Error:          err,
+				ClusterVersion: ggv2utils.HashProto(c),
 			})
 		}
 		return uccWithClusterRet
@@ -79,15 +80,4 @@ func NewPerClientEnvoyClusters(
 		clusters: clusters,
 		index:    idx,
 	}
-}
-
-func translate(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, ctx context.Context, translator *irtranslator.UpstreamTranslator, up ir.Upstream) (*envoy_config_cluster_v3.Cluster, uint64) {
-
-	// false here should be ok - plugins should set eds on eds clusters.
-	cluster := translator.TranslateUpstream(kctx, ucc, up)
-	if cluster == nil {
-		return nil, 0
-	}
-
-	return cluster, ggv2utils.HashProto(cluster)
 }

@@ -2,12 +2,11 @@ package irtranslator
 
 import (
 	"context"
+	"errors"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
 
@@ -21,20 +20,18 @@ type UpstreamTranslator struct {
 	ContributedPolicies  map[schema.GroupKind]extensionsplug.PolicyPlugin
 }
 
-func (t *UpstreamTranslator) TranslateUpstream(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, u ir.Upstream) *envoy_config_cluster_v3.Cluster {
+func (t *UpstreamTranslator) TranslateUpstream(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, u ir.Upstream) (*envoy_config_cluster_v3.Cluster, error) {
 	gk := schema.GroupKind{
 		Group: u.Group,
 		Kind:  u.Kind,
 	}
 	process, ok := t.ContributedUpstreams[gk]
 	if !ok {
-		// ERROR!
-		panic("TODO: report this error on the status")
+		return nil, errors.New("no upstream translator found for " + gk.String())
 	}
 
 	if process.InitUpstream == nil {
-		// ERROR!
-		panic("TODO: report this error on the status")
+		return nil, errors.New("no upstream plugin found for " + gk.String())
 	}
 
 	out := initializeCluster(u)
@@ -43,7 +40,7 @@ func (t *UpstreamTranslator) TranslateUpstream(kctx krt.HandlerContext, ucc ir.U
 
 	// now process upstream policies:
 	t.runPlugins(kctx, context.TODO(), ucc, u, out)
-	return out
+	return out, nil
 }
 
 func (t *UpstreamTranslator) runPlugins(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, u ir.Upstream, out *envoy_config_cluster_v3.Cluster) {
@@ -128,29 +125,4 @@ func initializeCluster(u ir.Upstream) *envoy_config_cluster_v3.Cluster {
 	//		xds.SetEdsOnCluster(out, t.settings)
 	//	}
 	return out
-}
-
-func setHttp2options(c *envoy_config_cluster_v3.Cluster) {
-
-	if c.GetTypedExtensionProtocolOptions() == nil {
-		c.TypedExtensionProtocolOptions = map[string]*anypb.Any{}
-	}
-	http2ProtocolOptions := &envoy_config_core_v3.Http2ProtocolOptions{}
-	opts := &envoy_upstreams_v3.HttpProtocolOptions{
-		UpstreamProtocolOptions: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
-			ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
-				ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
-					Http2ProtocolOptions: http2ProtocolOptions,
-				},
-			},
-		},
-	}
-	a, err := anypb.New(opts)
-	if err != nil {
-		// TODO return and report error instead of panic
-		panic(err)
-	}
-
-	c.GetTypedExtensionProtocolOptions()["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"] = a
-
 }

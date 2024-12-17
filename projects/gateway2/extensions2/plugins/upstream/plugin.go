@@ -165,8 +165,10 @@ func buildTranslateFunc(secrets *krtcollections.SecretIndex) func(krtctx krt.Han
 			secret, _ := secrets.GetSecret(krtctx, krtcollections.From{GroupKind: v1alpha1.UpstreamGVK.GroupKind(), Namespace: ns}, secretRef)
 			if secret != nil {
 				ir.AwsSecret = secret
+			} else {
+				// TODO: handle error and write it to status
+				// return error
 			}
-			// TODO: handle error and write it to status
 		}
 		return &ir
 	}
