@@ -245,7 +245,6 @@ func (p *PolicyIndex) getTargetingPolicies(kctx krt.HandlerContext, pnt extensio
 	targetRefIndexKey.SectionName = sectionName
 	sectionNamePolicies := krt.Fetch(kctx, p.policies, krt.FilterIndex(p.targetRefIndex, targetRefIndexKey))
 
-	// TODO: sort by priority/creation timestamp
 	for _, p := range policies {
 		ret = append(ret, ir.PolicyAtt{PolicyIr: p.PolicyIR, GroupKind: p.GetGroupKind(), PolicyTargetRef: &ir.PolicyTargetRef{
 			Group: p.Group,
@@ -491,7 +490,7 @@ func (h *RoutesIndex) transformRules(kctx krt.HandlerContext, src ir.ObjectSourc
 	rules := make([]ir.HttpRouteRuleIR, 0, len(i))
 	for _, r := range i {
 
-		extensionRefs := h.getExtensionRefs(kctx, src.Namespace, r)
+		extensionRefs := h.getExtensionRefs(kctx, src.Namespace, r.Filters)
 		var policies ir.AttachedPolicies
 		if r.Name != nil {
 			policies = toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, string(*r.Name)))
@@ -509,21 +508,7 @@ func (h *RoutesIndex) transformRules(kctx krt.HandlerContext, src ir.ObjectSourc
 
 }
 
-func (h *RoutesIndex) getExtensionRefs(kctx krt.HandlerContext, ns string, r gwv1.HTTPRouteRule) ir.AttachedPolicies {
-	ret := ir.AttachedPolicies{
-		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
-	}
-	for _, ext := range r.Filters {
-		gk, policy := h.resolveExtension(kctx, ns, ext)
-		if policy != nil {
-			ret.Policies[gk] = append(ret.Policies[gk], ir.PolicyAtt{PolicyIr: policy /*direct attachment - no target ref*/})
-		}
-
-	}
-	return ret
-}
-
-func (h *RoutesIndex) getExtensionRefs2(kctx krt.HandlerContext, ns string, r []gwv1.HTTPRouteFilter) ir.AttachedPolicies {
+func (h *RoutesIndex) getExtensionRefs(kctx krt.HandlerContext, ns string, r []gwv1.HTTPRouteFilter) ir.AttachedPolicies {
 	ret := ir.AttachedPolicies{
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
@@ -584,7 +569,7 @@ func toFromBackendRef(fromns string, ref gwv1.BackendObjectReference) ir.ObjectS
 func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, i []gwv1.HTTPBackendRef) []ir.HttpBackendOrDelegate {
 	backends := make([]ir.HttpBackendOrDelegate, 0, len(i))
 	for _, ref := range i {
-		extensionRefs := h.getExtensionRefs2(kctx, src.Namespace, ref.Filters)
+		extensionRefs := h.getExtensionRefs(kctx, src.Namespace, ref.Filters)
 		fromns := src.Namespace
 
 		to := toFromBackendRef(fromns, ref.BackendObjectReference)
@@ -662,36 +647,6 @@ func (h *RoutesIndex) getTcpBackends(kctx krt.HandlerContext, src ir.ObjectSourc
 	}
 	return backends
 }
-
-type GwIndex struct {
-	routes    krt.Collection[ir.GatewayIR]
-	policies  *PolicyIndex
-	refgrants *RefGrantIndex
-}
-
-//func NewGwIndex(gws krt.Collection[*gwv1.Gateway], policies *PolicyIndex, refgrants *RefGrantIndex) *HttpRoutesIndex {
-//	h := &HttpRoutesIndex{policies: policies, refgrants: refgrants}
-//	h.routes = krt.NewCollection(gws, h.transformGw)
-//	return h
-//}
-//
-//func (h *HttpRoutesIndex) transformGw(kctx krt.HandlerContext, i *gwv1.Gateway) *ir.GatewayWithPoliciesIR {
-//	src := ir.ObjectSource{
-//		Group:     gwv1.SchemeGroupVersion.Group,
-//		Kind:      "Gateway",
-//		Namespace: i.Namespace,
-//		Name:      i.Name,
-//	}
-//
-//	return &ir.HttpRouteIR{
-//		ObjectSource:     src,
-//		SourceObject:     i,
-//		ParentRefs:       i.Spec.ParentRefs,
-//		Hostnames:        tostr(i.Spec.Hostnames),
-//		Rules:            h.transformRules(kctx, src, i.Spec.Rules),
-//		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, src, "")),
-//	}
-//}
 
 func strOr[T ~string](s *T, def string) string {
 	if s == nil {

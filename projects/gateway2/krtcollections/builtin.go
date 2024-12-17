@@ -128,7 +128,7 @@ func convertMirror(kctx krt.HandlerContext, f *gwv1.HTTPRequestMirrorFilter, fro
 		// TODO: report error
 		return nil
 	}
-	fraction := getFactionPercent(*f)
+	fraction := getFractionPercent(*f)
 	mirror := &envoy_config_route_v3.RouteAction_RequestMirrorPolicy{
 		Cluster:         up.ClusterName(),
 		RuntimeFraction: fraction,
@@ -145,7 +145,7 @@ func convertMirror(kctx krt.HandlerContext, f *gwv1.HTTPRequestMirrorFilter, fro
 	}
 }
 
-func getFactionPercent(f gwv1.HTTPRequestMirrorFilter) *envoy_config_core_v3.RuntimeFractionalPercent {
+func getFractionPercent(f gwv1.HTTPRequestMirrorFilter) *envoy_config_core_v3.RuntimeFractionalPercent {
 	if f.Percent != nil {
 		return &envoy_config_core_v3.RuntimeFractionalPercent{
 			DefaultValue: &envoytype.FractionalPercent{

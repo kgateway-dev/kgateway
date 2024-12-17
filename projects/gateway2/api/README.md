@@ -14,6 +14,7 @@ These are the steps required to add a new CRD to be used in the Kubernetes Gatew
         - Define getters for each field, as these are not generated automatically.
         - Include all the appropriate json and kubebuilder annotations on fields and structs.
         - Make sure to include a unique `shortName` in the kubebuilder annotation for the resource.
+        - Avoid using slices with pointers. see: https://github.com/kubernetes/code-generator/issues/166
     - Define a struct for the resource list (containing the metadata fields and `Items`)
 3. Run codegen via `make generated-code -B`. This will invoke the `controller-gen` command specified in [generate.go](/projects/gateway2/generate.go), which should result in the following:
     - A `zz_generated.deepcopy.go` file is created in the same directory as the Go types.

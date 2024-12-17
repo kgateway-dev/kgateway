@@ -7,26 +7,25 @@ import (
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:metadata:labels={app=gateway,app.kubernetes.io/name=gateway}
-// +kubebuilder:resource:categories=gateway,shortName=rp
+// +kubebuilder:resource:categories=gateway,shortName=lp
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="gateway.networking.k8s.io/policy=Direct"
-type RoutePolicy struct {
+type ListenerPolicy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   RoutePolicySpec `json:"spec,omitempty"`
-	Status PolicyStatus    `json:"status,omitempty"`
+	Spec   ListenerPolicySpec `json:"spec,omitempty"`
+	Status PolicyStatus       `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
-type RoutePolicyList struct {
+type ListenerPolicyList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []RoutePolicy `json:"items"`
+	Items           []ListenerPolicy `json:"items"`
 }
 
-type RoutePolicySpec struct {
-	TargetRef LocalPolicyTargetReference `json:"targetRef,omitempty"`
-	// +kubebuilder:validation:Minimum=1
-	Timeout int `json:"timeout,omitempty"`
+type ListenerPolicySpec struct {
+	TargetRef                     LocalPolicyTargetReference `json:"targetRef,omitempty"`
+	PerConnectionBufferLimitBytes uint32                     `json:"perConnectionBufferLimitBytes,omitempty"`
 }

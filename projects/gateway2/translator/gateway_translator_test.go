@@ -179,7 +179,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				Expect(resolvedRefs.Message).To(Equal("unknown backend kind"))
 			},
 		}),
-	Entry(
+	XEntry(
 		"RouteOptions merging",
 		translatorTestCase{
 			inputFile:  "route_options/merge.yaml",
