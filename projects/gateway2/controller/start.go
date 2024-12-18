@@ -15,12 +15,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	czap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
-	ext "github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/common"
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
@@ -40,6 +38,7 @@ import (
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
+	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
@@ -88,19 +87,19 @@ type StartConfig struct {
 // It is intended to be run in a goroutine as the function will block until the supplied
 // context is cancelled
 type ControllerBuilder struct {
-	proxySyncer     *proxy_syncer.ProxySyncer
-	cfg             StartConfig
-	k8sGwExtensions ext.K8sGatewayExtensions
-	mgr             ctrl.Manager
+	proxySyncer *proxy_syncer.ProxySyncer
+	cfg         StartConfig
+	mgr         ctrl.Manager
+	isOurGw     func(gw *apiv1.Gateway) bool
 }
 
 func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuilder, error) {
-	var opts []zap.Opts
+	var opts []czap.Opts
 	if cfg.Dev {
 		setupLog.Info("starting log in dev mode")
-		opts = append(opts, zap.UseDevMode(true))
+		opts = append(opts, czap.UseDevMode(true))
 	}
-	ctrl.SetLogger(zap.New(opts...))
+	ctrl.SetLogger(czap.New(opts...))
 
 	scheme := glooschemes.DefaultScheme()
 
@@ -134,22 +133,6 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 
 	// TODO: replace this with something that checks that we have xds snapshot ready (or that we don't need one).
 	mgr.AddReadyzCheck("ready-ping", healthz.Ping)
-
-	//	virtualHostOptionCollection := proxy_syncer.SetupCollectionDynamic[gatewaykubev1.VirtualHostOption](
-	//		ctx,
-	//		cfg.Client,
-	//		gatewaykubev1.SchemeGroupVersion.WithResource("virtualhostoptions"),
-	//		krt.WithName("VirtualHostOption"))
-	//	routeOptionCollection := proxy_syncer.SetupCollectionDynamic[gatewaykubev1.RouteOption](
-	//		ctx,
-	//		cfg.Client,
-	//		gatewaykubev1.SchemeGroupVersion.WithResource("routeoptions"),
-	//		krt.WithName("RouteOption"))
-	//	authConfigCollection := proxy_syncer.SetupCollectionDynamic[extauthkubev1.AuthConfig](
-	//		ctx,
-	//		cfg.Client,
-	//		gatewaykubev1.SchemeGroupVersion.WithResource("authconfigs"),
-	//		krt.WithName("AuthConfig"))
 
 	setupLog.Info("initializing k8sgateway extensions")
 	secretClient := kclient.New[*corev1.Secret](cfg.Client)
@@ -187,6 +170,10 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		RefGrants: refgrants,
 	}
 
+	gwClasses := sets.New(append(cfg.SetupOpts.ExtraGatewayClasses, wellknown.GatewayClassName)...)
+	isOurGw := func(gw *apiv1.Gateway) bool {
+		return gwClasses.Has(string(gw.Spec.GatewayClassName))
+	}
 	// Create the proxy syncer for the Gateway API resources
 	setupLog.Info("initializing proxy syncer")
 	proxySyncer := proxy_syncer.NewProxySyncer(
@@ -202,16 +189,18 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		commoncol,
 		cfg.SetupOpts.Cache,
 	)
-	proxySyncer.Init(ctx, cfg.KrtOptions)
+	proxySyncer.Init(ctx, isOurGw, cfg.KrtOptions)
 	if err := mgr.Add(proxySyncer); err != nil {
 		setupLog.Error(err, "unable to add proxySyncer runnable")
 		return nil, err
 	}
+	setupLog.Info("starting controller builder", "GatewayClasses", sets.List(gwClasses))
 
 	return &ControllerBuilder{
 		proxySyncer: proxySyncer,
 		cfg:         cfg,
 		mgr:         mgr,
+		isOurGw:     isOurGw,
 	}, nil
 }
 
@@ -225,7 +214,7 @@ func pluginFactoryWithBuiltin(extraPlugins []extensionsplug.Plugin) extensions2.
 }
 
 func (c *ControllerBuilder) Start(ctx context.Context) error {
-	logger := contextutils.LoggerFrom(ctx)
+	logger := contextutils.LoggerFrom(ctx).Desugar()
 	logger.Info("starting gateway controller")
 	// GetXdsAddress waits for gloo-edge to populate the xds address of the server.
 	// in the future this logic may move here and be duplicated.
@@ -234,7 +223,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 		return ctx.Err()
 	}
 
-	logger.Infow("got xds address for deployer", uzap.String("xds_host", xdsHost), uzap.Int32("xds_port", xdsPort))
+	logger.Info("got xds address for deployer", uzap.String("xds_host", xdsHost), uzap.Int32("xds_port", xdsPort))
 
 	integrationEnabled := c.cfg.InitialSettings.Spec.GetGloo().GetIstioOptions().GetEnableIntegration().GetValue()
 
@@ -256,15 +245,9 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 		}
 	}
 
-	// Initialize the set of Gateway API CRDs we care about
-	crds, err := getGatewayCRDs(c.cfg.RestConfig)
-	if err != nil {
-		return err
-	}
-
 	gwCfg := GatewayConfig{
 		Mgr:            c.mgr,
-		GWClasses:      sets.New(append(c.cfg.SetupOpts.ExtraGatewayClasses, wellknown.GatewayClassName)...),
+		OurGateway:     c.isOurGw,
 		ControllerName: wellknown.GatewayControllerName,
 		AutoProvision:  AutoProvision,
 		ControlPlane: deployer.ControlPlaneInfo{
@@ -274,28 +257,12 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 		// TODO pass in the settings so that the deloyer can register to it for changes.
 		IstioIntegrationEnabled: integrationEnabled,
 		Aws:                     awsInfo,
-		Kick:                    func(context.Context) {},
-		CRDs:                    crds,
 	}
+
 	if err := NewBaseGatewayController(ctx, gwCfg); err != nil {
 		setupLog.Error(err, "unable to create controller")
 		return err
 	}
 
 	return c.mgr.Start(ctx)
-}
-
-func getGatewayCRDs(restConfig *rest.Config) (sets.Set[string], error) {
-	crds := wellknown.GatewayStandardCRDs
-
-	tcpRouteExists, err := glooschemes.CRDExists(restConfig, gwv1a2.GroupVersion.Group, gwv1a2.GroupVersion.Version, wellknown.TCPRouteKind)
-	if err != nil {
-		return nil, err
-	}
-
-	if tcpRouteExists {
-		crds.Insert(wellknown.TCPRouteCRDName)
-	}
-
-	return crds, nil
 }

@@ -3,35 +3,70 @@ package routeutils
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/gateway2/ir"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-var _ = Describe("RouteWrappersTest", func() {
-	defaultMatcher := func() *matchers.Matcher {
-		return &matchers.Matcher{
-			PathSpecifier: &matchers.Matcher_Prefix{
-				Prefix: "/",
-			},
-		}
+func defaultMatcher() gwv1.HTTPRouteMatch {
+	t := gwv1.PathMatchPathPrefix
+	v := "/"
+	return gwv1.HTTPRouteMatch{
+		Path: &gwv1.HTTPPathMatch{
+			Type:  &t,
+			Value: &v,
+		},
 	}
+}
+func prefixMatch(s string) *gwv1.HTTPPathMatch {
+	t := gwv1.PathMatchPathPrefix
+	return &gwv1.HTTPPathMatch{
+		Type:  &t,
+		Value: &s,
+	}
+}
+func prefixMatcher(s string) gwv1.HTTPRouteMatch {
+	return gwv1.HTTPRouteMatch{
+		Path: prefixMatch(s),
+	}
+}
+func exactMatcher(s string) gwv1.HTTPRouteMatch {
+	t := gwv1.PathMatchExact
+	return gwv1.HTTPRouteMatch{
+		Path: &gwv1.HTTPPathMatch{
+			Type:  &t,
+			Value: &s,
+		},
+	}
+}
+func regexMatcher(s string) gwv1.HTTPRouteMatch {
+	t := gwv1.PathMatchRegularExpression
+	return gwv1.HTTPRouteMatch{
+		Path: &gwv1.HTTPPathMatch{
+			Type:  &t,
+			Value: &s,
+		},
+	}
+}
 
-	defaultRt := func() *gwv1.HTTPRoute {
-		return &gwv1.HTTPRoute{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "a-test",
-			},
-		}
+func defaultRt() *gwv1.HTTPRoute {
+	return &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "a-test",
+		},
 	}
-	defaultRtB := func() *gwv1.HTTPRoute {
-		return &gwv1.HTTPRoute{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "b-test",
-			},
-		}
+}
+func defaultRtB() *gwv1.HTTPRoute {
+	return &gwv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "b-test",
+		},
 	}
+}
+
+var _ = Describe("RouteWrappersTest", func() {
+
 	DescribeTable("Route Sorting",
 		func(wrapperA, wrapperB *SortableRoute, expected bool) {
 			Expect(
@@ -42,14 +77,14 @@ var _ = Describe("RouteWrappersTest", func() {
 			"equal will return false",
 			&SortableRoute{
 				RouteObject: defaultRt(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{defaultMatcher()},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: defaultMatcher(),
 				},
 			},
 			&SortableRoute{
 				RouteObject: defaultRt(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{defaultMatcher()},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: defaultMatcher(),
 				},
 			},
 			false,
@@ -58,26 +93,14 @@ var _ = Describe("RouteWrappersTest", func() {
 			"Exact paths will take precedence over prefix",
 			&SortableRoute{
 				RouteObject: defaultRt(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Prefix{
-								Prefix: "/exact",
-							},
-						},
-					},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: prefixMatcher("/exact"),
 				},
 			},
 			&SortableRoute{
 				RouteObject: defaultRt(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Exact{
-								Exact: "/exact",
-							},
-						},
-					},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: exactMatcher("/exact"),
 				},
 			},
 			true,
@@ -86,26 +109,14 @@ var _ = Describe("RouteWrappersTest", func() {
 			"Exact paths will take precedence over Regex",
 			&SortableRoute{
 				RouteObject: defaultRt(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Regex{
-								Regex: "/exact",
-							},
-						},
-					},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: regexMatcher("/exact"),
 				},
 			},
 			&SortableRoute{
 				RouteObject: defaultRt(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Exact{
-								Exact: "/exact",
-							},
-						},
-					},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: exactMatcher("/exact"),
 				},
 			},
 			true,
@@ -114,26 +125,14 @@ var _ = Describe("RouteWrappersTest", func() {
 			"Regex paths will take precedence over Prefix",
 			&SortableRoute{
 				RouteObject: defaultRt(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Regex{
-								Regex: "/regex.*",
-							},
-						},
-					},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: regexMatcher("/regex.*"),
 				},
 			},
 			&SortableRoute{
 				RouteObject: defaultRt(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Prefix{
-								Prefix: "/prefix",
-							},
-						},
-					},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: prefixMatcher("/prefix"),
 				},
 			},
 			false,
@@ -142,26 +141,14 @@ var _ = Describe("RouteWrappersTest", func() {
 			"Regex paths will not take precedence over Regex regardless of their lengths",
 			&SortableRoute{
 				RouteObject: defaultRt(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Regex{
-								Regex: "/regex.*",
-							},
-						},
-					},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: regexMatcher("/regex.*"),
 				},
 			},
 			&SortableRoute{
 				RouteObject: defaultRt(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Regex{
-								Regex: "/re.*",
-							},
-						},
-					},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: regexMatcher("/re.*"),
 				},
 			},
 			false,
@@ -170,26 +157,14 @@ var _ = Describe("RouteWrappersTest", func() {
 			"Regex paths will not take precedence over Regex regardless of their lengths",
 			&SortableRoute{
 				RouteObject: defaultRt(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Regex{
-								Regex: "/re.*",
-							},
-						},
-					},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: regexMatcher("/re.*"),
 				},
 			},
 			&SortableRoute{
 				RouteObject: defaultRt(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Regex{
-								Regex: "/regex.*",
-							},
-						},
-					},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: regexMatcher("/regex.*"),
 				},
 			},
 			false,
@@ -198,26 +173,14 @@ var _ = Describe("RouteWrappersTest", func() {
 			"PrefixPaths check length",
 			&SortableRoute{
 				RouteObject: defaultRt(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Prefix{
-								Prefix: "/exact",
-							},
-						},
-					},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: prefixMatcher("/exact"),
 				},
 			},
 			&SortableRoute{
 				RouteObject: defaultRt(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Prefix{
-								Prefix: "/exact/2",
-							},
-						},
-					},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: prefixMatcher("/exact/2"),
 				},
 			},
 			true,
@@ -226,20 +189,16 @@ var _ = Describe("RouteWrappersTest", func() {
 			"matching paths will check method",
 			&SortableRoute{
 				RouteObject: defaultRt(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{defaultMatcher()},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: defaultMatcher(),
 				},
 			},
 			&SortableRoute{
 				RouteObject: defaultRt(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Prefix{
-								Prefix: "/",
-							},
-							Methods: []string{"GET"},
-						},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: gwv1.HTTPRouteMatch{
+						Path:   prefixMatch("/"),
+						Method: ptr.To(gwv1.HTTPMethod("GET")),
 					},
 				},
 			},
@@ -249,25 +208,19 @@ var _ = Describe("RouteWrappersTest", func() {
 			"matching paths and method will check headers",
 			&SortableRoute{
 				RouteObject: defaultRt(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{defaultMatcher()},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: defaultMatcher(),
 				},
 			},
 			&SortableRoute{
 				RouteObject: defaultRt(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Prefix{
-								Prefix: "/",
-							},
-							Headers: []*matchers.HeaderMatcher{
-								{
-									Name:  "test",
-									Value: "hello",
-								},
-							},
-						},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: gwv1.HTTPRouteMatch{
+						Path: prefixMatch("/"),
+						Headers: []gwv1.HTTPHeaderMatch{{
+							Name:  gwv1.HTTPHeaderName("test"),
+							Value: "hello",
+						}},
 					},
 				},
 			},
@@ -277,37 +230,25 @@ var _ = Describe("RouteWrappersTest", func() {
 			"different name same ns",
 			&SortableRoute{
 				RouteObject: defaultRtB(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Prefix{
-								Prefix: "/",
-							},
-							Headers: []*matchers.HeaderMatcher{
-								{
-									Name:  "test",
-									Value: "hello",
-								},
-							},
-						},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: gwv1.HTTPRouteMatch{
+						Path: prefixMatch("/"),
+						Headers: []gwv1.HTTPHeaderMatch{{
+							Name:  gwv1.HTTPHeaderName("test"),
+							Value: "hello",
+						}},
 					},
 				},
 			},
 			&SortableRoute{
 				RouteObject: defaultRt(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Prefix{
-								Prefix: "/",
-							},
-							Headers: []*matchers.HeaderMatcher{
-								{
-									Name:  "test2",
-									Value: "hello",
-								},
-							},
-						},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: gwv1.HTTPRouteMatch{
+						Path: prefixMatch("/"),
+						Headers: []gwv1.HTTPHeaderMatch{{
+							Name:  gwv1.HTTPHeaderName("test2"),
+							Value: "hello",
+						}},
 					},
 				},
 			},
@@ -317,41 +258,28 @@ var _ = Describe("RouteWrappersTest", func() {
 			"one has more headers",
 			&SortableRoute{
 				RouteObject: defaultRt(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Prefix{
-								Prefix: "/",
-							},
-							Headers: []*matchers.HeaderMatcher{
-								{
-									Name:  "test",
-									Value: "hello",
-								},
-							},
-						},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: gwv1.HTTPRouteMatch{
+						Path: prefixMatch("/"),
+						Headers: []gwv1.HTTPHeaderMatch{{
+							Name:  gwv1.HTTPHeaderName("test"),
+							Value: "hello",
+						}},
 					},
 				},
 			},
 			&SortableRoute{
 				RouteObject: defaultRt(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Prefix{
-								Prefix: "/",
-							},
-							Headers: []*matchers.HeaderMatcher{
-								{
-									Name:  "test2",
-									Value: "hello",
-								},
-								{
-									Name:  "test",
-									Value: "hello",
-								},
-							},
-						},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: gwv1.HTTPRouteMatch{
+						Path: prefixMatch("/"),
+						Headers: []gwv1.HTTPHeaderMatch{{
+							Name:  gwv1.HTTPHeaderName("test2"),
+							Value: "hello",
+						}, {
+							Name:  gwv1.HTTPHeaderName("test"),
+							Value: "hello",
+						}},
 					},
 				},
 			},
@@ -362,38 +290,26 @@ var _ = Describe("RouteWrappersTest", func() {
 			&SortableRoute{
 				RouteObject: defaultRt(),
 				Idx:         1,
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Prefix{
-								Prefix: "/",
-							},
-							Headers: []*matchers.HeaderMatcher{
-								{
-									Name:  "test",
-									Value: "hello",
-								},
-							},
-						},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: gwv1.HTTPRouteMatch{
+						Path: prefixMatch("/"),
+						Headers: []gwv1.HTTPHeaderMatch{{
+							Name:  gwv1.HTTPHeaderName("test"),
+							Value: "hello",
+						}},
 					},
 				},
 			},
 			&SortableRoute{
 				RouteObject: defaultRt(),
 				Idx:         0,
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Prefix{
-								Prefix: "/",
-							},
-							Headers: []*matchers.HeaderMatcher{
-								{
-									Name:  "test",
-									Value: "hello2",
-								},
-							},
-						},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: gwv1.HTTPRouteMatch{
+						Path: prefixMatch("/"),
+						Headers: []gwv1.HTTPHeaderMatch{{
+							Name:  gwv1.HTTPHeaderName("test"),
+							Value: "hello2",
+						}},
 					},
 				},
 			},
@@ -403,23 +319,20 @@ var _ = Describe("RouteWrappersTest", func() {
 			"All else fails use query",
 			&SortableRoute{
 				RouteObject: defaultRt(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{defaultMatcher()},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: defaultMatcher(),
 				},
 			},
 			&SortableRoute{
 				RouteObject: defaultRt(),
-				GlooRoute: &v1.Route{
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Prefix{
-								Prefix: "/",
-							},
-							QueryParameters: []*matchers.QueryParameterMatcher{
-								{
-									Name:  "test",
-									Value: "hello",
-								},
+				Route: ir.HttpRouteRuleMatchIR{
+					Match: gwv1.HTTPRouteMatch{
+						Path: prefixMatch("/"),
+						QueryParams: []gwv1.HTTPQueryParamMatch{
+							{
+								Type:  ptr.To(gwv1.QueryParamMatchExact),
+								Name:  "test",
+								Value: "hello",
 							},
 						},
 					},

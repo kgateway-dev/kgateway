@@ -26,7 +26,7 @@ func snapshotPerClient(l *zap.Logger, krtopts krtutil.KrtOptions, uccCol krt.Col
 		var clustersHash uint64
 		var erroredClusters []string
 		for _, c := range clustersForUcc {
-			if c.Error != nil {
+			if c.Error == nil {
 				clustersProto = append(clustersProto, c.Cluster)
 				clustersHash ^= c.ClusterVersion
 			} else {

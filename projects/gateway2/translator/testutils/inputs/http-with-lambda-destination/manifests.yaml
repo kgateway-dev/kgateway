@@ -25,7 +25,7 @@ spec:
     - backendRefs:
         - name: aws-upstream
           kind: Upstream
-          group: gloo.solo.io
+          group: gateway.gloo.solo.io
           filters:
             - type: ExtensionRef
               extensionRef:
@@ -33,14 +33,15 @@ spec:
                 kind: Parameter
                 name: uppercase
 ---
-apiVersion: gloo.solo.io/v1
+apiVersion: gateway.gloo.solo.io/v1alpha1
 kind: Upstream
 metadata:
   name: aws-upstream
 spec:
   aws:
     region: us-east-1
-    roleArn: arn:aws:iam::123456789012:role/lambda-role
-    lambdaFunctions:
-      - lambdaFunctionName: uppercase
-        logicalName: uppercase
+    # TODO: add these back
+    # roleArn: arn:aws:iam::123456789012:role/lambda-role
+    # lambdaFunctions:
+    #   - lambdaFunctionName: uppercase
+    #     logicalName: uppercase

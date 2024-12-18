@@ -31,9 +31,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator"
 	"github.com/solo-io/gloo/projects/gateway2/translator/irtranslator"
-	gwplugins "github.com/solo-io/gloo/projects/gateway2/translator/plugins"
-	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
-	"github.com/solo-io/gloo/projects/gateway2/translator/translatorutils"
 	ggv2utils "github.com/solo-io/gloo/projects/gateway2/utils"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
@@ -207,7 +204,7 @@ func (r report) Equals(in report) bool {
 	return true
 }
 
-func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) error {
+func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) bool, krtopts krtutil.KrtOptions) error {
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
 	logger := contextutils.LoggerFrom(ctx)
 
@@ -215,7 +212,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 
 	nsCol := krtcollections.NewNamespaceCollection(ctx, s.istioClient, krtopts)
 
-	kubeGateways, routes, finalUpstreams, endpointIRs := krtcollections.InitCollections(ctx, s.extensions, s.istioClient, s.commonCols.RefGrants, krtopts)
+	kubeGateways, routes, finalUpstreams, endpointIRs := krtcollections.InitCollections(ctx, s.extensions, s.istioClient, isOurGw, s.commonCols.RefGrants, krtopts)
 	queries := query.NewData(
 		routes,
 		s.commonCols.Secrets,
@@ -441,45 +438,6 @@ func (s *ProxySyncer) buildProxy(kctx krt.HandlerContext, ctx context.Context, g
 	return proxy
 }
 
-func applyStatusPlugins(
-	ctx context.Context,
-	proxiesWithReports []translatorutils.ProxyWithReports,
-	registry registry.PluginRegistry,
-) {
-	ctx = contextutils.WithLogger(ctx, "k8sGatewayStatusPlugins")
-	logger := contextutils.LoggerFrom(ctx)
-
-	statusCtx := &gwplugins.StatusContext{
-		ProxiesWithReports: proxiesWithReports,
-	}
-	for _, plugin := range registry.GetStatusPlugins() {
-		err := plugin.ApplyStatusPlugin(ctx, statusCtx)
-		if err != nil {
-			logger.Errorf("Error applying status plugin: %v", err)
-			continue
-		}
-	}
-}
-
-func initStatusPlugins(
-	ctx context.Context,
-	proxiesWithReports []translatorutils.ProxyWithReports,
-	registry registry.PluginRegistry,
-) {
-	ctx = contextutils.WithLogger(ctx, "k8sGatewayStatusPlugins")
-	logger := contextutils.LoggerFrom(ctx)
-
-	statusCtx := &gwplugins.StatusContext{
-		ProxiesWithReports: proxiesWithReports,
-	}
-	for _, plugin := range registry.GetStatusPlugins() {
-		err := plugin.InitStatusPlugin(ctx, statusCtx)
-		if err != nil {
-			logger.Errorf("Error applying init status plugin: %v", err)
-		}
-	}
-}
-
 func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
 	ctx = contextutils.WithLogger(ctx, "routeStatusSyncer")
 	logger := contextutils.LoggerFrom(ctx)
@@ -600,18 +558,18 @@ func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMa
 	logger.Debugf("synced gw status for %d gateways in %s", len(rm.Gateways), duration.String())
 }
 
-func applyPostTranslationPlugins(ctx context.Context, pluginRegistry registry.PluginRegistry, translationContext *gwplugins.PostTranslationContext) {
-	ctx = contextutils.WithLogger(ctx, "postTranslation")
-	logger := contextutils.LoggerFrom(ctx)
-
-	for _, postTranslationPlugin := range pluginRegistry.GetPostTranslationPlugins() {
-		err := postTranslationPlugin.ApplyPostTranslationPlugin(ctx, translationContext)
-		if err != nil {
-			logger.Errorf("Error applying post-translation plugin: %v", err)
-			continue
-		}
-	}
-}
+//func applyPostTranslationPlugins(ctx context.Context, pluginRegistry registry.PluginRegistry, translationContext *gwplugins.PostTranslationContext) {
+//	ctx = contextutils.WithLogger(ctx, "postTranslation")
+//	logger := contextutils.LoggerFrom(ctx)
+//
+//	for _, postTranslationPlugin := range pluginRegistry.GetPostTranslationPlugins() {
+//		err := postTranslationPlugin.ApplyPostTranslationPlugin(ctx, translationContext)
+//		if err != nil {
+//			logger.Errorf("Error applying post-translation plugin: %v", err)
+//			continue
+//		}
+//	}
+//}
 
 var opts = cmp.Options{
 	cmpopts.IgnoreFields(metav1.Condition{}, "LastTransitionTime"),

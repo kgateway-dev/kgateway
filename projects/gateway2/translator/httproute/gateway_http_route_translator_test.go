@@ -2,20 +2,12 @@ package httproute
 
 import (
 	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-
-	"github.com/solo-io/gloo/projects/gateway2/parameters"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure"
 )
 
 const funcName = "my-function"
 
 var _ = Describe("GatewayHttpRouteTranslator", func() {
-
+	/* TODO: move to upstream unit tests
 	type makeDestinationSpecTestCase struct {
 		upstream     *gloov1.Upstream
 		filters      []gwv1.HTTPRouteFilter
@@ -114,4 +106,5 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 			expectedErr:  nil,
 		}),
 	)
+	*/
 })

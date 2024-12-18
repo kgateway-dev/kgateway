@@ -59,6 +59,6 @@ func TestRedacted(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := string(data)
-	expectedJson := `{"Snap":{"Clusters":[{"transportSocket":{"name":"foo","typedConfig":{"@type":"type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext","commonTlsContext":{"tlsCertificates":[{"privateKey":{"inlineString":"[REDACTED]"}}]}}}}]},"ProxyKey":""}`
+	expectedJson := `{"Snap":{"Clusters":{"foo":{"transportSocket":{"name":"foo","typedConfig":{"@type":"type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext","commonTlsContext":{"tlsCertificates":[{"privateKey":{"inlineString":"[REDACTED]"}}]}}}}}},"ProxyKey":""}`
 	g.Expect(s).To(gomega.MatchJSON(expectedJson))
 }

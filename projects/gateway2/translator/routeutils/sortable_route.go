@@ -4,6 +4,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -50,9 +51,6 @@ func ParsePath(path *gwv1.HTTPPathMatch) (gwv1.PathMatchType, string) {
 	}
 	return pathType, pathValue
 }
-func ptr(b bool) *bool {
-	return &b
-}
 
 func lessPath(a, b *gwv1.HTTPPathMatch) *bool {
 	atype, avalue := ParsePath(a)
@@ -64,33 +62,33 @@ func lessPath(a, b *gwv1.HTTPPathMatch) *bool {
 		switch btype {
 		case gwv1.PathMatchPathPrefix:
 			if len(avalue) != len(bvalue) {
-				return ptr(len(avalue) < len(bvalue))
+				return ptr.To(len(avalue) < len(bvalue))
 			}
 		// Exact and Regex always takes precedence over prefix
 		case gwv1.PathMatchExact, gwv1.PathMatchRegularExpression:
-			return ptr(true)
+			return ptr.To(true)
 		}
 
 	case gwv1.PathMatchExact:
 		switch btype {
 		case gwv1.PathMatchExact:
 			if len(avalue) != len(bvalue) {
-				return ptr(len(avalue) < len(bvalue))
+				return ptr.To(len(avalue) < len(bvalue))
 			}
 
 		// Exact always takes precedence over regex and prefix
 		case gwv1.PathMatchRegularExpression, gwv1.PathMatchPathPrefix:
-			return ptr(false)
+			return ptr.To(false)
 		}
 
 	case gwv1.PathMatchRegularExpression:
 		switch btype {
 		// Regex always takes precedence over prefix
 		case gwv1.PathMatchPathPrefix:
-			return ptr(false)
+			return ptr.To(false)
 		// Exact always takes precedence over regex
 		case gwv1.PathMatchExact:
-			return ptr(true)
+			return ptr.To(true)
 		case gwv1.PathMatchRegularExpression:
 			// Don't prioritize one regex over another based on their lengths
 			// as it doesn't make sense to do so and would be quite arbitrary,
@@ -114,7 +112,7 @@ func routeWrapperLessFunc(wrapperA, wrapperB *SortableRoute) bool {
 
 	// If this matcher doesn't have a method match, then it's lower priority
 	if (matchA.Method == nil) != (matchB.Method == nil) {
-		return matchA.Method != nil
+		return matchB.Method != nil
 	}
 
 	if len(matchA.Headers) != len(matchB.Headers) {

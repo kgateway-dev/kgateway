@@ -390,7 +390,6 @@ replace (
 	k8s.io/component-base => k8s.io/component-base v0.31.1
 	k8s.io/component-helpers => k8s.io/component-helpers v0.31.1
 	// version of kube-openapi used by client-go v0.31.1
-	//	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20240827152857-f7e401e7b4c2
 	k8s.io/kubectl => k8s.io/kubectl v0.31.1
 	k8s.io/metrics => k8s.io/metrics v0.31.1
 	k8s.io/utils => k8s.io/utils v0.0.0-20240711033017-18e509b52bc8

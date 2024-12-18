@@ -455,10 +455,10 @@ func (tc *tcpFilterChain) translateTcpFilterChain(listener ir.Listener, reporter
 			for _, parentRefReporter := range parentRefReporters {
 				query.ProcessBackendError(err, parentRefReporter)
 			}
-		} else {
-			backends = append(backends, backend)
 		}
-
+		// add backend even if we have errors, as according to spec, with multiple destinations,
+		// they should fail based of the weights.
+		backends = append(backends, backend)
 	}
 
 	// Avoid creating a TcpListener if there are no TcpHosts
@@ -553,6 +553,11 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 			virtualHosts = append(virtualHosts, virtualHost)
 		}
 	}
+
+	// sort vhosts, to make sure the resource is stable
+	sort.Slice(virtualHosts, func(i, j int) bool {
+		return virtualHosts[i].Name < virtualHosts[j].Name
+	})
 
 	return ir.HttpFilterChainIR{
 		FilterChainCommon: ir.FilterChainCommon{

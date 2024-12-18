@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 
 	corev1 "k8s.io/api/core/v1"
@@ -19,6 +20,19 @@ func GroupNameHelper() *gwv1.Group {
 	return &g
 }
 
+func gwToIr(gw *gwv1.Gateway) *ir.Gateway {
+	out := &ir.Gateway{
+		Obj:       gw,
+		Listeners: make([]ir.Listener, 0, len(gw.Spec.Listeners)),
+	}
+	for _, l := range gw.Spec.Listeners {
+		out.Listeners = append(out.Listeners, ir.Listener{
+			Listener: l,
+		})
+	}
+	return out
+}
+
 func TestValidate(t *testing.T) {
 	gateway := simpleGw()
 	listeners := gateway.Spec.Listeners
@@ -26,7 +40,7 @@ func TestValidate(t *testing.T) {
 	reporter := reports.NewReporter(&report)
 	gatewayReporter := reporter.Gateway(gateway)
 
-	validListeners := validateListeners(gateway, gatewayReporter)
+	validListeners := validateListeners(gwToIr(gateway), gatewayReporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(1))
 
@@ -51,7 +65,7 @@ func TestSimpleGWNoHostname(t *testing.T) {
 	reporter := reports.NewReporter(&report)
 	gatewayReporter := reporter.Gateway(gateway)
 
-	validListeners := validateListeners(gateway, gatewayReporter)
+	validListeners := validateListeners(gwToIr(gateway), gatewayReporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(1))
 
@@ -76,7 +90,7 @@ func TestSimpleGWDuplicateNoHostname(t *testing.T) {
 	reporter := reports.NewReporter(&report)
 	gatewayReporter := reporter.Gateway(gateway)
 
-	validListeners := validateListeners(gateway, gatewayReporter)
+	validListeners := validateListeners(gwToIr(gateway), gatewayReporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(BeEmpty())
 
@@ -124,7 +138,7 @@ func TestSimpleListenerWithValidRouteKind(t *testing.T) {
 	reporter := reports.NewReporter(&report)
 	gatewayReporter := reporter.Gateway(gateway)
 
-	validListeners := validateListeners(gateway, gatewayReporter)
+	validListeners := validateListeners(gwToIr(gateway), gatewayReporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(1))
 
@@ -149,7 +163,7 @@ func TestSimpleListenerWithInvalidRouteKind(t *testing.T) {
 	reporter := reports.NewReporter(&report)
 	gatewayReporter := reporter.Gateway(gateway)
 
-	validListeners := validateListeners(gateway, gatewayReporter)
+	validListeners := validateListeners(gwToIr(gateway), gatewayReporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(BeEmpty())
 
@@ -176,7 +190,7 @@ func TestMultiListener(t *testing.T) {
 	reporter := reports.NewReporter(&report)
 	gatewayReporter := reporter.Gateway(gateway)
 
-	validListeners := validateListeners(gateway, gatewayReporter)
+	validListeners := validateListeners(gwToIr(gateway), gatewayReporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(2))
 
@@ -210,7 +224,7 @@ func TestMultiListenerExplicitRoutes(t *testing.T) {
 	reporter := reports.NewReporter(&report)
 	gatewayReporter := reporter.Gateway(gateway)
 
-	validListeners := validateListeners(gateway, gatewayReporter)
+	validListeners := validateListeners(gwToIr(gateway), gatewayReporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(2))
 
@@ -244,7 +258,7 @@ func TestMultiListenerWithInavlidRoute(t *testing.T) {
 	reporter := reports.NewReporter(&report)
 	gatewayReporter := reporter.Gateway(gateway)
 
-	validListeners := validateListeners(gateway, gatewayReporter)
+	validListeners := validateListeners(gwToIr(gateway), gatewayReporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(1))
 
@@ -280,7 +294,7 @@ func TestProtocolConflict(t *testing.T) {
 	reporter := reports.NewReporter(&report)
 	gatewayReporter := reporter.Gateway(gateway)
 
-	validListeners := validateListeners(gateway, gatewayReporter)
+	validListeners := validateListeners(gwToIr(gateway), gatewayReporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(BeEmpty())
 
@@ -328,7 +342,7 @@ func TestProtocolConflictInvalidRoutes(t *testing.T) {
 	reporter := reports.NewReporter(&report)
 	gatewayReporter := reporter.Gateway(gateway)
 
-	validListeners := validateListeners(gateway, gatewayReporter)
+	validListeners := validateListeners(gwToIr(gateway), gatewayReporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(1))
 
@@ -364,7 +378,7 @@ func TestActualProtocolConflictInvalidRoutes(t *testing.T) {
 	reporter := reports.NewReporter(&report)
 	gatewayReporter := reporter.Gateway(gateway)
 
-	validListeners := validateListeners(gateway, gatewayReporter)
+	validListeners := validateListeners(gwToIr(gateway), gatewayReporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(BeEmpty())
 
@@ -423,7 +437,7 @@ func TestHostnameConflict(t *testing.T) {
 	reporter := reports.NewReporter(&report)
 	gatewayReporter := reporter.Gateway(gateway)
 
-	validListeners := validateListeners(gateway, gatewayReporter)
+	validListeners := validateListeners(gwToIr(gateway), gatewayReporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(BeEmpty())
 
@@ -471,7 +485,7 @@ func TestHostnameConflictWithInvalidRoute(t *testing.T) {
 	reporter := reports.NewReporter(&report)
 	gatewayReporter := reporter.Gateway(gateway)
 
-	validListeners := validateListeners(gateway, gatewayReporter)
+	validListeners := validateListeners(gwToIr(gateway), gatewayReporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(1))
 
@@ -507,7 +521,7 @@ func TestActualHostnameConflictWithInvalidRoute(t *testing.T) {
 	reporter := reports.NewReporter(&report)
 	gatewayReporter := reporter.Gateway(gateway)
 
-	validListeners := validateListeners(gateway, gatewayReporter)
+	validListeners := validateListeners(gwToIr(gateway), gatewayReporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(BeEmpty())
 
@@ -566,7 +580,7 @@ func TestHostnameConflictWithExtraGoodListener(t *testing.T) {
 	reporter := reports.NewReporter(&report)
 	gatewayReporter := reporter.Gateway(gateway)
 
-	validListeners := validateListeners(gateway, gatewayReporter)
+	validListeners := validateListeners(gwToIr(gateway), gatewayReporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(1))
 
@@ -623,7 +637,7 @@ func TestValidTCPRouteListener(t *testing.T) {
 	reporter := reports.NewReporter(&report)
 	gatewayReporter := reporter.Gateway(gateway)
 
-	validListeners := validateListeners(gateway, gatewayReporter)
+	validListeners := validateListeners(gwToIr(gateway), gatewayReporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(HaveLen(1))
 
@@ -648,7 +662,7 @@ func TestInvalidRouteKindOnTCPListener(t *testing.T) {
 	reporter := reports.NewReporter(&report)
 	gatewayReporter := reporter.Gateway(gateway)
 
-	validListeners := validateListeners(gateway, gatewayReporter)
+	validListeners := validateListeners(gwToIr(gateway), gatewayReporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(BeEmpty())
 
@@ -675,7 +689,7 @@ func TestTCPProtocolConflict(t *testing.T) {
 	reporter := reports.NewReporter(&report)
 	gatewayReporter := reporter.Gateway(gateway)
 
-	validListeners := validateListeners(gateway, gatewayReporter)
+	validListeners := validateListeners(gwToIr(gateway), gatewayReporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(BeEmpty())
 
@@ -723,7 +737,7 @@ func TestTCPHostnameConflict(t *testing.T) {
 	reporter := reports.NewReporter(&report)
 	gatewayReporter := reporter.Gateway(gateway)
 
-	validListeners := validateListeners(gateway, gatewayReporter)
+	validListeners := validateListeners(gwToIr(gateway), gatewayReporter)
 	g := NewWithT(t)
 	g.Expect(validListeners).To(BeEmpty())
 

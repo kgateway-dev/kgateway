@@ -1,13 +1,7 @@
----
-listeners:
-- aggregateListener:
-    httpResources: {}
-  bindAddress: '::'
-  bindPort: 8443
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8443
   name: https-httpbin~https-bookinfo
-metadata:
-  labels:
-    created_by: gloo-kube-gateway-api
-    gateway_namespace: default
-  name: default-http
-  namespace: gloo-system

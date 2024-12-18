@@ -2,18 +2,13 @@ package controller
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	corev1 "k8s.io/api/core/v1"
-	discoveryv1 "k8s.io/api/discovery/v1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/sets"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -23,19 +18,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
-	apiv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
-	"github.com/solo-io/gloo/projects/gateway2/query"
-	httplisoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/httplisteneroptions/query"
-	lisoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/listeneroptions/query"
-	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
-	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 )
 
 const (
@@ -44,58 +30,35 @@ const (
 )
 
 type GatewayConfig struct {
-	Mgr            manager.Manager
-	GWClasses      sets.Set[string]
+	Mgr manager.Manager
+
+	OurGateway func(gw *apiv1.Gateway) bool
+
 	Dev            bool
 	ControllerName string
 	AutoProvision  bool
-	Kick           func(ctx context.Context)
 
 	ControlPlane            deployer.ControlPlaneInfo
 	IstioIntegrationEnabled bool
 	Aws                     *deployer.AwsInfo
-
-	// CRDs defines the set of discovered Gateway API CRDs
-	CRDs sets.Set[string]
 }
 
 func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 	log := log.FromContext(ctx)
-	log.V(5).Info("starting controller", "controllerName", cfg.ControllerName, "GatewayClasses", sets.List(cfg.GWClasses))
+	log.V(5).Info("starting controller", "controllerName", cfg.ControllerName)
 
 	controllerBuilder := &controllerBuilder{
 		cfg: cfg,
 		reconciler: &controllerReconciler{
 			cli:    cfg.Mgr.GetClient(),
 			scheme: cfg.Mgr.GetScheme(),
-			kick:   cfg.Kick,
 		},
 	}
 
 	return run(ctx,
-		controllerBuilder.watchCustomResourceDefinitions,
 		controllerBuilder.watchGwClass,
 		controllerBuilder.watchGw,
-		controllerBuilder.watchHttpRoute,
-		controllerBuilder.watchTcpRoute,
-		controllerBuilder.watchReferenceGrant,
-		controllerBuilder.watchNamespaces,
-		controllerBuilder.watchHttpListenerOptions,
-		controllerBuilder.watchListenerOptions,
-		controllerBuilder.watchRouteOptions,
-		controllerBuilder.watchVirtualHostOptions,
-		controllerBuilder.watchUpstreams,
-		controllerBuilder.watchServices,
-		controllerBuilder.watchEndpointSlices,
-		controllerBuilder.watchPods,
-		controllerBuilder.watchSecrets,
-		controllerBuilder.addIndexes,
-		controllerBuilder.addHttpLisOptIndexes,
-		controllerBuilder.addLisOptIndexes,
-		controllerBuilder.addRtOptIndexes,
-		controllerBuilder.addVhOptIndexes,
 		controllerBuilder.addGwParamsIndexes,
-		controllerBuilder.watchDirectResponses,
 	)
 }
 
@@ -114,29 +77,6 @@ type controllerBuilder struct {
 	reconciler *controllerReconciler
 }
 
-func (c *controllerBuilder) addIndexes(ctx context.Context) error {
-	var errs []error
-
-	// Index for HTTPRoute
-	if err := c.cfg.Mgr.GetFieldIndexer().IndexField(ctx, &apiv1.HTTPRoute{}, query.HttpRouteTargetField, query.IndexerByObjType); err != nil {
-		errs = append(errs, err)
-	}
-
-	// Index for ReferenceGrant
-	if err := c.cfg.Mgr.GetFieldIndexer().IndexField(ctx, &apiv1beta1.ReferenceGrant{}, query.ReferenceGrantFromField, query.IndexerByObjType); err != nil {
-		errs = append(errs, err)
-	}
-
-	// Conditionally index for TCPRoute
-	if c.cfg.CRDs.Has(wellknown.TCPRouteCRDName) {
-		if err := c.cfg.Mgr.GetFieldIndexer().IndexField(ctx, &apiv1a2.TCPRoute{}, query.TcpRouteTargetField, query.IndexerByObjType); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
-	return errors.Join(errs...)
-}
-
 func (c *controllerBuilder) addGwParamsIndexes(ctx context.Context) error {
 	return c.cfg.Mgr.GetFieldIndexer().IndexField(ctx, &apiv1.Gateway{}, GatewayParamsField, gatewayToParams)
 }
@@ -152,34 +92,6 @@ func gatewayToParams(obj client.Object) []string {
 		return []string{gwpName}
 	}
 	return []string{}
-}
-
-// TODO: move to RtOpt plugin when breaking the logic to RouteOption-specific controller
-func (c *controllerBuilder) addRtOptIndexes(ctx context.Context) error {
-	return rtoptquery.IterateIndices(func(obj client.Object, field string, indexer client.IndexerFunc) error {
-		return c.cfg.Mgr.GetFieldIndexer().IndexField(ctx, obj, field, indexer)
-	})
-}
-
-// TODO: move to VhOpt plugin when breaking the logic to VirtualHostOption-specific controller
-func (c *controllerBuilder) addVhOptIndexes(ctx context.Context) error {
-	return vhoptquery.IterateIndices(func(obj client.Object, field string, indexer client.IndexerFunc) error {
-		return c.cfg.Mgr.GetFieldIndexer().IndexField(ctx, obj, field, indexer)
-	})
-}
-
-// TODO: move to LisOpt plugin when breaking the logic to ListenerOption-specific controller
-func (c *controllerBuilder) addLisOptIndexes(ctx context.Context) error {
-	return lisoptquery.IterateIndices(func(obj client.Object, field string, indexer client.IndexerFunc) error {
-		return c.cfg.Mgr.GetFieldIndexer().IndexField(ctx, obj, field, indexer)
-	})
-}
-
-// TODO: move to HttpLisOpt plugin when breaking the logic to HttpListenerOption-specific controller
-func (c *controllerBuilder) addHttpLisOptIndexes(ctx context.Context) error {
-	return httplisoptquery.IterateIndices(func(obj client.Object, field string, indexer client.IndexerFunc) error {
-		return c.cfg.Mgr.GetFieldIndexer().IndexField(ctx, obj, field, indexer)
-	})
 }
 
 func (c *controllerBuilder) watchGw(ctx context.Context) error {
@@ -208,7 +120,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		For(&apiv1.Gateway{}, builder.WithPredicates(predicate.NewPredicateFuncs(func(object client.Object) bool {
 			// We only care about Gateways that use our GatewayClass
 			if gw, ok := object.(*apiv1.Gateway); ok {
-				return c.cfg.GWClasses.Has(string(gw.Spec.GatewayClassName))
+				return c.cfg.OurGateway(gw)
 			}
 			return false
 		}),
@@ -256,13 +168,11 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		}
 		buildr.Owns(clientObj, opts...)
 	}
-
 	gwReconciler := &gatewayReconciler{
 		cli:           c.cfg.Mgr.GetClient(),
 		scheme:        c.cfg.Mgr.GetScheme(),
 		autoProvision: c.cfg.AutoProvision,
 		deployer:      d,
-		kick:          c.cfg.Kick,
 	}
 	err = buildr.Complete(gwReconciler)
 	if err != nil {
@@ -290,237 +200,10 @@ func (c *controllerBuilder) watchGwClass(_ context.Context) error {
 		Complete(reconcile.Func(c.reconciler.ReconcileGatewayClasses))
 }
 
-func (c *controllerBuilder) watchCustomResourceDefinitions(_ context.Context) error {
-	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
-		WithEventFilter(predicate.And(
-			predicate.GenerationChangedPredicate{},
-			predicate.NewPredicateFuncs(func(object client.Object) bool {
-				crd, ok := object.(*apiextensionsv1.CustomResourceDefinition)
-				if !ok {
-					return false
-				}
-				// Check if the CRD is one we care about
-				return c.cfg.CRDs.Has(crd.Name)
-			}),
-		)).
-		For(&apiextensionsv1.CustomResourceDefinition{}).
-		Complete(reconcile.Func(c.reconciler.ReconcileCustomResourceDefinitions))
-}
-
-func (c *controllerBuilder) watchHttpRoute(_ context.Context) error {
-	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
-		For(&apiv1.HTTPRoute{}).
-		Complete(reconcile.Func(c.reconciler.ReconcileHttpRoutes))
-}
-
-func (c *controllerBuilder) watchTcpRoute(ctx context.Context) error {
-	if !c.cfg.CRDs.Has(wellknown.TCPRouteCRDName) {
-		log.FromContext(ctx).Info("TCPRoute type not registered in scheme; skipping TCPRoute controller setup")
-		return nil
-	}
-
-	// Proceed to set up the controller for TCPRoute
-	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
-		For(&apiv1a2.TCPRoute{}).
-		Complete(reconcile.Func(c.reconciler.ReconcileTcpRoutes))
-}
-
-func (c *controllerBuilder) watchReferenceGrant(_ context.Context) error {
-	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
-		For(&apiv1beta1.ReferenceGrant{}).
-		Complete(reconcile.Func(c.reconciler.ReconcileReferenceGrants))
-}
-
-func (c *controllerBuilder) watchNamespaces(_ context.Context) error {
-	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
-		For(&corev1.Namespace{}).
-		Complete(reconcile.Func(c.reconciler.ReconcileNamespaces))
-}
-
-func (c *controllerBuilder) watchHttpListenerOptions(_ context.Context) error {
-	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
-		For(&sologatewayv1.HttpListenerOption{}).
-		Complete(reconcile.Func(c.reconciler.ReconcileHttpListenerOptions))
-}
-
-func (c *controllerBuilder) watchListenerOptions(_ context.Context) error {
-	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
-		For(&sologatewayv1.ListenerOption{}).
-		Complete(reconcile.Func(c.reconciler.ReconcileListenerOptions))
-}
-
-func (c *controllerBuilder) watchRouteOptions(_ context.Context) error {
-	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
-		For(&sologatewayv1.RouteOption{}).
-		Complete(reconcile.Func(c.reconciler.ReconcileRouteOptions))
-}
-
-func (c *controllerBuilder) watchVirtualHostOptions(_ context.Context) error {
-	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
-		For(&sologatewayv1.VirtualHostOption{}).
-		Complete(reconcile.Func(c.reconciler.ReconcileVirtualHostOptions))
-}
-
-func (c *controllerBuilder) watchUpstreams(_ context.Context) error {
-	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
-		For(&gloov1.Upstream{}).
-		Complete(reconcile.Func(c.reconciler.ReconcileUpstreams))
-}
-
-func (c *controllerBuilder) watchServices(_ context.Context) error {
-	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
-		For(&corev1.Service{}).
-		Complete(reconcile.Func(c.reconciler.ReconcileServices))
-}
-
-// watchDirectResponses watches for DirectResponses and triggers
-// reconciliation of the Gateway that references them.
-func (c *controllerBuilder) watchDirectResponses(_ context.Context) error {
-	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
-		For(&v1alpha1.DirectResponse{}).
-		Complete(reconcile.Func(c.reconciler.ReconcileDirectResponses))
-}
-
-func (c *controllerBuilder) watchPods(ctx context.Context) error {
-	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
-		For(&corev1.Pod{}).
-		Complete(reconcile.Func(c.reconciler.ReconcilePods))
-}
-
-func (c *controllerBuilder) watchEndpointSlices(ctx context.Context) error {
-	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
-		For(&discoveryv1.EndpointSlice{}).
-		Complete(reconcile.Func(c.reconciler.ReconcileEndpointSlices))
-}
-
-func (c *controllerBuilder) watchSecrets(ctx context.Context) error {
-	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
-		For(&corev1.Secret{}).
-		Complete(reconcile.Func(c.reconciler.ReconcileSecrets))
-}
-
 type controllerReconciler struct {
 	cli    client.Client
 	scheme *runtime.Scheme
 	kick   func(ctx context.Context)
-}
-
-func (r *controllerReconciler) ReconcileHttpListenerOptions(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// eventually reconcile only effected routes/listeners etc
-	// https://github.com/solo-io/gloo/issues/9997.
-	r.kick(ctx)
-	return ctrl.Result{}, nil
-}
-
-func (r *controllerReconciler) ReconcileListenerOptions(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// eventually reconcile only effected routes/listeners etc
-	// https://github.com/solo-io/gloo/issues/9997.
-	r.kick(ctx)
-	return ctrl.Result{}, nil
-}
-
-func (r *controllerReconciler) ReconcileRouteOptions(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// eventually reconcile only effected routes/listeners etc
-	// https://github.com/solo-io/gloo/issues/9997.
-	r.kick(ctx)
-	return ctrl.Result{}, nil
-}
-
-func (r *controllerReconciler) ReconcileDirectResponses(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// TODO(tim): eventually reconcile only effected routes.
-	// https://github.com/solo-io/gloo/issues/9997.
-	r.kick(ctx)
-	return ctrl.Result{}, nil
-}
-
-func (r *controllerReconciler) ReconcileVirtualHostOptions(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// eventually reconcile only effected listeners etc
-	// https://github.com/solo-io/gloo/issues/9997.
-	r.kick(ctx)
-	return ctrl.Result{}, nil
-}
-
-func (r *controllerReconciler) ReconcileUpstreams(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// eventually reconcile only effected listeners etc
-	// https://github.com/solo-io/gloo/issues/9997.
-	r.kick(ctx)
-	return ctrl.Result{}, nil
-}
-
-func (r *controllerReconciler) ReconcileServices(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// eventually reconcile only effected listeners etc
-	// https://github.com/solo-io/gloo/issues/9997.
-	r.kick(ctx)
-	return ctrl.Result{}, nil
-}
-
-func (r *controllerReconciler) ReconcilePods(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// eventually reconcile only effected listeners etc
-	r.kick(ctx)
-	return ctrl.Result{}, nil
-}
-
-func (r *controllerReconciler) ReconcileEndpointSlices(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// eventually reconcile only effected listeners etc
-	r.kick(ctx)
-	return ctrl.Result{}, nil
-}
-
-func (r *controllerReconciler) ReconcileSecrets(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// eventually reconcile only effected listeners etc
-	r.kick(ctx)
-	return ctrl.Result{}, nil
-}
-
-func (r *controllerReconciler) ReconcileNamespaces(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// reconcile all gateways with namespace selector
-	// https://github.com/solo-io/gloo/issues/9997.
-	r.kick(ctx)
-	return ctrl.Result{}, nil
-}
-
-func (r *controllerReconciler) ReconcileCustomResourceDefinitions(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// For now, simply trigger the main reconciliation loop
-	r.kick(ctx)
-	return ctrl.Result{}, nil
-}
-
-func (r *controllerReconciler) ReconcileHttpRoutes(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// TODO: consider finding impacted gateways and queue them
-	// TODO: consider enabling this
-	//	// reconcile this specific route:
-	//	queries := query.NewData(r.cli, r.scheme)
-	//	httproute.TranslateGatewayHTTPRouteRules(queries, hr, nil)
-
-	r.kick(ctx)
-	return ctrl.Result{}, nil
-}
-
-func (r *controllerReconciler) ReconcileTcpRoutes(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// TODO: consider finding impacted gateways and queue them
-	// TODO: consider enabling this
-	//	// reconcile this specific route:
-	//	queries := query.NewData(r.cli, r.scheme)
-	//	httproute.TranslateGatewayHTTPRouteRules(queries, hr, nil)
-
-	r.kick(ctx)
-	return ctrl.Result{}, nil
-}
-
-func (r *controllerReconciler) ReconcileReferenceGrants(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// reconcile all things?! https://github.com/solo-io/gloo/issues/9997
-	r.kick(ctx)
-	return ctrl.Result{}, nil
 }
 
 func (r *controllerReconciler) ReconcileGatewayClasses(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {

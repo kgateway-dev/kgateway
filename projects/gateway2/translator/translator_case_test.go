@@ -226,8 +226,10 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 
 	httpRoutes := krt.WrapClient(kclient.New[*gwv1.HTTPRoute](cli), krtOpts.ToOptions("httpRoutes")...)
 	tcpRoutes := krt.WrapClient(kclient.New[*gwv1a2.TCPRoute](cli), krtOpts.ToOptions("tcpRoutes")...)
-
-	gi, ri, ui, ei := krtcollections.InitCollectionsWithGateways(ctx, rawGateways, httpRoutes, tcpRoutes, refGrants, extensions, cli, krtOpts)
+	isOurGw := func(gw *gwv1.Gateway) bool {
+		return true
+	}
+	gi, ri, ui, ei := krtcollections.InitCollectionsWithGateways(ctx, isOurGw, rawGateways, httpRoutes, tcpRoutes, refGrants, extensions, krtOpts)
 	cli.RunAndWait(ctx.Done())
 	gi.Gateways.Synced().WaitUntilSynced(ctx.Done())
 	kubeclient.WaitForCacheSync("routes", ctx.Done(), ri.HasSynced)
@@ -236,7 +238,7 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 	kubeclient.WaitForCacheSync("endpoints", ctx.Done(), ei.Synced().HasSynced)
 	kubeclient.WaitForCacheSync("namespaces", ctx.Done(), nsCol.Synced().HasSynced)
 
-	queries := query.NewData(ri, secretsIdx, nsCol) // testutils.BuildGatewayQueriesWithClient(fakeClient, query.WithBackendRefResolvers(&testBackendPlugin{}))
+	queries := query.NewData(ri, secretsIdx, nsCol)
 
 	results := make(map[types.NamespacedName]ActualTestResult)
 

@@ -17,7 +17,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/controller"
-	"github.com/solo-io/gloo/projects/gateway2/extensions"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	api "sigs.k8s.io/gateway-api/apis/v1"
+	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 var (
@@ -113,17 +113,15 @@ var _ = BeforeSuite(func() {
 	kubeconfig = generateKubeConfiguration(cfg)
 	mgr.GetLogger().Info("starting manager", "kubeconfig", kubeconfig)
 
-	exts, err := extensions.NewK8sGatewayExtensions(ctx, extensions.K8sGatewayExtensionsFactoryParameters{
-		Mgr: mgr,
-	})
 	Expect(err).ToNot(HaveOccurred())
+
 	cfg := controller.GatewayConfig{
 		Mgr:            mgr,
 		ControllerName: gatewayControllerName,
-		GWClasses:      gwClasses,
-		AutoProvision:  true,
-		Kick:           func(ctx context.Context) { return },
-		Extensions:     exts,
+		OurGateway: func(gw *apiv1.Gateway) bool {
+			return gwClasses.Has(string(gw.Spec.GatewayClassName))
+		},
+		AutoProvision: true,
 	}
 	err = controller.NewBaseGatewayController(ctx, cfg)
 	Expect(err).ToNot(HaveOccurred())

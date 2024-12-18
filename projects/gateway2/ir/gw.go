@@ -86,6 +86,7 @@ func (l AttachedPolicies) MarshalJSON() ([]byte, error) {
 }
 
 type Backend struct {
+	// TODO: remove cluster name from here, it's redundant.
 	ClusterName string
 	Weight      uint32
 

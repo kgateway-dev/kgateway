@@ -140,12 +140,16 @@ func (i *UpstreamIndex) getUpstreamFromRef(kctx krt.HandlerContext, localns stri
 
 type GatweayIndex struct {
 	policies *PolicyIndex
+	gwClass  krt.Collection[gwv1.GatewayClass]
 	Gateways krt.Collection[ir.Gateway]
 }
 
-func NewGatweayIndex(krtopts krtutil.KrtOptions, policies *PolicyIndex, gws krt.Collection[*gwv1.Gateway]) *GatweayIndex {
+func NewGatweayIndex(krtopts krtutil.KrtOptions, isOurGw func(gw *gwv1.Gateway) bool, policies *PolicyIndex, gws krt.Collection[*gwv1.Gateway]) *GatweayIndex {
 	h := &GatweayIndex{policies: policies}
 	h.Gateways = krt.NewCollection(gws, func(kctx krt.HandlerContext, i *gwv1.Gateway) *ir.Gateway {
+		if !isOurGw(i) {
+			return nil
+		}
 		out := ir.Gateway{
 			ObjectSource: ir.ObjectSource{
 				Group:     gwv1.SchemeGroupVersion.Group,
@@ -192,9 +196,16 @@ type PolicyIndex struct {
 	policiesFetch  map[schema.GroupKind]func(n string, ns string) ir.PolicyIR
 	globalPolicies []globalPolicy
 	targetRefIndex krt.Index[targetRefIndexKey, ir.PolicyWrapper]
+
+	hasSyncedFuncs []func() bool
 }
 
 func (h *PolicyIndex) HasSynced() bool {
+	for _, f := range h.hasSyncedFuncs {
+		if !f() {
+			return false
+		}
+	}
 	return h.policies.Synced().HasSynced()
 }
 
@@ -206,6 +217,7 @@ func NewPolicyIndex(krtopts krtutil.KrtOptions, contributesPolicies extensionspl
 	for gk, ext := range contributesPolicies {
 		if ext.Policies != nil {
 			policycols = append(policycols, ext.Policies)
+			h.hasSyncedFuncs = append(h.hasSyncedFuncs, ext.Policies.Synced().HasSynced)
 		}
 		if ext.PoliciesFetch != nil {
 			h.policiesFetch[gk] = ext.PoliciesFetch
@@ -390,15 +402,23 @@ type RoutesIndex struct {
 	policies  *PolicyIndex
 	refgrants *RefGrantIndex
 	upstreams *UpstreamIndex
+
+	hasSyncedFuncs []func() bool
 }
 
 func (h *RoutesIndex) HasSynced() bool {
-	return h.httpRoutes.Synced().HasSynced() && h.routes.Synced().HasSynced()
+	for _, f := range h.hasSyncedFuncs {
+		if !f() {
+			return false
+		}
+	}
+	return h.httpRoutes.Synced().HasSynced() && h.routes.Synced().HasSynced() && h.policies.HasSynced() && h.upstreams.HasSynced() && h.refgrants.HasSynced()
 }
 
 func NewRoutesIndex(krtopts krtutil.KrtOptions, httproutes krt.Collection[*gwv1.HTTPRoute], tcproutes krt.Collection[*gwv1a2.TCPRoute], policies *PolicyIndex, upstreams *UpstreamIndex, refgrants *RefGrantIndex) *RoutesIndex {
 
 	h := &RoutesIndex{policies: policies, refgrants: refgrants, upstreams: upstreams}
+	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.Synced().HasSynced, tcproutes.Synced().HasSynced)
 	h.httpRoutes = krt.NewCollection(httproutes, h.transformHttpRoute, krtopts.ToOptions("http-routes-with-policy")...)
 	hr := krt.NewCollection(h.httpRoutes, func(kctx krt.HandlerContext, i ir.HttpRouteIR) *RouteWrapper {
 		return &RouteWrapper{Route: &i}

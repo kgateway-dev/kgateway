@@ -1328,9 +1328,8 @@ var _ = Describe("Deployer", func() {
 
 					// make sure the envoy node metadata looks right
 					node := envoyConfig["node"].(map[string]any)
-					proxyName := fmt.Sprintf("%s-%s", gw.Namespace, gw.Name)
 					Expect(node).To(HaveKeyWithValue("metadata", map[string]any{
-						xds.RoleKey: fmt.Sprintf("%s~%s~%s", glooutils.GatewayApiProxyValue, gw.Namespace, proxyName),
+						xds.RoleKey: fmt.Sprintf("%s~%s~%s", glooutils.GatewayApiProxyValue, gw.Namespace, gw.Name),
 					}))
 
 					// make sure the stats listener is enabled
@@ -1374,9 +1373,8 @@ var _ = Describe("Deployer", func() {
 
 					// make sure the envoy node metadata looks right
 					node := envoyConfig["node"].(map[string]any)
-					proxyName := fmt.Sprintf("%s-%s", gw.Namespace, gw.Name)
 					Expect(node).To(HaveKeyWithValue("metadata", map[string]any{
-						xds.RoleKey: fmt.Sprintf("%s~%s~%s", glooutils.GatewayApiProxyValue, gw.Namespace, proxyName),
+						xds.RoleKey: fmt.Sprintf("%s~%s~%s", glooutils.GatewayApiProxyValue, gw.Namespace, gw.Name),
 					}))
 
 					// make sure the stats listener is enabled

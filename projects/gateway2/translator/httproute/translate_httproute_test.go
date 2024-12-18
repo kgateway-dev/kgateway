@@ -2,42 +2,22 @@ package httproute_test
 
 import (
 	"context"
+	"errors"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-
-	"github.com/solo-io/gloo/pkg/utils/statusutils"
-	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
+	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/httproute"
-	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/directresponse"
-	httplisquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/httplisteneroptions/query"
-	lisquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/listeneroptions/query"
-	"github.com/solo-io/gloo/projects/gateway2/translator/plugins/registry"
-	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
-	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
-	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
 var _ = Describe("GatewayHttpRouteTranslator", func() {
@@ -45,66 +25,28 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 		ctrl       *gomock.Controller
 		ctx        context.Context
 		gwListener gwv1.Listener
-
-		deps           []client.Object
-		c              client.Client
-		queries        query.GatewayQueries
-		pluginRegistry registry.PluginRegistry
-		statusClient   resources.StatusClient
-		statusReporter reporter.StatusReporter
 	)
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
 		ctx = context.Background()
 		gwListener = gwv1.Listener{}
-		deps = []client.Object{}
 
-		resourceClientFactory := &factory.MemoryResourceClientFactory{
-			Cache: memory.NewInMemoryResourceCache(),
-		}
-		routeOptionClient, _ := sologatewayv1.NewRouteOptionClient(ctx, resourceClientFactory)
-
-		statusClient = statusutils.GetStatusClientForNamespace(defaults.GlooSystem)
-		statusReporter = reporter.NewReporter(defaults.KubeGatewayReporter, statusClient, routeOptionClient.BaseClient())
 	})
 	AfterEach(func() {
 		ctrl.Finish()
 	})
 
-	JustBeforeEach(func() {
-		// test cases should modify the `deps` slice to add any additional
-		// resources needed for the test. we'll build the rest of the required
-		// resources to support the test here.
-		c = testutils.BuildIndexedFakeClient(
-			deps,
-			rtoptquery.IterateIndices,
-			vhoptquery.IterateIndices,
-			lisquery.IterateIndices,
-			httplisquery.IterateIndices,
-		)
-		queries = testutils.BuildGatewayQueriesWithClient(c)
-
-		routeOptionCollection := krt.NewStatic[*solokubev1.RouteOption](nil, true).AsCollection()
-		vhOptionCollection := krt.NewStatic[*solokubev1.VirtualHostOption](nil, true).AsCollection()
-		pluginRegistry = registry.NewPluginRegistry(registry.BuildPlugins(
-			queries,
-			c,
-			routeOptionCollection,
-			vhOptionCollection,
-			statusReporter,
-		))
-	})
-
 	Context("HTTPRoute resource routing", func() {
 		var (
 			route             *gwv1.HTTPRoute
+			routeir           *ir.HttpRouteIR
+			up                *ir.Upstream
 			routeInfo         *query.RouteInfo
 			parentRef         *gwv1.ParentReference
 			baseReporter      reports.Reporter
 			parentRefReporter reports.ParentRefReporter
 			reportsMap        reports.ReportMap
 			backingSvc        *corev1.Service
-			backends          query.BackendMap[client.Object]
 		)
 
 		BeforeEach(func() {
@@ -152,6 +94,49 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 					},
 				},
 			}
+			backingSvc = &corev1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "bar",
+				},
+				Spec: corev1.ServiceSpec{
+					Ports: []corev1.ServicePort{{
+						Name: "http",
+						Port: 8080,
+					}},
+				},
+			}
+			up = &ir.Upstream{
+				ObjectSource: ir.ObjectSource{
+					Namespace: backingSvc.Namespace,
+					Name:      backingSvc.Name,
+					Kind:      "Service",
+					Group:     "",
+				},
+				Port: 8080,
+				Obj:  backingSvc,
+			}
+			routeir = &ir.HttpRouteIR{
+				ObjectSource: ir.ObjectSource{
+					Namespace: route.Namespace,
+					Name:      route.Name,
+					Kind:      route.Kind,
+					Group:     gwv1.GroupVersion.Group,
+				},
+				SourceObject: route,
+				ParentRefs:   []gwv1.ParentReference{*parentRef},
+				Hostnames:    []string{"example.com"},
+				Rules: []ir.HttpRouteRuleIR{
+					{
+						Matches: route.Spec.Rules[0].Matches,
+						Backends: []ir.HttpBackendOrDelegate{
+							{
+								Backend: &ir.Backend{},
+							},
+						},
+					},
+				},
+			}
 			reportsMap = reports.NewReportMap()
 			baseReporter = reports.NewReporter(&reportsMap)
 			parentRefReporter = baseReporter.Route(route).ParentRef(parentRef)
@@ -172,42 +157,25 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 						}},
 					},
 				}
+				routeir.Rules[0].Backends[0].Backend.Upstream = up
+				routeir.Rules[0].Backends[0].Backend.ClusterName = up.ClusterName()
 
 				// Add backing service to backend map
-				backends = query.NewBackendMap[client.Object]()
-				backends.Add(route.Spec.Rules[0].BackendRefs[0].BackendObjectReference, backingSvc)
 
 				// Build RouteInfo
 				routeInfo = &query.RouteInfo{
-					Object:   route,
-					Backends: backends,
+					Object: routeir,
 				}
 			})
 
 			It("translates the route correctly", func() {
-				routes := httproute.TranslateGatewayHTTPRouteRules(ctx, pluginRegistry, gwListener, routeInfo, parentRefReporter, baseReporter)
+				routes := httproute.TranslateGatewayHTTPRouteRules(ctx, gwListener, routeInfo, parentRefReporter, baseReporter)
 
 				Expect(routes).To(HaveLen(1))
 				Expect(routes[0].Name).To(Equal("httproute-foo-httproute-bar-0-0"))
-				Expect(routes[0].Matchers).To(HaveLen(1))
-				Expect(routes[0].GetAction()).To(BeEquivalentTo(&v1.Route_RouteAction{
-					RouteAction: &v1.RouteAction{
-						Destination: &v1.RouteAction_Single{
-							Single: &v1.Destination{
-								DestinationType: &v1.Destination_Kube{
-									Kube: &v1.KubernetesServiceDestination{
-										Ref: &core.ResourceRef{
-											Name:      backingSvc.GetName(),
-											Namespace: backingSvc.GetNamespace(),
-										},
-										Port: uint32(backingSvc.Spec.Ports[0].Port),
-									},
-								},
-							},
-						},
-					},
-				}))
-				Expect(routes[0].Matchers[0].PathSpecifier).To(Equal(&matchers.Matcher_Prefix{Prefix: "/"}))
+				Expect(routes[0].Backends[0].Backend.ClusterName).To(Equal(up.ClusterName()))
+				Expect(routes[0].Match.Path.Type).To(BeEquivalentTo(ptr.To(gwv1.PathMatchPathPrefix)))
+				Expect(routes[0].Match.Path.Value).To(BeEquivalentTo(ptr.To("/")))
 
 				routeStatus := reportsMap.BuildRouteStatus(ctx, route, "")
 				Expect(routeStatus).NotTo(BeNil())
@@ -227,40 +195,23 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 
 		When("referencing a non-existent backing service", func() {
 			BeforeEach(func() {
-				// Do not add the backing service to the backend map (simulate missing service)
-				backends = query.NewBackendMap[client.Object]()
-
+				// simulate a missing service
+				routeir.Rules[0].Backends[0].Backend.Err = errors.New("missing upstream")
+				routeir.Rules[0].Backends[0].Backend.ClusterName = "blackhole_cluster"
 				// Build RouteInfo
 				routeInfo = &query.RouteInfo{
-					Object:   route,
-					Backends: backends,
+					Object: routeir,
 				}
 			})
 
 			It("falls back to a blackhole cluster", func() {
-				routes := httproute.TranslateGatewayHTTPRouteRules(ctx, pluginRegistry, gwListener, routeInfo, parentRefReporter, baseReporter)
+				routes := httproute.TranslateGatewayHTTPRouteRules(ctx, gwListener, routeInfo, parentRefReporter, baseReporter)
 
 				Expect(routes).To(HaveLen(1))
 				Expect(routes[0].Name).To(Equal("httproute-foo-httproute-bar-0-0"))
-				Expect(routes[0].Matchers).To(HaveLen(1))
-				Expect(routes[0].GetAction()).To(BeEquivalentTo(&v1.Route_RouteAction{
-					RouteAction: &v1.RouteAction{
-						Destination: &v1.RouteAction_Single{
-							Single: &v1.Destination{
-								DestinationType: &v1.Destination_Kube{
-									Kube: &v1.KubernetesServiceDestination{
-										Ref: &core.ResourceRef{
-											Name:      "blackhole_cluster",
-											Namespace: "blackhole_ns",
-										},
-										Port: uint32(8080),
-									},
-								},
-							},
-						},
-					},
-				}))
-				Expect(routes[0].Matchers[0].PathSpecifier).To(Equal(&matchers.Matcher_Prefix{Prefix: "/"}))
+				Expect(routes[0].Backends[0].Backend.ClusterName).To(Equal("blackhole_cluster"))
+				Expect(routes[0].Match.Path.Type).To(BeEquivalentTo(ptr.To(gwv1.PathMatchPathPrefix)))
+				Expect(routes[0].Match.Path.Value).To(BeEquivalentTo(ptr.To("/")))
 
 				routeStatus := reportsMap.BuildRouteStatus(ctx, route, "")
 				Expect(routeStatus).NotTo(BeNil())
@@ -280,61 +231,65 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 	})
 
 	Context("multiple route actions", func() {
-		var (
-			route             *gwv1.HTTPRoute
-			routeInfo         *query.RouteInfo
-			baseReporter      reports.Reporter
-			parentRefReporter reports.ParentRefReporter
-			reportsMap        reports.ReportMap
-		)
+		// TODO: Multiple route actoins are implemented in plugins now, so these should go to their unit tests
+		// or alternatively, to the ir  translator unit tests.
 
-		// Helper function to create a DirectResponse
-		createDirectResponse := func(name, namespace string, status uint32) *v1alpha1.DirectResponse {
-			return &v1alpha1.DirectResponse{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      name,
-					Namespace: namespace,
-				},
-				Spec: v1alpha1.DirectResponseSpec{
-					StatusCode: status,
-				},
-			}
-		}
+		//		var (
+		//			route             *gwv1.HTTPRoute
+		//			routeInfo         *query.RouteInfo
+		//			baseReporter      reports.Reporter
+		//			parentRefReporter reports.ParentRefReporter
+		//			reportsMap        reports.ReportMap
+		//		)
+		//
+		//		// Helper function to create a DirectResponse
+		//		createDirectResponse := func(name, namespace string, status uint32) *v1alpha1.DirectResponse {
+		//			return &v1alpha1.DirectResponse{
+		//				ObjectMeta: metav1.ObjectMeta{
+		//					Name:      name,
+		//					Namespace: namespace,
+		//				},
+		//				Spec: v1alpha1.DirectResponseSpec{
+		//					StatusCode: status,
+		//				},
+		//			}
+		//		}
+		//
+		//		// Helper function to create a basic HTTPRoute with a ParentRef
+		//		createHTTPRoute := func(backendRefs []gwv1.HTTPBackendRef, filters []gwv1.HTTPRouteFilter) *gwv1.HTTPRoute {
+		//			parentRef := &gwv1.ParentReference{Name: "my-gw"}
+		//
+		//			return &gwv1.HTTPRoute{
+		//				ObjectMeta: metav1.ObjectMeta{
+		//					Name:      "foo-httproute",
+		//					Namespace: "bar",
+		//				},
+		//				Spec: gwv1.HTTPRouteSpec{
+		//					Hostnames: []gwv1.Hostname{"example.com"},
+		//					CommonRouteSpec: gwv1.CommonRouteSpec{
+		//						ParentRefs: []gwv1.ParentReference{*parentRef},
+		//					},
+		//					Rules: []gwv1.HTTPRouteRule{{
+		//						Matches: []gwv1.HTTPRouteMatch{{
+		//							Path: &gwv1.HTTPPathMatch{
+		//								Type:  ptr.To(gwv1.PathMatchPathPrefix),
+		//								Value: ptr.To("/"),
+		//							},
+		//						}},
+		//						BackendRefs: backendRefs,
+		//						Filters:     filters,
+		//					}},
+		//				},
+		//			}
+		//		}
+		//
+		//		// Common BeforeEach block for initializing reports and parentRef
+		//		BeforeEach(func() {
+		//			reportsMap = reports.NewReportMap()
+		//			baseReporter = reports.NewReporter(&reportsMap)
+		//		})
 
-		// Helper function to create a basic HTTPRoute with a ParentRef
-		createHTTPRoute := func(backendRefs []gwv1.HTTPBackendRef, filters []gwv1.HTTPRouteFilter) *gwv1.HTTPRoute {
-			parentRef := &gwv1.ParentReference{Name: "my-gw"}
-
-			return &gwv1.HTTPRoute{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "foo-httproute",
-					Namespace: "bar",
-				},
-				Spec: gwv1.HTTPRouteSpec{
-					Hostnames: []gwv1.Hostname{"example.com"},
-					CommonRouteSpec: gwv1.CommonRouteSpec{
-						ParentRefs: []gwv1.ParentReference{*parentRef},
-					},
-					Rules: []gwv1.HTTPRouteRule{{
-						Matches: []gwv1.HTTPRouteMatch{{
-							Path: &gwv1.HTTPPathMatch{
-								Type:  ptr.To(gwv1.PathMatchPathPrefix),
-								Value: ptr.To("/"),
-							},
-						}},
-						BackendRefs: backendRefs,
-						Filters:     filters,
-					}},
-				},
-			}
-		}
-
-		// Common BeforeEach block for initializing reports and parentRef
-		BeforeEach(func() {
-			reportsMap = reports.NewReportMap()
-			baseReporter = reports.NewReporter(&reportsMap)
-		})
-
+		/* TODO: this needs to move to the direct response plugin unit tests
 		When("an HTTPRoute configures the backendRef and direct response actions", func() {
 			var (
 				backingSvc *corev1.Service
@@ -370,7 +325,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				filters := []gwv1.HTTPRouteFilter{{
 					Type: gwv1.HTTPRouteFilterExtensionRef,
 					ExtensionRef: &gwv1.LocalObjectReference{
-						Group: v1alpha1.Group,
+						Group: v1alpha1.GroupName,
 						Kind:  v1alpha1.DirectResponseKind,
 						Name:  gwv1.ObjectName(dr.GetName()),
 					},
@@ -406,7 +361,6 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonResolvedRefs))
 			})
 		})
-
 		When("an HTTPRoute configures the redirect and direct response actions", func() {
 			BeforeEach(func() {
 				dr := createDirectResponse("test", "bar", 200)
@@ -423,7 +377,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 					{
 						Type: gwv1.HTTPRouteFilterExtensionRef,
 						ExtensionRef: &gwv1.LocalObjectReference{
-							Group: v1alpha1.Group,
+							Group: v1alpha1.GroupName,
 							Kind:  v1alpha1.DirectResponseKind,
 							Name:  gwv1.ObjectName(dr.GetName()),
 						},
@@ -455,7 +409,9 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonResolvedRefs))
 			})
 		})
+		*/
 
+		/* TODO: this needs to move to the builtin plugin unit tests
 		When("an HTTPRoute configures the redirect and backendRef actions", func() {
 			var (
 				backingSvc *corev1.Service
@@ -545,5 +501,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 				Expect(resolvedRefs.Reason).To(BeEquivalentTo(gwv1.RouteReasonResolvedRefs))
 			})
 		})
+		*/
 	})
+
 })

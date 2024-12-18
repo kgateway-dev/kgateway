@@ -16,10 +16,13 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
-	"github.com/solo-io/gloo/projects/gateway2/translator/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/go-utils/contextutils"
 )
+
+type DelegationCtx struct {
+	Ref types.NamespacedName
+}
 
 // flattenDelegatedRoutes recursively translates a delegated route tree.
 //
@@ -46,7 +49,7 @@ func flattenDelegatedRoutes(
 	routesVisited.Insert(parentRef)
 	defer routesVisited.Delete(parentRef)
 
-	delegationCtx := plugins.DelegationCtx{
+	delegationCtx := DelegationCtx{
 		Ref: parentRef,
 	}
 	lRef := delegationChain.PushFront(delegationCtx)

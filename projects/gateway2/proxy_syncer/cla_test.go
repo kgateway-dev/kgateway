@@ -5,31 +5,23 @@ import (
 
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	duration "github.com/golang/protobuf/ptypes/duration"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
+	"github.com/solo-io/gloo/projects/gateway2/endpoints"
+	"github.com/solo-io/gloo/projects/gateway2/ir"
 	. "github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	networkingv1alpha3 "istio.io/api/networking/v1alpha3"
-	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestTransformsEndpoint(t *testing.T) {
 	g := gomega.NewWithT(t)
-	us := krtcollections.UpstreamWrapper{
-		Inner: &gloov1.Upstream{
-			Metadata: &core.Metadata{
-				Name:      "name",
-				Namespace: "ns",
-			},
+	us := ir.Upstream{
+		ObjectSource: ir.ObjectSource{
+			Namespace: "ns",
+			Name:      "name",
 		},
 	}
-	efu := krtcollections.NewEndpointsForUpstream(us, nil)
-	efu.Add(krtcollections.PodLocality{}, krtcollections.EndpointWithMd{
+	efu := ir.NewEndpointsForUpstream(us)
+	efu.Add(ir.PodLocality{}, ir.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
 			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
 				Endpoint: &endpointv3.Endpoint{
@@ -39,7 +31,7 @@ func TestTransformsEndpoint(t *testing.T) {
 				},
 			},
 		},
-		EndpointMd: krtcollections.EndpointMetadata{},
+		EndpointMd: ir.EndpointMetadata{},
 	})
 
 	envoyResources := TransformEndpointToResources(*efu)
@@ -51,16 +43,14 @@ func TestTransformsEndpoint(t *testing.T) {
 
 func TestTransformsEndpointsWithLocality(t *testing.T) {
 	g := gomega.NewWithT(t)
-	us := krtcollections.UpstreamWrapper{
-		Inner: &gloov1.Upstream{
-			Metadata: &core.Metadata{
-				Name:      "name",
-				Namespace: "ns",
-			},
+	us := ir.Upstream{
+		ObjectSource: ir.ObjectSource{
+			Namespace: "ns",
+			Name:      "name",
 		},
 	}
-	efu := krtcollections.NewEndpointsForUpstream(us, nil)
-	efu.Add(krtcollections.PodLocality{Region: "R1"}, krtcollections.EndpointWithMd{
+	efu := ir.NewEndpointsForUpstream(us)
+	efu.Add(ir.PodLocality{Region: "R1"}, ir.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
 			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
 				Endpoint: &endpointv3.Endpoint{
@@ -70,9 +60,9 @@ func TestTransformsEndpointsWithLocality(t *testing.T) {
 				},
 			},
 		},
-		EndpointMd: krtcollections.EndpointMetadata{},
+		EndpointMd: ir.EndpointMetadata{},
 	})
-	efu.Add(krtcollections.PodLocality{Region: "R2"}, krtcollections.EndpointWithMd{
+	efu.Add(ir.PodLocality{Region: "R2"}, ir.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
 			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
 				Endpoint: &endpointv3.Endpoint{
@@ -82,7 +72,7 @@ func TestTransformsEndpointsWithLocality(t *testing.T) {
 				},
 			},
 		},
-		EndpointMd: krtcollections.EndpointMetadata{},
+		EndpointMd: ir.EndpointMetadata{},
 	})
 
 	envoyResources := TransformEndpointToResources(*efu)
@@ -98,16 +88,14 @@ func TestTransformsEndpointsWithLocality(t *testing.T) {
 
 func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 	g := gomega.NewWithT(t)
-	us := krtcollections.UpstreamWrapper{
-		Inner: &gloov1.Upstream{
-			Metadata: &core.Metadata{
-				Name:      "name",
-				Namespace: "ns",
-			},
+	us := ir.Upstream{
+		ObjectSource: ir.ObjectSource{
+			Namespace: "ns",
+			Name:      "name",
 		},
 	}
-	efu := krtcollections.NewEndpointsForUpstream(us, nil)
-	efu.Add(krtcollections.PodLocality{Region: "R1"}, krtcollections.EndpointWithMd{
+	efu := ir.NewEndpointsForUpstream(us)
+	efu.Add(ir.PodLocality{Region: "R1"}, ir.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
 			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
 				Endpoint: &endpointv3.Endpoint{
@@ -117,11 +105,11 @@ func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 				},
 			},
 		},
-		EndpointMd: krtcollections.EndpointMetadata{
+		EndpointMd: ir.EndpointMetadata{
 			Labels: map[string]string{corev1.LabelTopologyRegion: "R1"},
 		},
 	})
-	efu.Add(krtcollections.PodLocality{Region: "R2"}, krtcollections.EndpointWithMd{
+	efu.Add(ir.PodLocality{Region: "R2"}, ir.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
 			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
 				Endpoint: &endpointv3.Endpoint{
@@ -131,45 +119,23 @@ func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 				},
 			},
 		},
-		EndpointMd: krtcollections.EndpointMetadata{
+		EndpointMd: ir.EndpointMetadata{
 			Labels: map[string]string{corev1.LabelTopologyRegion: "R2"},
 		},
 	})
-	ucc := krtcollections.UniqlyConnectedClient{
+	ucc := ir.UniqlyConnectedClient{
 		Namespace: "ns",
-		Locality:  krtcollections.PodLocality{Region: "R1"},
+		Locality:  ir.PodLocality{Region: "R1"},
 		Labels:    map[string]string{corev1.LabelTopologyRegion: "R1"},
 	}
 
-	destRule := &networkingclient.DestinationRule{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "networking.istio.io/v1alpha3",
-			Kind:       "DestinationRule",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "do-failover",
-		},
-		Spec: networkingv1alpha3.DestinationRule{
-			Host: "reviews.gwtest.svc.cluster.local",
-			TrafficPolicy: &networkingv1alpha3.TrafficPolicy{
-				OutlierDetection: &networkingv1alpha3.OutlierDetection{
-					Consecutive_5XxErrors: &wrappers.UInt32Value{Value: 7},
-					Interval:              &duration.Duration{Seconds: 300}, // 5 minutes
-					BaseEjectionTime:      &duration.Duration{Seconds: 900}, // 15 minutes
-				},
-				LoadBalancer: &networkingv1alpha3.LoadBalancerSettings{
-					LocalityLbSetting: &networkingv1alpha3.LocalityLoadBalancerSetting{
-						FailoverPriority: []string{
-							"topology.kubernetes.io/region",
-						},
-					},
-				},
-			},
-		},
+	priorityInfo := &endpoints.PriorityInfo{
+		FailoverPriority: endpoints.NewPriorities([]string{
+			"topology.kubernetes.io/region",
+		}),
 	}
 
-	uccWithEndpoints := PrioritizeEndpoints(nil, &DestinationRuleWrapper{destRule}, *efu, ucc)
-	cla := uccWithEndpoints.Endpoints.ResourceProto().(*endpointv3.ClusterLoadAssignment)
+	cla := endpoints.PrioritizeEndpoints(nil, priorityInfo, *efu, ucc)
 	g.Expect(cla.Endpoints).To(gomega.HaveLen(2))
 
 	remoteLocality := cla.Endpoints[0]
@@ -188,16 +154,14 @@ func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 // similar to TestTranslatesDestrulesFailoverPriority but implicit
 func TestTranslatesDestrulesFailover(t *testing.T) {
 	g := gomega.NewWithT(t)
-	us := krtcollections.UpstreamWrapper{
-		Inner: &gloov1.Upstream{
-			Metadata: &core.Metadata{
-				Name:      "name",
-				Namespace: "ns",
-			},
+	us := ir.Upstream{
+		ObjectSource: ir.ObjectSource{
+			Namespace: "ns",
+			Name:      "name",
 		},
 	}
-	efu := krtcollections.NewEndpointsForUpstream(us, nil)
-	efu.Add(krtcollections.PodLocality{Region: "R1"}, krtcollections.EndpointWithMd{
+	efu := ir.NewEndpointsForUpstream(us)
+	efu.Add(ir.PodLocality{Region: "R1"}, ir.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
 			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
 				Endpoint: &endpointv3.Endpoint{
@@ -207,11 +171,11 @@ func TestTranslatesDestrulesFailover(t *testing.T) {
 				},
 			},
 		},
-		EndpointMd: krtcollections.EndpointMetadata{
+		EndpointMd: ir.EndpointMetadata{
 			Labels: map[string]string{corev1.LabelTopologyRegion: "R1"},
 		},
 	})
-	efu.Add(krtcollections.PodLocality{Region: "R2"}, krtcollections.EndpointWithMd{
+	efu.Add(ir.PodLocality{Region: "R2"}, ir.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
 			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
 				Endpoint: &endpointv3.Endpoint{
@@ -221,41 +185,19 @@ func TestTranslatesDestrulesFailover(t *testing.T) {
 				},
 			},
 		},
-		EndpointMd: krtcollections.EndpointMetadata{
+		EndpointMd: ir.EndpointMetadata{
 			Labels: map[string]string{corev1.LabelTopologyRegion: "R2"},
 		},
 	})
-	ucc := krtcollections.UniqlyConnectedClient{
+	ucc := ir.UniqlyConnectedClient{
 		Namespace: "ns",
-		Locality:  krtcollections.PodLocality{Region: "R1"},
+		Locality:  ir.PodLocality{Region: "R1"},
 		Labels:    map[string]string{corev1.LabelTopologyRegion: "R1"},
 	}
 
-	destRule := &networkingclient.DestinationRule{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "networking.istio.io/v1alpha3",
-			Kind:       "DestinationRule",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "do-failover",
-		},
-		Spec: networkingv1alpha3.DestinationRule{
-			Host: "reviews.gwtest.svc.cluster.local",
-			TrafficPolicy: &networkingv1alpha3.TrafficPolicy{
-				OutlierDetection: &networkingv1alpha3.OutlierDetection{
-					Consecutive_5XxErrors: &wrappers.UInt32Value{Value: 7},
-					Interval:              &duration.Duration{Seconds: 300}, // 5 minutes
-					BaseEjectionTime:      &duration.Duration{Seconds: 900}, // 15 minutes
-				},
-				LoadBalancer: &networkingv1alpha3.LoadBalancerSettings{
-					LocalityLbSetting: &networkingv1alpha3.LocalityLoadBalancerSetting{},
-				},
-			},
-		},
-	}
+	priorityInfo := &endpoints.PriorityInfo{}
 
-	uccWithEndpoints := PrioritizeEndpoints(nil, &DestinationRuleWrapper{destRule}, *efu, ucc)
-	cla := uccWithEndpoints.Endpoints.ResourceProto().(*endpointv3.ClusterLoadAssignment)
+	cla := endpoints.PrioritizeEndpoints(nil, priorityInfo, *efu, ucc)
 	g.Expect(cla.Endpoints).To(gomega.HaveLen(2))
 
 	remoteLocality := cla.Endpoints[0]

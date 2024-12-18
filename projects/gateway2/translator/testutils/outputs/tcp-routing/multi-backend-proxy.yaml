@@ -1,34 +1,20 @@
----
-listeners:
-- name: tcp
-  bindAddress: "::"
-  bindPort: 8080
-  aggregateListener:
-    httpResources: {}
-    tcpListeners:
-      - tcpListener:
-          tcpHosts:
-            - name: example-tcp-route-rule-0
-              destination:
-                multi:
-                  destinations:
-                    - destination:
-                        kube:
-                          ref:
-                            name: example-tcp-svc-1
-                            namespace: default
-                          port: 8080
-                      weight: 65
-                    - destination:
-                        kube:
-                          ref:
-                            name: example-tcp-svc-2
-                            namespace: default
-                          port: 8081
-                      weight: 35
-metadata:
-  labels:
-    created_by: gloo-kube-gateway-api
-    gateway_namespace: "default"
-  name: default-example-tcp-gateway
-  namespace: gloo-system
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.tcp_proxy
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+        statPrefix: default.example-tcp-route-rule-0
+        weightedClusters:
+          clusters:
+          - name: kube_default_example-tcp-svc-1_8080
+            weight: 65
+          - name: kube_default_example-tcp-svc-2_8081
+            weight: 35
+    name: default.example-tcp-route-rule-0
+  name: tcp
