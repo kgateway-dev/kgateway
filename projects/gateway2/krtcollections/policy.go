@@ -47,6 +47,18 @@ func NewUpstreamIndex(krtopts krtutil.KrtOptions, backendRefExtension []extensio
 	}
 }
 
+func (s *UpstreamIndex) HasSynced() bool {
+	if !s.policies.HasSynced() {
+		return false
+	}
+	for _, col := range s.availableUpstreams {
+		if !col.Synced().HasSynced() {
+			return false
+		}
+	}
+	return true
+}
+
 func (ui *UpstreamIndex) Upstreams() []krt.Collection[ir.Upstream] {
 	ret := make([]krt.Collection[ir.Upstream], 0, len(ui.availableUpstreams))
 	for _, u := range ui.availableUpstreams {
@@ -431,7 +443,6 @@ func (h *RoutesIndex) RoutesForGateway(kctx krt.HandlerContext, nns types.Namesp
 }
 
 func (h *RoutesIndex) FetchHttp(kctx krt.HandlerContext, ns, n string) *ir.HttpRouteIR {
-	// TODO: maybe the key shouldnt include g and k?
 	src := ir.ObjectSource{
 		Group:     gwv1.SchemeGroupVersion.Group,
 		Kind:      "HTTPRoute",
@@ -442,8 +453,7 @@ func (h *RoutesIndex) FetchHttp(kctx krt.HandlerContext, ns, n string) *ir.HttpR
 	return route
 }
 
-func (h *RoutesIndex) Fetch(kctx krt.HandlerContext, gk schema.GroupKind, n, ns string) *RouteWrapper {
-	// TODO: maybe the key shouldnt include g and k?
+func (h *RoutesIndex) Fetch(kctx krt.HandlerContext, gk schema.GroupKind, ns, n string) *RouteWrapper {
 	src := ir.ObjectSource{
 		Group:     gk.Group,
 		Kind:      gk.Kind,
@@ -687,6 +697,9 @@ func emptyIfNil(s *gwv1.SectionName) string {
 }
 
 func tostr(in []gwv1.Hostname) []string {
+	if in == nil {
+		return nil
+	}
 	out := make([]string, len(in))
 	for i, h := range in {
 		out[i] = string(h)

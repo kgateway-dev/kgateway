@@ -21,6 +21,18 @@ func NewSecretIndex(secrets map[schema.GroupKind]krt.Collection[ir.Secret], refg
 	return &SecretIndex{secrets: secrets, refgrants: refgrants}
 }
 
+func (s *SecretIndex) HasSynced() bool {
+	if !s.refgrants.HasSynced() {
+		return false
+	}
+	for _, col := range s.secrets {
+		if !col.Synced().HasSynced() {
+			return false
+		}
+	}
+	return true
+}
+
 // if we want to make this function public, make it do ref grants
 func (s *SecretIndex) GetSecret(kctx krt.HandlerContext, from From, secretRef gwv1.SecretObjectReference) (*ir.Secret, error) {
 	secretKind := "Secret"

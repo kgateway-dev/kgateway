@@ -71,7 +71,10 @@ func (r *RouteInfo) Hostnames() []string {
 		return []string{}
 	}
 
-	return httpRoute.Hostnames
+	if httpRoute.Hostnames != nil {
+		return httpRoute.Hostnames
+	}
+	return []string{}
 }
 
 // GetChildrenForRef fetches child routes for a given BackendObjectReference.

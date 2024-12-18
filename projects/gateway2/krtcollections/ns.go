@@ -29,6 +29,10 @@ func NewNamespaceCollection(ctx context.Context, istioClient kube.Client, krtOpt
 		// ObjectTransform: ...,
 	})
 	col := krt.WrapClient(client, krtOpts.ToOptions("Namespaces")...)
+	return NewNamespaceCollectionFromCol(ctx, col, krtOpts)
+}
+
+func NewNamespaceCollectionFromCol(ctx context.Context, col krt.Collection[*corev1.Namespace], krtOpts krtutil.KrtOptions) krt.Collection[NamespaceMetadata] {
 	return krt.NewCollection(col, func(ctx krt.HandlerContext, ns *corev1.Namespace) *NamespaceMetadata {
 		return &NamespaceMetadata{
 			Name:   ns.Name,

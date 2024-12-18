@@ -2,24 +2,33 @@ package query_test
 
 import (
 	"context"
+	"time"
 
 	"github.com/solo-io/gloo/pkg/schemes"
+	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/kube/krt/krttest"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
+	"github.com/solo-io/gloo/projects/gateway2/ir"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	apiv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
+	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/query"
+	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 )
 
@@ -31,10 +40,6 @@ var _ = Describe("Query", func() {
 		builder *fake.ClientBuilder
 	)
 
-	tofrom := func(o client.Object) query.From {
-		return query.FromObject{Scheme: scheme, Object: o}
-	}
-
 	BeforeEach(func() {
 		scheme = schemes.GatewayScheme()
 		builder = fake.NewClientBuilder().WithScheme(scheme)
@@ -44,128 +49,20 @@ var _ = Describe("Query", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 	})
-	Describe("GetBackendForRef", func() {
-		It("should get service from same namespace", func() {
-			fakeClient := fake.NewFakeClient(svc("default"))
-
-			gq := query.NewData(fakeClient, scheme)
-			ref := &apiv1.BackendObjectReference{
-				Name: "foo",
-			}
-
-			backend, err := gq.GetBackendForRef(context.Background(), tofrom(httpRoute()), ref)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(backend).NotTo(BeNil())
-			Expect(backend.GetName()).To(Equal("foo"))
-			Expect(backend.GetNamespace()).To(Equal("default"))
-		})
-
-		It("should get service from different ns if we have a ref grant", func() {
-			rg := refGrant()
-			fakeClient := builder.WithObjects(svc("default2"), rg).Build()
-			gq := query.NewData(fakeClient, scheme)
-			ref := &apiv1.BackendObjectReference{
-				Name:      "foo",
-				Namespace: nsptr("default2"),
-			}
-
-			backend, err := gq.GetBackendForRef(context.Background(), tofrom(httpRoute()), ref)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(backend).NotTo(BeNil())
-			Expect(backend.GetName()).To(Equal("foo"))
-			Expect(backend.GetNamespace()).To(Equal("default2"))
-		})
-
-		It("should fail with service not found if we have a ref grant", func() {
-			rg := refGrant()
-			fakeClient := builder.WithObjects(rg).Build()
-			gq := query.NewData(fakeClient, scheme)
-			ref := &apiv1.BackendObjectReference{
-				Name:      "foo",
-				Namespace: nsptr("default2"),
-			}
-			backend, err := gq.GetBackendForRef(context.Background(), tofrom(httpRoute()), ref)
-			Expect(apierrors.IsNotFound(err)).To(BeTrue())
-			Expect(backend).To(BeNil())
-		})
-
-		It("should fail getting a service with ref grant with wrong from", func() {
-			ref := &apiv1.BackendObjectReference{
-				Name:      "foo",
-				Namespace: nsptr("default2"),
-			}
-			rg := &apiv1beta1.ReferenceGrant{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default2",
-					Name:      "foo",
-				},
-				Spec: apiv1beta1.ReferenceGrantSpec{
-					From: []apiv1beta1.ReferenceGrantFrom{
-						{
-							Group:     apiv1.Group("gateway.networking.k8s.io"),
-							Kind:      apiv1.Kind("NotGateway"),
-							Namespace: apiv1.Namespace("default"),
-						},
-						{
-							Group:     apiv1.Group("gateway.networking.k8s.io"),
-							Kind:      apiv1.Kind("Gateway"),
-							Namespace: apiv1.Namespace("default2"),
-						},
-					},
-					To: []apiv1beta1.ReferenceGrantTo{
-						{
-							Group: apiv1.Group("core"),
-							Kind:  apiv1.Kind("Service"),
-						},
-					},
-				},
-			}
-			fakeClient := builder.WithObjects(rg, svc("default2")).Build()
-
-			gq := query.NewData(fakeClient, scheme)
-			backend, err := gq.GetBackendForRef(context.Background(), tofrom(httpRoute()), ref)
-			Expect(err).To(MatchError(query.ErrMissingReferenceGrant))
-			Expect(backend).To(BeNil())
-		})
-
-		It("should fail getting a service with no ref grant", func() {
-			fakeClient := builder.WithObjects(svc("default3")).Build()
-			gq := query.NewData(fakeClient, scheme)
-			ref := &apiv1.BackendObjectReference{
-				Name:      "foo",
-				Namespace: nsptr("default3"),
-			}
-
-			backend, err := gq.GetBackendForRef(context.Background(), tofrom(httpRoute()), ref)
-			Expect(err).To(MatchError(query.ErrMissingReferenceGrant))
-			Expect(backend).To(BeNil())
-		})
-
-		It("should fail getting a service with ref grant in wrong ns", func() {
-			rg := refGrant()
-			fakeClient := builder.WithObjects(svc("default3"), rg).Build()
-
-			gq := query.NewData(fakeClient, scheme)
-			ref := &apiv1.BackendObjectReference{
-				Name:      "foo",
-				Namespace: nsptr("default3"),
-			}
-			backend, err := gq.GetBackendForRef(context.Background(), tofrom(httpRoute()), ref)
-			Expect(err).To(MatchError(query.ErrMissingReferenceGrant))
-			Expect(backend).To(BeNil())
-		})
-	})
 
 	Describe("GetSecretRef", func() {
 		It("should get secret from different ns if we have a ref grant", func() {
 			rg := refGrantSecret()
-			fakeClient := builder.WithObjects(secret("default2"), rg).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := newQueries(secret("default2"), rg)
 			ref := apiv1.SecretObjectReference{
 				Name:      "foo",
 				Namespace: nsptr("default2"),
 			}
-			backend, err := gq.GetSecretForRef(context.Background(), tofrom(gw()), ref)
+			fromGk := schema.GroupKind{
+				Group: apiv1.GroupName,
+				Kind:  "Gateway",
+			}
+			backend, err := gq.GetSecretForRef(krt.TestingDummyContext{}, context.Background(), fromGk, "default", ref)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(backend).NotTo(BeNil())
 			Expect(backend.GetName()).To(Equal("foo"))
@@ -189,9 +86,8 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
-			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
+			gq := newQueries(hr)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(BeEmpty())
@@ -222,9 +118,9 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
-			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
+			gq := newQueries(hr)
+
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(BeEmpty())
@@ -252,9 +148,8 @@ var _ = Describe("Query", func() {
 				Name: apiv1.ObjectName(gwWithListener.Name),
 			})
 
-			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
-			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
+			gq := newQueries(hr)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.ListenerResults["foo"].Error).To(MatchError("selector must be set"))
@@ -283,9 +178,8 @@ var _ = Describe("Query", func() {
 				Name: apiv1.ObjectName(gwWithListener.Name),
 			})
 
-			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
-			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
+			gq := newQueries(hr)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNotAllowedByListeners))
@@ -313,9 +207,8 @@ var _ = Describe("Query", func() {
 				Name: apiv1.ObjectName(gwWithListener.Name),
 			})
 
-			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
-			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
+			gq := newQueries(hr)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(BeEmpty())
@@ -346,9 +239,8 @@ var _ = Describe("Query", func() {
 				Port: &port,
 			})
 
-			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
-			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
+			gq := newQueries(hr)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNoMatchingParent))
@@ -377,9 +269,8 @@ var _ = Describe("Query", func() {
 				Port: &port,
 			})
 
-			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
-			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
+			gq := newQueries(hr)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(BeEmpty())
@@ -411,9 +302,8 @@ var _ = Describe("Query", func() {
 				Name: apiv1.ObjectName(gwWithListener.Name),
 			})
 
-			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
-			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
+			gq := newQueries(hr)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNoMatchingListenerHostname))
@@ -445,9 +335,8 @@ var _ = Describe("Query", func() {
 				Name: apiv1.ObjectName(gwWithListener.Name),
 			})
 
-			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
-			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
+			gq := newQueries(hr)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(BeEmpty())
@@ -475,9 +364,8 @@ var _ = Describe("Query", func() {
 				Name: apiv1.ObjectName(gwWithListener.Name),
 			})
 
-			fakeClient := builder.WithObjects(hr).Build()
-			gq := query.NewData(fakeClient, scheme)
-			routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
+			gq := newQueries(hr)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(HaveLen(1))
@@ -513,9 +401,8 @@ var _ = Describe("Query", func() {
 					Name: apiv1.ObjectName(gwWithListener.Name),
 				})
 
-				fakeClient := builder.WithObjects(hr).Build()
-				gq := query.NewData(fakeClient, scheme)
-				routes, err := gq.GetRoutesForGateway(context.Background(), gwWithListener)
+				gq := newQueries(hr)
+				routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
 
 				Expect(err).NotTo(HaveOccurred())
 				if expectedHostnames == nil {
@@ -567,9 +454,8 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			fakeClient := builder.WithObjects(tcpRoute).Build()
-			gq := query.NewData(fakeClient, scheme)
-			routes, err := gq.GetRoutesForGateway(context.Background(), gw)
+			gq := newQueries(tcpRoute)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.ListenerResults[string(gw.Spec.Listeners[0].Name)].Routes).To(HaveLen(1))
@@ -602,9 +488,9 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			fakeClient := builder.WithObjects(tcpRoute).Build()
-			gq := query.NewData(fakeClient, scheme)
-			routes, err := gq.GetRoutesForGateway(context.Background(), gw)
+			gq := newQueries(tcpRoute)
+
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.ListenerResults["foo-tcp"].Error).NotTo(HaveOccurred())
@@ -639,9 +525,8 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			fakeClient := builder.WithObjects(tcpRoute).Build()
-			gq := query.NewData(fakeClient, scheme)
-			routes, err := gq.GetRoutesForGateway(context.Background(), gw)
+			gq := newQueries(tcpRoute)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(HaveLen(1))
@@ -673,10 +558,9 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			fakeClient := builder.WithObjects(tcpRoute).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := newQueries(tcpRoute)
 
-			routes, err := gq.GetRoutesForGateway(context.Background(), gw)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(HaveLen(1))
 			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNotAllowedByListeners))
@@ -712,107 +596,15 @@ var _ = Describe("Query", func() {
 				},
 			}
 
-			fakeClient := builder.WithObjects(tcpRoute).Build()
-			gq := query.NewData(fakeClient, scheme)
+			gq := newQueries(tcpRoute)
 
-			routes, err := gq.GetRoutesForGateway(context.Background(), gw)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(BeEmpty())
 			Expect(routes.ListenerResults["foo-tcp"].Routes).To(HaveLen(1))
 			Expect(routes.ListenerResults["bar"].Routes).To(BeEmpty())
 		})
 
-		It("should get service from same namespace with TCPRoute", func() {
-			fakeClient := fake.NewFakeClient(svc("default"))
-
-			gq := query.NewData(fakeClient, scheme)
-			ref := &apiv1.BackendObjectReference{
-				Name: "foo",
-			}
-
-			fromTCPRoute := tcpRoute("test-tcp-route", "default")
-
-			backend, err := gq.GetBackendForRef(context.Background(), tofrom(fromTCPRoute), ref)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(backend).NotTo(BeNil())
-			Expect(backend.GetName()).To(Equal("foo"))
-			Expect(backend.GetNamespace()).To(Equal("default"))
-		})
-
-		It("should get service from different ns with TCPRoute if we have a ref grant", func() {
-			rg := refGrantForTCPRoute()
-			fakeClient := builder.WithObjects(svc("default2"), rg).Build()
-			gq := query.NewData(fakeClient, scheme)
-			ref := &apiv1.BackendObjectReference{
-				Name:      "foo",
-				Namespace: nsptr("default2"),
-			}
-
-			fromTCPRoute := tcpRoute("test-tcp-route", "default")
-
-			backend, err := gq.GetBackendForRef(context.Background(), tofrom(fromTCPRoute), ref)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(backend).NotTo(BeNil())
-			Expect(backend.GetName()).To(Equal("foo"))
-			Expect(backend.GetNamespace()).To(Equal("default2"))
-		})
-
-		It("should fail getting a service from different ns with TCPRoute when no ref grant", func() {
-			fakeClient := builder.WithObjects(svc("default2")).Build()
-			gq := query.NewData(fakeClient, scheme)
-			ref := &apiv1.BackendObjectReference{
-				Name:      "foo",
-				Namespace: nsptr("default2"),
-			}
-
-			fromTCPRoute := tcpRoute("test-tcp-route", "default")
-
-			backend, err := gq.GetBackendForRef(context.Background(), tofrom(fromTCPRoute), ref)
-			Expect(err).To(MatchError(query.ErrMissingReferenceGrant))
-			Expect(backend).To(BeNil())
-		})
-
-		It("should fail getting a service with TCPRoute when ref grant has wrong from", func() {
-			rg := &apiv1beta1.ReferenceGrant{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "default2",
-					Name:      "foo",
-				},
-				Spec: apiv1beta1.ReferenceGrantSpec{
-					From: []apiv1beta1.ReferenceGrantFrom{
-						{
-							Group:     apiv1.Group(apiv1a2.GroupName),
-							Kind:      apiv1.Kind("NotTCPRoute"),
-							Namespace: apiv1.Namespace("default"),
-						},
-						{
-							Group:     apiv1.Group(apiv1a2.GroupName),
-							Kind:      apiv1.Kind("TCPRoute"),
-							Namespace: apiv1.Namespace("default2"),
-						},
-					},
-					To: []apiv1beta1.ReferenceGrantTo{
-						{
-							Group: apiv1.Group("core"),
-							Kind:  apiv1.Kind("Service"),
-						},
-					},
-				},
-			}
-			fakeClient := builder.WithObjects(rg, svc("default2")).Build()
-
-			gq := query.NewData(fakeClient, scheme)
-			ref := &apiv1.BackendObjectReference{
-				Name:      "foo",
-				Namespace: nsptr("default2"),
-			}
-
-			fromTCPRoute := tcpRoute("test-tcp-route", "default")
-
-			backend, err := gq.GetBackendForRef(context.Background(), tofrom(fromTCPRoute), ref)
-			Expect(err).To(MatchError(query.ErrMissingReferenceGrant))
-			Expect(backend).To(BeNil())
-		})
 	})
 })
 
@@ -944,4 +736,73 @@ func refGrantForTCPRoute() *apiv1beta1.ReferenceGrant {
 			},
 		},
 	}
+}
+
+var (
+	SvcGk = schema.GroupKind{
+		Group: corev1.GroupName,
+		Kind:  "Service",
+	}
+)
+
+func newQueries(initObjs ...client.Object) query.GatewayQueries {
+	var anys []any
+	for _, obj := range initObjs {
+		anys = append(anys, obj)
+	}
+	mock := krttest.NewMock(GinkgoT(), anys)
+	services := krttest.GetMockCollection[*corev1.Service](mock)
+
+	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, extensionsplug.ContributesPolicies{})
+	upstreams := krtcollections.NewUpstreamIndex(krtutil.KrtOptions{}, nil, policies)
+	upstreams.AddUpstreams(SvcGk, k8sUpstreams(services))
+	refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*apiv1beta1.ReferenceGrant](mock))
+
+	httproutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
+	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
+	rtidx := krtcollections.NewRoutesIndex(krtutil.KrtOptions{}, httproutes, tcpproutes, policies, upstreams, refgrants)
+	services.Synced().WaitUntilSynced(nil)
+
+	secretsCol := map[schema.GroupKind]krt.Collection[ir.Secret]{
+		corev1.SchemeGroupVersion.WithKind("Secret").GroupKind(): krt.NewCollection(krttest.GetMockCollection[*corev1.Secret](mock), func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
+			res := ir.Secret{
+				ObjectSource: ir.ObjectSource{
+					Group:     "",
+					Kind:      "Secret",
+					Namespace: i.Namespace,
+					Name:      i.Name,
+				},
+				Obj:  i,
+				Data: i.Data,
+			}
+			return &res
+		}),
+	}
+	secrets := krtcollections.NewSecretIndex(secretsCol, refgrants)
+	nsCol := krtcollections.NewNamespaceCollectionFromCol(context.Background(), krttest.GetMockCollection[*corev1.Namespace](mock), krtutil.KrtOptions{})
+	for !rtidx.HasSynced() || !refgrants.HasSynced() || !secrets.HasSynced() || !upstreams.HasSynced() {
+		time.Sleep(time.Second / 10)
+	}
+	return query.NewData(rtidx, secrets, nsCol)
+
+}
+
+func k8sUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir.Upstream] {
+	return krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.Upstream {
+		uss := []ir.Upstream{}
+
+		for _, port := range svc.Spec.Ports {
+			uss = append(uss, ir.Upstream{
+				ObjectSource: ir.ObjectSource{
+					Kind:      SvcGk.Kind,
+					Group:     SvcGk.Group,
+					Namespace: svc.Namespace,
+					Name:      svc.Name,
+				},
+				Obj:  svc,
+				Port: port.Port,
+			})
+		}
+		return uss
+	})
 }

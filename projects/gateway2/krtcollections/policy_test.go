@@ -1,6 +1,7 @@
 package krtcollections
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -26,27 +27,38 @@ var (
 	}
 )
 
+func backends(refN, refNs string) []any {
+	return []any{httpRouteWithBackendRef(refN, refNs),
+		tcpRouteWithBackendRef(refN, refNs),
+	}
+}
+
 func TestGetBackendSameNamespace(t *testing.T) {
 	inputs := []any{
 		svc(""),
-		httpRouteWithBackendRef("foo", ""),
 	}
 
-	ir := translate(t, inputs)
-	if ir == nil {
-		t.Fatalf("expected ir")
-	}
-	if ir.Rules[0].Backends == nil {
-		t.Fatalf("expected backends")
-	}
-	if ir.Rules[0].Backends[0].Backend.Err != nil {
-		t.Fatalf("backend has error %v", ir.Rules[0].Backends[0].Backend.Err)
-	}
-	if ir.Rules[0].Backends[0].Backend.Upstream.Name != "foo" {
-		t.Fatalf("backend incorrect name")
-	}
-	if ir.Rules[0].Backends[0].Backend.Upstream.Namespace != "default" {
-		t.Fatalf("backend incorrect ns")
+	for _, backend := range backends("foo", "") {
+		t.Run(fmt.Sprintf("backend %T", backend), func(t *testing.T) {
+			inputs := append(inputs, backend)
+			ir := translateRoute(t, inputs)
+			if ir == nil {
+				t.Fatalf("expected ir")
+			}
+			backends := getBackends(ir)
+			if backends == nil {
+				t.Fatalf("expected backends")
+			}
+			if backends[0].Err != nil {
+				t.Fatalf("backend has error %v", backends[0].Err)
+			}
+			if backends[0].Upstream.Name != "foo" {
+				t.Fatalf("backend incorrect name")
+			}
+			if backends[0].Upstream.Namespace != "default" {
+				t.Fatalf("backend incorrect ns")
+			}
+		})
 	}
 }
 
@@ -54,111 +66,137 @@ func TestGetBackendDifNsWithRefGrant(t *testing.T) {
 	inputs := []any{
 		svc("default2"),
 		refGrant(),
-		httpRouteWithBackendRef("foo", "default2"),
 	}
 
-	ir := translate(t, inputs)
-	if ir == nil {
-		t.Fatalf("expected ir")
-	}
-	if ir.Rules[0].Backends == nil {
-		t.Fatalf("expected backends")
-	}
-	if ir.Rules[0].Backends[0].Backend.Err != nil {
-		t.Fatalf("backend has error %v", ir.Rules[0].Backends[0].Backend.Err)
-	}
-	if ir.Rules[0].Backends[0].Backend.Upstream.Name != "foo" {
-		t.Fatalf("backend incorrect name")
-	}
-	if ir.Rules[0].Backends[0].Backend.Upstream.Namespace != "default2" {
-		t.Fatalf("backend incorrect ns")
+	for _, backend := range backends("foo", "default2") {
+		t.Run(fmt.Sprintf("backend %T", backend), func(t *testing.T) {
+			inputs := append(inputs, backend)
+			ir := translateRoute(t, inputs)
+			if ir == nil {
+				t.Fatalf("expected ir")
+			}
+			backends := getBackends(ir)
+			if backends == nil {
+				t.Fatalf("expected backends")
+			}
+			if backends[0].Err != nil {
+				t.Fatalf("backend has error %v", backends[0].Err)
+			}
+			if backends[0].Upstream.Name != "foo" {
+				t.Fatalf("backend incorrect name")
+			}
+			if backends[0].Upstream.Namespace != "default2" {
+				t.Fatalf("backend incorrect ns")
+			}
+		})
 	}
 }
 
 func TestFailWithNotFoundIfWeHaveRefGrant(t *testing.T) {
 	inputs := []any{
 		refGrant(),
-		httpRouteWithBackendRef("foo", "default2"),
 	}
 
-	ir := translate(t, inputs)
-	if ir == nil {
-		t.Fatalf("expected ir")
-	}
-	if ir.Rules[0].Backends == nil {
-		t.Fatalf("expected backends")
-	}
-	if ir.Rules[0].Backends[0].Backend.Err == nil {
-		t.Fatalf("expected backend error")
-	}
-	if !strings.Contains(ir.Rules[0].Backends[0].Backend.Err.Error(), "not found") {
-		t.Fatalf("expected not found error")
+	for _, backend := range backends("foo", "default2") {
+		t.Run(fmt.Sprintf("backend %T", backend), func(t *testing.T) {
+			inputs := append(inputs, backend)
+			ir := translateRoute(t, inputs)
+			if ir == nil {
+				t.Fatalf("expected ir")
+			}
+			backends := getBackends(ir)
+
+			if backends == nil {
+				t.Fatalf("expected backends")
+			}
+			if backends[0].Err == nil {
+				t.Fatalf("expected backend error")
+			}
+			if !strings.Contains(backends[0].Err.Error(), "not found") {
+				t.Fatalf("expected not found error. found: %v", backends[0].Err)
+			}
+		})
 	}
 }
 
 func TestFailWitWithRefGrantAndWrongFrom(t *testing.T) {
 	rg := refGrant()
-	rg.Spec.From[0].Kind = gwv1.Kind("NotHTTPRoute")
+	rg.Spec.From[0].Kind = gwv1.Kind("NotARoute")
+	rg.Spec.From[1].Kind = gwv1.Kind("NotARoute")
 
 	inputs := []any{
 		rg,
-		httpRouteWithBackendRef("foo", "default2"),
 	}
+	for _, backend := range backends("foo", "default2") {
+		t.Run(fmt.Sprintf("backend %T", backend), func(t *testing.T) {
+			inputs := append(inputs, backend)
+			ir := translateRoute(t, inputs)
+			if ir == nil {
+				t.Fatalf("expected ir")
+			}
+			backends := getBackends(ir)
 
-	ir := translate(t, inputs)
-	if ir == nil {
-		t.Fatalf("expected ir")
-	}
-	if ir.Rules[0].Backends == nil {
-		t.Fatalf("expected backends")
-	}
-	if ir.Rules[0].Backends[0].Backend.Err == nil {
-		t.Fatalf("expected backend error")
-	}
-	if !strings.Contains(ir.Rules[0].Backends[0].Backend.Err.Error(), "missing reference grant") {
-		t.Fatalf("expected not found error %v", ir.Rules[0].Backends[0].Backend.Err)
+			if backends == nil {
+				t.Fatalf("expected backends")
+			}
+			if backends[0].Err == nil {
+				t.Fatalf("expected backend error")
+			}
+			if !strings.Contains(backends[0].Err.Error(), "missing reference grant") {
+				t.Fatalf("expected not found error %v", backends[0].Err)
+			}
+		})
 	}
 }
 
 func TestFailWithNoRefGrant(t *testing.T) {
 	inputs := []any{
 		svc("default2"),
-		httpRouteWithBackendRef("foo", "default2"),
 	}
 
-	ir := translate(t, inputs)
-	if ir == nil {
-		t.Fatalf("expected ir")
-	}
-	if ir.Rules[0].Backends == nil {
-		t.Fatalf("expected backends")
-	}
-	if ir.Rules[0].Backends[0].Backend.Err == nil {
-		t.Fatalf("expected backend error")
-	}
-	if !strings.Contains(ir.Rules[0].Backends[0].Backend.Err.Error(), "missing reference grant") {
-		t.Fatalf("expected not found error %v", ir.Rules[0].Backends[0].Backend.Err)
+	for _, backend := range backends("foo", "default2") {
+		t.Run(fmt.Sprintf("backend %T", backend), func(t *testing.T) {
+			inputs := append(inputs, backend)
+			ir := translateRoute(t, inputs)
+			if ir == nil {
+				t.Fatalf("expected ir")
+			}
+			backends := getBackends(ir)
+			if backends == nil {
+				t.Fatalf("expected backends")
+			}
+			if backends[0].Err == nil {
+				t.Fatalf("expected backend error")
+			}
+			if !strings.Contains(backends[0].Err.Error(), "missing reference grant") {
+				t.Fatalf("expected not found error %v", backends[0].Err)
+			}
+		})
 	}
 }
 func TestFailWithWrongNs(t *testing.T) {
 	inputs := []any{
 		svc("default3"),
 		refGrant(),
-		httpRouteWithBackendRef("foo", "default3"),
 	}
-
-	ir := translate(t, inputs)
-	if ir == nil {
-		t.Fatalf("expected ir")
-	}
-	if ir.Rules[0].Backends == nil {
-		t.Fatalf("expected backends")
-	}
-	if ir.Rules[0].Backends[0].Backend.Err == nil {
-		t.Fatalf("expected backend error %v", ir.Rules[0].Backends[0].Backend)
-	}
-	if !strings.Contains(ir.Rules[0].Backends[0].Backend.Err.Error(), "missing reference grant") {
-		t.Fatalf("expected not found error %v", ir.Rules[0].Backends[0].Backend.Err)
+	for _, backend := range backends("foo", "default3") {
+		t.Run(fmt.Sprintf("backend %T", backend), func(t *testing.T) {
+			inputs := append(inputs, backend)
+			ir := translateRoute(t, inputs)
+			if ir == nil {
+				t.Fatalf("expected ir")
+			}
+			backends := getBackends(ir)
+			if backends == nil {
+				t.Fatalf("expected backends")
+			}
+			if backends[0].Err == nil {
+				t.Fatalf("expected backend error %v", backends[0])
+			}
+			if !strings.Contains(backends[0].Err.Error(), "missing reference grant") {
+				t.Fatalf("expected not found error %v", backends[0].Err)
+			}
+		})
 	}
 }
 
@@ -192,6 +230,11 @@ func refGrant() *gwv1beta1.ReferenceGrant {
 				{
 					Group:     gwv1.Group("gateway.networking.k8s.io"),
 					Kind:      gwv1.Kind("HTTPRoute"),
+					Namespace: gwv1.Namespace("default"),
+				},
+				{
+					Group:     gwv1.Group("gateway.networking.k8s.io"),
+					Kind:      gwv1.Kind("TCPRoute"),
 					Namespace: gwv1.Namespace("default"),
 				},
 			},
@@ -256,8 +299,37 @@ func httpRouteWithBackendRef(refN, refNs string) *gwv1.HTTPRoute {
 		},
 	}
 }
+func tcpRouteWithBackendRef(refN, refNs string) *gwv1a2.TCPRoute {
+	var ns *gwv1.Namespace
+	if refNs != "" {
+		n := gwv1.Namespace(refNs)
+		ns = &n
+	}
+	var port gwv1.PortNumber = 8080
+	return &gwv1a2.TCPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "tcproute",
+			Namespace: "default",
+		},
+		Spec: gwv1a2.TCPRouteSpec{
+			Rules: []gwv1a2.TCPRouteRule{
+				{
+					BackendRefs: []gwv1.BackendRef{
+						{
+							BackendObjectReference: gwv1.BackendObjectReference{
+								Name:      gwv1.ObjectName(refN),
+								Namespace: ns,
+								Port:      &port,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
 
-func translate(t *testing.T, inputs []any) *ir.HttpRouteIR {
+func preRouteIndex(t *testing.T, inputs []any) *RoutesIndex {
 	mock := krttest.NewMock(t, inputs)
 	services := krttest.GetMockCollection[*corev1.Service](mock)
 
@@ -273,6 +345,45 @@ func translate(t *testing.T, inputs []any) *ir.HttpRouteIR {
 	for !rtidx.HasSynced() || !refgrants.HasSynced() {
 		time.Sleep(time.Second / 10)
 	}
+	return rtidx
+}
 
+func getBackends(r ir.Route) []ir.Backend {
+	if r == nil {
+		return nil
+	}
+	switch r := r.(type) {
+	case *ir.HttpRouteIR:
+		var ret []ir.Backend
+		for _, r := range r.Rules[0].Backends {
+			ret = append(ret, *r.Backend)
+		}
+		return ret
+	case *ir.TcpRouteIR:
+		return r.Backends
+	}
+	panic("should not get here")
+}
+
+func translateRoute(t *testing.T, inputs []any) ir.Route {
+	rtidx := preRouteIndex(t, inputs)
+	tcpGk := schema.GroupKind{
+		Group: gwv1a2.GroupName,
+		Kind:  "TCPRoute",
+	}
+	if t := rtidx.Fetch(krt.TestingDummyContext{}, tcpGk, "default", "tcproute"); t != nil {
+		return t.Route
+	}
+
+	h := rtidx.FetchHttp(krt.TestingDummyContext{}, "default", "httproute")
+	if h == nil {
+		// do this nil check so we don't return a typed nil
+		return nil
+	}
+	return h
+}
+
+func translate(t *testing.T, inputs []any) *ir.HttpRouteIR {
+	rtidx := preRouteIndex(t, inputs)
 	return rtidx.FetchHttp(krt.TestingDummyContext{}, "default", "httproute")
 }
