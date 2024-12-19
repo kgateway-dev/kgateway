@@ -546,6 +546,7 @@ func (h *RoutesIndex) getExtensionRefs(kctx krt.HandlerContext, ns string, r []g
 		Policies: map[schema.GroupKind][]ir.PolicyAtt{},
 	}
 	for _, ext := range r {
+		// TODO: propagate error if we can't find the extension
 		gk, policy := h.resolveExtension(kctx, ns, ext)
 		if policy != nil {
 			ret.Policies[gk] = append(ret.Policies[gk], ir.PolicyAtt{PolicyIr: policy /*direct attachment - no target ref*/})

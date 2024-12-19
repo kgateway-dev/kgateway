@@ -167,6 +167,7 @@ func translateGatewayHTTPRouteRule(
 		// Add the delegatee output routes to the final output list
 		*outputs = append(*outputs, delegatedRoutes...)
 
+		// TODO: this is not true; plugins can add actions later.
 		// It is possible for a parent route to not produce an output route action
 		// if it only delegates and does not directly route to a backend.
 		// We should only set a direct response action when there is no output action
@@ -188,9 +189,11 @@ func translateGatewayHTTPRouteRule(
 		// So this conditional ensures that we do not create a top level route matcher
 		// for the parent route when it delegates to a child route.
 
-		if len(outputRoute.Backends) > 0 {
-			routes = append(routes, outputRoute)
-		}
+		// TODO: need to be sure we can remove this if, and that we handle it later. routes with now backends might still have extensions
+		// on them that make them useful, but we processes these later
+		// if len(outputRoute.Backends) > 0 {
+		routes = append(routes, outputRoute)
+		// }
 	}
 	return routes
 }

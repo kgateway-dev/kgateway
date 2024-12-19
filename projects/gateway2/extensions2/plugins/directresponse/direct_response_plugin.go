@@ -15,9 +15,14 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/common"
 	extensionplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
+	"github.com/solo-io/gloo/projects/gateway2/pkg/client/clientset/versioned"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
+	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
 )
 
 type directResponse struct {
@@ -41,14 +46,25 @@ func (d *directResponse) Equals(in any) bool {
 type directResponseGwPass struct {
 }
 
+func registerTypes(ourCli versioned.Interface) {
+	skubeclient.Register[*v1alpha1.DirectResponse](
+		v1alpha1.DirectResponseGVK.GroupVersion().WithResource("directresponses"),
+		v1alpha1.DirectResponseGVK,
+		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return ourCli.GatewayV1alpha1().DirectResponses(namespace).List(context.Background(), o)
+		},
+		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return ourCli.GatewayV1alpha1().DirectResponses(namespace).Watch(context.Background(), o)
+		},
+	)
+}
+
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionplug.Plugin {
 
-	col := krtutil.SetupCollectionDynamic[v1alpha1.DirectResponse](
-		ctx,
-		commoncol.Client,
-		v1alpha1.SchemeGroupVersion.WithResource("directresponses"),
-		commoncol.KrtOpts.ToOptions("DirectResponse")...,
-	)
+	registerTypes(commoncol.OurClient)
+
+	col := krt.WrapClient(kclient.New[*v1alpha1.DirectResponse](commoncol.Client), commoncol.KrtOpts.ToOptions("DirectResponse")...)
+
 	gk := v1alpha1.DirectResponseGVK.GroupKind()
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.DirectResponse) *ir.PolicyWrapper {
 		var pol = &ir.PolicyWrapper{

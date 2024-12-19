@@ -43,9 +43,10 @@ func (empty) Equals(in any) bool {
 }
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
+	// TODO: if plumb settings from gw class; then they should be in the new translation pass
 	p := plugin{
-		enabledIstioIntegration: true,
-		enabledAutoMTLS:         true,
+		enabledIstioIntegration: false,
+		enabledAutoMTLS:         false,
 	}
 	return extensionsplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
@@ -74,6 +75,8 @@ func isDisabledForUpstream(upstream ir.Upstream) bool {
 }
 
 // we don't have a good way of know if we have ssl on the upstream, so check cluster instead
+// this could be a problem if the policy that adds ssl runs after this one.
+// so we need to think about how's best to handle this.
 func doesClusterHaveSslConfigPresent(out *envoy_config_cluster_v3.Cluster) bool {
 	// TODO: implement this
 	return false

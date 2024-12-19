@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"reflect"
+	"strings"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -132,10 +134,13 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 				// we don't use gateways in the fake client, creating a static collection instead
 				gateways = append(gateways, obj)
 
-			case *v1alpha1.Upstream:
-				ourObjs = append(ourObjs, obj)
 			default:
-				anyObjs = append(anyObjs, objs[i])
+				apiversion := reflect.ValueOf(obj).Elem().FieldByName("TypeMeta").FieldByName("APIVersion").String()
+				if strings.Contains(apiversion, v1alpha1.GroupName) {
+					ourObjs = append(ourObjs, obj)
+				} else {
+					anyObjs = append(anyObjs, objs[i])
+				}
 			}
 		}
 	}
