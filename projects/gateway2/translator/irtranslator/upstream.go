@@ -45,6 +45,11 @@ func (t *UpstreamTranslator) TranslateUpstream(kctx krt.HandlerContext, ucc ir.U
 
 func (t *UpstreamTranslator) runPlugins(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, u ir.Upstream, out *envoy_config_cluster_v3.Cluster) {
 	for gk, polImpl := range t.ContributedPolicies {
+		// TODO: in theory it would be nice to do `ProcessUpstream` once, and only do
+		// the the per-client processing for each client.
+		// that would require refactoring and thinking about the proper IR, so we'll punt on that for
+		// now, until we have more upstream plugin examples to properly understand what it should look
+		// like.
 		if polImpl.PerClientProcessUpstream != nil {
 			polImpl.PerClientProcessUpstream(kctx, ctx, ucc, u, out)
 		}
