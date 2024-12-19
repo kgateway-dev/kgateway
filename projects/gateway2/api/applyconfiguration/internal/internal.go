@@ -247,6 +247,10 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: compress
       type:
         scalar: boolean
+    - name: targetRef
+      type:
+        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.LocalPolicyTargetReference
+      default: {}
 - name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.Image
   map:
     fields:

@@ -55,6 +55,7 @@ spec:
                 - name
                 type: object
               timeout:
+                minimum: 1
                 type: integer
             type: object
           status:

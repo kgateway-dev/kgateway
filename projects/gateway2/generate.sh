@@ -32,8 +32,8 @@ API_INPUT_DIRS_COMMA="${API_INPUT_DIRS_COMMA%,}" # drop trailing comma
 
 
 go run k8s.io/code-generator/cmd/register-gen --output-file zz_generated.register.go ${API_INPUT_DIRS_SPACE}
-go run sigs.k8s.io/controller-tools/cmd/controller-gen crd:maxDescLen=0 object paths="${APIS_PKG}/api/${VERSION}" \
-    output:crd:artifacts:config=${SCRIPT_ROOT}/../../install/helm/gloo/crds/
+go run sigs.k8s.io/controller-tools/cmd/controller-gen crd:maxDescLen=0 object rbac:roleName=k8sgw-controller paths="${APIS_PKG}/api/${VERSION}" \
+    output:crd:artifacts:config=${SCRIPT_ROOT}/../../install/helm/gloo/crds/ output:rbac:artifacts:config=${SCRIPT_ROOT}/../../install/helm/gloo/files/rbac
 
 
 # throw away

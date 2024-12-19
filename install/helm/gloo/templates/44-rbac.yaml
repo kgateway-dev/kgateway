@@ -1,4 +1,6 @@
 {{- if .Values.kubeGateway.enabled -}}
+{{.Files.Get "files/rbac/role.yaml"}}
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:

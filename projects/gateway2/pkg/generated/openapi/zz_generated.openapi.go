@@ -1078,6 +1078,12 @@ func schema_projects_gateway2_api_v1alpha1_HttpListenerPolicySpec(ref common.Ref
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
+					"targetRef": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.LocalPolicyTargetReference"),
+						},
+					},
 					"compress": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"boolean"},
@@ -1087,6 +1093,8 @@ func schema_projects_gateway2_api_v1alpha1_HttpListenerPolicySpec(ref common.Ref
 				},
 			},
 		},
+		Dependencies: []string{
+			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.LocalPolicyTargetReference"},
 	}
 }
 

@@ -4,6 +4,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// +kubebuilder:rbac:groups=gateway.gloo.solo.io,resources=directresponses,verbs=get;list;watch
+// +kubebuilder:rbac:groups=gateway.gloo.solo.io,resources=directresponses/status,verbs=get;update;patch
+
 // DirectResponse contains configuration for defining direct response routes.
 //
 // +genclient

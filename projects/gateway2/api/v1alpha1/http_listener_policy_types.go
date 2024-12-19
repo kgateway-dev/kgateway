@@ -4,6 +4,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// +kubebuilder:rbac:groups=gateway.gloo.solo.io,resources=httplistenerpolicies,verbs=get;list;watch
+// +kubebuilder:rbac:groups=gateway.gloo.solo.io,resources=httplistenerpolicies/status,verbs=get;update;patch
+
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:metadata:labels={app=gateway,app.kubernetes.io/name=gateway}

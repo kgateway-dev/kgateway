@@ -1,0 +1,32 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: k8sgw-controller
+rules:
+- apiGroups:
+  - gateway.gloo.solo.io
+  resources:
+  - directresponses
+  - gatewayparameters
+  - httplistenerpolicies
+  - listenerpolicies
+  - routepolicies
+  - upstreams
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - gateway.gloo.solo.io
+  resources:
+  - directresponses/status
+  - gatewayparameters/status
+  - httplistenerpolicies/status
+  - listenerpolicies/status
+  - routepolicies/status
+  - upstreams/status
+  verbs:
+  - get
+  - patch
+  - update
