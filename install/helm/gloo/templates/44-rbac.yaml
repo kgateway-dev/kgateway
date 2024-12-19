@@ -1,5 +1,11 @@
 {{- if .Values.kubeGateway.enabled -}}
-{{.Files.Get "files/rbac/role.yaml"}}
+{{- $labels := include "gloo-gateway.constLabels" . | fromYaml }}
+{{- $labels = merge $labels (include "gloo-gateway.labels" . | fromYaml) }}
+{{- $data := fromYaml (.Files.Get "files/rbac/role.yaml") -}}
+{{- $newName := printf "%s.%s" $data.metadata.name  .Release.Namespace -}}
+{{- $data = mergeOverwrite $data (dict "metadata" (dict "name" $newName)) -}}
+{{- $data = mergeOverwrite $data (dict "metadata" (dict "labels" $labels)) -}}
+{{ toYaml $data }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -131,6 +137,6 @@ subjects:
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
-  name: k8sgw-controller # todo: template this name with the release namespace
+  name: k8sgw-controller.{{.Release.Namespace}}
   apiGroup: rbac.authorization.k8s.io
 {{- end }}
