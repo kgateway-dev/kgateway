@@ -2,7 +2,6 @@ package setup
 
 import (
 	errors "github.com/rotisserie/eris"
-	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
@@ -32,10 +31,6 @@ type Extensions struct {
 	// ApiEmitterChannel is a channel that forces the API Emitter to emit a new API Snapshot
 	ApiEmitterChannel chan struct{}
 
-	// K8sGatewayExtensionsFactory is the factory function which will return an extensions.K8sGatewayExtensions
-	// This is responsible for producing the extension points that the K8s Gateway integration requires
-	K8sGatewayExtensionsFactory *extensionsplug.Plugin
-
 	// SnapshotHistoryFactory is the factory function which will produce a History object
 	// This history object is used by the ControlPlane to track internal state
 	SnapshotHistoryFactory iosnapshot.HistoryFactory
@@ -43,9 +38,7 @@ type Extensions struct {
 
 // Validate returns an error if the Extensions are invalid, nil otherwise
 func (e Extensions) Validate() error {
-	if e.K8sGatewayExtensionsFactory == nil {
-		return ErrNilExtension("K8sGatewayExtensionsFactory")
-	}
+
 	if e.SnapshotHistoryFactory == nil {
 		return ErrNilExtension("SnapshotHistoryFactory")
 	}
