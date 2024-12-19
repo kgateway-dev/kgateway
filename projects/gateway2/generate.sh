@@ -69,3 +69,6 @@ go run k8s.io/code-generator/cmd/client-gen \
   --output-pkg "${OUTPUT_PKG}/${CLIENTSET_PKG_NAME}" \
   --apply-configuration-package "${APIS_PKG}/api/applyconfiguration" \
   ${COMMON_FLAGS}
+
+# fix imports of gen code
+go run golang.org/x/tools/cmd/goimports -w ${SCRIPT_ROOT}/api/v1alpha1
