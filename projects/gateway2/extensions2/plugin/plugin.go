@@ -42,7 +42,7 @@ type PolicyPlugin struct {
 	PerClientProcessEndpoints EndpointPlugin
 
 	Policies       krt.Collection[ir.PolicyWrapper]
-	GlobalPolicies func(AttachmentPoints) ir.PolicyIR
+	GlobalPolicies func(krt.HandlerContext, AttachmentPoints) ir.PolicyIR
 	PoliciesFetch  func(n, ns string) ir.PolicyIR
 }
 
@@ -68,6 +68,8 @@ type Plugin struct {
 	ContributesPolicies
 	ContributesUpstreams    map[schema.GroupKind]UpstreamPlugin
 	ContributesGwTranslator GwTranslatorFactory
+	// extra has sync beyong primary resources in the collections above
+	ExtraHasSynced func() bool
 }
 
 func (p PolicyPlugin) AttachmentPoints() AttachmentPoints {
@@ -94,6 +96,9 @@ func (p Plugin) HasSynced() bool {
 		if pol.Policies != nil && !pol.Policies.Synced().HasSynced() {
 			return false
 		}
+	}
+	if p.ExtraHasSynced != nil && !p.ExtraHasSynced() {
+		return false
 	}
 	return true
 }

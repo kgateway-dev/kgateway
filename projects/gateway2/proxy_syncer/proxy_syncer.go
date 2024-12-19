@@ -310,6 +310,7 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 		s.perclientSnapCollection.Synced().HasSynced,
 		s.mostXdsSnapshots.Synced().HasSynced,
 		s.extensions.HasSynced,
+		s.settings.AsCollection().Synced().HasSynced,
 		routes.HasSynced,
 	}
 	return nil

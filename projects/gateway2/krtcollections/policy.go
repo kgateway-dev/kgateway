@@ -188,7 +188,7 @@ func (k targetRefIndexKey) String() string {
 
 type globalPolicy struct {
 	schema.GroupKind
-	ir     func(extensionsplug.AttachmentPoints) ir.PolicyIR
+	ir     func(krt.HandlerContext, extensionsplug.AttachmentPoints) ir.PolicyIR
 	points extensionsplug.AttachmentPoints
 }
 type PolicyIndex struct {
@@ -250,7 +250,7 @@ func (p *PolicyIndex) getTargetingPolicies(kctx krt.HandlerContext, pnt extensio
 
 	for _, gp := range p.globalPolicies {
 		if gp.points.Has(pnt) {
-			if p := gp.ir(pnt); p != nil {
+			if p := gp.ir(kctx, pnt); p != nil {
 				ret = append(ret, ir.PolicyAtt{PolicyIr: p, GroupKind: gp.GroupKind})
 			}
 		}

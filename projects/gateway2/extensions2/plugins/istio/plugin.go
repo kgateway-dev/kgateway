@@ -8,6 +8,7 @@ import (
 
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"google.golang.org/protobuf/types/known/anypb"
+	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -15,6 +16,7 @@ import (
 	sockets_raw_buffer "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/raw_buffer/v3"
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/solo-io/gloo/pkg/utils/envutils"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/common"
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
@@ -30,41 +32,66 @@ var (
 	}
 )
 
-type empty struct {
+type IstioSettings struct {
+	EnableIstioIntegration      bool
+	EnableAutoMTLS              bool
+	EnableIstioSidecarOnGateway bool
+}
+
+func (i IstioSettings) ResourceName() string {
+	return "istio-settings"
 }
 
 // in case multiple policies attached to the same resouce, we sort by policy creation time.
-func (empty) CreationTime() time.Time {
+func (i IstioSettings) CreationTime() time.Time {
+	// settings always created at the same time
 	return time.Time{}
 }
 
-func (empty) Equals(in any) bool {
-	return true
+func (i IstioSettings) Equals(in any) bool {
+	s, ok := in.(IstioSettings)
+	if !ok {
+		return false
+	}
+	return i == s
 }
+
+var _ ir.PolicyIR = &IstioSettings{}
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
 	// TODO: if plumb settings from gw class; then they should be in the new translation pass
-	p := plugin{
-		enabledIstioIntegration: false,
-		enabledAutoMTLS:         false,
-	}
+	// the problem is that they get applied to an upstream, and currently we don't have access to the gateway
+	// when translating upstreams. if we want we can add the gateway to the context of PerClientProcessUpstream
+	p := plugin{}
+	sidecarEnabled := envutils.IsEnvTruthy(constants.IstioInjectionEnabled)
+	istiotSettings := krt.NewSingleton(func(ctx krt.HandlerContext) *IstioSettings {
+		settings := krt.FetchOne(ctx, commoncol.Settings.AsCollection())
+		return &IstioSettings{
+			EnableAutoMTLS:              settings.Spec.GetGloo().GetIstioOptions().GetEnableAutoMtls().GetValue(),
+			EnableIstioIntegration:      settings.Spec.GetGloo().GetIstioOptions().GetEnableIntegration().GetValue(),
+			EnableIstioSidecarOnGateway: sidecarEnabled,
+		}
+	}, commoncol.KrtOpts.ToOptions("istiotSettings")...)
+
 	return extensionsplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			VirtualIstioGK: {
 				Name:            "istio",
 				ProcessUpstream: p.processUpstream,
-				GlobalPolicies: func(attachmentPoints extensionsplug.AttachmentPoints) ir.PolicyIR {
-					return empty{}
+				GlobalPolicies: func(kctx krt.HandlerContext, attachmentPoints extensionsplug.AttachmentPoints) ir.PolicyIR {
+					settings := krt.FetchOne(kctx, istiotSettings.AsCollection())
+					if settings == nil {
+						return nil
+					}
+					return *settings
 				},
 			},
 		},
+		ExtraHasSynced: istiotSettings.AsCollection().Synced().HasSynced,
 	}
 }
 
 type plugin struct {
-	enabledIstioIntegration     bool
-	enabledAutoMTLS             bool
-	enableIstioSidecarOnGateway bool
 }
 
 func isDisabledForUpstream(upstream ir.Upstream) bool {
@@ -82,25 +109,30 @@ func doesClusterHaveSslConfigPresent(out *envoy_config_cluster_v3.Cluster) bool 
 	return false
 }
 
-func (p plugin) processUpstream(ctx context.Context, _ ir.PolicyIR, in ir.Upstream, out *envoy_config_cluster_v3.Cluster) {
+func (p plugin) processUpstream(ctx context.Context, settings ir.PolicyIR, in ir.Upstream, out *envoy_config_cluster_v3.Cluster) {
 	var socketmatches []*envoy_config_cluster_v3.Cluster_TransportSocketMatch
+
+	st, ok := settings.(IstioSettings)
+	if !ok {
+		return
+	}
 
 	// Istio automtls will only be applied when:
 	// 1) automtls is enabled on the settings
 	// 2) the upstream has not disabled auto mtls
 	// 3) the upstream has no sslConfig
 	//if p.settings.GetGloo().GetIstioOptions().GetEnableAutoMtls().GetValue() && !in.GetDisableIstioAutoMtls().GetValue() && sslConfig == nil {
-	if p.enabledAutoMTLS && !isDisabledForUpstream(in) && !doesClusterHaveSslConfigPresent(out) {
+	if st.EnableAutoMTLS && !isDisabledForUpstream(in) && !doesClusterHaveSslConfigPresent(out) {
 		// Istio automtls config is not applied if istio integration is disabled on the helm chart.
 		// When istio integration is disabled via istioSds.enabled=false, there is no sds or istio-proxy sidecar present
-		if !p.enabledIstioIntegration {
+		if !st.EnableIstioIntegration {
 			contextutils.LoggerFrom(ctx).Desugar().Error("Istio integration must be enabled to use auto mTLS. Enable integration with istioIntegration.enabled=true")
 		} else {
-			// Note: If enableIstioSidecarOnGateway is enabled, Istio automtls will not be able to generate the endpoint
+			// Note: If EnableIstioSidecarOnGateway is enabled, Istio automtls will not be able to generate the endpoint
 			// metadata from the Pod to match the transport socket match. We will still translate the transport socket match
-			// configuration. enableIstioSidecarOnGateway should be removed as part of: https://github.com/solo-io/solo-projects/issues/5743
-			if p.enableIstioSidecarOnGateway {
-				contextutils.LoggerFrom(ctx).Desugar().Warn("Istio sidecar injection (istioIntegration.enableIstioSidecarOnGateway) should be disabled for Istio automtls mode")
+			// configuration. EnableIstioSidecarOnGateway should be removed as part of: https://github.com/solo-io/solo-projects/issues/5743
+			if st.EnableIstioSidecarOnGateway {
+				contextutils.LoggerFrom(ctx).Desugar().Warn("Istio sidecar injection (istioIntegration.EnableIstioSidecarOnGateway) should be disabled for Istio automtls mode")
 			}
 
 			sni := buildSni(in)

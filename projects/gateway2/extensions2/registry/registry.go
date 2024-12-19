@@ -20,9 +20,6 @@ import (
 func mergedGw(funcs []extensionsplug.GwTranslatorFactory) extensionsplug.GwTranslatorFactory {
 	return func(gw *gwv1.Gateway) extensionsplug.K8sGwTranslator {
 		for _, f := range funcs {
-			if f == nil {
-				continue
-			}
 			ret := f(gw)
 			if ret != nil {
 				return ret
@@ -32,6 +29,16 @@ func mergedGw(funcs []extensionsplug.GwTranslatorFactory) extensionsplug.GwTrans
 	}
 
 }
+func mergeSynced(funcs []func() bool) func() bool {
+	return func() bool {
+		for _, f := range funcs {
+			if !f() {
+				return false
+			}
+		}
+		return true
+	}
+}
 
 func MergePlugins(plug ...extensionsplug.Plugin) extensionsplug.Plugin {
 	ret := extensionsplug.Plugin{
@@ -39,12 +46,19 @@ func MergePlugins(plug ...extensionsplug.Plugin) extensionsplug.Plugin {
 		ContributesUpstreams: make(map[schema.GroupKind]extensionsplug.UpstreamPlugin),
 	}
 	var funcs []extensionsplug.GwTranslatorFactory
+	var hasSynced []func() bool
 	for _, p := range plug {
 		maps.Copy(ret.ContributesPolicies, p.ContributesPolicies)
 		maps.Copy(ret.ContributesUpstreams, p.ContributesUpstreams)
-		funcs = append(funcs, p.ContributesGwTranslator)
+		if p.ContributesGwTranslator != nil {
+			funcs = append(funcs, p.ContributesGwTranslator)
+		}
+		if p.ExtraHasSynced != nil {
+			hasSynced = append(hasSynced, p.ExtraHasSynced)
+		}
 	}
 	ret.ContributesGwTranslator = mergedGw(funcs)
+	ret.ExtraHasSynced = mergeSynced(hasSynced)
 	return ret
 }
 
