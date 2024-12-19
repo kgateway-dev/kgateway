@@ -130,14 +130,14 @@ func translateGatewayHTTPRouteRule(
 		uniqueRouteName := gwroute.UniqueRouteName(ruleIdx, idx)
 
 		outputRoute := ir.HttpRouteRuleMatchIR{
-			ExtensionRefs:    rule.ExtensionRefs,
-			AttachedPolicies: rule.AttachedPolicies,
-			Parent:           parent,
-			ParentRef:        gwroute.ListenerParentRef,
-			Name:             uniqueRouteName,
-			Backends:         nil,
-			MatchIndex:       idx,
-			Match:            match,
+			ExtensionRefs:     rule.ExtensionRefs,
+			AttachedPolicies:  rule.AttachedPolicies,
+			Parent:            parent,
+			ListenerParentRef: gwroute.ListenerParentRef,
+			Name:              uniqueRouteName,
+			Backends:          nil,
+			MatchIndex:        idx,
+			Match:             match,
 		}
 
 		var delegatedRoutes []ir.HttpRouteRuleMatchIR
@@ -160,8 +160,8 @@ func translateGatewayHTTPRouteRule(
 
 		// If this parent route has delegatee routes, set the parent on it
 		// so that later when applying plugins we can access and apply policies from it
-		for _, child := range delegatedRoutes {
-			child.DelegateParent = &rule
+		for i := range delegatedRoutes {
+			delegatedRoutes[i].DelegateParent = &rule
 		}
 
 		// Add the delegatee output routes to the final output list
@@ -175,15 +175,10 @@ func translateGatewayHTTPRouteRule(
 		// otherwise result in a top level matcher with a direct response action for the
 		// path that the parent is delegating for.
 
-		if len(outputRoute.Backends) == 0 && !delegates {
-			/* i don't think we need this as round without backends will error regardless.
-			outputRoute.Action = &v1.Route_DirectResponseAction{
-				DirectResponseAction: &v1.DirectResponseAction{
-					Status: http.StatusInternalServerError,
-				},
-			}
-			*/
+		if delegates {
+			outputRoute.HasChildren = true
 		}
+
 		// A parent route that delegates to a child route should not have an output route
 		// action (outputRoute.Action) as the routes are derived from the child route.
 		// So this conditional ensures that we do not create a top level route matcher

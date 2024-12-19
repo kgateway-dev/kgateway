@@ -115,7 +115,7 @@ func (r *gatewayQueries) GetRouteChain(
 
 	switch typedRoute := route.(type) {
 	case *ir.HttpRouteIR:
-		children = r.getDelegatedChildren(kctx, ctx, typedRoute, nil)
+		children = r.getDelegatedChildren(kctx, ctx, parentRef, typedRoute, nil)
 	case *ir.TcpRouteIR:
 		// TODO (danehans): Should TCPRoute delegation support be added in the future?
 	default:
@@ -126,6 +126,7 @@ func (r *gatewayQueries) GetRouteChain(
 		Object:            route,
 		HostnameOverrides: hostnames,
 		ParentRef:         parentRef,
+		ListenerParentRef: parentRef,
 		Children:          children,
 	}
 }
@@ -190,6 +191,7 @@ func (r *gatewayQueries) allowedRoutes(gw *gwv1.Gateway, l *gwv1.Listener) (func
 func (r *gatewayQueries) getDelegatedChildren(
 	kctx krt.HandlerContext,
 	ctx context.Context,
+	listenerRef gwv1.ParentReference,
 	parent *ir.HttpRouteIR,
 	visited sets.Set[types.NamespacedName],
 ) BackendMap[[]*RouteInfo] {
@@ -238,7 +240,8 @@ func (r *gatewayQueries) getDelegatedChildren(
 						Namespace: ptr.To(gwv1.Namespace(parent.Namespace)),
 						Name:      gwv1.ObjectName(parent.Name),
 					},
-					Children: r.getDelegatedChildren(kctx, ctx, &childRoute, visited),
+					ListenerParentRef: listenerRef,
+					Children:          r.getDelegatedChildren(kctx, ctx, listenerRef, &childRoute, visited),
 				}
 				refChildren = append(refChildren, routeInfo)
 			}

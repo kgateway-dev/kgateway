@@ -49,6 +49,8 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 
 		if in.assertReports != nil {
 			in.assertReports(in.gwNN, result.ReportsMap)
+		} else {
+			Expect(AreReportsSuccess(in.gwNN, result.ReportsMap)).NotTo(HaveOccurred())
 		}
 	},
 	Entry(
@@ -301,7 +303,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 )
 
 var _ = DescribeTable("Route Delegation translator",
-	func(inputFile string) {
+	func(inputFile string, errdesc string) {
 		ctx := context.TODO()
 		dir := util.MustGetThisDir()
 
@@ -319,27 +321,32 @@ var _ = DescribeTable("Route Delegation translator",
 		Expect(ok).To(BeTrue())
 		outputProxyFile := filepath.Join(dir, "testutils/outputs/delegation", inputFile)
 		Expect(CompareProxy(outputProxyFile, result.Proxy)).To(BeEmpty())
+		if errdesc == "" {
+			Expect(AreReportsSuccess(gwNN, result.ReportsMap)).NotTo(HaveOccurred())
+		} else {
+			Expect(AreReportsSuccess(gwNN, result.ReportsMap)).To(MatchError(ContainSubstring(errdesc)))
+		}
 	},
-	Entry("Basic config", "basic.yaml"),
-	Entry("Child matches parent via parentRefs", "basic_parentref_match.yaml"),
-	Entry("Child doesn't match parent via parentRefs", "basic_parentref_mismatch.yaml"),
-	Entry("Parent delegates to multiple chidren", "multiple_children.yaml"),
-	Entry("Child is invalid as it is delegatee and specifies hostnames", "basic_invalid_hostname.yaml"),
-	Entry("Multi-level recursive delegation", "recursive.yaml"),
-	Entry("Cyclic child route", "cyclic1.yaml"),
-	Entry("Multi-level cyclic child route", "cyclic2.yaml"),
-	Entry("Child rule matcher", "child_rule_matcher.yaml"),
-	Entry("Child with multiple parents", "multiple_parents.yaml"),
-	Entry("Child can be an invalid delegatee but valid standalone", "invalid_child_valid_standalone.yaml"),
-	Entry("Relative paths", "relative_paths.yaml"),
-	Entry("Nested absolute and relative path inheritance", "nested_absolute_relative.yaml"),
-	XEntry("RouteOptions only on child", "route_options.yaml"),
-	XEntry("RouteOptions inheritance from parent", "route_options_inheritance.yaml"),
-	XEntry("RouteOptions ignore child override on conflict", "route_options_inheritance_child_override_ignore.yaml"),
-	XEntry("RouteOptions merge child override on no conflict", "route_options_inheritance_child_override_ok.yaml"),
-	XEntry("RouteOptions multi level inheritance with child override", "route_options_multi_level_inheritance_override_ok.yaml"),
-	XEntry("RouteOptions filter override merge", "route_options_filter_override_merge.yaml"),
-	Entry("Child route matcher does not match parent", "bug-6621.yaml"),
+	Entry("Basic config", "basic.yaml", ""),
+	Entry("Child matches parent via parentRefs", "basic_parentref_match.yaml", ""),
+	Entry("Child doesn't match parent via parentRefs", "basic_parentref_mismatch.yaml", ""),
+	Entry("Parent delegates to multiple chidren", "multiple_children.yaml", ""),
+	Entry("Child is invalid as it is delegatee and specifies hostnames", "basic_invalid_hostname.yaml", "spec.hostnames must be unset on a delegatee route as they are inherited from the parent route"),
+	Entry("Multi-level recursive delegation", "recursive.yaml", ""),
+	Entry("Cyclic child route", "cyclic1.yaml", "cyclic reference detected while evaluating delegated routes"),
+	Entry("Multi-level cyclic child route", "cyclic2.yaml", "cyclic reference detected while evaluating delegated routes"),
+	Entry("Child rule matcher", "child_rule_matcher.yaml", ""),
+	Entry("Child with multiple parents", "multiple_parents.yaml", ""),
+	Entry("Child can be an invalid delegatee but valid standalone", "invalid_child_valid_standalone.yaml", "spec.hostnames must be unset on a delegatee route as they are inherited from the parent route"),
+	Entry("Relative paths", "relative_paths.yaml", ""),
+	Entry("Nested absolute and relative path inheritance", "nested_absolute_relative.yaml", ""),
+	XEntry("RouteOptions only on child", "route_options.yaml", ""),
+	XEntry("RouteOptions inheritance from parent", "route_options_inheritance.yaml", ""),
+	XEntry("RouteOptions ignore child override on conflict", "route_options_inheritance_child_override_ignore.yaml", ""),
+	XEntry("RouteOptions merge child override on no conflict", "route_options_inheritance_child_override_ok.yaml", ""),
+	XEntry("RouteOptions multi level inheritance with child override", "route_options_multi_level_inheritance_override_ok.yaml", ""),
+	XEntry("RouteOptions filter override merge", "route_options_filter_override_merge.yaml", ""),
+	Entry("Child route matcher does not match parent", "bug-6621.yaml", ""),
 	// https://github.com/k8sgateway/k8sgateway/issues/10379
-	Entry("Multi-level multiple parents delegation", "bug-10379.yaml"),
+	Entry("Multi-level multiple parents delegation", "bug-10379.yaml", ""),
 )

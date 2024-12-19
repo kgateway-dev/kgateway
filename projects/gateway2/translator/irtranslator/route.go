@@ -68,7 +68,8 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 
 	var envoyRoutes []*envoy_config_route_v3.Route
 	for i, route := range virtualHost.Rules {
-		routeReport := h.reporter.Route(route.Parent.SourceObject).ParentRef(&route.ParentRef)
+		// TODO: not sure if we need listener parent ref here or the http parent ref
+		routeReport := h.reporter.Route(route.Parent.SourceObject).ParentRef(&route.ListenerParentRef)
 		generatedName := fmt.Sprintf("%s-route-%d", virtualHost.Name, i)
 		computedRoute := h.envoyRoutes(ctx, virtualHost, routeReport, route, generatedName)
 		if computedRoute != nil {
@@ -130,6 +131,15 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	if err == nil {
 		err = validateEnvoyRoute(out)
 	}
+
+	if err == nil && out.GetAction() == nil {
+		if in.HasChildren {
+			return nil
+		} else {
+			err = errors.New("no action specified")
+		}
+	}
+
 	if err != nil {
 		contextutils.LoggerFrom(ctx).Desugar().Debug("invalid route", zap.Error(err))
 		// TODO: we may want to aggregate all these errors per http route object and report one message?
@@ -140,7 +150,16 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 			// The message for this condition MUST start with the prefix "Dropped Rule"
 			Message: fmt.Sprintf("Dropped Rule: %v", err),
 		})
+		//  TODO: we currently drop the route which is not good;
+		//    we should implement route replacement.
+		// out.Reset()
+		// out.Action = &envoy_config_route_v3.Route_DirectResponse{
+		// 	DirectResponse: &envoy_config_route_v3.DirectResponseAction{
+		// 		Status: http.StatusInternalServerError,
+		// 	},
+		// }
 		out = nil
+
 	}
 
 	return out
@@ -319,24 +338,9 @@ func validateEnvoyRoute(r *envoy_config_route_v3.Route) error {
 	validatePath(re.GetSchemeRedirect(), &errs)
 	validatePrefixRewrite(route.GetPrefixRewrite(), &errs)
 	validatePrefixRewrite(re.GetPrefixRewrite(), &errs)
-
-	// if the only error is that we have no action, we don't need to drop the route,
-
-	if len(errs) == 0 {
-		if r.GetAction() == nil {
-			// TODO: maybe? report error
-			// r.Action = &envoy_config_route_v3.Route_DirectResponse{
-			// 	DirectResponse: &envoy_config_route_v3.DirectResponseAction{
-			// 		Status: http.StatusInternalServerError,
-			// 	},
-			// }
-			errs = append(errs, errors.New("no action specified"))
-		}
-	}
 	if len(errs) == 0 {
 		return nil
 	}
-
 	return fmt.Errorf("error %s: %w", r.Name, errors.Join(errs...))
 }
 
