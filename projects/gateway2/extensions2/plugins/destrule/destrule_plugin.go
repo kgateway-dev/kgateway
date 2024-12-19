@@ -111,7 +111,7 @@ func (d *destrulePlugin) processUpstream(kctx krt.HandlerContext, ctx context.Co
 			}
 			minHealthPercent := outlier.GetMinHealthPercent()
 			if minHealthPercent >= 0 {
-				if outCluster.CommonLbConfig == nil {
+				if outCluster.GetCommonLbConfig() == nil {
 					outCluster.CommonLbConfig = &envoy_config_cluster_v3.Cluster_CommonLbConfig{}
 				}
 				outCluster.GetCommonLbConfig().HealthyPanicThreshold = &envoy_type_v3.Percent{Value: float64(minHealthPercent)}

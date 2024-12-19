@@ -138,14 +138,14 @@ func (i *UpstreamIndex) getUpstreamFromRef(kctx krt.HandlerContext, localns stri
 	return i.getUpstream(kctx, resolved.GetGroupKind(), types.NamespacedName{Namespace: resolved.Namespace, Name: resolved.Name}, ref.Port)
 }
 
-type GatweayIndex struct {
+type GatewayIndex struct {
 	policies *PolicyIndex
 	gwClass  krt.Collection[gwv1.GatewayClass]
 	Gateways krt.Collection[ir.Gateway]
 }
 
-func NewGatweayIndex(krtopts krtutil.KrtOptions, isOurGw func(gw *gwv1.Gateway) bool, policies *PolicyIndex, gws krt.Collection[*gwv1.Gateway]) *GatweayIndex {
-	h := &GatweayIndex{policies: policies}
+func NewGatewayIndex(krtopts krtutil.KrtOptions, isOurGw func(gw *gwv1.Gateway) bool, policies *PolicyIndex, gws krt.Collection[*gwv1.Gateway]) *GatewayIndex {
+	h := &GatewayIndex{policies: policies}
 	h.Gateways = krt.NewCollection(gws, func(kctx krt.HandlerContext, i *gwv1.Gateway) *ir.Gateway {
 		if !isOurGw(i) {
 			return nil

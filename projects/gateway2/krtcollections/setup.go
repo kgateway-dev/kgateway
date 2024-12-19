@@ -20,7 +20,7 @@ func InitCollectionsWithGateways(ctx context.Context,
 	httpRoutes krt.Collection[*gwv1.HTTPRoute],
 	tcproutes krt.Collection[*gwv1a2.TCPRoute],
 	refgrants *RefGrantIndex,
-	extensions extensionsplug.Plugin, krtopts krtutil.KrtOptions) (*GatweayIndex, *RoutesIndex, krt.Collection[ir.Upstream], krt.Collection[ir.EndpointsForUpstream]) {
+	extensions extensionsplug.Plugin, krtopts krtutil.KrtOptions) (*GatewayIndex, *RoutesIndex, krt.Collection[ir.Upstream], krt.Collection[ir.EndpointsForUpstream]) {
 
 	policies := NewPolicyIndex(krtopts, extensions.ContributesPolicies)
 
@@ -34,7 +34,7 @@ func InitCollectionsWithGateways(ctx context.Context,
 	upstreamIndex := NewUpstreamIndex(krtopts, backendRefPlugins, policies)
 	finalUpstreams, endpointIRs := initUpstreams(ctx, extensions, upstreamIndex, krtopts)
 
-	kubeGateways := NewGatweayIndex(krtopts, isOurGw, policies, kubeRawGateways)
+	kubeGateways := NewGatewayIndex(krtopts, isOurGw, policies, kubeRawGateways)
 
 	routes := NewRoutesIndex(krtopts, httpRoutes, tcproutes, policies, upstreamIndex, refgrants)
 	return kubeGateways, routes, finalUpstreams, endpointIRs
@@ -45,7 +45,7 @@ func InitCollections(ctx context.Context,
 	istioClient kube.Client,
 	isOurGw func(gw *gwv1.Gateway) bool,
 	refgrants *RefGrantIndex,
-	krtopts krtutil.KrtOptions) (*GatweayIndex, *RoutesIndex, krt.Collection[ir.Upstream], krt.Collection[ir.EndpointsForUpstream]) {
+	krtopts krtutil.KrtOptions) (*GatewayIndex, *RoutesIndex, krt.Collection[ir.Upstream], krt.Collection[ir.EndpointsForUpstream]) {
 
 	kubeRawGateways := krtutil.SetupCollectionDynamic[gwv1.Gateway](
 		ctx,

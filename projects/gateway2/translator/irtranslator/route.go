@@ -120,7 +120,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	generatedName string,
 ) *envoy_config_route_v3.Route {
 
-	out := h.initRoutes(virtualHost, in, routeReport, generatedName)
+	out := h.initRoutes(in, generatedName)
 
 	if len(in.Backends) > 0 {
 		out.Action = h.translateRouteAction(in, out)
@@ -342,14 +342,12 @@ func validateEnvoyRoute(r *envoy_config_route_v3.Route) error {
 	if len(errs) == 0 {
 		return nil
 	}
-	return fmt.Errorf("error %s: %w", r.Name, errors.Join(errs...))
+	return fmt.Errorf("error %s: %w", r.GetName(), errors.Join(errs...))
 }
 
 // creates Envoy routes for each matcher provided on our Gateway route
 func (h *httpRouteConfigurationTranslator) initRoutes(
-	virtualHost *ir.VirtualHost,
 	in ir.HttpRouteRuleMatchIR,
-	routeReport reports.ParentRefReporter,
 	generatedName string,
 ) *envoy_config_route_v3.Route {
 
