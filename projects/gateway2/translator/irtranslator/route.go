@@ -312,7 +312,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 			if outRoute.GetTypedPerFilterConfig() == nil {
 				outRoute.TypedPerFilterConfig = clusters[0].GetTypedPerFilterConfig()
 			} else {
-				maps.Copy(outRoute.TypedPerFilterConfig, clusters[0].GetTypedPerFilterConfig())
+				maps.Copy(outRoute.GetTypedPerFilterConfig(), clusters[0].GetTypedPerFilterConfig())
 			}
 		}
 

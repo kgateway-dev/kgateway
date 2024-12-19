@@ -77,10 +77,10 @@ func (d *destrulePlugin) processUpstream(kctx krt.HandlerContext, ctx context.Co
 		if outlier := trafficPolicy.GetOutlierDetection(); outlier != nil {
 
 			if getLocalityLbSetting(trafficPolicy) != nil {
-				if outCluster.CommonLbConfig == nil {
+				if outCluster.GetCommonLbConfig() == nil {
 					outCluster.CommonLbConfig = &envoy_config_cluster_v3.Cluster_CommonLbConfig{}
 				}
-				outCluster.CommonLbConfig.LocalityConfigSpecifier = &envoy_config_cluster_v3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
+				outCluster.GetCommonLbConfig().LocalityConfigSpecifier = &envoy_config_cluster_v3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
 					LocalityWeightedLbConfig: &envoy_config_cluster_v3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
 				}
 			}
@@ -114,7 +114,7 @@ func (d *destrulePlugin) processUpstream(kctx krt.HandlerContext, ctx context.Co
 				if outCluster.CommonLbConfig == nil {
 					outCluster.CommonLbConfig = &envoy_config_cluster_v3.Cluster_CommonLbConfig{}
 				}
-				outCluster.CommonLbConfig.HealthyPanicThreshold = &envoy_type_v3.Percent{Value: float64(minHealthPercent)}
+				outCluster.GetCommonLbConfig().HealthyPanicThreshold = &envoy_type_v3.Percent{Value: float64(minHealthPercent)}
 			}
 
 			outCluster.OutlierDetection = out

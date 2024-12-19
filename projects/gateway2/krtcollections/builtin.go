@@ -108,8 +108,8 @@ func convertHeaderModifier(kctx krt.HandlerContext, f *gwv1.HTTPHeaderFilter) fu
 	toremove := f.Remove
 
 	return func(outputRoute *envoy_config_route_v3.Route) error {
-		outputRoute.RequestHeadersToAdd = append(outputRoute.RequestHeadersToAdd, headersToAddd...)
-		outputRoute.RequestHeadersToRemove = append(outputRoute.RequestHeadersToRemove, toremove...)
+		outputRoute.RequestHeadersToAdd = append(outputRoute.GetRequestHeadersToAdd(), headersToAddd...)
+		outputRoute.RequestHeadersToRemove = append(outputRoute.GetRequestHeadersToRemove(), toremove...)
 		return nil
 	}
 }
@@ -140,7 +140,7 @@ func convertMirror(kctx krt.HandlerContext, f *gwv1.HTTPRequestMirrorFilter, fro
 			// TODO: report error
 			return nil
 		}
-		route.RequestMirrorPolicies = append(route.RequestMirrorPolicies, mirror)
+		route.RequestMirrorPolicies = append(route.GetRequestMirrorPolicies(), mirror)
 		return nil
 	}
 }

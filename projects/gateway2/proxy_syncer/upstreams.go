@@ -65,7 +65,7 @@ func NewPerClientEnvoyClusters(
 			uccWithClusterRet = append(uccWithClusterRet, uccWithCluster{
 				Client:         ucc,
 				Cluster:        resource.NewEnvoyResource(c),
-				Name:           c.Name,
+				Name:           c.GetName(),
 				Error:          err,
 				ClusterVersion: ggv2utils.HashProto(c),
 			})
