@@ -1,10 +1,10 @@
 <h1 align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="/docs/content/img/k8sgateway/logo-dark.svg" alt="K8sGateway" width="800">
-    <source media="(prefers-color-scheme: light)" srcset="/docs/content/img/k8sgateway/logo.svg" alt="K8sGateway" width="800">
-    <img alt="K8sGateway" src="/docs/content/img/k8sgateway/logo.svg">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/content/img/k8sgateway/logo-dark.svg" alt="K8sGateway" width="800">
+    <source media="(prefers-color-scheme: light)" srcset="docs/content/img/k8sgateway/logo.svg" alt="K8sGateway" width="800">
+    <img alt="K8sGateway" src="docs/content/img/k8sgateway/logo.svg">
   </picture>
-  <br> 
+  <br>
   An Envoy-Powered Kubernetes-Native API Gateway
 </h1>
 
@@ -13,14 +13,14 @@
 Please see [the plan](https://github.com/k8sgateway/k8sgateway/issues/10363) for more information and current status.
 
 ## About K8sGateway
-K8sGateway is a feature-rich, fast, and flexible Kubernetes-native ingress controller and next-generation API gateway that is built on top of [Envoy proxy](https://www.envoyproxy.io) and the Kubernetes Gateway API. It excels in function-level routing, supports legacy apps, microservices and serverless, offers robust discovery capabilities, integrates seamlessly with open-source projects, and is designed to support hybrid applications with various technologies, architectures, protocols, and clouds. 
+K8sGateway is a feature-rich, fast, and flexible Kubernetes-native ingress controller and next-generation API gateway that is built on top of [Envoy proxy](https://www.envoyproxy.io) and the Kubernetes Gateway API. It excels in function-level routing, supports legacy apps, microservices and serverless, offers robust discovery capabilities, integrates seamlessly with open-source projects, and is designed to support hybrid applications with various technologies, architectures, protocols, and clouds.
 
 [**Installation**](https://k8sgateway.io/docs/quickstart/) &nbsp; |
 &nbsp; [**Documentation**](https://k8sgateway.io/docs) &nbsp; |
 &nbsp; [**Blog**](https://k8sgateway.io/docs/) &nbsp; |
 &nbsp; [**Slack**](https://cloud-native.slack.com/archives/C080D3PJMS4) &nbsp; |
 
-<BR><center><img src="/docs/content/img/k8sgateway/component-architecture.svg" alt="K8sGateway Architecture" width="700"></center>
+<BR><center><img align="center" src="docs/content/img/k8sgateway/component-architecture.svg" alt="K8sGateway Architecture" width="700"></center>
 
 ### Using K8sGateway
 - **Kubernetes Gateway API**: K8sGateway is a feature-rich ingress controller, built on top of the Envoy Proxy and fully conformant with the Kubernetes Gateway API.
@@ -28,8 +28,7 @@ K8sGateway is a feature-rich, fast, and flexible Kubernetes-native ingress contr
 - **Hybrid apps**: K8sGateway creates applications that route to backends implemented as microservices, serverless functions and legacy apps. This feature can help users to
   * Gradually migrate from their legacy code to microservices and serverless.
   * Add new functionalities using cloud-native technologies while maintaining their legacy codebase.
-  * Allow different teams in an organization choose different architectures. 
-
+  * Allow different teams in an organization choose different architectures.
 
 <!---
 PLEASE DO NOT RENAME THIS SECTION
@@ -50,7 +49,6 @@ The [devel](devel) folder should be the starting point for understanding the cod
 
 ## Thanks
 **K8sGateway** would not be possible without the valuable open-source work of projects in the community. We would like to extend a special thank-you to [Envoy](https://www.envoyproxy.io).
-
 
 ## Security
 *Reporting security issues* : We take K8sGateway's security very seriously. If you've found a security issue or a potential security issue in K8sGateway, please DO NOT file a public Github issue, instead follow the directions laid out in the [k8sgateway/community respository](https://github.com/k8sgateway/community/blob/main/CVE.md).
