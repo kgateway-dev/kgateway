@@ -649,7 +649,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 
 	return &ir.HttpFilterChainIR{
 		FilterChainCommon: ir.FilterChainCommon{
-			FilterChainName: string(listener.Name),
+			FilterChainName: string(parentName),
 			Matcher:         matcher,
 			TLS:             sslConfig,
 		},

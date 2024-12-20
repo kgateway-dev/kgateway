@@ -267,19 +267,11 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 	for _, backend := range in.Backends {
 		clusterName := backend.Backend.ClusterName
 
-		var weight *wrapperspb.UInt32Value
-		if backend.Backend.Weight != 0 {
-			weight = wrapperspb.UInt32(backend.Backend.Weight)
-		} else {
-			// according to spec, default weight is 1
-			weight = wrapperspb.UInt32(1)
-		}
-
 		// get backend for ref - we must do it to make sure we have permissions to access it.
 		// also we need the service so we can translate its name correctly.
 		cw := &envoy_config_route_v3.WeightedCluster_ClusterWeight{
 			Name:   clusterName,
-			Weight: weight,
+			Weight: wrapperspb.UInt32(backend.Backend.Weight),
 		}
 		pCtx := ir.RouteBackendContext{
 			FilterChainName:  h.fc.FilterChainName,
@@ -294,6 +286,8 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 		)
 		clusters = append(clusters, cw)
 	}
+
+	// TODO: i think envoy nacks if all weights are 0, we should error on that.
 
 	action := &envoy_config_route_v3.RouteAction{
 		ClusterNotFoundResponseCode: envoy_config_route_v3.RouteAction_INTERNAL_SERVER_ERROR,

@@ -125,22 +125,27 @@ func convertURLRewrite(kctx krt.HandlerContext, config *gwv1.HTTPURLRewriteFilte
 		if hostrewrite != nil {
 			outputRoute.GetRoute().HostRewriteSpecifier = hostrewrite
 		}
-		if prefixReplace != "" {
+		if fullReplace != "" {
 			outputRoute.GetRoute().RegexRewrite = &envoy_type_matcher_v3.RegexMatchAndSubstitute{
 				Pattern: &envoy_type_matcher_v3.RegexMatcher{
 					EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{}},
 					Regex:      ".*",
 				},
-				Substitution: prefixReplace,
+				Substitution: fullReplace,
 			}
 		}
 
-		if fullReplace != "" {
+		if prefixReplace != "" {
+			// TODO: not idealy way to get the path from the input route.
+			// see if we can plumb the input route into the context
 			path := outputRoute.GetMatch().GetPrefix()
 			if path == "" {
 				path = outputRoute.GetMatch().GetPath()
 			}
-			if path != "" && fullReplace == "/" {
+			if path == "" {
+				path = outputRoute.GetMatch().GetPathSeparatedPrefix()
+			}
+			if path != "" && prefixReplace == "/" {
 				outputRoute.GetRoute().RegexRewrite = &envoy_type_matcher_v3.RegexMatchAndSubstitute{
 					Pattern: &envoy_type_matcher_v3.RegexMatcher{
 						EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{}},
@@ -149,7 +154,7 @@ func convertURLRewrite(kctx krt.HandlerContext, config *gwv1.HTTPURLRewriteFilte
 					Substitution: "/",
 				}
 			} else {
-				outputRoute.GetRoute().PrefixRewrite = fullReplace
+				outputRoute.GetRoute().PrefixRewrite = prefixReplace
 			}
 		}
 		return nil
@@ -265,7 +270,7 @@ func convertHeaderModifier(kctx krt.HandlerContext, f *gwv1.HTTPHeaderFilter) fu
 				Key:   string(h.Name),
 				Value: h.Value,
 			},
-			AppendAction: envoy_config_core_v3.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD,
+			AppendAction: envoy_config_core_v3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
 		})
 	}
 	toremove := f.Remove
@@ -298,7 +303,7 @@ func convertResponseHeaderModifier(kctx krt.HandlerContext, f *gwv1.HTTPHeaderFi
 				Key:   string(h.Name),
 				Value: h.Value,
 			},
-			AppendAction: envoy_config_core_v3.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD,
+			AppendAction: envoy_config_core_v3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
 		})
 	}
 	toremove := f.Remove
