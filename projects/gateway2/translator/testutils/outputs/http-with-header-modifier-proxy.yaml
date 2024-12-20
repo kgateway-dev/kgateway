@@ -44,10 +44,12 @@ Routes:
       - header:
           key: X-Header-Add-3
           value: header-add-3
-      - header:
+      - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
+        header:
           key: X-Header-Set-1
           value: header-set-1
-      - header:
+      - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
+        header:
           key: X-Header-Set-2
           value: header-set-2
       requestHeadersToRemove:

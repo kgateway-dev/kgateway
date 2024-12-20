@@ -646,7 +646,9 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 		})
 		return nil
 	}
-
+	sort.Slice(virtualHosts, func(i, j int) bool {
+		return virtualHosts[i].Name < virtualHosts[j].Name
+	})
 	return &ir.HttpFilterChainIR{
 		FilterChainCommon: ir.FilterChainCommon{
 			FilterChainName: string(parentName),

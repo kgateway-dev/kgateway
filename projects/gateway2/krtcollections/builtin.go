@@ -31,7 +31,7 @@ var (
 
 type builtinPlugin struct {
 	spec     gwv1.HTTPRouteFilter
-	mutation func(outputRoute *envoy_config_route_v3.Route) error
+	mutation func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error
 }
 
 func (d *builtinPlugin) CreationTime() time.Time {
@@ -75,7 +75,7 @@ func NewBuiltinPlugin(ctx context.Context) extensionplug.Plugin {
 	}
 }
 
-func convert(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *UpstreamIndex) func(outputRoute *envoy_config_route_v3.Route) error {
+func convert(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *UpstreamIndex) func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
 	switch f.Type {
 	case gwv1.HTTPRouteFilterRequestMirror:
 		return convertMirror(kctx, f.RequestMirror, fromgk, fromns, refgrants, ups)
@@ -90,9 +90,9 @@ func convert(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.Grou
 	}
 	return nil
 }
-func convertURLRewrite(kctx krt.HandlerContext, config *gwv1.HTTPURLRewriteFilter) func(outputRoute *envoy_config_route_v3.Route) error {
+func convertURLRewrite(kctx krt.HandlerContext, config *gwv1.HTTPURLRewriteFilter) func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
 	if config == nil {
-		return func(outputRoute *envoy_config_route_v3.Route) error {
+		return func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
 			return errors.New("missing rewrite filter")
 		}
 	}
@@ -117,8 +117,13 @@ func convertURLRewrite(kctx krt.HandlerContext, config *gwv1.HTTPURLRewriteFilte
 		}
 	}
 
-	return func(outputRoute *envoy_config_route_v3.Route) error {
+	return func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
 		if outputRoute.GetRoute() == nil {
+			if in.HasChildren {
+				// if route has children, it's a delegate route, and we don't need to return an error
+				// as this might need to apply to children.
+				return nil
+			}
 			return errors.New("missing route action")
 		}
 
@@ -162,9 +167,9 @@ func convertURLRewrite(kctx krt.HandlerContext, config *gwv1.HTTPURLRewriteFilte
 
 }
 
-func convertRequestRedirect(kctx krt.HandlerContext, config *gwv1.HTTPRequestRedirectFilter) func(outputRoute *envoy_config_route_v3.Route) error {
+func convertRequestRedirect(kctx krt.HandlerContext, config *gwv1.HTTPRequestRedirectFilter) func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
 	if config == nil {
-		return func(outputRoute *envoy_config_route_v3.Route) error {
+		return func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
 			return errors.New("missing redirect filter")
 		}
 	}
@@ -179,7 +184,7 @@ func convertRequestRedirect(kctx krt.HandlerContext, config *gwv1.HTTPRequestRed
 	translateScheme(redir, config.Scheme)
 	translatePathRewrite(redir, config.Path)
 
-	return func(outputRoute *envoy_config_route_v3.Route) error {
+	return func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
 		// TODO: check if action is nil and error if not?
 		outputRoute.Action = &envoy_config_route_v3.Route_Redirect{
 			Redirect: redir,
@@ -249,7 +254,7 @@ func translateStatusCode(i *int) envoy_config_route_v3.RedirectAction_RedirectRe
 	}
 }
 
-func convertHeaderModifier(kctx krt.HandlerContext, f *gwv1.HTTPHeaderFilter) func(outputRoute *envoy_config_route_v3.Route) error {
+func convertHeaderModifier(kctx krt.HandlerContext, f *gwv1.HTTPHeaderFilter) func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
 	if f == nil {
 		return nil
 	}
@@ -275,14 +280,14 @@ func convertHeaderModifier(kctx krt.HandlerContext, f *gwv1.HTTPHeaderFilter) fu
 	}
 	toremove := f.Remove
 
-	return func(outputRoute *envoy_config_route_v3.Route) error {
+	return func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
 		outputRoute.RequestHeadersToAdd = append(outputRoute.GetRequestHeadersToAdd(), headersToAddd...)
 		outputRoute.RequestHeadersToRemove = append(outputRoute.GetRequestHeadersToRemove(), toremove...)
 		return nil
 	}
 }
 
-func convertResponseHeaderModifier(kctx krt.HandlerContext, f *gwv1.HTTPHeaderFilter) func(outputRoute *envoy_config_route_v3.Route) error {
+func convertResponseHeaderModifier(kctx krt.HandlerContext, f *gwv1.HTTPHeaderFilter) func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
 	if f == nil {
 		return nil
 	}
@@ -308,14 +313,14 @@ func convertResponseHeaderModifier(kctx krt.HandlerContext, f *gwv1.HTTPHeaderFi
 	}
 	toremove := f.Remove
 
-	return func(outputRoute *envoy_config_route_v3.Route) error {
+	return func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
 		outputRoute.ResponseHeadersToAdd = append(outputRoute.GetResponseHeadersToAdd(), headersToAddd...)
 		outputRoute.ResponseHeadersToRemove = append(outputRoute.GetResponseHeadersToRemove(), toremove...)
 		return nil
 	}
 }
 
-func convertMirror(kctx krt.HandlerContext, f *gwv1.HTTPRequestMirrorFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *UpstreamIndex) func(outputRoute *envoy_config_route_v3.Route) error {
+func convertMirror(kctx krt.HandlerContext, f *gwv1.HTTPRequestMirrorFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *UpstreamIndex) func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
 	if f == nil {
 		return nil
 	}
@@ -334,7 +339,7 @@ func convertMirror(kctx krt.HandlerContext, f *gwv1.HTTPRequestMirrorFilter, fro
 		Cluster:         up.ClusterName(),
 		RuntimeFraction: fraction,
 	}
-	return func(outputRoute *envoy_config_route_v3.Route) error {
+	return func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
 
 		route := outputRoute.GetRoute()
 		if route == nil {
@@ -404,7 +409,7 @@ func (p *builtinPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteC
 		return nil
 	}
 
-	return policy.mutation(outputRoute)
+	return policy.mutation(pCtx.In, outputRoute)
 }
 
 func (p *builtinPluginGwPass) ApplyForRouteBackend(
