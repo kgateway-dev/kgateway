@@ -17,6 +17,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/solo-io/gloo/projects/gateway2/ir"
+	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/ports"
 	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
@@ -629,7 +630,7 @@ func (httpsFilterChain *httpsFilterChain) translateHttpsFilterChain(
 	)
 	if err != nil {
 		reason := gwv1.ListenerReasonRefNotPermitted
-		if !errors.Is(err, query.ErrMissingReferenceGrant) {
+		if !errors.Is(err, krtcollections.ErrMissingReferenceGrant) {
 			reason = gwv1.ListenerReasonInvalidCertificateRef
 		}
 		listenerReporter.SetCondition(reports.ListenerCondition{

@@ -10,6 +10,7 @@ import (
 // needed to process it to xDS.
 
 // As types here are not in krt collections, so no need for equals and resource name.
+// Another advantage - because this doesn't appear in any snapshot, we don't need to redact secrets.
 
 type HttpBackend struct {
 	Backend Backend

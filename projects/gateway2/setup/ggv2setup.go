@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 
@@ -148,7 +149,7 @@ func StartGGv2WithConfig(ctx context.Context,
 		InitialSettings: initialSettings,
 		Settings:        settingsSingle,
 		// Dev flag may be useful for development purposes; not currently tied to any user-facing API
-		Dev:        false,
+		Dev:        os.Getenv("LOG_LEVEL") == "debug",
 		KrtOptions: krtOpts,
 	})
 	if err != nil {

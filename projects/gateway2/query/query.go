@@ -21,7 +21,6 @@ import (
 )
 
 var (
-	ErrMissingReferenceGrant      = fmt.Errorf("missing reference grant")
 	ErrUnknownBackendKind         = fmt.Errorf("unknown backend kind")
 	ErrNoMatchingListenerHostname = fmt.Errorf("no matching listener hostname")
 	ErrNoMatchingParent           = fmt.Errorf("no matching parent")

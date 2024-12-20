@@ -47,7 +47,35 @@ var _ krt.ResourceNamer = HttpRouteIR{}
 
 func (c HttpRouteIR) Equals(in HttpRouteIR) bool {
 	// TODO: equals should take the attached policies to account too!
-	return c.ObjectSource == in.ObjectSource && versionEquals(c.SourceObject, in.SourceObject) && c.AttachedPolicies.Equals(in.AttachedPolicies)
+	// as backends resolution may change when they are added/remove we need to check equality for them as well
+	// we don't need to check the whole backend, just the cluster name (that may swap in and out of black-hole)
+	// note - if we stop setting cluster to black whole here (and always set it to the expect cluster name) we can remove the backend equality check.
+	return c.ObjectSource == in.ObjectSource && versionEquals(c.SourceObject, in.SourceObject) && c.AttachedPolicies.Equals(in.AttachedPolicies) && c.backendsEqual(in)
+}
+func (c HttpRouteIR) backendsEqual(in HttpRouteIR) bool {
+	if len(c.Rules) != len(in.Rules) {
+		return false
+	}
+	for i, rule := range c.Rules {
+		backendsa := rule.Backends
+		backendsb := in.Rules[i].Backends
+		if len(backendsa) != len(backendsb) {
+			return false
+		}
+		for j, backend := range backendsa {
+			if backend.Backend == nil && backendsb[j].Backend == nil {
+				continue
+			}
+			if backend.Backend != nil && backendsb[j].Backend != nil {
+				if backend.Backend.ClusterName != backendsb[j].Backend.ClusterName {
+					return false
+				}
+			} else {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 var _ Route = &HttpRouteIR{}

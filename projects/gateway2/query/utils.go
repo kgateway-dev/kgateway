@@ -5,6 +5,7 @@ import (
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 
+	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -57,14 +58,14 @@ func ProcessBackendRef(obj client.Object, err error, reporter reports.ParentRefR
 
 func ProcessBackendError(err error, reporter reports.ParentRefReporter) {
 	switch {
-	case errors.Is(err, ErrUnknownBackendKind):
+	case errors.Is(err, krtcollections.ErrUnknownBackendKind):
 		reporter.SetCondition(reports.RouteCondition{
 			Type:    gwv1.RouteConditionResolvedRefs,
 			Status:  metav1.ConditionFalse,
 			Reason:  gwv1.RouteReasonInvalidKind,
 			Message: err.Error(),
 		})
-	case errors.Is(err, ErrMissingReferenceGrant):
+	case errors.Is(err, krtcollections.ErrMissingReferenceGrant):
 		reporter.SetCondition(reports.RouteCondition{
 			Type:    gwv1.RouteConditionResolvedRefs,
 			Status:  metav1.ConditionFalse,

@@ -37,6 +37,7 @@ import (
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	istiolog "istio.io/istio/pkg/log"
 	corev1 "k8s.io/api/core/v1"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -95,11 +96,15 @@ type ControllerBuilder struct {
 
 func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuilder, error) {
 	var opts []czap.Opts
+	loggingOptions := istiolog.DefaultOptions()
+
 	if cfg.Dev {
 		setupLog.Info("starting log in dev mode")
 		opts = append(opts, czap.UseDevMode(true))
+		loggingOptions.SetDefaultOutputLevel(istiolog.OverrideScopeName, istiolog.DebugLevel)
 	}
 	ctrl.SetLogger(czap.New(opts...))
+	istiolog.Configure(loggingOptions)
 
 	scheme := glooschemes.DefaultScheme()
 

@@ -382,7 +382,21 @@ func (c RouteWrapper) ResourceName() string {
 }
 
 func (c RouteWrapper) Equals(in RouteWrapper) bool {
-	return c.ResourceName() == in.ResourceName() && versionEquals(c.Route.GetSourceObject(), in.Route.GetSourceObject())
+	switch a := c.Route.(type) {
+	case *ir.HttpRouteIR:
+		if bhttp, ok := in.Route.(*ir.HttpRouteIR); !ok {
+			return false
+		} else {
+			return a.Equals(*bhttp)
+		}
+	case *ir.TcpRouteIR:
+		if bhttp, ok := in.Route.(*ir.TcpRouteIR); !ok {
+			return false
+		} else {
+			return a.Equals(*bhttp)
+		}
+	}
+	panic("unknown route type")
 }
 func versionEquals(a, b metav1.Object) bool {
 	var versionEquals bool
