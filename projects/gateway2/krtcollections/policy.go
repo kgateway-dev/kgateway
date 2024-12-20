@@ -24,11 +24,12 @@ var (
 )
 
 type NotFoundError struct {
-	Obj ir.ObjectSource
+	// I call this `NotFound` so its easy to find in krt dump.
+	NotFoundObj ir.ObjectSource
 }
 
 func (n *NotFoundError) Error() string {
-	return fmt.Sprintf("%s \"%s\" not found", n.Obj.Kind, n.Obj.Name)
+	return fmt.Sprintf("%s \"%s\" not found", n.NotFoundObj.Kind, n.NotFoundObj.Name)
 }
 
 type UpstreamIndex struct {
@@ -128,7 +129,7 @@ func (i *UpstreamIndex) getUpstream(kctx krt.HandlerContext, gk schema.GroupKind
 
 	up := krt.FetchOne(kctx, col, krt.FilterKey(ir.UpstreamResourceName(key, port)))
 	if up == nil {
-		return nil, &NotFoundError{Obj: key}
+		return nil, &NotFoundError{NotFoundObj: key}
 	}
 	return up, nil
 }
@@ -634,7 +635,7 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 		if upstream != nil {
 			clusterName = upstream.ClusterName()
 		} else if err == nil {
-			err = &NotFoundError{Obj: to}
+			err = &NotFoundError{NotFoundObj: to}
 		}
 		backends = append(backends, ir.HttpBackendOrDelegate{
 			Backend: &ir.Backend{
@@ -670,7 +671,7 @@ func (h *RoutesIndex) getTcpBackends(kctx krt.HandlerContext, src ir.ObjectSourc
 		if upstream != nil {
 			clusterName = upstream.ClusterName()
 		} else if err == nil {
-			err = &NotFoundError{Obj: to}
+			err = &NotFoundError{NotFoundObj: to}
 		}
 		backends = append(backends, ir.Backend{
 			Upstream:    upstream,

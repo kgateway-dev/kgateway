@@ -62,7 +62,7 @@ func (s *SecretIndex) GetSecret(kctx krt.HandlerContext, from From, secretRef gw
 	}
 	up := krt.FetchOne(kctx, col, krt.FilterKey(to.ResourceName()))
 	if up == nil {
-		return nil, &NotFoundError{Obj: to}
+		return nil, &NotFoundError{NotFoundObj: to}
 	}
 	return up, nil
 }

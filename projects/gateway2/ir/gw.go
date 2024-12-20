@@ -97,9 +97,9 @@ type Backend struct {
 }
 
 type HttpBackendOrDelegate struct {
-	Backend  *Backend
-	Delegate *ObjectSource
-	AttachedPolicies
+	Backend          *Backend
+	Delegate         *ObjectSource
+	AttachedPolicies AttachedPolicies
 }
 
 type HttpRouteRuleIR struct {
