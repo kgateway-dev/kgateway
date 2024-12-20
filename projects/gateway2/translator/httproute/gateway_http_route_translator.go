@@ -8,7 +8,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -235,12 +234,7 @@ func setRouteAction(
 		}
 
 		if err := backend.Backend.Err; err != nil {
-			reporter.SetCondition(reports.RouteCondition{
-				Type:    gwv1.RouteConditionResolvedRefs,
-				Status:  metav1.ConditionFalse,
-				Reason:  gwv1.RouteReasonBackendNotFound,
-				Message: err.Error(),
-			})
+			query.ProcessBackendError(err, reporter)
 			logger.Debug("error on backend upstream", zap.Error(err))
 		}
 

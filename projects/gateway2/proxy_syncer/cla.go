@@ -17,17 +17,17 @@ import (
 )
 
 type EndpointResources struct {
-	Endpoints        envoycache.Resource
-	EndpointsVersion uint64
-	UpstreamRef      ir.ObjectSource
+	Endpoints            envoycache.Resource
+	EndpointsVersion     uint64
+	UpstreamResourceName string
 }
 
 func (c EndpointResources) ResourceName() string {
-	return c.UpstreamRef.String()
+	return c.UpstreamResourceName
 }
 
 func (c EndpointResources) Equals(in EndpointResources) bool {
-	return c.UpstreamRef == in.UpstreamRef && c.EndpointsVersion == in.EndpointsVersion
+	return c.UpstreamResourceName == in.UpstreamResourceName && c.EndpointsVersion == in.EndpointsVersion
 }
 
 // TODO: this is needed temporary while we don't have the per-upstream translation done.
@@ -42,9 +42,9 @@ func newEnvoyEndpoints(glooEndpoints krt.Collection[ir.EndpointsForUpstream], db
 func TransformEndpointToResources(ep ir.EndpointsForUpstream) *EndpointResources {
 	cla := prioritize(ep)
 	return &EndpointResources{
-		Endpoints:        resource.NewEnvoyResource(cla),
-		EndpointsVersion: ep.LbEpsEqualityHash,
-		UpstreamRef:      ep.UpstreamRef,
+		Endpoints:            resource.NewEnvoyResource(cla),
+		EndpointsVersion:     ep.LbEpsEqualityHash,
+		UpstreamResourceName: ep.UpstreamResourceName,
 	}
 }
 

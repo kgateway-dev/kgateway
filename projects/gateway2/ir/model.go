@@ -90,12 +90,12 @@ var _ json.Marshaler = LocalityLbMap{}
 
 type EndpointsForUpstream struct {
 	LbEps LocalityLbMap
-	// Note - in theory, cluster name should be a function of the UpstreamRef.
+	// Note - in theory, cluster name should be a function of the UpstreamResourceName.
 	// But due to an upstream envoy bug, the cluster name also includes the upstream hash.
-	ClusterName string
-	UpstreamRef ObjectSource
-	Port        uint32
-	Hostname    string
+	ClusterName          string
+	UpstreamResourceName string
+	Port                 uint32
+	Hostname             string
 
 	LbEpsEqualityHash uint64
 	upstreamHash      uint64
@@ -119,13 +119,13 @@ func NewEndpointsForUpstream(us Upstream) *EndpointsForUpstream {
 	upstreamHash := h.Sum64()
 
 	return &EndpointsForUpstream{
-		LbEps:             make(map[PodLocality][]EndpointWithMd),
-		ClusterName:       us.ClusterName(),
-		UpstreamRef:       us.ObjectSource,
-		Port:              uint32(us.Port),
-		Hostname:          us.CanonicalHostname,
-		LbEpsEqualityHash: upstreamHash,
-		upstreamHash:      upstreamHash,
+		LbEps:                make(map[PodLocality][]EndpointWithMd),
+		ClusterName:          us.ClusterName(),
+		UpstreamResourceName: us.ResourceName(),
+		Port:                 uint32(us.Port),
+		Hostname:             us.CanonicalHostname,
+		LbEpsEqualityHash:    upstreamHash,
+		upstreamHash:         upstreamHash,
 	}
 }
 
@@ -161,9 +161,9 @@ func (e *EndpointsForUpstream) Add(l PodLocality, emd EndpointWithMd) {
 }
 
 func (c EndpointsForUpstream) ResourceName() string {
-	return c.UpstreamRef.ResourceName()
+	return c.UpstreamResourceName
 }
 
 func (c EndpointsForUpstream) Equals(in EndpointsForUpstream) bool {
-	return c.UpstreamRef == in.UpstreamRef && c.ClusterName == in.ClusterName && c.Port == in.Port && c.LbEpsEqualityHash == in.LbEpsEqualityHash && c.Hostname == in.Hostname
+	return c.UpstreamResourceName == in.UpstreamResourceName && c.ClusterName == in.ClusterName && c.Port == in.Port && c.LbEpsEqualityHash == in.LbEpsEqualityHash && c.Hostname == in.Hostname
 }

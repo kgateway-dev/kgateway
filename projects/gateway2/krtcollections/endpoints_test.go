@@ -18,6 +18,7 @@ import (
 	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 )
 
@@ -937,6 +938,145 @@ func TestEndpoints(t *testing.T) {
 				return result
 			},
 		},
+		{
+			name: "multiple ports",
+			inputs: []any{
+				&corev1.Pod{
+					TypeMeta: metav1.TypeMeta{},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod1",
+						Namespace: "ns",
+					},
+					Spec: corev1.PodSpec{
+						NodeName: "node1",
+					},
+					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
+						PodIP: "1.2.3.4",
+					},
+				},
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node1",
+						Labels: map[string]string{
+							corev1.LabelTopologyRegion: "region1",
+							corev1.LabelTopologyZone:   "zone1",
+						},
+					},
+				},
+				&discoveryv1.EndpointSlice{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "svc-slice-unready",
+						Namespace: "ns",
+						Labels: map[string]string{
+							"kubernetes.io/service-name": "svc",
+						},
+					},
+					AddressType: discoveryv1.AddressTypeIPv4,
+					Endpoints: []discoveryv1.Endpoint{
+						{
+							Addresses: []string{"1.2.3.4"},
+							Conditions: discoveryv1.EndpointConditions{
+								Ready: ptr.To(true),
+							},
+							TargetRef: &corev1.ObjectReference{
+								Kind:      "Pod",
+								Name:      "pod1",
+								Namespace: "ns",
+							},
+						},
+					},
+					Ports: []discoveryv1.EndpointPort{
+						{
+							Name:     ptr.To("third-port"),
+							Port:     ptr.To(int32(3000)),
+							Protocol: ptr.To(corev1.ProtocolTCP),
+						},
+						{
+							Name:     ptr.To("first-port"),
+							Port:     ptr.To(int32(3000)),
+							Protocol: ptr.To(corev1.ProtocolTCP),
+						},
+						{
+							Name:     ptr.To("second-port"),
+							Port:     ptr.To(int32(3001)),
+							Protocol: ptr.To(corev1.ProtocolTCP),
+						},
+					},
+				},
+			},
+			upstream: ir.Upstream{
+				ObjectSource: ir.ObjectSource{
+					Namespace: "ns",
+					Name:      "svc",
+					Group:     "",
+					Kind:      "Service",
+				},
+				Port: 8081,
+				Obj: &corev1.Service{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "svc",
+						Namespace: "ns",
+					},
+					Spec: corev1.ServiceSpec{
+						Ports: []corev1.ServicePort{
+							{
+								Name:       "first-port",
+								Port:       8080,
+								Protocol:   corev1.ProtocolTCP,
+								TargetPort: intstr.FromInt(3000),
+							},
+							{
+								Name:       "second-port",
+								Port:       8081,
+								Protocol:   corev1.ProtocolTCP,
+								TargetPort: intstr.FromInt(3001),
+							},
+							{
+								Name:       "third-port",
+								Port:       8082,
+								Protocol:   corev1.ProtocolTCP,
+								TargetPort: intstr.FromInt(3000),
+							},
+						},
+					},
+				},
+			},
+			result: func(us ir.Upstream) *ir.EndpointsForUpstream {
+				// output
+				emd := ir.EndpointWithMd{
+					LbEndpoint: &endpointv3.LbEndpoint{
+						LoadBalancingWeight: wrapperspb.UInt32(1),
+						HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
+							Endpoint: &endpointv3.Endpoint{
+								Address: &envoy_config_core_v3.Address{
+									Address: &envoy_config_core_v3.Address_SocketAddress{
+										SocketAddress: &envoy_config_core_v3.SocketAddress{
+											Address: "1.2.3.4",
+											PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
+												PortValue: 3001,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					EndpointMd: ir.EndpointMetadata{
+						Labels: map[string]string{
+							corev1.LabelTopologyRegion: "region1",
+							corev1.LabelTopologyZone:   "zone1",
+						},
+					},
+				}
+				result := ir.NewEndpointsForUpstream(us)
+				result.Add(ir.PodLocality{
+					Region: "region1",
+					Zone:   "zone1",
+				}, emd)
+				return result
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -973,8 +1113,8 @@ func TestEndpoints(t *testing.T) {
 				Pods:                    pods,
 				EndpointsSettings:       endpointSettings,
 			}
-
-			builder := transformK8sEndpoints(context.Background(), ei)
+			ctx := context.Background()
+			builder := transformK8sEndpoints(ctx, ei)
 
 			eps := builder(krt.TestingDummyContext{}, tc.upstream)
 			res := tc.result(tc.upstream)

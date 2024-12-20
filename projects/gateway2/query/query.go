@@ -21,7 +21,6 @@ import (
 )
 
 var (
-	ErrUnknownBackendKind         = fmt.Errorf("unknown backend kind")
 	ErrNoMatchingListenerHostname = fmt.Errorf("no matching listener hostname")
 	ErrNoMatchingParent           = fmt.Errorf("no matching parent")
 	ErrNotAllowedByListeners      = fmt.Errorf("not allowed by listeners")
