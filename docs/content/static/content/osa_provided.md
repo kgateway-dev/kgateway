@@ -75,8 +75,6 @@ Name|Version|License
 [k8s.io/client-go](https://k8s.io/client-go)|v0.31.1|Apache License 2.0
 [k8s.io/code-generator](https://k8s.io/code-generator)|v0.31.1|Apache License 2.0
 [k8s.io/component-base](https://k8s.io/component-base)|v0.31.1|Apache License 2.0
-[k8s.io/gengo](https://k8s.io/gengo)|v0.0.0-20230829151522-9cce18d56c01|Apache License 2.0
-[klog/v2](https://k8s.io/klog/v2)|v2.130.1|Apache License 2.0
 [k8s.io/kube-openapi](https://k8s.io/kube-openapi)|v0.0.0-20240423202451-8948a665c108|Apache License 2.0
 [k8s.io/kubectl](https://k8s.io/kubectl)|v0.31.1|Apache License 2.0
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20240711033017-18e509b52bc8|Apache License 2.0
