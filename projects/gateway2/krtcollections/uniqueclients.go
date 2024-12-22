@@ -61,7 +61,7 @@ type UniquelyConnectedClientsBulider func(ctx context.Context, handler *krt.Debu
 
 func NewUniquelyConnectedClients() (xdsserver.Callbacks, UniquelyConnectedClientsBulider) {
 	cb := &callbacks{}
-	envoycb := &xdsserver.CallbackFuncs{
+	envoycb := xdsserver.CallbackFuncs{
 		StreamClosedFunc:  cb.OnStreamClosed,
 		StreamRequestFunc: cb.OnStreamRequest,
 		FetchRequestFunc:  cb.OnFetchRequest,
