@@ -133,6 +133,7 @@ func translateGatewayHTTPRouteRule(
 			AttachedPolicies:  rule.AttachedPolicies,
 			Parent:            parent,
 			ListenerParentRef: gwroute.ListenerParentRef,
+			ParentRef:         gwroute.ParentRef,
 			Name:              uniqueRouteName,
 			Backends:          nil,
 			MatchIndex:        idx,

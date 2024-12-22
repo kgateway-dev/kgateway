@@ -26,10 +26,12 @@ type HttpRouteRuleMatchIR struct {
 	HasChildren    bool
 	// if there's an error, the gw-api listener to report it in.
 	ListenerParentRef gwv1.ParentReference
-	Backends          []HttpBackend
-	Match             gwv1.HTTPRouteMatch
-	MatchIndex        int
-	Name              string
+	// the parent ref the led here (may be delegated httproute or listner)
+	ParentRef  gwv1.ParentReference
+	Backends   []HttpBackend
+	Match      gwv1.HTTPRouteMatch
+	MatchIndex int
+	Name       string
 }
 
 type ListenerIR struct {
