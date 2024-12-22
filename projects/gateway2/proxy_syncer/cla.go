@@ -10,43 +10,9 @@ import (
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"go.uber.org/zap"
 	"istio.io/istio/pkg/kube/krt"
 )
-
-type EndpointResources struct {
-	Endpoints            envoycache.Resource
-	EndpointsVersion     uint64
-	UpstreamResourceName string
-}
-
-func (c EndpointResources) ResourceName() string {
-	return c.UpstreamResourceName
-}
-
-func (c EndpointResources) Equals(in EndpointResources) bool {
-	return c.UpstreamResourceName == in.UpstreamResourceName && c.EndpointsVersion == in.EndpointsVersion
-}
-
-// TODO: this is needed temporary while we don't have the per-upstream translation done.
-// once the plugins are fixed to support it, we can have the proxy translation skip upstreams/endpoints and remove this collection
-func newEnvoyEndpoints(glooEndpoints krt.Collection[ir.EndpointsForUpstream], dbg *krt.DebugHandler) krt.Collection[EndpointResources] {
-	clas := krt.NewCollection(glooEndpoints, func(_ krt.HandlerContext, ep ir.EndpointsForUpstream) *EndpointResources {
-		return TransformEndpointToResources(ep)
-	}, krt.WithDebugging(dbg), krt.WithName("EnvoyEndpoints"))
-	return clas
-}
-
-func TransformEndpointToResources(ep ir.EndpointsForUpstream) *EndpointResources {
-	cla := prioritize(ep)
-	return &EndpointResources{
-		Endpoints:            resource.NewEnvoyResource(cla),
-		EndpointsVersion:     ep.LbEpsEqualityHash,
-		UpstreamResourceName: ep.UpstreamResourceName,
-	}
-}
 
 func prioritize(ep ir.EndpointsForUpstream) *envoy_config_endpoint_v3.ClusterLoadAssignment {
 	cla := &envoy_config_endpoint_v3.ClusterLoadAssignment{
@@ -83,7 +49,7 @@ func prioritize(ep ir.EndpointsForUpstream) *envoy_config_endpoint_v3.ClusterLoa
 
 type UccWithEndpoints struct {
 	Client        ir.UniqlyConnectedClient
-	Endpoints     envoycache.Resource
+	Endpoints     *envoy_config_endpoint_v3.ClusterLoadAssignment
 	EndpointsHash uint64
 	endpointsName string
 }
@@ -119,7 +85,7 @@ func NewPerClientEnvoyEndpoints(logger *zap.Logger, krtopts krtutil.KrtOptions, 
 			if cla != nil {
 				uccWithEp := UccWithEndpoints{
 					Client:        ucc,
-					Endpoints:     resource.NewEnvoyResource(cla),
+					Endpoints:     cla,
 					EndpointsHash: ep.LbEpsEqualityHash ^ additionalHash,
 					endpointsName: ep.ResourceName(),
 				}
@@ -129,7 +95,7 @@ func NewPerClientEnvoyEndpoints(logger *zap.Logger, krtopts krtutil.KrtOptions, 
 				cla := endpoints.PrioritizeEndpoints(logger, nil, ep, ucc)
 				uccWithEp := UccWithEndpoints{
 					Client:        ucc,
-					Endpoints:     resource.NewEnvoyResource(cla),
+					Endpoints:     cla,
 					EndpointsHash: ep.LbEpsEqualityHash,
 					endpointsName: ep.ResourceName(),
 				}

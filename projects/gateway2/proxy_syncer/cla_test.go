@@ -8,83 +8,8 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gateway2/endpoints"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
-	. "github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 	corev1 "k8s.io/api/core/v1"
 )
-
-func TestTransformsEndpoint(t *testing.T) {
-	g := gomega.NewWithT(t)
-	us := ir.Upstream{
-		ObjectSource: ir.ObjectSource{
-			Namespace: "ns",
-			Name:      "name",
-		},
-	}
-	efu := ir.NewEndpointsForUpstream(us)
-	efu.Add(ir.PodLocality{}, ir.EndpointWithMd{
-		LbEndpoint: &endpointv3.LbEndpoint{
-			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
-				Endpoint: &endpointv3.Endpoint{
-					Address: &corev3.Address{
-						Address: &corev3.Address_Pipe{Pipe: &corev3.Pipe{Path: "a"}},
-					},
-				},
-			},
-		},
-		EndpointMd: ir.EndpointMetadata{},
-	})
-
-	envoyResources := TransformEndpointToResources(*efu)
-	cla := envoyResources.Endpoints.ResourceProto().(*endpointv3.ClusterLoadAssignment)
-	locality := cla.Endpoints[0].Locality
-	g.Expect(locality).To(gomega.BeNil())
-	g.Expect(cla.Endpoints[0].GetLbEndpoints()[0].GetEndpoint().GetAddress().GetPipe().GetPath()).To(gomega.Equal("a"))
-}
-
-func TestTransformsEndpointsWithLocality(t *testing.T) {
-	g := gomega.NewWithT(t)
-	us := ir.Upstream{
-		ObjectSource: ir.ObjectSource{
-			Namespace: "ns",
-			Name:      "name",
-		},
-	}
-	efu := ir.NewEndpointsForUpstream(us)
-	efu.Add(ir.PodLocality{Region: "R1"}, ir.EndpointWithMd{
-		LbEndpoint: &endpointv3.LbEndpoint{
-			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
-				Endpoint: &endpointv3.Endpoint{
-					Address: &corev3.Address{
-						Address: &corev3.Address_Pipe{Pipe: &corev3.Pipe{Path: "a"}},
-					},
-				},
-			},
-		},
-		EndpointMd: ir.EndpointMetadata{},
-	})
-	efu.Add(ir.PodLocality{Region: "R2"}, ir.EndpointWithMd{
-		LbEndpoint: &endpointv3.LbEndpoint{
-			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
-				Endpoint: &endpointv3.Endpoint{
-					Address: &corev3.Address{
-						Address: &corev3.Address_Pipe{Pipe: &corev3.Pipe{Path: "a"}},
-					},
-				},
-			},
-		},
-		EndpointMd: ir.EndpointMetadata{},
-	})
-
-	envoyResources := TransformEndpointToResources(*efu)
-	cla := envoyResources.Endpoints.ResourceProto().(*endpointv3.ClusterLoadAssignment)
-	g.Expect(cla.Endpoints).To(gomega.HaveLen(2))
-	locality1 := cla.Endpoints[0].Locality
-	locality2 := cla.Endpoints[1].Locality
-	regions := []string{locality1.Region, locality2.Region}
-	g.Expect(regions).To(gomega.ContainElement("R1"))
-	g.Expect(regions).To(gomega.ContainElement("R2"))
-
-}
 
 func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 	g := gomega.NewWithT(t)

@@ -18,6 +18,7 @@ import (
 	czap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
+	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/common"
@@ -30,9 +31,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	uzap "go.uber.org/zap"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"
@@ -49,29 +47,25 @@ const (
 	AutoProvision = true
 )
 
+type SetupOpts struct {
+	Cache               envoycache.SnapshotCache
+	ExtraGatewayClasses []string
+
+	KrtDebugger *krt.DebugHandler
+
+	XdsHost string
+	XdsPort int32
+}
+
 var setupLog = ctrl.Log.WithName("setup")
 
 type StartConfig struct {
 	Dev        bool
-	SetupOpts  *bootstrap.SetupOpts
+	SetupOpts  *SetupOpts
 	RestConfig *rest.Config
 	// ExtensionsFactory is the factory function which will return an extensions.K8sGatewayExtensions
 	// This is responsible for producing the extension points that this controller requires
 	ExtraPlugins []extensionsplug.Plugin
-
-	// GlooStatusReporter is the shared reporter from setup_syncer that reports as 'gloo',
-	// it is used to report on Upstreams and Proxies after xds translation.
-	// this is required because various upstream tests expect a certain reporter for Upstreams
-	// TODO: remove the other reporter and only use this one, no need for 2 different reporters
-	GlooStatusReporter reporter.StatusReporter
-
-	// KubeGwStatusReporter is used within any StatusPlugins that must persist a GE-classic style status
-	// TODO: as mentioned above, this should be removed: https://github.com/solo-io/solo-projects/issues/7055
-	KubeGwStatusReporter reporter.StatusReporter
-
-	// SyncerExtensions is a list of extensions, the kube gw controller will use these to get extension-specific
-	// errors & warnings for any Proxies it generates
-	SyncerExtensions []syncer.TranslatorSyncerExtension
 
 	Client istiokube.Client
 
@@ -223,7 +217,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 	logger.Info("starting gateway controller")
 	// GetXdsAddress waits for gloo-edge to populate the xds address of the server.
 	// in the future this logic may move here and be duplicated.
-	xdsHost, xdsPort := c.cfg.SetupOpts.GetXdsAddress(ctx)
+	xdsHost, xdsPort := c.cfg.SetupOpts.XdsHost, c.cfg.SetupOpts.XdsPort
 	if xdsHost == "" {
 		return ctx.Err()
 	}

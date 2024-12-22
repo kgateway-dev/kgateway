@@ -3,10 +3,10 @@ package proxy_syncer
 import (
 	"fmt"
 
+	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"go.uber.org/zap"
 	"istio.io/istio/pkg/kube/krt"
 )
@@ -22,12 +22,12 @@ func snapshotPerClient(l *zap.Logger, krtopts krtutil.KrtOptions, uccCol krt.Col
 		}
 		clustersForUcc := clusters.FetchClustersForClient(kctx, ucc)
 
-		clustersProto := make([]envoycache.Resource, 0, len(clustersForUcc)+len(maybeMostlySnap.Clusters))
+		clustersProto := make([]envoycachetypes.ResourceWithTTL, 0, len(clustersForUcc)+len(maybeMostlySnap.Clusters))
 		var clustersHash uint64
 		var erroredClusters []string
 		for _, c := range clustersForUcc {
 			if c.Error == nil {
-				clustersProto = append(clustersProto, c.Cluster)
+				clustersProto = append(clustersProto, envoycachetypes.ResourceWithTTL{Resource: c.Cluster})
 				clustersHash ^= c.ClusterVersion
 			} else {
 				erroredClusters = append(erroredClusters, c.Name)
@@ -38,29 +38,31 @@ func snapshotPerClient(l *zap.Logger, krtopts krtutil.KrtOptions, uccCol krt.Col
 		clustersVersion := fmt.Sprintf("%d", clustersHash)
 
 		endpointsForUcc := endpoints.FetchEndpointsForClient(kctx, ucc)
-		endpointsProto := make([]envoycache.Resource, 0, len(endpointsForUcc))
+		endpointsProto := make([]envoycachetypes.ResourceWithTTL, 0, len(endpointsForUcc))
 		var endpointsHash uint64
 		for _, ep := range endpointsForUcc {
-			endpointsProto = append(endpointsProto, ep.Endpoints)
+			endpointsProto = append(endpointsProto, envoycachetypes.ResourceWithTTL{Resource: ep.Endpoints})
 			endpointsHash ^= ep.EndpointsHash
 		}
 
 		snap := XdsSnapWrapper{}
 
-		clusterResources := envoycache.NewResources(clustersVersion, clustersProto)
+		clusterResources := envoycache.NewResourcesWithTTL(clustersVersion, clustersProto)
+		endpointResources := envoycache.NewResourcesWithTTL(fmt.Sprintf("%d", endpointsHash), endpointsProto)
 		snap.erroredClusters = erroredClusters
 		snap.proxyKey = ucc.ResourceName()
-		snap.snap = &xds.EnvoySnapshot{
-			Clusters:  clusterResources,
-			Endpoints: envoycache.NewResources(fmt.Sprintf("%d", endpointsHash), endpointsProto),
-			Routes:    maybeMostlySnap.Routes,
-			Listeners: maybeMostlySnap.Listeners,
-		}
+		snapshot := &envoycache.Snapshot{}
+		snapshot.Resources[envoycachetypes.Cluster] = clusterResources //envoycache.NewResources(version, resource)
+		snapshot.Resources[envoycachetypes.Endpoint] = endpointResources
+		snapshot.Resources[envoycachetypes.Route] = maybeMostlySnap.Routes
+		snapshot.Resources[envoycachetypes.Listener] = maybeMostlySnap.Listeners
+		//envoycache.NewResources(version, resource)
+		snap.snap = snapshot
 		l.Debug("snapshotPerClient", zap.String("proxyKey", snap.proxyKey),
 			zap.Stringer("Listeners", resourcesStringer(maybeMostlySnap.Listeners)),
-			zap.Stringer("Clusters", resourcesStringer(snap.snap.Clusters)),
+			zap.Stringer("Clusters", resourcesStringer(clusterResources)),
 			zap.Stringer("Routes", resourcesStringer(maybeMostlySnap.Routes)),
-			zap.Stringer("Endpoints", resourcesStringer(snap.snap.Endpoints)),
+			zap.Stringer("Endpoints", resourcesStringer(endpointResources)),
 		)
 
 		return &snap

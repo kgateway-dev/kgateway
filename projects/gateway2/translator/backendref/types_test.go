@@ -3,22 +3,21 @@ package backendref
 import (
 	"testing"
 
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-func TestRefIsService(t *testing.T) {
+func TestRefIsHTTPRoute(t *testing.T) {
 	tests := []struct {
 		name     string
 		ref      gwv1.BackendObjectReference
 		expected bool
 	}{
 		{
-			name: "Valid Service Reference",
+			name: "Valid RefIsHTTPRoute Reference",
 			ref: gwv1.BackendObjectReference{
-				Kind:  ptr.To(gwv1.Kind("Service")),
-				Group: ptr.To(gwv1.Group(corev1.GroupName)),
+				Kind:  ptr.To(gwv1.Kind("HTTPRoute")),
+				Group: ptr.To(gwv1.Group(gwv1.GroupName)),
 			},
 			expected: true,
 		},
@@ -26,14 +25,14 @@ func TestRefIsService(t *testing.T) {
 			name: "Invalid Kind",
 			ref: gwv1.BackendObjectReference{
 				Kind:  ptr.To(gwv1.Kind("InvalidKind")),
-				Group: ptr.To(gwv1.Group(corev1.GroupName)),
+				Group: ptr.To(gwv1.Group(gwv1.GroupName)),
 			},
 			expected: false,
 		},
 		{
 			name: "Invalid Group",
 			ref: gwv1.BackendObjectReference{
-				Kind:  ptr.To(gwv1.Kind("Service")),
+				Kind:  ptr.To(gwv1.Kind("HTTPRoute")),
 				Group: ptr.To(gwv1.Group("InvalidGroup")),
 			},
 			expected: false,
@@ -41,27 +40,27 @@ func TestRefIsService(t *testing.T) {
 		{
 			name: "Invalid Group",
 			ref: gwv1.BackendObjectReference{
-				Group: ptr.To(gwv1.Group(corev1.GroupName)),
+				Group: ptr.To(gwv1.Group(gwv1.GroupName)),
 			},
-			expected: true, // Default Kind should pass
+			expected: false, // Default Kind should not pass
 		},
 		{
 			name: "No Group",
 			ref: gwv1.BackendObjectReference{
-				Kind: ptr.To(gwv1.Kind("Service")),
+				Kind: ptr.To(gwv1.Kind("HTTPRoute")),
 			},
-			expected: true, // Default Group should pass
+			expected: false, // Default Group should not pass
 		},
 		{
 			name:     "No Kind and Group",
 			ref:      gwv1.BackendObjectReference{},
-			expected: true, // Defaults should pass
+			expected: false, // Defaults should not pass
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := RefIsService(test.ref)
+			result := RefIsHTTPRoute(test.ref)
 			if result != test.expected {
 				t.Errorf("Test case %q failed: expected %t but got %t", test.name, test.expected, result)
 			}

@@ -10,10 +10,10 @@ import (
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
-	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
@@ -61,7 +61,12 @@ type UniquelyConnectedClientsBulider func(ctx context.Context, handler *krt.Debu
 
 func NewUniquelyConnectedClients() (xdsserver.Callbacks, UniquelyConnectedClientsBulider) {
 	cb := &callbacks{}
-	return cb, buildCollection(cb)
+	envoycb := &xdsserver.CallbackFuncs{
+		StreamClosedFunc:  cb.OnStreamClosed,
+		StreamRequestFunc: cb.OnStreamRequest,
+		FetchRequestFunc:  cb.OnFetchRequest,
+	}
+	return envoycb, buildCollection(cb)
 }
 
 func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBulider {
@@ -89,16 +94,8 @@ func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBulider {
 	}
 }
 
-var _ xdsserver.Callbacks = new(callbacks)
-
-// OnStreamOpen is called once an xDS stream is open with a stream ID and the type URL (or "" for ADS).
-// Returning an error will end processing and close the stream. OnStreamClosed will still be called.
-func (x *callbacks) OnStreamOpen(_ context.Context, _ int64, _ string) error {
-	return nil
-}
-
 // OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
-func (x *callbacks) OnStreamClosed(sid int64) {
+func (x *callbacks) OnStreamClosed(sid int64, node *envoy_config_core_v3.Node) {
 	c := x.collection.Load()
 	if c == nil {
 		return
@@ -235,10 +232,6 @@ func (x *callbacksCollection) getClients() []ir.UniqlyConnectedClient {
 	return clients
 }
 
-// OnStreamResponse is called immediately prior to sending a response on a stream.
-func (x *callbacks) OnStreamResponse(_ int64, _ *envoy_service_discovery_v3.DiscoveryRequest, _ *envoy_service_discovery_v3.DiscoveryResponse) {
-}
-
 // OnFetchRequest is called for each Fetch request. Returning an error will end processing of the
 // request and respond with an error.
 func (x *callbacks) OnFetchRequest(ctx context.Context, r *envoy_service_discovery_v3.DiscoveryRequest) error {
@@ -282,41 +275,6 @@ func (x *callbacksCollection) fetchRequest(_ context.Context, r *envoy_service_d
 	nodeMd.GetFields()[xds.RoleKey] = structpb.NewStringValue(ucc.ResourceName())
 	r.GetNode().Metadata = nodeMd
 	return nil
-}
-
-// OnFetchResponse is called immediately prior to sending a response.
-func (x *callbacks) OnFetchResponse(_ *envoy_service_discovery_v3.DiscoveryRequest, _ *envoy_service_discovery_v3.DiscoveryResponse) {
-}
-
-func (x *callbacksCollection) Synced() krt.Syncer {
-	return &simpleSyncer{}
-}
-
-// GetKey returns an object by its key, if present. Otherwise, nil is returned.
-
-func (x *callbacksCollection) GetKey(k krt.Key[ir.UniqlyConnectedClient]) *ir.UniqlyConnectedClient {
-	x.stateLock.RLock()
-	defer x.stateLock.RUnlock()
-	u, ok := x.uniqClients[string(k)]
-	if ok {
-		return &u
-	}
-	return nil
-}
-
-// List returns all objects in the collection.
-// Order of the list is undefined.
-
-func (x *callbacksCollection) List() []ir.UniqlyConnectedClient { return x.getClients() }
-
-type simpleSyncer struct{}
-
-func (s *simpleSyncer) WaitUntilSynced(stop <-chan struct{}) bool {
-	return true
-}
-
-func (s *simpleSyncer) HasSynced() bool {
-	return true
 }
 
 func getRef(node *envoy_config_core_v3.Node) types.NamespacedName {

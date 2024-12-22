@@ -5,19 +5,17 @@ import (
 	"fmt"
 
 	udpaannontations "github.com/cncf/xds/go/udpa/annotations"
+	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/solo-io/gloo/pkg/utils/envutils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 
 	"istio.io/istio/pkg/kube/krt"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/known/anypb"
-
-	oldproto "github.com/golang/protobuf/proto"
 )
 
 var (
@@ -25,12 +23,12 @@ var (
 )
 
 type XdsSnapWrapper struct {
-	snap            *xds.EnvoySnapshot
+	snap            *envoycache.Snapshot
 	erroredClusters []string
 	proxyKey        string
 }
 
-func (p XdsSnapWrapper) WithSnapshot(snap *xds.EnvoySnapshot) XdsSnapWrapper {
+func (p XdsSnapWrapper) WithSnapshot(snap *envoycache.Snapshot) XdsSnapWrapper {
 	p.snap = snap
 	return p
 }
@@ -38,11 +36,32 @@ func (p XdsSnapWrapper) WithSnapshot(snap *xds.EnvoySnapshot) XdsSnapWrapper {
 var _ krt.ResourceNamer = XdsSnapWrapper{}
 
 func (p XdsSnapWrapper) Equals(in XdsSnapWrapper) bool {
-	return p.snap.Equal(in.snap)
+	// check that all the versions are the equal
+	for i, r := range p.snap.Resources {
+		if r.Version != in.snap.Resources[i].Version {
+			return false
+		}
+	}
+	return true
 }
 
 func (p XdsSnapWrapper) ResourceName() string {
 	return p.proxyKey
+}
+
+func cloneSnap(snap *envoycache.Snapshot) *envoycache.Snapshot {
+	s := &envoycache.Snapshot{}
+	for k, v := range snap.Resources {
+		s.Resources[k].Version = v.Version
+		items := map[string]envoycachetypes.ResourceWithTTL{}
+		s.Resources[k].Items = items
+		for a, b := range v.Items {
+			b := b
+			b.Resource = proto.Clone(b.Resource)
+			items[a] = b
+		}
+	}
+	return s
 }
 
 // note: this is feature gated, as i'm not confident the new logic can't panic, in all envoy configs
@@ -51,7 +70,7 @@ func (p XdsSnapWrapper) MarshalJSON() (out []byte, err error) {
 	if !UseDetailedUnmarshalling {
 		// use a new struct to prevent infinite recursion
 		return json.Marshal(struct {
-			snap     *xds.EnvoySnapshot
+			snap     *envoycache.Snapshot
 			proxyKey string
 		}{
 			snap:     p.snap,
@@ -59,7 +78,7 @@ func (p XdsSnapWrapper) MarshalJSON() (out []byte, err error) {
 		})
 	}
 
-	snap := p.snap.Clone().(*xds.EnvoySnapshot)
+	snap := cloneSnap(p.snap)
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -70,10 +89,10 @@ func (p XdsSnapWrapper) MarshalJSON() (out []byte, err error) {
 	// redact things
 	redact(snap)
 	snapJson := map[string]map[string]any{}
-	addToSnap(snapJson, "Listeners", snap.Listeners.Items)
-	addToSnap(snapJson, "Clusters", snap.Clusters.Items)
-	addToSnap(snapJson, "Routes", snap.Routes.Items)
-	addToSnap(snapJson, "Endpoints", snap.Endpoints.Items)
+	addToSnap(snapJson, "Listeners", snap.Resources[envoycachetypes.Listener].Items)
+	addToSnap(snapJson, "Clusters", snap.Resources[envoycachetypes.Cluster].Items)
+	addToSnap(snapJson, "Routes", snap.Resources[envoycachetypes.Route].Items)
+	addToSnap(snapJson, "Endpoints", snap.Resources[envoycachetypes.Endpoint].Items)
 
 	return json.Marshal(struct {
 		Snap     any
@@ -84,10 +103,10 @@ func (p XdsSnapWrapper) MarshalJSON() (out []byte, err error) {
 	})
 }
 
-func addToSnap(snapJson map[string]map[string]any, k string, resources map[string]cache.Resource) {
+func addToSnap(snapJson map[string]map[string]any, k string, resources map[string]envoycachetypes.ResourceWithTTL) {
 
 	for rname, r := range resources {
-		rJson, _ := protojson.Marshal(r.ResourceProto().(proto.Message))
+		rJson, _ := protojson.Marshal(r.Resource)
 		var rAny any
 		json.Unmarshal(rJson, &rAny)
 		if snapJson[k] == nil {
@@ -97,17 +116,17 @@ func addToSnap(snapJson map[string]map[string]any, k string, resources map[strin
 	}
 }
 
-func redact(snap *xds.EnvoySnapshot) {
+func redact(snap *envoycache.Snapshot) {
 	// clusters and listener might have secrets
-	for _, l := range snap.Listeners.Items {
-		redactProto(l.ResourceProto())
+	for _, l := range snap.Resources[envoycachetypes.Listener].Items {
+		redactProto(l.Resource)
 	}
-	for _, l := range snap.Clusters.Items {
-		redactProto(l.ResourceProto())
+	for _, l := range snap.Resources[envoycachetypes.Cluster].Items {
+		redactProto(l.Resource)
 	}
 }
 
-func redactProto(m oldproto.Message) {
+func redactProto(m proto.Message) {
 	var msg proto.Message = m.(proto.Message)
 	visitFields(msg.ProtoReflect(), false)
 }

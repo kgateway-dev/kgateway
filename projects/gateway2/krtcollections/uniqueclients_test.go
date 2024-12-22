@@ -127,7 +127,7 @@ func TestUniqueClients(t *testing.T) {
 			for i := range tc.requests {
 				for j := 0; j < 10; j++ {
 					g.Expect(ucc.List()).To(HaveLen(len(allUcc) - i))
-					cb.OnStreamClosed(int64(i*10 + j))
+					cb.OnStreamClosed(int64(i*10+j), nil)
 				}
 				// make sure client removed only when all similar clients are removed.
 				g.Expect(ucc.List()).To(HaveLen(len(allUcc) - 1 - i))

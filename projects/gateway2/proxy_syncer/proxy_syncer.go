@@ -18,7 +18,8 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/avast/retry-go/v4"
-	deprecatedproto "github.com/golang/protobuf/proto"
+	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/solo-io/gloo/pkg/utils/statsutils"
@@ -37,8 +38,6 @@ import (
 	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"google.golang.org/protobuf/proto"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -83,7 +82,7 @@ type GatewayXdsResources struct {
 
 	reports reports.ReportMap
 	// Clusters are items in the CDS response payload.
-	Clusters     []envoycache.Resource
+	Clusters     []envoycachetypes.ResourceWithTTL
 	ClustersHash uint64
 
 	// Routes are items in the RDS response payload.
@@ -100,14 +99,13 @@ func (r GatewayXdsResources) Equals(in GatewayXdsResources) bool {
 	return r.NamespacedName == in.NamespacedName && report{r.reports}.Equals(report{in.reports}) && r.ClustersHash == in.ClustersHash &&
 		r.Routes.Version == in.Routes.Version && r.Listeners.Version == in.Listeners.Version
 }
-func sliceToResourcesHash[T proto.Message](slice []T) ([]envoycache.Resource, uint64) {
-	var slicePb []envoycache.Resource
+func sliceToResourcesHash[T proto.Message](slice []T) ([]envoycachetypes.ResourceWithTTL, uint64) {
+	var slicePb []envoycachetypes.ResourceWithTTL
 	var resourcesHash uint64
 	for _, r := range slice {
 		var m proto.Message = r
-		dm := m.(deprecatedproto.Message)
 		hash := ggv2utils.HashProto(r)
-		slicePb = append(slicePb, resource.NewEnvoyResource(envoycache.ResourceProto(dm)))
+		slicePb = append(slicePb, envoycachetypes.ResourceWithTTL{Resource: m})
 		resourcesHash ^= hash
 	}
 
@@ -116,7 +114,7 @@ func sliceToResourcesHash[T proto.Message](slice []T) ([]envoycache.Resource, ui
 
 func sliceToResources[T proto.Message](slice []T) envoycache.Resources {
 	r, h := sliceToResourcesHash(slice)
-	return envoycache.NewResources(fmt.Sprintf("%d", h), r)
+	return envoycache.NewResourcesWithTTL(fmt.Sprintf("%d", h), r)
 
 }
 
