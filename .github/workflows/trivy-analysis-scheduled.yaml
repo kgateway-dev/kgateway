@@ -3,9 +3,16 @@ name: Scheduled Security Scan
 on:
   # allow for version to be manually specified under actions page
   workflow_dispatch: {}
-  schedule:
-    # Monday 4am EST so as to hope for this to complete prior to a 9 AM check 
-    - cron: "0 8 * * 1"
+  #
+  # Typically this job will execute on a weekly cadence
+  # Right now, it reports results to a Solo.io specific Slack channel
+  # During the ongoing donation process, we will want to find an appropriate place to report
+  # the results. In the meantime, we are disabling this action, as there is no action taken
+  # on the results
+  #
+  # schedule:
+    # Monday 4am EST so as to hope for this to complete prior to a 9 AM check
+    # - cron: "0 8 * * 1"
 
 env:
   SLACK_DEBUG_TESTING: false   # when set to "true", send notifications to #slack-integration-testing.  Otherwise, post to #edge-team-bots
