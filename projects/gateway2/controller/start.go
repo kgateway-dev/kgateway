@@ -100,7 +100,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	ctrl.SetLogger(czap.New(opts...))
 	istiolog.Configure(loggingOptions)
 
-	scheme := glooschemes.DefaultScheme()
+	scheme := DefaultScheme()
 
 	// Extend the scheme if the TCPRoute CRD exists.
 	if err := glooschemes.AddGatewayV1A2Scheme(cfg.RestConfig, scheme); err != nil {
