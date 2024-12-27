@@ -202,6 +202,7 @@ func (r report) Equals(in report) bool {
 	return true
 }
 
+// Note: isOurGw is shared between us and the deployer.
 func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) bool, krtopts krtutil.KrtOptions) error {
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
 	logger := contextutils.LoggerFrom(ctx)
@@ -243,12 +244,6 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 
 		return toResources(gw, xdsSnap, rm)
 	}, krtopts.ToOptions("MostXdsSnapshots")...)
-	// TODO: disable dest rule plugin if we have setting
-	//	if s.initialSettings.Spec.GetGloo().GetIstioOptions().GetEnableIntegration().GetValue() {
-	//		s.destRules = NewDestRuleIndex(s.istioClient, dbg)
-	//	} else {
-	//		s.destRules = NewEmptyDestRuleIndex()
-	//	}
 
 	var endpointPlugins []extensionsplug.EndpointPlugin
 	for _, ext := range s.extensions.ContributesPolicies {

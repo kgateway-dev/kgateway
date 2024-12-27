@@ -20,7 +20,8 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-func NewControlPlane(ctx context.Context,
+func NewControlPlane(
+	ctx context.Context,
 	bindAddr net.Addr,
 	callbacks xdsserver.Callbacks) (envoycache.SnapshotCache, error) {
 	lis, err := net.Listen(bindAddr.Network(), bindAddr.String())

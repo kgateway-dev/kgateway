@@ -26,6 +26,10 @@ const (
 )
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
+	if !commoncol.InitialSettings.Spec.GetGloo().GetIstioOptions().GetEnableIntegration().GetValue() {
+		return extensionsplug.Plugin{}
+	}
+
 	gk := schema.GroupKind{
 		Group: gvr.DestinationRule.Group,
 		Kind:  "DestinationRule",

@@ -160,13 +160,14 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		return nil, err
 	}
 	commoncol := common.CommonCollections{
-		OurClient: cli,
-		Client:    cfg.Client,
-		KrtOpts:   cfg.KrtOptions,
-		Secrets:   krtcollections.NewSecretIndex(secrets, refgrants),
-		Pods:      cfg.AugmentedPods,
-		Settings:  cfg.Settings,
-		RefGrants: refgrants,
+		OurClient:       cli,
+		Client:          cfg.Client,
+		KrtOpts:         cfg.KrtOptions,
+		Secrets:         krtcollections.NewSecretIndex(secrets, refgrants),
+		Pods:            cfg.AugmentedPods,
+		Settings:        cfg.Settings,
+		InitialSettings: cfg.InitialSettings,
+		RefGrants:       refgrants,
 	}
 
 	gwClasses := sets.New(append(cfg.SetupOpts.ExtraGatewayClasses, wellknown.GatewayClassName)...)
