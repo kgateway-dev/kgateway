@@ -1,10 +1,10 @@
 package krtcollections
 
 import (
-	"context"
 	"maps"
 
 	"github.com/solo-io/gloo/projects/gateway2/ir"
+	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"istio.io/api/label"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"
@@ -53,9 +53,9 @@ func (c LocalityPod) Equals(in LocalityPod) bool {
 		slices.Equal(c.Addresses, in.Addresses)
 }
 
-func newNodeCollection(istioClient kube.Client, dbg *krt.DebugHandler) krt.Collection[NodeMetadata] {
+func newNodeCollection(istioClient kube.Client, krtOptions krtutil.KrtOptions) krt.Collection[NodeMetadata] {
 	nodeClient := kclient.New[*corev1.Node](istioClient)
-	nodes := krt.WrapClient(nodeClient, krt.WithName("Nodes"), krt.WithDebugging(dbg))
+	nodes := krt.WrapClient(nodeClient, krtOptions.ToOptions("Nodes")...)
 	return NewNodeMetadataCollection(nodes)
 }
 
@@ -68,17 +68,17 @@ func NewNodeMetadataCollection(nodes krt.Collection[*corev1.Node]) krt.Collectio
 	})
 }
 
-func NewPodsCollection(ctx context.Context, istioClient kube.Client, dbg *krt.DebugHandler) krt.Collection[LocalityPod] {
+func NewPodsCollection(istioClient kube.Client, krtOptions krtutil.KrtOptions) krt.Collection[LocalityPod] {
 	podClient := kclient.NewFiltered[*corev1.Pod](istioClient, kclient.Filter{
 		ObjectTransform: kube.StripPodUnusedFields,
 	})
-	pods := krt.WrapClient(podClient, krt.WithName("Pods"), krt.WithDebugging(dbg))
-	nodes := newNodeCollection(istioClient, dbg)
-	return NewLocalityPodsCollection(nodes, pods, dbg)
+	pods := krt.WrapClient(podClient, krtOptions.ToOptions("Pods")...)
+	nodes := newNodeCollection(istioClient, krtOptions)
+	return NewLocalityPodsCollection(nodes, pods, krtOptions)
 }
 
-func NewLocalityPodsCollection(nodes krt.Collection[NodeMetadata], pods krt.Collection[*corev1.Pod], dbg *krt.DebugHandler) krt.Collection[LocalityPod] {
-	return krt.NewCollection(pods, augmentPodLabels(nodes), krt.WithName("AugmentPod"), krt.WithDebugging(dbg))
+func NewLocalityPodsCollection(nodes krt.Collection[NodeMetadata], pods krt.Collection[*corev1.Pod], krtOptions krtutil.KrtOptions) krt.Collection[LocalityPod] {
+	return krt.NewCollection(pods, augmentPodLabels(nodes), krtOptions.ToOptions("AugmentPod")...)
 }
 
 func augmentPodLabels(nodes krt.Collection[NodeMetadata]) func(kctx krt.HandlerContext, pod *corev1.Pod) *LocalityPod {

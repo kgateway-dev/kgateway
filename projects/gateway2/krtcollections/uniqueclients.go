@@ -12,6 +12,7 @@ import (
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
+	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
@@ -54,7 +55,7 @@ type callbacks struct {
 }
 
 // If augmentedPods is nil, we won't use the pod locality info, and all pods for the same gateway will receive the same config.
-type UniquelyConnectedClientsBulider func(ctx context.Context, handler *krt.DebugHandler, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniqlyConnectedClient]
+type UniquelyConnectedClientsBulider func(ctx context.Context, krtOpts krtutil.KrtOptions, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniqlyConnectedClient]
 
 // THIS IS THE SET OF THINGS WE RUN TRANSLATION FOR
 // add returned callbacks to the xds server.
@@ -70,7 +71,7 @@ func NewUniquelyConnectedClients() (xdsserver.Callbacks, UniquelyConnectedClient
 }
 
 func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBulider {
-	return func(ctx context.Context, handler *krt.DebugHandler, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniqlyConnectedClient] {
+	return func(ctx context.Context, krtOpts krtutil.KrtOptions, augmentedPods krt.Collection[LocalityPod]) krt.Collection[ir.UniqlyConnectedClient] {
 		trigger := krt.NewRecomputeTrigger(true)
 		col := &callbacksCollection{
 			logger:           contextutils.LoggerFrom(ctx).Desugar(),
@@ -88,8 +89,7 @@ func buildCollection(callbacks *callbacks) UniquelyConnectedClientsBulider {
 
 				return col.getClients()
 			},
-			krt.WithName("UniqueConnectedClients"),
-			krt.WithDebugging(handler),
+			krtOpts.ToOptions("UniqueConnectedClients")...,
 		)
 	}
 }

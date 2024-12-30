@@ -7,7 +7,6 @@ import (
 	"maps"
 	"time"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
@@ -28,7 +27,6 @@ import (
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
-	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator"
 	"github.com/solo-io/gloo/projects/gateway2/translator/irtranslator"
@@ -53,17 +51,14 @@ const gatewayV1A2Version = "v1alpha2"
 type ProxySyncer struct {
 	controllerName string
 
-	initialSettings   *glookubev1.Settings
-	settings          krt.Singleton[glookubev1.Settings]
-	mgr               manager.Manager
-	extensionsFactory extensions.K8sGatewayExtensionsFactory
-	extensions        extensionsplug.Plugin
-	commonCols        common.CommonCollections
+	mgr              manager.Manager
+	commonCols       *common.CommonCollections
+	translatorSyncer *translator.CombinedTranslator
+	extensions       extensionsplug.Plugin
 
 	istioClient     kube.Client
 	proxyTranslator ProxyTranslator
 
-	augmentedPods krt.Collection[krtcollections.LocalityPod]
 	uniqueClients krt.Collection[ir.UniqlyConnectedClient]
 
 	statusReport            krt.Singleton[report]
@@ -71,10 +66,6 @@ type ProxySyncer struct {
 	perclientSnapCollection krt.Collection[XdsSnapWrapper]
 
 	waitForSync []cache.InformerSynced
-
-	gwtranslator       extensionsplug.K8sGwTranslator
-	irtranslator       *irtranslator.Translator
-	upstreamTranslator *irtranslator.UpstreamTranslator
 }
 
 type GatewayXdsResources struct {
@@ -142,23 +133,22 @@ func NewProxySyncer(
 	controllerName string,
 	mgr manager.Manager,
 	client kube.Client,
-	augmentedPods krt.Collection[krtcollections.LocalityPod],
 	uniqueClients krt.Collection[ir.UniqlyConnectedClient],
 	extensionsFactory extensions.K8sGatewayExtensionsFactory,
-	commoncol common.CommonCollections,
+	commonCols *common.CommonCollections,
 	xdsCache envoycache.SnapshotCache,
 ) *ProxySyncer {
+	extensions := extensionsFactory(ctx, commonCols)
+
 	return &ProxySyncer{
-		initialSettings:   initialSettings,
-		settings:          settings,
-		controllerName:    controllerName,
-		extensionsFactory: extensionsFactory,
-		commonCols:        commoncol,
-		mgr:               mgr,
-		istioClient:       client,
-		proxyTranslator:   NewProxyTranslator(xdsCache),
-		augmentedPods:     augmentedPods,
-		uniqueClients:     uniqueClients,
+		controllerName:   controllerName,
+		commonCols:       commonCols,
+		mgr:              mgr,
+		istioClient:      client,
+		proxyTranslator:  NewProxyTranslator(xdsCache),
+		uniqueClients:    uniqueClients,
+		translatorSyncer: translator.NewCombinedTranslator(ctx, extensions, commonCols),
+		extensions:       extensions,
 	}
 }
 
@@ -207,53 +197,23 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
 	logger := contextutils.LoggerFrom(ctx)
 
-	s.extensions = s.extensionsFactory(ctx, &s.commonCols)
-
-	nsCol := krtcollections.NewNamespaceCollection(ctx, s.istioClient, krtopts)
+	s.translatorSyncer.Init(ctx, isOurGw)
 
 	kubeGateways, routes, finalUpstreams, endpointIRs := krtcollections.InitCollections(ctx, s.extensions, s.istioClient, isOurGw, s.commonCols.RefGrants, krtopts)
-	queries := query.NewData(
-		routes,
-		s.commonCols.Secrets,
-		nsCol,
-	)
-	s.gwtranslator = translator.NewTranslator(queries)
-	s.irtranslator = &irtranslator.Translator{
-		ContributedPolicies: s.extensions.ContributesPolicies,
-	}
-	s.upstreamTranslator = &irtranslator.UpstreamTranslator{
-		ContributedUpstreams: make(map[schema.GroupKind]ir.UpstreamInit),
-		ContributedPolicies:  s.extensions.ContributesPolicies,
-	}
-	for k, up := range s.extensions.ContributesUpstreams {
-		s.upstreamTranslator.ContributedUpstreams[k] = up.UpstreamInit
-	}
 
 	s.mostXdsSnapshots = krt.NewCollection(kubeGateways.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
 		logger.Debugf("building proxy for kube gw %s version %s", client.ObjectKeyFromObject(gw.Obj), gw.Obj.GetResourceVersion())
-		rm := reports.NewReportMap()
-		r := reports.NewReporter(&rm)
-		gwir := s.buildProxy(kctx, ctx, gw, r)
 
-		if gwir == nil {
+		xdsSnap, rm := s.translatorSyncer.TranslateGateway(kctx, ctx, gw)
+		if xdsSnap == nil {
 			return nil
 		}
 
-		// we are recomputing xds snapshots as proxies have changed, signal that we need to sync xds with these new snapshots
-		xdsSnap := s.irtranslator.Translate(*gwir, r)
-
-		return toResources(gw, xdsSnap, rm)
+		return toResources(gw, *xdsSnap, rm)
 	}, krtopts.ToOptions("MostXdsSnapshots")...)
 
-	var endpointPlugins []extensionsplug.EndpointPlugin
-	for _, ext := range s.extensions.ContributesPolicies {
-		if ext.PerClientProcessEndpoints != nil {
-			endpointPlugins = append(endpointPlugins, ext.PerClientProcessEndpoints)
-		}
-	}
-
-	epPerClient := NewPerClientEnvoyEndpoints(logger.Desugar(), krtopts, s.uniqueClients, endpointIRs, endpointPlugins)
-	clustersPerClient := NewPerClientEnvoyClusters(ctx, krtopts, s.upstreamTranslator, finalUpstreams, s.uniqueClients)
+	epPerClient := NewPerClientEnvoyEndpoints(logger.Desugar(), krtopts, s.uniqueClients, endpointIRs, s.translatorSyncer.TranslateEndpoints)
+	clustersPerClient := NewPerClientEnvoyClusters(ctx, krtopts, s.translatorSyncer.GetUpstreamTranslator(), finalUpstreams, s.uniqueClients)
 	s.perclientSnapCollection = snapshotPerClient(logger.Desugar(), krtopts, s.uniqueClients, s.mostXdsSnapshots, epPerClient, clustersPerClient)
 
 	// as proxies are created, they also contain a reportMap containing status for the Gateway and associated xRoutes (really parentRefs)
@@ -297,14 +257,13 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 	s.waitForSync = []cache.InformerSynced{
 		endpointIRs.Synced().HasSynced,
 		endpointIRs.Synced().HasSynced,
-		s.augmentedPods.Synced().HasSynced,
 		finalUpstreams.Synced().HasSynced,
 		kubeGateways.Gateways.Synced().HasSynced,
 		s.perclientSnapCollection.Synced().HasSynced,
 		s.mostXdsSnapshots.Synced().HasSynced,
 		s.extensions.HasSynced,
-		s.settings.AsCollection().Synced().HasSynced,
 		routes.HasSynced,
+		s.translatorSyncer.HasSynced,
 	}
 	return nil
 }
@@ -398,38 +357,6 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	}()
 	<-ctx.Done()
 	return nil
-}
-
-// buildProxy performs translation of a kube Gateway -> gloov1.Proxy (really a wrapper type)
-func (s *ProxySyncer) buildProxy(kctx krt.HandlerContext, ctx context.Context, gw ir.Gateway, r reports.Reporter) *ir.GatewayIR {
-	stopwatch := statsutils.NewTranslatorStopWatch("ProxySyncer")
-	stopwatch.Start()
-	var gatewayTranslator extensionsplug.K8sGwTranslator = s.gwtranslator
-	if s.extensions.ContributesGwTranslator != nil {
-		maybeGatewayTranslator := s.extensions.ContributesGwTranslator(gw.Obj)
-		if maybeGatewayTranslator != nil {
-			// TODO: need better error handling here
-			// and filtering out of our gateway classes, like before
-			// contextutils.LoggerFrom(ctx).Errorf("no translator found for Gateway %s (gatewayClass %s)", gw.Name, gw.Obj.Spec.GatewayClassName)
-			gatewayTranslator = maybeGatewayTranslator
-		}
-	} else {
-
-	}
-	proxy := gatewayTranslator.Translate(kctx, ctx, &gw, r)
-	if proxy == nil {
-		return nil
-	}
-
-	duration := stopwatch.Stop(ctx)
-	contextutils.LoggerFrom(ctx).Debugf("translated proxy %s/%s in %s", gw.Namespace, gw.Name, duration.String())
-
-	// TODO: these are likely unnecessary and should be removed!
-	//	applyPostTranslationPlugins(ctx, pluginRegistry, &gwplugins.PostTranslationContext{
-	//		TranslatedGateways: translatedGateways,
-	//	})
-
-	return proxy
 }
 
 func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {

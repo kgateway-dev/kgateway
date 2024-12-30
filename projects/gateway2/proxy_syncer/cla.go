@@ -1,13 +1,10 @@
 package proxy_syncer
 
 import (
-	"context"
 	"fmt"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	"github.com/solo-io/gloo/projects/gateway2/endpoints"
-	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"go.uber.org/zap"
@@ -73,34 +70,20 @@ func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerConte
 
 func NewPerClientEnvoyEndpoints(logger *zap.Logger, krtopts krtutil.KrtOptions, uccs krt.Collection[ir.UniqlyConnectedClient],
 	glooEndpoints krt.Collection[ir.EndpointsForUpstream],
-	plugins []extensionsplug.EndpointPlugin,
+	translateEndpoints func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, ep ir.EndpointsForUpstream) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64),
 ) PerClientEnvoyEndpoints {
 	clas := krt.NewManyCollection(glooEndpoints, func(kctx krt.HandlerContext, ep ir.EndpointsForUpstream) []UccWithEndpoints {
 		uccs := krt.Fetch(kctx, uccs)
 		uccWithEndpointsRet := make([]UccWithEndpoints, 0, len(uccs))
 		for _, ucc := range uccs {
-
-			// check if we have a plugin to do it
-			cla, additionalHash := proccessWithPlugins(plugins, kctx, context.TODO(), ucc, ep)
-			if cla != nil {
-				uccWithEp := UccWithEndpoints{
-					Client:        ucc,
-					Endpoints:     cla,
-					EndpointsHash: ep.LbEpsEqualityHash ^ additionalHash,
-					endpointsName: ep.ResourceName(),
-				}
-
-				uccWithEndpointsRet = append(uccWithEndpointsRet, uccWithEp)
-			} else {
-				cla := endpoints.PrioritizeEndpoints(logger, nil, ep, ucc)
-				uccWithEp := UccWithEndpoints{
-					Client:        ucc,
-					Endpoints:     cla,
-					EndpointsHash: ep.LbEpsEqualityHash,
-					endpointsName: ep.ResourceName(),
-				}
-				uccWithEndpointsRet = append(uccWithEndpointsRet, uccWithEp)
+			cla, additionalHash := translateEndpoints(kctx, ucc, ep)
+			u := UccWithEndpoints{
+				Client:        ucc,
+				Endpoints:     cla,
+				EndpointsHash: ep.LbEpsEqualityHash ^ additionalHash,
+				endpointsName: ep.ResourceName(),
 			}
+			uccWithEndpointsRet = append(uccWithEndpointsRet, u)
 		}
 		return uccWithEndpointsRet
 	}, krtopts.ToOptions("PerClientEnvoyEndpoints")...)
@@ -112,14 +95,4 @@ func NewPerClientEnvoyEndpoints(logger *zap.Logger, krtopts krtutil.KrtOptions, 
 		endpoints: clas,
 		index:     idx,
 	}
-}
-
-func proccessWithPlugins(plugins []extensionsplug.EndpointPlugin, kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.EndpointsForUpstream) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64) {
-	for _, processEnddpoints := range plugins {
-		cla, additionalHash := processEnddpoints(kctx, context.TODO(), ucc, in)
-		if cla != nil {
-			return cla, additionalHash
-		}
-	}
-	return nil, 0
 }

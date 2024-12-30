@@ -1,4 +1,4 @@
-package translator_test
+package gatewaytranslator_test
 
 import (
 	"context"

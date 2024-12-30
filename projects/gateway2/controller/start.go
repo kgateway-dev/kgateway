@@ -10,7 +10,6 @@ import (
 	glooschemes "github.com/solo-io/gloo/pkg/schemes"
 	"github.com/solo-io/go-utils/contextutils"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -33,12 +32,9 @@ import (
 	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	uzap "go.uber.org/zap"
 	istiokube "istio.io/istio/pkg/kube"
-	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	istiolog "istio.io/istio/pkg/log"
-	corev1 "k8s.io/api/core/v1"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 const (
@@ -134,42 +130,17 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	mgr.AddReadyzCheck("ready-ping", healthz.Ping)
 
 	setupLog.Info("initializing k8sgateway extensions")
-	secretClient := kclient.New[*corev1.Secret](cfg.Client)
-	k8sSecretsRaw := krt.WrapClient(secretClient, krt.WithStop(ctx.Done()), krt.WithName("Secrets") /* no debug here - we don't want raw secrets printed*/)
-	k8sSecrets := krt.NewCollection(k8sSecretsRaw, func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
-		res := ir.Secret{
-			ObjectSource: ir.ObjectSource{
-				Group:     "",
-				Kind:      "Secret",
-				Namespace: i.Namespace,
-				Name:      i.Name,
-			},
-			Obj:  i,
-			Data: i.Data,
-		}
-		return &res
-	}, cfg.KrtOptions.ToOptions("secrets")...)
-	secrets := map[schema.GroupKind]krt.Collection[ir.Secret]{
-		{Group: "", Kind: "Secret"}: k8sSecrets,
-	}
-
-	refgrantsCol := krt.WrapClient(kclient.New[*gwv1beta1.ReferenceGrant](cfg.Client), cfg.KrtOptions.ToOptions("RefGrants")...)
-	refgrants := krtcollections.NewRefGrantIndex(refgrantsCol)
 	cli, err := versioned.NewForConfig(cfg.RestConfig)
 	if err != nil {
 		return nil, err
 	}
-	commoncol := common.CommonCollections{
-		OurClient:       cli,
-		Client:          cfg.Client,
-		KrtOpts:         cfg.KrtOptions,
-		Secrets:         krtcollections.NewSecretIndex(secrets, refgrants),
-		Pods:            cfg.AugmentedPods,
-		Settings:        cfg.Settings,
-		InitialSettings: cfg.InitialSettings,
-		RefGrants:       refgrants,
-	}
-
+	commoncol := common.NewCommonCollections(
+		cfg.KrtOptions,
+		cfg.Client,
+		cli,
+		cfg.InitialSettings,
+		cfg.Settings,
+	)
 	gwClasses := sets.New(append(cfg.SetupOpts.ExtraGatewayClasses, wellknown.GatewayClassName)...)
 	isOurGw := func(gw *apiv1.Gateway) bool {
 		return gwClasses.Has(string(gw.Spec.GatewayClassName))
@@ -183,7 +154,6 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		wellknown.GatewayControllerName,
 		mgr,
 		cfg.Client,
-		cfg.AugmentedPods,
 		cfg.UniqueClients,
 		pluginFactoryWithBuiltin(cfg.ExtraPlugins),
 		commoncol,

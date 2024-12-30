@@ -122,7 +122,9 @@ func StartGGv2WithConfig(ctx context.Context, setupOpts *controller.SetupOpts,
 	}
 
 	logger.Info("creating krt collections")
-	augmentedPods := krtcollections.NewPodsCollection(ctx, kubeClient, setupOpts.KrtDebugger)
+	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
+
+	augmentedPods := krtcollections.NewPodsCollection(kubeClient, krtOpts)
 	setting := krtutil.SetupCollectionDynamic[glookubev1.Settings](
 		ctx,
 		kubeClient,
@@ -134,7 +136,7 @@ func StartGGv2WithConfig(ctx context.Context, setupOpts *controller.SetupOpts,
 		augmentedPodsForUcc = nil
 	}
 
-	ucc := uccBuilder(ctx, setupOpts.KrtDebugger, augmentedPodsForUcc)
+	ucc := uccBuilder(ctx, krtOpts, augmentedPodsForUcc)
 
 	settingsSingle := krt.NewSingleton(func(ctx krt.HandlerContext) *glookubev1.Settings {
 		s := krt.FetchOne(ctx, setting,
@@ -148,8 +150,6 @@ func StartGGv2WithConfig(ctx context.Context, setupOpts *controller.SetupOpts,
 	logger.Info("creating reporter")
 
 	logger.Info("initializing controller")
-
-	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
 
 	c, err := controller.NewControllerBuilder(ctx, controller.StartConfig{
 		ExtraPlugins:  extraPlugins,
