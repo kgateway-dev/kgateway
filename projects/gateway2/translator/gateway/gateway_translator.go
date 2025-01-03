@@ -1,4 +1,4 @@
-package gatewaytranslator
+package gateway
 
 import (
 	"context"

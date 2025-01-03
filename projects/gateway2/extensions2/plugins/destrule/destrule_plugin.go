@@ -27,6 +27,7 @@ const (
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
 	if !commoncol.InitialSettings.Spec.GetGloo().GetIstioOptions().GetEnableIntegration().GetValue() {
+		// don't add support for destination rules if istio integration is not enabled
 		return extensionsplug.Plugin{}
 	}
 
