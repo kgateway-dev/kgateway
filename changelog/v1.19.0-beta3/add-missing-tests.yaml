@@ -1,0 +1,5 @@
+
+changelog:
+- type: NON_USER_FACING
+  description: > 
+    Add missing e2e suite test for checking gateway param eternal traffic policy

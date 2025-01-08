@@ -190,6 +190,10 @@ func (s *testingSuite) TestProvisionResourcesUpdatedWithValidParameters() {
 	s.patchGatewayParameters(gwParamsDefault.ObjectMeta, func(parameters *v1alpha1.GatewayParameters) {
 		parameters.Spec.Kube.Service.ExternalTrafficPolicy = ptr.To(corev1.ServiceExternalTrafficPolicyLocal)
 	})
+
+	// the GatewayParameters modification should cause the deployer to re-run and update the
+	// service to have ExternalTrafficPolicy = Local
+	s.testInstallation.Assertions.EventuallyExternalTrafficPolicy(s.ctx, *proxyService, gomega.Equal(corev1.ServiceExternalTrafficPolicyLocal))
 }
 
 func (s *testingSuite) TestProvisionResourcesNotUpdatedWithInvalidParameters() {
