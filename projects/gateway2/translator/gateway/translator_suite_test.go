@@ -1,4 +1,4 @@
-package translator_test
+package gateway_test
 
 import (
 	"testing"

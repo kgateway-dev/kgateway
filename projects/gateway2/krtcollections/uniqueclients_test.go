@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/utils"
+	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"google.golang.org/protobuf/proto"
@@ -92,12 +93,12 @@ func TestUniqueClients(t *testing.T) {
 			if tc.inputs != nil {
 				mock := krttest.NewMock(t, tc.inputs)
 				nodes := NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
-				pods = NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), nil)
+				pods = NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})
 				pods.Synced().WaitUntilSynced(context.Background().Done())
 			}
 
 			cb, uccBuilder := NewUniquelyConnectedClients()
-			ucc := uccBuilder(context.Background(), nil, pods)
+			ucc := uccBuilder(context.Background(), krtutil.KrtOptions{}, pods)
 			ucc.Synced().WaitUntilSynced(context.Background().Done())
 
 			// check fetch as well
@@ -127,7 +128,7 @@ func TestUniqueClients(t *testing.T) {
 			for i := range tc.requests {
 				for j := 0; j < 10; j++ {
 					g.Expect(ucc.List()).To(HaveLen(len(allUcc) - i))
-					cb.OnStreamClosed(int64(i*10 + j))
+					cb.OnStreamClosed(int64(i*10+j), nil)
 				}
 				// make sure client removed only when all similar clients are removed.
 				g.Expect(ucc.List()).To(HaveLen(len(allUcc) - 1 - i))

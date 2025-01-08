@@ -3,18 +3,57 @@ package krtcollections
 import (
 	"context"
 
-	istiogvr "istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube"
+	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
 
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
+	"istio.io/istio/pkg/config/schema/gvk"
+	"istio.io/istio/pkg/config/schema/gvr"
+	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
-func InitCollectionsWithGateways(ctx context.Context,
+func registerTypes() {
+	skubeclient.Register[*gwv1.HTTPRoute](
+		gvr.HTTPRoute_v1,
+		gvk.HTTPRoute_v1.Kubernetes(),
+		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return c.GatewayAPI().GatewayV1().HTTPRoutes(namespace).List(context.Background(), o)
+		},
+		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return c.GatewayAPI().GatewayV1().HTTPRoutes(namespace).Watch(context.Background(), o)
+		},
+	)
+	skubeclient.Register[*gwv1a2.TCPRoute](
+		gvr.TCPRoute,
+		gvk.TCPRoute.Kubernetes(),
+		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return c.GatewayAPI().GatewayV1alpha2().TCPRoutes(namespace).List(context.Background(), o)
+		},
+		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return c.GatewayAPI().GatewayV1alpha2().TCPRoutes(namespace).Watch(context.Background(), o)
+		},
+	)
+	skubeclient.Register[*gwv1.Gateway](
+		gvr.KubernetesGateway_v1,
+		gvk.KubernetesGateway_v1.Kubernetes(),
+		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return c.GatewayAPI().GatewayV1().Gateways(namespace).List(context.Background(), o)
+		},
+		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return c.GatewayAPI().GatewayV1().Gateways(namespace).Watch(context.Background(), o)
+		},
+	)
+}
+
+func initCollectionsWithGateways(ctx context.Context,
 	isOurGw func(gw *gwv1.Gateway) bool,
 	kubeRawGateways krt.Collection[*gwv1.Gateway],
 	httpRoutes krt.Collection[*gwv1.HTTPRoute],
@@ -46,28 +85,13 @@ func InitCollections(ctx context.Context,
 	isOurGw func(gw *gwv1.Gateway) bool,
 	refgrants *RefGrantIndex,
 	krtopts krtutil.KrtOptions) (*GatewayIndex, *RoutesIndex, krt.Collection[ir.Upstream], krt.Collection[ir.EndpointsForUpstream]) {
+	registerTypes()
 
-	kubeRawGateways := krtutil.SetupCollectionDynamic[gwv1.Gateway](
-		ctx,
-		istioClient,
-		istiogvr.KubernetesGateway_v1,
-		krtopts.ToOptions("KubeGateways")...,
-	)
-	httpRoutes := krtutil.SetupCollectionDynamic[gwv1.HTTPRoute](
-		ctx,
-		istioClient,
-		istiogvr.HTTPRoute_v1,
-		krtopts.ToOptions("HTTPRoute")...,
-	)
+	httpRoutes := krt.WrapClient(kclient.New[*gwv1.HTTPRoute](istioClient), krtopts.ToOptions("HTTPRoute")...)
+	tcproutes := krt.WrapClient(kclient.New[*gwv1a2.TCPRoute](istioClient), krtopts.ToOptions("TCPRoute")...)
+	kubeRawGateways := krt.WrapClient(kclient.New[*gwv1.Gateway](istioClient), krtopts.ToOptions("KubeGateways")...)
 
-	tcproutes := krtutil.SetupCollectionDynamic[gwv1a2.TCPRoute](
-		ctx,
-		istioClient,
-		istiogvr.TCPRoute,
-		krtopts.ToOptions("TCPRoute")...,
-	)
-
-	return InitCollectionsWithGateways(ctx, isOurGw, kubeRawGateways, httpRoutes, tcproutes, refgrants, extensions, krtopts)
+	return initCollectionsWithGateways(ctx, isOurGw, kubeRawGateways, httpRoutes, tcproutes, refgrants, extensions, krtopts)
 }
 
 func initUpstreams(ctx context.Context,

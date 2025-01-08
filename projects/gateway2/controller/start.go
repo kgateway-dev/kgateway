@@ -10,7 +10,6 @@ import (
 	glooschemes "github.com/solo-io/gloo/pkg/schemes"
 	"github.com/solo-io/go-utils/contextutils"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -18,6 +17,7 @@ import (
 	czap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
+	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/common"
@@ -30,17 +30,11 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	uzap "go.uber.org/zap"
 	istiokube "istio.io/istio/pkg/kube"
-	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	istiolog "istio.io/istio/pkg/log"
-	corev1 "k8s.io/api/core/v1"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 const (
@@ -49,29 +43,25 @@ const (
 	AutoProvision = true
 )
 
+type SetupOpts struct {
+	Cache               envoycache.SnapshotCache
+	ExtraGatewayClasses []string
+
+	KrtDebugger *krt.DebugHandler
+
+	XdsHost string
+	XdsPort int32
+}
+
 var setupLog = ctrl.Log.WithName("setup")
 
 type StartConfig struct {
 	Dev        bool
-	SetupOpts  *bootstrap.SetupOpts
+	SetupOpts  *SetupOpts
 	RestConfig *rest.Config
 	// ExtensionsFactory is the factory function which will return an extensions.K8sGatewayExtensions
 	// This is responsible for producing the extension points that this controller requires
 	ExtraPlugins []extensionsplug.Plugin
-
-	// GlooStatusReporter is the shared reporter from setup_syncer that reports as 'gloo',
-	// it is used to report on Upstreams and Proxies after xds translation.
-	// this is required because various upstream tests expect a certain reporter for Upstreams
-	// TODO: remove the other reporter and only use this one, no need for 2 different reporters
-	GlooStatusReporter reporter.StatusReporter
-
-	// KubeGwStatusReporter is used within any StatusPlugins that must persist a GE-classic style status
-	// TODO: as mentioned above, this should be removed: https://github.com/solo-io/solo-projects/issues/7055
-	KubeGwStatusReporter reporter.StatusReporter
-
-	// SyncerExtensions is a list of extensions, the kube gw controller will use these to get extension-specific
-	// errors & warnings for any Proxies it generates
-	SyncerExtensions []syncer.TranslatorSyncerExtension
 
 	Client istiokube.Client
 
@@ -106,7 +96,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	ctrl.SetLogger(czap.New(opts...))
 	istiolog.Configure(loggingOptions)
 
-	scheme := glooschemes.DefaultScheme()
+	scheme := DefaultScheme()
 
 	// Extend the scheme if the TCPRoute CRD exists.
 	if err := glooschemes.AddGatewayV1A2Scheme(cfg.RestConfig, scheme); err != nil {
@@ -140,41 +130,17 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	mgr.AddReadyzCheck("ready-ping", healthz.Ping)
 
 	setupLog.Info("initializing k8sgateway extensions")
-	secretClient := kclient.New[*corev1.Secret](cfg.Client)
-	k8sSecretsRaw := krt.WrapClient(secretClient, krt.WithStop(ctx.Done()), krt.WithName("Secrets") /* no debug here - we don't want raw secrets printed*/)
-	k8sSecrets := krt.NewCollection(k8sSecretsRaw, func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
-		res := ir.Secret{
-			ObjectSource: ir.ObjectSource{
-				Group:     "",
-				Kind:      "Secret",
-				Namespace: i.Namespace,
-				Name:      i.Name,
-			},
-			Obj:  i,
-			Data: i.Data,
-		}
-		return &res
-	}, cfg.KrtOptions.ToOptions("secrets")...)
-	secrets := map[schema.GroupKind]krt.Collection[ir.Secret]{
-		{Group: "", Kind: "Secret"}: k8sSecrets,
-	}
-
-	refgrantsCol := krt.WrapClient(kclient.New[*gwv1beta1.ReferenceGrant](cfg.Client), cfg.KrtOptions.ToOptions("RefGrants")...)
-	refgrants := krtcollections.NewRefGrantIndex(refgrantsCol)
 	cli, err := versioned.NewForConfig(cfg.RestConfig)
 	if err != nil {
 		return nil, err
 	}
-	commoncol := common.CommonCollections{
-		OurClient: cli,
-		Client:    cfg.Client,
-		KrtOpts:   cfg.KrtOptions,
-		Secrets:   krtcollections.NewSecretIndex(secrets, refgrants),
-		Pods:      cfg.AugmentedPods,
-		Settings:  cfg.Settings,
-		RefGrants: refgrants,
-	}
-
+	commoncol := common.NewCommonCollections(
+		cfg.KrtOptions,
+		cfg.Client,
+		cli,
+		cfg.InitialSettings,
+		cfg.Settings,
+	)
 	gwClasses := sets.New(append(cfg.SetupOpts.ExtraGatewayClasses, wellknown.GatewayClassName)...)
 	isOurGw := func(gw *apiv1.Gateway) bool {
 		return gwClasses.Has(string(gw.Spec.GatewayClassName))
@@ -188,7 +154,6 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		wellknown.GatewayControllerName,
 		mgr,
 		cfg.Client,
-		cfg.AugmentedPods,
 		cfg.UniqueClients,
 		pluginFactoryWithBuiltin(cfg.ExtraPlugins),
 		commoncol,
@@ -223,7 +188,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 	logger.Info("starting gateway controller")
 	// GetXdsAddress waits for gloo-edge to populate the xds address of the server.
 	// in the future this logic may move here and be duplicated.
-	xdsHost, xdsPort := c.cfg.SetupOpts.GetXdsAddress(ctx)
+	xdsHost, xdsPort := c.cfg.SetupOpts.XdsHost, c.cfg.SetupOpts.XdsPort
 	if xdsHost == "" {
 		return ctx.Err()
 	}

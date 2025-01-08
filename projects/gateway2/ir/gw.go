@@ -9,8 +9,6 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-// types here are not in krt collections, so no need for equals
-
 type UpstreamInit struct {
 	InitUpstream func(ctx context.Context, in Upstream, out *envoy_config_cluster_v3.Cluster)
 }

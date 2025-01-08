@@ -7,6 +7,7 @@ import (
 
 	envoy_config_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
+	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
@@ -19,15 +20,13 @@ import (
 	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/gloo/test/gomega/matchers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
+	jsonpb "google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/utils/pointer"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -46,18 +45,16 @@ import (
 // testBootstrap implements resources.Resource in order to use protoutils.UnmarshalYAML
 // this is hacky but it seems more stable/concise than map-casting all the way down
 // to the field we need.
-type testBootstrap struct {
-	envoy_config_bootstrap.Bootstrap
-}
 
-func (t *testBootstrap) SetMetadata(meta *core.Metadata) {}
+func unmarshalYaml(data []byte, into proto.Message) error {
+	jsn, err := yaml.YAMLToJSON(data)
+	if err != nil {
+		return err
+	}
 
-func (t *testBootstrap) Equal(_ any) bool {
-	return false
-}
+	var j jsonpb.UnmarshalOptions
 
-func (t *testBootstrap) GetMetadata() *core.Metadata {
-	return nil
+	return j.Unmarshal(jsn, into)
 }
 
 type clientObjects []client.Object
@@ -106,10 +103,10 @@ func (objs *clientObjects) findConfigMap(namespace, name string) *corev1.ConfigM
 	return nil
 }
 
-func (objs *clientObjects) getEnvoyConfig(namespace, name string) *testBootstrap {
+func (objs *clientObjects) getEnvoyConfig(namespace, name string) *envoy_config_bootstrap.Bootstrap {
 	cm := objs.findConfigMap(namespace, name).Data
-	var bootstrapCfg testBootstrap
-	err := protoutils.UnmarshalYAML([]byte(cm["envoy.yaml"]), &bootstrapCfg)
+	var bootstrapCfg envoy_config_bootstrap.Bootstrap
+	err := unmarshalYaml([]byte(cm["envoy.yaml"]), &bootstrapCfg)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	return &bootstrapCfg
 }
@@ -767,10 +764,10 @@ var _ = Describe("Deployer", func() {
 				params := fullyDefinedGatewayParameters(wellknown.DefaultGatewayParametersName, defaultNamespace)
 				params.Spec.Kube.PodTemplate.LivenessProbe = generateLivenessProbe()
 				params.Spec.Kube.PodTemplate.ReadinessProbe = generateReadinessProbe()
-				params.Spec.Kube.PodTemplate.TerminationGracePeriodSeconds = pointer.Int(5)
+				params.Spec.Kube.PodTemplate.TerminationGracePeriodSeconds = ptr.To(5)
 				params.Spec.Kube.PodTemplate.GracefulShutdown = &gw2_v1alpha1.GracefulShutdownSpec{
-					Enabled:          pointer.Bool(true),
-					SleepTimeSeconds: pointer.Int(7),
+					Enabled:          ptr.To(true),
+					SleepTimeSeconds: ptr.To(7),
 				}
 				return params
 			}

@@ -4,20 +4,19 @@ import (
 	"context"
 	"fmt"
 
+	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/translator/irtranslator"
 	ggv2utils "github.com/solo-io/gloo/projects/gateway2/utils"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"github.com/solo-io/go-utils/contextutils"
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"go.uber.org/zap"
 	"istio.io/istio/pkg/kube/krt"
 )
 
 type uccWithCluster struct {
 	Client         ir.UniqlyConnectedClient
-	Cluster        envoycache.Resource
+	Cluster        *envoy_config_cluster_v3.Cluster
 	ClusterVersion uint64
 	Name           string
 	Error          error
@@ -64,7 +63,7 @@ func NewPerClientEnvoyClusters(
 			}
 			uccWithClusterRet = append(uccWithClusterRet, uccWithCluster{
 				Client:         ucc,
-				Cluster:        resource.NewEnvoyResource(c),
+				Cluster:        c,
 				Name:           c.GetName(),
 				Error:          err,
 				ClusterVersion: ggv2utils.HashProto(c),

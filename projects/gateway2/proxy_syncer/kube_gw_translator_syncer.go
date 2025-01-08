@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -33,20 +32,7 @@ func (s *ProxyTranslator) syncXds(
 	// TODO: me may need to copy this to not change krt cache.
 	// TODO: this is also may not be needed now that envoy has
 	// a default initial fetch timeout
-	snap.MakeConsistent()
-	s.xdsCache.SetSnapshot(proxyKey, snap)
+	// snap.MakeConsistent()
+	s.xdsCache.SetSnapshot(ctx, proxyKey, snap)
 
-}
-
-func (s *ProxyTranslator) syncStatus(
-	ctx context.Context,
-	proxyKey string,
-	reports reporter.ResourceReports,
-) error {
-	ctx = contextutils.WithLogger(ctx, "kube-gateway-xds-syncer")
-	logger := contextutils.LoggerFrom(ctx)
-	logger = logger
-
-	//TODO: handle statuses
-	return nil
 }

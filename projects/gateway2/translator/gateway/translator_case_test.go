@@ -1,4 +1,4 @@
-package translator_test
+package gateway_test
 
 import (
 	"context"
@@ -11,18 +11,14 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/onsi/ginkgo/v2"
 	"google.golang.org/protobuf/testing/protocmp"
-	"istio.io/istio/pkg/config/schema/gvk"
 	"istio.io/istio/pkg/config/schema/gvr"
 	kubeclient "istio.io/istio/pkg/kube"
-	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/test"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/watch"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/common"
@@ -31,18 +27,14 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/pkg/client/clientset/versioned/fake"
-	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
-	. "github.com/solo-io/gloo/projects/gateway2/translator"
+	"github.com/solo-io/gloo/projects/gateway2/translator"
+	"github.com/solo-io/gloo/projects/gateway2/translator/gateway/testutils"
 	"github.com/solo-io/gloo/projects/gateway2/translator/irtranslator"
-	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient/clienttest"
 	"istio.io/istio/pkg/kube/krt"
-	corev1 "k8s.io/api/core/v1"
-	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 type TestCase struct {
@@ -135,34 +127,10 @@ func (tp testBackendPlugin) GetBackendForRefPlugin(kctx krt.HandlerContext, key 
 	}
 }
 
-func registerTypes(ourCli *fake.Clientset) {
-	skubeclient.Register[*gwv1.HTTPRoute](
-		gvr.HTTPRoute_v1,
-		gvk.HTTPRoute_v1.Kubernetes(),
-		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return c.GatewayAPI().GatewayV1().HTTPRoutes(namespace).List(context.Background(), o)
-		},
-		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return c.GatewayAPI().GatewayV1().HTTPRoutes(namespace).Watch(context.Background(), o)
-		},
-	)
-	skubeclient.Register[*gwv1a2.TCPRoute](
-		gvr.TCPRoute,
-		gvk.TCPRoute.Kubernetes(),
-		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return c.GatewayAPI().GatewayV1alpha2().TCPRoutes(namespace).List(context.Background(), o)
-		},
-		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return c.GatewayAPI().GatewayV1alpha2().TCPRoutes(namespace).Watch(context.Background(), o)
-		},
-	)
-}
-
 func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.NamespacedName]ActualTestResult, error) {
 	var (
-		anyObjs  []runtime.Object
-		ourObjs  []runtime.Object
-		gateways []*gwv1.Gateway
+		anyObjs []runtime.Object
+		ourObjs []runtime.Object
 	)
 	for _, file := range tc.InputFiles {
 		objs, err := testutils.LoadFromFiles(ctx, file)
@@ -172,9 +140,7 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		for i := range objs {
 			switch obj := objs[i].(type) {
 			case *gwv1.Gateway:
-				// due to a problem with the test pluralizer making the gateway resource be `gatewaies`
-				// we don't use gateways in the fake client, creating a static collection instead
-				gateways = append(gateways, obj)
+				anyObjs = append(anyObjs, obj)
 
 			default:
 				apiversion := reflect.ValueOf(obj).Elem().FieldByName("TypeMeta").FieldByName("APIVersion").String()
@@ -188,7 +154,6 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 	}
 
 	ourCli := fake.NewClientset(ourObjs...)
-	registerTypes(ourCli)
 	cli := kubeclient.NewFakeClient(anyObjs...)
 	for _, crd := range []schema.GroupVersionResource{
 		gvr.KubernetesGateway_v1,
@@ -206,30 +171,6 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		Stop: ctx.Done(),
 	}
 
-	refgrantsCol := krt.WrapClient(kclient.New[*gwv1beta1.ReferenceGrant](cli), krtOpts.ToOptions("RefGrants")...)
-	refGrants := krtcollections.NewRefGrantIndex(refgrantsCol)
-
-	secretClient := kclient.New[*corev1.Secret](cli)
-	k8sSecretsRaw := krt.WrapClient(secretClient, krt.WithStop(ctx.Done()), krt.WithName("Secrets") /* no debug here - we don't want raw secrets printed*/)
-	k8sSecrets := krt.NewCollection(k8sSecretsRaw, func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {
-		res := ir.Secret{
-			ObjectSource: ir.ObjectSource{
-				Group:     "",
-				Kind:      "Secret",
-				Namespace: i.Namespace,
-				Name:      i.Name,
-			},
-			Obj:  i,
-			Data: i.Data,
-		}
-		return &res
-	}, krtOpts.ToOptions("secrets")...)
-	secrets := map[schema.GroupKind]krt.Collection[ir.Secret]{
-		{Group: "", Kind: "Secret"}: k8sSecrets,
-	}
-
-	augmentedPods := krtcollections.NewPodsCollection(ctx, cli, krtOpts.Debugger)
-
 	s := &glookubev1.Settings{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "settings",
@@ -246,18 +187,16 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		}
 		return nil
 	}, krt.WithName("GlooSettingsSingleton"))
-	secretsIdx := krtcollections.NewSecretIndex(secrets, refGrants)
-	commoncol := common.CommonCollections{
-		OurClient: ourCli,
-		Client:    cli,
-		KrtOpts:   krtOpts,
-		Secrets:   secretsIdx,
-		Pods:      augmentedPods,
-		Settings:  settingsSingle,
-		RefGrants: refGrants,
-	}
-	nsCol := krtcollections.NewNamespaceCollection(ctx, cli, krtOpts)
-	plugins := registry.Plugins(ctx, &commoncol)
+
+	commoncol := common.NewCommonCollections(
+		krtOpts,
+		cli,
+		ourCli,
+		s,
+		settingsSingle,
+	)
+
+	plugins := registry.Plugins(ctx, commoncol)
 	// TODO: consider moving the common code to a util that both proxy syncer and this test call
 	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
 	extensions := registry.MergePlugins(plugins...)
@@ -269,23 +208,22 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		GetBackendForRef: testBackendPlugin{}.GetBackendForRefPlugin,
 	}
 
-	rawGateways := krt.NewStaticCollection(gateways)
-
-	httpRoutes := krt.WrapClient(kclient.New[*gwv1.HTTPRoute](cli), krtOpts.ToOptions("httpRoutes")...)
-	tcpRoutes := krt.WrapClient(kclient.New[*gwv1a2.TCPRoute](cli), krtOpts.ToOptions("tcpRoutes")...)
 	isOurGw := func(gw *gwv1.Gateway) bool {
 		return true
 	}
-	gi, ri, ui, ei := krtcollections.InitCollectionsWithGateways(ctx, isOurGw, rawGateways, httpRoutes, tcpRoutes, refGrants, extensions, krtOpts)
+
+	translator := translator.NewCombinedTranslator(ctx, extensions, commoncol)
+	translator.Init(ctx, isOurGw)
+
+	gi, ri, ui, ei := krtcollections.InitCollections(ctx, extensions, cli, isOurGw, commoncol.RefGrants, krtOpts)
 	cli.RunAndWait(ctx.Done())
 	gi.Gateways.Synced().WaitUntilSynced(ctx.Done())
 	kubeclient.WaitForCacheSync("routes", ctx.Done(), ri.HasSynced)
 	kubeclient.WaitForCacheSync("extensions", ctx.Done(), extensions.HasSynced)
+	kubeclient.WaitForCacheSync("commoncol", ctx.Done(), commoncol.HasSynced)
+	kubeclient.WaitForCacheSync("translator", ctx.Done(), translator.HasSynced)
 	kubeclient.WaitForCacheSync("upstreams", ctx.Done(), ui.Synced().HasSynced)
 	kubeclient.WaitForCacheSync("endpoints", ctx.Done(), ei.Synced().HasSynced)
-	kubeclient.WaitForCacheSync("namespaces", ctx.Done(), nsCol.Synced().HasSynced)
-
-	queries := query.NewData(ri, secretsIdx, nsCol)
 
 	results := make(map[types.NamespacedName]ActualTestResult)
 
@@ -294,27 +232,14 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 			Namespace: gw.Namespace,
 			Name:      gw.Name,
 		}
-		reportsMap := reports.NewReportMap()
-		reporter := reports.NewReporter(&reportsMap)
 
-		// translate gateway
-		proxy := NewTranslator(queries).Translate(
-			krt.TestingDummyContext{},
-			ctx,
-			&gw,
-			reporter,
-		)
-
-		xdsTranslator := &irtranslator.Translator{
-			ContributedPolicies: extensions.ContributesPolicies,
-		}
-		xdsSnap := xdsTranslator.Translate(*proxy, reporter)
+		xdsSnap, reportsMap := translator.TranslateGateway(krt.TestingDummyContext{}, ctx, gw)
 
 		act, _ := testutils.MarshalAnyYaml(xdsSnap)
 		fmt.Fprintf(ginkgo.GinkgoWriter, "actual result:\n %s \n", act)
 
 		actual := ActualTestResult{
-			Proxy:      &xdsSnap,
+			Proxy:      xdsSnap,
 			ReportsMap: reportsMap,
 		}
 		results[gwNN] = actual

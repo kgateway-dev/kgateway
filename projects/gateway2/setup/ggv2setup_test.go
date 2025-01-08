@@ -21,7 +21,7 @@ import (
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
+	cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	jsonpb "google.golang.org/protobuf/encoding/protojson"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,13 +31,10 @@ import (
 
 	discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/go-logr/zapr"
+	"github.com/solo-io/gloo/projects/gateway2/controller"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 	ggv2setup "github.com/solo-io/gloo/projects/gateway2/setup"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
-	gloosetup "github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -166,41 +163,29 @@ func TestScenarios(t *testing.T) {
 
 	// setup xDS server:
 	uniqueClientCallbacks, builder := krtcollections.NewUniquelyConnectedClients()
-	snapCache := xds.NewAdsSnapshotCache(ctx)
-	setupOpts := bootstrap.NewSetupOpts(snapCache, uniqueClientCallbacks)
-	addr := &net.TCPAddr{
-		IP:   net.IPv4zero,
-		Port: int(0),
-	}
-	controlPlane := gloosetup.NewControlPlane(ctx, setupOpts.Cache, grpc.NewServer(), addr, bootstrap.KubernetesControlPlaneConfig{}, uniqueClientCallbacks, true)
-	xds.SetupEnvoyXds(controlPlane.GrpcServer, controlPlane.XDSServer, controlPlane.SnapshotCache)
 
 	lis, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("cant listen %v", err)
 	}
 	xdsPort := lis.Addr().(*net.TCPAddr).Port
-	setupOpts.SetXdsAddress("localhost", int32(xdsPort))
+	snapCache, err := ggv2setup.NewControlPlaneWithListener(ctx, lis, uniqueClientCallbacks)
+	if err != nil {
+		t.Fatalf("cant listen %v", err)
+	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		<-controlPlane.GrpcService.Ctx.Done()
-		controlPlane.GrpcServer.Stop()
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		controlPlane.GrpcServer.Serve(lis)
-		t.Log("grpc server stopped")
-	}()
+	setupOpts := &controller.SetupOpts{
+		Cache:       snapCache,
+		KrtDebugger: new(krt.DebugHandler),
+		XdsHost:     "localhost",
+		XdsPort:     9977,
+	}
 
 	// start ggv2
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		ggv2setup.StartGGv2WithConfig(ctx, setupOpts, cfg, builder, nil,
+		ggv2setup.StartGGv2WithConfig(ctx, setupOpts, cfg, builder, nil, nil,
 			types.NamespacedName{Name: "default", Namespace: "default"},
 		)
 	}()
@@ -303,10 +288,10 @@ func testScenario(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler,
 
 	dump := dumper.Dump(t, ctx)
 	if len(dump.Listeners) == 0 {
-		xdsDump := iosnapshot.GetXdsSnapshotDataFromCache(snapCache).MarshalJSONString()
+		//		xdsDump := iosnapshot.GetXdsSnapshotDataFromCache(snapCache).MarshalJSONString()
 		j, _ := kdbg.MarshalJSON()
 		t.Logf("timed out waiting - krt state for test: %s %s", t.Name(), string(j))
-		t.Logf("timed out waiting - xds state for test: %s %s", t.Name(), xdsDump)
+		//		t.Logf("timed out waiting - xds state for test: %s %s", t.Name(), xdsDump)
 		t.Fatalf("timed out waiting for listeners")
 	}
 	if write {

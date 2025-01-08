@@ -16,7 +16,8 @@ import (
 	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
-	k8sgwvalidation "github.com/solo-io/gloo/projects/gateway2/validation"
+
+	//	k8sgwvalidation "github.com/solo-io/gloo/projects/gateway2/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	syncerValidation "github.com/solo-io/gloo/projects/gloo/pkg/syncer/validation"
@@ -288,8 +289,8 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 
 	validatingK8sGateway := isK8sGatewayProxy(opts.Resource)
 	if validatingK8sGateway {
-		proxies, errs = k8sgwvalidation.TranslateK8sGatewayProxies(ctx, snapshot, opts.Resource)
-	} else {
+		//		proxies, errs = k8sgwvalidation.TranslateK8sGatewayProxies(ctx, snapshot, opts.Resource)
+		//	} else {
 		proxies, errs = v.translateGlooEdgeProxies(ctx, snapshot, opts.collectAllErrors)
 	}
 
@@ -326,9 +327,9 @@ func (v *validator) validateProxiesAndExtensions(ctx context.Context, snapshot *
 		// error aggregation below. Note that we do not care about allowWarnings, as they are not
 		// used in this case, as we do not do a full translation and use a 'dummy' proxy
 		if validatingK8sGateway {
-			if err = k8sgwvalidation.GetSimpleErrorFromGlooValidation(glooReports, proxy); err != nil {
-				errs = multierror.Append(errs, err)
-			}
+			//	if err = k8sgwvalidation.GetSimpleErrorFromGlooValidation(glooReports, proxy); err != nil {
+			//		errs = multierror.Append(errs, err)
+			//	}
 			continue
 		}
 

@@ -69,9 +69,9 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	var envoyRoutes []*envoy_config_route_v3.Route
 	for i, route := range virtualHost.Rules {
 		// TODO: not sure if we need listener parent ref here or the http parent ref
-		routeReport := h.reporter.Route(route.Parent.SourceObject).ParentRef(&route.ListenerParentRef)
+		routeReport := h.reporter.Route(route.Parent.SourceObject).ParentRef(&route.ParentRef)
 		generatedName := fmt.Sprintf("%s-route-%d", virtualHost.Name, i)
-		computedRoute := h.envoyRoutes(ctx, virtualHost, routeReport, route, generatedName)
+		computedRoute := h.envoyRoutes(ctx, routeReport, route, generatedName)
 		if computedRoute != nil {
 			envoyRoutes = append(envoyRoutes, computedRoute)
 		}
@@ -114,7 +114,6 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 }
 
 func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
-	virtualHost *ir.VirtualHost,
 	routeReport reports.ParentRefReporter,
 	in ir.HttpRouteRuleMatchIR,
 	generatedName string,
@@ -367,13 +366,6 @@ func (h *httpRouteConfigurationTranslator) initRoutes(
 	}
 
 	return out
-}
-
-func defaultStr[T ~string](s *T) string {
-	if s == nil {
-		return ""
-	}
-	return string(*s)
 }
 
 func translateGlooMatcher(matcher gwv1.HTTPRouteMatch) *envoy_config_route_v3.RouteMatch {

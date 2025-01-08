@@ -245,11 +245,15 @@ func (r *RouteReport) parentRef(parentRef *gwv1.ParentReference) *ParentRefRepor
 func (r *RouteReport) parentRefs() []gwv1.ParentReference {
 	var refs []gwv1.ParentReference
 	for key := range r.Parents {
+		var ns *gwv1.Namespace
+		if key.Namespace != "" {
+			ns = ptr.To(gwv1.Namespace(key.Namespace))
+		}
 		parentRef := gwv1.ParentReference{
 			Group:     ptr.To(gwv1.Group(key.Group)),
 			Kind:      ptr.To(gwv1.Kind(key.Kind)),
 			Name:      gwv1.ObjectName(key.Name),
-			Namespace: ptr.To(gwv1.Namespace(key.Namespace)),
+			Namespace: ns,
 		}
 		refs = append(refs, parentRef)
 	}
