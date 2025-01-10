@@ -13,6 +13,7 @@ env:
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+  merge_group: { }
 
 jobs:
   # Runs the unit tests for `projects/gateway2`
