@@ -40,7 +40,6 @@ type routeOptsPluginGwPass struct {
 }
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionplug.Plugin {
-
 	col := krtutil.SetupCollectionDynamic[v1alpha1.RoutePolicy](
 		ctx,
 		commoncol.Client,
@@ -48,17 +47,17 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		commoncol.KrtOpts.ToOptions("RoutePolicy")...,
 	)
 	gk := v1alpha1.RoutePolicyGVK.GroupKind()
-	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.RoutePolicy) *ir.PolicyWrapper {
+	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy) *ir.PolicyWrapper {
 		var pol = &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
 				Group:     gk.Group,
 				Kind:      gk.Kind,
-				Namespace: i.Namespace,
-				Name:      i.Name,
+				Namespace: policyCR.Namespace,
+				Name:      policyCR.Name,
 			},
-			Policy:     i,
-			PolicyIR:   &routeOptsPlugin{ct: i.CreationTimestamp.Time, spec: i.Spec},
-			TargetRefs: convert(i.Spec.TargetRef),
+			Policy:     policyCR,
+			PolicyIR:   &routeOptsPlugin{ct: policyCR.CreationTimestamp.Time, spec: policyCR.Spec},
+			TargetRefs: convert(policyCR.Spec.TargetRef),
 		}
 		return pol
 	})

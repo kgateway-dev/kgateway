@@ -20,7 +20,11 @@ type UpstreamTranslator struct {
 	ContributedPolicies  map[schema.GroupKind]extensionsplug.PolicyPlugin
 }
 
-func (t *UpstreamTranslator) TranslateUpstream(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, u ir.Upstream) (*envoy_config_cluster_v3.Cluster, error) {
+func (t *UpstreamTranslator) TranslateUpstream(
+	kctx krt.HandlerContext,
+	ucc ir.UniqlyConnectedClient,
+	u ir.Upstream,
+) (*envoy_config_cluster_v3.Cluster, error) {
 	gk := schema.GroupKind{
 		Group: u.Group,
 		Kind:  u.Kind,

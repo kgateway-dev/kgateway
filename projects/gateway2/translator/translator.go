@@ -144,9 +144,9 @@ func (s *CombinedTranslator) GetUpstreamTranslator() *irtranslator.UpstreamTrans
 func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx context.Context, gw ir.Gateway) (*irtranslator.TranslationResult, reports.ReportMap) {
 	logger := contextutils.LoggerFrom(ctx)
 
-	logger.Debugf("building proxy for kube gw %s version %s", client.ObjectKeyFromObject(gw.Obj), gw.Obj.GetResourceVersion())
 	rm := reports.NewReportMap()
 	r := reports.NewReporter(&rm)
+	logger.Debugf("building proxy for kube gw %s version %s", client.ObjectKeyFromObject(gw.Obj), gw.Obj.GetResourceVersion())
 	gwir := s.buildProxy(kctx, ctx, gw, r)
 
 	if gwir == nil {

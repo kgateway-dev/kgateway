@@ -157,7 +157,6 @@ func (ml *MergedListeners) appendHttpsListener(
 		sniDomain:           listener.Hostname,
 		tls:                 listener.TLS,
 		routesWithHosts:     routesWithHosts,
-		queries:             ml.Queries,
 		attachedPolicies:    listener.AttachedPolicies,
 	}
 
@@ -573,7 +572,6 @@ type httpsFilterChain struct {
 	sniDomain           *gwv1.Hostname
 	tls                 *gwv1.GatewayTLSConfig
 	routesWithHosts     []*query.RouteInfo
-	queries             query.GatewayQueries
 	attachedPolicies    ir.AttachedPolicies
 }
 

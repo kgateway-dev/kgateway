@@ -11,8 +11,14 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 )
 
-func snapshotPerClient(l *zap.Logger, krtopts krtutil.KrtOptions, uccCol krt.Collection[ir.UniqlyConnectedClient],
-	mostXdsSnapshots krt.Collection[GatewayXdsResources], endpoints PerClientEnvoyEndpoints, clusters PerClientEnvoyClusters) krt.Collection[XdsSnapWrapper] {
+func snapshotPerClient(
+	l *zap.Logger,
+	krtopts krtutil.KrtOptions,
+	uccCol krt.Collection[ir.UniqlyConnectedClient],
+	mostXdsSnapshots krt.Collection[GatewayXdsResources],
+	endpoints PerClientEnvoyEndpoints,
+	clusters PerClientEnvoyClusters,
+) krt.Collection[XdsSnapWrapper] {
 
 	xdsSnapshotsForUcc := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient) *XdsSnapWrapper {
 		maybeMostlySnap := krt.FetchOne(kctx, mostXdsSnapshots, krt.FilterKey(ucc.Role))

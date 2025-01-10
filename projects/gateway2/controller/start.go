@@ -160,12 +160,13 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.SetupOpts.Cache,
 	)
 	proxySyncer.Init(ctx, isOurGw, cfg.KrtOptions)
+
 	if err := mgr.Add(proxySyncer); err != nil {
 		setupLog.Error(err, "unable to add proxySyncer runnable")
 		return nil, err
 	}
-	setupLog.Info("starting controller builder", "GatewayClasses", sets.List(gwClasses))
 
+	setupLog.Info("starting controller builder", "GatewayClasses", sets.List(gwClasses))
 	return &ControllerBuilder{
 		proxySyncer: proxySyncer,
 		cfg:         cfg,

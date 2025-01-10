@@ -218,7 +218,7 @@ func (r *gatewayQueries) getDelegatedChildren(
 			}
 			ref := *backendRef.Delegate
 			// Fetch child routes based on the backend reference
-			referencedRoutes, err := r.fetchChildRoutes(kctx, ctx, parent.Namespace, backendRef)
+			referencedRoutes, err := r.fetchChildRoutes(kctx, backendRef)
 			if err != nil {
 				children.AddError(ref, err)
 				continue
@@ -254,8 +254,6 @@ func (r *gatewayQueries) getDelegatedChildren(
 
 func (r *gatewayQueries) fetchChildRoutes(
 	kctx krt.HandlerContext,
-	ctx context.Context,
-	parentNamespace string,
 	backend ir.HttpBackendOrDelegate,
 ) ([]ir.HttpRouteIR, error) {
 
@@ -294,7 +292,7 @@ func (r *gatewayQueries) GetRoutesForGateway(kctx krt.HandlerContext, ctx contex
 
 	// Process each route
 	ret := NewRoutesForGwResult()
-	routes := fetchRoutes(kctx, r, nns)
+	routes := r.routes.RoutesForGateway(kctx, nns)
 	for _, route := range routes {
 		if err := r.processRoute(kctx, ctx, gw, route, ret); err != nil {
 			return nil, err
@@ -304,14 +302,13 @@ func (r *gatewayQueries) GetRoutesForGateway(kctx krt.HandlerContext, ctx contex
 	return ret, nil
 }
 
-// fetchRoutes is a helper function to fetch routes and add to the routes slice.
-func fetchRoutes(kctx krt.HandlerContext, r *gatewayQueries, nns types.NamespacedName) []ir.Route {
-	return r.routes.RoutesForGateway(kctx, nns)
-}
-
 func (r *gatewayQueries) processRoute(
 	kctx krt.HandlerContext,
-	ctx context.Context, gw *gwv1.Gateway, route ir.Route, ret *RoutesForGwResult) error {
+	ctx context.Context,
+	gw *gwv1.Gateway,
+	route ir.Route,
+	ret *RoutesForGwResult,
+) error {
 	refs := getParentRefsForGw(gw, route)
 	routeKind := route.GetGroupKind().Kind
 

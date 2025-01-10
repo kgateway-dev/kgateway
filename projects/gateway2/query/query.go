@@ -97,20 +97,6 @@ func (f FromObject) Namespace() string {
 	return f.GetNamespace()
 }
 
-// TODO(Law): remove this type entirely?
-type FromGkNs struct {
-	Gk metav1.GroupKind
-	Ns string
-}
-
-func (f FromGkNs) GroupKind() (metav1.GroupKind, error) {
-	return f.Gk, nil
-}
-
-func (f FromGkNs) Namespace() string {
-	return f.Ns
-}
-
 type GatewayQueries interface {
 	GetSecretForRef(kctx krt.HandlerContext, ctx context.Context, fromGk schema.GroupKind, fromns string, secretRef apiv1.SecretObjectReference) (*ir.Secret, error)
 
@@ -121,7 +107,8 @@ type GatewayQueries interface {
 		ctx context.Context,
 		route ir.Route,
 		hostnames []string,
-		parentRef gwv1.ParentReference) *RouteInfo
+		parentRef gwv1.ParentReference,
+	) *RouteInfo
 }
 
 type RoutesForGwResult struct {
