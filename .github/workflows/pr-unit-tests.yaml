@@ -1,20 +1,14 @@
 name: Unit Tests
 
-# This workflow invokes unit tests for the Gloo Gateway project
-# It was introduced during the 1.17 quarter, where we added a new project (projects/gateway2)
-# and therefore we only run those new tests here
-#
-# Our historical unit tests are run via CloudBuild
-# Overtime, it would be valuable to consolidate these approaches
-env:
-  VERSION: '1.0.0-ci1'
-  GITHUB_TOKEN: ${{ github.token }}
-
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   merge_group:
     types: [checks_requested]
+
+env:
+  VERSION: '1.0.0-ci1'
+  GITHUB_TOKEN: ${{ github.token }}
 
 jobs:
   # Runs the unit tests for `projects/gateway2`
@@ -22,8 +16,6 @@ jobs:
     name: projects/gateway2
     runs-on: ubuntu-22.04
     timeout-minutes: 10
-    # Other unit tests are run by our CloudBuild runner
-    # These tests do run on Draft PRs, and so we maintain that consistency and run this job on Draft PRs as well
     steps:
     - uses: actions/checkout@v4
     - name: Setup Go
