@@ -118,8 +118,7 @@ type IstioValues struct {
 }
 
 type GlooGateway struct {
-	EnableK8sGatewayController bool
-	IstioValues                IstioValues
+	IstioValues IstioValues
 }
 
 type Consul struct {

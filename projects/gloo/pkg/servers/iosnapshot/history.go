@@ -49,9 +49,8 @@ type History interface {
 
 // HistoryFactoryParameters are the inputs used to create a History object
 type HistoryFactoryParameters struct {
-	Settings                    *gloov1.Settings
-	Cache                       cache.SnapshotCache
-	EnableK8sGatewayIntegration bool
+	Settings *gloov1.Settings
+	Cache    cache.SnapshotCache
 }
 
 // HistoryFactory is a function that produces a History object
@@ -72,11 +71,7 @@ func GetHistoryFactory() HistoryFactory {
 			}
 		}
 
-		// By default, only return the GVKs for using Gloo Gateway, with purely the Edge Gateway APIs
-		var gvks = EdgeOnlyInputSnapshotGVKs
-		if params.EnableK8sGatewayIntegration {
-			gvks = CompleteInputSnapshotGVKs
-		}
+		gvks := CompleteInputSnapshotGVKs
 
 		return NewHistory(params.Cache, params.Settings, kubeClient, gvks)
 	}

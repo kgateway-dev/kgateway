@@ -492,10 +492,9 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 			JustBeforeEach(func() {
 				mv = &mockValidator{}
 				wh = &gatewayValidationWebhook{
-					webhookNamespace:   "namespace",
-					ctx:                context.TODO(),
-					validator:          mv,
-					kubeGatewayEnabled: true,
+					webhookNamespace: "namespace",
+					ctx:              context.TODO(),
+					validator:        mv,
 				}
 				srv = httptest.NewServer(wh)
 			})
