@@ -6,20 +6,10 @@ body:
     attributes:
       value: |
         **Note**: This is a public repo. Be sure to obscure or redact any sensitive information.
-  - type: dropdown
-    id: product
-    attributes:
-      label: Gloo Edge Product
-      description: Which Edge product are you using?
-      options:
-        - Open Source
-        - Enterprise
-    validations:
-      required: true
   - type: input
     id: version
     attributes:
-      label: Gloo Edge Version
+      label: K8sGateway Version
       description: What version of your product are you using? Please specify a specific patch version
       placeholder: eg v1.14.2
     validations:
@@ -28,7 +18,7 @@ body:
     id: kube-version
     attributes:
       label: Kubernetes Version
-      description: What version of Kubernetes are you using with Gloo Edge?
+      description: What version of Kubernetes are you using with K8sGateway?
       placeholder: eg v1.26.6
     validations:
       required: true
