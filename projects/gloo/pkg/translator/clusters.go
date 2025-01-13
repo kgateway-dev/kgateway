@@ -15,8 +15,6 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
-	"github.com/solo-io/gloo/pkg/utils/envutils"
-	"github.com/solo-io/gloo/projects/gloo/constants"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1_options "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
@@ -143,6 +141,7 @@ func (t *translatorInstance) initializeCluster(
 	circuitBreakers := t.settings.GetGloo().GetCircuitBreakers()
 	out := &envoy_config_cluster_v3.Cluster{
 		Name:             UpstreamToClusterName(upstream.GetMetadata().Ref()),
+		AltStatName:      UpstreamToClusterStatsName(upstream),
 		Metadata:         new(envoy_config_core_v3.Metadata),
 		CircuitBreakers:  getCircuitBreakers(upstream.GetCircuitBreakers(), circuitBreakers),
 		LbSubsetConfig:   createLbConfig(upstream),
@@ -157,10 +156,6 @@ func (t *translatorInstance) initializeCluster(
 		RespectDnsTtl:             upstream.GetRespectDnsTtl().GetValue(),
 		DnsRefreshRate:            dnsRefreshRate,
 		PreconnectPolicy:          preconnect,
-	}
-	// for kube gateway, use new stats name format
-	if envutils.IsEnvTruthy(constants.GlooGatewayEnableK8sGwControllerEnv) {
-		out.AltStatName = UpstreamToClusterStatsName(upstream)
 	}
 
 	if sslConfig := upstream.GetSslConfig(); sslConfig != nil {

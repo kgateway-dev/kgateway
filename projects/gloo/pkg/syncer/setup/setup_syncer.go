@@ -898,9 +898,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	// snapshotHistory is a utility for managing the state of the input/output snapshots that the Control Plane
 	// consumes and produces. This object is then used by our Admin Server, to provide this data on demand
 	snapshotHistory := extensions.SnapshotHistoryFactory(iosnapshot.HistoryFactoryParameters{
-		Settings:                    opts.Settings,
-		Cache:                       opts.ControlPlane.SnapshotCache,
-		EnableK8sGatewayIntegration: opts.GlooGateway.EnableK8sGatewayController,
+		Settings: opts.Settings,
+		Cache:    opts.ControlPlane.SnapshotCache,
 	})
 
 	startFuncs["admin-server"] = AdminServerStartFunc(snapshotHistory, opts.KrtDebugger)
@@ -1012,7 +1011,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 					gwOpts.Validation.AlwaysAcceptResources,
 					gwOpts.ReadGatewaysFromAllNamespaces,
 					gwOpts.GlooNamespace,
-					opts.GlooGateway.EnableK8sGatewayController, // controls validation of KubeGateway policies (e.g. RouteOption, VirtualHostOption)
 				),
 			)
 			if err != nil {
@@ -1350,10 +1348,7 @@ func constructOpts(ctx context.Context, setup *bootstrap.SetupOpts, params const
 
 func constructGlooGatewayBootstrapOpts(settings *v1.Settings) bootstrap.GlooGateway {
 	return bootstrap.GlooGateway{
-		// TODO: This value should be inherited at installation time, to determine if the k8s controller is enabled
-		// In the interim, we use an env variable to control the value
-		EnableK8sGatewayController: envutils.IsEnvTruthy(constants.GlooGatewayEnableK8sGwControllerEnv),
-		IstioValues:                constructIstioBootstrapOpts(settings),
+		IstioValues: constructIstioBootstrapOpts(settings),
 	}
 }
 
