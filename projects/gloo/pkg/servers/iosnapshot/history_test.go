@@ -69,8 +69,7 @@ var _ = Describe("History", func() {
 					Namespace: defaults.GlooSystem,
 				},
 			},
-			Cache:                       &xds.MockXdsCache{},
-			EnableK8sGatewayIntegration: true,
+			Cache: &xds.MockXdsCache{},
 		}
 	})
 

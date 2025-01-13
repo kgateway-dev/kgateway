@@ -378,10 +378,10 @@ func constructTestOpts(ctx context.Context, runOptions *RunOptions, settings *gl
 		GatewayControllerEnabled: settings.GetGateway().GetEnableGatewayController().GetValue(),
 		ValidationOpts:           validationOpts,
 		Identity:                 singlereplica.Identity(),
-		GlooGateway: bootstrap.GlooGateway{
+		GlooGateway:              bootstrap.GlooGateway{
 			// The K8s Gateway Integration depends on a functioning k8s cluster
-			// These tests are designed to be run in-memory, without a true cluster, so we disable the relevant controller
-			EnableK8sGatewayController: false,
+			// These tests are designed to be run in-memory, without a true cluster
+			// TODO: delete any tests that cannot run when k8s gw api is used
 		},
 	}
 }
