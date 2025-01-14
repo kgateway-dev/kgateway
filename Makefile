@@ -230,11 +230,6 @@ run-e2e-tests: TEST_PKG = ./test/e2e/ ## Run all in-memory E2E tests
 run-e2e-tests: GINKGO_FLAGS += --label-filter="end-to-end && !performance"
 run-e2e-tests: test
 
-.PHONY: run-hashicorp-e2e-tests
-run-hashicorp-e2e-tests: TEST_PKG = ./test/consulvaulte2e/
-run-hashicorp-e2e-tests: GINKGO_FLAGS += --label-filter="end-to-end && !performance"
-run-hashicorp-e2e-tests: test
-
 .PHONY: run-kube-e2e-tests
 run-kube-e2e-tests: TEST_PKG = ./test/kube2e/$(KUBE2E_TESTS) ## Run the legacy Kubernetes E2E Tests in the {KUBE2E_TESTS} package
 run-kube-e2e-tests: test

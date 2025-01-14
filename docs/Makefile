@@ -41,7 +41,6 @@ site-common: clean gloo-enterprise-version
 
 .PHONY: site-test
 site-test: site-common
-	# ensure hugo version locally installed matches the version in cloudbuild CI
 	hugo version | grep -q $(HUGO_VERSION)
 	hugo --config docs.toml
 	# ensure that valid json is generated. Common cause: using yaml ">" multiline string symbols in Hugo's toml headers
@@ -49,7 +48,6 @@ site-test: site-common
 
 .PHONY: site-release
 site-release: site-common
-	# ensure hugo version locally installed matches the version in cloudbuild CI
 	hugo version | grep -q $(HUGO_VERSION)
 	hugo --config docs.toml
 	# ensure that valid json is generated. Common cause: using yaml ">" multiline string symbols in Hugo's toml headers
@@ -60,7 +58,6 @@ site-release: site-common
 
 .PHONY: serve-site
 serve-site: site-test
-	# ensure hugo version locally installed matches the version in cloudbuild CI
 	hugo version | grep -q $(HUGO_VERSION)
 	hugo --config docs.toml --themesDir themes server -D
 
