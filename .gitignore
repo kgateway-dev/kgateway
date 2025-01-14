@@ -57,3 +57,5 @@ istio-*/*
 
 # Bin directory created by e2e test
 .bin/
+# Added by goreleaser init:
+dist/

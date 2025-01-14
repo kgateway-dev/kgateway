@@ -1,0 +1,45 @@
+name: Label PR by Kind
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+jobs:
+  label-kind:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR description for kind and add label
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Get the pull request from the event payload
+            const pr = context.payload.pull_request;
+            if (!pr) {
+              core.info('No pull request found');
+              return;
+            }
+
+            // Extract the body of the pull request
+            const body = pr.body || "";
+
+            // Search for a "/kind enhancement" directive using regex
+            const match = body.match(/\/kind\s+(enhancement)/i);
+            if (match) {
+              // Extracted kind from the description
+              const kindLabel = match[1].toLowerCase();
+
+              core.info(`Found kind: ${kindLabel}. Adding label...`);
+
+              // Add the label to the pull request
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: [kindLabel]
+              });
+
+              core.info(`Label "${kindLabel}" added to PR #${pr.number}.`);
+            } else {
+              core.info('No /kind enhancement found in the PR description.');
+            }

@@ -3,7 +3,6 @@
 # https://www.gnu.org/software/make/manual/html_node/Special-Variables.html#Special-Variables
 .DEFAULT_GOAL := help
 
-
 #----------------------------------------------------------------------------------
 # Help
 #----------------------------------------------------------------------------------
@@ -21,7 +20,6 @@ help: LINE_COLUMN_WIDTH=5
 help: ## Output the self-documenting make targets
 	@grep -hnE '^[%a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = "[:]|(## )"}; {printf "\033[36mL%-$(LINE_COLUMN_WIDTH)s%-$(NAME_COLUMN_WIDTH)s\033[0m %s\n", $$1, $$2, $$4}'
 
-
 #----------------------------------------------------------------------------------
 # Base
 #----------------------------------------------------------------------------------
@@ -33,7 +31,8 @@ OUTPUT_DIR ?= $(ROOTDIR)/_output
 # To use quay images, set the IMAGE_REGISTRY to "quay.io/solo-io" (or leave unset)
 # To use dockerhub images, set the IMAGE_REGISTRY to "soloio"
 # To use gcr images, set the IMAGE_REGISTRY to "gcr.io/$PROJECT_NAME"
-IMAGE_REGISTRY ?= quay.io/solo-io
+export IMAGE_REGISTRY ?= ghcr.io/kgateway
+export IMAGE_REPO ?= kgateway
 
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
@@ -49,9 +48,9 @@ SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 # for more information, see https://github.com/solo-io/gloo/pull/9633
 # and
 # https://soloio.slab.com/posts/extended-http-methods-design-doc-40j7pjeu
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.31.2-patch3
-LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
-GCFLAGS ?=
+export ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.31.2-patch3
+export LDFLAGS := -X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)
+export GCFLAGS ?=
 
 UNAME_M := $(shell uname -m)
 # if `GO_ARCH` is set, then it will keep its value. Else, it will be changed based off the machine's host architecture.
@@ -126,7 +125,6 @@ ALPINE_BASE_IMAGE ?= alpine:3.17.6
 # in the tree rooted at that directory that match the given criteria.
 get_sources = $(shell find $(1) -name "*.go" | grep -v test | grep -v generated.go | grep -v mock_)
 
-
 #----------------------------------------------------------------------------------
 # Imports
 #----------------------------------------------------------------------------------
@@ -172,18 +170,27 @@ check-format:
 check-spelling:
 	./ci/spell.sh check
 
+#----------------------------------------------------------------------------------
+# Release
+#----------------------------------------------------------------------------------
+
+GORELEASER_ARGS ?= --snapshot --clean
+GORELEASER ?= go run github.com/goreleaser/goreleaser/v2@v2.5.1
+.PHONY: release
+release:
+	$(GORELEASER) release $(GORELEASER_ARGS)
+
 #----------------------------------------------------------------------------
 # Analyze
 #----------------------------------------------------------------------------
 LINTER_VERSION := $(shell cat .github/workflows/static-analysis.yaml | yq '.jobs.static-analysis.steps.[] | select( .uses == "*golangci/golangci-lint-action*") | .with.version ')
 
 # The analyze target runs a suite of static analysis tools against the codebase.
-# The options are defined in .golangci.yaml, and can be overridden by setting the ANALYZE_OPTIONS variable.
+# The options are defined in .golangci.yaml, and can be overridden by setting the ANALYZE_ARGS variable.
 .PHONY: analyze
-ANALYZE_OPTIONS ?= --fast --verbose
+ANALYZE_ARGS ?= --fast --verbose
 analyze:
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint@$(LINTER_VERSION) run $(ANALYZE_OPTIONS) ./...
-
+	go run github.com/golangci/golangci-lint/cmd/golangci-lint@$(LINTER_VERSION) run $(ANALYZE_ARGS) ./...
 
 #----------------------------------------------------------------------------------
 # Ginkgo Tests
@@ -237,7 +244,7 @@ run-kube-e2e-tests: test
 #----------------------------------------------------------------------------------
 # Go Tests
 #----------------------------------------------------------------------------------
-GO_TEST_ENV ?= 
+GO_TEST_ENV ?=
 # Testings flags: https://pkg.go.dev/cmd/go#hdr-Testing_flags
 # The default timeout for a suite is 10 minutes, but this can be overridden by setting the -timeout flag. Currently set
 # to 25 minutes based on the time it takes to run the longest test setup (k8s_gw_test).
@@ -377,7 +384,6 @@ generated-code-cleanup: getter-check mod-tidy update-licenses fmt ## Executes th
 .PHONY: generate-changelog
 generate-changelog: ## Generate a changelog entry
 	@./devel/tools/changelog.sh
-
 
 #----------------------------------------------------------------------------------
 # Generate CRD Reference Documentation
@@ -520,7 +526,6 @@ discovery-distroless-docker: $(DISCOVERY_OUTPUT_DIR)/discovery-linux-$(GOARCH) $
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_IMAGE) \
 		-t $(IMAGE_REGISTRY)/discovery:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL)
-
 
 #----------------------------------------------------------------------------------
 # Gloo
@@ -803,6 +808,8 @@ PUBLISH_CONTEXT := RELEASE
 VERSION := $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 endif
+
+export VERSION
 
 # controller variable for the "Publish Artifacts" section.  Defines which targets exist.  Possible Values: NONE, RELEASE, PULL_REQUEST
 PUBLISH_CONTEXT ?= NONE

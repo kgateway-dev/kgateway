@@ -1,0 +1,74 @@
+name: Release
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+
+env:
+  IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
+
+permissions:
+  contents: write
+  id-token: write
+  packages: write
+
+jobs:
+  goreleaser:
+    name: goreleaser
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      # TODO(tim): Manage tools in this repo better so we can cache them.
+      # - uses: actions/cache@v4
+      #   with:
+      #     path: hack/tools
+      #     key: ${{ runner.os }}-go-tools${{ hashFiles('hack/tools/go.sum') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-go-tools-
+
+      - name: Log into ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set the release related variables
+        id: set_vars
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            # Release tags.
+            VERSION="${GITHUB_REF#refs/tags/}"
+            echo GORELEASER_ARGS="--clean"
+          elif [[ $GITHUB_REF == refs/heads/main ]]; then
+            # 'main' branch build.
+            VERSION="$(echo "${GITHUB_REF#refs/heads/}" | sed -r 's|/+|-|g')"
+            echo GORELEASER_ARGS="--clean --skip=validate" >> $GITHUB_ENV
+          elif [[ $GITHUB_REF == refs/pull/* ]]; then
+            # PR build.
+            VERSION="pr-$(echo "${GITHUB_REF}" | sed -E 's|refs/pull/([^/]+)/?.*|\1|')"
+          else
+            VERSION="$(git describe --tags --always)"
+          fi
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+      - name: Run goreleaser
+        run: make release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ env.VERSION }}
+          IMAGE_REGISTRY: ${{ env.IMAGE_REGISTRY }}
