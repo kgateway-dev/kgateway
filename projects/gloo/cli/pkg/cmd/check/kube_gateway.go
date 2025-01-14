@@ -54,21 +54,11 @@ func CheckKubeGatewayResources(ctx context.Context, printer printers.P, opts *op
 	return multiErr.ErrorOrNil()
 }
 
-// check if Kubernetes Gateway integration is enabled by checking if the Gateway API CRDs are installed and
-// whether the GG_K8S_GW_CONTROLLER env var is true in the gloo deployment.
+// check if Kubernetes Gateway integration is enabled by checking if the Gateway API CRDs are installed
 func isKubeGatewayEnabled(ctx context.Context, opts *options.Options) (bool, error) {
 	cfg, err := kubeutils.GetRestConfigWithKubeContext(opts.Top.KubeContext)
 	if err != nil {
 		return false, err
-	}
-
-	gatewayEnabled, err := kubegatewayutils.DetectKubeGatewayEnabled(ctx, opts)
-	if err != nil {
-		return false, eris.Wrapf(err, "unable to determine if Kubernetes Gateway integration is enabled")
-	}
-
-	if !gatewayEnabled {
-		return false, nil
 	}
 
 	hasCRDs, err := kubegatewayutils.DetectKubeGatewayCrds(cfg)

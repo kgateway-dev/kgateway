@@ -1,7 +1,6 @@
 vendor*
 .vendor-new
 _output
-example/proxycontroller/_output
 _local
 _test
 _artifacts

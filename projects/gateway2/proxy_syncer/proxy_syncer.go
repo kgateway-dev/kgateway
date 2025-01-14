@@ -212,9 +212,28 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 		return toResources(gw, *xdsSnap, rm)
 	}, krtopts.ToOptions("MostXdsSnapshots")...)
 
-	epPerClient := NewPerClientEnvoyEndpoints(logger.Desugar(), krtopts, s.uniqueClients, endpointIRs, s.translatorSyncer.TranslateEndpoints)
-	clustersPerClient := NewPerClientEnvoyClusters(ctx, krtopts, s.translatorSyncer.GetUpstreamTranslator(), finalUpstreams, s.uniqueClients)
-	s.perclientSnapCollection = snapshotPerClient(logger.Desugar(), krtopts, s.uniqueClients, s.mostXdsSnapshots, epPerClient, clustersPerClient)
+	epPerClient := NewPerClientEnvoyEndpoints(
+		logger.Desugar(),
+		krtopts,
+		s.uniqueClients,
+		endpointIRs,
+		s.translatorSyncer.TranslateEndpoints,
+	)
+	clustersPerClient := NewPerClientEnvoyClusters(
+		ctx,
+		krtopts,
+		s.translatorSyncer.GetUpstreamTranslator(),
+		finalUpstreams,
+		s.uniqueClients,
+	)
+	s.perclientSnapCollection = snapshotPerClient(
+		logger.Desugar(),
+		krtopts,
+		s.uniqueClients,
+		s.mostXdsSnapshots,
+		epPerClient,
+		clustersPerClient,
+	)
 
 	// as proxies are created, they also contain a reportMap containing status for the Gateway and associated xRoutes (really parentRefs)
 	// here we will merge reports that are per-Proxy to a singleton Report used to persist to k8s on a timer

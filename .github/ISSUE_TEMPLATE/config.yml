@@ -1,8 +1,8 @@
-blank_issues_enabled: false
+blank_issues_enabled: true
 contact_links:
-  - name: Talk with us on Slack
-    url: https://slack.solo.io
-    about: For a fast response, consider asking your question on the Solo slack.
-  - name: Solo.io Documentation
-    url: https://docs.solo.io/gloo-edge/latest/guides
-    about: Check out the Gloo Edge docs for helpful information.
+  - name: Talk with us on the CNCF Slack!
+    url: https://slack.cncf.io/
+    about: "We are in #k8sgateway channel!"
+  - name: K8sGateway Documentation
+    url: https://k8sgateway.io/docs/
+    about: Check out the K8sGateway docs for helpful information.

@@ -29,10 +29,14 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	return NewPluginFromCollections(ctx, commoncol.KrtOpts, commoncol.Settings, commoncol.Pods, services, endpointSlices)
 }
 
-func NewPluginFromCollections(ctx context.Context, krtOpts krtutil.KrtOptions,
+func NewPluginFromCollections(
+	ctx context.Context,
+	krtOpts krtutil.KrtOptions,
 	settings krt.Singleton[glookubev1.Settings],
 	pods krt.Collection[krtcollections.LocalityPod],
-	services krt.Collection[*corev1.Service], endpointSlices krt.Collection[*discoveryv1.EndpointSlice]) extensionsplug.Plugin {
+	services krt.Collection[*corev1.Service],
+	endpointSlices krt.Collection[*discoveryv1.EndpointSlice],
+) extensionsplug.Plugin {
 	gk := schema.GroupKind{
 		Group: corev1.GroupName,
 		Kind:  "Service",

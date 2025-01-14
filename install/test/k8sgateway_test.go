@@ -9,7 +9,6 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-	"github.com/solo-io/gloo/projects/gloo/constants"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	glootestutils "github.com/solo-io/gloo/test/testutils"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
@@ -44,14 +43,8 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 			})
 
 			It("relevant resources are rendered", func() {
-				// make sure the env variable that enables the controller is set
 				deployment := getDeployment(testManifest, namespace, kubeutils.GlooDeploymentName)
 				Expect(deployment.Spec.Template.Spec.Containers).To(HaveLen(1), "should have exactly 1 container")
-				expectEnvVarExists(deployment.Spec.Template.Spec.Containers[0],
-					corev1.EnvVar{
-						Name:  constants.GlooGatewayEnableK8sGwControllerEnv,
-						Value: "true",
-					})
 
 				// make sure the GatewayClass and RBAC resources exist (note, since they are all cluster-scoped, they do not have a namespace)
 				testManifest.ExpectUnstructured("GatewayClass", "", "gloo-gateway").NotTo(BeNil())
@@ -491,10 +484,8 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 			})
 
 			It("relevant resources are not rendered", func() {
-				// the env variable that enables the controller should not be set
 				deployment := getDeployment(testManifest, namespace, kubeutils.GlooDeploymentName)
 				Expect(deployment.Spec.Template.Spec.Containers).To(HaveLen(1), "should have exactly 1 container")
-				expectEnvVarDoesNotExist(deployment.Spec.Template.Spec.Containers[0], constants.GlooGatewayEnableK8sGwControllerEnv)
 
 				// the RBAC resources should not be rendered
 				testManifest.ExpectUnstructured("GatewayClass", "", "gloo-gateway").To(BeNil())

@@ -2,6 +2,8 @@ name: Static Code Analysis
 
 on:
   pull_request: { }
+  merge_group:
+    types: [checks_requested]
 
 concurrency:
   group: ${{ github.head_ref || github.run_id }}

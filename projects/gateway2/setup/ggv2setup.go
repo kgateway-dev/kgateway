@@ -125,12 +125,6 @@ func StartGGv2WithConfig(ctx context.Context, setupOpts *controller.SetupOpts,
 	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
 
 	augmentedPods := krtcollections.NewPodsCollection(kubeClient, krtOpts)
-	setting := krtutil.SetupCollectionDynamic[glookubev1.Settings](
-		ctx,
-		kubeClient,
-		settingsGVR,
-		krt.WithName("GlooSettings"))
-
 	augmentedPodsForUcc := augmentedPods
 	if envutils.IsEnvTruthy("DISABLE_POD_LOCALITY_XDS") {
 		augmentedPodsForUcc = nil
@@ -138,6 +132,11 @@ func StartGGv2WithConfig(ctx context.Context, setupOpts *controller.SetupOpts,
 
 	ucc := uccBuilder(ctx, krtOpts, augmentedPodsForUcc)
 
+	setting := krtutil.SetupCollectionDynamic[glookubev1.Settings](
+		ctx,
+		kubeClient,
+		settingsGVR,
+		krt.WithName("GlooSettings"))
 	settingsSingle := krt.NewSingleton(func(ctx krt.HandlerContext) *glookubev1.Settings {
 		s := krt.FetchOne(ctx, setting,
 			krt.FilterObjectName(settingsNns))
@@ -147,10 +146,7 @@ func StartGGv2WithConfig(ctx context.Context, setupOpts *controller.SetupOpts,
 		return nil
 	}, krt.WithName("GlooSettingsSingleton"))
 
-	logger.Info("creating reporter")
-
 	logger.Info("initializing controller")
-
 	c, err := controller.NewControllerBuilder(ctx, controller.StartConfig{
 		ExtraPlugins:  extraPlugins,
 		RestConfig:    restConfig,
