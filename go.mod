@@ -12,7 +12,6 @@ require (
 	github.com/aws/aws-sdk-go v1.34.9
 	github.com/census-instrumentation/opencensus-proto v0.4.1
 	github.com/cncf/xds/go v0.0.0-20240905190251-b4127c9b8d78
-	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa
 	github.com/envoyproxy/go-control-plane v0.13.2-0.20241022220226-23b7e55d7f65
 	github.com/envoyproxy/protoc-gen-validate v1.1.0
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible
@@ -51,7 +50,6 @@ require (
 	github.com/solo-io/go-utils v0.27.3
 	github.com/solo-io/k8s-utils v0.8.1
 	github.com/solo-io/protoc-gen-ext v0.0.25
-	github.com/solo-io/protoc-gen-openapi v0.2.5
 	github.com/solo-io/skv2 v0.41.0
 
 	// Pinned to the `sa-k8s-1.29-bump` tag of solo-apis on `gloo-main` branch
@@ -90,6 +88,7 @@ require (
 )
 
 require (
+	fybrik.io/crdoc v0.6.3
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.1-0.20240214155107-6cf1ede4da61
 	github.com/avast/retry-go/v4 v4.3.3
 	github.com/fgrosse/zaptest v1.1.0
@@ -250,8 +249,6 @@ require (
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/lithammer/dedent v1.1.0 // indirect
-	github.com/lyft/protoc-gen-star v0.6.1 // indirect
-	github.com/lyft/protoc-gen-star/v2 v2.0.4-0.20230330145011-496ad1ac90a4 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect

@@ -35,9 +35,6 @@ jobs:
     - name: Install Test Utils
       shell: bash
       run: make -C ./projects/gateway2/ install-go-tools
-    - name: Install Test Coverage Tools
-      shell: bash
-      run: make install-go-test-coverage
     - name: Run Tests
       shell: bash
       env:

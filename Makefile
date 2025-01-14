@@ -28,11 +28,6 @@ help: ## Output the self-documenting make targets
 
 ROOTDIR := $(shell pwd)
 OUTPUT_DIR ?= $(ROOTDIR)/_output
-DEPSGOBIN := $(OUTPUT_DIR)/.bin
-
-# Important to use binaries built from module.
-export PATH:=$(DEPSGOBIN):$(PATH)
-export GOBIN:=$(DEPSGOBIN)
 
 # If you just put your username, then that refers to your account at hub.docker.com
 # To use quay images, set the IMAGE_REGISTRY to "quay.io/solo-io" (or leave unset)
@@ -153,12 +148,12 @@ init:
 # TODO: deprecate in favor of using fmt-v2
 .PHONY: fmt
 fmt:
-	$(DEPSGOBIN)/goimports -w $(shell ls -d */ | grep -v vendor)
+	go run golang.org/x/tools/cmd/goimports -w $(shell ls -d */ | grep -v vendor)
 
 # Formats code and imports
 .PHONY: fmt-v2
 fmt-v2:
-	$(DEPSGOBIN)/goimports -local "github.com/solo-io/gloo/"  -w $(shell ls -d */ | grep -v vendor)
+	go run golang.org/x/tools/cmd/goimports -local "github.com/solo-io/gloo/"  -w $(shell ls -d */ | grep -v vendor)
 
 .PHONY: fmt-changed
 fmt-changed:
@@ -169,32 +164,6 @@ fmt-changed:
 mod-download: check-go-version
 	go mod download all
 
-LINTER_VERSION := $(shell cat .github/workflows/static-analysis.yaml | yq '.jobs.static-analysis.steps.[] | select( .uses == "*golangci/golangci-lint-action*") | .with.version ')
-
-# https://github.com/go-modules-by-example/index/blob/master/010_tools/README.md
-.PHONY: install-go-tools
-install-go-tools: mod-download ## Download and install Go dependencies
-	mkdir -p $(DEPSGOBIN)
-	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
-	go install github.com/solo-io/protoc-gen-ext
-	go install github.com/solo-io/protoc-gen-openapi
-	go install github.com/envoyproxy/protoc-gen-validate
-	go install github.com/golang/protobuf/protoc-gen-go
-	go install golang.org/x/tools/cmd/goimports
-	go install github.com/cratonica/2goarray
-	go install github.com/golang/mock/mockgen
-	go install github.com/saiskee/gettercheck
-	go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
-	# This version must stay in sync with the version used in CI: .github/workflows/static-analysis.yaml
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(LINTER_VERSION)
-	go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@v0.3.16
-	# Kubebuilder docs generation
-	go install fybrik.io/crdoc@v0.6.3
-
-.PHONY: install-go-test-coverage
-install-go-test-coverage:
-	go install github.com/vladopajic/go-test-coverage/v2@v2.8.1
-
 .PHONY: check-format
 check-format:
 	NOT_FORMATTED=$$(gofmt -l ./projects/ ./pkg/ ./test/) && if [ -n "$$NOT_FORMATTED" ]; then echo These files are not formatted: $$NOT_FORMATTED; exit 1; fi
@@ -203,17 +172,17 @@ check-format:
 check-spelling:
 	./ci/spell.sh check
 
-
 #----------------------------------------------------------------------------
 # Analyze
 #----------------------------------------------------------------------------
+LINTER_VERSION := $(shell cat .github/workflows/static-analysis.yaml | yq '.jobs.static-analysis.steps.[] | select( .uses == "*golangci/golangci-lint-action*") | .with.version ')
 
 # The analyze target runs a suite of static analysis tools against the codebase.
 # The options are defined in .golangci.yaml, and can be overridden by setting the ANALYZE_OPTIONS variable.
 .PHONY: analyze
 ANALYZE_OPTIONS ?= --fast --verbose
 analyze:
-	$(DEPSGOBIN)/golangci-lint run $(ANALYZE_OPTIONS) ./...
+	go run github.com/golangci/golangci-lint/cmd/golangci-lint@$(LINTER_VERSION) run $(ANALYZE_OPTIONS) ./...
 
 
 #----------------------------------------------------------------------------------
@@ -221,7 +190,7 @@ analyze:
 #----------------------------------------------------------------------------------
 
 GINKGO_VERSION ?= $(shell echo $(shell go list -m github.com/onsi/ginkgo/v2) | cut -d' ' -f2)
-GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_RC=true ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
+GINKGO_ENV ?= ACK_GINKGO_RC=true ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
 GINKGO_FLAGS ?= -tags=purego --trace -progress -race --fail-fast -fail-on-pending --randomize-all --compilers=5 --flake-attempts=3
 GINKGO_REPORT_FLAGS ?= --json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
 GINKGO_COVERAGE_FLAGS ?= --cover --covermode=atomic --coverprofile=coverage.cov
@@ -231,39 +200,9 @@ TEST_PKG ?= ./... # Default to run all tests
 # For example, you may want to run tests multiple times, or with various timeouts
 GINKGO_USER_FLAGS ?=
 
-.PHONY: install-test-tools
-install-test-tools: check-go-version
-	go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
-
-# proto compiler installation
-PROTOC_VERSION:=3.6.1
-PROTOC_URL:=https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}
-.PHONY: install-protoc
-.SILENT: install-protoc
-install-protoc:
-	mkdir -p $(DEPSGOBIN)
-	if [ $(shell ${DEPSGOBIN}/protoc --version | grep -c ${PROTOC_VERSION}) -ne 0 ]; then \
-		echo expected protoc version ${PROTOC_VERSION} already installed ;\
-	else \
-		if [ "$(shell uname)" = "Darwin" ]; then \
-			echo "downloading protoc for osx" ;\
-			wget $(PROTOC_URL)-osx-x86_64.zip -O $(DEPSGOBIN)/protoc-${PROTOC_VERSION}.zip ;\
-		elif [ "$(shell uname -m)" = "aarch64" ]; then \
-			echo "downloading protoc for linux aarch64" ;\
-			wget $(PROTOC_URL)-linux-aarch_64.zip -O $(DEPSGOBIN)/protoc-${PROTOC_VERSION}.zip ;\
-		else \
-			echo "downloading protoc for linux x86-64" ;\
-			wget $(PROTOC_URL)-linux-x86_64.zip -O $(DEPSGOBIN)/protoc-${PROTOC_VERSION}.zip ;\
-		fi ;\
-		unzip $(DEPSGOBIN)/protoc-${PROTOC_VERSION}.zip -d $(DEPSGOBIN)/protoc-${PROTOC_VERSION} ;\
-		mv $(DEPSGOBIN)/protoc-${PROTOC_VERSION}/bin/protoc $(DEPSGOBIN)/protoc ;\
-		chmod +x $(DEPSGOBIN)/protoc ;\
-		rm -rf $(DEPSGOBIN)/protoc-${PROTOC_VERSION} $(DEPSGOBIN)/protoc-${PROTOC_VERSION}.zip ;\
-	fi
-
 .PHONY: test
 test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
-	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) \
+	$(GINKGO_ENV) go run github.com/onsi/ginkgo/v2/ginkgo -ldflags=$(LDFLAGS) \
 	$(GINKGO_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
 	$(TEST_PKG)
 
@@ -303,7 +242,7 @@ run-kube-e2e-tests: test
 #----------------------------------------------------------------------------------
 # Go Tests
 #----------------------------------------------------------------------------------
-GO_TEST_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore
+GO_TEST_ENV ?= 
 # Testings flags: https://pkg.go.dev/cmd/go#hdr-Testing_flags
 # The default timeout for a suite is 10 minutes, but this can be overridden by setting the -timeout flag. Currently set
 # to 25 minutes based on the time it takes to run the longest test setup (k8s_gw_test).
@@ -331,7 +270,7 @@ go-test-with-coverage: go-test
 
 .PHONY: validate-test-coverage
 validate-test-coverage:
-	${GOBIN}/go-test-coverage --config=./test_coverage.yml
+	go run github.com/vladopajic/go-test-coverage/v2@v2.8.1 --config=./test_coverage.yml
 
 .PHONY: view-test-coverage
 view-test-coverage:
@@ -365,10 +304,6 @@ clean-bug-report:
 clean-test-logs:
 	rm -rf $(TEST_LOG_DIR)
 
-.PHONY: clean-vendor-any
-clean-vendor-any:
-	rm -rf vendor_any
-
 # Removes files generated by codegen other than docs and tests
 .PHONY: clean-solo-kit-gen
 clean-solo-kit-gen:
@@ -400,22 +335,18 @@ generate-all-debug: generate-all
 
 # Generates all required code, cleaning and formatting as well; this target is executed in CI
 .PHONY: generated-code
-generated-code: check-go-version clean-solo-kit-gen ## Run all codegen and formatting as required by CI
+generated-code: check-go-version
 generated-code: go-generate-all generate-cli-docs getter-check mod-tidy
-generated-code: verify-enterprise-protos generate-helm-files update-licenses
+generated-code: update-licenses
 generated-code: generate-crd-reference-docs
 generated-code: fmt
 
 .PHONY: go-generate-all
-go-generate-all: clean-vendor-any ## Run all go generate directives in the repo, including codegen for protos, mockgen, and more
-	GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore GO111MODULE=on go generate ./...
-
-.PHONY: go-generate-apis
-go-generate-apis: clean-vendor-any ## Runs the generate directive in generate.go, which executes codegen for protos
-	GO111MODULE=on go generate generate.go
+go-generate-all: ## Run all go generate directives in the repo, including codegen for protos, mockgen, and more
+	GO111MODULE=on go generate ./projects/gateway2/...
 
 .PHONY: go-generate-mocks
-go-generate-mocks: clean-vendor-any ## Runs all generate directives for mockgen in the repo
+go-generate-mocks: ## Runs all generate directives for mockgen in the repo
 	GO111MODULE=on go generate -run="mockgen" ./...
 
 .PHONY: generate-cli-docs
@@ -425,7 +356,7 @@ generate-cli-docs: clean-cli-docs ## Removes existing CLI docs and re-generates 
 # Ensures that accesses for fields which have "getter" functions are exclusively done via said "getter" functions
 .PHONY: getter-check
 getter-check:
-	$(DEPSGOBIN)/gettercheck -ignoretests -ignoregenerated -write ./...
+	go run github.com/saiskee/gettercheck -ignoretests -ignoregenerated -write ./...
 
 .PHONY: mod-tidy
 mod-tidy:
@@ -459,41 +390,10 @@ generate-changelog: ## Generate a changelog entry
 # See docs/content/crds/README.md for more details.
 #----------------------------------------------------------------------------------
 
-# To run this command correctly, you must have executed `install-go-tools`
 .PHONY: generate-crd-reference-docs
 generate-crd-reference-docs:
 	go run docs/content/crds/generate.go
 
-
-#----------------------------------------------------------------------------------
-# Generate mocks
-#----------------------------------------------------------------------------------
-
-# The values in this array are used in a foreach loop to dynamically generate the
-# commands in the generate-client-mocks target.
-# For each value, the ":" character will be replaced with " " using the subst function,
-# thus turning the string into a 3-element array. The n-th element of the array will
-# then be selected via the word function
-MOCK_RESOURCE_INFO := \
-	gloo:artifact:ArtifactClient \
-	gloo:endpoint:EndpointClient \
-	gloo:proxy:ProxyClient \
-	gloo:secret:SecretClient \
-	gloo:settings:SettingsClient \
-	gloo:upstream:UpstreamClient \
-	gateway:gateway:GatewayClient \
-	gateway:virtual_service:VirtualServiceClient\
-	gateway:route_table:RouteTableClient\
-
-.PHONY: generate-client-mocks
-generate-client-mocks:
-	@$(foreach INFO, $(MOCK_RESOURCE_INFO), \
-		echo Generating mock for $(word 3,$(subst :, , $(INFO)))...; \
-		GOBIN=$(DEPSGOBIN) $(DEPSGOBIN)/mockgen -destination=projects/$(word 1,$(subst :, , $(INFO)))/pkg/mocks/mock_$(word 2,$(subst :, , $(INFO)))_client.go \
-		-package=mocks \
-		github.com/solo-io/gloo/projects/$(word 1,$(subst :, , $(INFO)))/pkg/api/v1 \
-		$(word 3,$(subst :, , $(INFO))) \
-	;)
 
 #----------------------------------------------------------------------------------
 # Gloo distroless base images
