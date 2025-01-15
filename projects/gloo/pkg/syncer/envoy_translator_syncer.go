@@ -2,11 +2,7 @@ package syncer
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"net/http"
 
-	"github.com/gorilla/mux"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
@@ -84,10 +80,6 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 	stopwatch := statsutils.NewTranslatorStopWatch("EnvoySyncer")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
-
-	// store snap for debug tooling
-	s.snapshotHistory.SetApiSnapshot(snap)
-	s.latestSnap = snap
 
 	var nonKubeProxies v1.ProxyList
 	for _, proxy := range snap.Proxies {
@@ -213,55 +205,4 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 	}
 
 	logger.Debugf("gloo reports to be written: %v", allReports)
-}
-
-// ServeXdsSnapshots exposes Gloo configuration as an API when `devMode` in Settings is True.
-// Deprecated: https://github.com/solo-io/gloo/issues/6494
-// Prefer to use the iosnapshot.History and pkg/servers/admin
-func (s *translatorSyncer) ServeXdsSnapshots() error {
-	return s.ContextuallyServeXdsSnapshots(context.Background())
-}
-
-// ContextuallyServeXdsSnapshots exposes Gloo configuration as an API when `devMode` in Settings is True.
-// Deprecated: https://github.com/solo-io/gloo/issues/6494
-// Prefer to use the iosnapshot.History and pkg/servers/admin
-func (s *translatorSyncer) ContextuallyServeXdsSnapshots(ctx context.Context) error {
-
-	r := mux.NewRouter()
-
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintf(w, "%v", "Developer API")
-	})
-	r.HandleFunc("/xds", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintf(w, "%+v", prettify(s.xdsCache.GetStatusKeys()))
-	})
-	r.HandleFunc("/xds/{key}", func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		xdsCacheKey := vars["key"]
-
-		xdsSnapshot, _ := s.xdsCache.GetSnapshot(xdsCacheKey)
-		_, _ = fmt.Fprintf(w, "%+v", prettify(xdsSnapshot))
-	})
-	r.HandleFunc("/api", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintf(w, "%+v", prettify(s.latestSnap))
-	})
-
-	server := &http.Server{Addr: fmt.Sprintf(":%d", devModePort), Handler: r}
-
-	go func() {
-		<-ctx.Done()
-		_ = server.Close()
-	}()
-
-	return server.ListenAndServe()
-
-}
-
-func prettify(original interface{}) string {
-	b, err := json.MarshalIndent(original, "", "    ")
-	if err != nil {
-		return ""
-	}
-
-	return string(b)
 }

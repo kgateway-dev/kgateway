@@ -15,7 +15,6 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/pkg/utils/statsutils/metrics"
 	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
-	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 
@@ -482,9 +481,8 @@ func RunGloo(opts bootstrap.Opts) error {
 			ratelimitExt.NewTranslatorSyncerExtension,
 			extauthExt.NewTranslatorSyncerExtension,
 		},
-		ApiEmitterChannel:      make(chan struct{}),
-		XdsCallbacks:           nil,
-		SnapshotHistoryFactory: iosnapshot.GetHistoryFactory(),
+		ApiEmitterChannel: make(chan struct{}),
+		XdsCallbacks:      nil,
 	}
 
 	return RunGlooWithExtensions(opts, glooExtensions)
@@ -895,15 +893,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	// Overtime, we should break up this large function into smaller StartFunc
 	startFuncs := map[string]StartFunc{}
 
-	// snapshotHistory is a utility for managing the state of the input/output snapshots that the Control Plane
-	// consumes and produces. This object is then used by our Admin Server, to provide this data on demand
-	snapshotHistory := extensions.SnapshotHistoryFactory(iosnapshot.HistoryFactoryParameters{
-		Settings: opts.Settings,
-		Cache:    opts.ControlPlane.SnapshotCache,
-	})
-
-	startFuncs["admin-server"] = AdminServerStartFunc(snapshotHistory, opts.KrtDebugger)
-
 	if opts.ProxyReconcileQueue != nil {
 		go runQueue(watchOpts.Ctx, opts.ProxyReconcileQueue, opts.WriteNamespace, proxyClient)
 	}
@@ -926,7 +915,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		proxyClient,
 		opts.WriteNamespace,
 		opts.Identity,
-		snapshotHistory,
 	)
 
 	// MARK: build & run api snap loop
