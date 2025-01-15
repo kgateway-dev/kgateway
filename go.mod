@@ -23,7 +23,7 @@ require (
 	github.com/golang/protobuf v1.5.4
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-github/v32 v32.0.0
-	github.com/gorilla/mux v1.8.1
+	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/hashicorp/consul/api v1.28.2
 	github.com/hashicorp/go-multierror v1.1.1

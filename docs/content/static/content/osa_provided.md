@@ -28,7 +28,6 @@ Name|Version|License
 [google/go-github](https://github.com/google/go-github)|v17.0.0+incompatible|BSD 3-clause "New" or "Revised" License
 [go-github/v32](https://github.com/google/go-github)|v32.0.0|BSD 3-clause "New" or "Revised" License
 [google/uuid](https://github.com/google/uuid)|v1.6.0|BSD 3-clause "New" or "Revised" License
-[gorilla/mux](https://github.com/gorilla/mux)|v1.8.1|BSD 3-clause "New" or "Revised" License
 [grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.4.0|Apache License 2.0
 [hinshun/vt10x](https://github.com/hinshun/vt10x)|v0.0.0-20180809195222-d55458df857c|MIT License
 [imdario/mergo](https://github.com/imdario/mergo)|v0.3.16|BSD 3-clause "New" or "Revised" License
