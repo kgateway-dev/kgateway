@@ -15,6 +15,7 @@ Name|Version|License
 [form3tech-oss/jwt-go](https://github.com/form3tech-oss/jwt-go)|v3.2.5+incompatible|MIT License
 [fsnotify/fsnotify](https://github.com/fsnotify/fsnotify)|v1.7.0|BSD 3-clause "New" or "Revised" License
 [ghodss/yaml](https://github.com/ghodss/yaml)|v1.0.1-0.20190212211648-25d852aebe32|MIT License
+[go-logr/logr](https://github.com/go-logr/logr)|v1.4.2|Apache License 2.0
 [go-logr/zapr](https://github.com/go-logr/zapr)|v1.3.0|Apache License 2.0
 [go-openapi/loads](https://github.com/go-openapi/loads)|v0.19.4|Apache License 2.0
 [go-openapi/spec](https://github.com/go-openapi/spec)|v0.19.6|Apache License 2.0
