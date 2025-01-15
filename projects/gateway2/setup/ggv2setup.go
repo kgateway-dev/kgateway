@@ -12,12 +12,16 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/namespaces"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
+	"github.com/solo-io/gloo/projects/gateway2/admin"
 	"github.com/solo-io/gloo/projects/gateway2/controller"
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
+	"github.com/solo-io/gloo/projects/gateway2/setup/utils"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	"github.com/solo-io/go-utils/contextutils"
+	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -171,6 +175,59 @@ func StartGGv2WithConfig(ctx context.Context, setupOpts *controller.SetupOpts,
 	kubeClient.RunAndWait(ctx.Done())
 	setting.Synced().WaitUntilSynced(ctx.Done())
 
+	logger.Info("running start funcs")
+	runStartFuncs(ctx, setupOpts)
+
 	logger.Info("starting controller")
 	return c.Start(ctx)
+}
+
+func runStartFuncs(ctx context.Context, setupOpts *controller.SetupOpts) {
+	// right now, the only StartFunc we have is the admin server
+	startFuncs := map[string]utils.StartFunc{}
+	startFuncs["admin-server"] = admin.AdminServerStartFunc(setupOpts)
+
+	eg, _ := errgroup.WithContext(ctx)
+	logger := contextutils.LoggerFrom(ctx)
+	errs := make(chan error)
+
+	for name, startFn := range startFuncs {
+		startFn := startFn
+		namedCtx := contextutils.WithLogger(ctx, name)
+		namedLogger := contextutils.LoggerFrom(namedCtx)
+
+		eg.Go(
+			func() error {
+				namedLogger.Infof("starting %s goroutine", name)
+				err := startFn(namedCtx)
+				if err != nil {
+					namedLogger.Errorf("%s goroutine failed: %v", name, err)
+				}
+				return err
+			},
+		)
+	}
+
+	go func() {
+		// It is critical that this function does not block.
+		// As a result, we monitor the error group and just drop errors on the shared "errs" channel if one occurs.
+		runErr := eg.Wait()
+		if runErr != nil {
+			errs <- runErr
+		}
+	}()
+
+	go func() {
+		for {
+			select {
+			case err, ok := <-errs:
+				if !ok {
+					return
+				}
+				logger.Errorw("runStartFuncs error", zap.Error(err))
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
 }
