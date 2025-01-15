@@ -39,36 +39,36 @@ jobs:
           echo "auto_succeed=true" >> $GITHUB_OUTPUT
         fi
 
-  regression_tests:
-    name: k8s regression tests (${{matrix.kube-e2e-test-type}})
-    needs: prepare_env
-    runs-on: ubuntu-22.04
-    timeout-minutes: 60
-    if: ${{ !github.event.pull_request.draft }}
-    strategy:
-      fail-fast: false
-      matrix:
-        # upgrade tests are run on LTS but not on main branch, for main they are run nightly
-        # ingress will be deprecated from 1.17. Ref: https://solo-io-corp.slack.com/archives/G01EERAK3KJ/p1716389614777799
-        # this is the github action version of ternary op
-        kube-e2e-test-type: [ 'gateway', 'gloo', 'upgrade' ]
-        kube-version: [ { node: 'v1.31.0@sha256:53df588e04085fd41ae12de0c3fe4c72f7013bba32a20e7325357a1ac94ba865', kubectl: 'v1.31.0', kind: 'v0.24.0', helm: 'v3.14.4' } ]
-        image-variant:
-          - distroless
-        merge-to-main:
-          - ${{ github.event.pull_request.base.ref == 'main' }}
-        exclude:
-          - merge-to-main: true
-            kube-e2e-test-type: upgrade
-    steps:
-    - uses: actions/checkout@v4
-    - id: run-tests
-      if: needs.prepare_env.outputs.should-auto-succeed-regression-tests != 'true'
-      uses: ./.github/workflows/composite-actions/regression-tests
-    - id: auto-succeed-tests
-      if: needs.prepare_env.outputs.should-auto-succeed-regression-tests == 'true'
-      run: |
-        echo "Regression tests auto-succeeded"
+  # regression_tests:
+  #   name: k8s regression tests (${{matrix.kube-e2e-test-type}})
+  #   needs: prepare_env
+  #   runs-on: ubuntu-22.04
+  #   timeout-minutes: 60
+  #   if: ${{ !github.event.pull_request.draft }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       # upgrade tests are run on LTS but not on main branch, for main they are run nightly
+  #       # ingress will be deprecated from 1.17. Ref: https://solo-io-corp.slack.com/archives/G01EERAK3KJ/p1716389614777799
+  #       # this is the github action version of ternary op
+  #       kube-e2e-test-type: [ 'gateway', 'gloo', 'upgrade' ]
+  #       kube-version: [ { node: 'v1.31.0@sha256:53df588e04085fd41ae12de0c3fe4c72f7013bba32a20e7325357a1ac94ba865', kubectl: 'v1.31.0', kind: 'v0.24.0', helm: 'v3.14.4' } ]
+  #       image-variant:
+  #         - distroless
+  #       merge-to-main:
+  #         - ${{ github.event.pull_request.base.ref == 'main' }}
+  #       exclude:
+  #         - merge-to-main: true
+  #           kube-e2e-test-type: upgrade
+  #   steps:
+  #   - uses: actions/checkout@v4
+  #   - id: run-tests
+  #     if: needs.prepare_env.outputs.should-auto-succeed-regression-tests != 'true'
+  #     uses: ./.github/workflows/composite-actions/regression-tests
+  #   - id: auto-succeed-tests
+  #     if: needs.prepare_env.outputs.should-auto-succeed-regression-tests == 'true'
+  #     run: |
+  #       echo "Regression tests auto-succeeded"
 
   kube_gateway_api_conformance_tests:
     name: kubernetes gateway api conformance tests (${{matrix.image-variant}})

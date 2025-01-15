@@ -1,7 +1,6 @@
 # Continuous Integration
 - [Pull Request](#pull-request)
     - [Changelog Bot](#changelog-bot)
-    - [Build Bot](#build-bot)
     - [Github Actions](#github-actions)
     - [Bulldozer](#bulldozer)
     - [Special Labels](#special-labels)
@@ -14,20 +13,10 @@
 
 This is enabled as a GitHub App on the project, and if changes are required, please contact the maintainers of the project by [opening an issue](/devel/contributing/issues.md).
 
-### Build Bot
-[Build Bot](https://github.com/solo-io/build-bot) runs unit tests for the entire project. 
-
-This is enabled as a Github App on the project, and is configured by the [cloudbuild.yaml](../cloudbuild.yaml) at the root of the project and contains additional configuration in the [cloudbuild](cloudbuild) folder.
-
 ### Github Actions
 [Github Workflows](/.github/workflows) run tests which rely on Kubernetes clusters.
 
 See the [GitHub docs](https://docs.github.com/en/actions/automating-builds-and-tests/about-continuous-integration#about-continuous-integration-using-github-actions) for more deatils about how GitHub Actions work.
-
-### Bulldozer
-[Bulldozer](https://github.com/solo-io/bulldozer) automatically merges PRs when all required status checks are successful and required reviews are provided.
-
-This is enabled as a GitHub App on the project, and if changes are required, please contact the maintainers of the project by [opening an issue](/devel/contributing/issues.md).
 
 ### Special Labels
 **Keep PR Updated**: When applied, bulldozer keeps the PR up to date with the base branch, by merging any updates into it (Applied by default).
@@ -44,7 +33,6 @@ This is enabled as a GitHub App on the project, and if changes are required, ple
 **Skip Docs Build**: Include `skipCI-docs-build:true` in the changelog entry of the PR.
 
 **Skip Kubernetes E2E Tests**: Include `skipCI-kube-tests:true` in the changelog entry of the PR.
-
 
 ### Assets and Package Management
 `glooctl` is built and published to the GitHub release via the script `upload_github_release_assets.go`. This is sensitive to changes to the output of `glooctl version`.

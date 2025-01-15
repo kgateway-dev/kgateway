@@ -11,15 +11,8 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
 	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
-	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stoewer/go-strcase"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-)
-
-var (
-	// crdocBinary is assumed to be installed locally to this path
-	// see the `install-go-tools` target in the Makefile
-	crdocBinary = filepath.Join(util.GetModuleRoot(), "_output", ".bin", "crdoc")
 )
 
 func main() {
@@ -81,7 +74,7 @@ func generateCrdReferenceMarkdown(ctx context.Context, gvk schema.GroupVersionKi
 		"templates",
 		"markdown.tmpl")
 
-	cmd := cmdutils.Command(ctx, crdocBinary,
+	cmd := cmdutils.Command(ctx, "go", "run", "fybrik.io/crdoc",
 		"--resources",
 		sourceFile,
 		"--output",
