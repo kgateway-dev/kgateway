@@ -1087,10 +1087,9 @@ func TestEndpoints(t *testing.T) {
 			nodes := NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
 			pods := NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})
 			pods.Synced().WaitUntilSynced(context.Background().Done())
-			es := EndpointsSettings{
+			endpointSettings := EndpointsSettings{
 				EnableAutoMtls: false,
 			}
-			endpointSettings := krt.NewStatic(&es, true)
 
 			// Get the EndpointSlices collection
 			endpointSlices := krttest.GetMockCollection[*discoveryv1.EndpointSlice](mock)

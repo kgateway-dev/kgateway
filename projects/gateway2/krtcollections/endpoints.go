@@ -9,10 +9,10 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/solo-io/gloo/projects/gateway2/extensions2/settings"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"github.com/solo-io/gloo/projects/gloo/constants"
-	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
@@ -43,24 +43,21 @@ type EndpointsInputs struct {
 	EndpointSlices          krt.Collection[*discoveryv1.EndpointSlice]
 	EndpointSlicesByService krt.Index[types.NamespacedName, *discoveryv1.EndpointSlice]
 	Pods                    krt.Collection[LocalityPod]
-	EndpointsSettings       krt.Singleton[EndpointsSettings]
+	EndpointsSettings       EndpointsSettings
 
 	KrtOpts krtutil.KrtOptions
 }
 
 func NewGlooK8sEndpointInputs(
-	settings krt.Singleton[glookubev1.Settings],
+	stngs settings.Settings,
 	krtopts krtutil.KrtOptions,
 	endpointSlices krt.Collection[*discoveryv1.EndpointSlice],
 	pods krt.Collection[LocalityPod],
 	k8supstreams krt.Collection[ir.Upstream],
 ) EndpointsInputs {
-	endpointSettings := krt.NewSingleton(func(ctx krt.HandlerContext) *EndpointsSettings {
-		settings := krt.FetchOne(ctx, settings.AsCollection())
-		return &EndpointsSettings{
-			EnableAutoMtls: settings.Spec.GetGloo().GetIstioOptions().GetEnableAutoMtls().GetValue(),
-		}
-	}, krtopts.ToOptions("EndpointSettings")...)
+	endpointSettings := EndpointsSettings{
+		EnableAutoMtls: stngs.EnableAutoMTLS,
+	}
 
 	// Create index on EndpointSlices by service name and endpointslice namespace
 	endpointSlicesByService := krt.NewIndex(endpointSlices, func(es *discoveryv1.EndpointSlice) []types.NamespacedName {
@@ -143,8 +140,7 @@ func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kct
 		}
 
 		// Initialize the returned EndpointsForUpstream
-		settings := krt.FetchOne(kctx, inputs.EndpointsSettings.AsCollection())
-		enableAutoMtls := settings.EnableAutoMtls
+		enableAutoMtls := inputs.EndpointsSettings.EnableAutoMtls
 		ret := ir.NewEndpointsForUpstream(us)
 
 		// Handle deduplication of endpoint addresses
