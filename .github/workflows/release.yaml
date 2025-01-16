@@ -9,7 +9,8 @@ on:
       - main
 
 env:
-  IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
+  # IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
+  IMAGE_REGISTRY: quay.io/solo-io
 
 permissions:
   contents: write
