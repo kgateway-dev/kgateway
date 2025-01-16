@@ -12,7 +12,6 @@ import (
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway2/controller"
-	"github.com/solo-io/gloo/projects/gateway2/setup/utils"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/stats"
 	"istio.io/istio/pkg/kube/krt"
@@ -22,30 +21,17 @@ const (
 	AdminPort = 9095
 )
 
-// AdminServerStartFunc returns the StartFunc for the Admin Server
-// The Admin Server is the groundwork for an Administration Interface, similar to that of Envoy
-// https://github.com/solo-io/gloo/issues/6494
-// The endpoints that are available on this server are split between two places:
-//  1. The default endpoints are defined by our stats server: https://github.com/solo-io/go-utils/blob/8eda16b9878d71673e6a3a9756f6088160f75468/stats/stats.go#L79
-//  2. Custom endpoints are defined by our admin server handler below
-func AdminServerStartFunc(setupOpts *controller.SetupOpts) utils.StartFunc { // dbg *krt.DebugHandler, cache envoycache.SnapshotCache) StartFunc {
-	return func(ctx context.Context) error {
-		// serverHandlers defines the custom handlers that the Admin Server will support
-		serverHandlers := getServerHandlers(ctx, setupOpts.KrtDebugger, setupOpts.Cache)
+func RunAdminServer(ctx context.Context, setupOpts *controller.SetupOpts) error {
+	// serverHandlers defines the custom handlers that the Admin Server will support
+	serverHandlers := getServerHandlers(ctx, setupOpts.KrtDebugger, setupOpts.Cache)
 
-		// The Stats Server is used as the running server for our admin endpoints
-		//
-		// NOTE: There is a slight difference in how we run this server -vs- how we used to run it
-		// In the past, we would start the server once, at the beginning of the running container
-		// Now, we start a new server each time we invoke a StartFunc.
-		stats.StartCancellableStatsServerWithPort(ctx, stats.DefaultStartupOptions(), func(mux *http.ServeMux, profiles map[string]string) {
-			// let people know these moved
-			profiles[fmt.Sprintf("http://localhost:%d/snapshots/", AdminPort)] = fmt.Sprintf("To see snapshots, port forward to port %d", AdminPort)
-		})
-		startHandlers(ctx, serverHandlers)
+	stats.StartCancellableStatsServerWithPort(ctx, stats.DefaultStartupOptions(), func(mux *http.ServeMux, profiles map[string]string) {
+		// let people know these moved
+		profiles[fmt.Sprintf("http://localhost:%d/snapshots/", AdminPort)] = fmt.Sprintf("To see snapshots, port forward to port %d", AdminPort)
+	})
+	startHandlers(ctx, serverHandlers)
 
-		return nil
-	}
+	return nil
 }
 
 // getServerHandlers returns the custom handlers for the Admin Server, which will be bound to the http.ServeMux
