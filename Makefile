@@ -31,8 +31,7 @@ OUTPUT_DIR ?= $(ROOTDIR)/_output
 # To use quay images, set the IMAGE_REGISTRY to "quay.io/solo-io" (or leave unset)
 # To use dockerhub images, set the IMAGE_REGISTRY to "soloio"
 # To use gcr images, set the IMAGE_REGISTRY to "gcr.io/$PROJECT_NAME"
-export IMAGE_REGISTRY ?= ghcr.io/kgateway
-export IMAGE_REPO ?= kgateway
+export IMAGE_REGISTRY ?= quay.io/solo-io
 
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
@@ -528,6 +527,7 @@ GLOO_SOURCES=$(call get_sources,$(GLOO_DIR))
 EDGE_GATEWAY_SOURCES=$(call get_sources,$(EDGE_GATEWAY_DIR))
 K8S_GATEWAY_SOURCES=$(call get_sources,$(K8S_GATEWAY_DIR))
 GLOO_OUTPUT_DIR=$(OUTPUT_DIR)/$(GLOO_DIR)
+export GLOO_IMAGE_REPO ?= gloo
 
 # We include the files in EDGE_GATEWAY_DIR and K8S_GATEWAY_DIR as dependencies to the gloo build
 # so changes in those directories cause the make target to rebuild
@@ -545,7 +545,7 @@ gloo-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DIR)/Dockerfi
 	docker buildx build --load $(PLATFORM) $(GLOO_OUTPUT_DIR) -f $(GLOO_OUTPUT_DIR)/Dockerfile.gloo \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
-		-t $(IMAGE_REGISTRY)/gloo:$(VERSION) $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/$(GLOO_IMAGE_REPO):$(VERSION) $(QUAY_EXPIRATION_LABEL)
 
 $(GLOO_OUTPUT_DIR)/Dockerfile.gloo.distroless: $(GLOO_DIR)/cmd/Dockerfile.distroless
 	cp $< $@
@@ -557,7 +557,7 @@ gloo-distroless-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DI
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
 		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) \
-		-t $(IMAGE_REGISTRY)/gloo:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/$(GLOO_IMAGE_REPO):$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL)
 
 #----------------------------------------------------------------------------------
 # Gloo with race detection enabled.

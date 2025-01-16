@@ -22,7 +22,7 @@ builds:
       - arm64
 dockers:
   - image_templates:
-      - &arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
+      - &arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.GLOO_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
     use: buildx
     dockerfile: &dockerfile projects/gloo/cmd/Dockerfile
     goos: linux
@@ -33,7 +33,7 @@ dockers:
       - "--build-arg=GOARCH=arm64"
       - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_GLOO_IMAGE }}"
   - image_templates:
-      - &amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
+      - &amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.GLOO_IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
     use: buildx
     dockerfile: *dockerfile
     goos: linux
@@ -44,7 +44,7 @@ dockers:
       - "--build-arg=GOARCH=amd64"
       - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_GLOO_IMAGE }}"
 docker_manifests:
-  - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.IMAGE_REPO }}:{{ .Env.VERSION }}"
+  - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.GLOO_IMAGE_REPO }}:{{ .Env.VERSION }}"
     image_templates:
       - *amd_image
       - *arm_image
