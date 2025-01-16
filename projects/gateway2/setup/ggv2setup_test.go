@@ -300,10 +300,8 @@ func testScenario(
 
 	dump := dumper.Dump(t, ctx)
 	if len(dump.Listeners) == 0 {
-		//		xdsDump := iosnapshot.GetXdsSnapshotDataFromCache(snapCache).MarshalJSONString()
 		j, _ := kdbg.MarshalJSON()
 		t.Logf("timed out waiting - krt state for test: %s %s", t.Name(), string(j))
-		//		t.Logf("timed out waiting - xds state for test: %s %s", t.Name(), xdsDump)
 		t.Fatalf("timed out waiting for listeners")
 	}
 	if write {

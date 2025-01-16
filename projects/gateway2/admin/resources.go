@@ -1,4 +1,4 @@
-package iosnapshot
+package admin
 
 import (
 	"slices"
@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+// TODO: these need to be updated
 var (
 	KubernetesCoreGVKs = []schema.GroupVersionKind{
 		wellknownkube.SecretGVK,
@@ -33,14 +34,6 @@ var (
 		gatewayv1.RouteOptionGVK,
 	}
 
-	EdgeGatewayGVKs = []schema.GroupVersionKind{
-		gatewayv1.GatewayGVK,
-		gatewayv1.MatchableHttpGatewayGVK,
-		gatewayv1.MatchableTcpGatewayGVK,
-		gatewayv1.VirtualServiceGVK,
-		gatewayv1.RouteTableGVK,
-	}
-
 	KubernetesGatewayGVKs = []schema.GroupVersionKind{
 		wellknown.GatewayClassGVK,
 		wellknown.GatewayGVK,
@@ -56,16 +49,11 @@ var (
 		gatewayv1.HttpListenerOptionGVK,
 	}
 
-	EdgeOnlyInputSnapshotGVKs = slices.Concat(
+	// CompleteInputSnapshotGVKs is the list of GVKs that will be returned by the InputSnapshot API
+	CompleteInputSnapshotGVKs = slices.Concat(
 		KubernetesCoreGVKs,
 		GlooGVKs,
 		PolicyGVKs,
-		EdgeGatewayGVKs,
-	)
-
-	// CompleteInputSnapshotGVKs is the list of GVKs that will be returned by the InputSnapshot API
-	CompleteInputSnapshotGVKs = slices.Concat(
-		EdgeOnlyInputSnapshotGVKs,
 		KubernetesGatewayGVKs,
 		KubernetesGatewayIntegrationPolicyGVKs,
 	)

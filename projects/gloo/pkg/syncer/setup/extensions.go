@@ -3,7 +3,6 @@ package setup
 import (
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 )
@@ -30,18 +29,11 @@ type Extensions struct {
 
 	// ApiEmitterChannel is a channel that forces the API Emitter to emit a new API Snapshot
 	ApiEmitterChannel chan struct{}
-
-	// SnapshotHistoryFactory is the factory function which will produce a History object
-	// This history object is used by the ControlPlane to track internal state
-	SnapshotHistoryFactory iosnapshot.HistoryFactory
 }
 
 // Validate returns an error if the Extensions are invalid, nil otherwise
 func (e Extensions) Validate() error {
 
-	if e.SnapshotHistoryFactory == nil {
-		return ErrNilExtension("SnapshotHistoryFactory")
-	}
 	if e.PluginRegistryFactory == nil {
 		return ErrNilExtension("PluginRegistryFactory")
 	}

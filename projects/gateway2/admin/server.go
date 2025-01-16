@@ -8,8 +8,12 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
+	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/projects/gateway2/controller"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/stats"
 	"istio.io/istio/pkg/kube/krt"
 )
 
@@ -17,41 +21,47 @@ const (
 	AdminPort = 9095
 )
 
-// ServerHandlers returns the custom handlers for the Admin Server, which will be bound to the http.ServeMux
+func RunAdminServer(ctx context.Context, setupOpts *controller.SetupOpts) error {
+	// serverHandlers defines the custom handlers that the Admin Server will support
+	serverHandlers := getServerHandlers(ctx, setupOpts.KrtDebugger, setupOpts.Cache)
+
+	stats.StartCancellableStatsServerWithPort(ctx, stats.DefaultStartupOptions(), func(mux *http.ServeMux, profiles map[string]string) {
+		// let people know these moved
+		profiles[fmt.Sprintf("http://localhost:%d/snapshots/", AdminPort)] = fmt.Sprintf("To see snapshots, port forward to port %d", AdminPort)
+	})
+	startHandlers(ctx, serverHandlers)
+
+	return nil
+}
+
+// getServerHandlers returns the custom handlers for the Admin Server, which will be bound to the http.ServeMux
 // These endpoints serve as the basis for an Admin Interface for the Control Plane (https://github.com/solo-io/gloo/issues/6494)
-func ServerHandlers(ctx context.Context, history iosnapshot.History, dbg *krt.DebugHandler) func(mux *http.ServeMux, profiles map[string]string) {
+func getServerHandlers(ctx context.Context, dbg *krt.DebugHandler, cache envoycache.SnapshotCache) func(mux *http.ServeMux, profiles map[string]string) {
 	return func(m *http.ServeMux, profiles map[string]string) {
 
-		// The Input Snapshot is intended to return a list of resources that are persisted in the Kubernetes DB, etcD
-		m.HandleFunc("/snapshots/input", func(w http.ResponseWriter, request *http.Request) {
-			response := history.GetInputSnapshot(ctx)
-			respondJson(w, response)
-		})
-		profiles["/snapshots/input"] = "Input Snapshot"
+		/*
+			// The Input Snapshot is intended to return a list of resources that are persisted in the Kubernetes DB, etcD
+			m.HandleFunc("/snapshots/input", func(w http.ResponseWriter, request *http.Request) {
+				response := history.GetInputSnapshot(ctx)
+				respondJson(w, response)
+			})
+			profiles["/snapshots/input"] = "Input Snapshot"
 
-		// The Edge Snapshot is intended to return a representation of the ApiSnapshot object that the Control Plane
-		// manages internally. This is not intended to be consumed by users, but instead be a mechanism to feed this
-		// data into future unit tests
-		m.HandleFunc("/snapshots/edge", func(w http.ResponseWriter, request *http.Request) {
-			response := history.GetEdgeApiSnapshot(ctx)
-			respondJson(w, response)
-		})
-		profiles["/snapshots/edge"] = "Edge Snapshot"
-
-		// The Proxy Snapshot is intended to return a representation of the Proxies within the ApiSnapshot object.
-		// Proxies may either be persisted in etcD or in-memory, so this Api provides a single mechansim to access
-		// these resources.
-		m.HandleFunc("/snapshots/proxies", func(w http.ResponseWriter, r *http.Request) {
-			response := history.GetProxySnapshot(ctx)
-			respondJson(w, response)
-		})
-		profiles["/snapshots/proxies"] = "Proxy Snapshot"
+			// The Proxy Snapshot is intended to return a representation of the Proxies within the ApiSnapshot object.
+			// Proxies may either be persisted in etcD or in-memory, so this Api provides a single mechansim to access
+			// these resources.
+			m.HandleFunc("/snapshots/proxies", func(w http.ResponseWriter, r *http.Request) {
+				response := history.GetProxySnapshot(ctx)
+				respondJson(w, response)
+			})
+			profiles["/snapshots/proxies"] = "Proxy Snapshot"
+		*/
 
 		// The xDS Snapshot is intended to return the full in-memory xDS cache that the Control Plane manages
 		// and serves up to running proxies.
 		m.HandleFunc("/snapshots/xds", func(w http.ResponseWriter, r *http.Request) {
-			response := history.GetXdsSnapshot(ctx)
-			respondJson(w, response)
+			response := getXdsSnapshotDataFromCache(cache)
+			writeJSON(w, response, r)
 		})
 		profiles["/snapshots/xds"] = "XDS Snapshot"
 
@@ -62,7 +72,7 @@ func ServerHandlers(ctx context.Context, history iosnapshot.History, dbg *krt.De
 	}
 }
 
-func respondJson(w http.ResponseWriter, response iosnapshot.SnapshotResponseData) {
+func respondJson(w http.ResponseWriter, response SnapshotResponseData) {
 	w.Header().Set("Content-Type", getContentType("json"))
 
 	_, _ = fmt.Fprintf(w, "%+v", response.MarshalJSONString())
@@ -106,7 +116,7 @@ func writeJSON(w http.ResponseWriter, obj any, req *http.Request) {
 	}
 }
 
-func StartHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, profiles map[string]string)) error {
+func startHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, profiles map[string]string)) error {
 	mux := new(http.ServeMux)
 	profileDescriptions := map[string]string{}
 	for _, addHandler := range addHandlers {
@@ -170,4 +180,29 @@ func index(profileDescriptions map[string]string) func(w http.ResponseWriter, r 
 		}
 		w.Write(buf.Bytes())
 	}
+}
+
+func getXdsSnapshotDataFromCache(xdsCache cache.SnapshotCache) SnapshotResponseData {
+	cacheKeys := xdsCache.GetStatusKeys()
+	cacheEntries := make(map[string]interface{}, len(cacheKeys))
+
+	for _, k := range cacheKeys {
+		xdsSnapshot, err := getXdsSnapshot(xdsCache, k)
+		if err != nil {
+			cacheEntries[k] = err.Error()
+		} else {
+			cacheEntries[k] = xdsSnapshot
+		}
+	}
+
+	return completeSnapshotResponse(cacheEntries)
+}
+
+func getXdsSnapshot(xdsCache cache.SnapshotCache, k string) (cache cache.ResourceSnapshot, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = eris.New(fmt.Sprintf("panic occurred while getting xds snapshot: %v", r))
+		}
+	}()
+	return xdsCache.GetSnapshot(k)
 }

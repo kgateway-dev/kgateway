@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/namespaces"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
+	"github.com/solo-io/gloo/projects/gateway2/admin"
 	"github.com/solo-io/gloo/projects/gateway2/controller"
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
@@ -124,6 +125,9 @@ func StartGGv2WithConfig(ctx context.Context, setupOpts *controller.SetupOpts,
 
 	logger.Info("waiting for cache sync")
 	kubeClient.RunAndWait(ctx.Done())
+
+	logger.Info("starting admin server")
+	go admin.RunAdminServer(ctx, setupOpts)
 
 	logger.Info("starting controller")
 	return c.Start(ctx)
