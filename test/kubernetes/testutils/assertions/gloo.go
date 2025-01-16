@@ -12,7 +12,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/glooadminutils/admincli"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
-	"github.com/solo-io/gloo/projects/gloo/pkg/servers/admin"
+	"github.com/solo-io/gloo/projects/gateway2/admin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )

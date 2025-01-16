@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/solo-io/gloo/pkg/utils/statsutils/metrics"
-	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
 
@@ -78,11 +77,7 @@ var _ = Describe("Translate Proxy", func() {
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), upstreamClient)
 
-		history := iosnapshot.GetHistoryFactory()(iosnapshot.HistoryFactoryParameters{
-			Settings: settings,
-			Cache:    xdsCache,
-		})
-		syncer = NewTranslatorSyncer(ctx, &mockTranslator{true, false, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity(), history)
+		syncer = NewTranslatorSyncer(ctx, &mockTranslator{true, false, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity())
 		snap = &v1snap.ApiSnapshot{
 			Proxies: v1.ProxyList{
 				proxy,
@@ -120,11 +115,7 @@ var _ = Describe("Translate Proxy", func() {
 		snap = &snapClone
 		snap.Proxies[0] = p1
 
-		history = iosnapshot.GetHistoryFactory()(iosnapshot.HistoryFactoryParameters{
-			Settings: settings,
-			Cache:    xdsCache,
-		})
-		syncer = NewTranslatorSyncer(ctx, &mockTranslator{false, false, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity(), history)
+		syncer = NewTranslatorSyncer(ctx, &mockTranslator{false, false, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity())
 
 		err = syncer.Sync(context.Background(), snap)
 		Expect(err).NotTo(HaveOccurred())
@@ -258,11 +249,7 @@ var _ = Describe("Translate multiple proxies with errors", func() {
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), usClient)
 
-		history := iosnapshot.GetHistoryFactory()(iosnapshot.HistoryFactoryParameters{
-			Settings: settings,
-			Cache:    xdsCache,
-		})
-		syncer = NewTranslatorSyncer(ctx, &mockTranslator{true, true, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity(), history)
+		syncer = NewTranslatorSyncer(ctx, &mockTranslator{true, true, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity())
 		snap = &v1snap.ApiSnapshot{
 			Proxies: v1.ProxyList{
 				proxy1,

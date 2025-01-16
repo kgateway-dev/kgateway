@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/statsutils/metrics"
-	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/hashicorp/go-multierror"
@@ -38,15 +37,6 @@ type translatorSyncer struct {
 	proxyClient      v1.ProxyClient
 	writeNamespace   string
 
-	// used for debugging purposes only
-	// Deprecated: https://github.com/solo-io/gloo/issues/6494
-	// Prefer to use the iosnapshot.History
-	latestSnap *v1snap.ApiSnapshot
-
-	// snapshotHistory is used for debugging purposes
-	// The syncer updates the History each time it runs, and the History is then used by the Admin Server
-	snapshotHistory iosnapshot.History
-
 	statusSyncer *statusSyncer
 }
 
@@ -76,7 +66,6 @@ func NewTranslatorSyncer(
 	proxyClient v1.ProxyClient,
 	writeNamespace string,
 	identity leaderelector.Identity,
-	snapshotHistory iosnapshot.History,
 ) v1snap.ApiSyncer {
 	s := &translatorSyncer{
 		translator:       translator,
@@ -96,14 +85,8 @@ func NewTranslatorSyncer(
 			leaderStartupAction: leaderelector.NewLeaderStartupAction(identity),
 			reportsLock:         sync.RWMutex{},
 		},
-		snapshotHistory: snapshotHistory,
 	}
-	if devMode {
-		// TODO(ilackarms): move this somewhere else?
-		go func() {
-			_ = s.ContextuallyServeXdsSnapshots(ctx)
-		}()
-	}
+
 	go s.statusSyncer.syncStatusOnEmit(ctx)
 	s.statusSyncer.leaderStartupAction.WatchElectionResults(ctx)
 	return s

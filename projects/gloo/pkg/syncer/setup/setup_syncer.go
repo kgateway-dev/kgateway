@@ -15,7 +15,6 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/pkg/utils/statsutils/metrics"
 	"github.com/solo-io/gloo/projects/gloo/pkg/debug"
-	"github.com/solo-io/gloo/projects/gloo/pkg/servers/iosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 
@@ -26,7 +25,6 @@ import (
 	consulapi "github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
 	"go.uber.org/zap"
-	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/protobuf/proto"
@@ -482,9 +480,8 @@ func RunGloo(opts bootstrap.Opts) error {
 			ratelimitExt.NewTranslatorSyncerExtension,
 			extauthExt.NewTranslatorSyncerExtension,
 		},
-		ApiEmitterChannel:      make(chan struct{}),
-		XdsCallbacks:           nil,
-		SnapshotHistoryFactory: iosnapshot.GetHistoryFactory(),
+		ApiEmitterChannel: make(chan struct{}),
+		XdsCallbacks:      nil,
 	}
 
 	return RunGlooWithExtensions(opts, glooExtensions)
@@ -506,7 +503,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	watchOpts.Ctx = contextutils.WithLogger(watchOpts.Ctx, "setup")
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gloo")
 
-	runErrorGroup, _ := errgroup.WithContext(watchOpts.Ctx)
 	logger := contextutils.LoggerFrom(watchOpts.Ctx)
 
 	// MARK: build resource clients
@@ -890,20 +886,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 	gwValidationSyncer := gwvalidation.NewValidator(validationConfig)
 
-	// startFuncs represents the set of StartFunc that should be executed at startup
-	// At the moment, the functionality is used minimally.
-	// Overtime, we should break up this large function into smaller StartFunc
-	startFuncs := map[string]StartFunc{}
-
-	// snapshotHistory is a utility for managing the state of the input/output snapshots that the Control Plane
-	// consumes and produces. This object is then used by our Admin Server, to provide this data on demand
-	snapshotHistory := extensions.SnapshotHistoryFactory(iosnapshot.HistoryFactoryParameters{
-		Settings: opts.Settings,
-		Cache:    opts.ControlPlane.SnapshotCache,
-	})
-
-	startFuncs["admin-server"] = AdminServerStartFunc(snapshotHistory, opts.KrtDebugger)
-
 	if opts.ProxyReconcileQueue != nil {
 		go runQueue(watchOpts.Ctx, opts.ProxyReconcileQueue, opts.WriteNamespace, proxyClient)
 	}
@@ -926,7 +908,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		proxyClient,
 		opts.WriteNamespace,
 		opts.Identity,
-		snapshotHistory,
 	)
 
 	// MARK: build & run api snap loop
@@ -1045,39 +1026,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		case <-time.After(time.Millisecond * 100):
 		}
 	}
-
-	ExecuteAsynchronousStartFuncs(
-		watchOpts.Ctx,
-		opts,
-		extensions,
-		startFuncs,
-		runErrorGroup,
-	)
-
-	go func() {
-		// It is critical that the RunGlooWithExtensions function does not block.
-		// As a result, we monitor the runErrorGroup and just drop errors on the shared "errs" channel if one occurs
-		runErr := runErrorGroup.Wait()
-		if runErr != nil {
-			errs <- runErr
-		}
-	}()
-
-	go func() {
-		for {
-			select {
-			case err, ok := <-errs:
-				if !ok {
-					return
-				}
-				logger.Errorw("gloo main event loop", zap.Error(err))
-			case <-watchOpts.Ctx.Done():
-				// think about closing this channel
-				// close(errs)
-				return
-			}
-		}
-	}()
 
 	logger.Infof("Gloo setup completed successfully")
 	return nil
