@@ -67,7 +67,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	sidecarEnabled := envutils.IsEnvTruthy(constants.IstioInjectionEnabled)
 	istioSettings := IstioSettings{
 		EnableAutoMTLS:              commoncol.Settings.EnableAutoMTLS,
-		EnableIstioIntegration:      commoncol.Settings.IstioIntegration,
+		EnableIstioIntegration:      commoncol.Settings.EnableIstioIntegration,
 		EnableIstioSidecarOnGateway: sidecarEnabled,
 	}
 

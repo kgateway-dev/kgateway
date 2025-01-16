@@ -26,7 +26,7 @@ const (
 )
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
-	if !commoncol.Settings.IstioIntegration {
+	if !commoncol.Settings.EnableIstioIntegration {
 		// don't add support for destination rules if istio integration is not enabled
 		return extensionsplug.Plugin{}
 	}

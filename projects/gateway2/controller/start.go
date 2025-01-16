@@ -192,7 +192,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 
 	logger.Info("got xds address for deployer", uzap.String("xds_host", xdsHost), uzap.Int32("xds_port", xdsPort))
 
-	integrationEnabled := c.settings.IstioIntegration
+	integrationEnabled := c.settings.EnableIstioIntegration
 
 	// copy over relevant aws options (if any) from Settings
 	var awsInfo *deployer.AwsInfo

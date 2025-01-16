@@ -5,10 +5,10 @@ import (
 )
 
 type Settings struct {
-	IstioIntegration bool
-	EnableAutoMTLS   bool
-	StsClusterName   string
-	StsUri           string
+	EnableIstioIntegration bool
+	EnableAutoMTLS         bool
+	StsClusterName         string
+	StsUri                 string
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env
