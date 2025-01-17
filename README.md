@@ -40,7 +40,7 @@ This header is used as an anchor in our CNCF Donation Issue
 - **Full automated discovery lets users move fast**: Upon launch, kgateway creates a catalog of all available destinations and continuously keeps them up to date. This takes the responsibility for 'bookkeeping' away from the developers and guarantees that new features become available as soon as they are ready. Kgateway discovers across IaaS, PaaS and FaaS providers as well as Swagger, and gRPC.
 
 
-## Next Steps
+## Next steps
 - Join us on our Slack channel: [#kgateway](https://cloud-native.slack.com/archives/C080D3PJMS4)
 - Check out the docs: [https://k8sgateway.io/docs](https://k8sgateway.io/docs)
 - Learn more about the [community](https://github.com/kgateway-dev/community)
