@@ -43,7 +43,7 @@ This header is used as an anchor in our CNCF Donation Issue
 ## Next Steps
 - Join us on our Slack channel: [#kgateway](https://cloud-native.slack.com/archives/C080D3PJMS4)
 - Check out the docs: [https://k8sgateway.io/docs](https://k8sgateway.io/docs)
-- Learn more about the [community](https://github.com/k8sgateway/community)
+- Learn more about the [community](https://github.com/kgateway-dev/community)
 
 ## Contributing to kgateway
 The [devel](devel) folder should be the starting point for understanding the code, and contributing to the product.
