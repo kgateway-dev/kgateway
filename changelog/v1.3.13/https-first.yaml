@@ -1,4 +1,0 @@
-changelog:
-  - type: HELM
-    description: List HTTPS port first to avoid failing health check on AWS
-    issueLink: https://github.com/solo-io/gloo/issues/2571

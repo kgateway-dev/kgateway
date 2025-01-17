@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/9443
-    resolvesIssue: false
-    description: >-
-      Update main branch `.trivyignore` to include CVEs that are unfixable for gloo 'v1.13.0'.
-      Add `ON_LTS_UPDATE` tag to appropriate places to mark for removal in the future.

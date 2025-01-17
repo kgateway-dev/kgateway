@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >
-      Instead of creating a default gateway-proxy-config-dump-service, create a service named
-      [gateway-proxy-name]-config-dump-service.

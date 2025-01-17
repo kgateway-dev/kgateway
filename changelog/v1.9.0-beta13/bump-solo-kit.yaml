@@ -1,5 +1,0 @@
-changelog:
-  - type: DEPENDENCY_BUMP
-    dependencyRepo: solo-kit
-    dependencyOwner: solo-io
-    dependencyTag: v0.21.2

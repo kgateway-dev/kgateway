@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Use the previous version docs images that include a header mark pointing user to current docs.

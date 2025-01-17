@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: refactors helm template comments so that they don't show up in final rendering of helm template

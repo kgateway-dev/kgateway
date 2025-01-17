@@ -1,5 +1,0 @@
-changelog:
-- type: FIX
-  issueLink: https://github.com/solo-io/gloo/issues/9160
-  resolvesIssue: false
-  description: Fixs the issue of all routes and route tables warning of an invalid route when an unsupported route action is defined on a listener with the grpcjson plugin enabled.

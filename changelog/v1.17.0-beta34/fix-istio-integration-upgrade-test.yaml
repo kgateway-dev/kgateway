@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Fix the TestAutomtlsIstioEdgeApisGateway/IstioIntegration/TestUpgrade test and switch the upstream resources 
-      to use unique names to avoid conflicts with other tests.

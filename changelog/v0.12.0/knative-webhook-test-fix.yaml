@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Try wrapping knative setup requiring webhook in eventually to give it more time.  

@@ -1,6 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/solo-projects/issues/6319
-    resolvesIssue: true
-    description: |
-      Add HttpListenerOption policy for use with Kube Gateway API resources

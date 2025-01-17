@@ -1,7 +1,0 @@
-changelog:
-  - type: HELM
-    issueLink: https://github.com/solo-io/solo-projects/issues/5743
-    resolvesIssue: true
-    description: >-
-      Fix istioIntegration.enabled helm value to configure bootstrap configmap. Remove deprecated istioSDS.enabled 
-      as a requirement for Istio automtls integration.

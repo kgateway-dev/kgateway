@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Multiarch updates for base and test images.
-
-      skipCI-docs-build:true

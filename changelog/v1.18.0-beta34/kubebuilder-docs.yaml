@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/6503
-    resolvesIssue: false
-    description: >-
-      Introduce user-facing documentation for our GatewayParameters API.

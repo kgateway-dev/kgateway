@@ -1,3 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: place kube dumps into saved artifacts, rather than stdout

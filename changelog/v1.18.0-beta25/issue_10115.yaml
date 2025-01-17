@@ -1,6 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/10115
-    resolvesIssue: true
-    description: >-
-      Updates the Gateway API CRDs to from v1.0.0-rc1 to v1.0.0.

@@ -1,4 +1,0 @@
-changelog:
-  - type: FIX
-    description: Fix Helm charts for knative installs so version specific templates only match the provided version
-    issueLink: https://github.com/solo-io/gloo/issues/2448

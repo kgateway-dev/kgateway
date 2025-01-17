@@ -1,6 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/solo-projects/issues/6121
-    resolvesIssue: false
-    description: |
-      Route delegation: explicitly pass route's hostnames to plugins so that delegatee (child) routes without hostnames can be associated with their corresponding hostnames.

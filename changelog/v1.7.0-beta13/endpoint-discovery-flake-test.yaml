@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >
-      Fix a flake in gzip e2e tests where requests sometimes
-      were tested before new gateway config was written.

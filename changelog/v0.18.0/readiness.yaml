@@ -1,4 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    description: Add liveness and readiness probes
-    issueLink: https://github.com/solo-io/gloo/issues/872

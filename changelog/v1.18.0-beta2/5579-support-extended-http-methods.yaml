@@ -1,8 +1,0 @@
-changelog:
-- type: NEW_FEATURE
-  issueLink: https://github.com/solo-io/gloo/issues/5579
-  resolvesIssue: true
-  description: >-
-    Enable Envoy to accept requests with extended HTTP methods (such as `LABEL`
-    or `UPDATE`). Previously, requests with these methods would return an HTTP
-    400 response. Currently, this functionality is supported for HTTP/1 only.

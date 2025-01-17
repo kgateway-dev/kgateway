@@ -1,4 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    description: Add shell completion to glooctl.
-    issueLink: https://github.com/solo-io/gloo/issues/460

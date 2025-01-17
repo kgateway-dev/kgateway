@@ -1,4 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: >
-    Merge docs gen github workflows into one workflow file.

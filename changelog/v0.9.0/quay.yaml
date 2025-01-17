@@ -1,4 +1,0 @@
-changelog:
-  - type: BREAKING_CHANGE
-    description: Moves images to quay.io.
-    issueLink: https://github.com/solo-io/gloo/issues/484

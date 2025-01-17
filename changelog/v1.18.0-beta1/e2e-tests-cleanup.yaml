@@ -1,8 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/9353
-    resolvesIssue: false
-    description: >-
-      Make Kubernetes E2E tests easily importable and runnable from enterprise suites
-
-      skipCI-docs-build:true

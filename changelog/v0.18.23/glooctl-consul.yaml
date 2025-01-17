@@ -1,4 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    description: Enable Glooctl create/update/delete commands for config backed by consul and secrets backed by vault.
-    issueLink: https://github.com/solo-io/gloo/pull/1067

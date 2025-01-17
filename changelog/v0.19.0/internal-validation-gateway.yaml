@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: add internal validation syncer to Gateway. this is business logic of the kubernetes validation webhook

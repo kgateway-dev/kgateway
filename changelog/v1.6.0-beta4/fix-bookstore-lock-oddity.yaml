@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Use Unlock in Bookstore gRPC-JSON transcoding example to prevent runtime error 

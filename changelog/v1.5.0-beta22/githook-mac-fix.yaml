@@ -1,3 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: Correct JWT githook to work when warning mac users, and to actually check the correct diffs

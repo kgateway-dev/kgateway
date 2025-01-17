@@ -1,6 +1,0 @@
-changelog:
-  - type: HELM
-    issueLink: https://github.com/solo-io/gloo/issues/9860
-    resolvesIssue: false
-    description: >-
-      Ensure that image digests are set correctly for all image variants (standard, fips, distroless, fips-distroless).

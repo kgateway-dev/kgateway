@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/5723
-    resolvesIssue: false
-    description: >-
-      Consolidate kubernetes utilities into shared locations, so that we can re-use as much as possible
-      between our implementation, CLI, and tests. This focuses on the construction of a Kubernetes Client.

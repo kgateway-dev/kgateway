@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    resolvesIssue: false
-    description: >-
-      "Test: print stdout and stderr of Curl command executed by the test."

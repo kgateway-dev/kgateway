@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >
-      Update gloo-fed license to use gloo-ee license

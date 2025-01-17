@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >- 
-      Adds in docs for local rate limiting. 
-      skipCI-kube-tests:true

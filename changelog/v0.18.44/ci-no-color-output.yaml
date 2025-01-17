@@ -1,3 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: Remove colors from Ginkgo CI output.

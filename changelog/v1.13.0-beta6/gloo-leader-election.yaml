@@ -1,8 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issuelink: https://github.com/solo-io/gloo/issues/5795
-    resolvesIssue: false
-    description: |
-      Allow the Gloo component of the ControlPlane to be scaled when running in Kubernetes.
-      Using https://github.com/kubernetes/client-go/tree/master/tools/leaderelection,
-      leader election will take place automatically.

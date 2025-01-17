@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >
-      Add documentation clarifying WAF JSON logging format
-    issueLink: https://github.com/solo-io/gloo/issues/6141

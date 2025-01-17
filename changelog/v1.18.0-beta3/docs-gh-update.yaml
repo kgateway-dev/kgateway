@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >- 
-      Updates the readme of the gloo repo. 
-      skipCI-kube-tests:true

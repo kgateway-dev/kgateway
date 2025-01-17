@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >
-      Updated the envoyinit README with more details on running with the Docker command

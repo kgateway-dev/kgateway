@@ -1,8 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/6337
-    resolvesIssue: false
-    description: >-
-      Fix a bug that caused CurlEventuallyShouldRespond() test helper function to have inconsistent behavior due to
-      stderr and stdout curl output being written concurrently and sometimes breaking assumptions necessary to parse
-      responses.

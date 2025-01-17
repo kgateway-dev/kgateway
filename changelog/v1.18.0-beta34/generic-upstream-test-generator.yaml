@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Added generic upstream generator that takes an http.Handler. Useful for E2E testing.

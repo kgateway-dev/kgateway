@@ -1,9 +1,0 @@
-changelog:
-- type: NEW_FEATURE
-  issueLink: https://github.com/solo-io/solo-projects/issues/6002
-  resolvesIssue: false
-  description: >-
-    Introduce VirtualHostOption plugin for the Kubernetes Gateway API integration. 
-    This plugin will honor VirtualHostOption resources and when translating K8s 
-    Gateway resources and apply their contents to the appropriate sections of 
-    the final proxy object.

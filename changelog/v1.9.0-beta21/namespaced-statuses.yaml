@@ -1,6 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/gloo/issues/5018
-    resolvesIssue: true
-    description: >
-      Support having multiple statuses for a resource, one status per controller.

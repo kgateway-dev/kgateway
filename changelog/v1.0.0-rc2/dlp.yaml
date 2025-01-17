@@ -1,5 +1,0 @@
-changelog:
-- type: NEW_FEATURE
-  description: Add API for data loss prevention filter.
-  issueLink: https://github.com/solo-io/gloo/issues/1500
-  resolvesIssue: false

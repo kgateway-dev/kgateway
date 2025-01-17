@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >- 
-      Add docs for Argo CD. 
-      skipCI-kube-tests:true

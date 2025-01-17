@@ -1,6 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/2793
-    description: >-
-      Gloo no longer reports a warning when route tables share a weight, since that is the default behavior. This means
-      `glooctl check` no longer errors out on this route table warning. 

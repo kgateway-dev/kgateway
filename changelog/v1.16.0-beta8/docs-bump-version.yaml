@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >- 
-      Bumping latest to 1.15.0. 
-      skipCI-kube-tests:true

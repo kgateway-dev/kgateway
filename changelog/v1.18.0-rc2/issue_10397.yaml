@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/10397
-    resolvesIssue: false
-    description: >-
-      Adds ginkgo assertions for resource status of TCPRoute e2e tests.

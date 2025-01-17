@@ -1,4 +1,0 @@
-changelog:
-  - type: HELM
-    issueLink: https://github.com/solo-io/gloo/issues/4914
-    description: Fix gateway proxy service annotation rendering

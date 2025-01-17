@@ -1,6 +1,0 @@
-changelog:
-- type: FIX
-  issueLink: https://github.com/solo-io/gloo/issues/5960
-  resolvesIssue: false
-  description: Restrict the certgen job's secret access to just the gloo installation namespace. The certgen job does not require cluster wide access to secrets as it only manages secrets within the gloo installation namespace.
-

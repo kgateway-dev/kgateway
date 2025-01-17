@@ -1,5 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/pull/7623
-    description: >- 
-      Glooctl should now correctly respect kube context if passed.

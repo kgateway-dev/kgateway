@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Add doc for setting up tracing locally.

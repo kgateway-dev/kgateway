@@ -1,8 +1,0 @@
-changelog:
-- type: NEW_FEATURE
-  issueLink: https://github.com/solo-io/solo-projects/issues/6002
-  resolvesIssue: false
-  description: >-
-    Introduce targetRef field to VirtualHostOption resource. This will allow users
-    of the Kubernetes Gateway API to specify which Gateway resource, and optionally
-    which Listeners on that resource will be affected by the VirtualHostOption

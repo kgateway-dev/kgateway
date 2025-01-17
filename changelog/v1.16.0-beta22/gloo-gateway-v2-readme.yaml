@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >- 
-      Adds a note about the Gloo Gateway v2 API.   
-      skipCI-kube-tests:true

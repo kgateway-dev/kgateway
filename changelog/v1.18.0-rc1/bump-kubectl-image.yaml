@@ -1,6 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo-mesh-enterprise/issues/19119
-    resolvesIssue: false
-    description: >-
-      Bump the kubectl image from 1.29.6 to to 1.31.1 to address CVE-2023-45288.

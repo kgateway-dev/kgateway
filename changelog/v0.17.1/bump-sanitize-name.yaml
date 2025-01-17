@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Update go-utils, use SanitizeNameV2
-    issueLink: https://github.com/solo-io/gloo/issues/817

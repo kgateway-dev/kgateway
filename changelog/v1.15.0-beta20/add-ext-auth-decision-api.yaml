@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Add field to OPA API to eventually support ext-auth returning objects from OPA decisions.

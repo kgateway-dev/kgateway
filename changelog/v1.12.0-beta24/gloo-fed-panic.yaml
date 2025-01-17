@@ -1,5 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/5832
-    resolvesIssue: false
-    description: Enable registering of empty clusters without crashing gloo-fed.

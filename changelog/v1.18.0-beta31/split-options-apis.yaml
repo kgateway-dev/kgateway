@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/6612
-    resolvesIssue: false
-    description: >-
-      Split our options.proto into sub-files, to improve the UX of interacting with our
-      generated API reference docs.

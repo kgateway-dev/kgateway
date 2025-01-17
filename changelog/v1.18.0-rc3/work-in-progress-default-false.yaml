@@ -1,9 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Do not add the `work in progress` label to PRs by default. This label prevents code from merging into the
-      target branch, and was intended to help prevent merges before they were intended to happen.
-      Instead however, it has caused engineering toil as removing the label is not intuitive for many developers.
-      
-      skipCI-docs-build:true
-      skipCI-kube-tests:true

@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Add API to configure stats prefix for GraphQL filter and some small WASM docs fixes

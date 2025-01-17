@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Fix an issue introduced earlier in this version, where changes in EDS would not be detected
-      properly if upstream discovery was turn on.

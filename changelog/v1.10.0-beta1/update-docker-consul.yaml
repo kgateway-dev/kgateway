@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Update docker-compose and consul tutorials for Gloo Edge 1.9.0

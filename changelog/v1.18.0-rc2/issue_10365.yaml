@@ -1,6 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/k8sgateway/k8sgateway/issues/10365
-    resolvesIssue: true
-    description: >-
-      Adds support for setting TCPRoute status and managing status conditions.

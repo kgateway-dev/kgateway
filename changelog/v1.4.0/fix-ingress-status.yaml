@@ -1,5 +1,0 @@
-changelog:
-- type: FIX
-  issueLink: https://github.com/solo-io/gloo/issues/2473
-  description: > 
-    Ingress: fixed updating status.loadBalancer field

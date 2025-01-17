@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/6080
-    resolvesIssue: false
-    description: >-
-      Code cleanup: remove v2 references from glooctl code

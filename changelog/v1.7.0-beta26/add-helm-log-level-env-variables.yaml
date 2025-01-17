@@ -1,8 +1,0 @@
-changelog:
-  - type: HELM
-    description: Added LOG_LEVEL environment variables to deployments templates
-    issueLink: https://github.com/solo-io/gloo/issues/4090
-  - type: DEPENDENCY_BUMP
-    dependencyOwner: solo-io
-    dependencyRepo: go-utils
-    dependencyTag: v0.20.5

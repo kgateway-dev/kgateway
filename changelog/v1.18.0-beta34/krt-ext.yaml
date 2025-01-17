@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Allow extensions to the custom Endpoints and Upstreams
-      generated from KRT. Allow custom Upstreams to request
-      to be treated as EDS clusters. Also, allow customizing
-      backendRef handling for custom types.

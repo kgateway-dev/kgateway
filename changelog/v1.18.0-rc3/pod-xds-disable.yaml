@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/7302
-    description: >-
-      Allow disabling pod locality considerations in xDS using undocumented env-var `DISABLE_POD_LOCALITY_XDS`.

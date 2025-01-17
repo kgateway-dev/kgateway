@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >- 
-      Adds in troubleshooting tips for the Gloo Edge data plane.
-      skipCI-kube-tests:true

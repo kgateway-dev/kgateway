@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/8968
-    resolvesIssue: false
-    description: >- 
-      Update language in settings to indicate that REST EDS should not 
-      be used in favor of GRPC EDS.

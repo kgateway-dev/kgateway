@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink:
-    description: >-
-      Remove tests that do not run in CI.

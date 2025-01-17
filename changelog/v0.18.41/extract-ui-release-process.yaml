@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Separate the UI release process from Gloo.
-    issueLink: https://github.com/solo-io/gloo/pull/1146
-    resolvesIssue: false

@@ -1,4 +1,0 @@
-changelog:
-  - type: FIX
-    description: Fix knative test flake
-    issueLink: https://github.com/solo-io/gloo/issues/685

@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Add a check for invalid values in the environment variable to require that secrets be in the same namespace as upstreams.

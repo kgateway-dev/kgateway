@@ -1,8 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/gloo/issues/9826
-    resolvesIssue: false
-    description: >-
-      Introduce API for oneWayTls in UpstreamSslConfig, which enables the capability 
-      for an upstream to be configured for one way TLS even if root CA data exists in 
-      the secret referenced by the UpstreamSslConfig. This feature does nothing when SDS is configured.

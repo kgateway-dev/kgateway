@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Consolidate all dependabot updates into a single PR.
-      This helps avoid running CI separately on N fairly small PRs.

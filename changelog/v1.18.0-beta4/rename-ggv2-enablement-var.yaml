@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >- 
-      Rename the k8s gateway api enablement variable from `GG_EXPERIMENTAL_K8S_GW_CONTROLLER` to `GG_K8S_GW_CONTROLLER`.
-      Remove unreferenced `GG_EXPERIMENTAL_ISTIO_MTLS_SDS_ENABLED` variable.

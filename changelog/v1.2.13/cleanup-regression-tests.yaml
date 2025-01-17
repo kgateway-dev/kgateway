@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Don't create namespace in regression tests now that glooctl create the namespace.

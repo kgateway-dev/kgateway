@@ -1,5 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: >-
-    Move testing utilities that GME does not utilize from `k8s-utils` into this
-    repo for flexibility and easy of iteration.

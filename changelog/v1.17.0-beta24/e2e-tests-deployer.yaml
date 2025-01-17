@@ -1,8 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/6089
-    resolvesIssue: false
-    description: >-
-      Migrate tests, which were originally defined in Enterprise, to be co-located
-      with the functionality. This allows us to run these tests, both against
-      Open Source installations, and Enterprise installations.

@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/pull/5733
-    resolvesIssue: true
-    description: Adds a doc to explain when to use namedExtAuth vs passThrough.

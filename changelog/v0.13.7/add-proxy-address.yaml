@@ -1,5 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    description: Add glooctl proxy address option to return proxy address (host:port).
-    resolvesIssue: true
-    issueLink: https://github.com/solo-io/gloo/issues/643

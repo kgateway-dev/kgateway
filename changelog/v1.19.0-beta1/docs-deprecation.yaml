@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/docs/issues/702
-    resolvesIssue: true
-    description: >-
-      Add a not-recommended notice for Aerospike.
-      skipCI-kube-tests:true

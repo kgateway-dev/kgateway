@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Add a Make target to build gloo with the race detector enabled.

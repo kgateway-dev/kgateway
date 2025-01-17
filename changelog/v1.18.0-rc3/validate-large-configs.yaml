@@ -1,9 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/solo-projects/issues/7089
-    resolvesIssue: false
-    description: >-
-      Fix the validation of large configurations when using envoy validation.
-      This was rarely seen in practice but occurred more often with the new fullEnvoyConfig validation.
-      Previously if the configuration grew too large translation would be blocked.
-      

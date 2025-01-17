@@ -1,3 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: Make the utility function to filter `RouteTables` by a `selector` public.

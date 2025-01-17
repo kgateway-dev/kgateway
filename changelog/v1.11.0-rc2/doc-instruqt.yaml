@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Embeds an Instruqt demo track into the Gloo Edge getting started section.

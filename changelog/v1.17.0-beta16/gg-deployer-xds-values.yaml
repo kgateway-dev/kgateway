@@ -1,9 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/solo-projects/issues/5949
-    description: >-
-      The Gloo Gateway deployer now gets the xDS host and port from the gloo service, instead of
-      using potentially incorrect values.
-  - type: NON_USER_FACING
-    description: >-
-      GG deployer helm cleanup: Use structs for deployer helm values, remove some unused values.

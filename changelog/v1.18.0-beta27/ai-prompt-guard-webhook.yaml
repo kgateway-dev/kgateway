@@ -1,6 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    resolvesIssue: false
-    issueLink: https://github.com/solo-io/solo-projects/issues/6983
-    description: >- 
-      Add the initial API for the AI Prompt Guard Webhook.

@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Update docs image and make files to pull in latest styling.
-    issueLink: https://github.com/solo-io/gloo/issues/2255

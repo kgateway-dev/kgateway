@@ -1,4 +1,0 @@
-changelog:
-  - type: FIX
-    description: When AuthConfigs are updated, gloo resyncs, which should trigger a gateway resync as well.
-    issueLink: https://github.com/solo-io/gloo/issues/2920

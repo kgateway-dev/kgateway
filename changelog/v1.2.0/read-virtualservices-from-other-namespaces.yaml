@@ -1,7 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/gloo/issues/1695
-    description: >
-      Add `virtual_service_namespaces` configuration to the `HttpGateway`, which allows `HttpGateway`s to reference
-      `VirtualService`s outside of their own namespace using the label selector. The default behavior, which remains
-      unchanged, is to restrict gateways to referencing virtual services in their own namespace.

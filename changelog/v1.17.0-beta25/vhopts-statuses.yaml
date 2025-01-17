@@ -1,6 +1,0 @@
-changelog:
-- type: NEW_FEATURE
-  issueLink: https://github.com/solo-io/solo-projects/issues/6044
-  resolvesIssue: true
-  description: >-
-    Add VirtualHostOptions status tracking for Kubernetes Gateways

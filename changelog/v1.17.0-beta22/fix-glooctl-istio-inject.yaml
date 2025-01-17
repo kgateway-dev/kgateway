@@ -1,3 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: Always build the sds standard image variant in tests as the `glooctl istio inject` command deploys the standard sds variant irrespective of the variant of edge installed

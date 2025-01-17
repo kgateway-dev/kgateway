@@ -1,7 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/8635
-    description: >
-      Fix a bug that caused discovered Upstreams to not reflect the updated state of parent Services discovered using
-      watchLabels
-    resolvesIssue: false

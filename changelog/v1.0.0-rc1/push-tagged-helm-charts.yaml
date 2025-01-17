@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Adds local make targets to make tagged helm charts and push to a tagged helm repo

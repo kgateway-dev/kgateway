@@ -1,5 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/solo-projects/issues/6919
-    description: >- 
-      Add an API to allow configuring Weaviate as a backend for semantic caching.

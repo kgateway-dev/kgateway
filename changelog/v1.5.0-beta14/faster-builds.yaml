@@ -1,3 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: Separate docker build targets into sub directories to minimize amount of data being sent to each build step.

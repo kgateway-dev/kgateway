@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Fix scripts
-
-      skipCI-kube-tests:true
-      skipCI-docs-build:true

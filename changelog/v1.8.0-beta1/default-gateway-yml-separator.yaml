@@ -1,4 +1,0 @@
-changelog:
-  - type: HELM
-    description: Remove spacing around failover gateway in helm template
-    issueLink: https://github.com/solo-io/gloo/issues/4485

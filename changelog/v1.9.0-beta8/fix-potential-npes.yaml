@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >
-      Fix Potential Nil-pointer exceptions by using Getters.

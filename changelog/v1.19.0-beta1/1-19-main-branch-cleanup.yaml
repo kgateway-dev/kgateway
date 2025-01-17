@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Update the main branch nightly tests after cutting the 1.18.x branch
-      
-      skipCI-kube-tests:true
-      skipCI-docs-build:true

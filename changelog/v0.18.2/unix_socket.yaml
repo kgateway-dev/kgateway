@@ -1,5 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    description: Support unix socket upstreams
-    issueLink: https://github.com/solo-io/gloo/issues/871
-    resolvesIssue: false

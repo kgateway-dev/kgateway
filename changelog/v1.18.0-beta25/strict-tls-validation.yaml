@@ -1,9 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/solo-projects/issues/6772
-    resolvesIssue: false
-    description: >-
-      Changes to downgrade the level of strictness added in 1.17.8 for TLS secret validation.
-      We still validate several pieces of the cert but also scrub down to usable bits. This means we avoid envoy nacks while allowing more non-useful or functional info in our TLS secrets.
-      This means we are RFC compliant but it may mean that there could exist some cert data in an edge case which we will elide from envoy but previously would be nacked.
-  

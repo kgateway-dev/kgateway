@@ -1,5 +1,0 @@
-changelog:
-- type: FIX
-  issueLink: https://github.com/solo-io/gloo/issues/9673
-  resolvesIssue: true
-  description: Optimizes the `glooctl check` command by reducing the time taken to check resources by almost half in large environments consisting of over 500 namespaces

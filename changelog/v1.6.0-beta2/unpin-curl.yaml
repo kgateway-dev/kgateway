@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      unpin curl in extended docker image flow as base containers have differing requirements and can't all be
-      satisfied by the same version

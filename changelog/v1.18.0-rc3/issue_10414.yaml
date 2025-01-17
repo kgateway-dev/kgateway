@@ -1,7 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/10414
-    resolvesIssue: true
-    description: >-
-      Refactors TCPRoute e2e tests to run in parallel, reduce flakes, and
-      parameterize tests for reusability.

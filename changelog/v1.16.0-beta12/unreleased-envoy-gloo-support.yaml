@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >- 
-      Update CI to better support unreleased assets from envoy-gloo-ee CI builds
-      skipCI-kube-tests:true
-      skipCI-docs-build:true

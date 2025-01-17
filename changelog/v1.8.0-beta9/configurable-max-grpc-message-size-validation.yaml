@@ -1,5 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/gloo/issues/4594
-    description: >
-      Allows configuration of max gRPC message size for Proxy CRD validation from gateway to gloo.

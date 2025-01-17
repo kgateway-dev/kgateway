@@ -1,8 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: >-
-    Run the 1.16 nightlies against kube 1.28 as mentioned in the compatibility matrix.
-
-    skipCI-kube-tests:true
-    skipCI-docs-build:true
-

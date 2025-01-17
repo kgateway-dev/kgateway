@@ -1,4 +1,0 @@
-changelog:
-- type: NEW_FEATURE
-  issueLink: https://github.com/solo-io/gloo/issues/8107
-  description: Adds the ability to recover if the Kubernetes API server is unreachable once the gloo pod comes up. The `MAX_RECOVERY_DURATION_WITHOUT_KUBE_API_SERVER` environment variable defines the maximum duration the gloo pod can run and attempt to reconnect to the kube apiserver if it is unreachable. Exceeding this duration will lead to the pod quitting. To enable this feature, set the `MAX_RECOVERY_DURATION_WITHOUT_KUBE_API_SERVER` environment variable to the desired duration in the gloo container. This can be done either by modifying the gloo deployment or by specifying the `gloo.deployment.customEnv[0].Name=MAX_RECOVERY_DURATION_WITHOUT_KUBE_API_SERVER` and `gloo.deployment.customEnv[0].Value=60s` helm values.

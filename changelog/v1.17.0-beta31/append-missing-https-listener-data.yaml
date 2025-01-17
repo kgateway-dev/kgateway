@@ -1,5 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/solo-projects/issues/6201
-    resolvesIssue: false
-    description: Set the previously-missing HTTPS listener data when the listeners are translated.

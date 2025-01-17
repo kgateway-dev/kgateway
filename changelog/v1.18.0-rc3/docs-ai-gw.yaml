@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/docs/issues/624
-    resolvesIssue: true
-    description: >-
-      Updates the comments in the AI gateway proto to clean up the api ref doc.

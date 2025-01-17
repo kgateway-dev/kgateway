@@ -1,4 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/5386
-    description: Check for Gloo Fed using deployment in glooctl check.

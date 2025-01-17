@@ -1,4 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/3975
-    description: fixes bug where route validation marks redirect and direct response route destinations as invalid.

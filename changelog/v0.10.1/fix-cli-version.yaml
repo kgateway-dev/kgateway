@@ -1,4 +1,0 @@
-changelog:
-  - type: FIX
-    description: When using `glooctl --version`, the version now clarifies that this is the community edition.
-    issueLink: https://github.com/solo-io/gloo/issues/408

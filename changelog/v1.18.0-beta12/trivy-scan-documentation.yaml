@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Add `devel/security/` to provide documentation on how our Trivy scans are
-      run.
-      skipCI-kube-tests:true
-      skipCI-docs-build:true

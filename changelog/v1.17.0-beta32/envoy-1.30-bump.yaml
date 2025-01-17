@@ -1,7 +1,0 @@
-changelog:
-- type: DEPENDENCY_BUMP
-  dependencyOwner: solo-io
-  dependencyRepo: envoy-gloo
-  dependencyTag: v1.30.1-patch1
-  description: >-
-    Bump envoy-gloo to bring us onto 1.30

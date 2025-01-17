@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: changed nightly tests to run against HEAD, rather than "latest release"

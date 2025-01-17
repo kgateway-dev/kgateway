@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Send slack notifications on regression test failure on an opt-in basis.

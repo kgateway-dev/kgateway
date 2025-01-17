@@ -1,9 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Add CVE-2024-27304 to trivyignore as we are not planning on fixing in 1.14 and it does not impact Gateway 
-      functionality.
-      
-      skipCI-kube-tests:true
-      skipCI-storybook-tests:true
-      skipCI-docs-build:true

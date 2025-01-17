@@ -1,4 +1,0 @@
-changelog:
-  - type: FIX
-    description: Ensure each crd is registered during install steps
-    issueLink: https://github.com/solo-io/gloo/issues/996

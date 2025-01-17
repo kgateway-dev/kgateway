@@ -1,6 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: >-
-    Append the run attempt and k8s version to the artifact so that all failures across k8s versions will be uploaded.
-    Upload conformance tests artifact only if the job has failed
-

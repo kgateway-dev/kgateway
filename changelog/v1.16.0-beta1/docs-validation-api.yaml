@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >- 
-      Adds examples for the validation API. 
-      skipCI-kube-tests:true

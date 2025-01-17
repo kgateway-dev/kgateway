@@ -1,4 +1,0 @@
-
-changelog:
-  - type: NON_USER_FACING
-    description: Update API for enabling the proxy latency filter. 

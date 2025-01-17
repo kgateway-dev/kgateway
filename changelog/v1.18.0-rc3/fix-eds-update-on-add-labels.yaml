@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/7301
-    resolvesIssue: true
-    description: >-
-      Fixes a bug where EDS updates were not triggered when adding annotations to a service.
-      Non-user-facing as this was in unreleased version.

@@ -1,4 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: Print error in tests if tests fail to close net.Listen after testing if a port is free.
-

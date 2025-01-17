@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/6029
-    resolvesIssue: false
-    description: >-
-      Provide a way to load balance tests across multiple clusters.
-      We are hitting a 25 minute threshold on existing tests, and as we add more this will become increasingly problematic.

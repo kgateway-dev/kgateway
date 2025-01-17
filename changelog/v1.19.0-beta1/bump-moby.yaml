@@ -1,7 +1,0 @@
-changelog:
-  - type: DEPENDENCY_BUMP
-    dependencyOwner: moby
-    dependencyRepo: moby
-    dependencyTag: v26.0.0
-    issueLink: https://github.com/solo-io/gloo/issues/10430
-    resolvesIssue: false

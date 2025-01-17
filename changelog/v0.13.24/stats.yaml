@@ -1,4 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    description: Expose gloo and envoy stats by default
-    issueLink: https://github.com/solo-io/gloo/pull/710

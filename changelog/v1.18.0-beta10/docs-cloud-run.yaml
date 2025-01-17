@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/9474
-    description: >-
-      Adds guide for using Google Cloud Run as an Upstream.
-      skipCI-kube-tests:true

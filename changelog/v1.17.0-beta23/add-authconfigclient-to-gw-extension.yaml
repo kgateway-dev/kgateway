@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/6050
-    resolvesIssue: false
-    description: >-
-      Enables reading authconfigs from the portal plugin, which is necessary to generate SecurityRequirements in OpenAPI Docs

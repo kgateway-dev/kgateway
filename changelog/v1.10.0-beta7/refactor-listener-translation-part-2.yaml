@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/5324
-    resolvesIssue: false
-    description: Support TcpFilterChain being run multiple times for a single listener

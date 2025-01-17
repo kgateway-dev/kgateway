@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Update gloo-fed installation docs to reflect glooctl and namespace changes.
-
-

@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >- 
-      Add docs explaining GG image variants (fips, disrtoless, etc).
-      skipCI-kube-tests:true

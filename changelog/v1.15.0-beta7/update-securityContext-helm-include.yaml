@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Update helm securityContext to make type safe

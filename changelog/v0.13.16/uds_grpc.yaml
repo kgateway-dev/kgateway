@@ -1,4 +1,0 @@
-changelog:
-  - type: FIX
-    description: Allow upstream discovery discovery grpc services correctly.
-    issueLink: https://github.com/solo-io/gloo/issues/688

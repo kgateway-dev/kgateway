@@ -1,5 +1,0 @@
-changelog:
-  - type: DEPENDENCY_BUMP
-    dependencyOwner: google
-    dependencyRepo: grpc
-    dependencyTag: v1.40.0

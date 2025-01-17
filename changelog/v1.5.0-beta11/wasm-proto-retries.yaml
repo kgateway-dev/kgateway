@@ -1,5 +1,0 @@
-changelog:
-  - type: FIX
-    description: When wasm is enabled, retry updates so that envoy will accept the config after first cache pass.
-    issueLink: https://github.com/solo-io/gloo/issues/3035
-    resolvesIssue: false

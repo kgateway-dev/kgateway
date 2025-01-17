@@ -1,6 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/solo-projects/issues/6910
-    resolvesIssue: true
-    description: >-
-      Updates the gateway2 project to use EndpointSlice instead of Endpoints for creating upstream endpoints.

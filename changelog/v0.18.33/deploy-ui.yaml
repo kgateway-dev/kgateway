@@ -1,4 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    description: Provide optional read-only UI with Gloo deployment.
-    issueLink: https://github.com/solo-io/gloo/pull/1109

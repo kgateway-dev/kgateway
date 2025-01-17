@@ -1,9 +1,0 @@
-changelog:
-- type: FIX
-  issueLink: https://github.com/solo-io/gloo/issues/9295
-  resolvesIssue: true
-  description: >-
-    Fix glooctl asset builds to crossbuild with the appropriate architecture.
-      
-    skipCI-kube-tests:true
-    skipCI-docs-build:true

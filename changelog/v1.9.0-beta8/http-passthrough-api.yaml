@@ -1,6 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/gloo/issues/4685
-    resolvesIssue: false
-    description: >
-      Introduce API for HTTP REST passthrough auth (enterprise-only).

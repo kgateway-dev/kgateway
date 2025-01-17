@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/5663
-    resolvesIssue: false
-    description: >-
-      Ensure that the k8s gateway controller can be run at the same time as the rest of the classic edge setup code.
-      Enable the experimental controller API to be executed during edge regression tests to prove that this works.

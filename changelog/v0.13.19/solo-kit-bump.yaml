@@ -1,6 +1,0 @@
-changelog:
-  - dependencyOwner: solo-io
-    dependencyRepo: solo-kit
-    dependencyTag: v0.7.0
-    description: Update solo-kit to version v0.7.0.
-    type: DEPENDENCY_BUMP
