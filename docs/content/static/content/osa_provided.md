@@ -78,7 +78,6 @@ Name|Version|License
 [k8s.io/kube-openapi](https://k8s.io/kube-openapi)|v0.0.0-20240423202451-8948a665c108|Apache License 2.0
 [k8s.io/kubectl](https://k8s.io/kubectl)|v0.31.1|Apache License 2.0
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20240711033017-18e509b52bc8|Apache License 2.0
-[knative.dev/networking](https://knative.dev/networking)|v0.0.0-20211210083629-bace06e98aee|Apache License 2.0
 [knative.dev/pkg](https://knative.dev/pkg)|v0.0.0-20211206113427-18589ac7627e|Apache License 2.0
 [sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.19.1|Apache License 2.0
 [sigs.k8s.io/controller-tools](https://sigs.k8s.io/controller-tools)|v0.16.5|Apache License 2.0

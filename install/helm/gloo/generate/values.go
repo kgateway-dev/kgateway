@@ -18,10 +18,7 @@ type Config struct {
 	Discovery      *Discovery              `json:"discovery,omitempty"`
 	Gateway        *Gateway                `json:"gateway,omitempty"`
 	GatewayProxies map[string]GatewayProxy `json:"gatewayProxies,omitempty"`
-	Ingress        *Ingress                `json:"ingress,omitempty"`
-	IngressProxy   *IngressProxy           `json:"ingressProxy,omitempty"`
 	K8s            *K8s                    `json:"k8s,omitempty"`
-	AccessLogger   *AccessLogger           `json:"accessLogger,omitempty"`
 }
 
 type Global struct {
@@ -133,7 +130,6 @@ type KubeResourceOverride struct {
 }
 
 type Integrations struct {
-	Knative                 *Knative                 `json:"knative,omitempty"`
 	Consul                  *Consul                  `json:"consul,omitempty" desc:"Consul settings to inject into the consul client on startup"`
 	ConsulUpstreamDiscovery *ConsulUpstreamDiscovery `json:"consulUpstreamDiscovery,omitempty" desc:"Settings for Gloo Edge's behavior when discovering consul services and creating upstreams for them."`
 }
@@ -176,41 +172,6 @@ type ResourceRef struct {
 type Duration struct {
 	Seconds *int32 `json:"seconds,omitempty" desc:"The value of this duration in seconds."`
 	Nanos   *int32 `json:"nanos,omitempty" desc:"The value of this duration in nanoseconds."`
-}
-
-type Knative struct {
-	Enabled                         *bool             `json:"enabled,omitempty" desc:"enabled knative components"`
-	Version                         *string           `json:"version,omitempty" desc:"the version of knative installed to the cluster. if using version < 0.8.0, Gloo Edge will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress"`
-	Proxy                           *KnativeProxy     `json:"proxy,omitempty"`
-	RequireIngressClass             *bool             `json:"requireIngressClass,omitempty" desc:"only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'."`
-	ExtraKnativeInternalLabels      map[string]string `json:"extraKnativeInternalLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the knative internal deployment."`
-	ExtraKnativeInternalAnnotations map[string]string `json:"extraKnativeInternalAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the knative internal deployment."`
-	ExtraKnativeExternalLabels      map[string]string `json:"extraKnativeExternalLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the knative external deployment."`
-	ExtraKnativeExternalAnnotations map[string]string `json:"extraKnativeExternalAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the knative external deployment."`
-}
-
-type KnativeProxy struct {
-	Image                               *Image                `json:"image,omitempty"`
-	HttpPort                            *int                  `json:"httpPort,omitempty" desc:"HTTP port for the proxy"`
-	HttpsPort                           *int                  `json:"httpsPort,omitempty" desc:"HTTPS port for the proxy"`
-	Tracing                             *string               `json:"tracing,omitempty" desc:"tracing configuration"`
-	RunAsUser                           *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the pod to run as. Default is 10101"`
-	LoopBackAddress                     *string               `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
-	Stats                               *bool                 `json:"stats,omitempty" desc:"Controls whether or not Envoy stats are enabled"`
-	ExtraClusterIngressProxyLabels      map[string]string     `json:"extraClusterIngressProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the cluster ingress proxy deployment."`
-	ExtraClusterIngressProxyAnnotations map[string]string     `json:"extraClusterIngressProxyAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the cluster ingress proxy deployment."`
-	Internal                            *KnativeProxyInternal `json:"internal,omitempty" desc:"kube resource overrides for knative internal proxy resources"`
-	*DeploymentSpec
-	*ServiceSpec
-	ConfigMap                *KubeResourceOverride `json:"configMap,omitempty"`
-	Deployment               *KubeResourceOverride `json:"deployment,omitempty"`
-	ContainerSecurityContext *SecurityContext      `json:"containerSecurityContext,omitempty" desc:"securityContext for knative proxy containers. See [security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core) for details."`
-}
-
-type KnativeProxyInternal struct {
-	Deployment *KubeResourceOverride `json:"deployment,omitempty"`
-	Service    *KubeResourceOverride `json:"service,omitempty"`
-	ConfigMap  *KubeResourceOverride `json:"configMap,omitempty"`
 }
 
 type Settings struct {
@@ -739,63 +700,6 @@ type Failover struct {
 	NodePort   *uint   `json:"nodePort,omitempty" desc:"(Enterprise Only): Optional NodePort for failover Service"`
 	SecretName *string `json:"secretName,omitempty" desc:"(Enterprise Only): Secret containing downstream Ssl Secrets Default is failover-downstream"`
 	*KubeResourceOverride
-}
-
-type AccessLogger struct {
-	Image                                *Image                `json:"image,omitempty"`
-	Port                                 *uint                 `json:"port,omitempty"`
-	ServiceName                          *string               `json:"serviceName,omitempty"`
-	Enabled                              *bool                 `json:"enabled,omitempty"`
-	Stats                                *Stats                `json:"stats,omitempty" desc:"overrides for prometheus stats published by the access logging pod"`
-	RunAsUser                            *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
-	FsGroup                              *float64              `json:"fsGroup,omitempty" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
-	ExtraAccessLoggerLabels              map[string]string     `json:"extraAccessLoggerLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the access logger deployment."`
-	ExtraAccessLoggerAnnotations         map[string]string     `json:"extraAccessLoggerAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the access logger deployment."`
-	Service                              *KubeResourceOverride `json:"service,omitempty"`
-	Deployment                           *KubeResourceOverride `json:"deployment,omitempty"`
-	AccessLoggerContainerSecurityContext *SecurityContext      `json:"accessLoggerContainerSecurityContext,omitempty" desc:"Security context for the access logger deployment.  If this is defined it supercedes any values set in FloatingUserId or RunAsUser. See [security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core) for details.""`
-	*DeploymentSpec
-}
-
-type Ingress struct {
-	Enabled             *bool              `json:"enabled,omitempty"`
-	Deployment          *IngressDeployment `json:"deployment,omitempty"`
-	RequireIngressClass *bool              `json:"requireIngressClass,omitempty" desc:"only serve traffic for Ingress objects with the Ingress Class annotation 'kubernetes.io/ingress.class'. By default the annotation value must be set to 'gloo', however this can be overridden via customIngressClass."`
-	CustomIngress       *bool              `json:"customIngressClass,omitempty" desc:"Only relevant when requireIngressClass is set to true. Setting this value will cause the Gloo Edge Ingress Controller to process only those Ingress objects which have their ingress class set to this value (e.g. 'kubernetes.io/ingress.class=SOMEVALUE')."`
-}
-
-type IngressDeployment struct {
-	Image                           *Image            `json:"image,omitempty"`
-	RunAsUser                       *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
-	FloatingUserId                  *bool             `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
-	ExtraIngressLabels              map[string]string `json:"extraIngressLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the ingress deployment."`
-	ExtraIngressAnnotations         map[string]string `json:"extraIngressAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the ingress deployment."`
-	Stats                           *bool             `json:"stats,omitempty" desc:"Controls whether or not Envoy stats are enabled"`
-	IngressContainerSecurityContext *SecurityContext  `json:"ingressContainerSecurityContext,omitempty" desc:"Security context for the ingress deployment.  If this is defined it supercedes any values set in FloatingUserId or RunAsUser. See [security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core) for details."`
-	*DeploymentSpec
-}
-
-type IngressProxy struct {
-	Deployment      *IngressProxyDeployment `json:"deployment,omitempty"`
-	ConfigMap       *ConfigMap              `json:"configMap,omitempty"`
-	Tracing         *string                 `json:"tracing,omitempty"`
-	LoopBackAddress *string                 `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
-	Label           *string                 `json:"label,omitempty" desc:"Value for label gloo. Use a unique value to use several ingress proxy instances in the same cluster. Default is ingress-proxy"`
-	*ServiceSpec
-}
-
-type IngressProxyDeployment struct {
-	Image                                *Image            `json:"image,omitempty"`
-	HttpPort                             *int              `json:"httpPort,omitempty" desc:"HTTP port for the ingress container"`
-	HttpsPort                            *int              `json:"httpsPort,omitempty" desc:"HTTPS port for the ingress container"`
-	ExtraPorts                           []interface{}     `json:"extraPorts,omitempty"`
-	ExtraAnnotations                     map[string]string `json:"extraAnnotations,omitempty"`
-	FloatingUserId                       *bool             `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
-	RunAsUser                            *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the pod to run as. Default is 10101"`
-	ExtraIngressProxyLabels              map[string]string `json:"extraIngressProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the ingress proxy deployment."`
-	Stats                                *bool             `json:"stats,omitempty" desc:"Controls whether or not Envoy stats are enabled"`
-	IngressProxyContainerSecurityContext *SecurityContext  `json:"ingressProxyContainerSecurityContext,omitempty" desc:"Security context for the ingress proxy deployment. If this is defined it supercedes any values set in FloatingUserId or RunAsUser. See [security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core) for details."`
-	*DeploymentSpec
 }
 
 type ServiceSpec struct {

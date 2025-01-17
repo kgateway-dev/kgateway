@@ -77,7 +77,6 @@ require (
 	k8s.io/component-base v0.31.2
 	k8s.io/kubectl v0.31.2
 	k8s.io/utils v0.0.0-20240921022957-49e7df575cb6
-	knative.dev/networking v0.0.0-20211210083629-bace06e98aee
 	knative.dev/pkg v0.0.0-20211206113427-18589ac7627e
 	sigs.k8s.io/controller-runtime v0.19.1
 	sigs.k8s.io/gateway-api v1.2.0
