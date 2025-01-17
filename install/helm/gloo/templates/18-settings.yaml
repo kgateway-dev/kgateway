@@ -104,15 +104,6 @@ spec:
 {{- if .Values.settings.linkerd }}
   linkerd: true
 {{- end }}
-{{- if .Values.settings.integrations.knative.enabled }}
-  knative:
-{{- if (semverCompare "< 0.8.0" .Values.settings.integrations.knative.version ) }}
-    clusterIngressProxyAddress: "clusteringress-proxy.{{ .Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}"
-{{- else }}
-    knativeExternalProxyAddress: "knative-external-proxy.{{ .Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}"
-    knativeInternalProxyAddress: "knative-internal-proxy.{{ .Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}"
-{{- end }}
-{{- end }}
 
   gateway:
     isolateVirtualHostsBySslConfig: {{ .Values.gateway.isolateVirtualHostsBySslConfig }}
