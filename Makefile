@@ -3,7 +3,6 @@
 # https://www.gnu.org/software/make/manual/html_node/Special-Variables.html#Special-Variables
 .DEFAULT_GOAL := help
 
-
 #----------------------------------------------------------------------------------
 # Help
 #----------------------------------------------------------------------------------
@@ -21,7 +20,6 @@ help: LINE_COLUMN_WIDTH=5
 help: ## Output the self-documenting make targets
 	@grep -hnE '^[%a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = "[:]|(## )"}; {printf "\033[36mL%-$(LINE_COLUMN_WIDTH)s%-$(NAME_COLUMN_WIDTH)s\033[0m %s\n", $$1, $$2, $$4}'
 
-
 #----------------------------------------------------------------------------------
 # Base
 #----------------------------------------------------------------------------------
@@ -33,7 +31,7 @@ OUTPUT_DIR ?= $(ROOTDIR)/_output
 # To use quay images, set the IMAGE_REGISTRY to "quay.io/solo-io" (or leave unset)
 # To use dockerhub images, set the IMAGE_REGISTRY to "soloio"
 # To use gcr images, set the IMAGE_REGISTRY to "gcr.io/$PROJECT_NAME"
-IMAGE_REGISTRY ?= quay.io/solo-io
+export IMAGE_REGISTRY ?= quay.io/solo-io
 
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
@@ -49,9 +47,9 @@ SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 # for more information, see https://github.com/solo-io/gloo/pull/9633
 # and
 # https://soloio.slab.com/posts/extended-http-methods-design-doc-40j7pjeu
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.31.2-patch3
-LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
-GCFLAGS ?=
+export ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.31.2-patch3
+export LDFLAGS := -X 'github.com/solo-io/gloo/pkg/version.Version=$(VERSION)'
+export GCFLAGS ?=
 
 UNAME_M := $(shell uname -m)
 # if `GO_ARCH` is set, then it will keep its value. Else, it will be changed based off the machine's host architecture.
@@ -126,7 +124,6 @@ ALPINE_BASE_IMAGE ?= alpine:3.17.6
 # in the tree rooted at that directory that match the given criteria.
 get_sources = $(shell find $(1) -name "*.go" | grep -v test | grep -v generated.go | grep -v mock_)
 
-
 #----------------------------------------------------------------------------------
 # Imports
 #----------------------------------------------------------------------------------
@@ -178,12 +175,11 @@ check-spelling:
 LINTER_VERSION := $(shell cat .github/workflows/static-analysis.yaml | yq '.jobs.static-analysis.steps.[] | select( .uses == "*golangci/golangci-lint-action*") | .with.version ')
 
 # The analyze target runs a suite of static analysis tools against the codebase.
-# The options are defined in .golangci.yaml, and can be overridden by setting the ANALYZE_OPTIONS variable.
+# The options are defined in .golangci.yaml, and can be overridden by setting the ANALYZE_ARGS variable.
 .PHONY: analyze
-ANALYZE_OPTIONS ?= --fast --verbose
+ANALYZE_ARGS ?= --fast --verbose
 analyze:
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint@$(LINTER_VERSION) run $(ANALYZE_OPTIONS) ./...
-
+	go run github.com/golangci/golangci-lint/cmd/golangci-lint@$(LINTER_VERSION) run $(ANALYZE_ARGS) ./...
 
 #----------------------------------------------------------------------------------
 # Ginkgo Tests
@@ -202,7 +198,7 @@ GINKGO_USER_FLAGS ?=
 
 .PHONY: test
 test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
-	$(GINKGO_ENV) go run github.com/onsi/ginkgo/v2/ginkgo -ldflags=$(LDFLAGS) \
+	$(GINKGO_ENV) go run github.com/onsi/ginkgo/v2/ginkgo -ldflags='$(LDFLAGS)' \
 	$(GINKGO_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
 	$(TEST_PKG)
 
@@ -237,7 +233,7 @@ run-kube-e2e-tests: test
 #----------------------------------------------------------------------------------
 # Go Tests
 #----------------------------------------------------------------------------------
-GO_TEST_ENV ?= 
+GO_TEST_ENV ?=
 # Testings flags: https://pkg.go.dev/cmd/go#hdr-Testing_flags
 # The default timeout for a suite is 10 minutes, but this can be overridden by setting the -timeout flag. Currently set
 # to 25 minutes based on the time it takes to run the longest test setup (k8s_gw_test).
@@ -251,7 +247,7 @@ GO_TEST_USER_ARGS ?=
 .PHONY: go-test
 go-test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 go-test: clean-bug-report clean-test-logs $(BUG_REPORT_DIR) $(TEST_LOG_DIR) # Ensure the bug_report dir is reset before each invocation
-	@$(GO_TEST_ENV) go test -ldflags=$(LDFLAGS) \
+	@$(GO_TEST_ENV) go test -ldflags='$(LDFLAGS)' \
     $(GO_TEST_ARGS) $(GO_TEST_USER_ARGS) \
     $(TEST_PKG) > $(TEST_LOG_DIR)/go-test 2>&1; \
     RESULT=$$?; \
@@ -378,7 +374,6 @@ generated-code-cleanup: getter-check mod-tidy update-licenses fmt ## Executes th
 generate-changelog: ## Generate a changelog entry
 	@./devel/tools/changelog.sh
 
-
 #----------------------------------------------------------------------------------
 # Generate CRD Reference Documentation
 #
@@ -428,7 +423,7 @@ DISCOVERY_SOURCES=$(call get_sources,$(DISCOVERY_DIR))
 DISCOVERY_OUTPUT_DIR=$(OUTPUT_DIR)/$(DISCOVERY_DIR)
 
 $(DISCOVERY_OUTPUT_DIR)/discovery-linux-$(GOARCH): $(DISCOVERY_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(DISCOVERY_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ $(DISCOVERY_DIR)/cmd/main.go
 
 .PHONY: discovery
 discovery: $(DISCOVERY_OUTPUT_DIR)/discovery-linux-$(GOARCH)
@@ -453,7 +448,6 @@ discovery-distroless-docker: $(DISCOVERY_OUTPUT_DIR)/discovery-linux-$(GOARCH) $
 		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_IMAGE) \
 		-t $(IMAGE_REGISTRY)/discovery:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL)
 
-
 #----------------------------------------------------------------------------------
 # Gloo
 #----------------------------------------------------------------------------------
@@ -465,11 +459,12 @@ GLOO_SOURCES=$(call get_sources,$(GLOO_DIR))
 EDGE_GATEWAY_SOURCES=$(call get_sources,$(EDGE_GATEWAY_DIR))
 K8S_GATEWAY_SOURCES=$(call get_sources,$(K8S_GATEWAY_DIR))
 GLOO_OUTPUT_DIR=$(OUTPUT_DIR)/$(GLOO_DIR)
+export GLOO_IMAGE_REPO ?= gloo
 
 # We include the files in EDGE_GATEWAY_DIR and K8S_GATEWAY_DIR as dependencies to the gloo build
 # so changes in those directories cause the make target to rebuild
 $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH): $(GLOO_SOURCES) $(EDGE_GATEWAY_SOURCES) $(K8S_GATEWAY_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GLOO_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ $(GLOO_DIR)/cmd/main.go
 
 .PHONY: gloo
 gloo: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH)
@@ -482,7 +477,7 @@ gloo-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DIR)/Dockerfi
 	docker buildx build --load $(PLATFORM) $(GLOO_OUTPUT_DIR) -f $(GLOO_OUTPUT_DIR)/Dockerfile.gloo \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
-		-t $(IMAGE_REGISTRY)/gloo:$(VERSION) $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/$(GLOO_IMAGE_REPO):$(VERSION) $(QUAY_EXPIRATION_LABEL)
 
 $(GLOO_OUTPUT_DIR)/Dockerfile.gloo.distroless: $(GLOO_DIR)/cmd/Dockerfile.distroless
 	cp $< $@
@@ -494,7 +489,7 @@ gloo-distroless-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DI
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
 		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) \
-		-t $(IMAGE_REGISTRY)/gloo:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/$(GLOO_IMAGE_REPO):$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL)
 
 #----------------------------------------------------------------------------------
 # Gloo with race detection enabled.
@@ -554,7 +549,7 @@ SDS_SOURCES=$(call get_sources,$(SDS_DIR))
 SDS_OUTPUT_DIR=$(OUTPUT_DIR)/$(SDS_DIR)
 
 $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH): $(SDS_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(SDS_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ $(SDS_DIR)/cmd/main.go
 
 .PHONY: sds
 sds: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH)
@@ -588,7 +583,7 @@ ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR))
 ENVOYINIT_OUTPUT_DIR=$(OUTPUT_DIR)/$(ENVOYINIT_DIR)
 
 $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH): $(ENVOYINIT_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOYINIT_DIR)/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ $(ENVOYINIT_DIR)/main.go
 
 .PHONY: envoyinit
 envoyinit: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH)
@@ -627,7 +622,7 @@ CERTGEN_SOURCES=$(call get_sources,$(CERTGEN_DIR))
 CERTGEN_OUTPUT_DIR=$(OUTPUT_DIR)/$(CERTGEN_DIR)
 
 $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH): $(CERTGEN_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CERTGEN_DIR)/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ $(CERTGEN_DIR)/main.go
 
 .PHONY: certgen
 certgen: $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH)
@@ -736,6 +731,8 @@ VERSION := $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 endif
 
+export VERSION
+
 # controller variable for the "Publish Artifacts" section.  Defines which targets exist.  Possible Values: NONE, RELEASE, PULL_REQUEST
 PUBLISH_CONTEXT ?= NONE
 # specify which bucket to upload helm chart to
@@ -789,6 +786,12 @@ publish-helm-chart: generate-helm-files
 		sleep 2; \
 	done
 endif # Publish Artifact Targets
+
+GORELEASER_ARGS ?= --snapshot --clean
+GORELEASER ?= go run github.com/goreleaser/goreleaser/v2@v2.5.1
+.PHONY: release
+release:  ## Create a release using goreleaser
+	$(GORELEASER) release $(GORELEASER_ARGS)
 
 #----------------------------------------------------------------------------------
 # Docker
@@ -1058,12 +1061,12 @@ CONFORMANCE_ARGS := -gateway-class=gloo-gateway $(CONFORMANCE_SUPPORTED_FEATURES
 
 .PHONY: conformance ## Run the conformance test suite
 conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go
-	go test -mod=mod -ldflags=$(LDFLAGS) -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS)
+	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS)
 
 # Run only the specified conformance test. The name must correspond to the ShortName of one of the k8s gateway api
 # conformance tests.
 conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
-	go test -mod=mod -ldflags=$(LDFLAGS) -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS) \
+	go test -mod=mod -ldflags='$(LDFLAGS)' -tags conformance -test.v $(TEST_ASSET_DIR)/conformance/... -args $(CONFORMANCE_ARGS) \
 	-run-test=$*
 
 #----------------------------------------------------------------------------------

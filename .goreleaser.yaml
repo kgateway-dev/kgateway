@@ -1,0 +1,55 @@
+version: 2
+before:
+  hooks:
+    - go mod tidy
+    - go mod download
+builds:
+  - id: controller
+    main: ./projects/gloo/cmd/
+    binary: gloo-linux-{{ .Arch }}
+    gcflags: "{{ .Env.GCFLAGS }}"
+    ldflags: "{{ .Env.LDFLAGS }}"
+    env:
+    - CGO_ENABLED=0
+    - GO111MODULE=on
+    - GOARCH={{ .Arch }}
+    - GOOS={{ .Os }}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+dockers:
+  - image_templates:
+      - &arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.GLOO_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
+    use: buildx
+    dockerfile: &dockerfile projects/gloo/cmd/Dockerfile
+    goos: linux
+    goarch: arm64
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/arm64"
+      - "--build-arg=GOARCH=arm64"
+      - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_GLOO_IMAGE }}"
+  - image_templates:
+      - &amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.GLOO_IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
+    use: buildx
+    dockerfile: *dockerfile
+    goos: linux
+    goarch: amd64
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/amd64"
+      - "--build-arg=GOARCH=amd64"
+      - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_GLOO_IMAGE }}"
+docker_manifests:
+  - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.GLOO_IMAGE_REPO }}:{{ .Env.VERSION }}"
+    image_templates:
+      - *amd_image
+      - *arm_image
+changelog:
+  disable: false
+release:
+  prerelease: "auto"
+  mode: "replace"

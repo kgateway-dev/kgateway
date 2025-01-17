@@ -1,0 +1,64 @@
+name: Release
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+
+env:
+  # IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
+  IMAGE_REGISTRY: quay.io/solo-io
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  goreleaser:
+    name: goreleaser
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Log into ghcr.io
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set the release related variables
+        id: set_vars
+        run: |
+          # we want to conditionally run the full release pipeline based on the
+          # event that triggered the workflow. for PRs, we only want to build
+          # the binaries & container images, but not create a release.
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/}"
+            echo "GORELEASER_ARGS=--clean" >> $GITHUB_ENV
+          elif [[ $GITHUB_REF == refs/pull/* ]]; then
+            VERSION="pr-$(echo "${GITHUB_REF}" | sed -E 's|refs/pull/([^/]+)/?.*|\1|')"
+          else
+            VERSION="$(git describe --tags --always)"
+          fi
+          echo "VERSION=${VERSION}"
+          echo "GORELEASER_ARGS=${GORELEASER_ARGS}"
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+      - name: Run goreleaser
+        run: make release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ env.VERSION }}
+          IMAGE_REGISTRY: ${{ env.IMAGE_REGISTRY }}
