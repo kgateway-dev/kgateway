@@ -35,6 +35,8 @@ go run k8s.io/code-generator/cmd/register-gen --output-file zz_generated.registe
 go run sigs.k8s.io/controller-tools/cmd/controller-gen crd:maxDescLen=0 object rbac:roleName=k8sgw-controller paths="${APIS_PKG}/api/${VERSION}" \
     output:crd:artifacts:config=${SCRIPT_ROOT}/../../install/helm/gloo/crds/ output:rbac:artifacts:config=${SCRIPT_ROOT}/../../install/helm/gloo/files/rbac
 
+go run sigs.k8s.io/controller-tools/cmd/controller-gen crd:maxDescLen=0 object rbac:roleName=k8sgw-controller paths="${APIS_PKG}/api/${VERSION}" \
+    output:crd:artifacts:config=${SCRIPT_ROOT}/../../install/helm/kgateway/crds/ output:rbac:artifacts:config=${SCRIPT_ROOT}/../../install/helm/kgateway/templates/rbac.yaml
 
 # throw away
 new_report="$(mktemp -t "$(basename "$0").api_violations.XXXXXX")"
