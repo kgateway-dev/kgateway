@@ -28,7 +28,7 @@ jobs:
         # which compares the state of two branches
         fetch-depth: 0
     - id: process-skip-directives
-      uses: ./.github/workflows/composite-actions/process-skip-directives
+      uses: ./.github/actions/process-skip-directives
       with:
         base-ref: ${{ github.base_ref }}
     - id: run-strategy
@@ -64,7 +64,7 @@ jobs:
   #   - uses: actions/checkout@v4
   #   - id: run-tests
   #     if: needs.prepare_env.outputs.should-auto-succeed-regression-tests != 'true'
-  #     uses: ./.github/workflows/composite-actions/regression-tests
+  #     uses: ./.github/actions/regression-tests
   #   - id: auto-succeed-tests
   #     if: needs.prepare_env.outputs.should-auto-succeed-regression-tests == 'true'
   #     run: |
@@ -92,4 +92,4 @@ jobs:
         echo "Kubernetes Gateway API conformance tests auto-succeeded"
     - id: run-tests
       if: needs.prepare_env.outputs.should-auto-succeed-regression-tests != 'true'
-      uses: ./.github/workflows/composite-actions/kube-gateway-api-conformance-tests
+      uses: ./.github/actions/kube-gateway-api-conformance-tests

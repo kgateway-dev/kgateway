@@ -2,7 +2,6 @@ package setup
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"os"
 
@@ -22,7 +21,6 @@ import (
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -38,28 +36,6 @@ func createKubeClient(restConfig *rest.Config) (istiokube.Client, error) {
 	}
 	istiokube.EnableCrdWatcher(client)
 	return client, nil
-}
-
-func getInitialSettings(ctx context.Context, c istiokube.Client, nns types.NamespacedName) *glookubev1.Settings {
-	// get initial settings
-	logger := contextutils.LoggerFrom(ctx)
-	logger.Infof("getting initial settings. gvr: %v", settingsGVR)
-
-	i, err := c.Dynamic().Resource(settingsGVR).Namespace(nns.Namespace).Get(ctx, nns.Name, metav1.GetOptions{})
-	if err != nil {
-		logger.Panicf("failed to get initial settings: %v", err)
-		return nil
-	}
-	logger.Infof("got initial settings")
-
-	var empty glookubev1.Settings
-	out := &empty
-	err = runtime.DefaultUnstructuredConverter.FromUnstructured(i.UnstructuredContent(), out)
-	if err != nil {
-		logger.Panicf("failed converting unstructured into settings: %v", i)
-		return nil
-	}
-	return out
 }
 
 func StartGGv2(ctx context.Context,
@@ -117,11 +93,6 @@ func StartGGv2WithConfig(ctx context.Context, setupOpts *controller.SetupOpts,
 		return err
 	}
 
-	initialSettings := getInitialSettings(ctx, kubeClient, settingsNns)
-	if initialSettings == nil {
-		return fmt.Errorf("initial settings not found")
-	}
-
 	logger.Info("creating krt collections")
 	krtOpts := krtutil.NewKrtOptions(ctx.Done(), setupOpts.KrtDebugger)
 
@@ -133,20 +104,6 @@ func StartGGv2WithConfig(ctx context.Context, setupOpts *controller.SetupOpts,
 
 	ucc := uccBuilder(ctx, krtOpts, augmentedPodsForUcc)
 
-	setting := krtutil.SetupCollectionDynamic[glookubev1.Settings](
-		ctx,
-		kubeClient,
-		settingsGVR,
-		krt.WithName("GlooSettings"))
-	settingsSingle := krt.NewSingleton(func(ctx krt.HandlerContext) *glookubev1.Settings {
-		s := krt.FetchOne(ctx, setting,
-			krt.FilterObjectName(settingsNns))
-		if s != nil {
-			return *s
-		}
-		return nil
-	}, krt.WithName("GlooSettingsSingleton"))
-
 	logger.Info("initializing controller")
 	c, err := controller.NewControllerBuilder(ctx, controller.StartConfig{
 		ExtraPlugins:  extraPlugins,
@@ -156,8 +113,6 @@ func StartGGv2WithConfig(ctx context.Context, setupOpts *controller.SetupOpts,
 		AugmentedPods: augmentedPods,
 		UniqueClients: ucc,
 
-		InitialSettings: initialSettings,
-		Settings:        settingsSingle,
 		// Dev flag may be useful for development purposes; not currently tied to any user-facing API
 		Dev:        os.Getenv("LOG_LEVEL") == "debug",
 		KrtOptions: krtOpts,
@@ -170,7 +125,6 @@ func StartGGv2WithConfig(ctx context.Context, setupOpts *controller.SetupOpts,
 
 	logger.Info("waiting for cache sync")
 	kubeClient.RunAndWait(ctx.Done())
-	setting.Synced().WaitUntilSynced(ctx.Done())
 
 	logger.Info("starting admin server")
 	go admin.RunAdminServer(ctx, setupOpts)

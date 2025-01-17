@@ -10,8 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
-	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
@@ -128,8 +126,6 @@ func toResources(gw ir.Gateway, xdsSnap irtranslator.TranslationResult, r report
 // The provided GatewayInputChannels are used to trigger syncs.
 func NewProxySyncer(
 	ctx context.Context,
-	initialSettings *glookubev1.Settings,
-	settings krt.Singleton[glookubev1.Settings],
 	controllerName string,
 	mgr manager.Manager,
 	client kube.Client,
@@ -199,7 +195,14 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 
 	s.translatorSyncer.Init(ctx, isOurGw)
 
-	kubeGateways, routes, finalUpstreams, endpointIRs := krtcollections.InitCollections(ctx, s.extensions, s.istioClient, isOurGw, s.commonCols.RefGrants, krtopts)
+	kubeGateways, routes, finalUpstreams, endpointIRs := krtcollections.InitCollections(
+		ctx,
+		s.extensions,
+		s.istioClient,
+		isOurGw,
+		s.commonCols.RefGrants,
+		krtopts,
+	)
 
 	s.mostXdsSnapshots = krt.NewCollection(kubeGateways.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
 		logger.Debugf("building proxy for kube gw %s version %s", client.ObjectKeyFromObject(gw.Obj), gw.Obj.GetResourceVersion())

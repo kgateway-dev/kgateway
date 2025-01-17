@@ -168,11 +168,6 @@ func generateValuesConfig(version, repositoryPrefix, globalPullPolicy string) (*
 	cfg.Gateway.RolloutJob.Image.Tag = &version
 	cfg.Gateway.CleanupJob.Image.Tag = &version
 
-	cfg.AccessLogger.Image.Tag = &version
-
-	cfg.Ingress.Deployment.Image.Tag = &version
-	cfg.IngressProxy.Deployment.Image.Tag = &version
-	cfg.Settings.Integrations.Knative.Proxy.Image.Tag = &version
 	cfg.Global.GlooMtls.Sds.Image.Tag = &version
 	cfg.Global.GlooMtls.EnvoySidecar.Image.Tag = &version
 

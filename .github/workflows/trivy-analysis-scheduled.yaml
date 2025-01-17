@@ -31,7 +31,7 @@ jobs:
           sudo dpkg -i trivy_${TRIVY_VERSION}_Linux-64bit.deb
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
-      - uses: ./.github/workflows/composite-actions/prep-go-runner
+      - uses: ./.github/actions/prep-go-runner
       - name: Setup - gcloud / gsutil
         uses: 'google-github-actions/auth@v2'
         with:

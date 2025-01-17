@@ -23,13 +23,13 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/common"
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/registry"
+	"github.com/solo-io/gloo/projects/gateway2/extensions2/settings"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/pkg/client/clientset/versioned"
 	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	uzap "go.uber.org/zap"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
@@ -68,9 +68,6 @@ type StartConfig struct {
 	AugmentedPods krt.Collection[krtcollections.LocalityPod]
 	UniqueClients krt.Collection[ir.UniqlyConnectedClient]
 
-	InitialSettings *glookubev1.Settings
-	Settings        krt.Singleton[glookubev1.Settings]
-
 	KrtOptions krtutil.KrtOptions
 }
 
@@ -82,6 +79,7 @@ type ControllerBuilder struct {
 	cfg         StartConfig
 	mgr         ctrl.Manager
 	isOurGw     func(gw *apiv1.Gateway) bool
+	settings    settings.Settings
 }
 
 func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuilder, error) {
@@ -138,8 +136,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.KrtOptions,
 		cfg.Client,
 		cli,
-		cfg.InitialSettings,
-		cfg.Settings,
+		setupLog,
 	)
 	gwClasses := sets.New(append(cfg.SetupOpts.ExtraGatewayClasses, wellknown.GatewayClassName)...)
 	isOurGw := func(gw *apiv1.Gateway) bool {
@@ -149,8 +146,6 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	setupLog.Info("initializing proxy syncer")
 	proxySyncer := proxy_syncer.NewProxySyncer(
 		ctx,
-		cfg.InitialSettings,
-		cfg.Settings,
 		wellknown.GatewayControllerName,
 		mgr,
 		cfg.Client,
@@ -172,6 +167,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg:         cfg,
 		mgr:         mgr,
 		isOurGw:     isOurGw,
+		settings:    commoncol.Settings,
 	}, nil
 }
 
@@ -196,23 +192,21 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 
 	logger.Info("got xds address for deployer", uzap.String("xds_host", xdsHost), uzap.Int32("xds_port", xdsPort))
 
-	integrationEnabled := c.cfg.InitialSettings.Spec.GetGloo().GetIstioOptions().GetEnableIntegration().GetValue()
+	integrationEnabled := c.settings.EnableIstioIntegration
 
 	// copy over relevant aws options (if any) from Settings
 	var awsInfo *deployer.AwsInfo
-	awsOpts := c.cfg.InitialSettings.Spec.GetGloo().GetAwsOptions()
-	if awsOpts != nil {
-		credOpts := awsOpts.GetServiceAccountCredentials()
-		if credOpts != nil {
-			awsInfo = &deployer.AwsInfo{
-				EnableServiceAccountCredentials: true,
-				StsClusterName:                  credOpts.GetCluster(),
-				StsUri:                          credOpts.GetUri(),
-			}
-		} else {
-			awsInfo = &deployer.AwsInfo{
-				EnableServiceAccountCredentials: false,
-			}
+	stsCluster := c.settings.StsClusterName
+	stsUri := c.settings.StsUri
+	if stsCluster != "" && stsUri != "" {
+		awsInfo = &deployer.AwsInfo{
+			EnableServiceAccountCredentials: true,
+			StsClusterName:                  stsCluster,
+			StsUri:                          stsUri,
+		}
+	} else {
+		awsInfo = &deployer.AwsInfo{
+			EnableServiceAccountCredentials: false,
 		}
 	}
 

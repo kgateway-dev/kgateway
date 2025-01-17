@@ -19,7 +19,6 @@ import (
 	wellknownkube "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/wellknown"
 	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
-	"github.com/solo-io/gloo/test/gomega/matchers"
 	jsonpb "google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	appsv1 "k8s.io/api/apps/v1"
@@ -113,6 +112,20 @@ func (objs *clientObjects) getEnvoyConfig(namespace, name string) *envoy_config_
 
 func proxyName(name string) string {
 	return fmt.Sprintf("gloo-proxy-%s", name)
+}
+
+// containMapElements produces a matcher that will only match if all provided map elements
+// are completely accounted for. The actual value is expected to not be nil or empty since
+// there are other, more appropriate matchers for those cases.
+func containMapElements[keyT comparable, valT any](m map[keyT]valT) types.GomegaMatcher {
+	subMatchers := []types.GomegaMatcher{
+		Not(BeNil()),
+		Not(BeEmpty()),
+	}
+	for k, v := range m {
+		subMatchers = append(subMatchers, HaveKeyWithValue(k, v))
+	}
+	return And(subMatchers...)
 }
 
 var _ = Describe("Deployer", func() {
@@ -816,7 +829,7 @@ var _ = Describe("Deployer", func() {
 				}
 				Expect(dep.Spec.Template.Spec.Containers[0].ImagePullPolicy).To(Equal(*expectedGwp.EnvoyContainer.Image.PullPolicy))
 
-				Expect(dep.Spec.Template.Annotations).To(matchers.ContainMapElements(expectedGwp.PodTemplate.ExtraAnnotations))
+				Expect(dep.Spec.Template.Annotations).To(containMapElements(expectedGwp.PodTemplate.ExtraAnnotations))
 				Expect(dep.Spec.Template.Annotations).To(HaveKeyWithValue("prometheus.io/scrape", "true"))
 				Expect(dep.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(expectedGwp.PodTemplate.SecurityContext.RunAsUser))
 				Expect(dep.Spec.Template.Spec.SecurityContext.RunAsGroup).To(Equal(expectedGwp.PodTemplate.SecurityContext.RunAsGroup))
@@ -824,18 +837,18 @@ var _ = Describe("Deployer", func() {
 				svc := objs.findService(defaultNamespace, defaultServiceName)
 				Expect(svc).ToNot(BeNil())
 				Expect(svc.GetAnnotations()).ToNot(BeNil())
-				Expect(svc.GetAnnotations()).To(matchers.ContainMapElements(expectedGwp.Service.ExtraAnnotations))
+				Expect(svc.GetAnnotations()).To(containMapElements(expectedGwp.Service.ExtraAnnotations))
 				Expect(svc.GetLabels()).ToNot(BeNil())
-				Expect(svc.GetLabels()).To(matchers.ContainMapElements(expectedGwp.Service.ExtraLabels))
+				Expect(svc.GetLabels()).To(containMapElements(expectedGwp.Service.ExtraLabels))
 				Expect(svc.Spec.Type).To(Equal(*expectedGwp.Service.Type))
 				Expect(svc.Spec.ClusterIP).To(Equal(*expectedGwp.Service.ClusterIP))
 
 				sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
 				Expect(sa).ToNot(BeNil())
 				Expect(sa.GetAnnotations()).ToNot(BeNil())
-				Expect(sa.GetAnnotations()).To(matchers.ContainMapElements(expectedGwp.ServiceAccount.ExtraAnnotations))
+				Expect(sa.GetAnnotations()).To(containMapElements(expectedGwp.ServiceAccount.ExtraAnnotations))
 				Expect(sa.GetLabels()).ToNot(BeNil())
-				Expect(sa.GetLabels()).To(matchers.ContainMapElements(expectedGwp.ServiceAccount.ExtraLabels))
+				Expect(sa.GetLabels()).To(containMapElements(expectedGwp.ServiceAccount.ExtraLabels))
 
 				cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 				Expect(cm).ToNot(BeNil())
@@ -871,7 +884,7 @@ var _ = Describe("Deployer", func() {
 			Expect(dep.Spec.Replicas).ToNot(BeNil())
 			Expect(*dep.Spec.Replicas).To(Equal(int32(*expectedGwp.Deployment.Replicas)))
 
-			Expect(dep.Spec.Template.Annotations).To(matchers.ContainMapElements(expectedGwp.PodTemplate.ExtraAnnotations))
+			Expect(dep.Spec.Template.Annotations).To(containMapElements(expectedGwp.PodTemplate.ExtraAnnotations))
 
 			// assert envoy container
 			expectedEnvoyImage := fmt.Sprintf("%s/%s",
@@ -940,18 +953,18 @@ var _ = Describe("Deployer", func() {
 			svc := objs.findService(defaultNamespace, defaultServiceName)
 			Expect(svc).ToNot(BeNil())
 			Expect(svc.GetAnnotations()).ToNot(BeNil())
-			Expect(svc.GetAnnotations()).To(matchers.ContainMapElements(expectedGwp.Service.ExtraAnnotations))
+			Expect(svc.GetAnnotations()).To(containMapElements(expectedGwp.Service.ExtraAnnotations))
 			Expect(svc.GetLabels()).ToNot(BeNil())
-			Expect(svc.GetLabels()).To(matchers.ContainMapElements(expectedGwp.Service.ExtraLabels))
+			Expect(svc.GetLabels()).To(containMapElements(expectedGwp.Service.ExtraLabels))
 			Expect(svc.Spec.Type).To(Equal(*expectedGwp.Service.Type))
 			Expect(svc.Spec.ClusterIP).To(Equal(*expectedGwp.Service.ClusterIP))
 
 			sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
 			Expect(sa).ToNot(BeNil())
 			Expect(sa.GetAnnotations()).ToNot(BeNil())
-			Expect(sa.GetAnnotations()).To(matchers.ContainMapElements(expectedGwp.ServiceAccount.ExtraAnnotations))
+			Expect(sa.GetAnnotations()).To(containMapElements(expectedGwp.ServiceAccount.ExtraAnnotations))
 			Expect(sa.GetLabels()).ToNot(BeNil())
-			Expect(sa.GetLabels()).To(matchers.ContainMapElements(expectedGwp.ServiceAccount.ExtraLabels))
+			Expect(sa.GetLabels()).To(containMapElements(expectedGwp.ServiceAccount.ExtraLabels))
 
 			cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 			Expect(cm).ToNot(BeNil())

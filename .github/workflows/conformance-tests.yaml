@@ -38,7 +38,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Conformance Tests
-        uses: ./.github/workflows/composite-actions/kube-gateway-api-conformance-tests
+        uses: ./.github/actions/kube-gateway-api-conformance-tests
 
       # TODO(tim): Add support for downloading the test results and creating
       # a pull request whenever a new release > 1.17+ is cut.

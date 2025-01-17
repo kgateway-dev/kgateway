@@ -14,7 +14,7 @@ test:
 test-full:
 	go test -ldflags=$(LDFLAGS) -count=1 ./...
 
-# internal target used by controller_suite_test.go
+# internal target used by ./controller/controller_suite_test.go & ./setup/ggv2setup_test.go
 envtest:
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)"
 

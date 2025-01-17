@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/onsi/ginkgo/v2"
@@ -32,7 +33,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/translator/gateway/testutils"
 	"github.com/solo-io/gloo/projects/gateway2/translator/irtranslator"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
-	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	"istio.io/istio/pkg/kube/kclient/clienttest"
 	"istio.io/istio/pkg/kube/krt"
 )
@@ -171,29 +171,11 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		Stop: ctx.Done(),
 	}
 
-	s := &glookubev1.Settings{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "settings",
-			Namespace: "gloo-system",
-		},
-	}
-	setting := krt.NewStatic(&s, true).AsCollection()
-
-	settingsSingle := krt.NewSingleton(func(ctx krt.HandlerContext) *glookubev1.Settings {
-		s := krt.FetchOne(ctx, setting,
-			krt.FilterObjectName(types.NamespacedName{Namespace: "gloo-system", Name: "settings"}))
-		if s != nil {
-			return *s
-		}
-		return nil
-	}, krt.WithName("GlooSettingsSingleton"))
-
 	commoncol := common.NewCommonCollections(
 		krtOpts,
 		cli,
 		ourCli,
-		s,
-		settingsSingle,
+		logr.Discard(),
 	)
 
 	plugins := registry.Plugins(ctx, commoncol)

@@ -415,74 +415,6 @@ distroless-with-utils-docker: distroless-docker $(DISTROLESS_OUTPUT_DIR)/Dockerf
 		-t  $(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) $(QUAY_EXPIRATION_LABEL)
 
 #----------------------------------------------------------------------------------
-# Ingress
-#----------------------------------------------------------------------------------
-
-INGRESS_DIR=projects/ingress
-INGRESS_SOURCES=$(call get_sources,$(INGRESS_DIR))
-INGRESS_OUTPUT_DIR=$(OUTPUT_DIR)/$(INGRESS_DIR)
-
-$(INGRESS_OUTPUT_DIR)/ingress-linux-$(GOARCH): $(INGRESS_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ $(INGRESS_DIR)/cmd/main.go
-
-.PHONY: ingress
-ingress: $(INGRESS_OUTPUT_DIR)/ingress-linux-$(GOARCH)
-
-$(INGRESS_OUTPUT_DIR)/Dockerfile.ingress: $(INGRESS_DIR)/cmd/Dockerfile
-	cp $< $@
-
-.PHONY: ingress-docker
-ingress-docker: $(INGRESS_OUTPUT_DIR)/ingress-linux-$(GOARCH) $(INGRESS_OUTPUT_DIR)/Dockerfile.ingress
-	docker buildx build --load $(PLATFORM) $(INGRESS_OUTPUT_DIR) -f $(INGRESS_OUTPUT_DIR)/Dockerfile.ingress \
-		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
-		--build-arg GOARCH=$(GOARCH) \
-		-t $(IMAGE_REGISTRY)/ingress:$(VERSION) $(QUAY_EXPIRATION_LABEL)
-
-$(INGRESS_OUTPUT_DIR)/Dockerfile.ingress.distroless: $(INGRESS_DIR)/cmd/Dockerfile.distroless
-	cp $< $@
-
-.PHONY: ingress-distroless-docker
-ingress-distroless-docker: $(INGRESS_OUTPUT_DIR)/ingress-linux-$(GOARCH) $(INGRESS_OUTPUT_DIR)/Dockerfile.ingress.distroless distroless-docker
-	docker buildx build --load $(PLATFORM) $(INGRESS_OUTPUT_DIR) -f $(INGRESS_OUTPUT_DIR)/Dockerfile.ingress.distroless \
-		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_IMAGE) \
-		--build-arg GOARCH=$(GOARCH) \
-		-t $(IMAGE_REGISTRY)/ingress:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL)
-
-#----------------------------------------------------------------------------------
-# Access Logger
-#----------------------------------------------------------------------------------
-
-ACCESS_LOG_DIR=projects/accesslogger
-ACCESS_LOG_SOURCES=$(call get_sources,$(ACCESS_LOG_DIR))
-ACCESS_LOG_OUTPUT_DIR=$(OUTPUT_DIR)/$(ACCESS_LOG_DIR)
-
-$(ACCESS_LOG_OUTPUT_DIR)/access-logger-linux-$(GOARCH): $(ACCESS_LOG_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ $(ACCESS_LOG_DIR)/cmd/main.go
-
-.PHONY: access-logger
-access-logger: $(ACCESS_LOG_OUTPUT_DIR)/access-logger-linux-$(GOARCH)
-
-$(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger: $(ACCESS_LOG_DIR)/cmd/Dockerfile
-	cp $< $@
-
-.PHONY: access-logger-docker
-access-logger-docker: $(ACCESS_LOG_OUTPUT_DIR)/access-logger-linux-$(GOARCH) $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger
-	docker buildx build --load $(PLATFORM) $(ACCESS_LOG_OUTPUT_DIR) -f $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger \
-		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
-		--build-arg GOARCH=$(GOARCH) \
-		-t $(IMAGE_REGISTRY)/access-logger:$(VERSION) $(QUAY_EXPIRATION_LABEL)
-
-$(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger.distroless: $(ACCESS_LOG_DIR)/cmd/Dockerfile.distroless
-	cp $< $@
-
-.PHONY: access-logger-distroless-docker
-access-logger-distroless-docker: $(ACCESS_LOG_OUTPUT_DIR)/access-logger-linux-$(GOARCH) $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger.distroless distroless-docker
-	docker buildx build --load $(PLATFORM) $(ACCESS_LOG_OUTPUT_DIR) -f $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger.distroless \
-		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_IMAGE) \
-		--build-arg GOARCH=$(GOARCH) \
-		-t $(IMAGE_REGISTRY)/access-logger:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL)
-
-#----------------------------------------------------------------------------------
 # Discovery
 #----------------------------------------------------------------------------------
 
@@ -884,8 +816,6 @@ docker-standard: discovery-docker
 docker-standard: gloo-envoy-wrapper-docker
 docker-standard: sds-docker
 docker-standard: certgen-docker
-docker-standard: ingress-docker
-docker-standard: access-logger-docker
 docker-standard: kubectl-docker
 
 .PHONY: docker-distroless
@@ -895,8 +825,6 @@ docker-distroless: discovery-distroless-docker
 docker-distroless: gloo-envoy-wrapper-distroless-docker
 docker-distroless: sds-distroless-docker
 docker-distroless: certgen-distroless-docker
-docker-distroless: ingress-distroless-docker
-docker-distroless: access-logger-distroless-docker
 docker-distroless: kubectl-distroless-docker
 
 IMAGE_VARIANT ?= all
@@ -920,7 +848,6 @@ docker-standard-push: docker-push-sds
 ifeq ($(MULTIARCH), )
 docker-standard-push: docker-push-certgen
 endif
-docker-standard-push: docker-push-ingress
 docker-standard-push: docker-push-access-logger
 ifeq ($(MULTIARCH), )
 docker-standard-push: docker-push-kubectl
@@ -934,7 +861,6 @@ docker-distroless-push: docker-push-sds-distroless
 ifeq ($(MULTIARCH), )
 docker-distroless-push: docker-push-certgen-distroless
 endif
-docker-distroless-push: docker-push-ingress-distroless
 docker-distroless-push: docker-push-access-logger-distroless
 ifeq ($(MULTIARCH), )
 docker-distroless-push: docker-push-kubectl-distroless
@@ -957,8 +883,6 @@ docker-standard-retag: docker-retag-discovery
 docker-standard-retag: docker-retag-gloo-envoy-wrapper
 docker-standard-retag: docker-retag-sds
 docker-standard-retag: docker-retag-certgen
-docker-standard-retag: docker-retag-ingress
-docker-standard-retag: docker-retag-access-logger
 docker-standard-retag: docker-retag-kubectl
 
 .PHONY: docker-distroless-retag
@@ -967,8 +891,6 @@ docker-distroless-retag: docker-retag-discovery-distroless
 docker-distroless-retag: docker-retag-gloo-envoy-wrapper-distroless
 docker-distroless-retag: docker-retag-sds-distroless
 docker-distroless-retag: docker-retag-certgen-distroless
-docker-distroless-retag: docker-retag-ingress-distroless
-docker-distroless-retag: docker-retag-access-logger-distroless
 docker-distroless-retag: docker-retag-kubectl-distroless
 
 # Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REGISTRY,
@@ -1042,8 +964,6 @@ kind-build-and-load-standard: kind-build-and-load-discovery
 kind-build-and-load-standard: kind-build-and-load-gloo-envoy-wrapper
 kind-build-and-load-standard: kind-build-and-load-sds
 kind-build-and-load-standard: kind-build-and-load-certgen
-kind-build-and-load-standard: kind-build-and-load-ingress
-kind-build-and-load-standard: kind-build-and-load-access-logger
 kind-build-and-load-standard: kind-build-and-load-kubectl
 
 .PHONY: kind-build-and-load-distroless
@@ -1052,8 +972,6 @@ kind-build-and-load-distroless: kind-build-and-load-discovery-distroless
 kind-build-and-load-distroless: kind-build-and-load-gloo-envoy-wrapper-distroless
 kind-build-and-load-distroless: kind-build-and-load-sds-distroless
 kind-build-and-load-distroless: kind-build-and-load-certgen-distroless
-kind-build-and-load-distroless: kind-build-and-load-ingress-distroless
-kind-build-and-load-distroless: kind-build-and-load-access-logger-distroless
 kind-build-and-load-distroless: kind-build-and-load-kubectl-distroless
 
 .PHONY: kind-build-and-load ## Use to build all images and load them into kind
@@ -1075,8 +993,6 @@ kind-load-standard: kind-load-discovery
 kind-load-standard: kind-load-gloo-envoy-wrapper
 kind-load-standard: kind-load-sds
 kind-load-standard: kind-load-certgen
-kind-load-standard: kind-load-ingress
-kind-load-standard: kind-load-access-logger
 kind-load-standard: kind-load-kubectl
 
 .PHONY: kind-build-and-load-distroless
@@ -1085,8 +1001,6 @@ kind-load-distroless: kind-load-discovery-distroless
 kind-load-distroless: kind-load-gloo-envoy-wrapper-distroless
 kind-load-distroless: kind-load-sds-distroless
 kind-load-distroless: kind-load-certgen-distroless
-kind-load-distroless: kind-load-ingress-distroless
-kind-load-distroless: kind-load-access-logger-distroless
 kind-load-distroless: kind-load-kubectl-distroless
 
 .PHONY: kind-load ## Use to build all images and load them into kind
@@ -1184,7 +1098,7 @@ scan-version: ## Scan all Gloo images with the tag matching {VERSION} env variab
 	PATH=$(DEPSGOBIN):$$PATH GO111MODULE=on go run github.com/solo-io/go-utils/securityscanutils/cli scan-version -v \
 		-r $(IMAGE_REGISTRY)\
 		-t $(VERSION)\
-		--images gloo,gloo-envoy-wrapper,discovery,ingress,sds,certgen,access-logger,kubectl
+		--images gloo,gloo-envoy-wrapper,discovery,sds,certgen,kubectl
 
 #----------------------------------------------------------------------------------
 # Third Party License Management

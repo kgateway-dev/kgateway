@@ -59,42 +59,35 @@ func (i IstioSettings) Equals(in any) bool {
 var _ ir.PolicyIR = &IstioSettings{}
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
+	p := plugin{}
+
 	// TODO: if plumb settings from gw class; then they should be in the new translation pass
 	// the problem is that they get applied to an upstream, and currently we don't have access to the gateway
 	// when translating upstreams. if we want we can add the gateway to the context of PerClientProcessUpstream
-	p := plugin{}
 	sidecarEnabled := envutils.IsEnvTruthy(constants.IstioInjectionEnabled)
-	istiotSettings := krt.NewSingleton(func(ctx krt.HandlerContext) *IstioSettings {
-		settings := krt.FetchOne(ctx, commoncol.Settings.AsCollection())
-		return &IstioSettings{
-			EnableAutoMTLS:              settings.Spec.GetGloo().GetIstioOptions().GetEnableAutoMtls().GetValue(),
-			EnableIstioIntegration:      settings.Spec.GetGloo().GetIstioOptions().GetEnableIntegration().GetValue(),
-			EnableIstioSidecarOnGateway: sidecarEnabled,
-		}
-	}, commoncol.KrtOpts.ToOptions("istiotSettings")...)
+	istioSettings := IstioSettings{
+		EnableAutoMTLS:              commoncol.Settings.EnableAutoMTLS,
+		EnableIstioIntegration:      commoncol.Settings.EnableIstioIntegration,
+		EnableIstioSidecarOnGateway: sidecarEnabled,
+	}
 
 	return extensionsplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			VirtualIstioGK: {
 				Name:            "istio",
 				ProcessUpstream: p.processUpstream,
-				GlobalPolicies: func(kctx krt.HandlerContext, attachmentPoints extensionsplug.AttachmentPoints) ir.PolicyIR {
-					settings := krt.FetchOne(kctx, istiotSettings.AsCollection())
-					if settings == nil {
-						return nil
-					}
-					return *settings
+				GlobalPolicies: func(_ krt.HandlerContext, _ extensionsplug.AttachmentPoints) ir.PolicyIR {
+					// return static settings which do not change post plugin creation
+					return istioSettings
 				},
 			},
 		},
-		ExtraHasSynced: istiotSettings.AsCollection().Synced().HasSynced,
 	}
 }
 
-type plugin struct {
-}
+type plugin struct{}
 
-func isDisabledForUpstream(upstream ir.Upstream) bool {
+func isDisabledForUpstream(_ ir.Upstream) bool {
 	// return in.GetDisableIstioAutoMtls().GetValue()
 
 	// TODO: implement this; we can do it by checking annotations?
@@ -104,24 +97,22 @@ func isDisabledForUpstream(upstream ir.Upstream) bool {
 // we don't have a good way of know if we have ssl on the upstream, so check cluster instead
 // this could be a problem if the policy that adds ssl runs after this one.
 // so we need to think about how's best to handle this.
-func doesClusterHaveSslConfigPresent(out *envoy_config_cluster_v3.Cluster) bool {
+func doesClusterHaveSslConfigPresent(_ *envoy_config_cluster_v3.Cluster) bool {
 	// TODO: implement this
 	return false
 }
 
-func (p plugin) processUpstream(ctx context.Context, settings ir.PolicyIR, in ir.Upstream, out *envoy_config_cluster_v3.Cluster) {
+func (p plugin) processUpstream(ctx context.Context, ir ir.PolicyIR, in ir.Upstream, out *envoy_config_cluster_v3.Cluster) {
 	var socketmatches []*envoy_config_cluster_v3.Cluster_TransportSocketMatch
 
-	st, ok := settings.(IstioSettings)
+	st, ok := ir.(IstioSettings)
 	if !ok {
 		return
 	}
-
 	// Istio automtls will only be applied when:
 	// 1) automtls is enabled on the settings
 	// 2) the upstream has not disabled auto mtls
 	// 3) the upstream has no sslConfig
-	//if p.settings.GetGloo().GetIstioOptions().GetEnableAutoMtls().GetValue() && !in.GetDisableIstioAutoMtls().GetValue() && sslConfig == nil {
 	if st.EnableAutoMTLS && !isDisabledForUpstream(in) && !doesClusterHaveSslConfigPresent(out) {
 		// Istio automtls config is not applied if istio integration is disabled on the helm chart.
 		// When istio integration is disabled via istioSds.enabled=false, there is no sds or istio-proxy sidecar present
