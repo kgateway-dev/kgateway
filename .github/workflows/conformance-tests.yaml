@@ -12,7 +12,7 @@ on:
           - standard
           - distroless
       version:
-        description: "Optional: Specify an existing Gloo Gateway release tag to deploy and test (e.g., 1.17.3). Leave empty to use the default branch."
+        description: "Optional: Specify an existing kgateway release tag to deploy and test. Leave empty to use the default branch."
         required: false
         type: string
 
@@ -39,6 +39,3 @@ jobs:
 
       - name: Run Conformance Tests
         uses: ./.github/actions/kube-gateway-api-conformance-tests
-
-      # TODO(tim): Add support for downloading the test results and creating
-      # a pull request whenever a new release > 1.17+ is cut.
