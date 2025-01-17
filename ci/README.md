@@ -2,7 +2,6 @@
 - [Pull Request](#pull-request)
     - [Changelog Bot](#changelog-bot)
     - [Github Actions](#github-actions)
-    - [Bulldozer](#bulldozer)
     - [Special Labels](#special-labels)
     - [Special Directives to Skip CI](#special-directives-to-skip-ci)
 

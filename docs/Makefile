@@ -17,9 +17,8 @@ MIN_SCANNED_VERSION ?= v1.15.0
 # Docs
 #----------------------------------------------------------------------------------
 
-
 .PHONY: site-common
-site-common: clean gloo-enterprise-version
+site-common: clean
 	if [ ! -d themes/hugo-theme-soloio ]; then git clone https://github.com/solo-io/hugo-theme-soloio themes/hugo-theme-soloio; fi
 	git -C themes/hugo-theme-soloio checkout $(SOLO_HUGO_THEME_REVISION)
 	go run cmd/generate_docs.go gen-releases -r gloo > opensource.out
@@ -33,11 +32,6 @@ site-common: clean gloo-enterprise-version
 	cat content/static/content/gloo-security-scan.docgen
 	./split-file-by-delimiter.sh content/static/content/gloo-security-scan.docgen \\\*\\\*\\\*
 	./split-file-by-delimiter.sh content/static/content/glooe-security-scan.docgen \\\*\\\*\\\*
-
-	# get enterprise helm values based on contents of _output/gloo-enterprise-version
-	go run cmd/generate_docs.go get-enterprise-helm-values > content/static/content/glooe-values.docgen
-	rm -f opensource.out enterprise.out
-
 
 .PHONY: site-test
 site-test: site-common
@@ -82,12 +76,6 @@ install-tools:
 .PHONY: build-site
 build-site: clean
 	./build-docs.sh
-
-# Generate _output/gloo-enterprise-version based on the latest patch enterprise version
-# corresponding to content in changelog directory.
-.PHONY: gloo-enterprise-version
-gloo-enterprise-version:
-	cd .. && go run hack/find_latest_enterprise_version/main.go
 
 #----------------------------------------------------------------------------------
 # Printing makefile variables utility
