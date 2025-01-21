@@ -27,13 +27,6 @@ func RunAdminServer(ctx context.Context, setupOpts *controller.SetupOpts) error 
 	if envLogLevel := os.Getenv(contextutils.LogLevelEnvName); envLogLevel != "" {
 		contextutils.SetLogLevelFromString(envLogLevel)
 	}
-	// TODO remove
-	// stats.StartCancellableStatsServerWithPort(ctx, stats.StartupOptions{
-	// 	EnvVar:       stats.DefaultEnvVar,
-	// 	EnabledValue: stats.DefaultEnabledValue,
-	// 	Port:         9095,
-	// }, func(mux *http.ServeMux, profiles map[string]string) {
-	// })
 
 	startHandlers(ctx, serverHandlers)
 
@@ -45,7 +38,7 @@ func RunAdminServer(ctx context.Context, setupOpts *controller.SetupOpts) error 
 type dynamicProfileDescription func() string
 
 // getServerHandlers returns the custom handlers for the Admin Server, which will be bound to the http.ServeMux
-// These endpoints serve as the basis for an Admin Interface for the Control Plane (https://github.com/solo-io/gloo/issues/6494)
+// These endpoints serve as the basis for an Admin Interface for the Control Plane (https://github.com/kgateway-dev/kgateway/issues/6494)
 func getServerHandlers(ctx context.Context, dbg *krt.DebugHandler, cache envoycache.SnapshotCache) func(mux *http.ServeMux, profiles map[string]dynamicProfileDescription) {
 	return func(m *http.ServeMux, profiles map[string]dynamicProfileDescription) {
 
@@ -67,21 +60,13 @@ func getServerHandlers(ctx context.Context, dbg *krt.DebugHandler, cache envoyca
 			profiles["/snapshots/proxies"] = "Proxy Snapshot"
 		*/
 
-		// The xDS Snapshot is intended to return the full in-memory xDS cache that the Control Plane manages
-		// and serves up to running proxies.
-		m.HandleFunc("/snapshots/xds", func(w http.ResponseWriter, r *http.Request) {
-			response := getXdsSnapshotDataFromCache(cache)
-			writeJSON(w, response, r)
-		})
-		profiles["/snapshots/xds"] = func() string { return "XDS Snapshot" }
+		addXdsSnapshotHandler("/snapshots/xds", m, profiles, cache)
 
-		m.HandleFunc("/snapshots/krt", func(w http.ResponseWriter, r *http.Request) {
-			writeJSON(w, dbg, r)
-		})
-		profiles["/snapshots/krt"] = func() string { return "KRT Snapshot" }
+		addKrtSnapshotHandler("/snapshots/krt", m, profiles, dbg)
 
-		m.Handle("/logging", getLoggingHandler())
-		profiles["/logging"] = getLoggingDescription
+		addLoggingHandler("/logging", m, profiles)
+
+		addPprofHandler("/debug/pprof/", m, profiles)
 	}
 }
 
@@ -137,7 +122,7 @@ func startHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, 
 	}
 	idx := index(profileDescriptions)
 	mux.HandleFunc("/", idx)
-	mux.HandleFunc("/snapshots/", idx) // TODO only snapshots
+	mux.HandleFunc("/snapshots/", idx)
 	server := &http.Server{
 		Addr:    fmt.Sprintf("localhost:%d", AdminPort),
 		Handler: mux,

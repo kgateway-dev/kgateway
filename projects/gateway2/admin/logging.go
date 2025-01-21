@@ -2,14 +2,15 @@ package admin
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/solo-io/go-utils/contextutils"
-	"go.uber.org/zap"
 )
 
-// Gets an AtomicLevel that supports dynamically changing the log level at runtime.
-func getLoggingHandler() zap.AtomicLevel {
-	return contextutils.GetLogHandler()
+// The logging handler is an AtomicLevel that supports dynamically changing the log level at runtime.
+func addLoggingHandler(path string, mux *http.ServeMux, profiles map[string]dynamicProfileDescription) {
+	mux.Handle(path, contextutils.GetLogHandler())
+	profiles[path] = getLoggingDescription
 }
 
 // Gets a string representation of the current log level.
@@ -26,9 +27,9 @@ func getLoggingDescription() string {
 	supportedLogLevels := []string{"debug", "info", "warn", "error"}
 	for _, level := range supportedLogLevels {
 		if level == currentLogLevel {
-			selectorText += fmt.Sprintf(`<option value="%s" selected>%s</option>\n`, level, level)
+			selectorText += fmt.Sprintf(`<option value="%s" selected>%s</option>`, level, level)
 		} else {
-			selectorText += fmt.Sprintf(`<option value="%s">%s</option>\n`, level, level)
+			selectorText += fmt.Sprintf(`<option value="%s">%s</option>`, level, level)
 		}
 	}
 	selectorText += `</select>`
