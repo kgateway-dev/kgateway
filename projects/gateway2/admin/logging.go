@@ -34,7 +34,7 @@ func getLoggingDescription() string {
 	}
 	selectorText += `</select>`
 
-	return `View or change the log level of the program.<br/>
+	return `View or change the log level of the program. Note: does not persist across pod restarts.<br/>
 
 Log level:
 ` + selectorText + `
