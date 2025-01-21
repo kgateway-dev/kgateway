@@ -32,7 +32,7 @@ type CombinedTranslator struct {
 
 	waitForSync []cache.InformerSynced
 
-	gwtranslator       extensionsplug.K8sGwTranslator
+	gwtranslator       extensionsplug.KGwTranslator
 	irtranslator       *irtranslator.Translator
 	upstreamTranslator *irtranslator.UpstreamTranslator
 	endpointPlugins    []extensionsplug.EndpointPlugin
@@ -108,7 +108,7 @@ func (s *CombinedTranslator) HasSynced() bool {
 func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Context, gw ir.Gateway, r reports.Reporter) *ir.GatewayIR {
 	stopwatch := statsutils.NewTranslatorStopWatch("CombinedTranslator")
 	stopwatch.Start()
-	var gatewayTranslator extensionsplug.K8sGwTranslator = s.gwtranslator
+	var gatewayTranslator extensionsplug.KGwTranslator = s.gwtranslator
 	if s.extensions.ContributesGwTranslator != nil {
 		maybeGatewayTranslator := s.extensions.ContributesGwTranslator(gw.Obj)
 		if maybeGatewayTranslator != nil {

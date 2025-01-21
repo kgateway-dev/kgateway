@@ -21,7 +21,7 @@ inputs:
   istio-version:
     required: true
     description: The version of Istio
-  k8sgateway-api-version:
+  kgateway-api-version:
     required: false
     default: "" # If this is undefined the setup-kind script has its own default value
     description: The version of the gateway-api to use
@@ -47,5 +47,5 @@ runs:
         CLUSTER_NAME: ${{ inputs.cluster-name }}
         CLUSTER_NODE_VERSION: ${{ inputs.kind-node-version }}
         ISTIO_VERSION: ${{ inputs.istio-version }}
-        CONFORMANCE_VERSION: ${{ inputs.k8sgateway-api-version }}
+        CONFORMANCE_VERSION: ${{ inputs.kgateway-api-version }}
       run: ./ci/kind/setup-kind.sh

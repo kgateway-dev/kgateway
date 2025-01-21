@@ -18,7 +18,7 @@ import (
 )
 
 func mergedGw(funcs []extensionsplug.GwTranslatorFactory) extensionsplug.GwTranslatorFactory {
-	return func(gw *gwv1.Gateway) extensionsplug.K8sGwTranslator {
+	return func(gw *gwv1.Gateway) extensionsplug.KGwTranslator {
 		for _, f := range funcs {
 			ret := f(gw)
 			if ret != nil {

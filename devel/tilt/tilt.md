@@ -18,20 +18,20 @@ workflow that offers easy deployments and rapid iterative builds.
 To create a pre-configured cluster run:
 
 ```bash
-ctlptl create cluster kind --name kind-gloo-oss --registry=ctlptl-registry
+ctlptl create cluster kind --name kind-kgateway --registry=ctlptl-registry
 ```
 
 You can see the status of the cluster with:
 
 ```bash
-kubectl cluster-info --context kind-gloo-oss
+kubectl cluster-info --context kind-kgateway
 ```
 
 ### Build and load your docker images
 
 When you switch branches, you'll need to rebuild the images (unless the changes are in the enabled providers list). Run
 ```bash
-VERSION=1.0.0-ci1 CLUSTER_NAME=gloo-oss IMAGE_VARIANT=standard make kind-build-and-load build-test-chart build-cli-local
+VERSION=1.0.0-ci1 CLUSTER_NAME=kgateway IMAGE_VARIANT=standard make kind-build-and-load build-test-chart build-cli-local
 ```
 
 ### Run tilt!

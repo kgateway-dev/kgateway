@@ -196,8 +196,8 @@ const (
 	glooEnterpriseRepo = "solo-projects"
 
 	// donated names
-	repoOwnerDonated      = "k8sgateway"
-	donatedOpenSourceRepo = "k8sgateway"
+	repoOwnerDonated      = "kgateway-dev"
+	donatedOpenSourceRepo = "kgateway"
 )
 
 const (

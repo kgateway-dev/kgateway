@@ -55,7 +55,7 @@ RUN chmod 777 ./$binary_name
 standard_entrypoint = "ENTRYPOINT /app/start.sh /app/$binary_name"
 debug_entrypoint = "ENTRYPOINT /app/start.sh /go/bin/dlv --listen=0.0.0.0:$debug_port --api-version=2 --headless=true --only-same-user=false --accept-multiclient --check-go-version=false exec --continue /app/$binary_name"
 
-get_resources_cmd = "{0} -n {1} template {2} --include-crds install/helm/gloo/ --set gloo.deployment.image.pullPolicy='IfNotPresent' --set license_key='abcd'".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"))
+get_resources_cmd = "{0} -n {1} template {2} --include-crds install/helm/gloo/ --set gloo.deployment.image.pullPolicy='IfNotPresent'".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"))
 for f in settings.get("helm_values_files") :
     get_resources_cmd = get_resources_cmd + " --values=" + f
 get_resources_cmd = get_resources_cmd + " --set=gloo.deployment.livenessProbeEnabled=false"

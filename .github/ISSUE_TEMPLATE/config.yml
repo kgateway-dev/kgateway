@@ -2,7 +2,7 @@ blank_issues_enabled: true
 contact_links:
   - name: Talk with us on the CNCF Slack!
     url: https://slack.cncf.io/
-    about: "We are in #k8sgateway channel!"
+    about: "We are in the #kgateway channel!"
   - name: K8sGateway Documentation
-    url: https://k8sgateway.io/docs/
+    url: https://kgateway.io/docs/
     about: Check out the K8sGateway docs for helpful information.
