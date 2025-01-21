@@ -646,33 +646,6 @@ certgen-distroless-docker: $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH) $(CERTG
 		-t $(IMAGE_REGISTRY)/certgen:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL)
 
 #----------------------------------------------------------------------------------
-# Kubectl - Used in jobs during helm install/upgrade/uninstall
-#----------------------------------------------------------------------------------
-
-KUBECTL_DIR=jobs/kubectl
-KUBECTL_OUTPUT_DIR=$(OUTPUT_DIR)/$(KUBECTL_DIR)
-
-$(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl: $(KUBECTL_DIR)/Dockerfile
-	mkdir -p $(KUBECTL_OUTPUT_DIR)
-	cp $< $@
-
-.PHONY: kubectl-docker
-kubectl-docker: $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl
-	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) $(KUBECTL_OUTPUT_DIR) -f $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl \
-		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
-		-t $(IMAGE_REGISTRY)/kubectl:$(VERSION) $(QUAY_EXPIRATION_LABEL)
-
-$(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl.distroless: $(KUBECTL_DIR)/Dockerfile.distroless
-	mkdir -p $(KUBECTL_OUTPUT_DIR)
-	cp $< $@
-
-.PHONY: kubectl-distroless-docker
-kubectl-distroless-docker: $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl.distroless distroless-with-utils-docker
-	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) $(KUBECTL_OUTPUT_DIR) -f $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl.distroless \
-		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) \
-		-t $(IMAGE_REGISTRY)/kubectl:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL)
-
-#----------------------------------------------------------------------------------
 # Deployment Manifests / Helm
 #----------------------------------------------------------------------------------
 
@@ -960,19 +933,15 @@ kind-reload-gloo-envoy-wrapper:
 
 .PHONY: kind-build-and-load-standard
 kind-build-and-load-standard: kind-build-and-load-gloo
-kind-build-and-load-standard: kind-build-and-load-discovery
 kind-build-and-load-standard: kind-build-and-load-gloo-envoy-wrapper
 kind-build-and-load-standard: kind-build-and-load-sds
 kind-build-and-load-standard: kind-build-and-load-certgen
-kind-build-and-load-standard: kind-build-and-load-kubectl
 
 .PHONY: kind-build-and-load-distroless
 kind-build-and-load-distroless: kind-build-and-load-gloo-distroless
-kind-build-and-load-distroless: kind-build-and-load-discovery-distroless
 kind-build-and-load-distroless: kind-build-and-load-gloo-envoy-wrapper-distroless
 kind-build-and-load-distroless: kind-build-and-load-sds-distroless
 kind-build-and-load-distroless: kind-build-and-load-certgen-distroless
-kind-build-and-load-distroless: kind-build-and-load-kubectl-distroless
 
 .PHONY: kind-build-and-load ## Use to build all images and load them into kind
 kind-build-and-load: # Standard images
@@ -989,19 +958,15 @@ kind-build-and-load: kind-build-and-load-sds
 # Load existing images. This can speed up development if the images have already been built / are unchanged
 .PHONY: kind-load-standard
 kind-load-standard: kind-load-gloo
-kind-load-standard: kind-load-discovery
 kind-load-standard: kind-load-gloo-envoy-wrapper
 kind-load-standard: kind-load-sds
 kind-load-standard: kind-load-certgen
-kind-load-standard: kind-load-kubectl
 
 .PHONY: kind-build-and-load-distroless
 kind-load-distroless: kind-load-gloo-distroless
-kind-load-distroless: kind-load-discovery-distroless
 kind-load-distroless: kind-load-gloo-envoy-wrapper-distroless
 kind-load-distroless: kind-load-sds-distroless
 kind-load-distroless: kind-load-certgen-distroless
-kind-load-distroless: kind-load-kubectl-distroless
 
 .PHONY: kind-load ## Use to build all images and load them into kind
 kind-load: # Standard images

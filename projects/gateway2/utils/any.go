@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	gogoproto "github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
 	pany "github.com/golang/protobuf/ptypes/any"
 )
 
@@ -29,6 +30,12 @@ func MessageToAny(msg proto.Message) (*pany.Any, error) {
 		TypeUrl: name,
 		Value:   buf,
 	}, nil
+}
+
+func AnyToMessage(a *pany.Any) (proto.Message, error) {
+	var x ptypes.DynamicAny
+	err := ptypes.UnmarshalAny(a, &x)
+	return x.Message, err
 }
 
 func protoToMessageName(msg proto.Message) (string, error) {
