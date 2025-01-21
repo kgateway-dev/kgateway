@@ -279,7 +279,7 @@ ingressProxy:
   tracing:
 global:
   image:
-    registry: quay.io/solo-io
+    registry: ghcr.io/kgateway
     pullPolicy: IfNotPresent
   glooRbac:
     create: true

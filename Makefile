@@ -27,11 +27,7 @@ help: ## Output the self-documenting make targets
 ROOTDIR := $(shell pwd)
 OUTPUT_DIR ?= $(ROOTDIR)/_output
 
-# If you just put your username, then that refers to your account at hub.docker.com
-# To use quay images, set the IMAGE_REGISTRY to "quay.io/solo-io" (or leave unset)
-# To use dockerhub images, set the IMAGE_REGISTRY to "soloio"
-# To use gcr images, set the IMAGE_REGISTRY to "gcr.io/$PROJECT_NAME"
-export IMAGE_REGISTRY ?= quay.io/solo-io
+export IMAGE_REGISTRY ?= ghcr.io/kgateway
 
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
@@ -43,10 +39,7 @@ SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
 # ATTENTION: when updating to a new major version of Envoy, check if
 # universal header validation has been enabled and if so, we expect
-# failures in `test/e2e/header_validation_test.go`
-# for more information, see https://github.com/solo-io/gloo/pull/9633
-# and
-# https://soloio.slab.com/posts/extended-http-methods-design-doc-40j7pjeu
+# failures in `test/e2e/header_validation_test.go`.
 export ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.31.2-patch3
 export LDFLAGS := -X 'github.com/solo-io/gloo/pkg/version.Version=$(VERSION)'
 export GCFLAGS ?=
@@ -401,7 +394,7 @@ distroless-docker: $(DISTROLESS_OUTPUT_DIR)/Dockerfile
 	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) $(DISTROLESS_OUTPUT_DIR) -f $(DISTROLESS_OUTPUT_DIR)/Dockerfile \
 		--build-arg PACKAGE_DONOR_IMAGE=$(PACKAGE_DONOR_IMAGE) \
 		--build-arg BASE_IMAGE=$(DISTROLESS_BASE_IMAGE) \
-		-t $(GLOO_DISTROLESS_BASE_IMAGE) $(QUAY_EXPIRATION_LABEL)
+		-t $(GLOO_DISTROLESS_BASE_IMAGE)
 
 $(DISTROLESS_OUTPUT_DIR)/Dockerfile.utils: $(DISTROLESS_DIR)/Dockerfile.utils
 	mkdir -p $(DISTROLESS_OUTPUT_DIR)
@@ -412,7 +405,7 @@ distroless-with-utils-docker: distroless-docker $(DISTROLESS_OUTPUT_DIR)/Dockerf
 	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) $(DISTROLESS_OUTPUT_DIR) -f $(DISTROLESS_OUTPUT_DIR)/Dockerfile.utils \
 		--build-arg UTILS_DONOR_IMAGE=$(UTILS_DONOR_IMAGE) \
 		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_IMAGE) \
-		-t  $(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) $(QUAY_EXPIRATION_LABEL)
+		-t  $(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE)
 
 #----------------------------------------------------------------------------------
 # Discovery
@@ -436,7 +429,7 @@ discovery-docker: $(DISCOVERY_OUTPUT_DIR)/discovery-linux-$(GOARCH) $(DISCOVERY_
 	docker buildx build --load $(PLATFORM) $(DISCOVERY_OUTPUT_DIR) -f $(DISCOVERY_OUTPUT_DIR)/Dockerfile.discovery \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
-		-t $(IMAGE_REGISTRY)/discovery:$(VERSION) $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/discovery:$(VERSION)
 
 $(DISCOVERY_OUTPUT_DIR)/Dockerfile.discovery.distroless: $(DISCOVERY_DIR)/cmd/Dockerfile.distroless
 	cp $< $@
@@ -446,7 +439,7 @@ discovery-distroless-docker: $(DISCOVERY_OUTPUT_DIR)/discovery-linux-$(GOARCH) $
 	docker buildx build --load $(PLATFORM) $(DISCOVERY_OUTPUT_DIR) -f $(DISCOVERY_OUTPUT_DIR)/Dockerfile.discovery.distroless \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_IMAGE) \
-		-t $(IMAGE_REGISTRY)/discovery:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/discovery:$(VERSION)-distroless
 
 #----------------------------------------------------------------------------------
 # Gloo
@@ -477,7 +470,7 @@ gloo-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DIR)/Dockerfi
 	docker buildx build --load $(PLATFORM) $(GLOO_OUTPUT_DIR) -f $(GLOO_OUTPUT_DIR)/Dockerfile.gloo \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
-		-t $(IMAGE_REGISTRY)/$(GLOO_IMAGE_REPO):$(VERSION) $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/$(GLOO_IMAGE_REPO):$(VERSION)
 
 $(GLOO_OUTPUT_DIR)/Dockerfile.gloo.distroless: $(GLOO_DIR)/cmd/Dockerfile.distroless
 	cp $< $@
@@ -489,7 +482,7 @@ gloo-distroless-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DI
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
 		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) \
-		-t $(IMAGE_REGISTRY)/$(GLOO_IMAGE_REPO):$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/$(GLOO_IMAGE_REPO):$(VERSION)-distroless
 
 #----------------------------------------------------------------------------------
 # Gloo with race detection enabled.
@@ -537,7 +530,7 @@ gloo-race-docker: $(GLOO_RACE_OUT_DIR)/.gloo-race-docker
 $(GLOO_RACE_OUT_DIR)/.gloo-race-docker: $(GLOO_RACE_OUT_DIR)/gloo-linux-amd64 $(GLOO_RACE_OUT_DIR)/Dockerfile
 	docker buildx build --load $(PLATFORM) $(GLOO_RACE_OUT_DIR) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) --build-arg GOARCH=amd64 \
-		-t $(IMAGE_REGISTRY)/gloo:$(VERSION)-race $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/gloo:$(VERSION)-race
 	touch $@
 
 #----------------------------------------------------------------------------------
@@ -562,7 +555,7 @@ sds-docker: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) $(SDS_OUTPUT_DIR)/Dockerfile.s
 	docker buildx build --load $(PLATFORM) $(SDS_OUTPUT_DIR) -f $(SDS_OUTPUT_DIR)/Dockerfile.sds \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
-		-t $(IMAGE_REGISTRY)/sds:$(VERSION) $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/sds:$(VERSION)
 
 $(SDS_OUTPUT_DIR)/Dockerfile.sds.distroless: $(SDS_DIR)/cmd/Dockerfile.distroless
 	cp $< $@
@@ -572,7 +565,7 @@ sds-distroless-docker: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) $(SDS_OUTPUT_DIR)/D
 	docker buildx build --load $(PLATFORM) $(SDS_OUTPUT_DIR) -f $(SDS_OUTPUT_DIR)/Dockerfile.sds.distroless \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) \
-		-t $(IMAGE_REGISTRY)/sds:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/sds:$(VERSION)-distroless
 
 #----------------------------------------------------------------------------------
 # Envoy init (BASE/SIDECAR)
@@ -599,7 +592,7 @@ gloo-envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(E
 	docker buildx build --load $(PLATFORM) $(ENVOYINIT_OUTPUT_DIR) -f $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
-		-t $(IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION) $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION)
 
 $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless: $(ENVOYINIT_DIR)/Dockerfile.envoyinit.distroless
 	cp $< $@
@@ -611,7 +604,7 @@ gloo-envoy-wrapper-distroless-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
 		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) \
-		-t $(IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION)-distroless
 
 #----------------------------------------------------------------------------------
 # Certgen - Job for creating TLS Secrets in Kubernetes
@@ -634,7 +627,7 @@ $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen: $(CERTGEN_DIR)/Dockerfile
 certgen-docker: $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH) $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen
 	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) $(CERTGEN_OUTPUT_DIR) -f $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen \
 		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
-		-t $(IMAGE_REGISTRY)/certgen:$(VERSION) $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/certgen:$(VERSION)
 
 $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen.distroless: $(CERTGEN_DIR)/Dockerfile.distroless
 	cp $< $@
@@ -643,7 +636,7 @@ $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen.distroless: $(CERTGEN_DIR)/Dockerfile.d
 certgen-distroless-docker: $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH) $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen.distroless distroless-docker
 	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) $(CERTGEN_OUTPUT_DIR) -f $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen.distroless \
 		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_IMAGE) \
-		-t $(IMAGE_REGISTRY)/certgen:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/certgen:$(VERSION)-distroless
 
 #----------------------------------------------------------------------------------
 # Kubectl - Used in jobs during helm install/upgrade/uninstall
@@ -660,7 +653,7 @@ $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl: $(KUBECTL_DIR)/Dockerfile
 kubectl-docker: $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl
 	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) $(KUBECTL_OUTPUT_DIR) -f $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl \
 		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
-		-t $(IMAGE_REGISTRY)/kubectl:$(VERSION) $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/kubectl:$(VERSION)
 
 $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl.distroless: $(KUBECTL_DIR)/Dockerfile.distroless
 	mkdir -p $(KUBECTL_OUTPUT_DIR)
@@ -670,7 +663,7 @@ $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl.distroless: $(KUBECTL_DIR)/Dockerfile.d
 kubectl-distroless-docker: $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl.distroless distroless-with-utils-docker
 	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) $(KUBECTL_OUTPUT_DIR) -f $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl.distroless \
 		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) \
-		-t $(IMAGE_REGISTRY)/kubectl:$(VERSION)-distroless $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/kubectl:$(VERSION)-distroless
 
 #----------------------------------------------------------------------------------
 # Deployment Manifests / Helm
@@ -737,12 +730,6 @@ export VERSION
 PUBLISH_CONTEXT ?= NONE
 # specify which bucket to upload helm chart to
 HELM_BUCKET ?= gs://solo-public-tagged-helm
-# modifier to docker builds which can auto-delete docker images after a set time
-QUAY_EXPIRATION_LABEL ?= --label quay.expires-after=3w
-
-ifeq (,$(findstring quay,$(IMAGE_REGISTRY)))
-	QUAY_EXPIRATION_LABEL :=
-endif
 
 # define empty publish targets so calls won't fail
 .PHONY: publish-docker
@@ -755,7 +742,6 @@ ifneq (,$(filter $(PUBLISH_CONTEXT),RELEASE PULL_REQUEST))
 
 ifeq (RELEASE, $(PUBLISH_CONTEXT))      # RELEASE contexts have additional make targets
 HELM_BUCKET           := gs://solo-public-helm
-QUAY_EXPIRATION_LABEL :=
 # Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REGISTRY,
 # and push them to a secondary repository, defined at IMAGE_REGISTRY
 publish-docker-retag: docker-retag docker-push
