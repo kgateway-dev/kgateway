@@ -23,14 +23,14 @@ jobs:
       with:
         go-version-file: go.mod
     - name: Build
-      run: go build -v ./projects/gateway2/... ./projects/gloo/cli/cmd
+      run: go build -v ./projects/gateway2/...
     - name: Install Test Utils
       shell: bash
       run: make -C ./projects/gateway2/ install-go-tools
     - name: Run Tests
       shell: bash
       env:
-        TEST_PKG: "./projects/gateway2/... ./test/kubernetes/testutils/helper"
+        TEST_PKG: "./projects/gateway2/..."
       run: make go-test-with-coverage
     - name: Validate Test Coverage
       shell: bash
