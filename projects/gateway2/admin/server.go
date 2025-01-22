@@ -6,38 +6,41 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"sort"
 
-	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway2/controller"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/stats"
 	"istio.io/istio/pkg/kube/krt"
 )
 
 const (
-	AdminPort = 9095
+	AdminPort = 9091
 )
 
 func RunAdminServer(ctx context.Context, setupOpts *controller.SetupOpts) error {
 	// serverHandlers defines the custom handlers that the Admin Server will support
 	serverHandlers := getServerHandlers(ctx, setupOpts.KrtDebugger, setupOpts.Cache)
 
-	stats.StartCancellableStatsServerWithPort(ctx, stats.DefaultStartupOptions(), func(mux *http.ServeMux, profiles map[string]string) {
-		// let people know these moved
-		profiles[fmt.Sprintf("http://localhost:%d/snapshots/", AdminPort)] = fmt.Sprintf("To see snapshots, port forward to port %d", AdminPort)
-	})
+	// initialize the atomic log level
+	if envLogLevel := os.Getenv(contextutils.LogLevelEnvName); envLogLevel != "" {
+		contextutils.SetLogLevelFromString(envLogLevel)
+	}
+
 	startHandlers(ctx, serverHandlers)
 
 	return nil
 }
 
+// use a function for the profile descriptions so that every time the admin page is displayed, it can show
+// up-to-date info in the description (e.g. the current log level)
+type dynamicProfileDescription func() string
+
 // getServerHandlers returns the custom handlers for the Admin Server, which will be bound to the http.ServeMux
-// These endpoints serve as the basis for an Admin Interface for the Control Plane (https://github.com/solo-io/gloo/issues/6494)
-func getServerHandlers(ctx context.Context, dbg *krt.DebugHandler, cache envoycache.SnapshotCache) func(mux *http.ServeMux, profiles map[string]string) {
-	return func(m *http.ServeMux, profiles map[string]string) {
+// These endpoints serve as the basis for an Admin Interface for the Control Plane (https://github.com/kgateway-dev/kgateway/issues/6494)
+func getServerHandlers(ctx context.Context, dbg *krt.DebugHandler, cache envoycache.SnapshotCache) func(mux *http.ServeMux, profiles map[string]dynamicProfileDescription) {
+	return func(m *http.ServeMux, profiles map[string]dynamicProfileDescription) {
 
 		/*
 			// The Input Snapshot is intended to return a list of resources that are persisted in the Kubernetes DB, etcD
@@ -57,18 +60,13 @@ func getServerHandlers(ctx context.Context, dbg *krt.DebugHandler, cache envoyca
 			profiles["/snapshots/proxies"] = "Proxy Snapshot"
 		*/
 
-		// The xDS Snapshot is intended to return the full in-memory xDS cache that the Control Plane manages
-		// and serves up to running proxies.
-		m.HandleFunc("/snapshots/xds", func(w http.ResponseWriter, r *http.Request) {
-			response := getXdsSnapshotDataFromCache(cache)
-			writeJSON(w, response, r)
-		})
-		profiles["/snapshots/xds"] = "XDS Snapshot"
+		addXdsSnapshotHandler("/snapshots/xds", m, profiles, cache)
 
-		m.HandleFunc("/snapshots/krt", func(w http.ResponseWriter, r *http.Request) {
-			writeJSON(w, dbg, r)
-		})
-		profiles["/snapshots/krt"] = "KRT Snapshot"
+		addKrtSnapshotHandler("/snapshots/krt", m, profiles, dbg)
+
+		addLoggingHandler("/logging", m, profiles)
+
+		addPprofHandler("/debug/pprof/", m, profiles)
 	}
 }
 
@@ -116,9 +114,9 @@ func writeJSON(w http.ResponseWriter, obj any, req *http.Request) {
 	}
 }
 
-func startHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, profiles map[string]string)) error {
+func startHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, profiles map[string]dynamicProfileDescription)) error {
 	mux := new(http.ServeMux)
-	profileDescriptions := map[string]string{}
+	profileDescriptions := map[string]dynamicProfileDescription{}
 	for _, addHandler := range addHandlers {
 		addHandler(mux, profileDescriptions)
 	}
@@ -150,7 +148,7 @@ func startHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, 
 	return nil
 }
 
-func index(profileDescriptions map[string]string) func(w http.ResponseWriter, r *http.Request) {
+func index(profileDescriptions map[string]dynamicProfileDescription) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		type profile struct {
@@ -159,11 +157,11 @@ func index(profileDescriptions map[string]string) func(w http.ResponseWriter, r 
 			Desc string
 		}
 		var profiles []profile
-		for href, desc := range profileDescriptions {
+		for href, descFunc := range profileDescriptions {
 			profiles = append(profiles, profile{
 				Name: href,
 				Href: href,
-				Desc: desc,
+				Desc: descFunc(),
 			})
 		}
 
@@ -180,29 +178,4 @@ func index(profileDescriptions map[string]string) func(w http.ResponseWriter, r 
 		}
 		w.Write(buf.Bytes())
 	}
-}
-
-func getXdsSnapshotDataFromCache(xdsCache cache.SnapshotCache) SnapshotResponseData {
-	cacheKeys := xdsCache.GetStatusKeys()
-	cacheEntries := make(map[string]interface{}, len(cacheKeys))
-
-	for _, k := range cacheKeys {
-		xdsSnapshot, err := getXdsSnapshot(xdsCache, k)
-		if err != nil {
-			cacheEntries[k] = err.Error()
-		} else {
-			cacheEntries[k] = xdsSnapshot
-		}
-	}
-
-	return completeSnapshotResponse(cacheEntries)
-}
-
-func getXdsSnapshot(xdsCache cache.SnapshotCache, k string) (cache cache.ResourceSnapshot, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = eris.New(fmt.Sprintf("panic occurred while getting xds snapshot: %v", r))
-		}
-	}()
-	return xdsCache.GetSnapshot(k)
 }

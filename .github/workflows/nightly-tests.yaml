@@ -115,7 +115,7 @@ jobs:
   #         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
   #         helm-version: ${{ steps.dotenv.outputs.helm_version }}
   #         istio-version: ${{ steps.dotenv.outputs.istio_version }}
-  #         k8sgateway-api-version: ${{ steps.dotenv.outputs.k8sgateway_api_version }}
+  #         kgateway-api-version: ${{ steps.dotenv.outputs.kgateway_api_version }}
   #     # Run the tests
   #     - id: run-tests
   #       name: Run Kubernetes e2e Tests
@@ -177,7 +177,7 @@ jobs:
   #         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
   #         helm-version: ${{ steps.dotenv.outputs.helm_version }}
   #         istio-version: ${{ steps.dotenv.outputs.istio_version }}
-  #         k8sgateway-api-version: ${{ steps.dotenv.outputs.k8sgateway_api_version }}
+  #         kgateway-api-version: ${{ steps.dotenv.outputs.kgateway_api_version }}
   #     # Run the tests
   #     - id: run-tests
   #       name: Run Kubernetes e2e Tests

@@ -52,16 +52,16 @@ type UpstreamPlugin struct {
 	Endpoints krt.Collection[ir.EndpointsForUpstream]
 }
 
-type K8sGwTranslator interface {
+type KGwTranslator interface {
 	// This function is called by the reconciler when a K8s Gateway resource is created or updated.
-	// It returns an instance of the k8sgateway Proxy resource, that should configure a target k8sgateway Proxy workload.
-	// A null return value indicates the K8s Gateway resource failed to translate into a k8sgateway Proxy. The error will be reported on the provided reporter.
+	// It returns an instance of the kgateway Proxy resource, that should configure a target kgateway Proxy workload.
+	// A null return value indicates the K8s Gateway resource failed to translate into a kgateway Proxy. The error will be reported on the provided reporter.
 	Translate(kctx krt.HandlerContext,
 		ctx context.Context,
 		gateway *ir.Gateway,
 		reporter reports.Reporter) *ir.GatewayIR
 }
-type GwTranslatorFactory func(gw *gwv1.Gateway) K8sGwTranslator
+type GwTranslatorFactory func(gw *gwv1.Gateway) KGwTranslator
 type ContributesPolicies map[schema.GroupKind]PolicyPlugin
 
 type Plugin struct {
