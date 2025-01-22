@@ -5,7 +5,7 @@ before:
     - go mod download
 builds:
   - id: controller
-    main: ./projects/gloo/cmd/
+    main: ./projects/gateway2/cmd/
     binary: gloo-linux-{{ .Arch }}
     gcflags: "{{ .Env.GCFLAGS }}"
     ldflags: "{{ .Env.LDFLAGS }}"
@@ -24,7 +24,7 @@ dockers:
   - image_templates:
       - &arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.GLOO_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
     use: buildx
-    dockerfile: &dockerfile projects/gloo/cmd/Dockerfile
+    dockerfile: &dockerfile projects/gateway2/cmd/Dockerfile
     goos: linux
     goarch: arm64
     build_flag_templates:
