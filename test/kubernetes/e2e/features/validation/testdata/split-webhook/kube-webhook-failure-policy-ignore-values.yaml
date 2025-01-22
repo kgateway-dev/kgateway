@@ -1,5 +1,0 @@
-gateway:
-  validation:
-    kubeCoreFailurePolicy: Ignore
-    webhook:
-      skipDeleteValidationResources: []

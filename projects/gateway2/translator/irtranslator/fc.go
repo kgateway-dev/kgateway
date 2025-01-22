@@ -18,9 +18,9 @@ import (
 
 	envoy_tls_inspector "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/listener/tls_inspector/v3"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
+	"github.com/solo-io/gloo/projects/gateway2/plugins"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/gloo/projects/gateway2/utils"
 	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -41,7 +41,7 @@ type filterChainTranslator struct {
 }
 
 func computeListenerAddress(bindAddress string, port uint32, reporter reports.GatewayReporter) *envoy_config_core_v3.Address {
-	_, isIpv4Address, err := translator.IsIpv4Address(bindAddress)
+	_, isIpv4Address, err := utils.IsIpv4Address(bindAddress)
 	if err != nil {
 		// TODO: return error ????
 		reporter.SetCondition(reports.GatewayCondition{

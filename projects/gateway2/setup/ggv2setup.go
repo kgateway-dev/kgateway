@@ -17,7 +17,6 @@ import (
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
-	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -30,7 +29,18 @@ import (
 	zaputil "sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
-var settingsGVR = glookubev1.SchemeGroupVersion.WithResource("settings")
+const (
+	glooComponentName = "gloo"
+)
+
+func Main(customCtx context.Context) error {
+	SetupLogging(customCtx, glooComponentName)
+	return startSetupLoop(customCtx)
+}
+
+func startSetupLoop(ctx context.Context) error {
+	return StartGGv2(ctx, nil, nil)
+}
 
 func createKubeClient(restConfig *rest.Config) (istiokube.Client, error) {
 	restCfg := istiokube.NewClientConfigForRestConfig(restConfig)

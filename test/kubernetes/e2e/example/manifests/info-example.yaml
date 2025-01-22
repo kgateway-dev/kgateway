@@ -1,4 +1,0 @@
-gloo:
-  # We customize the log level to info
-  # Our testInstallation code expects Gloo to have the log level set to info
-  logLevel: info

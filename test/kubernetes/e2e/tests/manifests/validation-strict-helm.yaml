@@ -1,9 +1,0 @@
-gateway:
-  persistProxySpec: false
-  validation:
-    enabled: true
-    failurePolicy: Fail # For "strict" validation mode, fail the validation if webhook server is not available
-    allowWarnings: false # For "strict" validation mode, webhook will also reject warnings
-    alwaysAcceptResources: false
-    # added to preserve behavior tested by this suite.
-    warnMissingTlsSecret: false

@@ -1,5 +1,0 @@
-discovery:
-  enabled: true
-  udsOptions:
-    watchLabels:
-      watchedKey: watchedValue

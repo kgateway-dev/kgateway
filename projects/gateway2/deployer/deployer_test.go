@@ -16,9 +16,7 @@ import (
 	gw2_v1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-	wellknownkube "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/wellknown"
-	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
+	"github.com/solo-io/gloo/projects/gateway2/xds"
 	jsonpb "google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	appsv1 "k8s.io/api/apps/v1"
@@ -30,7 +28,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	api "sigs.k8s.io/gateway-api/apis/v1"
-
 	// TODO BML tests in this suite fail if this no-op import is not imported first.
 	//
 	// I know, I know, you're reading this, and you're skeptical. I can feel it.
@@ -38,7 +35,7 @@ import (
 	//
 	// There is some import within this package that this suite relies on. Chasing that down is
 	// *hard* tho due to the import tree, and best done in a followup.
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	// _ "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
 
 // testBootstrap implements resources.Resource in order to use protoutils.UnmarshalYAML
@@ -443,10 +440,10 @@ var _ = Describe("Deployer", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(gvks).To(HaveLen(4))
 			Expect(gvks).To(ConsistOf(
-				wellknownkube.DeploymentGVK,
-				wellknownkube.ServiceGVK,
-				wellknownkube.ServiceAccountGVK,
-				wellknownkube.ConfigMapGVK,
+				wellknown.DeploymentGVK,
+				wellknown.ServiceGVK,
+				wellknown.ServiceAccountGVK,
+				wellknown.ConfigMapGVK,
 			))
 		})
 
@@ -1339,7 +1336,7 @@ var _ = Describe("Deployer", func() {
 					// make sure the envoy node metadata looks right
 					node := envoyConfig["node"].(map[string]any)
 					Expect(node).To(HaveKeyWithValue("metadata", map[string]any{
-						xds.RoleKey: fmt.Sprintf("%s~%s~%s", glooutils.GatewayApiProxyValue, gw.Namespace, gw.Name),
+						xds.RoleKey: fmt.Sprintf("%s~%s~%s", wellknown.GatewayApiProxyValue, gw.Namespace, gw.Name),
 					}))
 
 					// make sure the stats listener is enabled
@@ -1384,7 +1381,7 @@ var _ = Describe("Deployer", func() {
 					// make sure the envoy node metadata looks right
 					node := envoyConfig["node"].(map[string]any)
 					Expect(node).To(HaveKeyWithValue("metadata", map[string]any{
-						xds.RoleKey: fmt.Sprintf("%s~%s~%s", glooutils.GatewayApiProxyValue, gw.Namespace, gw.Name),
+						xds.RoleKey: fmt.Sprintf("%s~%s~%s", wellknown.GatewayApiProxyValue, gw.Namespace, gw.Name),
 					}))
 
 					// make sure the stats listener is enabled

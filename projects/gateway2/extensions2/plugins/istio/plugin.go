@@ -20,7 +20,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/common"
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gloo/constants"
+	ourwellknown "github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/go-utils/contextutils"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -64,7 +64,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	// TODO: if plumb settings from gw class; then they should be in the new translation pass
 	// the problem is that they get applied to an upstream, and currently we don't have access to the gateway
 	// when translating upstreams. if we want we can add the gateway to the context of PerClientProcessUpstream
-	sidecarEnabled := envutils.IsEnvTruthy(constants.IstioInjectionEnabled)
+	sidecarEnabled := envutils.IsEnvTruthy(ourwellknown.IstioInjectionEnabled)
 	istioSettings := IstioSettings{
 		EnableAutoMTLS:              commoncol.Settings.EnableAutoMTLS,
 		EnableIstioIntegration:      commoncol.Settings.EnableIstioIntegration,
@@ -142,7 +142,7 @@ func (p plugin) processUpstream(ctx context.Context, ir ir.PolicyIR, in ir.Upstr
 func createIstioMatch(sni string) *envoy_config_cluster_v3.Cluster_TransportSocketMatch {
 	istioMtlsTransportSocketMatch := &structpb.Struct{
 		Fields: map[string]*structpb.Value{
-			constants.TLSModeLabelShortname: {Kind: &structpb.Value_StringValue{StringValue: constants.IstioMutualTLSModeLabel}},
+			ourwellknown.TLSModeLabelShortname: {Kind: &structpb.Value_StringValue{StringValue: ourwellknown.IstioMutualTLSModeLabel}},
 		},
 	}
 
@@ -153,7 +153,7 @@ func createIstioMatch(sni string) *envoy_config_cluster_v3.Cluster_TransportSock
 			TlsParams:     &tlsv3.TlsParameters{},
 			ValidationContextType: &tlsv3.CommonTlsContext_ValidationContextSdsSecretConfig{
 				ValidationContextSdsSecretConfig: &tlsv3.SdsSecretConfig{
-					Name: constants.IstioValidationContext,
+					Name: ourwellknown.IstioValidationContext,
 					SdsConfig: &envoy_config_core_v3.ConfigSource{
 						ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
 						ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_ApiConfigSource{
@@ -165,7 +165,7 @@ func createIstioMatch(sni string) *envoy_config_cluster_v3.Cluster_TransportSock
 								GrpcServices: []*envoy_config_core_v3.GrpcService{
 									{
 										TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
-											EnvoyGrpc: &envoy_config_core_v3.GrpcService_EnvoyGrpc{ClusterName: constants.SdsClusterName},
+											EnvoyGrpc: &envoy_config_core_v3.GrpcService_EnvoyGrpc{ClusterName: ourwellknown.SdsClusterName},
 										},
 									},
 								},
@@ -176,7 +176,7 @@ func createIstioMatch(sni string) *envoy_config_cluster_v3.Cluster_TransportSock
 			},
 			TlsCertificateSdsSecretConfigs: []*tlsv3.SdsSecretConfig{
 				{
-					Name: constants.IstioCertSecret,
+					Name: ourwellknown.IstioCertSecret,
 					SdsConfig: &envoy_config_core_v3.ConfigSource{
 						ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
 						ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_ApiConfigSource{
@@ -189,7 +189,7 @@ func createIstioMatch(sni string) *envoy_config_cluster_v3.Cluster_TransportSock
 									{
 										TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
 											EnvoyGrpc: &envoy_config_core_v3.GrpcService_EnvoyGrpc{
-												ClusterName: constants.SdsClusterName,
+												ClusterName: ourwellknown.SdsClusterName,
 											},
 										},
 									},
@@ -209,7 +209,7 @@ func createIstioMatch(sni string) *envoy_config_cluster_v3.Cluster_TransportSock
 	}
 
 	return &envoy_config_cluster_v3.Cluster_TransportSocketMatch{
-		Name:            fmt.Sprintf("%s-%s", constants.TLSModeLabelShortname, constants.IstioMutualTLSModeLabel),
+		Name:            fmt.Sprintf("%s-%s", ourwellknown.TLSModeLabelShortname, ourwellknown.IstioMutualTLSModeLabel),
 		Match:           istioMtlsTransportSocketMatch,
 		TransportSocket: transportSocket,
 	}
@@ -224,7 +224,7 @@ func createDefaultIstioMatch() *envoy_config_cluster_v3.Cluster_TransportSocketM
 	}
 
 	return &envoy_config_cluster_v3.Cluster_TransportSocketMatch{
-		Name:            fmt.Sprintf("%s-disabled", constants.TLSModeLabelShortname),
+		Name:            fmt.Sprintf("%s-disabled", ourwellknown.TLSModeLabelShortname),
 		Match:           &structpb.Struct{},
 		TransportSocket: rawBufferTransportSocket,
 	}

@@ -24,7 +24,7 @@ import (
 	route "github.com/solo-io/gloo/projects/gateway2/translator/httproute"
 	"github.com/solo-io/gloo/projects/gateway2/translator/routeutils"
 	"github.com/solo-io/gloo/projects/gateway2/translator/sslutils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/gloo/projects/gateway2/utils"
 	corev1 "k8s.io/api/core/v1"
 )
 

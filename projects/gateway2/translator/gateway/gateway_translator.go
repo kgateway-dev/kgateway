@@ -3,9 +3,9 @@ package gateway
 import (
 	"context"
 
-	"github.com/solo-io/gloo/pkg/utils/statsutils"
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
+	"github.com/solo-io/gloo/projects/gateway2/utils"
 	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/kube/krt"
 
@@ -32,7 +32,7 @@ func (t *translator) Translate(
 	gateway *ir.Gateway,
 	reporter reports.Reporter,
 ) *ir.GatewayIR {
-	stopwatch := statsutils.NewTranslatorStopWatch("TranslateProxy")
+	stopwatch := utils.NewTranslatorStopWatch("TranslateProxy")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 

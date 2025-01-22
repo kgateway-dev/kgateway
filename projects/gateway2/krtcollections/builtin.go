@@ -18,7 +18,7 @@ import (
 	extensionplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gateway2/plugins"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 

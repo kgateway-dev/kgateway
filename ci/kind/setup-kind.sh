@@ -77,7 +77,7 @@ else
 fi
 
 # 4. Build the gloo command line tool, ensuring we have one in the `_output` folder
-make -s build-cli-local
+# make -s build-cli-local
 
 # 5. Apply the Kubernetes Gateway API CRDs
 # Note, we're using kustomize to apply the CRDs from the k8s gateway api repo as
