@@ -320,9 +320,9 @@ generate-all-debug: generate-all
 # Generates all required code, cleaning and formatting as well; this target is executed in CI
 .PHONY: generated-code
 generated-code: check-go-version
-generated-code: go-generate-all generate-cli-docs getter-check mod-tidy
+generated-code: go-generate-all getter-check mod-tidy
 generated-code: update-licenses
-generated-code: generate-crd-reference-docs
+# generated-code: generate-crd-reference-docs
 generated-code: fmt
 
 .PHONY: go-generate-all
