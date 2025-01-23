@@ -11,8 +11,8 @@ import (
 	. "github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/utils"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
-	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	"github.com/solo-io/gloo/projects/gateway2/xds"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
@@ -59,7 +59,7 @@ func TestUniqueClients(t *testing.T) {
 						Id: "podname.ns",
 						Metadata: &structpb.Struct{
 							Fields: map[string]*structpb.Value{
-								xds.RoleKey: structpb.NewStringValue(glooutils.GatewayApiProxyValue + "~best-proxy-role"),
+								xds.RoleKey: structpb.NewStringValue(wellknown.GatewayApiProxyValue + "~best-proxy-role"),
 							},
 						},
 					},
@@ -76,13 +76,13 @@ func TestUniqueClients(t *testing.T) {
 						Id: "podname.ns",
 						Metadata: &structpb.Struct{
 							Fields: map[string]*structpb.Value{
-								xds.RoleKey: structpb.NewStringValue(glooutils.GatewayApiProxyValue + "~best-proxy-role"),
+								xds.RoleKey: structpb.NewStringValue(wellknown.GatewayApiProxyValue + "~best-proxy-role"),
 							},
 						},
 					},
 				},
 			},
-			result: sets.New(fmt.Sprintf(glooutils.GatewayApiProxyValue + "~best-proxy-role")),
+			result: sets.New(fmt.Sprintf(wellknown.GatewayApiProxyValue + "~best-proxy-role")),
 		},
 	}
 

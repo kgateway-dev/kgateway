@@ -1,4 +1,3 @@
-{{- if .Values.kubeGateway.enabled -}}
 {{- $global := .Values.global -}}
 kind: GatewayParameters
 apiVersion: gateway.gloo.solo.io/v1alpha1
@@ -53,13 +52,9 @@ spec:
     floatingUserId: {{ hasKey $global.securitySettings "floatingUserId" | ternary $global.securitySettings.floatingUserId (or $gg.floatingUserId false) }}
     envoyContainer:
       image:
-        {{- $envoyImage := dict -}}
-        {{- if $gg.envoyContainer -}}
-        {{- if $gg.envoyContainer.image -}}
-        {{- $envoyImage = $gg.envoyContainer.image -}}
-        {{- end -}}{{/* if $gg.envoyContainer.image */}}
-        {{- end }}{{/* if $gg.envoyContainer */}}
-        {{- merge $envoyImage $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
+        registry: quay.io/solo-io
+        repository: gloo-envoy-wrapper
+        tag: 1.18.5
 {{- if $gg.envoyContainer -}}
 {{- if $gg.envoyContainer.securityContext }}
       securityContext:
@@ -163,4 +158,3 @@ spec:
 {{ toYaml $gg.aiExtension.ports | indent 6 }}
 {{- end }} {{/* if $gg.aiExtension.ports */}}
 {{- end }}{{/* if $gg.aiExtension */}}
-{{- end }}{{/* if .Values.kubeGateway.enabled */}}

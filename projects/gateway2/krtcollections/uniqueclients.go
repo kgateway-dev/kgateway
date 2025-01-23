@@ -13,7 +13,7 @@ import (
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
+	"github.com/solo-io/gloo/projects/gateway2/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"

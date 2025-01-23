@@ -45,7 +45,6 @@ import (
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/slices"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/yaml"
@@ -189,9 +188,7 @@ func TestScenarios(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		ggv2setup.StartGGv2WithConfig(ctx, setupOpts, cfg, builder, nil, nil,
-			types.NamespacedName{Name: "default", Namespace: "default"},
-		)
+		ggv2setup.StartGGv2WithConfig(ctx, setupOpts, cfg, builder, nil, nil)
 	}()
 	// give ggv2 time to initialize so we don't get
 	// "ggv2 not initialized" error

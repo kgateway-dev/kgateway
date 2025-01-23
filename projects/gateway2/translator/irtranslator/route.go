@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/routeutils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/gloo/projects/gateway2/utils"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"

@@ -3,16 +3,20 @@ package irtranslator
 import (
 	"context"
 	"errors"
+	"time"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
 
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+)
+
+var (
+	ClusterConnectionTimeout = time.Second * 5
 )
 
 type UpstreamTranslator struct {
@@ -80,7 +84,7 @@ func initializeCluster(u ir.Upstream) *envoy_config_cluster_v3.Cluster {
 		// defaults to Cluster_USE_CONFIGURED_PROTOCOL
 		// ProtocolSelection: envoy_config_cluster_v3.Cluster_ClusterProtocolSelection(upstream.GetProtocolSelection()),
 		// this field can be overridden by plugins
-		ConnectTimeout: durationpb.New(translator.ClusterConnectionTimeout),
+		ConnectTimeout: durationpb.New(ClusterConnectionTimeout),
 		// Http2ProtocolOptions:      getHttp2options(upstream),
 		// IgnoreHealthOnHostRemoval: upstream.GetIgnoreHealthOnHostRemoval().GetValue(),
 		//	RespectDnsTtl:             upstream.GetRespectDnsTtl().GetValue(),

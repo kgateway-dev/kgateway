@@ -7,26 +7,40 @@ import (
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
+	"github.com/go-logr/zapr"
 	"github.com/solo-io/gloo/pkg/utils/envutils"
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"github.com/solo-io/gloo/pkg/utils/namespaces"
-	"github.com/solo-io/gloo/pkg/utils/setuputils"
+	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gateway2/admin"
 	"github.com/solo-io/gloo/projects/gateway2/controller"
 	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
 	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
-	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	"github.com/solo-io/go-utils/contextutils"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	zaputil "sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
-var settingsGVR = glookubev1.SchemeGroupVersion.WithResource("settings")
+const (
+	glooComponentName = "gloo"
+)
+
+func Main(customCtx context.Context) error {
+	SetupLogging(customCtx, glooComponentName)
+	return startSetupLoop(customCtx)
+}
+
+func startSetupLoop(ctx context.Context) error {
+	return StartGGv2(ctx, nil, nil)
+}
 
 func createKubeClient(restConfig *rest.Config) (istiokube.Client, error) {
 	restCfg := istiokube.NewClientConfigForRestConfig(restConfig)
@@ -59,7 +73,7 @@ func StartGGv2(ctx context.Context,
 		XdsPort:             9977,
 	}
 
-	return StartGGv2WithConfig(ctx, setupOpts, restConfig, uccBuilder, extraPlugins, nil, setuputils.SetupNamespaceName())
+	return StartGGv2WithConfig(ctx, setupOpts, restConfig, uccBuilder, extraPlugins, nil)
 }
 
 // GetControlPlaneXdsHost gets the xDS address from the gloo Service.
@@ -81,7 +95,6 @@ func StartGGv2WithConfig(ctx context.Context, setupOpts *controller.SetupOpts,
 	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
 	extraPlugins []extensionsplug.Plugin,
 	extraGwClasses []string, // TODO: we can remove this and replace with something that watches all GW classes with our controller name
-	settingsNns types.NamespacedName,
 ) error {
 	ctx = contextutils.WithLogger(ctx, "k8s")
 
@@ -131,4 +144,29 @@ func StartGGv2WithConfig(ctx context.Context, setupOpts *controller.SetupOpts,
 
 	logger.Info("starting controller")
 	return c.Start(ctx)
+}
+
+// SetupLogging sets up controller-runtime logging
+func SetupLogging(ctx context.Context, loggerName string) {
+	level := zapcore.InfoLevel
+	// if log level is set in env, use that
+	if envLogLevel := os.Getenv(contextutils.LogLevelEnvName); envLogLevel != "" {
+		if err := (&level).Set(envLogLevel); err != nil {
+			contextutils.LoggerFrom(ctx).Infof("Could not set log level from env %s=%s, available levels "+
+				"can be found here: https://pkg.go.dev/go.uber.org/zap/zapcore?tab=doc#Level",
+				contextutils.LogLevelEnvName,
+				envLogLevel,
+				zap.Error(err),
+			)
+		}
+	}
+	atomicLevel := zap.NewAtomicLevelAt(level)
+
+	baseLogger := zaputil.NewRaw(
+		zaputil.Level(&atomicLevel),
+		zaputil.RawZapOpts(zap.Fields(zap.String("version", version.Version))),
+	).Named(loggerName)
+
+	// controller-runtime
+	log.SetLogger(zapr.NewLogger(baseLogger))
 }

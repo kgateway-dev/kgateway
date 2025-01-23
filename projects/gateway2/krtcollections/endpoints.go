@@ -12,7 +12,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway2/extensions2/settings"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
-	"github.com/solo-io/gloo/projects/gloo/constants"
+	"github.com/solo-io/gloo/projects/gateway2/wellknown"
 	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
@@ -248,12 +248,12 @@ func CreateLBEndpoint(address string, port uint32, podLabels map[string]string, 
 func addIstioAutomtlsMetadata(metadata *envoy_config_core_v3.Metadata, labels map[string]string, enableAutoMtls bool) *envoy_config_core_v3.Metadata {
 	const EnvoyTransportSocketMatch = "envoy.transport_socket_match"
 	if enableAutoMtls {
-		if _, ok := labels[constants.IstioTlsModeLabel]; ok {
+		if _, ok := labels[wellknown.IstioTlsModeLabel]; ok {
 			metadata.GetFilterMetadata()[EnvoyTransportSocketMatch] = &structpb.Struct{
 				Fields: map[string]*structpb.Value{
-					constants.TLSModeLabelShortname: {
+					wellknown.TLSModeLabelShortname: {
 						Kind: &structpb.Value_StringValue{
-							StringValue: constants.IstioMutualTLSModeLabel,
+							StringValue: wellknown.IstioMutualTLSModeLabel,
 						},
 					},
 				},

@@ -11,11 +11,10 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	awspb "github.com/solo-io/envoy-gloo/go/config/filter/http/aws_lambda/v2"
 	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
+	"github.com/solo-io/gloo/projects/gateway2/extensions2/pluginutils"
 	"github.com/solo-io/gloo/projects/gateway2/ir"
-	awspb "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
@@ -38,13 +37,15 @@ func processAws(ctx context.Context, in *v1alpha1.AwsUpstream, ir *UpstreamIr, o
 	out.DnsLookupFamily = envoy_config_cluster_v3.Cluster_V4_ONLY
 	pluginutils.EnvoySingleEndpointLoadAssignment(out, lambdaHostname, 443)
 
-	commonTlsContext, err := utils.GetCommonTlsContextFromUpstreamOptions(nil)
-	if err != nil {
-		// return err
-		return
-	}
+	// TODO: this returns nil anyway, so don't worry about temporarily migrating legacy util function
+	// that still relied on gloo v1 types
+	// commonTlsContext, err := utils.GetCommonTlsContextFromUpstreamOptions(nil)
+	// if err != nil {
+	// 	// return err
+	// 	return
+	// }
 	tlsContext := &envoyauth.UpstreamTlsContext{
-		CommonTlsContext: commonTlsContext,
+		CommonTlsContext: nil,
 		// TODO(yuval-k): Add verification context
 		Sni: lambdaHostname,
 	}
