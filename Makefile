@@ -255,10 +255,16 @@ go-test-with-coverage: go-test
 .PHONY: validate-test-coverage
 validate-test-coverage:
 	go run github.com/vladopajic/go-test-coverage/v2@v2.8.1 --config=./test_coverage.yml
-
+# https://go.dev/blog/cover#heat-maps
 .PHONY: view-test-coverage
 view-test-coverage:
 	go tool cover -html $(OUTPUT_DIR)/cover.out
+
+.PHONY: package-kgateway-chart
+package-kgateway-chart: ## Package the new kgateway helm chart for testing
+	mkdir -p $(TEST_ASSET_DIR)
+	helm package --version $(VERSION) --destination $(TEST_ASSET_DIR) install/helm/kgateway
+	helm repo index $(TEST_ASSET_DIR)
 
 #----------------------------------------------------------------------------------
 # Clean
@@ -413,7 +419,6 @@ distroless-with-utils-docker: distroless-docker $(DISTROLESS_OUTPUT_DIR)/Dockerf
 #----------------------------------------------------------------------------------
 
 K8S_GATEWAY_DIR=projects/gateway2
-# GLOO_SOURCES=$(call get_sources,$(GLOO_DIR))
 EDGE_GATEWAY_SOURCES=$(call get_sources,$(EDGE_GATEWAY_DIR))
 K8S_GATEWAY_SOURCES=$(call get_sources,$(K8S_GATEWAY_DIR))
 GLOO_OUTPUT_DIR=$(OUTPUT_DIR)/$(K8S_GATEWAY_DIR)
@@ -653,12 +658,7 @@ package-chart: generate-helm-files
 	helm repo index $(HELM_SYNC_DIR)
 
 #----------------------------------------------------------------------------------
-# Publish Artifacts
-#
-# We publish artifacts using our CI pipeline. This may happen during any of the following scenarios:
-# 	- Release
-#	- Development Build (a one-off build for unreleased code)
-#	- Pull Request (we publish unreleased artifacts to be consumed by our Enterprise project)
+# Release
 #----------------------------------------------------------------------------------
 # TODO: delete this logic block when we have a github actions-managed release
 
@@ -719,7 +719,6 @@ else
 publish-glooctl: build-cli
 	VERSION=$(VERSION) GO111MODULE=on go run ci/upload_github_release_assets.go true
 endif # RELEASE exclusive make targets
-
 
 # Build and push docker images to the defined $(IMAGE_REGISTRY)
 publish-docker: docker docker-push
@@ -853,12 +852,9 @@ endif # distroless images
 #----------------------------------------------------------------------------------
 # Build assets for Kube2e tests
 #----------------------------------------------------------------------------------
-#
-# The following targets are used to generate the assets on which the kube2e tests rely upon.
-# The Kube2e tests will use the generated Gloo Edge Chart to install Gloo Edge to the KinD test cluster.
 
 CLUSTER_NAME ?= kind
-INSTALL_NAMESPACE ?= gloo-system
+INSTALL_NAMESPACE ?= kgateway-system
 
 kind-setup:
 	VERSION=${VERSION} CLUSTER_NAME=${CLUSTER_NAME} ./ci/kind/setup-kind.sh
@@ -993,8 +989,9 @@ $(TEST_ASSET_DIR)/conformance/conformance_test.go:
 
 CONFORMANCE_SUPPORTED_FEATURES ?= -supported-features=Gateway,ReferenceGrant,HTTPRoute,HTTPRouteQueryParamMatching,HTTPRouteMethodMatching,HTTPRouteResponseHeaderModification,HTTPRoutePortRedirect,HTTPRouteHostRewrite,HTTPRouteSchemeRedirect,HTTPRoutePathRedirect,HTTPRouteHostRewrite,HTTPRoutePathRewrite,HTTPRouteRequestMirror
 CONFORMANCE_SUPPORTED_PROFILES ?= -conformance-profiles=GATEWAY-HTTP
-CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSION)-report.yaml -organization=solo.io -project=gloo-gateway -version=$(VERSION) -url=github.com/solo-io/gloo -contact=github.com/solo-io/gloo/issues/new/choose
-CONFORMANCE_ARGS := -gateway-class=gloo-gateway $(CONFORMANCE_SUPPORTED_FEATURES) $(CONFORMANCE_SUPPORTED_PROFILES) $(CONFORMANCE_REPORT_ARGS)
+CONFORMANCE_GATEWAY_CLASS ?= kgateway
+CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose
+CONFORMANCE_ARGS := -gateway-class=$(CONFORMANCE_GATEWAY_CLASS) $(CONFORMANCE_SUPPORTED_FEATURES) $(CONFORMANCE_SUPPORTED_PROFILES) $(CONFORMANCE_REPORT_ARGS)
 
 .PHONY: conformance ## Run the conformance test suite
 conformance: $(TEST_ASSET_DIR)/conformance/conformance_test.go

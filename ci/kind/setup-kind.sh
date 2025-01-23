@@ -73,7 +73,7 @@ else
   VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME IMAGE_VARIANT=$IMAGE_VARIANT make kind-build-and-load
 
   # 3. Build the test helm chart, ensuring we have a chart in the `_test` folder
-  VERSION=$VERSION make build-test-chart
+  VERSION=$VERSION make package-kgateway-chart
 fi
 
 # 4. Build the gloo command line tool, ensuring we have one in the `_output` folder

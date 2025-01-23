@@ -37,18 +37,18 @@ runs:
       IMAGE_VARIANT: ${{ matrix.image-variant }}
       CONFORMANCE: "true"
     run: ./ci/kind/setup-kind.sh
-  - name: Install Gloo Gateway with the k8s gateway integration enabled
+  - name: Install kgateway via helm
     shell: bash
     run: |
       if [[ -z "${{ matrix.version }}" ]]; then
         # If matrix.version is empty, use the local chart path specified in the Makefile.
-        helm upgrade -i -n gloo-system gloo ./_test/gloo-${VERSION}.tgz --create-namespace \
-          --set kubeGateway.enabled=true \
+        helm upgrade -i -n kgateway-system kgateway ./_test/kgateway-${VERSION}.tgz --create-namespace \
+          --set image.tag=${VERSION} \
           --set global.image.variant=${{ matrix.image-variant }}
       else
         # Else, use the provided version to install Gloo from the helm repository.
-        helm upgrade -i -n gloo-system gloo gloo/gloo --version ${VERSION} --create-namespace \
-          --set kubeGateway.enabled=true \
+        helm upgrade -i -n kgateway-system kgateway kgateway/kgateway --version ${VERSION} --create-namespace \
+          --set image.tag=${VERSION} \
           --set global.image.variant=${{ matrix.image-variant }}
       fi
   - name: Run the kubernetes gateway API conformance tests
