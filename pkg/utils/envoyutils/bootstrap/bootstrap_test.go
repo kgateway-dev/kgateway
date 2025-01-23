@@ -3,7 +3,9 @@ package bootstrap
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gateway2/utils"
+	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
@@ -215,91 +217,88 @@ var _ = Describe("Static bootstrap generation", func() {
 			})
 		})
 	})
+	Context("From Filter", func() {
+		It("produces correct bootstrap", func() {
+			inTransformation := &envoytransformation.RouteTransformations{
+				ClearRouteCache: true,
+				Transformations: []*envoytransformation.RouteTransformations_RouteTransformation{
+					{
+						Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
+							RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{ClearRouteCache: true},
+						},
+					},
+				},
+			}
 
-	// TODO: reimplement with transformation
-	// Context("From Filter", func() {
-	// 	It("produces correct bootstrap", func() {
-	// 		inTransformation := &envoytransformation.RouteTransformations{
-	// 			ClearRouteCache: true,
-	// 			Transformations: []*envoytransformation.RouteTransformations_RouteTransformation{
-	// 				{
-	// 					Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
-	// 						RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{ClearRouteCache: true},
-	// 					},
-	// 				},
-	// 			},
-	// 		}
+			filterName := "transformation"
+			actual, err := FromFilter(filterName, inTransformation)
+			Expect(err).NotTo(HaveOccurred())
 
-	// 		filterName := "transformation"
-	// 		actual, err := FromFilter(filterName, inTransformation)
-	// 		Expect(err).NotTo(HaveOccurred())
+			expectedBootstrap := &envoy_config_bootstrap_v3.Bootstrap{
+				Node: &envoy_config_core_v3.Node{
+					Id:      "validation-node-id",
+					Cluster: "validation-cluster",
+				},
+				StaticResources: &envoy_config_bootstrap_v3.Bootstrap_StaticResources{
+					Listeners: []*envoy_config_listener_v3.Listener{{
+						Name: "placeholder_listener",
+						Address: &envoy_config_core_v3.Address{
+							Address: &envoy_config_core_v3.Address_SocketAddress{SocketAddress: &envoy_config_core_v3.SocketAddress{
+								Address:       "0.0.0.0",
+								PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{PortValue: 8081},
+							}},
+						},
+						FilterChains: []*envoy_config_listener_v3.FilterChain{
+							{
+								Name: "placeholder_filter_chain",
+								Filters: []*envoy_config_listener_v3.Filter{
+									{
+										Name: wellknown.HTTPConnectionManager,
+										ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
+											TypedConfig: func() *anypb.Any {
+												hcmAny, err := utils.MessageToAny(&envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager{
+													StatPrefix: "placeholder",
+													RouteSpecifier: &envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager_RouteConfig{
+														RouteConfig: &envoy_config_route_v3.RouteConfiguration{
+															VirtualHosts: []*envoy_config_route_v3.VirtualHost{
+																{
+																	Name:    "placeholder_host",
+																	Domains: []string{"*"},
+																	TypedPerFilterConfig: map[string]*anypb.Any{
+																		filterName: {
+																			TypeUrl: "type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations",
+																			Value: func() []byte {
+																				tformany, err := utils.MessageToAny(inTransformation)
+																				Expect(err).NotTo(HaveOccurred())
+																				return tformany.GetValue()
+																			}(),
+																		},
+																	},
+																},
+															},
+														},
+													},
+												})
+												Expect(err).NotTo(HaveOccurred())
+												return hcmAny
+											}(),
+										},
+									},
+								},
+							},
+						},
+					}},
+				},
+			}
 
-	// 		expectedBootstrap := &envoy_config_bootstrap_v3.Bootstrap{
-	// 			Node: &envoy_config_core_v3.Node{
-	// 				Id:      "validation-node-id",
-	// 				Cluster: "validation-cluster",
-	// 			},
-	// 			StaticResources: &envoy_config_bootstrap_v3.Bootstrap_StaticResources{
-	// 				Listeners: []*envoy_config_listener_v3.Listener{{
-	// 					Name: "placeholder_listener",
-	// 					Address: &envoy_config_core_v3.Address{
-	// 						Address: &envoy_config_core_v3.Address_SocketAddress{SocketAddress: &envoy_config_core_v3.SocketAddress{
-	// 							Address:       "0.0.0.0",
-	// 							PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{PortValue: 8081},
-	// 						}},
-	// 					},
-	// 					FilterChains: []*envoy_config_listener_v3.FilterChain{
-	// 						{
-	// 							Name: "placeholder_filter_chain",
-	// 							Filters: []*envoy_config_listener_v3.Filter{
-	// 								{
-	// 									Name: wellknown.HTTPConnectionManager,
-	// 									ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
-	// 										TypedConfig: func() *anypb.Any {
-	// 											hcmAny, err := utils.MessageToAny(&envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager{
-	// 												StatPrefix: "placeholder",
-	// 												RouteSpecifier: &envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager_RouteConfig{
-	// 													RouteConfig: &envoy_config_route_v3.RouteConfiguration{
-	// 														VirtualHosts: []*envoy_config_route_v3.VirtualHost{
-	// 															{
-	// 																Name:    "placeholder_host",
-	// 																Domains: []string{"*"},
-	// 																TypedPerFilterConfig: map[string]*anypb.Any{
-	// 																	filterName: {
-	// 																		TypeUrl: "type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations",
-	// 																		Value: func() []byte {
-	// 																			tformany, err := utils.MessageToAny(inTransformation)
-	// 																			Expect(err).NotTo(HaveOccurred())
-	// 																			return tformany.GetValue()
-	// 																		}(),
-	// 																	},
-	// 																},
-	// 															},
-	// 														},
-	// 													},
-	// 												},
-	// 											})
-	// 											Expect(err).NotTo(HaveOccurred())
-	// 											return hcmAny
-	// 										}(),
-	// 									},
-	// 								},
-	// 							},
-	// 						},
-	// 					},
-	// 				}},
-	// 			},
-	// 		}
+			actualBootstrap := &envoy_config_bootstrap_v3.Bootstrap{}
 
-	// 		actualBootstrap := &envoy_config_bootstrap_v3.Bootstrap{}
+			err = protojson.Unmarshal([]byte(actual), actualBootstrap)
+			Expect(err).NotTo(HaveOccurred())
 
-	// 		err = protojson.Unmarshal([]byte(actual), actualBootstrap)
-	// 		Expect(err).NotTo(HaveOccurred())
-
-	// 		Expect(proto.Equal(expectedBootstrap, actualBootstrap)).To(BeTrue())
-	// 	})
-	// })
-
+			Expect(proto.Equal(expectedBootstrap, actualBootstrap)).To(BeTrue())
+		})
+	})
 	Context("From Snapshot", func() {
 		var (
 			snap *fakeSnapshot
