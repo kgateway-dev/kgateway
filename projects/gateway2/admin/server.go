@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	AdminPort = 9091
+	AdminPort = 9092
 )
 
 func RunAdminServer(ctx context.Context, setupOpts *controller.SetupOpts) error {
