@@ -11,7 +11,6 @@ import (
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/solo-io/gloo/pkg/utils/cmdutils"
-	"github.com/solo-io/gloo/pkg/utils/defaults"
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/go-utils/threadsafe"
@@ -31,6 +30,8 @@ const (
 	LoggingPath        = "logging"
 	ServerInfoPath     = "server_info"
 )
+
+var EnvoyAdminPort uint32 = 19000
 
 // DumpOptions should have flags for any kind of underlying optional
 // filtering or inclusion of Envoy dump data, such as including EDS, filters, etc.
@@ -56,7 +57,7 @@ func NewClient() *Client {
 		curlOptions: []curl.Option{
 			curl.WithScheme("http"),
 			curl.WithHost("127.0.0.1"),
-			curl.WithPort(int(defaults.EnvoyAdminPort)),
+			curl.WithPort(int(EnvoyAdminPort)),
 			// 3 retries, exponential back-off, 10 second max
 			curl.WithRetries(3, 0, 10),
 		},
@@ -75,7 +76,7 @@ func NewPortForwardedClient(ctx context.Context, proxySelector, namespace string
 	// 1. Open a port-forward to the Kubernetes Deployment, so that we can query the Envoy Admin API directly
 	portForwarder, err := kubectl.NewCli().StartPortForward(ctx,
 		selector,
-		portforward.WithRemotePort(int(defaults.EnvoyAdminPort)))
+		portforward.WithRemotePort(int(EnvoyAdminPort)))
 	if err != nil {
 		return nil, nil, err
 	}
