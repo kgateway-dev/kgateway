@@ -40,7 +40,8 @@ jobs:
       # If this action fails, try running `make analyze` locally.
       with:
         version: v1.57.2
-        args: --verbose --modules-download-mode=readonly --allow-parallel-runners
+        # TODO: remove specific dir once we remove old code and deflate structure
+        args: --verbose --modules-download-mode=readonly --allow-parallel-runners ./projects/gateway2
         skip-cache: true
         skip-save-cache: true
         only-new-issues: false
