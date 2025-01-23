@@ -58,7 +58,7 @@ controller:
     pullPolicy: IfNotPresent
     tag: ""
   service:
-    type: LoadBalancer
+    type: ClusterIP
     ports:
       grpc: 9977
 
