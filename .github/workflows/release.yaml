@@ -16,8 +16,63 @@ permissions:
   packages: write
 
 jobs:
+  setup:
+    name: Setup Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.set_vars.outputs.version }}
+      goreleaser_args: ${{ steps.set_vars.outputs.goreleaser_args }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set the release related variables
+        id: set_vars
+        run: |
+          # run the full release pipeline unless it's a pull request
+          if [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
+            VERSION="$(git describe --abbrev=0 --tags)"
+            echo "goreleaser_args=--clean --skip=validate" >> $GITHUB_OUTPUT
+          elif [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/}"
+            echo "goreleaser_args=--clean" >> $GITHUB_OUTPUT
+          elif [[ $GITHUB_REF == refs/pull/* ]]; then
+            VERSION="$(git describe --abbrev=0 --tags)+build.$(echo "${GITHUB_REF}" | sed -E 's|refs/pull/([^/]+)/?.*|\1|')"
+            echo "goreleaser_args=--snapshot --clean" >> $GITHUB_OUTPUT
+          else
+            VERSION="$(git describe --abbrev=0 --tags)"
+            echo "goreleaser_args=--snapshot --clean" >> $GITHUB_OUTPUT
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+  helm:
+    name: Package Helm Charts
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        if: ${{ github.event_name != 'pull_request' }}
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
+
+      - name: Lint kgateway chart
+        run: helm lint install/helm/kgateway
+
+      - name: Package kgateway chart
+        run: make package-kgateway-chart
+        env:
+          VERSION: ${{ needs.setup.outputs.version }}
+
+      - name: Push kgateway chart to registry
+        if: ${{ github.event_name != 'pull_request' }}
+        run: |
+          helm push _test/kgateway-${{ needs.setup.outputs.version }}.tgz oci://${{ env.IMAGE_REGISTRY }}/charts
+
   goreleaser:
     name: goreleaser
+    needs: [setup, helm]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,27 +92,10 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set the release related variables
-        id: set_vars
-        run: |
-          # we want to conditionally run the full release pipeline based on the
-          # event that triggered the workflow. for PRs, we only want to build
-          # the binaries & container images, but not create a release.
-          if [[ $GITHUB_REF == refs/tags/* ]]; then
-            VERSION="${GITHUB_REF#refs/tags/}"
-            echo "GORELEASER_ARGS=--clean" >> $GITHUB_ENV
-          elif [[ $GITHUB_REF == refs/pull/* ]]; then
-            VERSION="pr-$(echo "${GITHUB_REF}" | sed -E 's|refs/pull/([^/]+)/?.*|\1|')"
-          else
-            VERSION="$(git describe --tags --always)"
-          fi
-          echo "VERSION=${VERSION}"
-          echo "GORELEASER_ARGS=${GORELEASER_ARGS}"
-          echo "VERSION=${VERSION}" >> $GITHUB_ENV
-
       - name: Run goreleaser
         run: make release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ env.VERSION }}
+          VERSION: ${{ needs.setup.outputs.version }}
           IMAGE_REGISTRY: ${{ env.IMAGE_REGISTRY }}
+          GORELEASER_ARGS: ${{ needs.setup.outputs.goreleaser_args }}
