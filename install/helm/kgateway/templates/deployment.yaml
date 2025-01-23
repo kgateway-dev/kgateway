@@ -31,22 +31,81 @@ spec:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: "{{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag | default .Chart.Version }}"
+          imagePullPolicy: {{ .Values.controller.image.pullPolicy }}
           ports:
-            - name: http
-              containerPort: {{ .Values.service.port }}
+            - containerPort: {{ .Values.controller.ports.grpc | default 9977 }}
+              name: grpc-xds
               protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
+            {{- if .Values.gateway.aiExtension.enabled }}
+            - name: ai-grpc
+              containerPort: {{ .Values.gateway.aiExtension.ports.grpc | default 50051 }}
+              protocol: TCP
+            {{- end }}
           readinessProbe:
-            httpGet:
-              path: /
-              port: http
+            failureThreshold: 3
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: 9977
+            timeoutSeconds: 1
+          env:
+            - name: GOMEMLIMIT
+              valueFrom:
+                resourceFieldRef:
+                  divisor: "1"
+                  resource: limits.memory
+            - name: GOMAXPROCS
+              valueFrom:
+                resourceFieldRef:
+                  divisor: "1"
+                  resource: limits.cpu
+            - name: GOLANG_PROTOBUF_REGISTRATION_CONFLICT
+              value: ignore
+            - name: LEADER_ELECTION_LEASE_DURATION
+              value: 4s
+            - name: LEADER_ELECTION_RENEW_PERIOD
+              value: 3s
+            - name: LEADER_ELECTION_RETRY_PERIOD
+              value: 1s
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: LOG_LEVEL
+              value: {{ .Values.controller.logLevel | quote }}
+            {{- if .Values.gateway.aiExtension.enabled }}
+            {{- range .Values.gateway.aiExtension.env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+        {{- if .Values.gateway.aiExtension.enabled }}
+        - name: ai-extension
+          image: "{{ .Values.gateway.aiExtension.image.registry }}/{{ .Values.gateway.aiExtension.image.repository }}:{{ .Values.gateway.aiExtension.image.tag }}"
+          imagePullPolicy: {{ .Values.gateway.aiExtension.image.pullPolicy }}
+          ports:
+            - name: grpc
+              containerPort: {{ .Values.gateway.aiExtension.ports.grpc | default 50051 }}
+              protocol: TCP
+          {{- with .Values.gateway.aiExtension.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.gateway.sdsContainer.enabled }}
+        - name: sds
+          image: "{{ .Values.gateway.sdsContainer.image.registry }}/{{ .Values.gateway.sdsContainer.image.repository }}:{{ .Values.gateway.sdsContainer.image.tag }}"
+          imagePullPolicy: {{ .Values.gateway.sdsContainer.image.pullPolicy }}
+          {{- with .Values.gateway.sdsContainer.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

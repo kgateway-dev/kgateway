@@ -1,0 +1,58 @@
+{{- if .Values.gatewayClass.parametersRef.enabled }}
+apiVersion: gateway.gloo.solo.io/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: {{ .Values.gatewayClass.parametersRef.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kgateway.labels" . | nindent 4 }}
+spec:
+  kube:
+    deployment:
+      replicas: {{ .Values.replicaCount }}
+    envoyContainer:
+      # See https://github.com/kgateway-dev/kgateway/issues/10491.
+      image:
+        registry: quay.io/solo-io
+        repository: gloo-envoy-wrapper
+        tag: 1.18.5
+      # image:
+      #   registry: {{ .Values.gateway.envoyContainer.image.registry }}
+      #   repository: {{ .Values.gateway.envoyContainer.image.repository }}
+      #   tag: {{ .Values.gateway.envoyContainer.image.tag | default .Chart.Version }}
+      {{- with .Values.gateway.envoyContainer.securityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    service:
+      type: {{ .Values.gateway.service.type }}
+      {{- with .Values.gateway.service.extraLabels }}
+      extraLabels:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.gateway.service.extraAnnotations }}
+      extraAnnotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.gateway.podTemplate }}
+    podTemplate:
+      {{- with .extraLabels }}
+      extraLabels:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .probes }}
+      readinessProbe:
+        httpGet:
+          scheme: HTTP
+          port: 8082
+          path: /envoy-hc
+        initialDelaySeconds: 5
+        periodSeconds: 5
+        failureThreshold: 2
+      {{- end }}
+    {{- end }}
+    {{- with .Values.gateway.stats }}
+    stats:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+{{- end }}

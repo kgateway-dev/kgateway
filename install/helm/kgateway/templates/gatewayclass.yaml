@@ -1,0 +1,20 @@
+{{- if .Values.gatewayClass.enabled }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: {{ .Values.gatewayClass.name }}
+  labels:
+    {{- include "kgateway.labels" . | nindent 4 }}
+spec:
+  controllerName: {{ .Values.gatewayClass.controllerName }}
+  {{- if .Values.gatewayClass.parametersRef }}
+  parametersRef:
+    {{- with .Values.gatewayClass.parametersRef }}
+    group: {{ .group }}
+    kind: {{ .kind }}
+    name: {{ .name }}
+    namespace: {{ .namespace }}
+    {{- end }}
+  {{- end }}
+  description: {{ .Values.gatewayClass.description | quote }}
+{{- end }}
