@@ -37,11 +37,6 @@ spec:
             - containerPort: {{ .Values.controller.service.ports.grpc | default 9977 }}
               name: grpc-xds
               protocol: TCP
-            {{- if .Values.gateway.aiExtension.enabled }}
-            - name: ai-grpc
-              containerPort: {{ .Values.gateway.aiExtension.ports.grpc | default 50051 }}
-              protocol: TCP
-            {{- end }}
           readinessProbe:
             failureThreshold: 3
             initialDelaySeconds: 3
@@ -61,51 +56,19 @@ spec:
                 resourceFieldRef:
                   divisor: "1"
                   resource: limits.cpu
-            - name: GOLANG_PROTOBUF_REGISTRATION_CONFLICT
-              value: ignore
-            - name: LEADER_ELECTION_LEASE_DURATION
-              value: 4s
-            - name: LEADER_ELECTION_RENEW_PERIOD
-              value: 3s
-            - name: LEADER_ELECTION_RETRY_PERIOD
-              value: 1s
+            - name: LOG_LEVEL
+              value: {{ .Values.controller.logLevel | quote }}
+            # TODO: Remove this once the cleanup is done. Required as the gloo-system
+            # namespace is the default namespace and conformance will fail as a result.
             - name: POD_NAMESPACE
               valueFrom:
                 fieldRef:
-                  apiVersion: v1
                   fieldPath: metadata.namespace
-            - name: LOG_LEVEL
-              value: {{ .Values.controller.logLevel | quote }}
-            {{- if .Values.gateway.aiExtension.enabled }}
-            {{- range .Values.gateway.aiExtension.env }}
-            - name: {{ .name }}
-              value: {{ .value | quote }}
-            {{- end }}
-            {{- end }}
+            # TODO: Remove this once the cleanup is done.
+            - name: GOLANG_PROTOBUF_REGISTRATION_CONFLICT
+              value: ignore
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-        {{- if .Values.gateway.aiExtension.enabled }}
-        - name: ai-extension
-          image: "{{ .Values.gateway.aiExtension.image.registry }}/{{ .Values.gateway.aiExtension.image.repository }}:{{ .Values.gateway.aiExtension.image.tag }}"
-          imagePullPolicy: {{ .Values.gateway.aiExtension.image.pullPolicy }}
-          ports:
-            - name: grpc
-              containerPort: {{ .Values.gateway.aiExtension.ports.grpc | default 50051 }}
-              protocol: TCP
-          {{- with .Values.gateway.aiExtension.resources }}
-          resources:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-        {{- end }}
-        {{- if .Values.gateway.sdsContainer.enabled }}
-        - name: sds
-          image: "{{ .Values.gateway.sdsContainer.image.registry }}/{{ .Values.gateway.sdsContainer.image.repository }}:{{ .Values.gateway.sdsContainer.image.tag }}"
-          imagePullPolicy: {{ .Values.gateway.sdsContainer.image.pullPolicy }}
-          {{- with .Values.gateway.sdsContainer.resources }}
-          resources:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
