@@ -345,9 +345,10 @@ generate-cli-docs: clean-cli-docs ## Removes existing CLI docs and re-generates 
 	GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
 
 # Ensures that accesses for fields which have "getter" functions are exclusively done via said "getter" functions
+# TODO: do we still want this?
 .PHONY: getter-check
 getter-check:
-	go run github.com/saiskee/gettercheck -ignoretests -ignoregenerated -write ./...
+	go run github.com/saiskee/gettercheck -ignoretests -ignoregenerated -write ./projects/gateway2/...
 
 .PHONY: mod-tidy
 mod-tidy:

@@ -8,7 +8,7 @@ Name|Version|License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License
 [aws/aws-sdk-go](https://github.com/aws/aws-sdk-go)|v1.34.9|Apache License 2.0
 [census-instrumentation/opencensus-proto](https://github.com/census-instrumentation/opencensus-proto)|v0.2.0|Apache License 2.0
-[xds/go](https://github.com/cncf/xds)|v0.0.0-20240905190251-b4127c9b8d78|Apache License 2.0
+[xds/go](https://github.com/cncf/xds)|v0.0.0-20241223141626-cff3c89139a3|Apache License 2.0
 [envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.13.2-0.20241022220226-23b7e55d7f65|Apache License 2.0
 [envoyproxy/protoc-gen-validate](https://github.com/envoyproxy/protoc-gen-validate)|v1.1.0|Apache License 2.0
 [fgrosse/zaptest](https://github.com/fgrosse/zaptest)|v1.1.0|MIT License
@@ -63,7 +63,7 @@ Name|Version|License
 [googleapis/api](https://google.golang.org/genproto/googleapis/api)|v0.0.0-20241021214115-324edc3d5d38|Apache License 2.0
 [googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20241021214115-324edc3d5d38|Apache License 2.0
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.67.1|Apache License 2.0
-[google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.35.1|BSD 3-clause "New" or "Revised" License
+[google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.36.1|BSD 3-clause "New" or "Revised" License
 [AlecAivazis/survey.v1](https://gopkg.in/AlecAivazis/survey.v1)|v1.8.7|MIT License
 [helm/v3](https://helm.sh/helm/v3)|v3.16.2|Apache License 2.0
 [istio.io/api](https://istio.io/api)|v1.24.0-alpha.0.0.20241106042855-9e26cdd3450a|Apache License 2.0

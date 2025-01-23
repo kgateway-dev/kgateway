@@ -8,7 +8,7 @@ require (
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/aws/aws-sdk-go v1.34.9
 	github.com/census-instrumentation/opencensus-proto v0.4.1
-	github.com/cncf/xds/go v0.0.0-20240905190251-b4127c9b8d78
+	github.com/cncf/xds/go v0.0.0-20241223141626-cff3c89139a3
 	github.com/envoyproxy/go-control-plane v0.13.2-0.20241022220226-23b7e55d7f65
 	github.com/envoyproxy/protoc-gen-validate v1.1.0
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible
@@ -66,7 +66,7 @@ require (
 	golang.org/x/sync v0.8.0
 	golang.org/x/tools v0.26.0
 	google.golang.org/grpc v1.67.1
-	google.golang.org/protobuf v1.35.1
+	google.golang.org/protobuf v1.36.1
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	helm.sh/helm/v3 v3.16.2
 	k8s.io/api v0.31.2
@@ -96,6 +96,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/mccutchen/go-httpbin/v2 v2.15.0
 	github.com/quasilyte/go-ruleguard/dsl v0.3.22
+	github.com/solo-io/envoy-gloo/go v0.0.0-20250102165327-33a74fcf9966
 	github.com/stoewer/go-strcase v1.3.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56
