@@ -58,7 +58,7 @@ runs:
     if: ${{ failure() }}
     shell: bash
     run: |
-      kubectl -n gloo-system get events --sort-by='{.lastTimestamp}'
+      kubectl -n kgateway-system get events --sort-by='{.lastTimestamp}'
       echo
       kubectl -n gateway-conformance-infra get events --sort-by='{.lastTimestamp}'
       echo
@@ -66,12 +66,12 @@ runs:
       echo
       kubectl -n gateway-conformance-web-backend get events --sort-by='{.lastTimestamp}'
       echo
-      kubectl -n gloo-system logs deploy/gloo
+      kubectl -n kgateway-system logs deploy/gloo
   - name: Upload reports
     if: ${{ failure() }}
     uses: actions/upload-artifact@v4
     with:
       # Name of the path to upload. The VERSION variable refers to the Makefile
       # VERSION variable.
-      name: conformance-gloo-gateway-report-attempt-${{ github.run_attempt }}@k8s${{ matrix.kube-version.kubectl }}
+      name: conformance-kgateway-gateway-report-attempt-${{ github.run_attempt }}@k8s${{ matrix.kube-version.kubectl }}
       path: _test/conformance/${{ env.VERSION }}-report.yaml
