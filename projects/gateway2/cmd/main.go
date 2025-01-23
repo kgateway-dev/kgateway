@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/solo-io/gloo/pkg/utils/probes"
-	"github.com/solo-io/gloo/projects/gloo/pkg/setup"
+	"github.com/solo-io/gloo/projects/gateway2/setup"
 	"github.com/solo-io/go-utils/log"
 )
 
