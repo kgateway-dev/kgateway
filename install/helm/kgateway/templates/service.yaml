@@ -5,11 +5,11 @@ metadata:
   labels:
     {{- include "kgateway.labels" . | nindent 4 }}
 spec:
-  type: ClusterIP
+  type: {{ .Values.controller.service.type }}
   ports:
   - name: grpc-xds
-    port: 9977
     protocol: TCP
-    targetPort: 9977
+    port: {{ .Values.controller.service.ports.grpc }}
+    targetPort: {{ .Values.controller.service.ports.grpc }}
   selector:
     {{- include "kgateway.selectorLabels" . | nindent 4 }}

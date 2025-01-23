@@ -34,7 +34,7 @@ spec:
           image: "{{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag | default .Chart.Version }}"
           imagePullPolicy: {{ .Values.controller.image.pullPolicy }}
           ports:
-            - containerPort: {{ .Values.controller.ports.grpc | default 9977 }}
+            - containerPort: {{ .Values.controller.service.ports.grpc | default 9977 }}
               name: grpc-xds
               protocol: TCP
             {{- if .Values.gateway.aiExtension.enabled }}
