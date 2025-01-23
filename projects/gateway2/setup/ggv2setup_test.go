@@ -118,7 +118,7 @@ func TestScenarios(t *testing.T) {
 	testEnv := &envtest.Environment{
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "crds"),
-			filepath.Join("..", "..", "..", "install", "helm", "gloo", "crds"),
+			filepath.Join("..", "..", "..", "install", "helm", "kgateway", "crds"),
 			filepath.Join("testdata", "istiocrds"),
 		},
 		ErrorIfCRDPathMissing: true,

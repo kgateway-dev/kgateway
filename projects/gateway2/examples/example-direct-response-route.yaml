@@ -5,7 +5,7 @@ metadata:
   name: http
   namespace: gloo-system
 spec:
-  gatewayClassName: gloo-gateway
+  gatewayClassName: kgateway
   listeners:
   - protocol: HTTP
     port: 8080
