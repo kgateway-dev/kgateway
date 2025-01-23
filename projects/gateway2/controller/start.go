@@ -127,7 +127,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	// TODO: replace this with something that checks that we have xds snapshot ready (or that we don't need one).
 	mgr.AddReadyzCheck("ready-ping", healthz.Ping)
 
-	setupLog.Info("initializing k8sgateway extensions")
+	setupLog.Info("initializing kgateway extensions")
 	cli, err := versioned.NewForConfig(cfg.RestConfig)
 	if err != nil {
 		return nil, err

@@ -16,7 +16,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-func NewTranslator(queries query.GatewayQueries) extensionsplug.K8sGwTranslator {
+func NewTranslator(queries query.GatewayQueries) extensionsplug.KGwTranslator {
 	return &translator{
 		queries: queries,
 	}

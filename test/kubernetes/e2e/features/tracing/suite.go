@@ -117,7 +117,7 @@ func (s *testingSuite) BeforeTest(string, string) {
 	)
 
 	// Technical Debt!!
-	// https://github.com/k8sgateway/k8sgateway/issues/10293
+	// https://github.com/kgateway-dev/kgateway/issues/10293
 	// There is a bug in the Control Plane that results in an Error reported on the status
 	// when the Upstream of the Tracing Collector is not found. This results in the VirtualService
 	// that references that Upstream being rejected. What should occur is a Warning is reported,

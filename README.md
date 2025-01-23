@@ -15,9 +15,9 @@ Please see [the plan](https://github.com/kgateway-dev/kgateway/issues/10363) for
 ## About kgateway
 Kgateway is a feature-rich, fast, and flexible Kubernetes-native ingress controller and next-generation API gateway that is built on top of [Envoy proxy](https://www.envoyproxy.io) and the Kubernetes Gateway API. It excels in function-level routing, supports legacy apps, microservices and serverless, offers robust discovery capabilities, integrates seamlessly with open-source projects, and is designed to support hybrid applications with various technologies, architectures, protocols, and clouds.
 
-[**Installation**](https://k8sgateway.io/docs/quickstart/) &nbsp; |
-&nbsp; [**Documentation**](https://k8sgateway.io/docs) &nbsp; |
-&nbsp; [**Blog**](https://k8sgateway.io/docs/) &nbsp; |
+[**Installation**](https://kgateway.io/docs/quickstart/) &nbsp; |
+&nbsp; [**Documentation**](https://kgateway.io/docs) &nbsp; |
+&nbsp; [**Blog**](https://kgateway.io/docs/) &nbsp; |
 &nbsp; [**Slack**](https://cloud-native.slack.com/archives/C080D3PJMS4) &nbsp; |
 
 <BR><center><img align="center" src="docs/content/img/k8sgateway/component-architecture.svg" alt="kgateway Architecture" width="700"></center>
@@ -42,7 +42,7 @@ This header is used as an anchor in our CNCF Donation Issue
 
 ## Next steps
 - Join us on our Slack channel: [#kgateway](https://cloud-native.slack.com/archives/C080D3PJMS4)
-- Check out the docs: [https://k8sgateway.io/docs](https://k8sgateway.io/docs)
+- Check out the docs: [https://kgateway.io/docs](https://kgateway.io/docs)
 - Learn more about the [community](https://github.com/kgateway-dev/community)
 
 ## Contributing to kgateway
