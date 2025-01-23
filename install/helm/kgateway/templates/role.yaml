@@ -2,7 +2,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: k8sgw-controller
+  name: kgateway
 rules:
 - apiGroups:
   - gateway.gloo.solo.io
