@@ -763,7 +763,7 @@ docker-push-%:
 .PHONY: docker-standard
 docker-standard: check-go-version ## Build docker images (standard only)
 docker-standard: gloo-docker
-# docker-standard: gloo-envoy-wrapper-docker
+docker-standard: gloo-envoy-wrapper-docker
 docker-standard: sds-docker
 
 .PHONY: docker-distroless
@@ -905,7 +905,7 @@ kind-reload-gloo-envoy-wrapper:
 
 .PHONY: kind-build-and-load-standard
 kind-build-and-load-standard: kind-build-and-load-gloo
-# kind-build-and-load-standard: kind-build-and-load-gloo-envoy-wrapper
+kind-build-and-load-standard: kind-build-and-load-gloo-envoy-wrapper
 # kind-build-and-load-standard: kind-build-and-load-sds
 # kind-build-and-load-standard: kind-build-and-load-certgen
 

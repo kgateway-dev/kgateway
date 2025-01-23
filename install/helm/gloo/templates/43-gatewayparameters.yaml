@@ -52,9 +52,13 @@ spec:
     floatingUserId: {{ hasKey $global.securitySettings "floatingUserId" | ternary $global.securitySettings.floatingUserId (or $gg.floatingUserId false) }}
     envoyContainer:
       image:
-        registry: quay.io/solo-io
-        repository: gloo-envoy-wrapper
-        tag: 1.18.5
+        {{- $envoyImage := dict -}}
+        {{- if $gg.envoyContainer -}}
+        {{- if $gg.envoyContainer.image -}}
+        {{- $envoyImage = $gg.envoyContainer.image -}}
+        {{- end -}}{{/* if $gg.envoyContainer.image */}}
+        {{- end }}{{/* if $gg.envoyContainer */}}
+        {{- merge $envoyImage $global.image | include "gloo-gateway.gatewayParametersImage" | nindent 8 }}
 {{- if $gg.envoyContainer -}}
 {{- if $gg.envoyContainer.securityContext }}
       securityContext:
