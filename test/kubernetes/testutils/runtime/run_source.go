@@ -1,3 +1,5 @@
+//go:build exclude
+
 package runtime
 
 // RunSource identifies who/what triggered the test

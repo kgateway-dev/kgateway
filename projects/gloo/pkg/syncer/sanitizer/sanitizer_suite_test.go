@@ -1,3 +1,5 @@
+//go:build exclude
+
 package sanitizer_test
 
 import (

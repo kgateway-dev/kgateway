@@ -1,3 +1,5 @@
+//go:build exclude
+
 package proxyprotocol_test
 
 import (

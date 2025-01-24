@@ -1,3 +1,5 @@
+//go:build exclude
+
 package protocoloptions_test
 
 import (

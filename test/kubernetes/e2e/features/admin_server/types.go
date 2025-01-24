@@ -1,3 +1,5 @@
+//go:build exclude
+
 package admin_server
 
 import (

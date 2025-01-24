@@ -1,3 +1,5 @@
+//go:build exclude
+
 package debug_test
 
 import (

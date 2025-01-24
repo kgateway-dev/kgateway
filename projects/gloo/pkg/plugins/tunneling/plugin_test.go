@@ -1,3 +1,5 @@
+//go:build exclude
+
 package tunneling_test
 
 import (

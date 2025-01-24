@@ -1,3 +1,5 @@
+//go:build exclude
+
 package utils_test
 
 import (

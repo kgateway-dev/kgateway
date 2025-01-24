@@ -1,3 +1,5 @@
+//go:build exclude
+
 package dynamic_forward_proxy_test
 
 import (

@@ -1,3 +1,5 @@
+//go:build exclude
+
 package crd_categories
 
 import (

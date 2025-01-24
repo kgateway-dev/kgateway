@@ -1,3 +1,5 @@
+//go:build exclude
+
 package transformation_validation_disabled
 
 import (

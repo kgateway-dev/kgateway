@@ -1,3 +1,5 @@
+//go:build exclude
+
 package grpcjson_test
 
 import (

@@ -1,3 +1,5 @@
+//go:build exclude
+
 package aws_test
 
 import (

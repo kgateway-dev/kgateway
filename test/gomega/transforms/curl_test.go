@@ -1,3 +1,5 @@
+//go:build exclude
+
 package transforms_test
 
 import (

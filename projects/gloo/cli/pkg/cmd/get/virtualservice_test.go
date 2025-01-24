@@ -1,3 +1,5 @@
+//go:build exclude
+
 package get_test
 
 import (

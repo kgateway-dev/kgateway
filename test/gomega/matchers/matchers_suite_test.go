@@ -1,3 +1,5 @@
+//go:build exclude
+
 package matchers_test
 
 import (

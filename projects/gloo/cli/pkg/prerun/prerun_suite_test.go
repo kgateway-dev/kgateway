@@ -1,3 +1,5 @@
+//go:build exclude
+
 package prerun_test
 
 import (

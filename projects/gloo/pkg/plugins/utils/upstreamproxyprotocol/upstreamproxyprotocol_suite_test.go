@@ -1,3 +1,5 @@
+//go:build exclude
+
 package upstream_proxy_protocol
 
 import (

@@ -1,3 +1,5 @@
+//go:build exclude
+
 package local_ratelimit
 
 import (

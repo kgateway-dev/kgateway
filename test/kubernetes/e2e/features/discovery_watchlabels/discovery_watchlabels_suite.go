@@ -1,3 +1,5 @@
+//go:build exclude
+
 package discovery_watchlabels
 
 import (

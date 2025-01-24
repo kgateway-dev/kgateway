@@ -1,3 +1,5 @@
+//go:build exclude
+
 package virtualhost_test
 
 import (

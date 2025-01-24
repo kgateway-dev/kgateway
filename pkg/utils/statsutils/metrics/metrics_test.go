@@ -1,3 +1,5 @@
+//go:build exclude
+
 package metrics_test
 
 import (

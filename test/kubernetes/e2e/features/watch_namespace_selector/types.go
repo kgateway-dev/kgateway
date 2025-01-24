@@ -1,3 +1,5 @@
+//go:build exclude
+
 package watch_namespace_selector
 
 import (

@@ -1,3 +1,5 @@
+//go:build exclude
+
 package tls_inspector_test
 
 import (

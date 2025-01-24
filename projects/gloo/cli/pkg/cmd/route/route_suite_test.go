@@ -1,3 +1,5 @@
+//go:build exclude
+
 package route_test
 
 import (

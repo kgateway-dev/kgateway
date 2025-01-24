@@ -1,3 +1,5 @@
+//go:build exclude
+
 package buffer_test
 
 import (

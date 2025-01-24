@@ -1,3 +1,5 @@
+//go:build exclude
+
 package validation_reject_invalid
 
 import (

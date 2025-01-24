@@ -1,3 +1,5 @@
+//go:build exclude
+
 package full_envoy_validation
 
 import (

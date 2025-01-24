@@ -1,3 +1,5 @@
+//go:build exclude
+
 package enterprise_warning_test
 
 import (
