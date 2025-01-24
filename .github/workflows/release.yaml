@@ -55,6 +55,9 @@ jobs:
           echo "GORELEASER_ARGS=${GORELEASER_ARGS}"
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
 
+      - uses: "docker/setup-qemu-action@v3"
+      - uses: "docker/setup-buildx-action@v3"
+
       - name: Run goreleaser
         run: make release
         env:
