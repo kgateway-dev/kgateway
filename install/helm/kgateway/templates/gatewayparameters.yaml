@@ -11,15 +11,10 @@ spec:
     deployment:
       replicas: {{ .Values.replicaCount }}
     envoyContainer:
-      # See https://github.com/kgateway-dev/kgateway/issues/10491.
       image:
-        registry: quay.io/solo-io
-        repository: gloo-envoy-wrapper
-        tag: 1.18.5
-      # image:
-      #   registry: {{ .Values.gateway.envoyContainer.image.registry }}
-      #   repository: {{ .Values.gateway.envoyContainer.image.repository }}
-      #   tag: {{ .Values.gateway.envoyContainer.image.tag | default .Chart.Version }}
+        registry: {{ .Values.gateway.envoyContainer.image.registry }}
+        repository: {{ .Values.gateway.envoyContainer.image.repository }}
+        tag: {{ .Values.gateway.envoyContainer.image.tag | default .Chart.Version }}
       {{- with .Values.gateway.envoyContainer.securityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
