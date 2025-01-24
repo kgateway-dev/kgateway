@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   setup:
-    name: Setup Release
+    name: Setup release inputs
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.set_vars.outputs.version }}
@@ -30,24 +30,30 @@ jobs:
       - name: Set the release related variables
         id: set_vars
         run: |
-          # run the full release pipeline unless it's a pull request
+          GIT_TAG=$(git describe --tags --abbrev=0)
+          GIT_SHA=$(git rev-parse --short HEAD)
+          DATE=$(date +"%Y-%m-%d")
+
           if [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
-            VERSION="$(git describe --abbrev=0 --tags)"
+            VERSION="${GIT_TAG}-${DATE}-${GIT_SHA}"
             echo "goreleaser_args=--clean --skip=validate" >> $GITHUB_OUTPUT
           elif [[ $GITHUB_REF == refs/tags/* ]]; then
             VERSION="${GITHUB_REF#refs/tags/}"
             echo "goreleaser_args=--clean" >> $GITHUB_OUTPUT
           elif [[ $GITHUB_REF == refs/pull/* ]]; then
-            VERSION="$(git describe --abbrev=0 --tags)+build.$(echo "${GITHUB_REF}" | sed -E 's|refs/pull/([^/]+)/?.*|\1|')"
+            PR_NUM=$(echo "${GITHUB_REF}" | sed -E 's|refs/pull/([^/]+)/?.*|\1|')
+            VERSION="${GIT_TAG}-pr.${PR_NUM}-${DATE}-${GIT_SHA}"
             echo "goreleaser_args=--snapshot --clean" >> $GITHUB_OUTPUT
           else
-            VERSION="$(git describe --abbrev=0 --tags)"
+            GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD | sed -e "s/\//-/g")
+            DATE=$(date +"%Y-%m-%d")
+            VERSION="${GIT_TAG}-${DATE}-${GIT_BRANCH}-${GIT_SHA}"
             echo "goreleaser_args=--snapshot --clean" >> $GITHUB_OUTPUT
           fi
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
   helm:
-    name: Package Helm Charts
+    name: Package helm charts
     needs: setup
     runs-on: ubuntu-latest
     steps:
@@ -57,7 +63,8 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
 
-      - name: Lint kgateway chart
+      - name: Lint kgateway chart on PRs
+        if: ${{ github.event_name == 'pull_request' }}
         run: helm lint install/helm/kgateway
 
       - name: Package kgateway chart
