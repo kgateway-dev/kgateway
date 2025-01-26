@@ -2,134 +2,22 @@ package setuputils
 
 import (
 	"context"
-	"flag"
 	"os"
-	"sync"
-	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/kubeutils"
-	"github.com/solo-io/gloo/pkg/utils/namespaces"
 
 	"github.com/go-logr/zapr"
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	kube2 "github.com/solo-io/gloo/pkg/bootstrap/leaderelector/kube"
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
 	"github.com/solo-io/gloo/pkg/version"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	zaputil "sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
-
-type SetupOpts struct {
-	LoggerName string
-	// logged as the version of Gloo currently executing
-	Version     string
-	SetupFunc   SetupFunc
-	ExitOnError bool
-	CustomCtx   context.Context
-
-	// optional - if present, add these values in each JSON log line in the gloo pod.
-	// By default, we already log the gloo version.
-	LoggingPrefixVals []interface{}
-	// optional - if present, report usage with the payload this discovers
-	// should really only provide it in very intentional places- in the gloo pod, and in glooctl
-	// otherwise, we'll provide redundant copies of the usage data
-
-	ElectionConfig *leaderelector.ElectionConfig
-}
-
-var once sync.Once
-
-// Main is the main entrypoint for running Gloo Edge components
-// It works by performing the following:
-//  1. Initialize a SettingsClient backed either by Kubernetes or a File
-//  2. Run an event loop, watching events on the Settings resource, and executing the
-//     opts.SetupFunc whenever settings change
-//
-// This allows Gloo components to automatically receive updates to Settings and reload their
-// configuration, without needing to restart the container
-func Main(opts SetupOpts) error {
-	// prevent panic if multiple flag.Parse called concurrently
-	once.Do(func() {
-		flag.Parse()
-	})
-
-	ctx := opts.CustomCtx
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	ctx = contextutils.WithLogger(ctx, opts.LoggerName)
-	loggingContext := append([]interface{}{"version", opts.Version}, opts.LoggingPrefixVals...)
-	ctx = contextutils.WithLoggerValues(ctx, loggingContext...)
-
-	settingsClient, err := fileOrKubeSettingsClient(ctx, setupNamespace, setupDir)
-	if err != nil {
-		return err
-	}
-
-	if err := settingsClient.Register(); err != nil {
-		return err
-	}
-
-	identity, err := startLeaderElection(ctx, setupDir, opts.ElectionConfig)
-	if err != nil {
-		return err
-	}
-
-	namespaceClient, err := namespaces.NewKubeNamespaceClient(ctx)
-	// If there is any error when creating a KubeNamespaceClient (RBAC issues) default to a fake client
-	if err != nil {
-		namespaceClient = &namespaces.NoOpKubeNamespaceWatcher{}
-	}
-
-	// settings come from the ResourceClient in the settingsClient
-	// the eventLoop will Watch the emitter's settingsClient to receive settings from the ResourceClient
-	emitter := v1.NewSetupEmitter(settingsClient, namespaceClient)
-	settingsRef := &core.ResourceRef{Namespace: setupNamespace, Name: setupName}
-	eventLoop := v1.NewSetupEventLoop(emitter, NewSetupSyncer(settingsRef, opts.SetupFunc, identity))
-	errs, err := eventLoop.Run([]string{setupNamespace}, clients.WatchOpts{
-		Ctx:         ctx,
-		RefreshRate: time.Second,
-	})
-	if err != nil {
-		return err
-	}
-	for err := range errs {
-		if opts.ExitOnError {
-			contextutils.LoggerFrom(ctx).Fatalf("error in setup: %v", err)
-		}
-		contextutils.LoggerFrom(ctx).Errorf("error in setup: %v", err)
-	}
-	return nil
-}
-
-func fileOrKubeSettingsClient(ctx context.Context, setupNamespace, settingsDir string) (v1.SettingsClient, error) {
-	if settingsDir != "" {
-		contextutils.LoggerFrom(ctx).Infow("using filesystem for settings", zap.String("directory", settingsDir))
-		return v1.NewSettingsClient(ctx, &factory.FileResourceClientFactory{
-			RootDir: settingsDir,
-		})
-	}
-
-	cfg, err := kubeutils.GetRestConfigWithKubeContext("")
-	if err != nil {
-		return nil, err
-	}
-	return v1.NewSettingsClient(ctx, &factory.KubeResourceClientFactory{
-		Crd:                v1.SettingsCrd,
-		Cfg:                cfg,
-		SharedCache:        kube.NewKubeCache(ctx),
-		NamespaceWhitelist: []string{setupNamespace},
-	})
-}
 
 func startLeaderElection(ctx context.Context, settingsDir string, electionConfig *leaderelector.ElectionConfig) (leaderelector.Identity, error) {
 	if electionConfig == nil || settingsDir != "" || leaderelector.IsDisabled() {
