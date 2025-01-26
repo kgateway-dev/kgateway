@@ -1,9 +1,0 @@
-ARG BASE_IMAGE
-
-FROM bitnami/kubectl:1.31.1 as kubectl
-
-FROM $BASE_IMAGE
-
-COPY --from=kubectl /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/
-
-USER 10101
