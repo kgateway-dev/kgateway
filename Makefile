@@ -41,7 +41,7 @@ SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 # universal header validation has been enabled and if so, we expect
 # failures in `test/e2e/header_validation_test.go`.
 export ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.31.2-patch3
-export LDFLAGS := -X 'github.com/solo-io/gloo/pkg/version.Version=$(VERSION)'
+export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/pkg/version.Version=$(VERSION)'
 export GCFLAGS ?=
 
 UNAME_M := $(shell uname -m)
@@ -143,7 +143,7 @@ fmt:
 # Formats code and imports
 .PHONY: fmt-v2
 fmt-v2:
-	go run golang.org/x/tools/cmd/goimports -local "github.com/solo-io/gloo/"  -w $(shell ls -d */ | grep -v vendor)
+	go run golang.org/x/tools/cmd/goimports -local "github.com/kgateway-dev/kgateway/"  -w $(shell ls -d */ | grep -v vendor)
 
 .PHONY: fmt-changed
 fmt-changed:
@@ -681,14 +681,14 @@ else
 # example: 1.16.0-beta4-{TEST_ASSET_ID}
 VERSION = $(shell echo $(git_tag) | cut -c 2-)-$(TEST_ASSET_ID)
 endif
-LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
+LDFLAGS := "-X github.com/kgateway-dev/kgateway/pkg/version.Version=$(VERSION)"
 endif
 
 # TODO: delete this logic block when we have a github actions-managed release
 ifneq (,$(TAGGED_VERSION))
 PUBLISH_CONTEXT := RELEASE
 VERSION := $(shell echo $(TAGGED_VERSION) | cut -c 2-)
-LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
+LDFLAGS := "-X github.com/kgateway-dev/kgateway/pkg/version.Version=$(VERSION)"
 endif
 
 export VERSION

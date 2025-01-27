@@ -10,8 +10,8 @@ set -x
 APIS_PKG=""
 
 readonly SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE}")" && pwd)"
-readonly OUTPUT_PKG=github.com/solo-io/gloo/projects/gateway2/pkg/client
-readonly APIS_PKG=github.com/solo-io/gloo/projects/gateway2
+readonly OUTPUT_PKG=github.com/kgateway-dev/kgateway/projects/gateway2/pkg/client
+readonly APIS_PKG=github.com/kgateway-dev/kgateway/projects/gateway2
 readonly CLIENTSET_NAME=versioned
 readonly CLIENTSET_PKG_NAME=clientset
 readonly VERSIONS=(v1alpha1)

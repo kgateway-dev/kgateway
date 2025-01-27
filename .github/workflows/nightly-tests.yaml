@@ -214,7 +214,7 @@ jobs:
   #   runs-on: ubuntu-22.04
   #   timeout-minutes: 60
   #   # Previously, there was an environment variable, RELEASED_VERSION="LATEST" set.  This made use of some internal code:
-  #   #       https://github.com/solo-io/gloo/blob/main/test/kube2e/util.go#L229-L241
+  #   #       https://github.com/kgateway-dev/kgateway/blob/main/test/kube2e/util.go#L229-L241
   #   # which modified our testing process to pull the latest beta release.
   #   #
   #   # NOW, however, running this job is the same as normal CI.  (building a local chart, then using it)

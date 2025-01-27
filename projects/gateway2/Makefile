@@ -3,7 +3,7 @@ ifneq (,$(TAGGED_VERSION))
 VERSION := $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 endif
 
-LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
+LDFLAGS := "-X github.com/kgateway-dev/kgateway/pkg/version.Version=$(VERSION)"
 
 # TODO (Law[revert]): need to add CLI tests here, see CI pr.yaml workflow
 .PHONY: test

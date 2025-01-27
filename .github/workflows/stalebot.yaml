@@ -27,8 +27,8 @@ jobs:
             It will be closed in the next ${{ env.DAYS_BEFORE_ISSUE_CLOSE }} days unless it is tagged "no stalebot" or other activity occurs.
           close-issue-message: >
             This issue has been closed due to no activity in the last 12 months.
-          stale-issue-label: 'stale' # https://github.com/solo-io/gloo/labels/stale
-          exempt-issue-labels: 'no stalebot' # https://github.com/solo-io/gloo/labels/no%20stalebot
+          stale-issue-label: 'stale' # https://github.com/kgateway-dev/kgateway/labels/stale
+          exempt-issue-labels: 'no stalebot' # https://github.com/kgateway-dev/kgateway/labels/no%20stalebot
           enable-statistics: true
           operations-per-run: 1000
           ascending: true # asc means oldest first
