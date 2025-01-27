@@ -1,5 +1,3 @@
-//go:build exclude
-
 package static_test
 
 import (

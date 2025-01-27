@@ -1,5 +1,3 @@
-//go:build exclude
-
 package headless_svc
 
 import (

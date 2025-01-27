@@ -1,5 +1,3 @@
-//go:build exclude
-
 package upstream_test
 
 import (

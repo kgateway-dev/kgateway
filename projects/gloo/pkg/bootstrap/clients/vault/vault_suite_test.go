@@ -1,5 +1,3 @@
-//go:build exclude
-
 package vault_test
 
 import (

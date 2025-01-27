@@ -1,5 +1,3 @@
-//go:build exclude
-
 package settings_test
 
 import (

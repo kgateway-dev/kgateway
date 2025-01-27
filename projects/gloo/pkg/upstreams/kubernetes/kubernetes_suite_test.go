@@ -1,5 +1,3 @@
-//go:build exclude
-
 package kubernetes_test
 
 import (

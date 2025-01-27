@@ -1,5 +1,3 @@
-//go:build exclude
-
 package validation_allow_warnings
 
 import (

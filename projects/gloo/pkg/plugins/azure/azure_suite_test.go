@@ -1,5 +1,3 @@
-//go:build exclude
-
 package azure_test
 
 import (

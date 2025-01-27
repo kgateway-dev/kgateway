@@ -1,5 +1,3 @@
-//go:build exclude
-
 package kube2e
 
 import (

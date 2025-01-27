@@ -1,5 +1,3 @@
-//go:build exclude
-
 package translator_test
 
 import (

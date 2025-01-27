@@ -1,5 +1,3 @@
-//go:build exclude
-
 package helpers_test
 
 import (

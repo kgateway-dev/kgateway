@@ -1,5 +1,3 @@
-//go:build exclude
-
 package gateway_test
 
 import (

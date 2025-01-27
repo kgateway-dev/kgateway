@@ -1,5 +1,3 @@
-//go:build exclude
-
 package helpers
 
 // from here: https://golang.org/src/crypto/tls/generate_cert.go

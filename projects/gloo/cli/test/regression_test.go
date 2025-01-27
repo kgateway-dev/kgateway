@@ -1,5 +1,3 @@
-//go:build exclude
-
 package cli_unit_test
 
 import (

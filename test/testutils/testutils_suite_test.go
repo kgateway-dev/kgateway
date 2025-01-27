@@ -1,5 +1,3 @@
-//go:build exclude
-
 package testutils_test
 
 import (

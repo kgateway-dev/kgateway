@@ -1,5 +1,3 @@
-//go:build exclude
-
 package hcm_test
 
 import (

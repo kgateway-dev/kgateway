@@ -1,5 +1,3 @@
-//go:build exclude
-
 package v1helpers
 
 import (

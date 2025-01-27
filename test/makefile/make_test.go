@@ -1,5 +1,3 @@
-//go:build exclude
-
 package makefile_test
 
 import (

@@ -1,5 +1,3 @@
-//go:build exclude
-
 package consul_test
 
 import (

@@ -1,5 +1,3 @@
-//go:build exclude
-
 package printers_test
 
 import (

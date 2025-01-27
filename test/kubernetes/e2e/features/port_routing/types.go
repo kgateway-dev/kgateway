@@ -1,5 +1,3 @@
-//go:build exclude
-
 package port_routing
 
 import (

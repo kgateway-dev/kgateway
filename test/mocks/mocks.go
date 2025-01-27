@@ -1,5 +1,3 @@
-//go:build exclude
-
 package mocks
 
 //go:generate go run github.com/golang/mock/mockgen -destination ./cache/corecache.go github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache KubeCoreCache

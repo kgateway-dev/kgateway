@@ -1,5 +1,3 @@
-//go:build exclude
-
 package k8sadmission_test
 
 import (

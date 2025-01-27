@@ -1,5 +1,3 @@
-//go:build exclude
-
 package example
 
 // This file is an example for developers.

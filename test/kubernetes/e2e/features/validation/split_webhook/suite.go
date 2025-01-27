@@ -1,5 +1,3 @@
-//go:build exclude
-
 package split_webhook
 
 import (

@@ -1,5 +1,3 @@
-//go:build exclude
-
 package create_test
 
 import (

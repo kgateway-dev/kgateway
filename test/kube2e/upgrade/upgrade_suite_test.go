@@ -1,5 +1,3 @@
-//go:build exclude
-
 package upgrade_test
 
 import (

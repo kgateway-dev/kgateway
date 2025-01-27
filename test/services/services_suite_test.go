@@ -1,5 +1,3 @@
-//go:build exclude
-
 package services_test
 
 import (

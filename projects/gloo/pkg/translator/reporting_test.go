@@ -1,5 +1,3 @@
-//go:build exclude
-
 package translator
 
 // The functions in this file are private to our translator package, but warrant their own tests.

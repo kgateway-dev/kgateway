@@ -1,5 +1,3 @@
-//go:build exclude
-
 package reporting_test
 
 import (

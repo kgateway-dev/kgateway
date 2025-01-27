@@ -1,5 +1,3 @@
-//go:build exclude
-
 package route_delegation
 
 import (

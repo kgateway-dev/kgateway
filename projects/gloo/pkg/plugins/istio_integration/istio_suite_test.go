@@ -1,5 +1,3 @@
-//go:build exclude
-
 package istio_integration_test
 
 import (
