@@ -14,7 +14,6 @@ linters:
     # Given that we have not had linting enabled in this repository, it would be a large change to turn on all linters immediately.
     # We are aiming to progressively enable linters.
     # If you see a linter that can be added, please do so.
-    # See: https://github.com/solo-io/gloo-mesh-enterprise/blob/main/.golangci.yaml for a reference
     - bodyclose
     - ginkgolinter
     - goimports
@@ -35,8 +34,6 @@ linters-settings:
         alias: metav1
       - pkg: k8s.io/api/batch/v1
         alias: batchv1
-      - pkg: github.com/solo-io/gloo/test/kubernetes/testutils/clients
-        alias: kubetestclients
   nakedret:
     # The team consensus is that naked returns hinder the readability of the code.
     # However, named return values can still be useful as documentation for certain scenarios.
