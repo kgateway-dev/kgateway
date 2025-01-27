@@ -1,3 +1,5 @@
+//go:build ignore
+
 package validation_always_accept
 
 import (

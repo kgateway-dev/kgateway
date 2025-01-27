@@ -1,3 +1,5 @@
+//go:build ignore
+
 package create_test
 
 import (

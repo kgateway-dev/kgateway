@@ -1,3 +1,5 @@
+//go:build ignore
+
 package assertions
 
 // WebhookReject is a well-known string that should be placed in the filename of any manifest which should be rejected

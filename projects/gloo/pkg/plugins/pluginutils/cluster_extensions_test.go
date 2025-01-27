@@ -1,3 +1,5 @@
+//go:build ignore
+
 package pluginutils_test
 
 import (

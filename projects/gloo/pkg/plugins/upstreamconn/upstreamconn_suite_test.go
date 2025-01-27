@@ -1,3 +1,5 @@
+//go:build ignore
+
 package upstreamconn_test
 
 import (

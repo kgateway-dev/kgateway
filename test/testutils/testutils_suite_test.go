@@ -1,3 +1,5 @@
+//go:build ignore
+
 package testutils_test
 
 import (

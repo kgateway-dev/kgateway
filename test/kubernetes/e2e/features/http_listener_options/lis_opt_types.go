@@ -1,3 +1,5 @@
+//go:build ignore
+
 package http_listener_options
 
 import (

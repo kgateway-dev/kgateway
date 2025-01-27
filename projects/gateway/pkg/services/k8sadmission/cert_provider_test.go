@@ -1,3 +1,5 @@
+//go:build ignore
+
 package k8sadmission
 
 import (

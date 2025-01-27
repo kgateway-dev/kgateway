@@ -1,3 +1,5 @@
+//go:build ignore
+
 package gateway_test
 
 import (

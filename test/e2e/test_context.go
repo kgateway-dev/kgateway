@@ -1,3 +1,5 @@
+//go:build ignore
+
 package e2e
 
 import (

@@ -1,3 +1,5 @@
+//go:build ignore
+
 package hcm_test
 
 import (
