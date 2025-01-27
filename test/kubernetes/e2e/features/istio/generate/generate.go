@@ -7,9 +7,9 @@ import (
 	"log"
 	"path/filepath"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/istio"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/resources"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/istio"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/resources"
 	"github.com/solo-io/skv2/codegen/util"
 )
 

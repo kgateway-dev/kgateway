@@ -3,7 +3,7 @@ package httproute
 import (
 	"testing"
 
-	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"

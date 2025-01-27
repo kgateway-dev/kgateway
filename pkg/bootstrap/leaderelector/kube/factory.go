@@ -6,8 +6,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
-	"github.com/solo-io/gloo/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector"
+	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
 	"github.com/solo-io/go-utils/contextutils"
 	"k8s.io/client-go/rest"
 	k8sleaderelection "k8s.io/client-go/tools/leaderelection"
@@ -110,7 +110,7 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 						config.OnStoppedLeading()
 						if recoverIfKubeAPIServerIsUnreachable {
 							// Recreate the elected channel and reset the identity to a follower
-							// Ref: https://github.com/solo-io/gloo/issues/7346
+							// Ref: https://github.com/kgateway-dev/kgateway/issues/7346
 							elected = make(chan struct{})
 							identity.Reset(elected)
 							// Die if we are unable to recover from this within the recoveryTimeout

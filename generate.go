@@ -38,7 +38,7 @@ func main() {
 	generateOptions := cmd.GenerateOptions{
 		SkipGenMocks: true,
 		CustomCompileProtos: []string{
-			"github.com/solo-io/gloo/projects/gloo/api/grpc",
+			"github.com/kgateway-dev/kgateway/projects/gloo/api/grpc",
 		},
 		SkipGeneratedTests: true,
 		// helps to cut down on time spent searching for imports, not strictly necessary
@@ -57,7 +57,7 @@ func main() {
 			},
 			RenderOptions: &options.RenderOptions{
 				SkipLinksForPathPrefixes: []string{
-					"github.com/solo-io/gloo/projects/gloo/api/external",
+					"github.com/kgateway-dev/kgateway/projects/gloo/api/external",
 				},
 			},
 		},
@@ -76,7 +76,7 @@ func main() {
 
 				// These messages are part of our internal API, and therefore aren't required
 				// Also they are quite large and can cause the Proxy CRD to become too large,
-				// resulting in: https://github.com/solo-io/gloo/issues/4789
+				// resulting in: https://github.com/kgateway-dev/kgateway/issues/4789
 				"gloo.solo.io.HttpListener",
 				"gloo.solo.io.TcpListener",
 				"gloo.solo.io.HybridListener",
@@ -98,6 +98,6 @@ func main() {
 }
 
 func removeExternalApiDocs() error {
-	const externalApiDocsPath = "docs/content/reference/api/github.com/solo-io/gloo/projects/gloo/api/external"
+	const externalApiDocsPath = "docs/content/reference/api/github.com/kgateway-dev/kgateway/projects/gloo/api/external"
 	return os.RemoveAll(externalApiDocsPath)
 }

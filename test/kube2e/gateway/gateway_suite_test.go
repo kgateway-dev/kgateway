@@ -9,23 +9,23 @@ import (
 	"testing"
 	"time"
 
-	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/skv2/codegen/util"
 
-	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
+	kubetestclients "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/clients"
 
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
 
-	kubeutils2 "github.com/solo-io/gloo/test/testutils"
+	kubeutils2 "github.com/kgateway-dev/kgateway/test/testutils"
 
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	gatewaydefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
 
-	gloodefaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	gloodefaults "github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 
-	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/gloo/test/kube2e/helper"
-	testruntime "github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
+	"github.com/kgateway-dev/kgateway/test/helpers"
+	"github.com/kgateway-dev/kgateway/test/kube2e"
+	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
+	testruntime "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/runtime"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 
 	. "github.com/onsi/ginkgo/v2"

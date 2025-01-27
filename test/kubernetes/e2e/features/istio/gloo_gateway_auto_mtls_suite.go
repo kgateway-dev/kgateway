@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils"
-	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
-	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/resources"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/resources"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

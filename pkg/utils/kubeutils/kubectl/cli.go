@@ -12,12 +12,12 @@ import (
 
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/solo-io/gloo/pkg/utils/cmdutils"
-	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/pkg/utils/cmdutils"
+	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
 	"github.com/solo-io/k8s-utils/testutils/kube"
 
 	"github.com/avast/retry-go/v4"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/portforward"
 )
 
 // Cli is a utility for executing `kubectl` commands

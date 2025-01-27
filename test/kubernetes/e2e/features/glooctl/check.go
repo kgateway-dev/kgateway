@@ -74,8 +74,8 @@ var (
 		},
 		"route-tables": {
 			// RouteTable CRs are not currently included in `glooctl check`
-			// https://github.com/solo-io/gloo/issues/4244
-			// https://github.com/solo-io/gloo/issues/2780
+			// https://github.com/kgateway-dev/kgateway/issues/4244
+			// https://github.com/kgateway-dev/kgateway/issues/2780
 			include:  gstruct.Ignore(),
 			exclude:  gstruct.Ignore(),
 			readOnly: gstruct.Ignore(),

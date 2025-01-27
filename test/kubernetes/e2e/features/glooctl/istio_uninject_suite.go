@@ -7,10 +7,10 @@ import (
 	"fmt"
 
 	"github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/istio"
-	"github.com/solo-io/gloo/test/gomega/matchers"
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/cmd/istio"
+	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

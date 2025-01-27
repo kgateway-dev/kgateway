@@ -7,7 +7,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	anypb "github.com/golang/protobuf/ptypes/any"
 	"github.com/pkg/errors"
-	"github.com/solo-io/gloo/projects/gateway2/utils"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils"
 )
 
 func EnvoySingleEndpointLoadAssignment(out *envoy_config_cluster_v3.Cluster, address string, port uint32) {

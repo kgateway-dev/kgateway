@@ -4,16 +4,16 @@ package samples
 
 import (
 	"github.com/golang/protobuf/ptypes/wrappers"
-	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
-	gloohelpers "github.com/solo-io/gloo/test/helpers"
+	gwv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/core/matchers"
+	v1snap "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/hcm"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/static"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/ssl"
+	gloohelpers "github.com/kgateway-dev/kgateway/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 

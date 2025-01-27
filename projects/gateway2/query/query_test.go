@@ -4,15 +4,15 @@ import (
 	"context"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/pkg/schemes"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
-	"github.com/solo-io/gloo/projects/gateway2/ir"
+	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -26,13 +26,13 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
-	"github.com/solo-io/gloo/projects/gateway2/query"
-	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
-	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/krtcollections"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/query"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
 )
 
-//go:generate go run github.com/golang/mock/mockgen -destination mocks/mock_queries.go -package mocks github.com/solo-io/gloo/projects/gateway2/query GatewayQueries
+//go:generate go run github.com/golang/mock/mockgen -destination mocks/mock_queries.go -package mocks github.com/kgateway-dev/kgateway/projects/gateway2/query GatewayQueries
 
 var _ = Describe("Query", func() {
 	var (

@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gleak"
 	"github.com/onsi/gomega/types"
-	"github.com/solo-io/gloo/test/gomega/assertions"
+	"github.com/kgateway-dev/kgateway/test/gomega/assertions"
 )
 
 var _ = Describe("GoRoutineMonitor", func() {
@@ -41,7 +41,7 @@ var _ = Describe("GoRoutineMonitor", func() {
 
 		monitor.ExpectNoLeaks(&assertions.ExpectNoLeaksArgs{
 			AllowedRoutines: []types.GomegaMatcher{
-				gleak.IgnoringInBacktrace("github.com/solo-io/gloo/test/gomega/assertions_test.init"),
+				gleak.IgnoringInBacktrace("github.com/kgateway-dev/kgateway/test/gomega/assertions_test.init"),
 			},
 		})
 

@@ -15,10 +15,10 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
 	"github.com/onsi/gomega/types"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	"github.com/solo-io/gloo/test/gomega/matchers"
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
 	"github.com/stretchr/testify/suite"
 )
 

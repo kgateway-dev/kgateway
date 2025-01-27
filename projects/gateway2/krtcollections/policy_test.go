@@ -12,9 +12,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
-	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
+	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"

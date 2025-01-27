@@ -5,8 +5,8 @@ package zero_downtime_rollout
 import (
 	"path/filepath"
 
-	"github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/tests/base"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests/base"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/solo-io/skv2/codegen/util"

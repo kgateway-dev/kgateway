@@ -16,13 +16,13 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/onsi/ginkgo/v2"
 
-	"github.com/solo-io/gloo/pkg/cliutil/install"
-	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
-	glooAdminCli "github.com/solo-io/gloo/pkg/utils/glooadminutils/admincli"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
-	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
-	"github.com/solo-io/gloo/projects/gateway2/admin"
+	"github.com/kgateway-dev/kgateway/pkg/cliutil/install"
+	"github.com/kgateway-dev/kgateway/pkg/utils/envoyutils/admincli"
+	glooAdminCli "github.com/kgateway-dev/kgateway/pkg/utils/glooadminutils/admincli"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/portforward"
+	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/admin"
 	"github.com/solo-io/go-utils/threadsafe"
 )
 

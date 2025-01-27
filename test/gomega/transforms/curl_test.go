@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
-	"github.com/solo-io/gloo/test/gomega/transforms"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
+	"github.com/kgateway-dev/kgateway/test/gomega/transforms"
 
 	"github.com/onsi/gomega/gstruct"
-	"github.com/solo-io/gloo/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

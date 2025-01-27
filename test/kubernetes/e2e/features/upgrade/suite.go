@@ -9,9 +9,9 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/tests/base"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests/base"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/helper"
 	"github.com/solo-io/skv2/codegen/util"
 )
 

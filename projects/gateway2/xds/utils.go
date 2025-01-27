@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 )
 

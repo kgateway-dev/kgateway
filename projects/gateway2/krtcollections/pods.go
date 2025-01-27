@@ -3,8 +3,8 @@ package krtcollections
 import (
 	"maps"
 
-	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 	"istio.io/api/label"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"

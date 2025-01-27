@@ -5,7 +5,7 @@ package test
 import (
 	"fmt"
 
-	glootestutils "github.com/solo-io/gloo/test/testutils"
+	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo/v2"

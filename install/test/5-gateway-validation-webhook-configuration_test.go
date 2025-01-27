@@ -11,12 +11,12 @@ import (
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/onsi/gomega/types"
-	glootestutils "github.com/solo-io/gloo/test/testutils"
+	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
 	v1 "k8s.io/api/admissionregistration/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	gloostringutils "github.com/solo-io/gloo/pkg/utils/stringutils"
+	gloostringutils "github.com/kgateway-dev/kgateway/pkg/utils/stringutils"
 	"github.com/solo-io/go-utils/stringutils"
 	"github.com/solo-io/k8s-utils/installutils/kuberesource"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"

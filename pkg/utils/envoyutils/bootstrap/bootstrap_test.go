@@ -4,7 +4,7 @@ import (
 	"context"
 
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
-	"github.com/solo-io/gloo/projects/gateway2/utils"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils"
 
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"

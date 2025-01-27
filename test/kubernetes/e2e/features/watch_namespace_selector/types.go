@@ -5,13 +5,13 @@ package watch_namespace_selector
 import (
 	"path/filepath"
 
-	"github.com/solo-io/gloo/test/kubernetes/e2e/tests/base"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests/base"
 	"github.com/solo-io/skv2/codegen/util"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	e2edefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
+	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
+	e2edefaults "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

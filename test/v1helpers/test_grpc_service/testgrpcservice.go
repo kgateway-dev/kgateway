@@ -11,7 +11,7 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 
-	glootest "github.com/solo-io/gloo/test/v1helpers/test_grpc_service/glootest/protos"
+	glootest "github.com/kgateway-dev/kgateway/test/v1helpers/test_grpc_service/glootest/protos"
 	"github.com/solo-io/go-utils/healthchecker"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"

@@ -3,7 +3,7 @@
 package testutils
 
 import (
-	"github.com/solo-io/gloo/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
 )
 
 const (

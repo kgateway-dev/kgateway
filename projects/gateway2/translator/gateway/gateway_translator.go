@@ -3,15 +3,15 @@ package gateway
 import (
 	"context"
 
-	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
-	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/utils"
+	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils"
 	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/kube/krt"
 
-	"github.com/solo-io/gloo/projects/gateway2/query"
-	"github.com/solo-io/gloo/projects/gateway2/reports"
-	"github.com/solo-io/gloo/projects/gateway2/translator/listener"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/query"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/reports"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/translator/listener"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )

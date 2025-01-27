@@ -3,7 +3,7 @@
 package scheme
 
 import (
-	gatewayv1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
+	gatewayv1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

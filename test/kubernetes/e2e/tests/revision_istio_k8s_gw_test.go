@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/utils/envutils"
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	. "github.com/solo-io/gloo/test/kubernetes/e2e/tests"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
-	"github.com/solo-io/gloo/test/testutils"
+	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	. "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/gloogateway"
+	"github.com/kgateway-dev/kgateway/test/testutils"
 )
 
 // TestK8sGatewayIstioRevision is the function which executes a series of tests against a given installation with

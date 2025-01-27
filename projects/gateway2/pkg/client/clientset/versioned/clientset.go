@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	gatewayv1alpha1 "github.com/solo-io/gloo/projects/gateway2/pkg/client/clientset/versioned/typed/api/v1alpha1"
+	gatewayv1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/pkg/client/clientset/versioned/typed/api/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"

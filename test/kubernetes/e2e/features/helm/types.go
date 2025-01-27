@@ -5,7 +5,7 @@ package helm
 import (
 	"path/filepath"
 
-	"github.com/solo-io/gloo/test/kubernetes/e2e/tests/base"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests/base"
 	"github.com/solo-io/skv2/codegen/util"
 )
 

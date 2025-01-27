@@ -10,8 +10,8 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
 
-	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
-	"github.com/solo-io/gloo/projects/gateway2/ir"
+	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 

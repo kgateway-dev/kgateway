@@ -5,25 +5,25 @@ package e2e_test
 import (
 	"testing"
 
-	"github.com/solo-io/gloo/test/services/envoy"
+	"github.com/kgateway-dev/kgateway/test/services/envoy"
 
-	"github.com/solo-io/gloo/test/ginkgo/labels"
+	"github.com/kgateway-dev/kgateway/test/ginkgo/labels"
 
-	"github.com/solo-io/gloo/test/e2e"
+	"github.com/kgateway-dev/kgateway/test/e2e"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/solo-io/gloo/test/services"
+	"github.com/kgateway-dev/kgateway/test/services"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/test/helpers"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 )
 
 func TestE2e(t *testing.T) {
-	// https://github.com/solo-io/gloo/issues/7147
+	// https://github.com/kgateway-dev/kgateway/issues/7147
 	// We ought to add goroutine leak validation to these tests
 	// See the attached issue for context around why this is valuable and previous attempts to incorporate it
 

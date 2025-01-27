@@ -11,13 +11,13 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/config"
 
-	"github.com/solo-io/gloo/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/pkg/schemes"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
-	"github.com/solo-io/gloo/projects/gateway2/controller"
-	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/controller"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"

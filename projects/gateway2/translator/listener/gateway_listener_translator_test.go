@@ -13,12 +13,12 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
-	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/query"
-	"github.com/solo-io/gloo/projects/gateway2/query/mocks"
-	"github.com/solo-io/gloo/projects/gateway2/reports"
-	"github.com/solo-io/gloo/projects/gateway2/translator/listener"
-	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/query"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/query/mocks"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/reports"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/translator/listener"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
 )
 
 var (

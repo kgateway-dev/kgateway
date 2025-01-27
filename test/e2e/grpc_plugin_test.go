@@ -11,31 +11,31 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/solo-io/gloo/test/services/envoy"
+	"github.com/kgateway-dev/kgateway/test/services/envoy"
 
-	"github.com/solo-io/gloo/test/e2e"
+	"github.com/kgateway-dev/kgateway/test/e2e"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
-	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/services"
-	"github.com/solo-io/gloo/test/v1helpers"
+	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
+	gwdefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/grpc"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/transformation"
+	"github.com/kgateway-dev/kgateway/test/helpers"
+	"github.com/kgateway-dev/kgateway/test/services"
+	"github.com/kgateway-dev/kgateway/test/v1helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 )
 
 var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
@@ -63,7 +63,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 			},
 			Settings: &gloov1.Settings{
 				Gloo: &gloov1.GlooOptions{
-					// https://github.com/solo-io/gloo/issues/8374
+					// https://github.com/kgateway-dev/kgateway/issues/8374
 					RemoveUnusedFilters: &wrappers.BoolValue{Value: false},
 				},
 				Discovery: &gloov1.Settings_DiscoveryOptions{

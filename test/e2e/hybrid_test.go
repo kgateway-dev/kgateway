@@ -12,23 +12,23 @@ import (
 
 	"math/rand"
 
-	"github.com/solo-io/gloo/test/gomega/matchers"
-	gloohelpers "github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/testutils"
+	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	gloohelpers "github.com/kgateway-dev/kgateway/test/helpers"
+	"github.com/kgateway-dev/kgateway/test/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/proxy_protocol"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
-	"github.com/solo-io/gloo/test/e2e"
+	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
+	gatewaydefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
+	v3 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/envoy/config/core/v3"
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/headers"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/proxy_protocol"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/ssl"
+	"github.com/kgateway-dev/kgateway/test/e2e"
 )
 
 type ClientConnectionProperties struct {
@@ -420,7 +420,7 @@ var _ = Describe("Hybrid Gateway", func() {
 				// for the next 2 entries, no filter chain match is recorded
 				// because the filter chain translator aborts translation if there
 				// are no network filters (ie. virtual hosts)
-				// https://github.com/solo-io/gloo/blob/d3879f282da00dc0cb6c8c9366a87b48ca1a382b/projects/gloo/pkg/translator/filter_chain.go#L94-L96
+				// https://github.com/kgateway-dev/kgateway/blob/d3879f282da00dc0cb6c8c9366a87b48ca1a382b/projects/gloo/pkg/translator/filter_chain.go#L94-L96
 				// so even though the ip matches, we expect the request to fail
 				// similar to the above test.
 				// there is a workaround for this: by setting SniDomains to '*.', a

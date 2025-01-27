@@ -12,9 +12,9 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	awspb "github.com/solo-io/envoy-gloo/go/config/filter/http/aws_lambda/v2"
-	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
-	"github.com/solo-io/gloo/projects/gateway2/extensions2/pluginutils"
-	"github.com/solo-io/gloo/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 

@@ -14,10 +14,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
 
 	"github.com/avast/retry-go/v4"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/portforward"
 
 	"github.com/hashicorp/go-multierror"
 	errors "github.com/rotisserie/eris"

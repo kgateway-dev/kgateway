@@ -10,7 +10,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"go.uber.org/zap"
 
-	"github.com/solo-io/gloo/projects/sds/pkg/server"
+	"github.com/kgateway-dev/kgateway/projects/sds/pkg/server"
 	"github.com/solo-io/go-utils/contextutils"
 )
 

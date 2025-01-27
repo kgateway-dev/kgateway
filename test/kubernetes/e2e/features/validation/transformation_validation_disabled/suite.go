@@ -5,8 +5,8 @@ package transformation_validation_disabled
 import (
 	"context"
 
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/validation"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/validation"
 	"github.com/stretchr/testify/suite"
 )
 

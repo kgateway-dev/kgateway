@@ -5,9 +5,9 @@ package v1alpha1
 import (
 	"context"
 
-	apiv1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/applyconfiguration/api/v1alpha1"
-	v1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
-	scheme "github.com/solo-io/gloo/projects/gateway2/pkg/client/clientset/versioned/scheme"
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/applyconfiguration/api/v1alpha1"
+	v1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
+	scheme "github.com/kgateway-dev/kgateway/projects/gateway2/pkg/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"

@@ -6,9 +6,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	testdefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/validation"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	testdefaults "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/validation"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/stretchr/testify/suite"

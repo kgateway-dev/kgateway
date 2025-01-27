@@ -3,10 +3,10 @@
 package tests
 
 import (
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/validation/split_webhook"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/validation/validation_reject_invalid"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/validation/validation_strict_warnings"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/validation/split_webhook"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/validation/validation_reject_invalid"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/validation/validation_strict_warnings"
 )
 
 // ValidationStrictSuiteRunnerAll is used to run all the validation tests, including ones that depend on the helm chart/values/helpers

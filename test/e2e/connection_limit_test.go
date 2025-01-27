@@ -6,15 +6,15 @@ import (
 	"sync"
 	"time"
 
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/connection_limit"
-	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
-	"github.com/solo-io/gloo/test/e2e"
-	"github.com/solo-io/gloo/test/gomega/matchers"
-	gloohelpers "github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/testutils"
+	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
+	gatewaydefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/connection_limit"
+	fault "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/faultinjection"
+	"github.com/kgateway-dev/kgateway/test/e2e"
+	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	gloohelpers "github.com/kgateway-dev/kgateway/test/helpers"
+	"github.com/kgateway-dev/kgateway/test/testutils"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -95,7 +95,7 @@ var _ = Describe("Connection Limit", func() {
 		// [error][envoy_bug] [external/envoy/source/common/http/conn_manager_impl.cc:527] envoy bug failure: !local_close_reason.empty(). Details: Local Close Reason was not set!
 		// This has been fixed in envoy v1.27.0 but since we still use v1.26.x, this issue intermittently occurs.
 		// Since this bug doesn't affect the functionally of the ConnectionLimit filter (requests still do not cross the limit), we're adding FlakeAttempts until we move to a version of envoy with this fix.
-		// More info can be found here : https://github.com/solo-io/gloo/issues/8531
+		// More info can be found here : https://github.com/kgateway-dev/kgateway/issues/8531
 		It("Should drop connections after limit is reached", FlakeAttempts(5), func() {
 			var wg sync.WaitGroup
 			httpClient := testutils.DefaultClientBuilder().WithTimeout(time.Second * 10).Build()

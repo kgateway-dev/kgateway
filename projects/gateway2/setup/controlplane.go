@@ -13,7 +13,7 @@ import (
 	xdsserver "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
-	"github.com/solo-io/gloo/projects/gateway2/xds"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"

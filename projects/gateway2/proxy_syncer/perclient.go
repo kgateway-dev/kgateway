@@ -5,8 +5,8 @@ import (
 
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 	"go.uber.org/zap"
 	"istio.io/istio/pkg/kube/krt"
 )

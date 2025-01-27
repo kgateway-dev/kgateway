@@ -3,7 +3,7 @@
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
+	v1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 )
 
 // AiExtensionStatsApplyConfiguration represents a declarative configuration of the AiExtensionStats type for use

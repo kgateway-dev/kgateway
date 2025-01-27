@@ -5,8 +5,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils/glooadminutils/admincli"
-	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/pkg/utils/glooadminutils/admincli"
+	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
 	"github.com/solo-io/go-utils/threadsafe"
 )
 

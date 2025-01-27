@@ -6,8 +6,8 @@ import (
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gateway2/endpoints"
-	"github.com/solo-io/gloo/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/endpoints"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
 	corev1 "k8s.io/api/core/v1"
 )
 

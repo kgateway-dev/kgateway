@@ -12,15 +12,15 @@ package irtranslator_test
 
 // 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-// 	v1 "github.com/solo-io/gloo/projects/controller/pkg/api/v1"
-// 	solokubev1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-// 	gwquery "github.com/solo-io/gloo/projects/gateway2/query"
-// 	. "github.com/solo-io/gloo/projects/gateway2/translator"
-// 	httplisquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/httplisteneroptions/query"
-// 	lisquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/listeneroptions/query"
-// 	rtoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/routeoptions/query"
-// 	vhoptquery "github.com/solo-io/gloo/projects/gateway2/translator/plugins/virtualhostoptions/query"
-// 	"github.com/solo-io/gloo/projects/gateway2/translator/testutils"
+// 	v1 "github.com/kgateway-dev/kgateway/projects/controller/pkg/api/v1"
+// 	solokubev1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
+// 	gwquery "github.com/kgateway-dev/kgateway/projects/gateway2/query"
+// 	. "github.com/kgateway-dev/kgateway/projects/gateway2/translator"
+// 	httplisquery "github.com/kgateway-dev/kgateway/projects/gateway2/translator/plugins/httplisteneroptions/query"
+// 	lisquery "github.com/kgateway-dev/kgateway/projects/gateway2/translator/plugins/listeneroptions/query"
+// 	rtoptquery "github.com/kgateway-dev/kgateway/projects/gateway2/translator/plugins/routeoptions/query"
+// 	vhoptquery "github.com/kgateway-dev/kgateway/projects/gateway2/translator/plugins/virtualhostoptions/query"
+// 	"github.com/kgateway-dev/kgateway/projects/gateway2/translator/testutils"
 // )
 
 // func CompareProxy2(expectedFile string, actualProxy *v1.Proxy) (string, error) {

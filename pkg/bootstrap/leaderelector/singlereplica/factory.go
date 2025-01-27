@@ -3,7 +3,7 @@ package singlereplica
 import (
 	"context"
 
-	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
+	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector"
 	"github.com/solo-io/go-utils/contextutils"
 )
 

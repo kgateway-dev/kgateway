@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-	. "github.com/solo-io/gloo/projects/gateway2/utils"
+	. "github.com/kgateway-dev/kgateway/projects/gateway2/utils"
 )
 
 type testType struct {

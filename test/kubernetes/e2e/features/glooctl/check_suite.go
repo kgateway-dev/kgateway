@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -17,7 +17,7 @@ import (
 var _ e2e.NewSuiteFunc = NewCheckSuite
 
 // checkSuite contains the set of tests to validate the behavior of `glooctl check`
-// These tests attempt to mirror: https://github.com/solo-io/gloo/blob/v1.16.x/test/kube2e/glooctl/check_test.go
+// These tests attempt to mirror: https://github.com/kgateway-dev/kgateway/blob/v1.16.x/test/kube2e/glooctl/check_test.go
 type checkSuite struct {
 	suite.Suite
 

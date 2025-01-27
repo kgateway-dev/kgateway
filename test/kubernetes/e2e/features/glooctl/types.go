@@ -5,8 +5,8 @@ package glooctl
 import (
 	"path/filepath"
 
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	"github.com/solo-io/skv2/codegen/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"

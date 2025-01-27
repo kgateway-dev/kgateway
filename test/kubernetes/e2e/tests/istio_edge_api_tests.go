@@ -3,10 +3,10 @@
 package tests
 
 import (
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/istio"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/headless_svc"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/istio"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/port_routing"
 )
 
 func IstioEdgeApiSuiteRunner() e2e.SuiteRunner {

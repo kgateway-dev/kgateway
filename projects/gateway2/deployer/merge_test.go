@@ -3,7 +3,7 @@ package deployer
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	gw2_v1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
+	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 	"k8s.io/utils/ptr"
 )
 

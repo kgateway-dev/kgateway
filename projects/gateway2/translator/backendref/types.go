@@ -3,7 +3,7 @@ package backendref
 import (
 	"fmt"
 
-	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 

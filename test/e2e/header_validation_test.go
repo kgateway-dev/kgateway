@@ -5,16 +5,16 @@ package e2e_test
 import (
 	"net/http"
 
-	"github.com/solo-io/gloo/test/testutils"
+	"github.com/kgateway-dev/kgateway/test/testutils"
 
-	"github.com/solo-io/gloo/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	header_validation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/header_validation"
-	"github.com/solo-io/gloo/test/e2e"
+	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	header_validation "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/header_validation"
+	"github.com/kgateway-dev/kgateway/test/e2e"
 )
 
 var _ = Describe("Header Validation", Label(), func() {

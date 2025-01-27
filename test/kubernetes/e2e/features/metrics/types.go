@@ -5,10 +5,10 @@ package metrics
 import (
 	"path/filepath"
 
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
-	testdefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/tests/base"
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/kubernetes"
+	testdefaults "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests/base"
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	appsv1 "k8s.io/api/apps/v1"

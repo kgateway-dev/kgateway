@@ -1,7 +1,7 @@
 package deployer
 
 import (
-	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 )
 

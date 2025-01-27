@@ -12,7 +12,7 @@ import (
 
 	"github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/test/testutils"
+	"github.com/kgateway-dev/kgateway/test/testutils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 	"google.golang.org/protobuf/proto"
 	"istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"

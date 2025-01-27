@@ -8,9 +8,9 @@ import (
 
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_service_secret_v3 "github.com/envoyproxy/go-control-plane/envoy/service/secret/v3"
-	"github.com/solo-io/gloo/projects/sds/pkg/run"
-	"github.com/solo-io/gloo/projects/sds/pkg/server"
-	"github.com/solo-io/gloo/projects/sds/pkg/testutils"
+	"github.com/kgateway-dev/kgateway/projects/sds/pkg/run"
+	"github.com/kgateway-dev/kgateway/projects/sds/pkg/server"
+	"github.com/kgateway-dev/kgateway/projects/sds/pkg/testutils"
 	"github.com/spf13/afero"
 	"google.golang.org/grpc"
 

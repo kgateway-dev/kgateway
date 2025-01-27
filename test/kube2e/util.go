@@ -13,16 +13,16 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils/fsutils"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/test/gomega/assertions"
-	"github.com/solo-io/gloo/test/kube2e/helper"
-	newhelper "github.com/solo-io/gloo/test/kubernetes/testutils/helper"
-	"github.com/solo-io/gloo/test/testutils"
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/cmd/check"
+	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/cmd/options"
+	clienthelpers "github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/helpers"
+	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/printers"
+	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/test/gomega/assertions"
+	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
+	newhelper "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/helper"
+	"github.com/kgateway-dev/kgateway/test/testutils"
 	"github.com/solo-io/go-utils/stats"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -161,7 +161,7 @@ func ToFile(content string) string {
 	return fname
 }
 
-// https://github.com/solo-io/gloo/issues/4043#issuecomment-772706604
+// https://github.com/kgateway-dev/kgateway/issues/4043#issuecomment-772706604
 // We should move tests away from using the testserver, and instead depend on EphemeralContainers.
 // The default response changed in later kube versions, which caused this value to change.
 // Ideally the test utilities used by Gloo are maintained in the Gloo repo, so I opted to move

@@ -3,9 +3,9 @@
 package applyconfiguration
 
 import (
-	apiv1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/applyconfiguration/api/v1alpha1"
-	internal "github.com/solo-io/gloo/projects/gateway2/api/applyconfiguration/internal"
-	v1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/applyconfiguration/api/v1alpha1"
+	internal "github.com/kgateway-dev/kgateway/projects/gateway2/api/applyconfiguration/internal"
+	v1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	testing "k8s.io/client-go/testing"

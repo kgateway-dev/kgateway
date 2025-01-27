@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
 	"go.uber.org/zap"
 	"istio.io/api/networking/v1alpha3"
 

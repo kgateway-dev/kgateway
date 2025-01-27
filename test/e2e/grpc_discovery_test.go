@@ -5,26 +5,26 @@ package e2e_test
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/grpc"
 
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 
-	"github.com/solo-io/gloo/test/testutils"
+	"github.com/kgateway-dev/kgateway/test/testutils"
 
-	"github.com/solo-io/gloo/test/e2e"
+	"github.com/kgateway-dev/kgateway/test/e2e"
 
-	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
+	testmatchers "github.com/kgateway-dev/kgateway/test/gomega/matchers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
-	"github.com/solo-io/gloo/test/services"
-	"github.com/solo-io/gloo/test/v1helpers"
+	"github.com/kgateway-dev/kgateway/test/services"
+	"github.com/kgateway-dev/kgateway/test/v1helpers"
 
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 )
 
 var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
@@ -50,7 +50,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 		})
 		testContext.SetRunSettings(&gloov1.Settings{
 			Gloo: &gloov1.GlooOptions{
-				// https://github.com/solo-io/gloo/issues/7577
+				// https://github.com/kgateway-dev/kgateway/issues/7577
 				RemoveUnusedFilters: &wrappers.BoolValue{Value: false},
 			},
 			Discovery: &gloov1.Settings_DiscoveryOptions{

@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/solo-io/gloo/pkg/utils/channelutils"
+	. "github.com/kgateway-dev/kgateway/pkg/utils/channelutils"
 )
 
 var _ = Describe("Wait", func() {

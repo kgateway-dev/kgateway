@@ -4,7 +4,7 @@ import (
 	"context"
 	"maps"
 
-	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"

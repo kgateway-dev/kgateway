@@ -1,7 +1,7 @@
 package routeutils
 
 import (
-	"github.com/solo-io/gloo/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"

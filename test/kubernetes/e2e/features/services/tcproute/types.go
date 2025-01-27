@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
+	testmatchers "github.com/kgateway-dev/kgateway/test/gomega/matchers"
 
 	"github.com/solo-io/skv2/codegen/util"
 

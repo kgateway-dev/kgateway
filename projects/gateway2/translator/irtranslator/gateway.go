@@ -4,9 +4,9 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
-	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/reports"
+	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/reports"
 	"golang.org/x/net/context"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )

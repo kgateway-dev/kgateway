@@ -7,27 +7,27 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/solo-io/gloo/test/services/envoy"
-	"github.com/solo-io/gloo/test/testutils"
+	"github.com/kgateway-dev/kgateway/test/services/envoy"
+	"github.com/kgateway-dev/kgateway/test/testutils"
 
-	"github.com/solo-io/gloo/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/solo-io/gloo/test/e2e"
-	"github.com/solo-io/gloo/test/helpers"
+	"github.com/kgateway-dev/kgateway/test/e2e"
+	"github.com/kgateway-dev/kgateway/test/helpers"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/onsi/gomega/types"
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	gloo_config_core "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
-	csrf "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
-	gloo_type_matcher "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
-	glootype "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
+	gatewaydefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
+	gloo_config_core "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/envoy/config/core/v3"
+	csrf "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
+	gloo_type_matcher "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
+	glootype "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/envoy/type/v3"
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 )
 
 const (

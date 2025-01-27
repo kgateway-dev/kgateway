@@ -5,7 +5,7 @@ package glooctl
 import (
 	"context"
 
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 	"github.com/stretchr/testify/suite"
 )
 

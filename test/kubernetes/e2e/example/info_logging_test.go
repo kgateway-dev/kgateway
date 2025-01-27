@@ -11,15 +11,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/utils/envutils"
-	"github.com/solo-io/gloo/test/testutils"
+	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/test/testutils"
 
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/example"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/example"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/gloogateway"
 )
 
 // TestInstallationWithInfoLogLevel is the function which executes a series of tests against a given installation

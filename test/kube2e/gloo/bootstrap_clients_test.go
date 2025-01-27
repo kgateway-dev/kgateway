@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/kube"
-	"github.com/solo-io/gloo/test/kube2e/helper"
-	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
+	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector/kube"
+	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
+	kubetestclients "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/clients"
 
 	"github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -22,11 +22,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/hashicorp/consul/api"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	vault_client "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients/vault"
-	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/services"
+	gatewaydefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
+	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	vault_client "github.com/kgateway-dev/kgateway/projects/gloo/pkg/bootstrap/clients/vault"
+	"github.com/kgateway-dev/kgateway/test/helpers"
+	"github.com/kgateway-dev/kgateway/test/services"
 	skclients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,10 +34,10 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/solo-io/gloo/test/gomega"
+	. "github.com/kgateway-dev/kgateway/test/gomega"
 
 	vaultapi "github.com/hashicorp/vault/api"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/bootstrap/clients"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )

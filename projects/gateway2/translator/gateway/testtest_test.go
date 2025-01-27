@@ -17,7 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 	"istio.io/istio/pkg/kube/kclient/clienttest"
 )
 

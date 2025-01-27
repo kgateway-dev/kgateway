@@ -6,18 +6,18 @@ import (
 	"context"
 	"time"
 
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/test/gomega/matchers"
-	"github.com/solo-io/gloo/test/kube2e/helper"
-	testdefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
+	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
+	testdefaults "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/solo-io/gloo/pkg/utils/kubeutils"
-	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite

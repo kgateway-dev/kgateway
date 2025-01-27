@@ -11,8 +11,8 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/solo-io/gloo/test/services/utils"
-	"github.com/solo-io/gloo/test/testutils"
+	"github.com/kgateway-dev/kgateway/test/services/utils"
+	"github.com/kgateway-dev/kgateway/test/testutils"
 	"github.com/stretchr/testify/assert"
 )
 

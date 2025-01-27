@@ -7,29 +7,29 @@ import (
 	"errors"
 	"time"
 
-	"github.com/solo-io/gloo/test/ginkgo/decorators"
+	"github.com/kgateway-dev/kgateway/test/ginkgo/decorators"
 
 	"github.com/golang/protobuf/ptypes/duration"
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/test/e2e"
-	"github.com/solo-io/gloo/test/gomega/matchers"
+	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/test/e2e"
+	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 
-	"github.com/solo-io/gloo/test/testutils"
+	"github.com/kgateway-dev/kgateway/test/testutils"
 
-	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
+	consulplugin "github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/consul"
 
-	"github.com/solo-io/gloo/test/helpers"
+	"github.com/kgateway-dev/kgateway/test/helpers"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/hashicorp/consul/api"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	consulapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
-	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
-	"github.com/solo-io/gloo/test/services"
-	"github.com/solo-io/gloo/test/v1helpers"
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	consulapi "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/consul"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/upstreams/consul"
+	"github.com/kgateway-dev/kgateway/test/services"
+	"github.com/kgateway-dev/kgateway/test/v1helpers"
 )
 
 var _ = Describe("Consul e2e", decorators.Consul, func() {

@@ -1,4 +1,4 @@
-module github.com/solo-io/gloo
+module github.com/kgateway-dev/kgateway
 
 go 1.23.3
 

@@ -3,15 +3,15 @@
 package tests
 
 import (
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/admin_server"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/basicrouting"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/client_tls"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/port_routing"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/tracing"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/validation/validation_allow_warnings"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/validation/validation_reject_invalid"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/admin_server"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/basicrouting"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/client_tls"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/headless_svc"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/port_routing"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/tracing"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/validation/validation_allow_warnings"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/validation/validation_reject_invalid"
 )
 
 func EdgeGwSuiteRunner() e2e.SuiteRunner {

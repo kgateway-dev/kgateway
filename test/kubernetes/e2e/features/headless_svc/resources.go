@@ -18,8 +18,8 @@ import (
 	soloapis_kubernetes "github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1/options/kubernetes"
 	gloocore "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/resources"
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/resources"
 )
 
 const (

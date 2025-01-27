@@ -9,7 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/solo-io/gloo/pkg/utils/probes"
+	. "github.com/kgateway-dev/kgateway/pkg/utils/probes"
 )
 
 var _ = Describe("Probes", func() {

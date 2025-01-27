@@ -6,7 +6,7 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 
-	"github.com/solo-io/gloo/pkg/cliutil"
+	"github.com/kgateway-dev/kgateway/pkg/cliutil"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	survey "gopkg.in/AlecAivazis/survey.v1"
 )

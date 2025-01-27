@@ -9,7 +9,7 @@ import (
 	"github.com/hinshun/vt10x"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/cliutil"
+	"github.com/kgateway-dev/kgateway/pkg/cliutil"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
 )
 

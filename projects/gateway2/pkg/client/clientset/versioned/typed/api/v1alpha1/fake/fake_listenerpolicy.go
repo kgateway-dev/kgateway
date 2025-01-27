@@ -7,8 +7,8 @@ import (
 	json "encoding/json"
 	"fmt"
 
-	apiv1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/applyconfiguration/api/v1alpha1"
-	v1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/applyconfiguration/api/v1alpha1"
+	v1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	types "k8s.io/apimachinery/pkg/types"

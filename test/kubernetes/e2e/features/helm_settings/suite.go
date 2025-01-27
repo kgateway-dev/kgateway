@@ -14,7 +14,7 @@ import (
 
 	"text/template"
 
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/suite"
 )
@@ -36,8 +36,8 @@ var _ e2e.NewSuiteFunc = NewTestingSuite
 // This solution may not be the best way to validate settings, but it
 // attempts to avoid re-running all the helm template tests against a live cluster
 // Reference PRs:
-//   - https://github.com/solo-io/gloo/pull/5957 (introduced)
-//   - https://github.com/solo-io/gloo/pull/9732 (migrated)
+//   - https://github.com/kgateway-dev/kgateway/pull/5957 (introduced)
+//   - https://github.com/kgateway-dev/kgateway/pull/9732 (migrated)
 type testingSuite struct {
 	suite.Suite
 

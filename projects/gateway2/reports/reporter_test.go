@@ -13,7 +13,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
-	"github.com/solo-io/gloo/projects/gateway2/reports"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/reports"
 )
 
 var _ = Describe("Reporting Infrastructure", func() {

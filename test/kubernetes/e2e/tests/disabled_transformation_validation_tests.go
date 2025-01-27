@@ -3,8 +3,8 @@
 package tests
 
 import (
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/validation/transformation_validation_disabled"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/validation/transformation_validation_disabled"
 )
 
 func DisableTransformationValidationSuiteRunner() e2e.SuiteRunner {

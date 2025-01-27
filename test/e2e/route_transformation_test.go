@@ -6,23 +6,23 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/solo-io/gloo/test/testutils"
+	"github.com/kgateway-dev/kgateway/test/testutils"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/onsi/gomega/gstruct"
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/test/e2e"
-	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
-	"github.com/solo-io/gloo/test/gomega/transforms"
-	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/v1helpers"
+	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/test/e2e"
+	testmatchers "github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/test/gomega/transforms"
+	"github.com/kgateway-dev/kgateway/test/helpers"
+	"github.com/kgateway-dev/kgateway/test/v1helpers"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/transformation"
 )
 
 var _ = Describe("Transformations", func() {

@@ -3,10 +3,10 @@
 package fake
 
 import (
-	applyconfiguration "github.com/solo-io/gloo/projects/gateway2/api/applyconfiguration"
-	clientset "github.com/solo-io/gloo/projects/gateway2/pkg/client/clientset/versioned"
-	gatewayv1alpha1 "github.com/solo-io/gloo/projects/gateway2/pkg/client/clientset/versioned/typed/api/v1alpha1"
-	fakegatewayv1alpha1 "github.com/solo-io/gloo/projects/gateway2/pkg/client/clientset/versioned/typed/api/v1alpha1/fake"
+	applyconfiguration "github.com/kgateway-dev/kgateway/projects/gateway2/api/applyconfiguration"
+	clientset "github.com/kgateway-dev/kgateway/projects/gateway2/pkg/client/clientset/versioned"
+	gatewayv1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/pkg/client/clientset/versioned/typed/api/v1alpha1"
+	fakegatewayv1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/pkg/client/clientset/versioned/typed/api/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

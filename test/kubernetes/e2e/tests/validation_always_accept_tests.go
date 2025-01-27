@@ -3,10 +3,10 @@
 package tests
 
 import (
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/server_tls"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/validation/validation_allow_warnings"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/validation/validation_always_accept"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/server_tls"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/validation/validation_allow_warnings"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/validation/validation_always_accept"
 )
 
 func ValidationAlwaysAcceptSuiteRunner() e2e.SuiteRunner {

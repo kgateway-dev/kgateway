@@ -9,24 +9,24 @@ import (
 	"testing"
 	"time"
 
-	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/skv2/codegen/util"
 
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
 
 	"github.com/avast/retry-go"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	"github.com/solo-io/gloo/test/services/envoy"
+	"github.com/kgateway-dev/kgateway/test/services/envoy"
 
-	"github.com/solo-io/gloo/test/services"
+	"github.com/kgateway-dev/kgateway/test/services"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/gloo/test/kube2e/helper"
-	testruntime "github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
-	glootestutils "github.com/solo-io/gloo/test/testutils"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/test/helpers"
+	"github.com/kgateway-dev/kgateway/test/kube2e"
+	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
+	testruntime "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/runtime"
+	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
 	"github.com/solo-io/go-utils/testutils"
 
 	. "github.com/onsi/ginkgo/v2"

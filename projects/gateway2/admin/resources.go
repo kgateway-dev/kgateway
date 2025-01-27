@@ -3,8 +3,8 @@ package admin
 import (
 	"slices"
 
-	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
-	"github.com/solo-io/gloo/projects/gateway2/wellknown"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 

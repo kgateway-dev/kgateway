@@ -4,13 +4,13 @@ import (
 	"context"
 	"os"
 
-	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
 
 	"github.com/go-logr/zapr"
-	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
-	kube2 "github.com/solo-io/gloo/pkg/bootstrap/leaderelector/kube"
-	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
-	"github.com/solo-io/gloo/pkg/version"
+	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector"
+	kube2 "github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector/kube"
+	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector/singlereplica"
+	"github.com/kgateway-dev/kgateway/pkg/version"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

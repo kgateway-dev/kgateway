@@ -14,14 +14,14 @@ import (
 
 	"k8s.io/utils/pointer"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/gloo/test/gomega/matchers"
-	"github.com/solo-io/gloo/test/gomega/transforms"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/test/gomega/transforms"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
-	"github.com/solo-io/gloo/pkg/cliutil"
+	"github.com/kgateway-dev/kgateway/pkg/cliutil"
 	"github.com/solo-io/go-utils/stats"
 )
 

@@ -13,16 +13,16 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/solo-io/gloo/test/services"
+	"github.com/kgateway-dev/kgateway/test/services"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 
 	"github.com/onsi/ginkgo/v2"
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/test/services/utils"
-	"github.com/solo-io/gloo/test/testutils"
-	"github.com/solo-io/gloo/test/testutils/version"
+	"github.com/kgateway-dev/kgateway/test/services/utils"
+	"github.com/kgateway-dev/kgateway/test/testutils"
+	"github.com/kgateway-dev/kgateway/test/testutils/version"
 	"github.com/solo-io/skv2/codegen/util"
 )
 

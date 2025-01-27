@@ -14,7 +14,7 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 
-	"github.com/solo-io/gloo/test/testutils"
+	"github.com/kgateway-dev/kgateway/test/testutils"
 )
 
 // ExecLookPathWrapper is a wrapper around exec.LookPath so it can be mocked in tests.

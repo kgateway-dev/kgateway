@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/solo-io/gloo/pkg/cliutil"
+	"github.com/kgateway-dev/kgateway/pkg/cliutil"
 	"github.com/solo-io/go-utils/testutils"
 )
 

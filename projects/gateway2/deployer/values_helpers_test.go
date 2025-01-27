@@ -3,7 +3,7 @@ package deployer_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gateway2/deployer"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/deployer"
 )
 
 var _ = Describe("Values Helpers", func() {

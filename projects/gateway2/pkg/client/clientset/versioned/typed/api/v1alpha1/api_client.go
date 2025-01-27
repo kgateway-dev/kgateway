@@ -5,8 +5,8 @@ package v1alpha1
 import (
 	"net/http"
 
-	v1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
-	"github.com/solo-io/gloo/projects/gateway2/pkg/client/clientset/versioned/scheme"
+	v1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/pkg/client/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
 

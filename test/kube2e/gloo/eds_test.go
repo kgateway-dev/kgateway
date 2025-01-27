@@ -8,12 +8,12 @@ import (
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/gloo/test/kube2e/helper"
+	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/kgateway-dev/kgateway/test/helpers"
+	"github.com/kgateway-dev/kgateway/test/kube2e"
+	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -87,7 +87,7 @@ var _ = Describe("EDS", func() {
 			kube2e.UpdateRestEdsSetting(ctx, false, testHelper.InstallNamespace)
 		})
 
-		// This test is inspired by the issue here: https://github.com/solo-io/gloo/issues/8968
+		// This test is inspired by the issue here: https://github.com/kgateway-dev/kgateway/issues/8968
 		// There were some versions of Gloo Edge 1.15.x which depended on versions of envoy-gloo
 		// which did not have REST config subscription enabled, and so gateway-proxy logs would
 		// contain warnings about not finding a registered config subscription factory implementation

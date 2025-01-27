@@ -8,7 +8,7 @@ import (
 	"maps"
 
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	"github.com/solo-io/gloo/projects/gateway2/utils"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils"
 	"istio.io/istio/pkg/kube/krt"
 )
 

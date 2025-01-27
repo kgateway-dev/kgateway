@@ -1,7 +1,7 @@
 package ir
 
 import (
-	"github.com/solo-io/gloo/projects/gateway2/plugins"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/plugins"
 	"google.golang.org/protobuf/types/known/anypb"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )

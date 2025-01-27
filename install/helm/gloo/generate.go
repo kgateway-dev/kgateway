@@ -6,7 +6,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/install/helm/gloo/generate"
+	"github.com/kgateway-dev/kgateway/install/helm/gloo/generate"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/k8s-utils/installutils/helmchart"
 )

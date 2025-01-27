@@ -3,8 +3,8 @@
 package tests
 
 import (
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/discovery_watchlabels"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/discovery_watchlabels"
 )
 
 func DiscoveryWatchlabelsSuiteRunner() e2e.SuiteRunner {

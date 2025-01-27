@@ -3,8 +3,8 @@
 package v1alpha1
 
 import (
-	internal "github.com/solo-io/gloo/projects/gateway2/api/applyconfiguration/internal"
-	apiv1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
+	internal "github.com/kgateway-dev/kgateway/projects/gateway2/api/applyconfiguration/internal"
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	managedfields "k8s.io/apimachinery/pkg/util/managedfields"

@@ -17,7 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/k8s-utils/testutils/kube"

@@ -16,51 +16,51 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.AiExtension":                schema_projects_gateway2_api_v1alpha1_AiExtension(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.AiExtensionStats":           schema_projects_gateway2_api_v1alpha1_AiExtensionStats(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.AwsUpstream":                schema_projects_gateway2_api_v1alpha1_AwsUpstream(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.CustomLabel":                schema_projects_gateway2_api_v1alpha1_CustomLabel(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.DirectResponse":             schema_projects_gateway2_api_v1alpha1_DirectResponse(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.DirectResponseList":         schema_projects_gateway2_api_v1alpha1_DirectResponseList(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.DirectResponseSpec":         schema_projects_gateway2_api_v1alpha1_DirectResponseSpec(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.DirectResponseStatus":       schema_projects_gateway2_api_v1alpha1_DirectResponseStatus(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.EnvoyBootstrap":             schema_projects_gateway2_api_v1alpha1_EnvoyBootstrap(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.EnvoyContainer":             schema_projects_gateway2_api_v1alpha1_EnvoyContainer(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.GatewayParameters":          schema_projects_gateway2_api_v1alpha1_GatewayParameters(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.GatewayParametersList":      schema_projects_gateway2_api_v1alpha1_GatewayParametersList(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.GatewayParametersSpec":      schema_projects_gateway2_api_v1alpha1_GatewayParametersSpec(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.GatewayParametersStatus":    schema_projects_gateway2_api_v1alpha1_GatewayParametersStatus(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.GracefulShutdownSpec":       schema_projects_gateway2_api_v1alpha1_GracefulShutdownSpec(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.Host":                       schema_projects_gateway2_api_v1alpha1_Host(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.HttpListenerPolicy":         schema_projects_gateway2_api_v1alpha1_HttpListenerPolicy(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.HttpListenerPolicyList":     schema_projects_gateway2_api_v1alpha1_HttpListenerPolicyList(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.HttpListenerPolicySpec":     schema_projects_gateway2_api_v1alpha1_HttpListenerPolicySpec(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.Image":                      schema_projects_gateway2_api_v1alpha1_Image(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.IstioContainer":             schema_projects_gateway2_api_v1alpha1_IstioContainer(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.IstioIntegration":           schema_projects_gateway2_api_v1alpha1_IstioIntegration(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.KubernetesProxyConfig":      schema_projects_gateway2_api_v1alpha1_KubernetesProxyConfig(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.ListenerPolicy":             schema_projects_gateway2_api_v1alpha1_ListenerPolicy(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.ListenerPolicyList":         schema_projects_gateway2_api_v1alpha1_ListenerPolicyList(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.ListenerPolicySpec":         schema_projects_gateway2_api_v1alpha1_ListenerPolicySpec(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.LocalPolicyTargetReference": schema_projects_gateway2_api_v1alpha1_LocalPolicyTargetReference(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.Pod":                        schema_projects_gateway2_api_v1alpha1_Pod(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.PolicyAncestorStatus":       schema_projects_gateway2_api_v1alpha1_PolicyAncestorStatus(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.PolicyStatus":               schema_projects_gateway2_api_v1alpha1_PolicyStatus(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.ProxyDeployment":            schema_projects_gateway2_api_v1alpha1_ProxyDeployment(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.RoutePolicy":                schema_projects_gateway2_api_v1alpha1_RoutePolicy(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.RoutePolicyList":            schema_projects_gateway2_api_v1alpha1_RoutePolicyList(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.RoutePolicySpec":            schema_projects_gateway2_api_v1alpha1_RoutePolicySpec(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.SdsBootstrap":               schema_projects_gateway2_api_v1alpha1_SdsBootstrap(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.SdsContainer":               schema_projects_gateway2_api_v1alpha1_SdsContainer(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.SelfManagedGateway":         schema_projects_gateway2_api_v1alpha1_SelfManagedGateway(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.Service":                    schema_projects_gateway2_api_v1alpha1_Service(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.ServiceAccount":             schema_projects_gateway2_api_v1alpha1_ServiceAccount(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.StaticUpstream":             schema_projects_gateway2_api_v1alpha1_StaticUpstream(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.StatsConfig":                schema_projects_gateway2_api_v1alpha1_StatsConfig(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.Upstream":                   schema_projects_gateway2_api_v1alpha1_Upstream(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.UpstreamList":               schema_projects_gateway2_api_v1alpha1_UpstreamList(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.UpstreamSpec":               schema_projects_gateway2_api_v1alpha1_UpstreamSpec(ref),
-		"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.UpstreamStatus":             schema_projects_gateway2_api_v1alpha1_UpstreamStatus(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.AiExtension":                schema_projects_gateway2_api_v1alpha1_AiExtension(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.AiExtensionStats":           schema_projects_gateway2_api_v1alpha1_AiExtensionStats(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.AwsUpstream":                schema_projects_gateway2_api_v1alpha1_AwsUpstream(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.CustomLabel":                schema_projects_gateway2_api_v1alpha1_CustomLabel(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.DirectResponse":             schema_projects_gateway2_api_v1alpha1_DirectResponse(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.DirectResponseList":         schema_projects_gateway2_api_v1alpha1_DirectResponseList(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.DirectResponseSpec":         schema_projects_gateway2_api_v1alpha1_DirectResponseSpec(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.DirectResponseStatus":       schema_projects_gateway2_api_v1alpha1_DirectResponseStatus(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.EnvoyBootstrap":             schema_projects_gateway2_api_v1alpha1_EnvoyBootstrap(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.EnvoyContainer":             schema_projects_gateway2_api_v1alpha1_EnvoyContainer(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.GatewayParameters":          schema_projects_gateway2_api_v1alpha1_GatewayParameters(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.GatewayParametersList":      schema_projects_gateway2_api_v1alpha1_GatewayParametersList(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.GatewayParametersSpec":      schema_projects_gateway2_api_v1alpha1_GatewayParametersSpec(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.GatewayParametersStatus":    schema_projects_gateway2_api_v1alpha1_GatewayParametersStatus(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.GracefulShutdownSpec":       schema_projects_gateway2_api_v1alpha1_GracefulShutdownSpec(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.Host":                       schema_projects_gateway2_api_v1alpha1_Host(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.HttpListenerPolicy":         schema_projects_gateway2_api_v1alpha1_HttpListenerPolicy(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.HttpListenerPolicyList":     schema_projects_gateway2_api_v1alpha1_HttpListenerPolicyList(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.HttpListenerPolicySpec":     schema_projects_gateway2_api_v1alpha1_HttpListenerPolicySpec(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.Image":                      schema_projects_gateway2_api_v1alpha1_Image(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.IstioContainer":             schema_projects_gateway2_api_v1alpha1_IstioContainer(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.IstioIntegration":           schema_projects_gateway2_api_v1alpha1_IstioIntegration(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.KubernetesProxyConfig":      schema_projects_gateway2_api_v1alpha1_KubernetesProxyConfig(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.ListenerPolicy":             schema_projects_gateway2_api_v1alpha1_ListenerPolicy(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.ListenerPolicyList":         schema_projects_gateway2_api_v1alpha1_ListenerPolicyList(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.ListenerPolicySpec":         schema_projects_gateway2_api_v1alpha1_ListenerPolicySpec(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.LocalPolicyTargetReference": schema_projects_gateway2_api_v1alpha1_LocalPolicyTargetReference(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.Pod":                        schema_projects_gateway2_api_v1alpha1_Pod(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.PolicyAncestorStatus":       schema_projects_gateway2_api_v1alpha1_PolicyAncestorStatus(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.PolicyStatus":               schema_projects_gateway2_api_v1alpha1_PolicyStatus(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.ProxyDeployment":            schema_projects_gateway2_api_v1alpha1_ProxyDeployment(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.RoutePolicy":                schema_projects_gateway2_api_v1alpha1_RoutePolicy(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.RoutePolicyList":            schema_projects_gateway2_api_v1alpha1_RoutePolicyList(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.RoutePolicySpec":            schema_projects_gateway2_api_v1alpha1_RoutePolicySpec(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.SdsBootstrap":               schema_projects_gateway2_api_v1alpha1_SdsBootstrap(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.SdsContainer":               schema_projects_gateway2_api_v1alpha1_SdsContainer(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.SelfManagedGateway":         schema_projects_gateway2_api_v1alpha1_SelfManagedGateway(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.Service":                    schema_projects_gateway2_api_v1alpha1_Service(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.ServiceAccount":             schema_projects_gateway2_api_v1alpha1_ServiceAccount(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.StaticUpstream":             schema_projects_gateway2_api_v1alpha1_StaticUpstream(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.StatsConfig":                schema_projects_gateway2_api_v1alpha1_StatsConfig(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.Upstream":                   schema_projects_gateway2_api_v1alpha1_Upstream(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.UpstreamList":               schema_projects_gateway2_api_v1alpha1_UpstreamList(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.UpstreamSpec":               schema_projects_gateway2_api_v1alpha1_UpstreamSpec(ref),
+		"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.UpstreamStatus":             schema_projects_gateway2_api_v1alpha1_UpstreamStatus(ref),
 		"k8s.io/api/core/v1.AWSElasticBlockStoreVolumeSource":                               schema_k8sio_api_core_v1_AWSElasticBlockStoreVolumeSource(ref),
 		"k8s.io/api/core/v1.Affinity":                                                       schema_k8sio_api_core_v1_Affinity(ref),
 		"k8s.io/api/core/v1.AppArmorProfile":                                                schema_k8sio_api_core_v1_AppArmorProfile(ref),
@@ -429,7 +429,7 @@ func schema_projects_gateway2_api_v1alpha1_AiExtension(ref common.ReferenceCallb
 					"image": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The extension's container image. See https://kubernetes.io/docs/concepts/containers/images for details.",
-							Ref:         ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.Image"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.Image"),
 						},
 					},
 					"securityContext": {
@@ -475,14 +475,14 @@ func schema_projects_gateway2_api_v1alpha1_AiExtension(ref common.ReferenceCallb
 					"stats": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Additional stats config for AI Extension. This config can be useful for adding custom labels to the request metrics.\n\nExample: ```yaml stats:\n  customLabels:\n    - name: \"subject\"\n      metadataNamespace: \"envoy.filters.http.jwt_authn\"\n      metadataKey: \"principal:sub\"\n    - name: \"issuer\"\n      metadataNamespace: \"envoy.filters.http.jwt_authn\"\n      metadataKey: \"principal:iss\"\n```",
-							Ref:         ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.AiExtensionStats"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.AiExtensionStats"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.AiExtensionStats", "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.Image", "k8s.io/api/core/v1.ContainerPort", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.AiExtensionStats", "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.Image", "k8s.io/api/core/v1.ContainerPort", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext"},
 	}
 }
 
@@ -499,7 +499,7 @@ func schema_projects_gateway2_api_v1alpha1_AiExtensionStats(ref common.Reference
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.CustomLabel"),
+										Ref: ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.CustomLabel"),
 									},
 								},
 							},
@@ -509,7 +509,7 @@ func schema_projects_gateway2_api_v1alpha1_AiExtensionStats(ref common.Reference
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.CustomLabel"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.CustomLabel"},
 	}
 }
 
@@ -612,20 +612,20 @@ func schema_projects_gateway2_api_v1alpha1_DirectResponse(ref common.ReferenceCa
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.DirectResponseSpec"),
+							Ref:     ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.DirectResponseSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.DirectResponseStatus"),
+							Ref:     ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.DirectResponseStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.DirectResponseSpec", "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.DirectResponseStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.DirectResponseSpec", "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.DirectResponseStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -662,7 +662,7 @@ func schema_projects_gateway2_api_v1alpha1_DirectResponseList(ref common.Referen
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.DirectResponse"),
+										Ref:     ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.DirectResponse"),
 									},
 								},
 							},
@@ -673,7 +673,7 @@ func schema_projects_gateway2_api_v1alpha1_DirectResponseList(ref common.Referen
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.DirectResponse", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.DirectResponse", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
@@ -763,13 +763,13 @@ func schema_projects_gateway2_api_v1alpha1_EnvoyContainer(ref common.ReferenceCa
 					"bootstrap": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Initial envoy configuration.",
-							Ref:         ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.EnvoyBootstrap"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.EnvoyBootstrap"),
 						},
 					},
 					"image": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The envoy container image. See https://kubernetes.io/docs/concepts/containers/images for details.\n\nDefault values, which may be overridden individually:\n\n\tregistry: quay.io/solo-io\n\trepository: gloo-envoy-wrapper (OSS) / gloo-ee-envoy-wrapper (EE)\n\ttag: <gloo version> (OSS) / <gloo-ee version> (EE)\n\tpullPolicy: IfNotPresent",
-							Ref:         ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.Image"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.Image"),
 						},
 					},
 					"securityContext": {
@@ -788,7 +788,7 @@ func schema_projects_gateway2_api_v1alpha1_EnvoyContainer(ref common.ReferenceCa
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.EnvoyBootstrap", "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.Image", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.EnvoyBootstrap", "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.Image", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext"},
 	}
 }
 
@@ -822,20 +822,20 @@ func schema_projects_gateway2_api_v1alpha1_GatewayParameters(ref common.Referenc
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.GatewayParametersSpec"),
+							Ref:     ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.GatewayParametersSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.GatewayParametersStatus"),
+							Ref:     ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.GatewayParametersStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.GatewayParametersSpec", "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.GatewayParametersStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.GatewayParametersSpec", "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.GatewayParametersStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -872,7 +872,7 @@ func schema_projects_gateway2_api_v1alpha1_GatewayParametersList(ref common.Refe
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.GatewayParameters"),
+										Ref:     ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.GatewayParameters"),
 									},
 								},
 							},
@@ -883,7 +883,7 @@ func schema_projects_gateway2_api_v1alpha1_GatewayParametersList(ref common.Refe
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.GatewayParameters", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.GatewayParameters", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
@@ -897,20 +897,20 @@ func schema_projects_gateway2_api_v1alpha1_GatewayParametersSpec(ref common.Refe
 					"kube": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The proxy will be deployed on Kubernetes.",
-							Ref:         ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.KubernetesProxyConfig"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.KubernetesProxyConfig"),
 						},
 					},
 					"selfManaged": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The proxy will be self-managed and not auto-provisioned.",
-							Ref:         ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.SelfManagedGateway"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.SelfManagedGateway"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.KubernetesProxyConfig", "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.SelfManagedGateway"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.KubernetesProxyConfig", "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.SelfManagedGateway"},
 	}
 }
 
@@ -1007,20 +1007,20 @@ func schema_projects_gateway2_api_v1alpha1_HttpListenerPolicy(ref common.Referen
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.HttpListenerPolicySpec"),
+							Ref:     ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.HttpListenerPolicySpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.PolicyStatus"),
+							Ref:     ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.PolicyStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.HttpListenerPolicySpec", "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.PolicyStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.HttpListenerPolicySpec", "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.PolicyStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -1057,7 +1057,7 @@ func schema_projects_gateway2_api_v1alpha1_HttpListenerPolicyList(ref common.Ref
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.HttpListenerPolicy"),
+										Ref:     ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.HttpListenerPolicy"),
 									},
 								},
 							},
@@ -1068,7 +1068,7 @@ func schema_projects_gateway2_api_v1alpha1_HttpListenerPolicyList(ref common.Ref
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.HttpListenerPolicy", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.HttpListenerPolicy", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
@@ -1081,7 +1081,7 @@ func schema_projects_gateway2_api_v1alpha1_HttpListenerPolicySpec(ref common.Ref
 					"targetRef": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.LocalPolicyTargetReference"),
+							Ref:     ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.LocalPolicyTargetReference"),
 						},
 					},
 					"compress": {
@@ -1094,7 +1094,7 @@ func schema_projects_gateway2_api_v1alpha1_HttpListenerPolicySpec(ref common.Ref
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.LocalPolicyTargetReference"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.LocalPolicyTargetReference"},
 	}
 }
 
@@ -1157,7 +1157,7 @@ func schema_projects_gateway2_api_v1alpha1_IstioContainer(ref common.ReferenceCa
 					"image": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The envoy container image. See https://kubernetes.io/docs/concepts/containers/images for details.",
-							Ref:         ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.Image"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.Image"),
 						},
 					},
 					"securityContext": {
@@ -1204,7 +1204,7 @@ func schema_projects_gateway2_api_v1alpha1_IstioContainer(ref common.ReferenceCa
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.Image", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.Image", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext"},
 	}
 }
 
@@ -1218,7 +1218,7 @@ func schema_projects_gateway2_api_v1alpha1_IstioIntegration(ref common.Reference
 					"istioProxyContainer": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Configuration for the container running istio-proxy. Note that if Istio integration is not enabled, the istio container will not be injected into the gateway proxy deployment.",
-							Ref:         ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.IstioContainer"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.IstioContainer"),
 						},
 					},
 					"customSidecars": {
@@ -1239,7 +1239,7 @@ func schema_projects_gateway2_api_v1alpha1_IstioIntegration(ref common.Reference
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.IstioContainer", "k8s.io/api/core/v1.Container"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.IstioContainer", "k8s.io/api/core/v1.Container"},
 	}
 }
 
@@ -1253,55 +1253,55 @@ func schema_projects_gateway2_api_v1alpha1_KubernetesProxyConfig(ref common.Refe
 					"deployment": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Use a Kubernetes deployment as the proxy workload type. Currently, this is the only supported workload type.",
-							Ref:         ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.ProxyDeployment"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.ProxyDeployment"),
 						},
 					},
 					"envoyContainer": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Configuration for the container running Envoy.",
-							Ref:         ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.EnvoyContainer"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.EnvoyContainer"),
 						},
 					},
 					"sdsContainer": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Configuration for the container running the Secret Discovery Service (SDS).",
-							Ref:         ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.SdsContainer"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.SdsContainer"),
 						},
 					},
 					"podTemplate": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Configuration for the pods that will be created.",
-							Ref:         ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.Pod"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.Pod"),
 						},
 					},
 					"service": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Configuration for the Kubernetes Service that exposes the Envoy proxy over the network.",
-							Ref:         ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.Service"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.Service"),
 						},
 					},
 					"serviceAccount": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Configuration for the Kubernetes ServiceAccount used by the Envoy pod.",
-							Ref:         ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.ServiceAccount"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.ServiceAccount"),
 						},
 					},
 					"istio": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Configuration for the Istio integration.",
-							Ref:         ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.IstioIntegration"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.IstioIntegration"),
 						},
 					},
 					"stats": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Configuration for the stats server.",
-							Ref:         ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.StatsConfig"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.StatsConfig"),
 						},
 					},
 					"aiExtension": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Configuration for the AI extension.",
-							Ref:         ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.AiExtension"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.AiExtension"),
 						},
 					},
 					"floatingUserId": {
@@ -1315,7 +1315,7 @@ func schema_projects_gateway2_api_v1alpha1_KubernetesProxyConfig(ref common.Refe
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.AiExtension", "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.EnvoyContainer", "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.IstioIntegration", "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.Pod", "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.ProxyDeployment", "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.SdsContainer", "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.Service", "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.ServiceAccount", "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.StatsConfig"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.AiExtension", "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.EnvoyContainer", "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.IstioIntegration", "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.Pod", "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.ProxyDeployment", "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.SdsContainer", "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.Service", "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.ServiceAccount", "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.StatsConfig"},
 	}
 }
 
@@ -1348,20 +1348,20 @@ func schema_projects_gateway2_api_v1alpha1_ListenerPolicy(ref common.ReferenceCa
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.ListenerPolicySpec"),
+							Ref:     ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.ListenerPolicySpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.PolicyStatus"),
+							Ref:     ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.PolicyStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.ListenerPolicySpec", "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.PolicyStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.ListenerPolicySpec", "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.PolicyStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -1398,7 +1398,7 @@ func schema_projects_gateway2_api_v1alpha1_ListenerPolicyList(ref common.Referen
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.ListenerPolicy"),
+										Ref:     ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.ListenerPolicy"),
 									},
 								},
 							},
@@ -1409,7 +1409,7 @@ func schema_projects_gateway2_api_v1alpha1_ListenerPolicyList(ref common.Referen
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.ListenerPolicy", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.ListenerPolicy", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
@@ -1422,7 +1422,7 @@ func schema_projects_gateway2_api_v1alpha1_ListenerPolicySpec(ref common.Referen
 					"targetRef": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.LocalPolicyTargetReference"),
+							Ref:     ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.LocalPolicyTargetReference"),
 						},
 					},
 					"perConnectionBufferLimitBytes": {
@@ -1435,7 +1435,7 @@ func schema_projects_gateway2_api_v1alpha1_ListenerPolicySpec(ref common.Referen
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.LocalPolicyTargetReference"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.LocalPolicyTargetReference"},
 	}
 }
 
@@ -1575,7 +1575,7 @@ func schema_projects_gateway2_api_v1alpha1_Pod(ref common.ReferenceCallback) com
 					"gracefulShutdown": {
 						SchemaProps: spec.SchemaProps{
 							Description: "If specified, the pod's graceful shutdown spec.",
-							Ref:         ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.GracefulShutdownSpec"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.GracefulShutdownSpec"),
 						},
 					},
 					"terminationGracePeriodSeconds": {
@@ -1601,7 +1601,7 @@ func schema_projects_gateway2_api_v1alpha1_Pod(ref common.ReferenceCallback) com
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.GracefulShutdownSpec", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Probe", "k8s.io/api/core/v1.Toleration"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.GracefulShutdownSpec", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Probe", "k8s.io/api/core/v1.Toleration"},
 	}
 }
 
@@ -1691,7 +1691,7 @@ func schema_projects_gateway2_api_v1alpha1_PolicyStatus(ref common.ReferenceCall
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.PolicyAncestorStatus"),
+										Ref:     ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.PolicyAncestorStatus"),
 									},
 								},
 							},
@@ -1702,7 +1702,7 @@ func schema_projects_gateway2_api_v1alpha1_PolicyStatus(ref common.ReferenceCall
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.PolicyAncestorStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.Condition"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.PolicyAncestorStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.Condition"},
 	}
 }
 
@@ -1755,20 +1755,20 @@ func schema_projects_gateway2_api_v1alpha1_RoutePolicy(ref common.ReferenceCallb
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.RoutePolicySpec"),
+							Ref:     ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.RoutePolicySpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.PolicyStatus"),
+							Ref:     ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.PolicyStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.PolicyStatus", "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.RoutePolicySpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.PolicyStatus", "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.RoutePolicySpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -1805,7 +1805,7 @@ func schema_projects_gateway2_api_v1alpha1_RoutePolicyList(ref common.ReferenceC
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.RoutePolicy"),
+										Ref:     ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.RoutePolicy"),
 									},
 								},
 							},
@@ -1816,7 +1816,7 @@ func schema_projects_gateway2_api_v1alpha1_RoutePolicyList(ref common.ReferenceC
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.RoutePolicy", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.RoutePolicy", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
@@ -1829,7 +1829,7 @@ func schema_projects_gateway2_api_v1alpha1_RoutePolicySpec(ref common.ReferenceC
 					"targetRef": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.LocalPolicyTargetReference"),
+							Ref:     ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.LocalPolicyTargetReference"),
 						},
 					},
 					"timeout": {
@@ -1842,7 +1842,7 @@ func schema_projects_gateway2_api_v1alpha1_RoutePolicySpec(ref common.ReferenceC
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.LocalPolicyTargetReference"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.LocalPolicyTargetReference"},
 	}
 }
 
@@ -1876,7 +1876,7 @@ func schema_projects_gateway2_api_v1alpha1_SdsContainer(ref common.ReferenceCall
 					"image": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The SDS container image. See https://kubernetes.io/docs/concepts/containers/images for details.",
-							Ref:         ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.Image"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.Image"),
 						},
 					},
 					"securityContext": {
@@ -1894,14 +1894,14 @@ func schema_projects_gateway2_api_v1alpha1_SdsContainer(ref common.ReferenceCall
 					"bootstrap": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Initial SDS container configuration.",
-							Ref:         ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.SdsBootstrap"),
+							Ref:         ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.SdsBootstrap"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.Image", "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.SdsBootstrap", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.Image", "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.SdsBootstrap", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext"},
 	}
 }
 
@@ -2032,7 +2032,7 @@ func schema_projects_gateway2_api_v1alpha1_StaticUpstream(ref common.ReferenceCa
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.Host"),
+										Ref:     ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.Host"),
 									},
 								},
 							},
@@ -2042,7 +2042,7 @@ func schema_projects_gateway2_api_v1alpha1_StaticUpstream(ref common.ReferenceCa
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.Host"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.Host"},
 	}
 }
 
@@ -2116,20 +2116,20 @@ func schema_projects_gateway2_api_v1alpha1_Upstream(ref common.ReferenceCallback
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.UpstreamSpec"),
+							Ref:     ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.UpstreamSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.UpstreamStatus"),
+							Ref:     ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.UpstreamStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.UpstreamSpec", "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.UpstreamStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.UpstreamSpec", "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.UpstreamStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -2166,7 +2166,7 @@ func schema_projects_gateway2_api_v1alpha1_UpstreamList(ref common.ReferenceCall
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.Upstream"),
+										Ref:     ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.Upstream"),
 									},
 								},
 							},
@@ -2177,7 +2177,7 @@ func schema_projects_gateway2_api_v1alpha1_UpstreamList(ref common.ReferenceCall
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.Upstream", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.Upstream", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
@@ -2189,19 +2189,19 @@ func schema_projects_gateway2_api_v1alpha1_UpstreamSpec(ref common.ReferenceCall
 				Properties: map[string]spec.Schema{
 					"aws": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.AwsUpstream"),
+							Ref: ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.AwsUpstream"),
 						},
 					},
 					"static": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.StaticUpstream"),
+							Ref: ref("github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.StaticUpstream"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.AwsUpstream", "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1.StaticUpstream"},
+			"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.AwsUpstream", "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1.StaticUpstream"},
 	}
 }
 
