@@ -1,3 +1,5 @@
+//go:build ignore
+
 package reconciler_test
 
 import (

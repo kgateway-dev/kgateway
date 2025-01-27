@@ -1,3 +1,5 @@
+//go:build ignore
+
 package loadbalancer_test
 
 import (

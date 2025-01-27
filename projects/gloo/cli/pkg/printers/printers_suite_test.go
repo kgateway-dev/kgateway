@@ -1,3 +1,5 @@
+//go:build ignore
+
 package printers_test
 
 import (

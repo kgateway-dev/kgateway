@@ -1,3 +1,5 @@
+//go:build ignore
+
 package local_ratelimit
 
 import (

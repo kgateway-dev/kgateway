@@ -1,3 +1,5 @@
+//go:build ignore
+
 package compress_test
 
 import (

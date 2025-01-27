@@ -1,3 +1,5 @@
+//go:build ignore
+
 package decorators
 
 import "github.com/onsi/ginkgo/v2"

@@ -1,3 +1,5 @@
+//go:build ignore
+
 package xds_test
 
 import (

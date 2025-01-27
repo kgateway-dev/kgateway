@@ -1,3 +1,5 @@
+//go:build ignore
+
 package labels
 
 // Ginkgo Spec Labels (https://onsi.github.io/ginkgo/#spec-labels)

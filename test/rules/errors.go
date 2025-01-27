@@ -1,3 +1,5 @@
+//go:build ignore
+
 package rules
 
 import "github.com/quasilyte/go-ruleguard/dsl"

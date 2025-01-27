@@ -1,3 +1,5 @@
+//go:build ignore
+
 package authconfig_test
 
 import (

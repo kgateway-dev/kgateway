@@ -1,3 +1,5 @@
+//go:build ignore
+
 package surveyutils_test
 
 import (

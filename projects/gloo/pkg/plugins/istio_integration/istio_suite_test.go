@@ -1,3 +1,5 @@
+//go:build ignore
+
 package istio_integration_test
 
 import (

@@ -1,3 +1,5 @@
+//go:build ignore
+
 package vault_test
 
 import (

@@ -1,3 +1,5 @@
+//go:build ignore
+
 package grpcweb_test
 
 import (

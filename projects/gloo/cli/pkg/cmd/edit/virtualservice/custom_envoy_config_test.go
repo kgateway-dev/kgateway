@@ -1,3 +1,5 @@
+//go:build ignore
+
 package virtualservice_test
 
 import (

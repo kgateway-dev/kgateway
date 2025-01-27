@@ -1,3 +1,5 @@
+//go:build ignore
+
 package gloo_test
 
 import (

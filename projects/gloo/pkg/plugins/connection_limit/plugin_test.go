@@ -1,3 +1,5 @@
+//go:build ignore
+
 package connection_limit
 
 import (

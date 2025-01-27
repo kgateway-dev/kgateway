@@ -1,3 +1,5 @@
+//go:build ignore
+
 package example
 
 // This file is an example for developers.

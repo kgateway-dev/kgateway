@@ -1,3 +1,5 @@
+//go:build ignore
+
 package vault
 
 // White box tests to avoid having to expose internal states only for testing

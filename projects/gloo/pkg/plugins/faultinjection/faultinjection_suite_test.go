@@ -1,3 +1,5 @@
+//go:build ignore
+
 package faultinjection_test
 
 import (

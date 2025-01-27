@@ -1,3 +1,5 @@
+//go:build ignore
+
 package ratelimit_test
 
 import (

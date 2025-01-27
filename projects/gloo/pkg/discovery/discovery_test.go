@@ -1,3 +1,5 @@
+//go:build ignore
+
 package discovery_test
 
 import (

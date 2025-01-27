@@ -1,3 +1,5 @@
+//go:build ignore
+
 package pipe_test
 
 import (

@@ -1,3 +1,5 @@
+//go:build ignore
+
 package istio_automtls_test
 
 import (

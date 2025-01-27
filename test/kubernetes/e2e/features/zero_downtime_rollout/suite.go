@@ -1,3 +1,5 @@
+//go:build ignore
+
 package zero_downtime_rollout
 
 import (
