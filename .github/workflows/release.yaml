@@ -32,22 +32,21 @@ jobs:
         run: |
           GIT_TAG=$(git describe --tags --abbrev=0)
           GIT_SHA=$(git rev-parse --short HEAD)
-          DATE=$(date +"%Y-%m-%d")
+          GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD | sed -e "s/\//-/g")
 
+          # Set version based on event type
           if [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
-            VERSION="${GIT_TAG}-${DATE}-${GIT_SHA}"
+            VERSION="${GIT_TAG}-${GIT_SHA}"
             echo "goreleaser_args=--clean --skip=validate" >> $GITHUB_OUTPUT
           elif [[ $GITHUB_REF == refs/tags/* ]]; then
             VERSION="${GITHUB_REF#refs/tags/}"
             echo "goreleaser_args=--clean" >> $GITHUB_OUTPUT
           elif [[ $GITHUB_REF == refs/pull/* ]]; then
             PR_NUM=$(echo "${GITHUB_REF}" | sed -E 's|refs/pull/([^/]+)/?.*|\1|')
-            VERSION="${GIT_TAG}-pr.${PR_NUM}-${DATE}-${GIT_SHA}"
+            VERSION="${GIT_TAG}-pr.${PR_NUM}-${GIT_SHA}"
             echo "goreleaser_args=--snapshot --clean" >> $GITHUB_OUTPUT
           else
-            GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD | sed -e "s/\//-/g")
-            DATE=$(date +"%Y-%m-%d")
-            VERSION="${GIT_TAG}-${DATE}-${GIT_BRANCH}-${GIT_SHA}"
+            VERSION="${GIT_TAG}-${GIT_BRANCH}-${GIT_SHA}"
             echo "goreleaser_args=--snapshot --clean" >> $GITHUB_OUTPUT
           fi
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
