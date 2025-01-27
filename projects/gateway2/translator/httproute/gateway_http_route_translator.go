@@ -4,8 +4,8 @@ import (
 	"container/list"
 	"context"
 
-	"github.com/rotisserie/eris"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/types"

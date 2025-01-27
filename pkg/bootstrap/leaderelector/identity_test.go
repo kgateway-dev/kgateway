@@ -1,9 +1,9 @@
 package leaderelector_test
 
 import (
+	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector"
 )
 
 var _ = Describe("Identity", func() {

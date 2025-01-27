@@ -3,8 +3,8 @@ package kuberesource
 import (
 	"encoding/json"
 
-	"github.com/pkg/errors"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"

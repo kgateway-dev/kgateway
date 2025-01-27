@@ -55,7 +55,7 @@ func ExtractUpstreamStatus(upstream *apiv1alpha1.Upstream, fieldManager string) 
 
 func extractUpstream(upstream *apiv1alpha1.Upstream, fieldManager string, subresource string) (*UpstreamApplyConfiguration, error) {
 	b := &UpstreamApplyConfiguration{}
-	err := managedfields.ExtractInto(upstream, internal.Parser().Type("com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.Upstream"), fieldManager, b, subresource)
+	err := managedfields.ExtractInto(upstream, internal.Parser().Type("com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.Upstream"), fieldManager, b, subresource)
 	if err != nil {
 		return nil, err
 	}

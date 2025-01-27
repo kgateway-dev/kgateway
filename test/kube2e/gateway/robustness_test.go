@@ -35,10 +35,10 @@ import (
 
 	"k8s.io/apimachinery/pkg/labels"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

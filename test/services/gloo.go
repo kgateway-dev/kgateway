@@ -67,11 +67,11 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	fds_syncer "github.com/kgateway-dev/kgateway/projects/discovery/pkg/fds/syncer"
 	uds_syncer "github.com/kgateway-dev/kgateway/projects/discovery/pkg/uds/syncer"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes"
 )
 

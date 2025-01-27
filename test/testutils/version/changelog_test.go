@@ -5,9 +5,9 @@ package version_test
 import (
 	"fmt"
 
+	"github.com/kgateway-dev/kgateway/test/testutils/version"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/kgateway-dev/kgateway/test/testutils/version"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 

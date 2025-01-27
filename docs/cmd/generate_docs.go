@@ -19,8 +19,8 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v32/github"
-	"github.com/rotisserie/eris"
 	. "github.com/kgateway-dev/kgateway/docs/cmd/securityscanutils"
+	"github.com/rotisserie/eris"
 	changelogdocutils "github.com/solo-io/go-utils/changeloggenutils"
 	"github.com/solo-io/go-utils/githubutils"
 	"github.com/solo-io/go-utils/versionutils"

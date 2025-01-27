@@ -32,9 +32,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 
+	. "github.com/kgateway-dev/kgateway/test/gomega"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/kgateway-dev/kgateway/test/gomega"
 
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/bootstrap/clients"

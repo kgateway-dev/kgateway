@@ -12,11 +12,11 @@ import (
 
 	"github.com/kgateway-dev/kgateway/test/e2e"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	fault "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/faultinjection"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 )
 

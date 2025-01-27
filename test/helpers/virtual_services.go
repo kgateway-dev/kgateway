@@ -6,11 +6,11 @@ import (
 	"errors"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/onsi/ginkgo/v2"
 	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/ssl"
+	"github.com/onsi/ginkgo/v2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 

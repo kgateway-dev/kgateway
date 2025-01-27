@@ -11,9 +11,9 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/rotisserie/eris"
 	glooruntime "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/runtime"
 	"github.com/kgateway-dev/kgateway/test/testutils"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 )
 

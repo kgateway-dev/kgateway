@@ -23,9 +23,9 @@ import (
 
 	"net/http"
 
+	"github.com/kgateway-dev/kgateway/test/e2e"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/kgateway-dev/kgateway/test/e2e"
 
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/core/matchers"

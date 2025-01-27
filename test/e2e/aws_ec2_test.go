@@ -18,12 +18,12 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/rotisserie/eris"
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	glooec2 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/aws/ec2"
 	"github.com/kgateway-dev/kgateway/test/services"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )

@@ -6,9 +6,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/rotisserie/eris"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/ports"
+	"github.com/rotisserie/eris"
 	"golang.org/x/exp/slices"
 	"k8s.io/utils/ptr"
 	api "sigs.k8s.io/gateway-api/apis/v1"

@@ -27,9 +27,9 @@ import (
 	"github.com/kgateway-dev/kgateway/test/helpers"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	testmatchers "github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	testmatchers "github.com/kgateway-dev/kgateway/test/gomega/matchers"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"

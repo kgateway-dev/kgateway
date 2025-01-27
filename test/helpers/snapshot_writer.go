@@ -5,8 +5,8 @@ package helpers
 import (
 	"time"
 
-	"github.com/onsi/ginkgo/v2"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
+	"github.com/onsi/ginkgo/v2"
 
 	"github.com/avast/retry-go"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/gloosnapshot"

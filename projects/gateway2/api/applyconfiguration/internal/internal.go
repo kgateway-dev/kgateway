@@ -23,7 +23,7 @@ func Parser() *typed.Parser {
 var parserOnce sync.Once
 var parser *typed.Parser
 var schemaYAML = typed.YAMLObject(`types:
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.AiExtension
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.AiExtension
   map:
     fields:
     - name: enabled
@@ -37,7 +37,7 @@ var schemaYAML = typed.YAMLObject(`types:
           elementRelationship: atomic
     - name: image
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.Image
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.Image
     - name: ports
       type:
         list:
@@ -52,17 +52,17 @@ var schemaYAML = typed.YAMLObject(`types:
         namedType: io.k8s.api.core.v1.SecurityContext
     - name: stats
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.AiExtensionStats
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.AiExtensionStats
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.AiExtensionStats
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.AiExtensionStats
   map:
     fields:
     - name: customLabels
       type:
         list:
           elementType:
-            namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.CustomLabel
+            namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.CustomLabel
           elementRelationship: atomic
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.AwsUpstream
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.AwsUpstream
   map:
     fields:
     - name: region
@@ -72,7 +72,7 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: io.k8s.api.core.v1.LocalObjectReference
       default: {}
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.CustomLabel
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.CustomLabel
   map:
     fields:
     - name: keyDelimiter
@@ -89,7 +89,7 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.DirectResponse
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.DirectResponse
   map:
     fields:
     - name: apiVersion
@@ -104,13 +104,13 @@ var schemaYAML = typed.YAMLObject(`types:
       default: {}
     - name: spec
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.DirectResponseSpec
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.DirectResponseSpec
       default: {}
     - name: status
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.DirectResponseStatus
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.DirectResponseStatus
       default: {}
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.DirectResponseSpec
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.DirectResponseSpec
   map:
     fields:
     - name: body
@@ -120,7 +120,7 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: numeric
       default: 0
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.DirectResponseStatus
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.DirectResponseStatus
   map:
     elementType:
       scalar: untyped
@@ -132,7 +132,7 @@ var schemaYAML = typed.YAMLObject(`types:
         elementType:
           namedType: __untyped_deduced_
         elementRelationship: separable
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.EnvoyBootstrap
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.EnvoyBootstrap
   map:
     fields:
     - name: componentLogLevels
@@ -143,22 +143,22 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: logLevel
       type:
         scalar: string
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.EnvoyContainer
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.EnvoyContainer
   map:
     fields:
     - name: bootstrap
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.EnvoyBootstrap
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.EnvoyBootstrap
     - name: image
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.Image
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.Image
     - name: resources
       type:
         namedType: io.k8s.api.core.v1.ResourceRequirements
     - name: securityContext
       type:
         namedType: io.k8s.api.core.v1.SecurityContext
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.GatewayParameters
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.GatewayParameters
   map:
     fields:
     - name: apiVersion
@@ -173,22 +173,22 @@ var schemaYAML = typed.YAMLObject(`types:
       default: {}
     - name: spec
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.GatewayParametersSpec
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.GatewayParametersSpec
       default: {}
     - name: status
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.GatewayParametersStatus
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.GatewayParametersStatus
       default: {}
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.GatewayParametersSpec
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.GatewayParametersSpec
   map:
     fields:
     - name: kube
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.KubernetesProxyConfig
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.KubernetesProxyConfig
     - name: selfManaged
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.SelfManagedGateway
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.GatewayParametersStatus
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.SelfManagedGateway
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.GatewayParametersStatus
   map:
     elementType:
       scalar: untyped
@@ -200,7 +200,7 @@ var schemaYAML = typed.YAMLObject(`types:
         elementType:
           namedType: __untyped_deduced_
         elementRelationship: separable
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.GracefulShutdownSpec
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.GracefulShutdownSpec
   map:
     fields:
     - name: enabled
@@ -209,7 +209,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: sleepTimeSeconds
       type:
         scalar: numeric
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.Host
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.Host
   map:
     fields:
     - name: host
@@ -220,7 +220,7 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: numeric
       default: 0
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.HttpListenerPolicy
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.HttpListenerPolicy
   map:
     fields:
     - name: apiVersion
@@ -235,13 +235,13 @@ var schemaYAML = typed.YAMLObject(`types:
       default: {}
     - name: spec
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.HttpListenerPolicySpec
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.HttpListenerPolicySpec
       default: {}
     - name: status
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.PolicyStatus
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.PolicyStatus
       default: {}
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.HttpListenerPolicySpec
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.HttpListenerPolicySpec
   map:
     fields:
     - name: compress
@@ -249,9 +249,9 @@ var schemaYAML = typed.YAMLObject(`types:
         scalar: boolean
     - name: targetRef
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.LocalPolicyTargetReference
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.LocalPolicyTargetReference
       default: {}
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.Image
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.Image
   map:
     fields:
     - name: digest
@@ -269,12 +269,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: tag
       type:
         scalar: string
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.IstioContainer
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.IstioContainer
   map:
     fields:
     - name: image
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.Image
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.Image
     - name: istioDiscoveryAddress
       type:
         scalar: string
@@ -293,7 +293,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: securityContext
       type:
         namedType: io.k8s.api.core.v1.SecurityContext
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.IstioIntegration
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.IstioIntegration
   map:
     fields:
     - name: customSidecars
@@ -304,41 +304,41 @@ var schemaYAML = typed.YAMLObject(`types:
           elementRelationship: atomic
     - name: istioProxyContainer
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.IstioContainer
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.KubernetesProxyConfig
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.IstioContainer
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.KubernetesProxyConfig
   map:
     fields:
     - name: aiExtension
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.AiExtension
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.AiExtension
     - name: deployment
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.ProxyDeployment
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.ProxyDeployment
     - name: envoyContainer
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.EnvoyContainer
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.EnvoyContainer
     - name: floatingUserId
       type:
         scalar: boolean
     - name: istio
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.IstioIntegration
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.IstioIntegration
     - name: podTemplate
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.Pod
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.Pod
     - name: sdsContainer
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.SdsContainer
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.SdsContainer
     - name: service
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.Service
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.Service
     - name: serviceAccount
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.ServiceAccount
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.ServiceAccount
     - name: stats
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.StatsConfig
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.ListenerPolicy
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.StatsConfig
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.ListenerPolicy
   map:
     fields:
     - name: apiVersion
@@ -353,13 +353,13 @@ var schemaYAML = typed.YAMLObject(`types:
       default: {}
     - name: spec
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.ListenerPolicySpec
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.ListenerPolicySpec
       default: {}
     - name: status
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.PolicyStatus
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.PolicyStatus
       default: {}
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.ListenerPolicySpec
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.ListenerPolicySpec
   map:
     fields:
     - name: perConnectionBufferLimitBytes
@@ -367,9 +367,9 @@ var schemaYAML = typed.YAMLObject(`types:
         scalar: numeric
     - name: targetRef
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.LocalPolicyTargetReference
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.LocalPolicyTargetReference
       default: {}
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.LocalPolicyTargetReference
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.LocalPolicyTargetReference
   map:
     fields:
     - name: group
@@ -384,7 +384,7 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.Pod
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.Pod
   map:
     fields:
     - name: affinity
@@ -402,7 +402,7 @@ var schemaYAML = typed.YAMLObject(`types:
             scalar: string
     - name: gracefulShutdown
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.GracefulShutdownSpec
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.GracefulShutdownSpec
     - name: imagePullSecrets
       type:
         list:
@@ -432,7 +432,7 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: io.k8s.api.core.v1.Toleration
           elementRelationship: atomic
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.PolicyAncestorStatus
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.PolicyAncestorStatus
   map:
     fields:
     - name: ancestorRef
@@ -451,14 +451,14 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.PolicyStatus
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.PolicyStatus
   map:
     fields:
     - name: ancestors
       type:
         list:
           elementType:
-            namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.PolicyAncestorStatus
+            namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.PolicyAncestorStatus
           elementRelationship: atomic
     - name: conditions
       type:
@@ -468,13 +468,13 @@ var schemaYAML = typed.YAMLObject(`types:
           elementRelationship: associative
           keys:
           - type
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.ProxyDeployment
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.ProxyDeployment
   map:
     fields:
     - name: replicas
       type:
         scalar: numeric
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.RoutePolicy
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.RoutePolicy
   map:
     fields:
     - name: apiVersion
@@ -489,44 +489,44 @@ var schemaYAML = typed.YAMLObject(`types:
       default: {}
     - name: spec
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.RoutePolicySpec
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.RoutePolicySpec
       default: {}
     - name: status
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.PolicyStatus
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.PolicyStatus
       default: {}
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.RoutePolicySpec
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.RoutePolicySpec
   map:
     fields:
     - name: targetRef
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.LocalPolicyTargetReference
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.LocalPolicyTargetReference
       default: {}
     - name: timeout
       type:
         scalar: numeric
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.SdsBootstrap
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.SdsBootstrap
   map:
     fields:
     - name: logLevel
       type:
         scalar: string
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.SdsContainer
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.SdsContainer
   map:
     fields:
     - name: bootstrap
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.SdsBootstrap
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.SdsBootstrap
     - name: image
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.Image
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.Image
     - name: resources
       type:
         namedType: io.k8s.api.core.v1.ResourceRequirements
     - name: securityContext
       type:
         namedType: io.k8s.api.core.v1.SecurityContext
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.SelfManagedGateway
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.SelfManagedGateway
   map:
     elementType:
       scalar: untyped
@@ -538,7 +538,7 @@ var schemaYAML = typed.YAMLObject(`types:
         elementType:
           namedType: __untyped_deduced_
         elementRelationship: separable
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.Service
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.Service
   map:
     fields:
     - name: clusterIP
@@ -557,7 +557,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: type
       type:
         scalar: string
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.ServiceAccount
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.ServiceAccount
   map:
     fields:
     - name: extraAnnotations
@@ -570,16 +570,16 @@ var schemaYAML = typed.YAMLObject(`types:
         map:
           elementType:
             scalar: string
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.StaticUpstream
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.StaticUpstream
   map:
     fields:
     - name: hosts
       type:
         list:
           elementType:
-            namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.Host
+            namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.Host
           elementRelationship: atomic
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.StatsConfig
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.StatsConfig
   map:
     fields:
     - name: enableStatsRoute
@@ -594,7 +594,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: statsRoutePrefixRewrite
       type:
         scalar: string
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.Upstream
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.Upstream
   map:
     fields:
     - name: apiVersion
@@ -609,22 +609,22 @@ var schemaYAML = typed.YAMLObject(`types:
       default: {}
     - name: spec
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.UpstreamSpec
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.UpstreamSpec
       default: {}
     - name: status
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.UpstreamStatus
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.UpstreamStatus
       default: {}
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.UpstreamSpec
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.UpstreamSpec
   map:
     fields:
     - name: aws
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.AwsUpstream
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.AwsUpstream
     - name: static
       type:
-        namedType: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.StaticUpstream
-- name: com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.UpstreamStatus
+        namedType: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.StaticUpstream
+- name: com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.UpstreamStatus
   map:
     fields:
     - name: conditions

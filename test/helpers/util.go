@@ -8,8 +8,8 @@ import (
 	"math"
 	"time"
 
-	. "github.com/onsi/gomega"
 	"github.com/kgateway-dev/kgateway/test/gomega"
+	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"

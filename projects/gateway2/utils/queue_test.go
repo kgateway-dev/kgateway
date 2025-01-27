@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	. "github.com/onsi/gomega"
 	. "github.com/kgateway-dev/kgateway/projects/gateway2/utils"
+	. "github.com/onsi/gomega"
 )
 
 type testType struct {

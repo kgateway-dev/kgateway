@@ -3,8 +3,8 @@
 package gloogateway
 
 import (
-	"github.com/rotisserie/eris"
 	"github.com/kgateway-dev/kgateway/test/testutils"
+	"github.com/rotisserie/eris"
 )
 
 // Context contains the set of properties for a given installation of Gloo Gateway

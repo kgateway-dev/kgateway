@@ -7,12 +7,12 @@ import (
 
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-	. "github.com/onsi/gomega"
 	. "github.com/kgateway-dev/kgateway/projects/gateway2/krtcollections"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/utils"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/xds"
+	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"

@@ -8,12 +8,12 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/onsi/gomega"
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/resources"
+	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

@@ -9,11 +9,11 @@ import (
 	"io/fs"
 	"path/filepath"
 
-	"github.com/rotisserie/eris"
 	"github.com/kgateway-dev/kgateway/pkg/version"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/helm"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
+	"github.com/rotisserie/eris"
 	"golang.org/x/exp/slices"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"

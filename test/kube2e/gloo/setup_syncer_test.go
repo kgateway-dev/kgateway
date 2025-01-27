@@ -24,11 +24,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/test/kube2e"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"

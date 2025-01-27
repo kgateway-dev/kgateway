@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/onsi/gomega"
 	testmatchers "github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	"github.com/onsi/gomega"
 	"github.com/solo-io/skv2/codegen/util"
 )
 

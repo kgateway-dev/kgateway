@@ -28,9 +28,6 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/golang/protobuf/ptypes/duration"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gstruct"
 	"github.com/kgateway-dev/kgateway/pkg/utils/api_conversion"
 	gwdefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
@@ -39,6 +36,9 @@ import (
 	. "github.com/kgateway-dev/kgateway/test/gomega"
 	"github.com/kgateway-dev/kgateway/test/services"
 	"github.com/kgateway-dev/kgateway/test/v1helpers"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 

@@ -3,9 +3,9 @@
 package gloo_test
 
 import (
+	kubetestclients "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/clients"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	kubetestclients "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

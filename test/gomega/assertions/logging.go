@@ -8,9 +8,9 @@ import (
 
 	"github.com/kgateway-dev/kgateway/test/testutils"
 
+	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	"github.com/solo-io/go-utils/stats"
 	"go.uber.org/zap/zapcore"
 )

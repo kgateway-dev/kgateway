@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/onsi/gomega"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/validation"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/helper"
+	"github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"sigs.k8s.io/controller-runtime/pkg/client"

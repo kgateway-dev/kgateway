@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/ghodss/yaml"
-	errors "github.com/rotisserie/eris"
 	"github.com/kgateway-dev/kgateway/install/helm/gloo/generate"
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/k8s-utils/installutils/helmchart"
 )

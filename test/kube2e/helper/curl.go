@@ -18,11 +18,11 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega/types"
 
-	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/test/gomega/transforms"
 	"github.com/kgateway-dev/kgateway/test/helpers"
+	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	"github.com/solo-io/go-utils/log"
 )
 

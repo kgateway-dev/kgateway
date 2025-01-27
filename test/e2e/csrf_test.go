@@ -19,7 +19,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/onsi/gomega/types"
 	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
 	gloo_config_core "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/envoy/config/core/v3"
@@ -28,6 +27,7 @@ import (
 	glootype "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/envoy/type/v3"
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
+	"github.com/onsi/gomega/types"
 )
 
 const (

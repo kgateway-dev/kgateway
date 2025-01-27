@@ -9,8 +9,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/rotisserie/eris"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/aws/ec2"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 

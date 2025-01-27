@@ -6,8 +6,8 @@ import (
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"github.com/golang/protobuf/proto"
 	anypb "github.com/golang/protobuf/ptypes/any"
-	"github.com/pkg/errors"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/utils"
+	"github.com/pkg/errors"
 )
 
 func EnvoySingleEndpointLoadAssignment(out *envoy_config_cluster_v3.Cluster, address string, port uint32) {

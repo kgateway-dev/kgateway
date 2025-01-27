@@ -12,10 +12,10 @@ import (
 	"time"
 
 	"github.com/google/go-github/v32/github"
-	. "github.com/onsi/gomega"
-	errors "github.com/rotisserie/eris"
 	"github.com/kgateway-dev/kgateway/test/testutils"
 	"github.com/kgateway-dev/kgateway/test/testutils/version"
+	. "github.com/onsi/gomega"
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/changelogutils"
 	"github.com/solo-io/go-utils/githubutils"
 	"github.com/solo-io/go-utils/versionutils"

@@ -18,10 +18,10 @@ import (
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/test/gomega/transforms"
 
+	"github.com/kgateway-dev/kgateway/pkg/cliutil"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
-	"github.com/kgateway-dev/kgateway/pkg/cliutil"
 	"github.com/solo-io/go-utils/stats"
 )
 

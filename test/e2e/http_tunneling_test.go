@@ -38,10 +38,10 @@ import (
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/ssl"
 	testhelpers "github.com/kgateway-dev/kgateway/test/helpers"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/test/services"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 

@@ -12,10 +12,10 @@ import (
 	"github.com/kgateway-dev/kgateway/pkg/schemes"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/rotisserie/eris"
 	"github.com/kgateway-dev/kgateway/pkg/utils/protoutils"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/translator/irtranslator"
+	"github.com/rotisserie/eris"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"

@@ -6,11 +6,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/onsi/gomega"
 	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
 	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/cmd/istio"
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

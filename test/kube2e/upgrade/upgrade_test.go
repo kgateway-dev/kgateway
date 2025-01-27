@@ -25,12 +25,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/cmd/version"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 	"github.com/kgateway-dev/kgateway/test/kube2e"
 	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

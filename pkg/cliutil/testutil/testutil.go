@@ -7,9 +7,9 @@ import (
 
 	expect "github.com/Netflix/go-expect"
 	"github.com/hinshun/vt10x"
+	"github.com/kgateway-dev/kgateway/pkg/cliutil"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/kgateway-dev/kgateway/pkg/cliutil"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
 )
 

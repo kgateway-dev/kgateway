@@ -1,10 +1,10 @@
 package admin_test
 
 import (
+	"github.com/kgateway-dev/kgateway/projects/gateway2/admin"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/admin"
 	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

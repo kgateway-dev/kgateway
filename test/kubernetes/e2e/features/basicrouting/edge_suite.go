@@ -6,7 +6,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/onsi/gomega"
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
@@ -16,6 +15,7 @@ import (
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
 	ossvalidation "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/validation"
+	"github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"

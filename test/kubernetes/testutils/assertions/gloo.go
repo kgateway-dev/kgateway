@@ -8,13 +8,13 @@ import (
 	"net"
 	"time"
 
-	"github.com/onsi/gomega"
-	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/types"
 	"github.com/kgateway-dev/kgateway/pkg/utils/glooadminutils/admincli"
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/portforward"
 	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/admin"
+	"github.com/onsi/gomega"
+	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )

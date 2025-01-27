@@ -8,9 +8,9 @@ import (
 	"slices"
 	"time"
 
-	"github.com/onsi/gomega"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/helper"
+	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

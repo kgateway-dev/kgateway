@@ -18,11 +18,11 @@ import (
 
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 
-	"github.com/onsi/ginkgo/v2"
-	errors "github.com/rotisserie/eris"
 	"github.com/kgateway-dev/kgateway/test/services/utils"
 	"github.com/kgateway-dev/kgateway/test/testutils"
 	"github.com/kgateway-dev/kgateway/test/testutils/version"
+	"github.com/onsi/ginkgo/v2"
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/skv2/codegen/util"
 )
 
