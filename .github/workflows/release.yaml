@@ -18,7 +18,7 @@ permissions:
 jobs:
   setup:
     name: Setup release inputs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       version: ${{ steps.set_vars.outputs.version }}
       goreleaser_args: ${{ steps.set_vars.outputs.goreleaser_args }}
@@ -55,7 +55,7 @@ jobs:
   helm:
     name: Package helm charts
     needs: setup
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
@@ -80,7 +80,7 @@ jobs:
   goreleaser:
     name: goreleaser
     needs: [setup, helm]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:

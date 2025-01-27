@@ -18,7 +18,7 @@ on:
 
 jobs:
   run-conformance-tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         # TODO(tim): Avoid hardcoding versions here. It's a bit tricky based on
