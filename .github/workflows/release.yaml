@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - 'v*'
+      - '!v0.0.0-main'
+    branches:
+      - main
   pull_request:
     branches:
       - main
@@ -30,7 +33,7 @@ jobs:
       - name: Set the release related variables
         id: set_vars
         run: |
-          GIT_TAG=$(git describe --tags --abbrev=0)
+          GIT_TAG=$(git describe --tags --abbrev=0 --always)
           GIT_SHA=$(git rev-parse --short HEAD)
           GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD | sed -e "s/\//-/g")
 
@@ -41,6 +44,9 @@ jobs:
           elif [[ $GITHUB_REF == refs/tags/* ]]; then
             VERSION="${GITHUB_REF#refs/tags/}"
             echo "goreleaser_args=--clean" >> $GITHUB_OUTPUT
+          elif [[ $GITHUB_REF == refs/heads/main ]]; then
+            VERSION="v0.0.0-main"
+            echo "goreleaser_args=--clean --skip=validate" >> $GITHUB_OUTPUT
           elif [[ $GITHUB_REF == refs/pull/* ]]; then
             PR_NUM=$(echo "${GITHUB_REF}" | sed -E 's|refs/pull/([^/]+)/?.*|\1|')
             VERSION="${GIT_TAG}-pr.${PR_NUM}-${GIT_SHA}"
@@ -108,3 +114,4 @@ jobs:
           VERSION: ${{ needs.setup.outputs.version }}
           IMAGE_REGISTRY: ${{ env.IMAGE_REGISTRY }}
           GORELEASER_ARGS: ${{ needs.setup.outputs.goreleaser_args }}
+          GORELEASER_CURRENT_TAG: ${{ needs.setup.outputs.version }}

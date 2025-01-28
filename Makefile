@@ -261,10 +261,11 @@ view-test-coverage:
 	go tool cover -html $(OUTPUT_DIR)/cover.out
 
 .PHONY: package-kgateway-chart
+HELM_PACKAGE_ARGS ?= --version $(VERSION)
 package-kgateway-chart: ## Package the new kgateway helm chart for testing
-	mkdir -p $(TEST_ASSET_DIR)
-	helm package --version $(VERSION) --destination $(TEST_ASSET_DIR) install/helm/kgateway
-	helm repo index $(TEST_ASSET_DIR)
+	mkdir -p $(TEST_ASSET_DIR); \
+	helm package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) install/helm/kgateway; \
+	helm repo index $(TEST_ASSET_DIR);
 
 #----------------------------------------------------------------------------------
 # Clean
@@ -583,11 +584,12 @@ publish-docker: docker docker-push
 
 endif # Publish Artifact Targets
 
-GORELEASER_ARGS ?= --snapshot --clean
 GORELEASER ?= go run github.com/goreleaser/goreleaser/v2@v2.5.1
+GORELEASER_ARGS ?= --snapshot --clean
+GORELEASER_CURRENT_TAG ?= $(VERSION)
 .PHONY: release
 release:  ## Create a release using goreleaser
-	$(GORELEASER) release $(GORELEASER_ARGS)
+	GORELEASER_CURRENT_TAG=$(GORELEASER_CURRENT_TAG) $(GORELEASER) release $(GORELEASER_ARGS)
 
 #----------------------------------------------------------------------------------
 # Docker

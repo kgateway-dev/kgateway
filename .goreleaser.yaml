@@ -137,7 +137,61 @@ docker_manifests:
       - *envoyinit_arm_image
       - *envoyinit_amd_image
 changelog:
-  disable: false
+  disable: true
 release:
   prerelease: "auto"
   mode: "replace"
+  replace_existing_artifacts: true
+  header: |
+    {{ if eq .Env.VERSION "v0.0.0-main" }}
+    🚀 Nightly build of kgateway!
+    ---
+    It includes the latest changes but may be unstable. Use it for testing and providing feedback.
+    {{ else }}
+    🎉 Welcome to the {{ .Env.VERSION }} release of the kgateway project!
+    ---
+    {{ end }}
+  footer: |
+    ## Installation
+
+    The kgateway project is available as a Helm chart and docker images.
+
+    ### Helm Charts
+
+    The Helm chart is available at {{ .Env.IMAGE_REGISTRY }}/charts/kgateway.
+
+    ### Docker Images
+
+    The docker images are available at:
+
+    - {{ .Env.IMAGE_REGISTRY }}:{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}
+    - {{ .Env.IMAGE_REGISTRY }}:{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.VERSION }}
+    - {{ .Env.IMAGE_REGISTRY }}:{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.VERSION }}
+
+    ## Quickstart
+
+    First, create a [kind cluster](https://kind.sigs.k8s.io/docs/user/quick-start/#installation).
+
+    ```bash
+    kind create cluster
+    ```
+
+    Then, deploy the Kubernetes Gateway API CRDs.
+
+    ```bash
+    kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/experimental?ref=v1.2.1"
+    ```
+
+    Install the `kgateway` controller.
+
+    ```bash
+    helm install --create-namespace --namespace kgateway-system --version {{ .Env.VERSION }} kgateway oci://{{ .Env.IMAGE_REGISTRY }}/charts/kgateway
+    ```
+
+    Verify the release was successful.
+
+    ```bash
+    kubectl get pods -n kgateway-system
+    ```
+
+    If the release was successful, you should see a `kgateway` pod running.
