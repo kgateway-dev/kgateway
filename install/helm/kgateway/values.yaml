@@ -54,7 +54,7 @@ controller:
   replicaCount: 1
   logLevel: info
   image:
-    repository: ghcr.io/kgateway/gloo
+    repository: ghcr.io/kgateway/kgateway
     pullPolicy: IfNotPresent
     tag: ""
   service:
@@ -86,7 +86,7 @@ gateway:
   envoyContainer:
     image:
       registry: ghcr.io/kgateway
-      repository: gloo-envoy-wrapper
+      repository: envoy-wrapper
       tag: ""
     securityContext:
       allowPrivilegeEscalation: false
