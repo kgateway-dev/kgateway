@@ -8,7 +8,6 @@ import (
 	"github.com/kgateway-dev/kgateway/install/helm/gloo/generate"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/log"
-	"github.com/solo-io/k8s-utils/installutils/helmchart"
 )
 
 var (
@@ -66,14 +65,7 @@ func main() {
 	if err := generateValuesYaml(flagOpts.version, flagOpts.repoPrefixOverride, flagOpts.globalPullPolicy); err != nil {
 		log.Fatalf("generating values.yaml failed!: %v", err)
 	}
-	if flagOpts.generateHelmDocs {
-		log.Printf("Generating helm value docs in file: %v", docsOutput)
-		if err := generateValueDocs(helmDocsVersionText, flagOpts.repoPrefixOverride, flagOpts.globalPullPolicy); err != nil {
-			log.Fatalf("generating values.yaml docs failed!: %v", err)
-		}
-	} else {
-		log.Printf("NOT generating helm value docs, set %v to produce helm value docs", generateHelmDocsFlag)
-	}
+	log.Printf("NOT generating helm value docs, set %v to produce helm value docs", generateHelmDocsFlag)
 	if err := generateChartYaml(flagOpts.version); err != nil {
 		log.Fatalf("generating Chart.yaml failed!: %v", err)
 	}
@@ -86,18 +78,6 @@ func generateValuesYaml(version, repositoryPrefix, globalPullPolicy string) erro
 	}
 
 	return writeYaml(cfg, valuesOutput)
-}
-
-func generateValueDocs(version, repositoryPrefix, globalPullPolicy string) error {
-	cfg, err := generateValuesConfig(version, repositoryPrefix, globalPullPolicy)
-	if err != nil {
-		return err
-	}
-
-	// customize config as needed for docs
-	// (currently only the version text differs, and this is passed as a function argument)
-
-	return writeDocs(helmchart.Doc(cfg), docsOutput)
 }
 
 func generateChartYaml(version string) error {
@@ -133,14 +113,6 @@ func writeYaml(obj interface{}, path string) error {
 	err = os.WriteFile(path, bytes, os.ModePerm)
 	if err != nil {
 		return errors.Wrapf(err, "failing writing config file")
-	}
-	return nil
-}
-
-func writeDocs(docs helmchart.HelmValues, path string) error {
-	err := os.WriteFile(path, []byte(docs.ToMarkdown()), os.ModePerm)
-	if err != nil {
-		return errors.Wrapf(err, "failing writing helm values file")
 	}
 	return nil
 }
