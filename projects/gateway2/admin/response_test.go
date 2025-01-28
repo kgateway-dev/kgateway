@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
-	crdv1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -14,7 +14,7 @@ var _ = Describe("SnapshotResponseData", func() {
 	DescribeTable("MarshalJSONString",
 		func(response admin.SnapshotResponseData, expectedString string) {
 			responseStr := response.MarshalJSONString()
-			Expect(responseStr).To(Equal(expectedString))
+			Expect(responseStr).To(MatchJSON(expectedString))
 		},
 		Entry("successful response can be formatted as json",
 			admin.SnapshotResponseData{
@@ -30,7 +30,7 @@ var _ = Describe("SnapshotResponseData", func() {
 			"{\"data\":\"\",\"error\":\"one error\"}"),
 		Entry("CR list can be formatted as json",
 			admin.SnapshotResponseData{
-				Data: []crdv1.Resource{
+				Data: []corev1.Namespace{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "name",
@@ -47,6 +47,6 @@ var _ = Describe("SnapshotResponseData", func() {
 				},
 				Error: nil,
 			},
-			"{\"data\":[{\"kind\":\"kind\",\"apiVersion\":\"version\",\"metadata\":{\"name\":\"name\",\"namespace\":\"namespace\",\"creationTimestamp\":null,\"managedFields\":[{\"manager\":\"manager\"}]},\"status\":null,\"spec\":null}],\"error\":\"\"}"),
+			"{\"data\":[{\"kind\":\"kind\",\"apiVersion\":\"version\",\"metadata\":{\"name\":\"name\",\"namespace\":\"namespace\",\"creationTimestamp\":null,\"managedFields\":[{\"manager\":\"manager\"}]},\"status\":{},\"spec\":{}}],\"error\":\"\"}"),
 	)
 })

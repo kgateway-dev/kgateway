@@ -26,7 +26,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/skv2/contrib/pkg/sets"
 )
 
 var (
@@ -137,7 +136,7 @@ func parseFile(ctx context.Context, filename string) ([]runtime.Object, error) {
 				zap.Error(err),
 				zap.String("filename", filename),
 				zap.String("resourceKind", gvk.String()),
-				zap.String("resourceId", sets.Key(obj.(client.Object))),
+				zap.String("resourceId", obj.(client.Object).GetName()+"."+obj.(client.Object).GetNamespace()),
 				zap.String("truncatedYamlDoc", truncateString(string(objYaml), 100)),
 			)
 			continue
