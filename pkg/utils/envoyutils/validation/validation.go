@@ -36,12 +36,12 @@ func ValidateBootstrap(ctx context.Context, bootstrap string) error {
 // and some configurations may require the context of the destination such as mounted files.
 func ValidateSnapshot(
 	ctx context.Context,
-	snap envoycache.Snapshot,
+	snap *envoycache.Snapshot,
 ) error {
 	// THIS IS CRITICAL SO WE DO NOT INTERFERE WITH THE CONTROL PLANE.
 	// The logic for converting xDS to static bootstrap mutates some of
 	// the inputs, which is unacceptable when calling from translation.
-	snap = *xds.CloneSnap(&snap)
+	snap = xds.CloneSnap(snap)
 
 	bootstrapJson, err := bootstrap.FromSnapshot(ctx, snap)
 	if err != nil {
