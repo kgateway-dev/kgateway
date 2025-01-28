@@ -5,8 +5,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// +kubebuilder:rbac:groups=gateway.gloo.solo.io,resources=gatewayparameters,verbs=get;list;watch
-// +kubebuilder:rbac:groups=gateway.gloo.solo.io,resources=gatewayparameters/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=gatewayparameters,verbs=get;list;watch
+// +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=gatewayparameters/status,verbs=get;update;patch
 
 // A GatewayParameters contains configuration that is used to dynamically
 // provision Gloo Gateway's data plane (Envoy proxy instance), based on a

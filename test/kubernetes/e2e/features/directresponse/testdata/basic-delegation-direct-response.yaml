@@ -28,7 +28,7 @@ spec:
     - type: ExtensionRef
       extensionRef:
         name: parent-dr
-        group: gateway.gloo.solo.io
+        group: gateway.kgateway.dev
         kind: DirectResponse
 ---
 apiVersion: gateway.networking.k8s.io/v1
@@ -55,10 +55,10 @@ spec:
     - type: ExtensionRef
       extensionRef:
         name: child-dr
-        group: gateway.gloo.solo.io
+        group: gateway.kgateway.dev
         kind: DirectResponse
 ---
-apiVersion: gateway.gloo.solo.io/v1alpha1
+apiVersion: gateway.kgateway.dev/v1alpha1
 kind: DirectResponse
 metadata:
   name: parent-dr
@@ -67,7 +67,7 @@ spec:
   status: 302
   body: "Hello from parent route"
 ---
-apiVersion: gateway.gloo.solo.io/v1alpha1
+apiVersion: gateway.kgateway.dev/v1alpha1
 kind: DirectResponse
 metadata:
   name: child-dr

@@ -1,6 +1,6 @@
 // +k8s:openapi-gen=true
 // +kubebuilder:object:generate=true
-// +groupName=gateway.gloo.solo.io
+// +groupName=gateway.kgateway.dev
 package v1alpha1
 
 // Gateway API resources with status management

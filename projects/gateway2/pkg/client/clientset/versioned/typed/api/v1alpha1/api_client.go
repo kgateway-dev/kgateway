@@ -20,7 +20,7 @@ type GatewayV1alpha1Interface interface {
 	UpstreamsGetter
 }
 
-// GatewayV1alpha1Client is used to interact with features provided by the gateway.gloo.solo.io group.
+// GatewayV1alpha1Client is used to interact with features provided by the gateway.kgateway.dev group.
 type GatewayV1alpha1Client struct {
 	restClient rest.Interface
 }

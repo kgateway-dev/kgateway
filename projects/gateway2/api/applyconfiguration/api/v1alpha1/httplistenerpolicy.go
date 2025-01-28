@@ -27,7 +27,7 @@ func HttpListenerPolicy(name, namespace string) *HttpListenerPolicyApplyConfigur
 	b.WithName(name)
 	b.WithNamespace(namespace)
 	b.WithKind("HttpListenerPolicy")
-	b.WithAPIVersion("gateway.gloo.solo.io/v1alpha1")
+	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b
 }
 
@@ -63,7 +63,7 @@ func extractHttpListenerPolicy(httpListenerPolicy *apiv1alpha1.HttpListenerPolic
 	b.WithNamespace(httpListenerPolicy.Namespace)
 
 	b.WithKind("HttpListenerPolicy")
-	b.WithAPIVersion("gateway.gloo.solo.io/v1alpha1")
+	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b, nil
 }
 

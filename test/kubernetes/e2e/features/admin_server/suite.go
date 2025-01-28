@@ -87,7 +87,7 @@ func (s *testingSuite) TestGetInputSnapshotIncludesK8sGatewayApiResources() {
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, gatewayParametersManifest)
-	s.Assert().NoError(err, "can apply gateway.gloo.solo.io GatewayParameters manifest")
+	s.Assert().NoError(err, "can apply gateway.kgateway.dev GatewayParameters manifest")
 
 	s.testInstallation.Assertions.AssertGlooAdminApi(
 		s.ctx,

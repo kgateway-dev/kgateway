@@ -74,7 +74,7 @@ gatewayClass:
   # Optional parameters reference
   parametersRef:
     enabled: true
-    group: "gateway.gloo.solo.io"
+    group: "gateway.kgateway.dev"
     kind: "GatewayParameters"
     # The name of the GatewayParameters which is attached by parametersRef to the GatewayClass
     name: "kgateway"
@@ -83,7 +83,7 @@ gatewayClass:
 # Gateway proxy configuration
 gateway:
   # The name of the Gateway annotation that specifies the name of a GatewayParameters CR
-  parametersAnnotationName: "gateway.gloo.solo.io/gateway-parameters-name"
+  parametersAnnotationName: "gateway.kgateway.dev/gateway-parameters-name"
   envoyContainer:
     image:
       registry: ghcr.io/kgateway-dev

@@ -21,10 +21,10 @@ spec:
     - type: ExtensionRef
       extensionRef:
         name: test-1
-        group: gateway.gloo.solo.io
+        group: gateway.kgateway.dev
         kind: DirectResponse
 ---
-apiVersion: gateway.gloo.solo.io/v1alpha1
+apiVersion: gateway.kgateway.dev/v1alpha1
 kind: DirectResponse
 metadata:
   name: test-1
