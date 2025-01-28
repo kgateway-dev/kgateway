@@ -579,33 +579,6 @@ gloo-envoy-wrapper-distroless-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(
 		-t $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)-distroless
 
 #----------------------------------------------------------------------------------
-# Kubectl - Used in jobs during helm install/upgrade/uninstall
-#----------------------------------------------------------------------------------
-
-KUBECTL_DIR=jobs/kubectl
-KUBECTL_OUTPUT_DIR=$(OUTPUT_DIR)/$(KUBECTL_DIR)
-
-$(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl: $(KUBECTL_DIR)/Dockerfile
-	mkdir -p $(KUBECTL_OUTPUT_DIR)
-	cp $< $@
-
-.PHONY: kubectl-docker
-kubectl-docker: $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl
-	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) $(KUBECTL_OUTPUT_DIR) -f $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl \
-		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
-		-t $(IMAGE_REGISTRY)/kubectl:$(VERSION)
-
-$(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl.distroless: $(KUBECTL_DIR)/Dockerfile.distroless
-	mkdir -p $(KUBECTL_OUTPUT_DIR)
-	cp $< $@
-
-.PHONY: kubectl-distroless-docker
-kubectl-distroless-docker: $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl.distroless distroless-with-utils-docker
-	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) $(KUBECTL_OUTPUT_DIR) -f $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl.distroless \
-		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) \
-		-t $(IMAGE_REGISTRY)/kubectl:$(VERSION)-distroless
-
-#----------------------------------------------------------------------------------
 # Deployment Manifests / Helm
 #----------------------------------------------------------------------------------
 
@@ -756,29 +729,13 @@ endif # distroless images
 
 .PHONY: docker-standard-push
 docker-standard-push: docker-push-gloo
-docker-standard-push: docker-push-discovery
 docker-standard-push: docker-push-gloo-envoy-wrapper
 docker-standard-push: docker-push-sds
-ifeq ($(MULTIARCH), )
-docker-standard-push: docker-push-certgen
-endif
-docker-standard-push: docker-push-access-logger
-ifeq ($(MULTIARCH), )
-docker-standard-push: docker-push-kubectl
-endif
 
 .PHONY: docker-distroless-push
 docker-distroless-push: docker-push-gloo-distroless
-docker-distroless-push: docker-push-discovery-distroless
 docker-distroless-push: docker-push-gloo-envoy-wrapper-distroless
 docker-distroless-push: docker-push-sds-distroless
-ifeq ($(MULTIARCH), )
-docker-distroless-push: docker-push-certgen-distroless
-endif
-docker-distroless-push: docker-push-access-logger-distroless
-ifeq ($(MULTIARCH), )
-docker-distroless-push: docker-push-kubectl-distroless
-endif
 
 # Push docker images to the defined IMAGE_REGISTRY
 .PHONY: docker-push
@@ -793,19 +750,13 @@ endif # distroless images
 
 .PHONY: docker-standard-retag
 docker-standard-retag: docker-retag-gloo
-docker-standard-retag: docker-retag-discovery
 docker-standard-retag: docker-retag-gloo-envoy-wrapper
 docker-standard-retag: docker-retag-sds
-docker-standard-retag: docker-retag-certgen
-docker-standard-retag: docker-retag-kubectl
 
 .PHONY: docker-distroless-retag
 docker-distroless-retag: docker-retag-gloo-distroless
-docker-distroless-retag: docker-retag-discovery-distroless
 docker-distroless-retag: docker-retag-gloo-envoy-wrapper-distroless
 docker-distroless-retag: docker-retag-sds-distroless
-docker-distroless-retag: docker-retag-certgen-distroless
-docker-distroless-retag: docker-retag-kubectl-distroless
 
 # Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REGISTRY,
 # and tag them with a secondary repository, defined at IMAGE_REGISTRY
@@ -872,14 +823,12 @@ kind-reload-gloo-envoy-wrapper:
 .PHONY: kind-build-and-load-standard
 kind-build-and-load-standard: kind-build-and-load-gloo
 kind-build-and-load-standard: kind-build-and-load-gloo-envoy-wrapper
-# kind-build-and-load-standard: kind-build-and-load-sds
-# kind-build-and-load-standard: kind-build-and-load-certgen
+kind-build-and-load-standard: kind-build-and-load-sds
 
 .PHONY: kind-build-and-load-distroless
 kind-build-and-load-distroless: kind-build-and-load-gloo-distroless
 kind-build-and-load-distroless: kind-build-and-load-gloo-envoy-wrapper-distroless
 kind-build-and-load-distroless: kind-build-and-load-sds-distroless
-kind-build-and-load-distroless: kind-build-and-load-certgen-distroless
 
 .PHONY: kind-build-and-load ## Use to build all images and load them into kind
 kind-build-and-load: # Standard images
@@ -898,13 +847,11 @@ kind-build-and-load: kind-build-and-load-sds
 kind-load-standard: kind-load-gloo
 kind-load-standard: kind-load-gloo-envoy-wrapper
 kind-load-standard: kind-load-sds
-kind-load-standard: kind-load-certgen
 
 .PHONY: kind-build-and-load-distroless
 kind-load-distroless: kind-load-gloo-distroless
 kind-load-distroless: kind-load-gloo-envoy-wrapper-distroless
 kind-load-distroless: kind-load-sds-distroless
-kind-load-distroless: kind-load-certgen-distroless
 
 .PHONY: kind-load ## Use to build all images and load them into kind
 kind-load: # Standard images
