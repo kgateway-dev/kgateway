@@ -1,5 +1,0 @@
-gateway:
-  validation:
-    failurePolicy: Fail # For "strict" validation mode, fail the validation if webhook server is not available
-    webhook:
-      skipDeleteValidationResources: []
