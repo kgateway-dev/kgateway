@@ -54,7 +54,8 @@ controller:
   replicaCount: 1
   logLevel: info
   image:
-    repository: ghcr.io/kgateway/gloo
+    registry: ghcr.io/kgateway-dev
+    repository: kgateway
     pullPolicy: IfNotPresent
     tag: ""
   service:
@@ -85,8 +86,9 @@ gateway:
   parametersAnnotationName: "gateway.gloo.solo.io/gateway-parameters-name"
   envoyContainer:
     image:
-      registry: ghcr.io/kgateway
-      repository: gloo-envoy-wrapper
+      registry: ghcr.io/kgateway-dev
+      repository: envoy-wrapper
+      pullPolicy: IfNotPresent
       tag: ""
     securityContext:
       allowPrivilegeEscalation: false
@@ -108,7 +110,9 @@ gateway:
     type: LoadBalancer
   sdsContainer:
     image:
+      registry: ghcr.io/kgateway-dev
       repository: sds
+      pullPolicy: IfNotPresent
     logLevel: info
   istio:
     istioProxyContainer:

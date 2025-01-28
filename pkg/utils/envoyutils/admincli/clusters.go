@@ -3,7 +3,7 @@ package admincli
 import (
 	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	anypb "github.com/golang/protobuf/ptypes/any"
+	anypb "google.golang.org/protobuf/types/known/anypb"
 )
 
 // GetStaticClustersByName returns a map of static clusters, indexed by their name

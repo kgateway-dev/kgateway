@@ -4,7 +4,7 @@ import (
 	"regexp"
 
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
+	wrappers "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // TODO: [gloo cleanup] keeping this around as it may be needed, but the previous function call chain relied on

@@ -27,7 +27,7 @@ help: ## Output the self-documenting make targets
 ROOTDIR := $(shell pwd)
 OUTPUT_DIR ?= $(ROOTDIR)/_output
 
-export IMAGE_REGISTRY ?= ghcr.io/kgateway
+export IMAGE_REGISTRY ?= ghcr.io/kgateway-dev
 
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
@@ -40,7 +40,7 @@ SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 # ATTENTION: when updating to a new major version of Envoy, check if
 # universal header validation has been enabled and if so, we expect
 # failures in `test/e2e/header_validation_test.go`.
-export ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.31.2-patch3
+export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.31.2-patch3
 export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/pkg/version.Version=$(VERSION)'
 export GCFLAGS ?=
 
@@ -384,9 +384,8 @@ generate-changelog: ## Generate a changelog entry
 generate-crd-reference-docs:
 	go run docs/content/crds/generate.go
 
-
 #----------------------------------------------------------------------------------
-# Gloo distroless base images
+# Distroless base images
 #----------------------------------------------------------------------------------
 
 DISTROLESS_DIR=projects/distroless
@@ -415,93 +414,43 @@ distroless-with-utils-docker: distroless-docker $(DISTROLESS_OUTPUT_DIR)/Dockerf
 		-t  $(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE)
 
 #----------------------------------------------------------------------------------
-# Gloo
+# Controller
 #----------------------------------------------------------------------------------
 
 K8S_GATEWAY_DIR=projects/gateway2
-EDGE_GATEWAY_SOURCES=$(call get_sources,$(EDGE_GATEWAY_DIR))
 K8S_GATEWAY_SOURCES=$(call get_sources,$(K8S_GATEWAY_DIR))
-GLOO_OUTPUT_DIR=$(OUTPUT_DIR)/$(K8S_GATEWAY_DIR)
-export GLOO_IMAGE_REPO ?= gloo
+CONTROLLER_OUTPUT_DIR=$(OUTPUT_DIR)/$(K8S_GATEWAY_DIR)
+export CONTROLLER_IMAGE_REPO ?= kgateway
 
 # We include the files in EDGE_GATEWAY_DIR and K8S_GATEWAY_DIR as dependencies to the gloo build
 # so changes in those directories cause the make target to rebuild
-$(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH): $(K8S_GATEWAY_SOURCES)
+$(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH): $(K8S_GATEWAY_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ $(K8S_GATEWAY_DIR)/cmd/main.go
 
-.PHONY: gloo
-gloo: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH)
+.PHONY: kgateway
+kgateway: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH)
 
-$(GLOO_OUTPUT_DIR)/Dockerfile.gloo: $(K8S_GATEWAY_DIR)/cmd/Dockerfile
+$(CONTROLLER_OUTPUT_DIR)/Dockerfile: $(K8S_GATEWAY_DIR)/cmd/Dockerfile
 	cp $< $@
 
-.PHONY: gloo-docker
-gloo-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DIR)/Dockerfile.gloo
-	docker buildx build --load $(PLATFORM) $(GLOO_OUTPUT_DIR) -f $(GLOO_OUTPUT_DIR)/Dockerfile.gloo \
+.PHONY: kgateway-docker
+kgateway-docker: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(CONTROLLER_OUTPUT_DIR)/Dockerfile
+	docker buildx build --load $(PLATFORM) $(CONTROLLER_OUTPUT_DIR) -f $(CONTROLLER_OUTPUT_DIR)/Dockerfile \
 		--build-arg GOARCH=$(GOARCH) \
-		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
-		-t $(IMAGE_REGISTRY)/$(GLOO_IMAGE_REPO):$(VERSION)
+		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
+		-t $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)
 
-$(GLOO_OUTPUT_DIR)/Dockerfile.gloo.distroless: $(GLOO_DIR)/cmd/Dockerfile.distroless
+$(CONTROLLER_OUTPUT_DIR)/Dockerfile.distroless: $(K8S_GATEWAY_DIR)/cmd/Dockerfile.distroless
 	cp $< $@
 
-# Explicitly specify the base image is amd64 as we only build the amd64 flavour of gloo envoy
-.PHONY: gloo-distroless-docker
-gloo-distroless-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DIR)/Dockerfile.gloo.distroless distroless-with-utils-docker
-	docker buildx build --load $(PLATFORM) $(GLOO_OUTPUT_DIR) -f $(GLOO_OUTPUT_DIR)/Dockerfile.gloo.distroless \
+# Explicitly specify the base image is amd64 as we only build the amd64 flavour of envoy
+.PHONY: kgateway-distroless-docker
+kgateway-distroless-docker: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(CONTROLLER_OUTPUT_DIR)/Dockerfile.distroless distroless-with-utils-docker
+	docker buildx build --load $(PLATFORM) $(CONTROLLER_OUTPUT_DIR) -f $(CONTROLLER_OUTPUT_DIR)/Dockerfile.distroless \
 		--build-arg GOARCH=$(GOARCH) \
-		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
+		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
 		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) \
-		-t $(IMAGE_REGISTRY)/$(GLOO_IMAGE_REPO):$(VERSION)-distroless
-
-#----------------------------------------------------------------------------------
-# Gloo with race detection enabled.
-# This is intended to be used to aid in local debugging by swapping out this image in a running gloo instance
-#----------------------------------------------------------------------------------
-GLOO_RACE_OUT_DIR=$(OUTPUT_DIR)/gloo-race
-
-$(GLOO_RACE_OUT_DIR)/Dockerfile.build: $(GLOO_DIR)/Dockerfile
-	mkdir -p $(GLOO_RACE_OUT_DIR)
-	cp $< $@
-
-# Hardcode GOARCH for targets that are both built and run entirely in amd64 docker containers
-$(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build: $(GLOO_SOURCES) $(GLOO_RACE_OUT_DIR)/Dockerfile.build
-	docker buildx build --load $(PLATFORM) -t $(IMAGE_REGISTRY)/gloo-race-build-container:$(VERSION) \
-		-f $(GLOO_RACE_OUT_DIR)/Dockerfile.build \
-		--build-arg GO_BUILD_IMAGE=$(GOLANG_ALPINE_IMAGE_NAME) \
-		--build-arg VERSION=$(VERSION) \
-		--build-arg GCFLAGS=$(GCFLAGS) \
-		--build-arg LDFLAGS=$(LDFLAGS) \
-		--build-arg USE_APK=true \
-		--build-arg GOARCH=amd64 \
-		$(PLATFORM) \
-		.
-	touch $@
-
-# Hardcode GOARCH for targets that are both built and run entirely in amd64 docker containers
-# Build inside container as we need to target linux and must compile with CGO_ENABLED=1
-# We may be running Docker in a VM (eg, minikube) so be careful about how we copy files out of the containers
-$(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH): $(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build
-	docker create -ti --name gloo-race-temp-container $(IMAGE_REGISTRY)/gloo-race-build-container:$(VERSION) bash
-	docker cp gloo-race-temp-container:/gloo-linux-amd64 $(GLOO_RACE_OUT_DIR)/gloo-linux-amd64
-	docker rm -f gloo-race-temp-container
-
-# Build the gloo project with race detection enabled
-.PHONY: gloo-race
-gloo-race: $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH)
-
-$(GLOO_RACE_OUT_DIR)/Dockerfile: $(GLOO_DIR)/cmd/Dockerfile
-	cp $< $@
-
-# Hardcode GOARCH for targets that are both built and run entirely in amd64 docker containers
-# Take the executable built in gloo-race and put it in a docker container
-.PHONY: gloo-race-docker
-gloo-race-docker: $(GLOO_RACE_OUT_DIR)/.gloo-race-docker
-$(GLOO_RACE_OUT_DIR)/.gloo-race-docker: $(GLOO_RACE_OUT_DIR)/gloo-linux-amd64 $(GLOO_RACE_OUT_DIR)/Dockerfile
-	docker buildx build --load $(PLATFORM) $(GLOO_RACE_OUT_DIR) \
-		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) --build-arg GOARCH=amd64 \
-		-t $(IMAGE_REGISTRY)/gloo:$(VERSION)-race
-	touch $@
+		-t $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)-distroless
 
 #----------------------------------------------------------------------------------
 # SDS Server - gRPC server for serving Secret Discovery Service config
@@ -545,7 +494,7 @@ sds-distroless-docker: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) $(SDS_OUTPUT_DIR)/D
 ENVOYINIT_DIR=projects/envoyinit/cmd
 ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR))
 ENVOYINIT_OUTPUT_DIR=$(OUTPUT_DIR)/$(ENVOYINIT_DIR)
-export ENVOYINIT_IMAGE_REPO ?= gloo-envoy-wrapper
+export ENVOYINIT_IMAGE_REPO ?= envoy-wrapper
 
 $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH): $(ENVOYINIT_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ $(ENVOYINIT_DIR)/main.go
@@ -559,22 +508,22 @@ $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DIR)/Dockerfile.envoyi
 $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: $(ENVOYINIT_DIR)/docker-entrypoint.sh
 	cp $< $@
 
-.PHONY: gloo-envoy-wrapper-docker
-gloo-envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh
+.PHONY: envoy-wrapper-docker
+envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh
 	docker buildx build --load $(PLATFORM) $(ENVOYINIT_OUTPUT_DIR) -f $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit \
 		--build-arg GOARCH=$(GOARCH) \
-		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
+		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)
 
 $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless: $(ENVOYINIT_DIR)/Dockerfile.envoyinit.distroless
 	cp $< $@
 
-# Explicitly specify the base image is amd64 as we only build the amd64 flavour of gloo envoy
-.PHONY: gloo-envoy-wrapper-distroless-docker
-gloo-envoy-wrapper-distroless-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh distroless-with-utils-docker
+# Explicitly specify the base image is amd64 as we only build the amd64 flavour of envoy
+.PHONY: envoy-wrapper-distroless-docker
+envoy-wrapper-distroless-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh distroless-with-utils-docker
 	docker buildx build --load $(PLATFORM) $(ENVOYINIT_OUTPUT_DIR) -f $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless \
 		--build-arg GOARCH=$(GOARCH) \
-		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
+		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
 		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)-distroless
 
@@ -704,14 +653,14 @@ docker-push-%:
 
 .PHONY: docker-standard
 docker-standard: check-go-version ## Build docker images (standard only)
-docker-standard: gloo-docker
-docker-standard: gloo-envoy-wrapper-docker
+docker-standard: kgateway-docker
+docker-standard: envoy-wrapper-docker
 docker-standard: sds-docker
 
 .PHONY: docker-distroless
 docker-distroless: check-go-version ## Build docker images (distroless only)
-docker-distroless: gloo-distroless-docker
-docker-distroless: gloo-envoy-wrapper-distroless-docker
+docker-distroless: kgateway-distroless-docker
+docker-distroless: envoy-wrapper-distroless-docker
 docker-distroless: sds-distroless-docker
 
 IMAGE_VARIANT ?= all
@@ -728,13 +677,13 @@ docker: docker-distroless
 endif # distroless images
 
 .PHONY: docker-standard-push
-docker-standard-push: docker-push-gloo
-docker-standard-push: docker-push-gloo-envoy-wrapper
+docker-standard-push: docker-push-kgateway
+docker-standard-push: docker-push-envoy-wrapper
 docker-standard-push: docker-push-sds
 
 .PHONY: docker-distroless-push
-docker-distroless-push: docker-push-gloo-distroless
-docker-distroless-push: docker-push-gloo-envoy-wrapper-distroless
+docker-distroless-push: docker-push-kgateway-distroless
+docker-distroless-push: docker-push-envoy-wrapper-distroless
 docker-distroless-push: docker-push-sds-distroless
 
 # Push docker images to the defined IMAGE_REGISTRY
@@ -749,13 +698,13 @@ docker-push: docker-distroless-push
 endif # distroless images
 
 .PHONY: docker-standard-retag
-docker-standard-retag: docker-retag-gloo
-docker-standard-retag: docker-retag-gloo-envoy-wrapper
+docker-standard-retag: docker-retag-kgateway
+docker-standard-retag: docker-retag-envoy-wrapper
 docker-standard-retag: docker-retag-sds
 
 .PHONY: docker-distroless-retag
-docker-distroless-retag: docker-retag-gloo-distroless
-docker-distroless-retag: docker-retag-gloo-envoy-wrapper-distroless
+docker-distroless-retag: docker-retag-kgateway-distroless
+docker-distroless-retag: docker-retag-envoy-wrapper-distroless
 docker-distroless-retag: docker-retag-sds-distroless
 
 # Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REGISTRY,
@@ -788,7 +737,7 @@ kind-load-%:
 
 # Build an image and load it into the KinD cluster
 # Depends on: IMAGE_REGISTRY, VERSION, CLUSTER_NAME
-# Envoy image may be specified via ENVOY_GLOO_IMAGE on the command line or at the top of this file
+# Envoy image may be specified via ENVOY_IMAGE on the command line or at the top of this file
 kind-build-and-load-%: %-docker kind-load-% ; ## Use to build specified image and load it into kind
 
 # Update the docker image used by a deployment
@@ -808,26 +757,26 @@ kind-set-image-%:
 # You can reload an image, which means it will be rebuilt and reloaded into the kind cluster, and the deployment
 # will be updated to reference it
 # Depends on: IMAGE_REGISTRY, VERSION, INSTALL_NAMESPACE , CLUSTER_NAME
-# Envoy image may be specified via ENVOY_GLOO_IMAGE on the command line or at the top of this file
+# Envoy image may be specified via ENVOY_IMAGE on the command line or at the top of this file
 kind-reload-%: kind-build-and-load-% kind-set-image-% ; ## Use to build specified image, load it into kind, and restart its deployment
 
 # This is an alias to remedy the fact that the deployment is called gateway-proxy
-# but our make targets refer to gloo-envoy-wrapper
-kind-reload-gloo-envoy-wrapper: kind-build-and-load-gloo-envoy-wrapper
-kind-reload-gloo-envoy-wrapper:
+# but our make targets refer to envoy-wrapper
+kind-reload-envoy-wrapper: kind-build-and-load-envoy-wrapper
+kind-reload-envoy-wrapper:
 	kubectl rollout pause deployment gateway-proxy -n $(INSTALL_NAMESPACE) || true
-	kubectl set image deployment/gateway-proxy gateway-proxy=$(IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION) -n $(INSTALL_NAMESPACE)
+	kubectl set image deployment/gateway-proxy gateway-proxy=$(IMAGE_REGISTRY)/envoy-wrapper:$(VERSION) -n $(INSTALL_NAMESPACE)
 	kubectl patch deployment gateway-proxy -n $(INSTALL_NAMESPACE) -p '{"spec": {"template":{"metadata":{"annotations":{"gloo-kind-last-update":"$(shell date)"}}}} }'
 	kubectl rollout resume deployment gateway-proxy -n $(INSTALL_NAMESPACE)
 
 .PHONY: kind-build-and-load-standard
-kind-build-and-load-standard: kind-build-and-load-gloo
-kind-build-and-load-standard: kind-build-and-load-gloo-envoy-wrapper
+kind-build-and-load-standard: kind-build-and-load-kgateway
+kind-build-and-load-standard: kind-build-and-load-envoy-wrapper
 kind-build-and-load-standard: kind-build-and-load-sds
 
 .PHONY: kind-build-and-load-distroless
-kind-build-and-load-distroless: kind-build-and-load-gloo-distroless
-kind-build-and-load-distroless: kind-build-and-load-gloo-envoy-wrapper-distroless
+kind-build-and-load-distroless: kind-build-and-load-kgateway-distroless
+kind-build-and-load-distroless: kind-build-and-load-envoy-wrapper-distroless
 kind-build-and-load-distroless: kind-build-and-load-sds-distroless
 
 .PHONY: kind-build-and-load ## Use to build all images and load them into kind
@@ -844,13 +793,13 @@ kind-build-and-load: kind-build-and-load-sds
 
 # Load existing images. This can speed up development if the images have already been built / are unchanged
 .PHONY: kind-load-standard
-kind-load-standard: kind-load-gloo
-kind-load-standard: kind-load-gloo-envoy-wrapper
+kind-load-standard: kind-load-kgateway
+kind-load-standard: kind-load-envoy-wrapper
 kind-load-standard: kind-load-sds
 
 .PHONY: kind-build-and-load-distroless
-kind-load-distroless: kind-load-gloo-distroless
-kind-load-distroless: kind-load-gloo-envoy-wrapper-distroless
+kind-load-distroless: kind-load-kgateway-distroless
+kind-load-distroless: kind-load-envoy-wrapper-distroless
 kind-load-distroless: kind-load-sds-distroless
 
 .PHONY: kind-load ## Use to build all images and load them into kind
@@ -949,7 +898,7 @@ scan-version: ## Scan all Gloo images with the tag matching {VERSION} env variab
 	PATH=$(DEPSGOBIN):$$PATH GO111MODULE=on go run github.com/solo-io/go-utils/securityscanutils/cli scan-version -v \
 		-r $(IMAGE_REGISTRY)\
 		-t $(VERSION)\
-		--images gloo,gloo-envoy-wrapper,discovery,sds,certgen,kubectl
+		--images kgateway,envoy-wrapper,sds
 
 #----------------------------------------------------------------------------------
 # Third Party License Management

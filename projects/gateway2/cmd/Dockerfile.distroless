@@ -12,8 +12,8 @@ COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
 # lib64z1 - Required by libsaxon for xslt transformations
 COPY --from=envoy /usr/lib/x86_64-linux-gnu/libz.so* /usr/lib/x86_64-linux-gnu/
 
-COPY gloo-linux-$GOARCH /usr/local/bin/gloo
+COPY kgateway-linux-$GOARCH /usr/local/bin/kgateway
 
 USER 10101
 
-ENTRYPOINT ["/usr/local/bin/gloo"]
+ENTRYPOINT ["/usr/local/bin/kgateway"]
