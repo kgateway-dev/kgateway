@@ -64,9 +64,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-            # TODO: Remove this once the cleanup is done.
-            - name: GOLANG_PROTOBUF_REGISTRATION_CONFLICT
-              value: ignore
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

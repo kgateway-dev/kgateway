@@ -10,7 +10,7 @@ import (
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 func PrioritizeEndpoints(logger *zap.Logger, priorityInfo *PriorityInfo, ep ir.EndpointsForUpstream, ucc ir.UniqlyConnectedClient) *envoy_config_endpoint_v3.ClusterLoadAssignment {
@@ -155,7 +155,7 @@ func getEndpoints(eps []ir.EndpointWithMd, lbinfo LoadBalancingInfo) []*envoy_co
 	}
 	// reset weight
 	if weight > 0 {
-		epsOut[0].LoadBalancingWeight = &wrappers.UInt32Value{
+		epsOut[0].LoadBalancingWeight = &wrapperspb.UInt32Value{
 			Value: weight,
 		}
 	}
@@ -191,7 +191,7 @@ func applyFailoverPriorityPerLocality(
 		}
 		// reset weight
 		if weight > 0 {
-			out[i].LoadBalancingWeight = &wrappers.UInt32Value{
+			out[i].LoadBalancingWeight = &wrapperspb.UInt32Value{
 				Value: weight,
 			}
 		}
