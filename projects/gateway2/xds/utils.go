@@ -4,8 +4,10 @@ import (
 	"strings"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
+	"google.golang.org/protobuf/proto"
 )
 
 var _ cache.NodeHash = new(nodeRoleHasher)
@@ -55,4 +57,19 @@ func (h *nodeRoleHasher) ID(node *envoy_config_core_v3.Node) string {
 	}
 
 	return FallbackNodeCacheKey
+}
+
+func CloneSnap(snap *cache.Snapshot) *cache.Snapshot {
+	s := &cache.Snapshot{}
+	for k, v := range snap.Resources {
+		s.Resources[k].Version = v.Version
+		items := map[string]envoycachetypes.ResourceWithTTL{}
+		s.Resources[k].Items = items
+		for a, b := range v.Items {
+			b := b
+			b.Resource = proto.Clone(b.Resource)
+			items[a] = b
+		}
+	}
+	return s
 }

@@ -3,12 +3,13 @@ package validation
 import (
 	"context"
 
+	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/kgateway-dev/kgateway/pkg/utils/envoyutils/bootstrap"
 	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/projects/envoyinit/pkg/runner"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/xds"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 )
 
 const (
@@ -35,12 +36,12 @@ func ValidateBootstrap(ctx context.Context, bootstrap string) error {
 // and some configurations may require the context of the destination such as mounted files.
 func ValidateSnapshot(
 	ctx context.Context,
-	snap envoycache.Snapshot,
+	snap *envoycache.Snapshot,
 ) error {
 	// THIS IS CRITICAL SO WE DO NOT INTERFERE WITH THE CONTROL PLANE.
 	// The logic for converting xDS to static bootstrap mutates some of
 	// the inputs, which is unacceptable when calling from translation.
-	snap = snap.Clone()
+	snap = xds.CloneSnap(snap)
 
 	bootstrapJson, err := bootstrap.FromSnapshot(ctx, snap)
 	if err != nil {

@@ -6,9 +6,9 @@ import (
 	"github.com/kgateway-dev/kgateway/projects/gateway2/utils"
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
+	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	envoyresource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	envoy_config_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -306,10 +306,10 @@ var _ = Describe("Static bootstrap generation", func() {
 		BeforeEach(func() {
 			snap = &fakeSnapshot{
 				m: map[string]envoycache.Resources{
-					types.ListenerTypeV3: envoycache.NewResources("", []envoycache.Resource{}),
-					types.ClusterTypeV3:  envoycache.NewResources("", []envoycache.Resource{}),
-					types.RouteTypeV3:    envoycache.NewResources("", []envoycache.Resource{}),
-					types.EndpointTypeV3: envoycache.NewResources("", []envoycache.Resource{}),
+					envoyresource.ListenerType: envoycache.NewResources("", []types.Resource{}),
+					envoyresource.ClusterType:  envoycache.NewResources("", []types.Resource{}),
+					envoyresource.RouteType:    envoycache.NewResources("", []types.Resource{}),
+					envoyresource.EndpointType: envoycache.NewResources("", []types.Resource{}),
 				},
 			}
 			hcmAny, err := utils.MessageToAny(&envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager{
@@ -344,16 +344,16 @@ var _ = Describe("Static bootstrap generation", func() {
 		// types.SecretTypeV3 are omitted due to not being converted from snapshot into bootstrap.
 		JustBeforeEach(func() {
 			for _, l := range listeners {
-				snap.m[types.ListenerTypeV3].Items[l.GetName()] = resource.NewEnvoyResource(l)
+				snap.m[envoyresource.ListenerType].Items[l.GetName()] = types.ResourceWithTTL{Resource: l}
 			}
 			for _, c := range clusters {
-				snap.m[types.ClusterTypeV3].Items[c.GetName()] = resource.NewEnvoyResource(c)
+				snap.m[envoyresource.ClusterType].Items[c.GetName()] = types.ResourceWithTTL{Resource: c}
 			}
 			for _, r := range routes {
-				snap.m[types.RouteTypeV3].Items[r.GetName()] = resource.NewEnvoyResource(r)
+				snap.m[envoyresource.RouteType].Items[r.GetName()] = types.ResourceWithTTL{Resource: r}
 			}
 			for _, e := range endpoints {
-				snap.m[types.EndpointTypeV3].Items[e.GetClusterName()] = resource.NewEnvoyResource(e)
+				snap.m[envoyresource.EndpointType].Items[e.GetClusterName()] = types.ResourceWithTTL{Resource: e}
 			}
 		})
 		It("produces correct bootstrap", func() {
@@ -465,26 +465,39 @@ type fakeSnapshot struct {
 	m map[string]envoycache.Resources
 }
 
-func (f *fakeSnapshot) GetResources(typ string) envoycache.Resources {
+func (f *fakeSnapshot) GetResources(typ string) map[string]types.Resource {
 	if res, ok := f.m[typ]; ok {
-		return res
+		withoutTTL := make(map[string]types.Resource, len(res.Items))
+		for k, v := range res.Items {
+			withoutTTL[k] = v.Resource
+		}
+
+		return withoutTTL
 	}
 	panic("unknown resources type" + typ)
 
 }
 
-// Clone shouldn't be called on a generic snapshot until https://github.com/solo-io/solo-kit/issues/461 is resolved.
-func (f *fakeSnapshot) Clone() envoycache.Snapshot {
-	// don't need to worry about cloning for testing purposes.
-	return f
-}
-
-// Unused
-func (f *fakeSnapshot) Consistent() error {
+func (f *fakeSnapshot) GetResourcesAndTTL(typ string) map[string]types.ResourceWithTTL {
 	panic("not implemented")
 }
 
-// Unused
-func (f *fakeSnapshot) MakeConsistent() {
-	panic("not implemented")
+// GetVersion should return the current version of the resource indicated
+// by typeURL. The version string that is returned is opaque and should
+// only be compared for equality.
+func (f *fakeSnapshot) GetVersion(typeURL string) string {
+	panic("not implemented") // TODO: Implement
+}
+
+// ConstructVersionMap is a hint that a delta watch will soon make a
+// call to GetVersionMap. The snapshot should construct an internal
+// opaque version string for each collection of resource types.
+func (f *fakeSnapshot) ConstructVersionMap() error {
+	panic("not implemented") // TODO: Implement
+}
+
+// GetVersionMap returns a map of resource name to resource version for
+// all the resources of type indicated by typeURL.
+func (f *fakeSnapshot) GetVersionMap(typeURL string) map[string]string {
+	panic("not implemented") // TODO: Implement
 }

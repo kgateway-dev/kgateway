@@ -1,7 +1,6 @@
 package bootstrap
 
 import (
-	"bytes"
 	"context"
 	"errors"
 
@@ -12,13 +11,13 @@ import (
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_extensions_filters_network_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
-	anypb "github.com/golang/protobuf/ptypes/any"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/utils"
 	"github.com/rotisserie/eris"
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 var (
@@ -41,13 +40,11 @@ func FromEnvoyResources(resources *EnvoyResources) (string, error) {
 		},
 	}
 
-	buf := &bytes.Buffer{}
-	marshaler := &jsonpb.Marshaler{
-		OrigName: true,
+	marshaler := &protojson.MarshalOptions{
+		UseProtoNames: true,
 	}
-	marshaler.Marshal(buf, bootstrap)
-	json := string(buf.Bytes())
-	return json, nil // returns a json, but json is valid yaml
+	j, err := marshaler.Marshal(bootstrap)
+	return string(j), err // returns a json, but json is valid yaml
 }
 
 // FromFilter accepts a filter name and typed config for that filter,
@@ -56,7 +53,7 @@ func FromEnvoyResources(resources *EnvoyResources) (string, error) {
 // the stringified json or any error if it occurred.
 func FromFilter(filterName string, msg proto.Message) (string, error) {
 
-	typedFilter, err := utils.MessageToAny(msg)
+	typedFilter, err := anypb.New(msg)
 	if err != nil {
 		return "", err
 	}
@@ -86,7 +83,7 @@ func FromFilter(filterName string, msg proto.Message) (string, error) {
 		},
 	}
 
-	hcmAny, err := utils.MessageToAny(hcm)
+	hcmAny, err := anypb.New(hcm)
 	if err != nil {
 		return "", err
 	}
@@ -119,7 +116,7 @@ func FromFilter(filterName string, msg proto.Message) (string, error) {
 // FromSnapshot accepts an xds Snapshot and converts it into valid bootstrap json.
 func FromSnapshot(
 	ctx context.Context,
-	snap envoycache.Snapshot,
+	snap envoycache.ResourceSnapshot,
 ) (string, error) {
 
 	// Get the resources we're going to need as concrete types.
@@ -328,7 +325,7 @@ func setStaticRouteConfig(
 		RouteConfig: r,
 	}
 
-	hcmAny, err := utils.MessageToAny(hcm)
+	hcmAny, err := anypb.New(hcm)
 	if err != nil {
 		return err
 	}
