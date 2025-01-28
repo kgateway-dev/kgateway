@@ -31,7 +31,7 @@ spec:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag | default .Chart.Version }}"
+          image: "{{ .Values.controller.image.registry }}/{{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag | default .Chart.Version }}"
           imagePullPolicy: {{ .Values.controller.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.controller.service.ports.grpc | default 9977 }}

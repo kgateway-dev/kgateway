@@ -27,7 +27,7 @@ help: ## Output the self-documenting make targets
 ROOTDIR := $(shell pwd)
 OUTPUT_DIR ?= $(ROOTDIR)/_output
 
-export IMAGE_REGISTRY ?= ghcr.io/kgateway
+export IMAGE_REGISTRY ?= ghcr.io/kgateway-dev
 
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
