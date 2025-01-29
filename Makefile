@@ -528,28 +528,6 @@ envoy-wrapper-distroless-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARC
 		-t $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)-distroless
 
 #----------------------------------------------------------------------------------
-# Deployment Manifests / Helm
-#----------------------------------------------------------------------------------
-
-HELM_SYNC_DIR := $(OUTPUT_DIR)/helm
-HELM_DIR := install/helm/gloo
-
-.PHONY: generate-helm-files
-generate-helm-files: $(OUTPUT_DIR)/.helm-prepared ## Generates required helm files
-
-HELM_PREPARED_INPUT := $(HELM_DIR)/generate.go $(wildcard $(HELM_DIR)/generate/*.go)
-$(OUTPUT_DIR)/.helm-prepared: $(HELM_PREPARED_INPUT)
-	mkdir -p $(HELM_SYNC_DIR)/charts
-	IMAGE_REGISTRY=$(IMAGE_REGISTRY) go run $(HELM_DIR)/generate.go --version $(VERSION) --generate-helm-docs
-	touch $@
-
-.PHONY: package-chart
-package-chart: generate-helm-files
-	mkdir -p $(HELM_SYNC_DIR)/charts
-	helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR)
-	helm repo index $(HELM_SYNC_DIR)
-
-#----------------------------------------------------------------------------------
 # Release
 #----------------------------------------------------------------------------------
 # TODO: delete this logic block when we have a github actions-managed release
@@ -585,48 +563,24 @@ export VERSION
 
 # controller variable for the "Publish Artifacts" section.  Defines which targets exist.  Possible Values: NONE, RELEASE, PULL_REQUEST
 PUBLISH_CONTEXT ?= NONE
-# specify which bucket to upload helm chart to
-HELM_BUCKET ?= gs://solo-public-tagged-helm
 
 # define empty publish targets so calls won't fail
 .PHONY: publish-docker
 .PHONY: publish-docker-retag
-.PHONY: publish-glooctl
-.PHONY: publish-helm-chart
 
 # don't define Publish Artifacts Targets if we don't have a release context
 ifneq (,$(filter $(PUBLISH_CONTEXT),RELEASE PULL_REQUEST))
 
 ifeq (RELEASE, $(PUBLISH_CONTEXT))      # RELEASE contexts have additional make targets
-HELM_BUCKET           := gs://solo-public-helm
 # Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REGISTRY,
 # and push them to a secondary repository, defined at IMAGE_REGISTRY
 publish-docker-retag: docker-retag docker-push
 
-# publish glooctl
-publish-glooctl: build-cli
-	VERSION=$(VERSION) GO111MODULE=on go run ci/upload_github_release_assets.go false
-else
-# dry run publish glooctl
-publish-glooctl: build-cli
-	VERSION=$(VERSION) GO111MODULE=on go run ci/upload_github_release_assets.go true
 endif # RELEASE exclusive make targets
 
 # Build and push docker images to the defined $(IMAGE_REGISTRY)
 publish-docker: docker docker-push
 
-# create a new helm chart and publish it to $(HELM_BUCKET)
-publish-helm-chart: generate-helm-files
-	@echo "Uploading helm chart to $(HELM_BUCKET) with name gloo-$(VERSION).tgz"
-	until $$(GENERATION=$$(gsutil ls -a $(HELM_BUCKET)/index.yaml | tail -1 | cut -f2 -d '#') && \
-					gsutil cp -v $(HELM_BUCKET)/index.yaml $(HELM_SYNC_DIR)/index.yaml && \
-					helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR) >> /dev/null && \
-					helm repo index $(HELM_SYNC_DIR) --merge $(HELM_SYNC_DIR)/index.yaml && \
-					gsutil -m rsync $(HELM_SYNC_DIR)/charts $(HELM_BUCKET)/charts && \
-					gsutil -h x-goog-if-generation-match:"$$GENERATION" cp $(HELM_SYNC_DIR)/index.yaml $(HELM_BUCKET)/index.yaml); do \
-		echo "Failed to upload new helm index (updated helm index since last download?). Trying again"; \
-		sleep 2; \
-	done
 endif # Publish Artifact Targets
 
 GORELEASER_ARGS ?= --snapshot --clean
@@ -834,13 +788,6 @@ kind-list-images: ## List solo-io images in the kind cluster named {CLUSTER_NAME
 .PHONY: kind-prune-images
 kind-prune-images: ## Remove images in the kind cluster named {CLUSTER_NAME}
 	docker exec -ti $(CLUSTER_NAME)-control-plane crictl rmi --prune
-
-.PHONY: build-test-chart
-build-test-chart: ## Build the Helm chart and place it in the _test directory
-	mkdir -p $(TEST_ASSET_DIR)
-	GO111MODULE=on go run $(HELM_DIR)/generate.go --version $(VERSION)
-	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)
-	helm repo index $(TEST_ASSET_DIR)
 
 #----------------------------------------------------------------------------------
 # Targets for running Kubernetes Gateway API conformance tests
