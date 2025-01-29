@@ -27,7 +27,7 @@ func DirectResponse(name, namespace string) *DirectResponseApplyConfiguration {
 	b.WithName(name)
 	b.WithNamespace(namespace)
 	b.WithKind("DirectResponse")
-	b.WithAPIVersion("gateway.gloo.solo.io/v1alpha1")
+	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b
 }
 
@@ -63,7 +63,7 @@ func extractDirectResponse(directResponse *apiv1alpha1.DirectResponse, fieldMana
 	b.WithNamespace(directResponse.Namespace)
 
 	b.WithKind("DirectResponse")
-	b.WithAPIVersion("gateway.gloo.solo.io/v1alpha1")
+	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b, nil
 }
 

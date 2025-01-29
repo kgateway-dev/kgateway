@@ -27,7 +27,7 @@ func RoutePolicy(name, namespace string) *RoutePolicyApplyConfiguration {
 	b.WithName(name)
 	b.WithNamespace(namespace)
 	b.WithKind("RoutePolicy")
-	b.WithAPIVersion("gateway.gloo.solo.io/v1alpha1")
+	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b
 }
 
@@ -63,7 +63,7 @@ func extractRoutePolicy(routePolicy *apiv1alpha1.RoutePolicy, fieldManager strin
 	b.WithNamespace(routePolicy.Namespace)
 
 	b.WithKind("RoutePolicy")
-	b.WithAPIVersion("gateway.gloo.solo.io/v1alpha1")
+	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b, nil
 }
 

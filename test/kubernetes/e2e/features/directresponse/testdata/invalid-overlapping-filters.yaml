@@ -17,15 +17,15 @@ spec:
     - type: ExtensionRef
       extensionRef:
         name: test-1
-        group: gateway.gloo.solo.io
+        group: gateway.kgateway.dev
         kind: DirectResponse
     - type: ExtensionRef
       extensionRef:
         name: test-2
-        group: gateway.gloo.solo.io
+        group: gateway.kgateway.dev
         kind: DirectResponse
 ---
-apiVersion: gateway.gloo.solo.io/v1alpha1
+apiVersion: gateway.kgateway.dev/v1alpha1
 kind: DirectResponse
 metadata:
   name: test-1
@@ -34,7 +34,7 @@ spec:
   status: 301
   body: "Test 1 body"
 ---
-apiVersion: gateway.gloo.solo.io/v1alpha1
+apiVersion: gateway.kgateway.dev/v1alpha1
 kind: DirectResponse
 metadata:
   name: test-2

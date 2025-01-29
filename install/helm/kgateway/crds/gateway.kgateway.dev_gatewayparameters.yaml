@@ -7,9 +7,9 @@ metadata:
   labels:
     app: gloo-gateway
     app.kubernetes.io/name: gloo-gateway
-  name: gatewayparameters.gateway.gloo.solo.io
+  name: gatewayparameters.gateway.kgateway.dev
 spec:
-  group: gateway.gloo.solo.io
+  group: gateway.kgateway.dev
   names:
     categories:
     - gloo-gateway

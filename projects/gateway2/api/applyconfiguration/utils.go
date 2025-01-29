@@ -15,7 +15,7 @@ import (
 // apply configuration type exists for the given GroupVersionKind.
 func ForKind(kind schema.GroupVersionKind) interface{} {
 	switch kind {
-	// Group=gateway.gloo.solo.io, Version=v1alpha1
+	// Group=gateway.kgateway.dev, Version=v1alpha1
 	case v1alpha1.SchemeGroupVersion.WithKind("AiExtension"):
 		return &apiv1alpha1.AiExtensionApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AiExtensionStats"):

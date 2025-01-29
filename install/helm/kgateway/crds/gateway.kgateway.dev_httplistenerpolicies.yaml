@@ -8,18 +8,18 @@ metadata:
     app: gateway
     app.kubernetes.io/name: gateway
     gateway.networking.k8s.io/policy: Direct
-  name: routepolicies.gateway.gloo.solo.io
+  name: httplistenerpolicies.gateway.kgateway.dev
 spec:
-  group: gateway.gloo.solo.io
+  group: gateway.kgateway.dev
   names:
     categories:
     - gateway
-    kind: RoutePolicy
-    listKind: RoutePolicyList
-    plural: routepolicies
+    kind: HttpListenerPolicy
+    listKind: HttpListenerPolicyList
+    plural: httplistenerpolicies
     shortNames:
-    - rp
-    singular: routepolicy
+    - hlp
+    singular: httplistenerpolicy
   scope: Namespaced
   versions:
   - name: v1alpha1
@@ -34,6 +34,8 @@ spec:
             type: object
           spec:
             properties:
+              compress:
+                type: boolean
               targetRef:
                 properties:
                   group:
@@ -54,9 +56,6 @@ spec:
                 - kind
                 - name
                 type: object
-              timeout:
-                minimum: 1
-                type: integer
             type: object
           status:
             properties:

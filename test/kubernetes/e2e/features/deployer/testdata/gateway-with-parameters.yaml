@@ -3,7 +3,7 @@ kind: Gateway
 metadata:
   name: gw
   annotations:
-    gateway.gloo.solo.io/gateway-parameters-name: "gw-params"
+    gateway.kgateway.dev/gateway-parameters-name: "gw-params"
 spec:
   gatewayClassName: gloo-gateway
   listeners:
@@ -28,7 +28,7 @@ spec:
         - name: nginx
           port: 8080
 ---
-apiVersion: gateway.gloo.solo.io/v1alpha1
+apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayParameters
 metadata:
   name: gw-params

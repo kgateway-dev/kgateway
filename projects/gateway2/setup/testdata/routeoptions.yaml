@@ -12,12 +12,6 @@ spec:
     allowedRoutes:
       namespaces:
         from: All
-  - protocol: HTTP
-    port: 8081
-    name: other
-    allowedRoutes:
-      namespaces:
-        from: All
 ---
 apiVersion: v1
 kind: Service
@@ -63,7 +57,7 @@ ports:
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
-  name: reviews
+  name: routetimeout
   namespace: gwtest
 spec:
   parentRefs:
@@ -76,13 +70,13 @@ spec:
           port: 8080
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: ListenerPolicy
+kind: RoutePolicy
 metadata:
-  name: buffer-limit
+  name: timeout
   namespace: gwtest
 spec:
-  perConnectionBufferLimitBytes: 42000
+  timeout: 1
   targetRef:
     group: gateway.networking.k8s.io
-    kind: Gateway
-    name: http-gw-for-test
+    kind: HTTPRoute
+    name: routetimeout

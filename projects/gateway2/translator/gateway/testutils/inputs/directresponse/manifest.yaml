@@ -12,7 +12,7 @@ spec:
         namespaces:
           from: Same
 ---
-apiVersion: gateway.gloo.solo.io/v1alpha1
+apiVersion: gateway.kgateway.dev/v1alpha1
 kind: DirectResponse
 metadata:
   name: direct-response
@@ -34,5 +34,5 @@ spec:
       - type: ExtensionRef
         extensionRef:
           name: direct-response
-          group: gateway.gloo.solo.io
+          group: gateway.kgateway.dev
           kind: DirectResponse

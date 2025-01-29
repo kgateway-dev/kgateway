@@ -8,9 +8,9 @@ metadata:
     app: gateway
     app.kubernetes.io/name: gateway
     gateway.networking.k8s.io/policy: Direct
-  name: routepolicies.gateway.gloo.solo.io
+  name: routepolicies.gateway.kgateway.dev
 spec:
-  group: gateway.gloo.solo.io
+  group: gateway.kgateway.dev
   names:
     categories:
     - gateway

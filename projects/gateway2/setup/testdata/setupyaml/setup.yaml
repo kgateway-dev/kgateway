@@ -5,13 +5,13 @@ metadata:
 spec:
   controllerName: kgateway.io/kgateway
   parametersRef:
-    group: gateway.gloo.solo.io
+    group: gateway.kgateway.dev
     kind: GatewayParameters
     name: kgateway
     namespace: default
 ---
 kind: GatewayParameters
-apiVersion: gateway.gloo.solo.io/v1alpha1
+apiVersion: gateway.kgateway.dev/v1alpha1
 metadata:
   name: kgateway
 spec:

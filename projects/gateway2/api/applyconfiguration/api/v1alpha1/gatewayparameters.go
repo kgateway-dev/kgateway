@@ -27,7 +27,7 @@ func GatewayParameters(name, namespace string) *GatewayParametersApplyConfigurat
 	b.WithName(name)
 	b.WithNamespace(namespace)
 	b.WithKind("GatewayParameters")
-	b.WithAPIVersion("gateway.gloo.solo.io/v1alpha1")
+	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b
 }
 
@@ -63,7 +63,7 @@ func extractGatewayParameters(gatewayParameters *apiv1alpha1.GatewayParameters, 
 	b.WithNamespace(gatewayParameters.Namespace)
 
 	b.WithKind("GatewayParameters")
-	b.WithAPIVersion("gateway.gloo.solo.io/v1alpha1")
+	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b, nil
 }
 

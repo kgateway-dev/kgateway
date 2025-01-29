@@ -69,7 +69,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - gateway.gloo.solo.io
+  - gateway.kgateway.dev
   resources:
   - directresponses
   - gatewayparameters
@@ -82,7 +82,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - gateway.gloo.solo.io
+  - gateway.kgateway.dev
   resources:
   - directresponses/status
   - gatewayparameters/status

@@ -1,5 +1,5 @@
 {{- if .Values.gatewayClass.parametersRef.enabled }}
-apiVersion: gateway.gloo.solo.io/v1alpha1
+apiVersion: gateway.kgateway.dev/v1alpha1
 kind: GatewayParameters
 metadata:
   name: {{ .Values.gatewayClass.parametersRef.name }}
