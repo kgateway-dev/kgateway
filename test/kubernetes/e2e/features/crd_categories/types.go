@@ -5,11 +5,11 @@ package crd_categories
 import (
 	"path/filepath"
 
-	"github.com/solo-io/skv2/codegen/util"
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 )
 
 var (
-	emptyVsManifest = filepath.Join(util.MustGetThisDir(), "testdata/manifests", "empty-virtualservice.yaml")
+	emptyVsManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata/manifests", "empty-virtualservice.yaml")
 
 	installedVs = "virtualservice.gateway.solo.io/empty-virtualservice"
 )

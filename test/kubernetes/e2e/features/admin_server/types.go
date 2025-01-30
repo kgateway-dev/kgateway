@@ -5,13 +5,14 @@ package admin_server
 import (
 	"path/filepath"
 
-	"github.com/solo-io/skv2/codegen/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 )
 
 var (
-	upstreamManifest          = filepath.Join(util.MustGetThisDir(), "testdata/upstream.yaml")
-	gatewayParametersManifest = filepath.Join(util.MustGetThisDir(), "testdata/gateway-parameters.yaml")
+	upstreamManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata/upstream.yaml")
+	gatewayParametersManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata/gateway-parameters.yaml")
 
 	// Upstream resource to be created
 	upstreamMeta = metav1.ObjectMeta{

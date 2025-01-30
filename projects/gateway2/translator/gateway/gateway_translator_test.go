@@ -3,9 +3,7 @@ package gateway_test
 import (
 	"context"
 	"fmt"
-	"log"
 	"path/filepath"
-	"runtime"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -14,6 +12,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 
 	"github.com/kgateway-dev/kgateway/projects/gateway2/reports"
 )
@@ -29,7 +29,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 	func(in translatorTestCase) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		dir := MustGetThisDir()
+		dir := fsutils.MustGetThisDir()
 
 		results, err := TestCase{
 			InputFiles: []string{filepath.Join(dir, "testutils/inputs/", in.inputFile)},
@@ -306,7 +306,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 var _ = DescribeTable("Route Delegation translator",
 	func(inputFile string, errdesc string) {
 		ctx := context.TODO()
-		dir := MustGetThisDir()
+		dir := fsutils.MustGetThisDir()
 
 		results, err := TestCase{
 			InputFiles: []string{filepath.Join(dir, "testutils/inputs/delegation", inputFile)},
@@ -351,11 +351,3 @@ var _ = DescribeTable("Route Delegation translator",
 	// https://github.com/k8sgateway/k8sgateway/issues/10379
 	Entry("Multi-level multiple parents delegation", "bug-10379.yaml", ""),
 )
-
-func MustGetThisDir() string {
-	_, thisFile, _, ok := runtime.Caller(1)
-	if !ok {
-		log.Fatalf("Failed to get runtime.Caller")
-	}
-	return filepath.Dir(thisFile)
-}

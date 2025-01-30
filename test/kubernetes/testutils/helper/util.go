@@ -17,8 +17,8 @@ import (
 	"github.com/solo-io/go-utils/changelogutils"
 	"github.com/solo-io/go-utils/githubutils"
 	"github.com/solo-io/go-utils/versionutils"
-	"github.com/solo-io/skv2/codegen/util"
 
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/test/testutils"
 	"github.com/kgateway-dev/kgateway/test/testutils/version"
 )
@@ -84,7 +84,7 @@ func GetTestHelperForRootDir(ctx context.Context, rootDir, namespace string) (*S
 //   - (nil, nil, err):                      unable to fetch versions for upgrade test
 func GetUpgradeVersions(ctx context.Context, repoName string) (*versionutils.Version, *versionutils.Version, error) {
 	// get the latest and upcoming releases of the current branch
-	files, changelogReadErr := os.ReadDir(filepath.Join(util.GetModuleRoot(), changelogutils.ChangelogDirectory))
+	files, changelogReadErr := os.ReadDir(filepath.Join(fsutils.GetModuleRoot(), changelogutils.ChangelogDirectory))
 	if changelogReadErr != nil {
 		return nil, nil, changelogutils.ReadChangelogDirError(changelogReadErr)
 	}

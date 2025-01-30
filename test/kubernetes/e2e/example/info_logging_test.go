@@ -14,8 +14,9 @@ import (
 	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/test/testutils"
 
-	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/example"
@@ -30,8 +31,8 @@ func TestInstallationWithInfoLogLevel(t *testing.T) {
 		t,
 		&gloogateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: filepath.Join(util.MustGetThisDir(), "manifests", "example-profile.yaml"),
-			ValuesManifestFile:        filepath.Join(util.MustGetThisDir(), "manifests", "info-example.yaml"),
+			ProfileValuesManifestFile: filepath.Join(fsutils.MustGetThisDir(), "manifests", "example-profile.yaml"),
+			ValuesManifestFile:        filepath.Join(fsutils.MustGetThisDir(), "manifests", "info-example.yaml"),
 		},
 	)
 

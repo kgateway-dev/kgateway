@@ -9,9 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/solo-io/skv2/codegen/util"
-
 	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 	. "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/gloogateway"
@@ -28,7 +27,7 @@ func TestDiscoveryWatchlabels(t *testing.T) {
 		&gloogateway.Context{
 			InstallNamespace:          installNs,
 			ProfileValuesManifestFile: e2e.KubernetesGatewayProfilePath,
-			ValuesManifestFile:        filepath.Join(util.MustGetThisDir(), "manifests", "discovery-watchlabels-test-helm.yaml"),
+			ValuesManifestFile:        filepath.Join(fsutils.MustGetThisDir(), "manifests", "discovery-watchlabels-test-helm.yaml"),
 		},
 	)
 
