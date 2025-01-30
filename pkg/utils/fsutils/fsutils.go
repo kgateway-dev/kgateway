@@ -2,7 +2,12 @@ package fsutils
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strings"
 )
 
 // ToTempFile takes a string to write to a temp file. It returns the filename and an error.
@@ -32,4 +37,27 @@ func IsDirectory(dir string) bool {
 		return false
 	}
 	return stat.IsDir()
+}
+
+// returns absolute path to the diretory containing the .go file containing the calling function
+func MustGetThisDir() string {
+	_, thisFile, _, ok := runtime.Caller(1)
+	if !ok {
+		log.Fatalf("Failed to get runtime.Caller")
+	}
+	return filepath.Dir(thisFile)
+}
+
+// absolute path to go.mod file for current dir
+func GoModPath() string {
+	out, err := exec.Command("go", "env", "GOMOD").CombinedOutput()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// the project root dir (based on gomod location)
+func GetModuleRoot() string {
+	return filepath.Dir(GoModPath())
 }

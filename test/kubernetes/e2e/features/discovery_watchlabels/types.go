@@ -5,12 +5,12 @@ package discovery_watchlabels
 import (
 	"path/filepath"
 
-	"github.com/solo-io/skv2/codegen/util"
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 )
 
 var (
-	serviceWithLabelsManifest           = filepath.Join(util.MustGetThisDir(), "testdata/service-with-labels.yaml")
-	serviceWithModifiedLabelsManifest   = filepath.Join(util.MustGetThisDir(), "testdata/service-with-modified-labels.yaml")
-	serviceWithoutLabelsManifest        = filepath.Join(util.MustGetThisDir(), "testdata/service-without-labels.yaml")
-	serviceWithNoMatchingLabelsManifest = filepath.Join(util.MustGetThisDir(), "testdata/service-with-no-matching-labels.yaml")
+	serviceWithLabelsManifest           = filepath.Join(fsutils.MustGetThisDir(), "testdata/service-with-labels.yaml")
+	serviceWithModifiedLabelsManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata/service-with-modified-labels.yaml")
+	serviceWithoutLabelsManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata/service-without-labels.yaml")
+	serviceWithNoMatchingLabelsManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata/service-with-no-matching-labels.yaml")
 )

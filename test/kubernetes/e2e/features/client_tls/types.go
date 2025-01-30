@@ -6,20 +6,20 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	"github.com/onsi/gomega"
-	"github.com/solo-io/skv2/codegen/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
-	annotatedNginxSvcManifestFile       = filepath.Join(util.MustGetThisDir(), "testdata", "annotated-nginx-svc.yaml")
-	annotatedNginxOneWaySvcManifestFile = filepath.Join(util.MustGetThisDir(), "testdata", "annotated-oneway-nginx-svc.yaml")
-	nginxUpstreamManifestFile           = filepath.Join(util.MustGetThisDir(), "testdata", "nginx-upstream.yaml")
-	nginxOneWayUpstreamManifestFile     = filepath.Join(util.MustGetThisDir(), "testdata", "nginx-oneway-upstream.yaml")
-	tlsSecretManifestFile               = filepath.Join(util.MustGetThisDir(), "testdata", "tls-secret.yaml")
+	annotatedNginxSvcManifestFile       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "annotated-nginx-svc.yaml")
+	annotatedNginxOneWaySvcManifestFile = filepath.Join(fsutils.MustGetThisDir(), "testdata", "annotated-oneway-nginx-svc.yaml")
+	nginxUpstreamManifestFile           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "nginx-upstream.yaml")
+	nginxOneWayUpstreamManifestFile     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "nginx-oneway-upstream.yaml")
+	tlsSecretManifestFile               = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tls-secret.yaml")
 
 	// When we apply the deployer-provision.yaml file, we expect resources to be created with this metadata
 	glooProxyObjectMeta = func(ns string) metav1.ObjectMeta {

@@ -5,8 +5,8 @@ package watch_namespace_selector
 import (
 	"path/filepath"
 
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests/base"
-	"github.com/solo-io/skv2/codegen/util"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -16,19 +16,19 @@ import (
 )
 
 var (
-	installNamespaceVSManifest = filepath.Join(util.MustGetThisDir(), "testdata", "vs-install-ns.yaml")
+	installNamespaceVSManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "vs-install-ns.yaml")
 
-	unlabeledRandomNamespaceManifest = filepath.Join(util.MustGetThisDir(), "testdata", "random-ns-unlabeled.yaml")
+	unlabeledRandomNamespaceManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "random-ns-unlabeled.yaml")
 	randomNamespace                  = &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "random",
 		},
 	}
 
-	randomVSManifest = filepath.Join(util.MustGetThisDir(), "testdata", "vs-random.yaml")
+	randomVSManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "vs-random.yaml")
 
-	randomUpstreamManifest                       = filepath.Join(util.MustGetThisDir(), "testdata", "upstream-random.yaml")
-	installNamespaceWithRandomUpstreamVSManifest = filepath.Join(util.MustGetThisDir(), "testdata", "vs-upstream.yaml")
+	randomUpstreamManifest                       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "upstream-random.yaml")
+	installNamespaceWithRandomUpstreamVSManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "vs-upstream.yaml")
 
 	randomNamespaceVS = &gatewayv1.VirtualService{
 		ObjectMeta: metav1.ObjectMeta{

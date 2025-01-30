@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/solo-io/skv2/codegen/util"
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,7 +20,7 @@ const (
 
 // ref: test/kubernetes/e2e/features/delegation/testdata/common.yaml
 var (
-	commonManifest = filepath.Join(util.MustGetThisDir(), "testdata", "common.yaml")
+	commonManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "common.yaml")
 	proxyMeta      = metav1.ObjectMeta{
 		Name:      "gloo-proxy-http-gateway",
 		Namespace: "infra",
@@ -105,14 +105,14 @@ var (
 )
 
 var (
-	basicRoutesManifest                 = filepath.Join(util.MustGetThisDir(), "testdata", "basic.yaml")
-	recursiveRoutesManifest             = filepath.Join(util.MustGetThisDir(), "testdata", "recursive.yaml")
-	cyclicRoutesManifest                = filepath.Join(util.MustGetThisDir(), "testdata", "cyclic.yaml")
-	invalidChildRoutesManifest          = filepath.Join(util.MustGetThisDir(), "testdata", "invalid_child.yaml")
-	headerQueryMatchRoutesManifest      = filepath.Join(util.MustGetThisDir(), "testdata", "header_query_match.yaml")
-	multipleParentsManifest             = filepath.Join(util.MustGetThisDir(), "testdata", "multiple_parents.yaml")
-	invalidChildValidStandaloneManifest = filepath.Join(util.MustGetThisDir(), "testdata", "invalid_child_valid_standalone.yaml")
-	unresolvedChildManifest             = filepath.Join(util.MustGetThisDir(), "testdata", "unresolved_child.yaml")
-	routeOptionsManifest                = filepath.Join(util.MustGetThisDir(), "testdata", "route_options.yaml")
-	matcherInheritanceManifest          = filepath.Join(util.MustGetThisDir(), "testdata", "matcher_inheritance.yaml")
+	basicRoutesManifest                 = filepath.Join(fsutils.MustGetThisDir(), "testdata", "basic.yaml")
+	recursiveRoutesManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "recursive.yaml")
+	cyclicRoutesManifest                = filepath.Join(fsutils.MustGetThisDir(), "testdata", "cyclic.yaml")
+	invalidChildRoutesManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid_child.yaml")
+	headerQueryMatchRoutesManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "header_query_match.yaml")
+	multipleParentsManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "multiple_parents.yaml")
+	invalidChildValidStandaloneManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid_child_valid_standalone.yaml")
+	unresolvedChildManifest             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "unresolved_child.yaml")
+	routeOptionsManifest                = filepath.Join(fsutils.MustGetThisDir(), "testdata", "route_options.yaml")
+	matcherInheritanceManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "matcher_inheritance.yaml")
 )

@@ -8,8 +8,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
-	"github.com/solo-io/skv2/codegen/util"
 )
 
 var (
@@ -26,7 +26,7 @@ var (
 		},
 	}
 
-	CurlPodManifest = filepath.Join(util.MustGetThisDir(), "testdata", "curl_pod.yaml")
+	CurlPodManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "curl_pod.yaml")
 
 	HttpEchoPod = &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -35,7 +35,7 @@ var (
 		},
 	}
 
-	HttpEchoPodManifest = filepath.Join(util.MustGetThisDir(), "testdata", "http_echo.yaml")
+	HttpEchoPodManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "http_echo.yaml")
 
 	TcpEchoPod = &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -44,7 +44,7 @@ var (
 		},
 	}
 
-	TcpEchoPodManifest = filepath.Join(util.MustGetThisDir(), "testdata", "tcp_echo.yaml")
+	TcpEchoPodManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tcp_echo.yaml")
 
 	NginxPod = &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -60,7 +60,7 @@ var (
 		},
 	}
 
-	NginxPodManifest = filepath.Join(util.MustGetThisDir(), "testdata", "nginx_pod.yaml")
+	NginxPodManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "nginx_pod.yaml")
 
 	NginxResponse = `<!DOCTYPE html>
 <html>

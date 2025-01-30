@@ -9,10 +9,10 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/helper"
-	"github.com/solo-io/skv2/codegen/util"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -63,7 +63,7 @@ func (s *testingSuite) TestUpdateValidationServerGrpcMaxSizeBytes() {
 	settings := s.GetKubectlOutput("-n", s.TestInstallation.Metadata.InstallNamespace, "get", "settings", "default", "-o", "yaml")
 	s.TestInstallation.Assertions.Assert.Contains(settings, "invalidRouteResponseCode: 404")
 
-	s.UpgradeWithCustomValuesFile(filepath.Join(util.MustGetThisDir(), "testdata/manifests", "server-grpc-max-size-bytes.yaml"))
+	s.UpgradeWithCustomValuesFile(filepath.Join(fsutils.MustGetThisDir(), "testdata/manifests", "server-grpc-max-size-bytes.yaml"))
 
 	// Verify that the changes in helm reflected in the settings CR
 	settings = s.GetKubectlOutput("-n", s.TestInstallation.Metadata.InstallNamespace, "get", "settings", "default", "-o", "yaml")
@@ -76,7 +76,7 @@ func (s *testingSuite) TestAddSecondGatewayProxySeparateNamespace() {
 	externalNamespace := "other-ns"
 	s.GetKubectlOutput("create", "ns", externalNamespace)
 
-	s.UpgradeWithCustomValuesFile(filepath.Join(util.MustGetThisDir(), "testdata/manifests", "secondary-gateway-namespace-validation.yaml"))
+	s.UpgradeWithCustomValuesFile(filepath.Join(fsutils.MustGetThisDir(), "testdata/manifests", "secondary-gateway-namespace-validation.yaml"))
 
 	// Ensures deployment is created for both default namespace and external one
 	// Note - name of external deployments is kebab-case of gatewayProxies NAME helm value
@@ -103,7 +103,7 @@ func (s *testingSuite) TestValidationWebhookCABundle() {
 
 	ensureWebhookCABundleMatchesSecretsRootCAValue()
 
-	s.UpgradeWithCustomValuesFile(filepath.Join(util.MustGetThisDir(), "testdata/manifests", "strict-validation.yaml"))
+	s.UpgradeWithCustomValuesFile(filepath.Join(fsutils.MustGetThisDir(), "testdata/manifests", "strict-validation.yaml"))
 
 	// Ensure the webhook caBundle should be the same as the secret's root ca value post upgrade
 	ensureWebhookCABundleMatchesSecretsRootCAValue()

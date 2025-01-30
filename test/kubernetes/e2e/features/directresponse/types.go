@@ -10,19 +10,19 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/solo-io/skv2/codegen/util"
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 )
 
 var (
-	setupManifest                                = filepath.Join(util.MustGetThisDir(), "testdata", "setup.yaml")
-	gatewayManifest                              = filepath.Join(util.MustGetThisDir(), "testdata", "gateway.yaml")
-	basicDirectResposeManifests                  = filepath.Join(util.MustGetThisDir(), "testdata", "basic-direct-response.yaml")
-	basicDelegationManifests                     = filepath.Join(util.MustGetThisDir(), "testdata", "basic-delegation-direct-response.yaml")
-	invalidDelegationConflictingFiltersManifests = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-delegation-conflicting-filters.yaml")
-	invalidMissingRefManifests                   = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-missing-ref-direct-response.yaml")
-	invalidOverlappingFiltersManifests           = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-overlapping-filters.yaml")
-	invalidMultipleRouteActionsManifests         = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-multiple-route-actions.yaml")
-	invalidBackendRefFilterManifests             = filepath.Join(util.MustGetThisDir(), "testdata", "invalid-backendRef-filter.yaml")
+	setupManifest                                = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
+	gatewayManifest                              = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway.yaml")
+	basicDirectResposeManifests                  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "basic-direct-response.yaml")
+	basicDelegationManifests                     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "basic-delegation-direct-response.yaml")
+	invalidDelegationConflictingFiltersManifests = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid-delegation-conflicting-filters.yaml")
+	invalidMissingRefManifests                   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid-missing-ref-direct-response.yaml")
+	invalidOverlappingFiltersManifests           = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid-overlapping-filters.yaml")
+	invalidMultipleRouteActionsManifests         = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid-multiple-route-actions.yaml")
+	invalidBackendRefFilterManifests             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid-backendRef-filter.yaml")
 
 	glooProxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gloo-proxy-gw",

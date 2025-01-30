@@ -6,29 +6,29 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
-	"github.com/solo-io/skv2/codegen/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
-	setupManifest                        = filepath.Join(util.MustGetThisDir(), "testdata", "setup.yaml")
-	basicRtoManifest                     = filepath.Join(util.MustGetThisDir(), "testdata", "basic-rto.yaml")
-	basicRtoTargetRefManifest            = filepath.Join(util.MustGetThisDir(), "testdata", "basic-rto-targetref.yaml")
-	extraRtoManifest                     = filepath.Join(util.MustGetThisDir(), "testdata", "extra-rto.yaml")
-	extraRtoTargetRefManifest            = filepath.Join(util.MustGetThisDir(), "testdata", "extra-rto-targetref.yaml")
-	badRtoManifest                       = filepath.Join(util.MustGetThisDir(), "testdata", "bad-rto.yaml")
-	badRtoTargetRefManifest              = filepath.Join(util.MustGetThisDir(), "testdata", "bad-rto-targetref.yaml")
-	httproute1Manifest                   = filepath.Join(util.MustGetThisDir(), "testdata", "httproute1.yaml")
-	httproute1ExtensionManifest          = filepath.Join(util.MustGetThisDir(), "testdata", "httproute1-extension.yaml")
-	httproute1BadExtensionManifest       = filepath.Join(util.MustGetThisDir(), "testdata", "httproute1-bad-extension.yaml")
-	httproute1MultipleExtensionsManifest = filepath.Join(util.MustGetThisDir(), "testdata", "httproute1-multiple-extensions.yaml")
-	httproute2Manifest                   = filepath.Join(util.MustGetThisDir(), "testdata", "httproute2.yaml")
-	mergeManifest                        = filepath.Join(util.MustGetThisDir(), "testdata", "merge.yaml")
+	setupManifest                        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
+	basicRtoManifest                     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "basic-rto.yaml")
+	basicRtoTargetRefManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "basic-rto-targetref.yaml")
+	extraRtoManifest                     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "extra-rto.yaml")
+	extraRtoTargetRefManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "extra-rto-targetref.yaml")
+	badRtoManifest                       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "bad-rto.yaml")
+	badRtoTargetRefManifest              = filepath.Join(fsutils.MustGetThisDir(), "testdata", "bad-rto-targetref.yaml")
+	httproute1Manifest                   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproute1.yaml")
+	httproute1ExtensionManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproute1-extension.yaml")
+	httproute1BadExtensionManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproute1-bad-extension.yaml")
+	httproute1MultipleExtensionsManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproute1-multiple-extensions.yaml")
+	httproute2Manifest                   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "httproute2.yaml")
+	mergeManifest                        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "merge.yaml")
 
 	// When we apply the fault injection manifest files, we expect resources to be created with this metadata
 	proxyService = &corev1.Service{

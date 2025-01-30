@@ -5,11 +5,11 @@ package metrics
 import (
 	"path/filepath"
 
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/kubernetes"
 	testdefaults "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests/base"
-	"github.com/solo-io/skv2/codegen/util"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -20,9 +20,9 @@ import (
 
 var (
 	// manifests
-	exampleServiceManifest            = filepath.Join(util.MustGetThisDir(), "testdata", "service.yaml")
-	gatewayAndRouteToServiceManifest  = filepath.Join(util.MustGetThisDir(), "testdata", "gateway-and-route-to-service.yaml")
-	gatewayAndRouteToUpstreamManifest = filepath.Join(util.MustGetThisDir(), "testdata", "gateway-and-route-to-upstream.yaml")
+	exampleServiceManifest            = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service.yaml")
+	gatewayAndRouteToServiceManifest  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-and-route-to-service.yaml")
+	gatewayAndRouteToUpstreamManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-and-route-to-upstream.yaml")
 
 	// objects
 	glooProxyObjectMeta = metav1.ObjectMeta{
