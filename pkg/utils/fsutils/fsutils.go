@@ -39,7 +39,7 @@ func IsDirectory(dir string) bool {
 	return stat.IsDir()
 }
 
-// returns absolute path to the diretory containing the .go file containing the calling function
+// MustGetThisDir returns the absolute path to the diretory containing the .go file containing the calling function
 func MustGetThisDir() string {
 	_, thisFile, _, ok := runtime.Caller(1)
 	if !ok {
@@ -48,7 +48,7 @@ func MustGetThisDir() string {
 	return filepath.Dir(thisFile)
 }
 
-// absolute path to go.mod file for current dir
+// GoModPath returns the absolute path to the go.mod file for the current dir
 func GoModPath() string {
 	out, err := exec.Command("go", "env", "GOMOD").CombinedOutput()
 	if err != nil {
@@ -57,7 +57,7 @@ func GoModPath() string {
 	return strings.TrimSpace(string(out))
 }
 
-// the project root dir (based on gomod location)
+// GetModuleRoot returns the project root dir (based on gomod location)
 func GetModuleRoot() string {
 	return filepath.Dir(GoModPath())
 }
