@@ -119,14 +119,6 @@ export ALPINE_BASE_IMAGE ?= alpine:3.17.6
 get_sources = $(shell find $(1) -name "*.go" | grep -v test | grep -v generated.go | grep -v mock_)
 
 #----------------------------------------------------------------------------------
-# Imports
-#----------------------------------------------------------------------------------
-
-# glooctl and other ci related targets are in this file.
-# they rely on some of the args set above
-include Makefile.ci
-
-#----------------------------------------------------------------------------------
 # Repo setup
 #----------------------------------------------------------------------------------
 
