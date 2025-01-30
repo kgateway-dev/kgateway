@@ -158,20 +158,12 @@ func (s *testingSuite) TestConfigureInvalidVirtualHostOptions() {
 	s.testInstallation.Assertions.ExpectObjectAdmitted(manifestVhoWebhookReject, err, output,
 		"Validating *v1.VirtualHostOption failed")
 
-	if !s.testInstallation.Metadata.ValidationAlwaysAccept {
-		s.testInstallation.Assertions.ExpectGlooObjectNotExist(
-			s.ctx,
-			s.getterForMeta(&vhoWebhookReject),
-			&vhoWebhookReject,
-		)
-	} else {
-		// Check status is rejected on bad VirtualHostOption
-		s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
-			s.getterForMeta(&vhoWebhookReject),
-			core.Status_Rejected,
-			defaults.KubeGatewayReporter,
-		)
-	}
+	// Check status is rejected on bad VirtualHostOption
+	s.testInstallation.Assertions.EventuallyResourceStatusMatchesState(
+		s.getterForMeta(&vhoWebhookReject),
+		core.Status_Rejected,
+		defaults.KubeGatewayReporter,
+	)
 
 	// Check healthy response with no x-bar header
 	s.testInstallation.Assertions.AssertEventualCurlResponse(

@@ -21,16 +21,6 @@ type Context struct {
 	// ValuesManifestFile points to the file that contains the set of Helm values that are unique to this test
 	ValuesManifestFile string
 
-	// whether or not the K8s Gateway controller is enabled
-	K8sGatewayEnabled bool
-
-	// whether or not the installation is an enterprise installation
-	IsEnterprise bool
-
-	// whether or not the validation webhook is configured to always accept resources,
-	// i.e. if this is set to true, the webhook will accept regardless of errors found during validation
-	ValidationAlwaysAccept bool
-
 	// is populated if the installation has any AWS options configured (via `settings.aws.*` Helm values)
 	AwsOptions *AwsOptions
 

@@ -78,10 +78,6 @@ func (s *testingSuite) TestGetInputSnapshotIncludesEdgeApiResources() {
 // TestGetInputSnapshotIncludesK8sGatewayApiResources verifies that we can query the /snapshots/input API and have it return K8s Gateway API
 // resources without an error
 func (s *testingSuite) TestGetInputSnapshotIncludesK8sGatewayApiResources() {
-	if !s.testInstallation.Metadata.K8sGatewayEnabled {
-		s.T().Skip("Installation of Gloo Gateway does not have K8s Gateway enabled, skipping test as there is nothing to test")
-	}
-
 	s.T().Cleanup(func() {
 		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, gatewayParametersManifest)
 		s.NoError(err, "can delete manifest")
