@@ -294,10 +294,6 @@ clean-solo-kit-gen:
 	find * -type f -name '*.pb.equal.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
 	find * -type f -name '*.pb.clone.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
 
-.PHONY: clean-cli-docs
-clean-cli-docs:
-	rm docs/content/reference/cli/glooctl* || true # ignore error if file doesn't exist
-
 #----------------------------------------------------------------------------------
 # Generated Code and Docs
 #----------------------------------------------------------------------------------
@@ -328,10 +324,6 @@ go-generate-all: ## Run all go generate directives in the repo, including codege
 .PHONY: go-generate-mocks
 go-generate-mocks: ## Runs all generate directives for mockgen in the repo
 	GO111MODULE=on go generate -run="mockgen" ./...
-
-.PHONY: generate-cli-docs
-generate-cli-docs: clean-cli-docs ## Removes existing CLI docs and re-generates them
-	GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
 
 # Ensures that accesses for fields which have "getter" functions are exclusively done via said "getter" functions
 # TODO: do we still want this?
