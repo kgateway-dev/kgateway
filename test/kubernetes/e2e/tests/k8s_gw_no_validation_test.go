@@ -25,8 +25,6 @@ func TestK8sGatewayNoValidation(t *testing.T) {
 			InstallNamespace:          installNs,
 			ProfileValuesManifestFile: e2e.KubernetesGatewayProfilePath,
 			ValuesManifestFile:        e2e.ManifestPath("k8s-gateway-no-webhook-validation-test-helm.yaml"),
-			ValidationAlwaysAccept:    true,
-			K8sGatewayEnabled:         true,
 		},
 	)
 

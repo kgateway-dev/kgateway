@@ -26,7 +26,6 @@ func TestK8sGatewayAws(t *testing.T) {
 			InstallNamespace:          installNs,
 			ProfileValuesManifestFile: e2e.KubernetesGatewayProfilePath,
 			ValuesManifestFile:        e2e.ManifestPath("aws-lambda-helm.yaml"),
-			K8sGatewayEnabled:         true,
 			// these should correspond to the `settings.aws.*` values in the aws-lambda-helm.yaml manifest
 			AwsOptions: &gloogateway.AwsOptions{
 				EnableServiceAccountCredentials: true,

@@ -30,7 +30,6 @@ func TestUpgradeFromLastPatchPreviousMinor(t *testing.T) {
 			InstallNamespace:          "upgrade-from-last-patch-previous-minor",
 			ProfileValuesManifestFile: e2e.FullGatewayProfilePath,
 			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
-			ValidationAlwaysAccept:    false,
 			ReleasedVersion:           lastPatchPreviousMinorVersion.String(),
 		},
 	)
@@ -57,7 +56,6 @@ func TestUpgradeFromCurrentPatchLatestMinor(t *testing.T) {
 			InstallNamespace:          "upgrade-from-current-patch-latest-minor",
 			ProfileValuesManifestFile: e2e.FullGatewayProfilePath,
 			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
-			ValidationAlwaysAccept:    false,
 			ReleasedVersion:           currentPatchMostRecentMinorVersion.String(),
 		},
 	)
