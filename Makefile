@@ -129,12 +129,6 @@ include Makefile.ci
 # Repo setup
 #----------------------------------------------------------------------------------
 
-# https://www.viget.com/articles/two-ways-to-share-git-hooks-with-your-team/
-.PHONY: init
-init:
-	git config core.hooksPath .githooks
-
-# Formats code and imports
 .PHONY: fmt
 fmt:
 	go run golang.org/x/tools/cmd/goimports -local "github.com/kgateway-dev/kgateway/"  -w $(shell ls -d */ | grep -v vendor)
