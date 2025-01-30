@@ -348,12 +348,6 @@ getter-check:
 mod-tidy:
 	go mod tidy
 
-# Validates that protos used exclusively in EE are valid
-.PHONY: verify-enterprise-protos
-verify-enterprise-protos:
-	@echo Verifying validity of generated enterprise files...
-	$(GO_BUILD_FLAGS) GOOS=linux go build projects/gloo/pkg/api/v1/enterprise/verify.go
-
 # Validates that local Go version matches go.mod
 .PHONY: check-go-version
 check-go-version:
