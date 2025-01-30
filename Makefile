@@ -32,8 +32,9 @@ export IMAGE_REGISTRY ?= ghcr.io/kgateway-dev
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
 
-# a semver resembling 1.0.1-dev.  Most calling jobs customize this.  Ex:  v1.15.0-pr8278
+# A semver resembling 1.0.1-dev. Most calling GHA jobs customize this. Exported for use in goreleaser.yaml.
 VERSION ?= 1.0.1-dev
+export VERSION
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
@@ -513,58 +514,6 @@ envoy-wrapper-distroless-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARC
 #----------------------------------------------------------------------------------
 # Release
 #----------------------------------------------------------------------------------
-# TODO: delete this logic block when we have a github actions-managed release
-
-# git_tag is evaluated when is used (recursively expanded variable)
-# https://ftp.gnu.org/old-gnu/Manuals/make-3.79.1/html_chapter/make_6.html#SEC59
-git_tag = $(shell git describe --abbrev=0 --tags)
-# Semantic versioning format https://semver.org/
-# Regex copied from: https://github.com/solo-io/go-utils/blob/16d4d94e4e5f182ca8c10c5823df303087879dea/versionutils/version.go#L338
-tag_regex := v[0-9]+[.][0-9]+[.][0-9]+(-[a-z]+)*(-[a-z]+[0-9]*)?$
-
-ifneq (,$(TEST_ASSET_ID))
-PUBLISH_CONTEXT := PULL_REQUEST
-ifeq ($(shell echo $(git_tag) | egrep "$(tag_regex)"),)
-# Forked repos don't have tags by default, so we create a standard tag for them
-# This only impacts the version of the assets used in CI for this PR, so it is ok that it is not a real tag
-VERSION = 1.0.0-$(TEST_ASSET_ID)
-else
-# example: 1.16.0-beta4-{TEST_ASSET_ID}
-VERSION = $(shell echo $(git_tag) | cut -c 2-)-$(TEST_ASSET_ID)
-endif
-LDFLAGS := "-X github.com/kgateway-dev/kgateway/pkg/version.Version=$(VERSION)"
-endif
-
-# TODO: delete this logic block when we have a github actions-managed release
-ifneq (,$(TAGGED_VERSION))
-PUBLISH_CONTEXT := RELEASE
-VERSION := $(shell echo $(TAGGED_VERSION) | cut -c 2-)
-LDFLAGS := "-X github.com/kgateway-dev/kgateway/pkg/version.Version=$(VERSION)"
-endif
-
-export VERSION
-
-# controller variable for the "Publish Artifacts" section.  Defines which targets exist.  Possible Values: NONE, RELEASE, PULL_REQUEST
-PUBLISH_CONTEXT ?= NONE
-
-# define empty publish targets so calls won't fail
-.PHONY: publish-docker
-.PHONY: publish-docker-retag
-
-# don't define Publish Artifacts Targets if we don't have a release context
-ifneq (,$(filter $(PUBLISH_CONTEXT),RELEASE PULL_REQUEST))
-
-ifeq (RELEASE, $(PUBLISH_CONTEXT))      # RELEASE contexts have additional make targets
-# Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REGISTRY,
-# and push them to a secondary repository, defined at IMAGE_REGISTRY
-publish-docker-retag: docker-retag docker-push
-
-endif # RELEASE exclusive make targets
-
-# Build and push docker images to the defined $(IMAGE_REGISTRY)
-publish-docker: docker docker-push
-
-endif # Publish Artifact Targets
 
 GORELEASER ?= go run github.com/goreleaser/goreleaser/v2@v2.5.1
 GORELEASER_ARGS ?= --snapshot --clean
