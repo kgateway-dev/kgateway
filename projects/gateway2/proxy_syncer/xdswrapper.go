@@ -8,6 +8,7 @@ import (
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/xds"
 
 	"istio.io/istio/pkg/kube/krt"
 
@@ -49,21 +50,6 @@ func (p XdsSnapWrapper) ResourceName() string {
 	return p.proxyKey
 }
 
-func cloneSnap(snap *envoycache.Snapshot) *envoycache.Snapshot {
-	s := &envoycache.Snapshot{}
-	for k, v := range snap.Resources {
-		s.Resources[k].Version = v.Version
-		items := map[string]envoycachetypes.ResourceWithTTL{}
-		s.Resources[k].Items = items
-		for a, b := range v.Items {
-			b := b
-			b.Resource = proto.Clone(b.Resource)
-			items[a] = b
-		}
-	}
-	return s
-}
-
 // note: this is feature gated, as i'm not confident the new logic can't panic, in all envoy configs
 // once 1.18 is out, we can remove the feature gate.
 func (p XdsSnapWrapper) MarshalJSON() (out []byte, err error) {
@@ -78,7 +64,7 @@ func (p XdsSnapWrapper) MarshalJSON() (out []byte, err error) {
 		})
 	}
 
-	snap := cloneSnap(p.snap)
+	snap := xds.CloneSnap(p.snap)
 
 	defer func() {
 		if r := recover(); r != nil {

@@ -31,8 +31,6 @@ jobs:
       shell: bash
       env:
         TEST_PKG: "./projects/gateway2/..."
-        # TODO: remove this once we delete gloo
-        GOLANG_PROTOBUF_REGISTRATION_CONFLICT: "ignore"
       run: make go-test-with-coverage
     - name: Validate Test Coverage
       shell: bash

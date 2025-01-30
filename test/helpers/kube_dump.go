@@ -129,7 +129,7 @@ func recordKubeState(f *os.File) {
 		"httproutes.gateway.networking.k8s.io",
 		"referencegrants.gateway.networking.k8s.io",
 		// GG Kube GW resources
-		"gatewayparameters.gateway.gloo.solo.io",
+		"gatewayparameters.gateway.kgateway.dev",
 		"listeneroptions.gateway.solo.io",     // only implemented for kube gw as of now
 		"httplisteneroptions.gateway.solo.io", // only implemented for kube gw as of now
 		// GG Gloo resources

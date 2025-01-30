@@ -12,7 +12,7 @@ const (
 	// the name of a GatewayParameters CR, which is used to dynamically provision the data plane
 	// resources for the Gateway. The GatewayParameters is assumed to be in the same namespace
 	// as the Gateway.
-	GatewayParametersAnnotationName = "gateway.gloo.solo.io/gateway-parameters-name"
+	GatewayParametersAnnotationName = "gateway.kgateway.dev/gateway-parameters-name"
 
 	// DefaultGatewayParametersName is the name of the GatewayParameters which is attached by
 	// parametersRef to the GatewayClass.

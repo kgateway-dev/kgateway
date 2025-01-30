@@ -13,7 +13,6 @@ Name|Version|License
 [ghodss/yaml](https://github.com/ghodss/yaml)|v1.0.1-0.20190212211648-25d852aebe32|MIT License
 [go-logr/logr](https://github.com/go-logr/logr)|v1.4.2|Apache License 2.0
 [go-logr/zapr](https://github.com/go-logr/zapr)|v1.3.0|Apache License 2.0
-[golang/protobuf](https://github.com/golang/protobuf)|v1.5.4|BSD 3-clause "New" or "Revised" License
 [google/go-cmp](https://github.com/google/go-cmp)|v0.6.0|BSD 3-clause "New" or "Revised" License
 [go-github/v32](https://github.com/google/go-github)|v32.0.0|BSD 3-clause "New" or "Revised" License
 [grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.4.0|Apache License 2.0
@@ -41,14 +40,14 @@ Name|Version|License
 [istio.io/api](https://istio.io/api)|v1.24.0-alpha.0.0.20241106042855-9e26cdd3450a|Apache License 2.0
 [istio.io/client-go](https://istio.io/client-go)|v1.24.0-alpha.0.0.20241106043554-b5828356941f|Apache License 2.0
 [istio.io/istio](https://istio.io/istio)|v0.0.0-20241107203726-094b9e700412|Apache License 2.0
-[k8s.io/api](https://k8s.io/api)|v0.31.1|Apache License 2.0
-[k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.31.1|Apache License 2.0
-[k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.31.1|Apache License 2.0
-[k8s.io/client-go](https://k8s.io/client-go)|v0.31.1|Apache License 2.0
-[k8s.io/code-generator](https://k8s.io/code-generator)|v0.31.1|Apache License 2.0
-[k8s.io/component-base](https://k8s.io/component-base)|v0.31.1|Apache License 2.0
+[k8s.io/api](https://k8s.io/api)|v0.31.2|Apache License 2.0
+[k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.31.2|Apache License 2.0
+[k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.31.2|Apache License 2.0
+[k8s.io/client-go](https://k8s.io/client-go)|v0.31.2|Apache License 2.0
+[k8s.io/code-generator](https://k8s.io/code-generator)|v0.31.2|Apache License 2.0
+[k8s.io/component-base](https://k8s.io/component-base)|v0.31.2|Apache License 2.0
 [k8s.io/kube-openapi](https://k8s.io/kube-openapi)|v0.0.0-20240423202451-8948a665c108|Apache License 2.0
-[k8s.io/utils](https://k8s.io/utils)|v0.0.0-20240711033017-18e509b52bc8|Apache License 2.0
+[k8s.io/utils](https://k8s.io/utils)|v0.0.0-20240921022957-49e7df575cb6|Apache License 2.0
 [knative.dev/pkg](https://knative.dev/pkg)|v0.0.0-20211206113427-18589ac7627e|Apache License 2.0
 [sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.19.1|Apache License 2.0
 [sigs.k8s.io/controller-tools](https://sigs.k8s.io/controller-tools)|v0.16.5|Apache License 2.0

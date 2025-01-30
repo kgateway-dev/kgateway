@@ -27,7 +27,7 @@ help: ## Output the self-documenting make targets
 ROOTDIR := $(shell pwd)
 OUTPUT_DIR ?= $(ROOTDIR)/_output
 
-export IMAGE_REGISTRY ?= ghcr.io/kgateway
+export IMAGE_REGISTRY ?= ghcr.io/kgateway-dev
 
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
@@ -40,7 +40,7 @@ SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 # ATTENTION: when updating to a new major version of Envoy, check if
 # universal header validation has been enabled and if so, we expect
 # failures in `test/e2e/header_validation_test.go`.
-export ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.31.2-patch3
+export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.31.2-patch3
 export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/pkg/version.Version=$(VERSION)'
 export GCFLAGS ?=
 
@@ -384,9 +384,8 @@ generate-changelog: ## Generate a changelog entry
 generate-crd-reference-docs:
 	go run docs/content/crds/generate.go
 
-
 #----------------------------------------------------------------------------------
-# Gloo distroless base images
+# Distroless base images
 #----------------------------------------------------------------------------------
 
 DISTROLESS_DIR=projects/distroless
@@ -415,93 +414,43 @@ distroless-with-utils-docker: distroless-docker $(DISTROLESS_OUTPUT_DIR)/Dockerf
 		-t  $(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE)
 
 #----------------------------------------------------------------------------------
-# Gloo
+# Controller
 #----------------------------------------------------------------------------------
 
 K8S_GATEWAY_DIR=projects/gateway2
-EDGE_GATEWAY_SOURCES=$(call get_sources,$(EDGE_GATEWAY_DIR))
 K8S_GATEWAY_SOURCES=$(call get_sources,$(K8S_GATEWAY_DIR))
-GLOO_OUTPUT_DIR=$(OUTPUT_DIR)/$(K8S_GATEWAY_DIR)
-export GLOO_IMAGE_REPO ?= gloo
+CONTROLLER_OUTPUT_DIR=$(OUTPUT_DIR)/$(K8S_GATEWAY_DIR)
+export CONTROLLER_IMAGE_REPO ?= kgateway
 
 # We include the files in EDGE_GATEWAY_DIR and K8S_GATEWAY_DIR as dependencies to the gloo build
 # so changes in those directories cause the make target to rebuild
-$(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH): $(K8S_GATEWAY_SOURCES)
+$(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH): $(K8S_GATEWAY_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ $(K8S_GATEWAY_DIR)/cmd/main.go
 
-.PHONY: gloo
-gloo: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH)
+.PHONY: kgateway
+kgateway: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH)
 
-$(GLOO_OUTPUT_DIR)/Dockerfile.gloo: $(K8S_GATEWAY_DIR)/cmd/Dockerfile
+$(CONTROLLER_OUTPUT_DIR)/Dockerfile: $(K8S_GATEWAY_DIR)/cmd/Dockerfile
 	cp $< $@
 
-.PHONY: gloo-docker
-gloo-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DIR)/Dockerfile.gloo
-	docker buildx build --load $(PLATFORM) $(GLOO_OUTPUT_DIR) -f $(GLOO_OUTPUT_DIR)/Dockerfile.gloo \
+.PHONY: kgateway-docker
+kgateway-docker: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(CONTROLLER_OUTPUT_DIR)/Dockerfile
+	docker buildx build --load $(PLATFORM) $(CONTROLLER_OUTPUT_DIR) -f $(CONTROLLER_OUTPUT_DIR)/Dockerfile \
 		--build-arg GOARCH=$(GOARCH) \
-		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
-		-t $(IMAGE_REGISTRY)/$(GLOO_IMAGE_REPO):$(VERSION)
+		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
+		-t $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)
 
-$(GLOO_OUTPUT_DIR)/Dockerfile.gloo.distroless: $(GLOO_DIR)/cmd/Dockerfile.distroless
+$(CONTROLLER_OUTPUT_DIR)/Dockerfile.distroless: $(K8S_GATEWAY_DIR)/cmd/Dockerfile.distroless
 	cp $< $@
 
-# Explicitly specify the base image is amd64 as we only build the amd64 flavour of gloo envoy
-.PHONY: gloo-distroless-docker
-gloo-distroless-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DIR)/Dockerfile.gloo.distroless distroless-with-utils-docker
-	docker buildx build --load $(PLATFORM) $(GLOO_OUTPUT_DIR) -f $(GLOO_OUTPUT_DIR)/Dockerfile.gloo.distroless \
+# Explicitly specify the base image is amd64 as we only build the amd64 flavour of envoy
+.PHONY: kgateway-distroless-docker
+kgateway-distroless-docker: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(CONTROLLER_OUTPUT_DIR)/Dockerfile.distroless distroless-with-utils-docker
+	docker buildx build --load $(PLATFORM) $(CONTROLLER_OUTPUT_DIR) -f $(CONTROLLER_OUTPUT_DIR)/Dockerfile.distroless \
 		--build-arg GOARCH=$(GOARCH) \
-		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
+		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
 		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) \
-		-t $(IMAGE_REGISTRY)/$(GLOO_IMAGE_REPO):$(VERSION)-distroless
-
-#----------------------------------------------------------------------------------
-# Gloo with race detection enabled.
-# This is intended to be used to aid in local debugging by swapping out this image in a running gloo instance
-#----------------------------------------------------------------------------------
-GLOO_RACE_OUT_DIR=$(OUTPUT_DIR)/gloo-race
-
-$(GLOO_RACE_OUT_DIR)/Dockerfile.build: $(GLOO_DIR)/Dockerfile
-	mkdir -p $(GLOO_RACE_OUT_DIR)
-	cp $< $@
-
-# Hardcode GOARCH for targets that are both built and run entirely in amd64 docker containers
-$(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build: $(GLOO_SOURCES) $(GLOO_RACE_OUT_DIR)/Dockerfile.build
-	docker buildx build --load $(PLATFORM) -t $(IMAGE_REGISTRY)/gloo-race-build-container:$(VERSION) \
-		-f $(GLOO_RACE_OUT_DIR)/Dockerfile.build \
-		--build-arg GO_BUILD_IMAGE=$(GOLANG_ALPINE_IMAGE_NAME) \
-		--build-arg VERSION=$(VERSION) \
-		--build-arg GCFLAGS=$(GCFLAGS) \
-		--build-arg LDFLAGS=$(LDFLAGS) \
-		--build-arg USE_APK=true \
-		--build-arg GOARCH=amd64 \
-		$(PLATFORM) \
-		.
-	touch $@
-
-# Hardcode GOARCH for targets that are both built and run entirely in amd64 docker containers
-# Build inside container as we need to target linux and must compile with CGO_ENABLED=1
-# We may be running Docker in a VM (eg, minikube) so be careful about how we copy files out of the containers
-$(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH): $(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build
-	docker create -ti --name gloo-race-temp-container $(IMAGE_REGISTRY)/gloo-race-build-container:$(VERSION) bash
-	docker cp gloo-race-temp-container:/gloo-linux-amd64 $(GLOO_RACE_OUT_DIR)/gloo-linux-amd64
-	docker rm -f gloo-race-temp-container
-
-# Build the gloo project with race detection enabled
-.PHONY: gloo-race
-gloo-race: $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH)
-
-$(GLOO_RACE_OUT_DIR)/Dockerfile: $(GLOO_DIR)/cmd/Dockerfile
-	cp $< $@
-
-# Hardcode GOARCH for targets that are both built and run entirely in amd64 docker containers
-# Take the executable built in gloo-race and put it in a docker container
-.PHONY: gloo-race-docker
-gloo-race-docker: $(GLOO_RACE_OUT_DIR)/.gloo-race-docker
-$(GLOO_RACE_OUT_DIR)/.gloo-race-docker: $(GLOO_RACE_OUT_DIR)/gloo-linux-amd64 $(GLOO_RACE_OUT_DIR)/Dockerfile
-	docker buildx build --load $(PLATFORM) $(GLOO_RACE_OUT_DIR) \
-		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) --build-arg GOARCH=amd64 \
-		-t $(IMAGE_REGISTRY)/gloo:$(VERSION)-race
-	touch $@
+		-t $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)-distroless
 
 #----------------------------------------------------------------------------------
 # SDS Server - gRPC server for serving Secret Discovery Service config
@@ -545,7 +494,7 @@ sds-distroless-docker: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) $(SDS_OUTPUT_DIR)/D
 ENVOYINIT_DIR=projects/envoyinit/cmd
 ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR))
 ENVOYINIT_OUTPUT_DIR=$(OUTPUT_DIR)/$(ENVOYINIT_DIR)
-export ENVOYINIT_IMAGE_REPO ?= gloo-envoy-wrapper
+export ENVOYINIT_IMAGE_REPO ?= envoy-wrapper
 
 $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH): $(ENVOYINIT_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ $(ENVOYINIT_DIR)/main.go
@@ -559,105 +508,24 @@ $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DIR)/Dockerfile.envoyi
 $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: $(ENVOYINIT_DIR)/docker-entrypoint.sh
 	cp $< $@
 
-.PHONY: gloo-envoy-wrapper-docker
-gloo-envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh
+.PHONY: envoy-wrapper-docker
+envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh
 	docker buildx build --load $(PLATFORM) $(ENVOYINIT_OUTPUT_DIR) -f $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit \
 		--build-arg GOARCH=$(GOARCH) \
-		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
+		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)
 
 $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless: $(ENVOYINIT_DIR)/Dockerfile.envoyinit.distroless
 	cp $< $@
 
-# Explicitly specify the base image is amd64 as we only build the amd64 flavour of gloo envoy
-.PHONY: gloo-envoy-wrapper-distroless-docker
-gloo-envoy-wrapper-distroless-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh distroless-with-utils-docker
+# Explicitly specify the base image is amd64 as we only build the amd64 flavour of envoy
+.PHONY: envoy-wrapper-distroless-docker
+envoy-wrapper-distroless-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh distroless-with-utils-docker
 	docker buildx build --load $(PLATFORM) $(ENVOYINIT_OUTPUT_DIR) -f $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless \
 		--build-arg GOARCH=$(GOARCH) \
-		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
+		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
 		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)-distroless
-
-#----------------------------------------------------------------------------------
-# Certgen - Job for creating TLS Secrets in Kubernetes
-#----------------------------------------------------------------------------------
-
-CERTGEN_DIR=jobs/certgen/cmd
-CERTGEN_SOURCES=$(call get_sources,$(CERTGEN_DIR))
-CERTGEN_OUTPUT_DIR=$(OUTPUT_DIR)/$(CERTGEN_DIR)
-
-$(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH): $(CERTGEN_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ $(CERTGEN_DIR)/main.go
-
-.PHONY: certgen
-certgen: $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH)
-
-$(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen: $(CERTGEN_DIR)/Dockerfile
-	cp $< $@
-
-.PHONY: certgen-docker
-certgen-docker: $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH) $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen
-	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) $(CERTGEN_OUTPUT_DIR) -f $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen \
-		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
-		-t $(IMAGE_REGISTRY)/certgen:$(VERSION)
-
-$(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen.distroless: $(CERTGEN_DIR)/Dockerfile.distroless
-	cp $< $@
-
-.PHONY: certgen-distroless-docker
-certgen-distroless-docker: $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH) $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen.distroless distroless-docker
-	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) $(CERTGEN_OUTPUT_DIR) -f $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen.distroless \
-		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_IMAGE) \
-		-t $(IMAGE_REGISTRY)/certgen:$(VERSION)-distroless
-
-#----------------------------------------------------------------------------------
-# Kubectl - Used in jobs during helm install/upgrade/uninstall
-#----------------------------------------------------------------------------------
-
-KUBECTL_DIR=jobs/kubectl
-KUBECTL_OUTPUT_DIR=$(OUTPUT_DIR)/$(KUBECTL_DIR)
-
-$(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl: $(KUBECTL_DIR)/Dockerfile
-	mkdir -p $(KUBECTL_OUTPUT_DIR)
-	cp $< $@
-
-.PHONY: kubectl-docker
-kubectl-docker: $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl
-	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) $(KUBECTL_OUTPUT_DIR) -f $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl \
-		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
-		-t $(IMAGE_REGISTRY)/kubectl:$(VERSION)
-
-$(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl.distroless: $(KUBECTL_DIR)/Dockerfile.distroless
-	mkdir -p $(KUBECTL_OUTPUT_DIR)
-	cp $< $@
-
-.PHONY: kubectl-distroless-docker
-kubectl-distroless-docker: $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl.distroless distroless-with-utils-docker
-	docker buildx build $(LOAD_OR_PUSH) $(PLATFORM_MULTIARCH) $(KUBECTL_OUTPUT_DIR) -f $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl.distroless \
-		--build-arg BASE_IMAGE=$(GLOO_DISTROLESS_BASE_WITH_UTILS_IMAGE) \
-		-t $(IMAGE_REGISTRY)/kubectl:$(VERSION)-distroless
-
-#----------------------------------------------------------------------------------
-# Deployment Manifests / Helm
-#----------------------------------------------------------------------------------
-
-HELM_SYNC_DIR := $(OUTPUT_DIR)/helm
-HELM_DIR := install/helm/gloo
-
-.PHONY: generate-helm-files
-generate-helm-files: $(OUTPUT_DIR)/.helm-prepared ## Generates required helm files
-
-HELM_PREPARED_INPUT := $(HELM_DIR)/generate.go $(wildcard $(HELM_DIR)/generate/*.go)
-$(OUTPUT_DIR)/.helm-prepared: $(HELM_PREPARED_INPUT)
-	mkdir -p $(HELM_SYNC_DIR)/charts
-	IMAGE_REGISTRY=$(IMAGE_REGISTRY) go run $(HELM_DIR)/generate.go --version $(VERSION) --generate-helm-docs
-	touch $@
-
-.PHONY: package-chart
-package-chart: generate-helm-files
-	mkdir -p $(HELM_SYNC_DIR)/charts
-	helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR)
-	helm repo index $(HELM_SYNC_DIR)
 
 #----------------------------------------------------------------------------------
 # Release
@@ -695,48 +563,24 @@ export VERSION
 
 # controller variable for the "Publish Artifacts" section.  Defines which targets exist.  Possible Values: NONE, RELEASE, PULL_REQUEST
 PUBLISH_CONTEXT ?= NONE
-# specify which bucket to upload helm chart to
-HELM_BUCKET ?= gs://solo-public-tagged-helm
 
 # define empty publish targets so calls won't fail
 .PHONY: publish-docker
 .PHONY: publish-docker-retag
-.PHONY: publish-glooctl
-.PHONY: publish-helm-chart
 
 # don't define Publish Artifacts Targets if we don't have a release context
 ifneq (,$(filter $(PUBLISH_CONTEXT),RELEASE PULL_REQUEST))
 
 ifeq (RELEASE, $(PUBLISH_CONTEXT))      # RELEASE contexts have additional make targets
-HELM_BUCKET           := gs://solo-public-helm
 # Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REGISTRY,
 # and push them to a secondary repository, defined at IMAGE_REGISTRY
 publish-docker-retag: docker-retag docker-push
 
-# publish glooctl
-publish-glooctl: build-cli
-	VERSION=$(VERSION) GO111MODULE=on go run ci/upload_github_release_assets.go false
-else
-# dry run publish glooctl
-publish-glooctl: build-cli
-	VERSION=$(VERSION) GO111MODULE=on go run ci/upload_github_release_assets.go true
 endif # RELEASE exclusive make targets
 
 # Build and push docker images to the defined $(IMAGE_REGISTRY)
 publish-docker: docker docker-push
 
-# create a new helm chart and publish it to $(HELM_BUCKET)
-publish-helm-chart: generate-helm-files
-	@echo "Uploading helm chart to $(HELM_BUCKET) with name gloo-$(VERSION).tgz"
-	until $$(GENERATION=$$(gsutil ls -a $(HELM_BUCKET)/index.yaml | tail -1 | cut -f2 -d '#') && \
-					gsutil cp -v $(HELM_BUCKET)/index.yaml $(HELM_SYNC_DIR)/index.yaml && \
-					helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR) >> /dev/null && \
-					helm repo index $(HELM_SYNC_DIR) --merge $(HELM_SYNC_DIR)/index.yaml && \
-					gsutil -m rsync $(HELM_SYNC_DIR)/charts $(HELM_BUCKET)/charts && \
-					gsutil -h x-goog-if-generation-match:"$$GENERATION" cp $(HELM_SYNC_DIR)/index.yaml $(HELM_BUCKET)/index.yaml); do \
-		echo "Failed to upload new helm index (updated helm index since last download?). Trying again"; \
-		sleep 2; \
-	done
 endif # Publish Artifact Targets
 
 GORELEASER_ARGS ?= --snapshot --clean
@@ -763,14 +607,14 @@ docker-push-%:
 
 .PHONY: docker-standard
 docker-standard: check-go-version ## Build docker images (standard only)
-docker-standard: gloo-docker
-docker-standard: gloo-envoy-wrapper-docker
+docker-standard: kgateway-docker
+docker-standard: envoy-wrapper-docker
 docker-standard: sds-docker
 
 .PHONY: docker-distroless
 docker-distroless: check-go-version ## Build docker images (distroless only)
-docker-distroless: gloo-distroless-docker
-docker-distroless: gloo-envoy-wrapper-distroless-docker
+docker-distroless: kgateway-distroless-docker
+docker-distroless: envoy-wrapper-distroless-docker
 docker-distroless: sds-distroless-docker
 
 IMAGE_VARIANT ?= all
@@ -787,30 +631,14 @@ docker: docker-distroless
 endif # distroless images
 
 .PHONY: docker-standard-push
-docker-standard-push: docker-push-gloo
-docker-standard-push: docker-push-discovery
-docker-standard-push: docker-push-gloo-envoy-wrapper
+docker-standard-push: docker-push-kgateway
+docker-standard-push: docker-push-envoy-wrapper
 docker-standard-push: docker-push-sds
-ifeq ($(MULTIARCH), )
-docker-standard-push: docker-push-certgen
-endif
-docker-standard-push: docker-push-access-logger
-ifeq ($(MULTIARCH), )
-docker-standard-push: docker-push-kubectl
-endif
 
 .PHONY: docker-distroless-push
-docker-distroless-push: docker-push-gloo-distroless
-docker-distroless-push: docker-push-discovery-distroless
-docker-distroless-push: docker-push-gloo-envoy-wrapper-distroless
+docker-distroless-push: docker-push-kgateway-distroless
+docker-distroless-push: docker-push-envoy-wrapper-distroless
 docker-distroless-push: docker-push-sds-distroless
-ifeq ($(MULTIARCH), )
-docker-distroless-push: docker-push-certgen-distroless
-endif
-docker-distroless-push: docker-push-access-logger-distroless
-ifeq ($(MULTIARCH), )
-docker-distroless-push: docker-push-kubectl-distroless
-endif
 
 # Push docker images to the defined IMAGE_REGISTRY
 .PHONY: docker-push
@@ -824,20 +652,14 @@ docker-push: docker-distroless-push
 endif # distroless images
 
 .PHONY: docker-standard-retag
-docker-standard-retag: docker-retag-gloo
-docker-standard-retag: docker-retag-discovery
-docker-standard-retag: docker-retag-gloo-envoy-wrapper
+docker-standard-retag: docker-retag-kgateway
+docker-standard-retag: docker-retag-envoy-wrapper
 docker-standard-retag: docker-retag-sds
-docker-standard-retag: docker-retag-certgen
-docker-standard-retag: docker-retag-kubectl
 
 .PHONY: docker-distroless-retag
-docker-distroless-retag: docker-retag-gloo-distroless
-docker-distroless-retag: docker-retag-discovery-distroless
-docker-distroless-retag: docker-retag-gloo-envoy-wrapper-distroless
+docker-distroless-retag: docker-retag-kgateway-distroless
+docker-distroless-retag: docker-retag-envoy-wrapper-distroless
 docker-distroless-retag: docker-retag-sds-distroless
-docker-distroless-retag: docker-retag-certgen-distroless
-docker-distroless-retag: docker-retag-kubectl-distroless
 
 # Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REGISTRY,
 # and tag them with a secondary repository, defined at IMAGE_REGISTRY
@@ -869,7 +691,7 @@ kind-load-%:
 
 # Build an image and load it into the KinD cluster
 # Depends on: IMAGE_REGISTRY, VERSION, CLUSTER_NAME
-# Envoy image may be specified via ENVOY_GLOO_IMAGE on the command line or at the top of this file
+# Envoy image may be specified via ENVOY_IMAGE on the command line or at the top of this file
 kind-build-and-load-%: %-docker kind-load-% ; ## Use to build specified image and load it into kind
 
 # Update the docker image used by a deployment
@@ -889,29 +711,27 @@ kind-set-image-%:
 # You can reload an image, which means it will be rebuilt and reloaded into the kind cluster, and the deployment
 # will be updated to reference it
 # Depends on: IMAGE_REGISTRY, VERSION, INSTALL_NAMESPACE , CLUSTER_NAME
-# Envoy image may be specified via ENVOY_GLOO_IMAGE on the command line or at the top of this file
+# Envoy image may be specified via ENVOY_IMAGE on the command line or at the top of this file
 kind-reload-%: kind-build-and-load-% kind-set-image-% ; ## Use to build specified image, load it into kind, and restart its deployment
 
 # This is an alias to remedy the fact that the deployment is called gateway-proxy
-# but our make targets refer to gloo-envoy-wrapper
-kind-reload-gloo-envoy-wrapper: kind-build-and-load-gloo-envoy-wrapper
-kind-reload-gloo-envoy-wrapper:
+# but our make targets refer to envoy-wrapper
+kind-reload-envoy-wrapper: kind-build-and-load-envoy-wrapper
+kind-reload-envoy-wrapper:
 	kubectl rollout pause deployment gateway-proxy -n $(INSTALL_NAMESPACE) || true
-	kubectl set image deployment/gateway-proxy gateway-proxy=$(IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION) -n $(INSTALL_NAMESPACE)
+	kubectl set image deployment/gateway-proxy gateway-proxy=$(IMAGE_REGISTRY)/envoy-wrapper:$(VERSION) -n $(INSTALL_NAMESPACE)
 	kubectl patch deployment gateway-proxy -n $(INSTALL_NAMESPACE) -p '{"spec": {"template":{"metadata":{"annotations":{"gloo-kind-last-update":"$(shell date)"}}}} }'
 	kubectl rollout resume deployment gateway-proxy -n $(INSTALL_NAMESPACE)
 
 .PHONY: kind-build-and-load-standard
-kind-build-and-load-standard: kind-build-and-load-gloo
-kind-build-and-load-standard: kind-build-and-load-gloo-envoy-wrapper
-# kind-build-and-load-standard: kind-build-and-load-sds
-# kind-build-and-load-standard: kind-build-and-load-certgen
+kind-build-and-load-standard: kind-build-and-load-kgateway
+kind-build-and-load-standard: kind-build-and-load-envoy-wrapper
+kind-build-and-load-standard: kind-build-and-load-sds
 
 .PHONY: kind-build-and-load-distroless
-kind-build-and-load-distroless: kind-build-and-load-gloo-distroless
-kind-build-and-load-distroless: kind-build-and-load-gloo-envoy-wrapper-distroless
+kind-build-and-load-distroless: kind-build-and-load-kgateway-distroless
+kind-build-and-load-distroless: kind-build-and-load-envoy-wrapper-distroless
 kind-build-and-load-distroless: kind-build-and-load-sds-distroless
-kind-build-and-load-distroless: kind-build-and-load-certgen-distroless
 
 .PHONY: kind-build-and-load ## Use to build all images and load them into kind
 kind-build-and-load: # Standard images
@@ -927,16 +747,14 @@ kind-build-and-load: kind-build-and-load-sds
 
 # Load existing images. This can speed up development if the images have already been built / are unchanged
 .PHONY: kind-load-standard
-kind-load-standard: kind-load-gloo
-kind-load-standard: kind-load-gloo-envoy-wrapper
+kind-load-standard: kind-load-kgateway
+kind-load-standard: kind-load-envoy-wrapper
 kind-load-standard: kind-load-sds
-kind-load-standard: kind-load-certgen
 
 .PHONY: kind-build-and-load-distroless
-kind-load-distroless: kind-load-gloo-distroless
-kind-load-distroless: kind-load-gloo-envoy-wrapper-distroless
+kind-load-distroless: kind-load-kgateway-distroless
+kind-load-distroless: kind-load-envoy-wrapper-distroless
 kind-load-distroless: kind-load-sds-distroless
-kind-load-distroless: kind-load-certgen-distroless
 
 .PHONY: kind-load ## Use to build all images and load them into kind
 kind-load: # Standard images
@@ -970,13 +788,6 @@ kind-list-images: ## List solo-io images in the kind cluster named {CLUSTER_NAME
 .PHONY: kind-prune-images
 kind-prune-images: ## Remove images in the kind cluster named {CLUSTER_NAME}
 	docker exec -ti $(CLUSTER_NAME)-control-plane crictl rmi --prune
-
-.PHONY: build-test-chart
-build-test-chart: ## Build the Helm chart and place it in the _test directory
-	mkdir -p $(TEST_ASSET_DIR)
-	GO111MODULE=on go run $(HELM_DIR)/generate.go --version $(VERSION)
-	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)
-	helm repo index $(TEST_ASSET_DIR)
 
 #----------------------------------------------------------------------------------
 # Targets for running Kubernetes Gateway API conformance tests
@@ -1034,7 +845,7 @@ scan-version: ## Scan all Gloo images with the tag matching {VERSION} env variab
 	PATH=$(DEPSGOBIN):$$PATH GO111MODULE=on go run github.com/solo-io/go-utils/securityscanutils/cli scan-version -v \
 		-r $(IMAGE_REGISTRY)\
 		-t $(VERSION)\
-		--images gloo,gloo-envoy-wrapper,discovery,sds,certgen,kubectl
+		--images kgateway,envoy-wrapper,sds
 
 #----------------------------------------------------------------------------------
 # Third Party License Management

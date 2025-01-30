@@ -54,7 +54,8 @@ controller:
   replicaCount: 1
   logLevel: info
   image:
-    repository: ghcr.io/kgateway/gloo
+    registry: ghcr.io/kgateway-dev
+    repository: kgateway
     pullPolicy: IfNotPresent
     tag: ""
   service:
@@ -73,7 +74,7 @@ gatewayClass:
   # Optional parameters reference
   parametersRef:
     enabled: true
-    group: "gateway.gloo.solo.io"
+    group: "gateway.kgateway.dev"
     kind: "GatewayParameters"
     # The name of the GatewayParameters which is attached by parametersRef to the GatewayClass
     name: "kgateway"
@@ -82,11 +83,12 @@ gatewayClass:
 # Gateway proxy configuration
 gateway:
   # The name of the Gateway annotation that specifies the name of a GatewayParameters CR
-  parametersAnnotationName: "gateway.gloo.solo.io/gateway-parameters-name"
+  parametersAnnotationName: "gateway.kgateway.dev/gateway-parameters-name"
   envoyContainer:
     image:
-      registry: ghcr.io/kgateway
-      repository: gloo-envoy-wrapper
+      registry: ghcr.io/kgateway-dev
+      repository: envoy-wrapper
+      pullPolicy: IfNotPresent
       tag: ""
     securityContext:
       allowPrivilegeEscalation: false
@@ -108,7 +110,9 @@ gateway:
     type: LoadBalancer
   sdsContainer:
     image:
+      registry: ghcr.io/kgateway-dev
       repository: sds
+      pullPolicy: IfNotPresent
     logLevel: info
   istio:
     istioProxyContainer:

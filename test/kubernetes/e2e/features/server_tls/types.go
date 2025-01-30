@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 
-	kubev1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	"github.com/onsi/gomega"
 	"github.com/solo-io/skv2/codegen/util"
@@ -21,10 +20,6 @@ var (
 	tlsSecret1Manifest      = func() ([]byte, error) { return manifestFromFile("tls-secret-1.yaml") }
 	tlsSecret2Manifest      = func() ([]byte, error) { return manifestFromFile("tls-secret-2.yaml") }
 	tlsSecretWithCaManifest = func() ([]byte, error) { return manifestFromFile("tls-secret-with-ca.yaml") }
-	vs1Manifest             = func() ([]byte, error) { return manifestFromFile("vs-1.yaml") }
-	vs2Manifest             = func() ([]byte, error) { return manifestFromFile("vs-2.yaml") }
-	vsWithOneWayManifest    = func() ([]byte, error) { return manifestFromFile("vs-with-oneway.yaml") }
-	vsWithoutOneWayManifest = func() ([]byte, error) { return manifestFromFile("vs-without-oneway.yaml") }
 
 	// When we apply the deployer-provision.yaml file, we expect resources to be created with this metadata
 	glooProxyObjectMeta = func(ns string) metav1.ObjectMeta {
@@ -40,38 +35,6 @@ var (
 		return &corev1.Service{ObjectMeta: glooProxyObjectMeta(ns)}
 	}
 
-	vs1 = func(ns string) *kubev1.VirtualService {
-		return &kubev1.VirtualService{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "vs-1",
-				Namespace: ns,
-			},
-		}
-	}
-	vs2 = func(ns string) *kubev1.VirtualService {
-		return &kubev1.VirtualService{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "vs-2",
-				Namespace: ns,
-			},
-		}
-	}
-	vsWithOneWay = func(ns string) *kubev1.VirtualService {
-		return &kubev1.VirtualService{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "vs-with-oneway",
-				Namespace: ns,
-			},
-		}
-	}
-	vsWithoutOneWay = func(ns string) *kubev1.VirtualService {
-		return &kubev1.VirtualService{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "vs-without-oneway",
-				Namespace: ns,
-			},
-		}
-	}
 	tlsSecret1 = func(ns string) *corev1.Secret {
 		return &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{

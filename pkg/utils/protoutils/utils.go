@@ -1,21 +1,20 @@
 package protoutils
 
 import (
-	"bytes"
 	"io"
 
 	"github.com/ghodss/yaml"
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
-	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/rotisserie/eris"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
 var (
-	jsonpbMarshaler               = &jsonpb.Marshaler{OrigName: false}
-	jsonpbMarshalerEmitZeroValues = &jsonpb.Marshaler{OrigName: false, EmitDefaults: true}
-	jsonpbMarshalerIndented       = &jsonpb.Marshaler{OrigName: false, Indent: "  "}
-	jsonpbUnmarshalerAllowUnknown = &jsonpb.Unmarshaler{AllowUnknownFields: true}
+	jsonpbMarshaler               = &protojson.MarshalOptions{UseProtoNames: false}
+	jsonpbMarshalerEmitZeroValues = &protojson.MarshalOptions{UseProtoNames: false, EmitUnpopulated: true}
+	jsonpbMarshalerIndented       = &protojson.MarshalOptions{UseProtoNames: false, Indent: "  "}
+	jsonpbUnmarshalerAllowUnknown = &protojson.UnmarshalOptions{DiscardUnknown: true}
 
 	NilStructError = eris.New("cannot unmarshal nil struct")
 )
@@ -28,7 +27,7 @@ func MarshalStruct(m proto.Message) (*structpb.Struct, error) {
 		return nil, err
 	}
 	var pb structpb.Struct
-	err = jsonpb.UnmarshalString(string(data), &pb)
+	err = protojson.Unmarshal(data, &pb)
 	return &pb, err
 }
 
@@ -38,38 +37,33 @@ func MarshalStructEmitZeroValues(m proto.Message) (*structpb.Struct, error) {
 		return nil, err
 	}
 	var pb structpb.Struct
-	err = jsonpb.UnmarshalString(string(data), &pb)
+	err = protojson.Unmarshal(data, &pb)
 	return &pb, err
 }
 
 func MarshalBytes(pb proto.Message) ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := jsonpbMarshaler.Marshal(buf, pb)
-	return buf.Bytes(), err
+	return jsonpbMarshaler.Marshal(pb)
 }
 
 func MarshalBytesIndented(pb proto.Message) ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := jsonpbMarshalerIndented.Marshal(buf, pb)
-	return buf.Bytes(), err
+	return jsonpbMarshalerIndented.Marshal(pb)
 }
 
 func MarshalBytesEmitZeroValues(pb proto.Message) ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := jsonpbMarshalerEmitZeroValues.Marshal(buf, pb)
-	return buf.Bytes(), err
+	return jsonpbMarshalerEmitZeroValues.Marshal(pb)
 }
 
 func UnmarshalBytes(data []byte, into proto.Message) error {
-	return jsonpb.Unmarshal(bytes.NewBuffer(data), into)
+	return protojson.Unmarshal(data, into)
 }
 
 func UnmarshalBytesAllowUnknown(data []byte, into proto.Message) error {
-	return UnmarshalAllowUnknown(bytes.NewBuffer(data), into)
+	return jsonpbUnmarshalerAllowUnknown.Unmarshal(data, into)
 }
 
 func UnmarshalAllowUnknown(r io.Reader, into proto.Message) error {
-	return jsonpbUnmarshalerAllowUnknown.Unmarshal(r, into)
+	data, _ := io.ReadAll(r)
+	return UnmarshalBytesAllowUnknown(data, into)
 }
 
 func UnmarshalYaml(data []byte, into proto.Message) error {
@@ -78,5 +72,5 @@ func UnmarshalYaml(data []byte, into proto.Message) error {
 		return err
 	}
 
-	return jsonpb.Unmarshal(bytes.NewBuffer(jsn), into)
+	return protojson.Unmarshal(jsn, into)
 }

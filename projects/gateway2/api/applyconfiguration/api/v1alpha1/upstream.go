@@ -27,7 +27,7 @@ func Upstream(name, namespace string) *UpstreamApplyConfiguration {
 	b.WithName(name)
 	b.WithNamespace(namespace)
 	b.WithKind("Upstream")
-	b.WithAPIVersion("gateway.gloo.solo.io/v1alpha1")
+	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b
 }
 
@@ -63,7 +63,7 @@ func extractUpstream(upstream *apiv1alpha1.Upstream, fieldManager string, subres
 	b.WithNamespace(upstream.Namespace)
 
 	b.WithKind("Upstream")
-	b.WithAPIVersion("gateway.gloo.solo.io/v1alpha1")
+	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b, nil
 }
 

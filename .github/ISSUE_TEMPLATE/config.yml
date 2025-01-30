@@ -3,6 +3,6 @@ contact_links:
   - name: Talk with us on the CNCF Slack!
     url: https://slack.cncf.io/
     about: "We are in the #kgateway channel!"
-  - name: K8sGateway Documentation
+  - name: kgateway Documentation
     url: https://kgateway.io/docs/
-    about: Check out the K8sGateway docs for helpful information.
+    about: Check out the kgateway docs for helpful information.

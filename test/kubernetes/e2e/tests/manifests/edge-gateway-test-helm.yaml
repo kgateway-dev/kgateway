@@ -1,4 +1,0 @@
-gateway:
-  validation:
-    # added to preserve behavior tested by this suite.
-    warnMissingTlsSecret: false

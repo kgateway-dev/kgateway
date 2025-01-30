@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"path/filepath"
 
-	kubev1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	"github.com/onsi/gomega"
 	"github.com/solo-io/skv2/codegen/util"
@@ -21,8 +20,6 @@ var (
 	nginxUpstreamManifestFile           = filepath.Join(util.MustGetThisDir(), "testdata", "nginx-upstream.yaml")
 	nginxOneWayUpstreamManifestFile     = filepath.Join(util.MustGetThisDir(), "testdata", "nginx-oneway-upstream.yaml")
 	tlsSecretManifestFile               = filepath.Join(util.MustGetThisDir(), "testdata", "tls-secret.yaml")
-	vsTargetingKubeManifestFile         = filepath.Join(util.MustGetThisDir(), "testdata", "vs-targeting-kube.yaml")
-	vsTargetingUpstreamManifestFile     = filepath.Join(util.MustGetThisDir(), "testdata", "vs-targeting-upstream.yaml")
 
 	// When we apply the deployer-provision.yaml file, we expect resources to be created with this metadata
 	glooProxyObjectMeta = func(ns string) metav1.ObjectMeta {
@@ -38,22 +35,6 @@ var (
 		return &corev1.Service{ObjectMeta: glooProxyObjectMeta(ns)}
 	}
 
-	vsTargetingKube = func(ns string) *kubev1.VirtualService {
-		return &kubev1.VirtualService{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "vs-targeting-kube",
-				Namespace: ns,
-			},
-		}
-	}
-	vsTargetingUpstream = func(ns string) *kubev1.VirtualService {
-		return &kubev1.VirtualService{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "vs-targeting-upstream",
-				Namespace: ns,
-			},
-		}
-	}
 	tlsSecret = &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "my-tls",
