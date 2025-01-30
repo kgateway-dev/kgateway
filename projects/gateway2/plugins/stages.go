@@ -8,10 +8,11 @@ import (
 
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/filters"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/utils"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/filters"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils"
 )
 
 var (

@@ -12,13 +12,17 @@ import (
 
 	"math/rand"
 
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
-	gloohelpers "github.com/kgateway-dev/kgateway/test/helpers"
-	"github.com/kgateway-dev/kgateway/test/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
+	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	gloohelpers "github.com/kgateway-dev/kgateway/test/helpers"
+	"github.com/kgateway-dev/kgateway/test/testutils"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
 	v3 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/envoy/config/core/v3"
@@ -27,8 +31,6 @@ import (
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/proxy_protocol"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/ssl"
 	"github.com/kgateway-dev/kgateway/test/e2e"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 )
 
 type ClientConnectionProperties struct {

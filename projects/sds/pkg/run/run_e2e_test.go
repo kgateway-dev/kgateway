@@ -8,11 +8,12 @@ import (
 
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_service_secret_v3 "github.com/envoyproxy/go-control-plane/envoy/service/secret/v3"
+	"github.com/spf13/afero"
+	"google.golang.org/grpc"
+
 	"github.com/kgateway-dev/kgateway/projects/sds/pkg/run"
 	"github.com/kgateway-dev/kgateway/projects/sds/pkg/server"
 	"github.com/kgateway-dev/kgateway/projects/sds/pkg/testutils"
-	"github.com/spf13/afero"
-	"google.golang.org/grpc"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

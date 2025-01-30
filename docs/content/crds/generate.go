@@ -8,11 +8,12 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/kgateway-dev/kgateway/pkg/utils/cmdutils"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 	"github.com/rotisserie/eris"
 	"github.com/stoewer/go-strcase"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/kgateway-dev/kgateway/pkg/utils/cmdutils"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 )
 
 func main() {

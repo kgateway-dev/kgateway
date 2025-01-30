@@ -16,6 +16,12 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
+	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	coreV1 "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	"github.com/kgateway-dev/kgateway/pkg/utils/api_conversion"
 	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
@@ -31,11 +37,6 @@ import (
 	"github.com/kgateway-dev/kgateway/test/services/envoy"
 	"github.com/kgateway-dev/kgateway/test/testutils"
 	"github.com/kgateway-dev/kgateway/test/v1helpers"
-	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	coreV1 "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 var _ = Describe("HeaderManipulation", func() {

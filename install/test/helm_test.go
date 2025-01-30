@@ -14,12 +14,6 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/proto"
-	values "github.com/kgateway-dev/kgateway/install/helm/gloo/generate"
-	"github.com/kgateway-dev/kgateway/install/test/securitycontext"
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
-	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
-	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
@@ -38,6 +32,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/pointer"
+
+	values "github.com/kgateway-dev/kgateway/install/helm/gloo/generate"
+	"github.com/kgateway-dev/kgateway/install/test/securitycontext"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
 )
 
 func GetPodNamespaceStats() corev1.EnvVar {

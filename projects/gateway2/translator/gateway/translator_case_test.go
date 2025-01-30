@@ -21,6 +21,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"istio.io/istio/pkg/kube/kclient/clienttest"
+	"istio.io/istio/pkg/kube/krt"
+
 	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
@@ -33,8 +36,6 @@ import (
 	"github.com/kgateway-dev/kgateway/projects/gateway2/translator/gateway/testutils"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
-	"istio.io/istio/pkg/kube/kclient/clienttest"
-	"istio.io/istio/pkg/kube/krt"
 )
 
 type TestCase struct {

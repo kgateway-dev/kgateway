@@ -6,8 +6,9 @@ import (
 	"context"
 	"time"
 
-	testdefaults "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	testdefaults "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"

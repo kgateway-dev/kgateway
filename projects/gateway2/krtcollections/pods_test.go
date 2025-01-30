@@ -4,16 +4,17 @@ import (
 	"context"
 	"testing"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/krtcollections"
-	. "github.com/kgateway-dev/kgateway/projects/gateway2/krtcollections"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 	"github.com/onsi/gomega"
 	. "github.com/onsi/gomega"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/krt/krttest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/krtcollections"
+	. "github.com/kgateway-dev/kgateway/projects/gateway2/krtcollections"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 )
 
 func TestPods(t *testing.T) {

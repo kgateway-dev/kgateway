@@ -15,10 +15,11 @@ import (
 
 	errors "github.com/rotisserie/eris"
 
-	"github.com/kgateway-dev/kgateway/test/services/utils"
-	"github.com/kgateway-dev/kgateway/test/testutils"
 	"github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
+
+	"github.com/kgateway-dev/kgateway/test/services/utils"
+	"github.com/kgateway-dev/kgateway/test/testutils"
 
 	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 

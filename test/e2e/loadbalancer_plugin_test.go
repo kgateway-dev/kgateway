@@ -8,12 +8,13 @@ import (
 
 	envoy_admin_v3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	glooV1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/test/e2e"
 	"github.com/kgateway-dev/kgateway/test/helpers"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 )
 
 // setupLBPluginTest sets up a test context with a virtual service that uses the provided load balancer config

@@ -5,11 +5,12 @@ import (
 	"math"
 	"os"
 
-	"github.com/kgateway-dev/kgateway/pkg/version"
 	"github.com/pkg/errors"
 	"github.com/solo-io/go-utils/changelogutils"
 	"github.com/solo-io/go-utils/versionutils"
 	"github.com/solo-io/go-utils/vfsutils"
+
+	"github.com/kgateway-dev/kgateway/pkg/version"
 )
 
 // GetLatestEnterpriseVersion computes the latest Gloo Enterprise version.

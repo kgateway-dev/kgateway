@@ -1,10 +1,11 @@
 package version_test
 
 import (
-	"github.com/kgateway-dev/kgateway/pkg/version"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/afero"
+
+	"github.com/kgateway-dev/kgateway/pkg/version"
 )
 
 var _ = Describe("LatestVersionFromRepo", func() {

@@ -10,12 +10,20 @@ import (
 
 	"github.com/kgateway-dev/kgateway/test/services/envoy"
 
-	"github.com/kgateway-dev/kgateway/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+
+	"github.com/kgateway-dev/kgateway/test/helpers"
 
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/gogo/googleapis/google/rpc"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"google.golang.org/genproto/googleapis/rpc/status"
+	"google.golang.org/grpc"
+
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/core/matchers"
 	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
@@ -23,12 +31,6 @@ import (
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 	"github.com/kgateway-dev/kgateway/test/services"
 	"github.com/kgateway-dev/kgateway/test/v1helpers"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"google.golang.org/genproto/googleapis/rpc/status"
-	"google.golang.org/grpc"
 )
 
 var _ = Describe("CustomAuth", func() {

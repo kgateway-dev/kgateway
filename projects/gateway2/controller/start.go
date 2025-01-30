@@ -7,8 +7,9 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/config"
 
-	glooschemes "github.com/kgateway-dev/kgateway/pkg/schemes"
 	"github.com/solo-io/go-utils/contextutils"
+
+	glooschemes "github.com/kgateway-dev/kgateway/pkg/schemes"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -18,6 +19,12 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	uzap "go.uber.org/zap"
+	istiokube "istio.io/istio/pkg/kube"
+	"istio.io/istio/pkg/kube/krt"
+	istiolog "istio.io/istio/pkg/log"
+	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
+
 	"github.com/kgateway-dev/kgateway/projects/gateway2/deployer"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/common"
@@ -30,11 +37,6 @@ import (
 	"github.com/kgateway-dev/kgateway/projects/gateway2/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
-	uzap "go.uber.org/zap"
-	istiokube "istio.io/istio/pkg/kube"
-	"istio.io/istio/pkg/kube/krt"
-	istiolog "istio.io/istio/pkg/log"
-	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 const (

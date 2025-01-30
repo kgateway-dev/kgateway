@@ -3,8 +3,9 @@ package backendref
 import (
 	"fmt"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
 )
 
 // RefIsHTTPRoute checks if the BackendObjectReference is an HTTPRoute

@@ -6,26 +6,29 @@ import (
 	"encoding/base64"
 	"encoding/json"
 
-	"github.com/kgateway-dev/kgateway/test/testutils"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/kgateway-dev/kgateway/test/testutils"
+
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	extauthv1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	gloov1static "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/static"
 	testmatchers "github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/test/helpers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"net/http"
 
-	"github.com/kgateway-dev/kgateway/test/e2e"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/kgateway-dev/kgateway/test/e2e"
 
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/core/matchers"

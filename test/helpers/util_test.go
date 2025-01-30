@@ -5,10 +5,11 @@ package helpers_test
 import (
 	"time"
 
-	"github.com/kgateway-dev/kgateway/test/gomega"
-	"github.com/kgateway-dev/kgateway/test/helpers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/kgateway-dev/kgateway/test/gomega"
+	"github.com/kgateway-dev/kgateway/test/helpers"
 )
 
 var _ = Describe("PercentileIndex", func() {

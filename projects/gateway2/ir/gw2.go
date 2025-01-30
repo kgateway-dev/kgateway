@@ -1,9 +1,10 @@
 package ir
 
 import (
-	"github.com/kgateway-dev/kgateway/projects/gateway2/plugins"
 	"google.golang.org/protobuf/types/known/anypb"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/plugins"
 )
 
 // This is the IR that is used in the translation to XDS. it is self contained and no IO/krt is

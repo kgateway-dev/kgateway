@@ -19,12 +19,13 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v32/github"
-	. "github.com/kgateway-dev/kgateway/docs/cmd/securityscanutils"
 	"github.com/rotisserie/eris"
 	changelogdocutils "github.com/solo-io/go-utils/changeloggenutils"
 	"github.com/solo-io/go-utils/githubutils"
 	"github.com/solo-io/go-utils/versionutils"
 	"github.com/spf13/cobra"
+
+	. "github.com/kgateway-dev/kgateway/docs/cmd/securityscanutils"
 )
 
 func main() {

@@ -12,12 +12,13 @@ import (
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	v3 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/core/matchers"
 	v1static "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/static"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/ssl"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 // ScaledSnapshotBuilder enumerates the number of each type of resource that should be included in a snapshot and

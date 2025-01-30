@@ -7,16 +7,17 @@ import (
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
 
 	"github.com/go-logr/zapr"
-	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector"
-	kube2 "github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector/kube"
-	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector/singlereplica"
-	"github.com/kgateway-dev/kgateway/pkg/version"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	zaputil "sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector"
+	kube2 "github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector/kube"
+	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector/singlereplica"
+	"github.com/kgateway-dev/kgateway/pkg/version"
 )
 
 func startLeaderElection(ctx context.Context, settingsDir string, electionConfig *leaderelector.ElectionConfig) (leaderelector.Identity, error) {

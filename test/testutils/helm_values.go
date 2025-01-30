@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"path"
 
-	"github.com/kgateway-dev/kgateway/install/helm/gloo/generate"
-	"github.com/kgateway-dev/kgateway/pkg/utils/helmutils"
 	"helm.sh/helm/v3/pkg/strvals"
 	"knative.dev/pkg/test/helpers"
 	k8syamlutil "sigs.k8s.io/yaml"
+
+	"github.com/kgateway-dev/kgateway/install/helm/gloo/generate"
+	"github.com/kgateway-dev/kgateway/pkg/utils/helmutils"
 )
 
 // HelmValues is a struct that holds the values that will be passed to a Helm chart

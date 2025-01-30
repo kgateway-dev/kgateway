@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+
 	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
@@ -16,8 +19,6 @@ import (
 	"github.com/kgateway-dev/kgateway/test/e2e"
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/test/testutils"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

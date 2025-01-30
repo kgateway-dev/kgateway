@@ -30,10 +30,6 @@ import (
 
 	discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/go-logr/zapr"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/controller"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/krtcollections"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/proxy_syncer"
-	ggv2setup "github.com/kgateway-dev/kgateway/projects/gateway2/setup"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -48,6 +44,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/yaml"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/controller"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/krtcollections"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/proxy_syncer"
+	ggv2setup "github.com/kgateway-dev/kgateway/projects/gateway2/setup"
 )
 
 func getAssetsDir(t *testing.T) string {

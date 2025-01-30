@@ -22,14 +22,28 @@ import (
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/utils"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/grpc/debug"
 	"google.golang.org/grpc"
+
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/grpc/debug"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/wrappers"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"github.com/rotisserie/eris"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"sigs.k8s.io/yaml"
 
 	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
@@ -47,18 +61,6 @@ import (
 	"github.com/kgateway-dev/kgateway/test/helpers"
 	"github.com/kgateway-dev/kgateway/test/kube2e"
 	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/rotisserie/eris"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/intstr"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	"sigs.k8s.io/yaml"
 )
 
 var _ = Describe("Kube2e: gateway", func() {

@@ -14,6 +14,7 @@ import (
 	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
 
 	"github.com/avast/retry-go/v4"
+
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/portforward"
 )
 

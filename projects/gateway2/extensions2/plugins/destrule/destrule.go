@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 	"google.golang.org/protobuf/proto"
 	"istio.io/api/networking/v1alpha3"
 	networkingclient "istio.io/client-go/pkg/apis/networking/v1"
@@ -13,6 +12,8 @@ import (
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/kube/kubetypes"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 )
 
 type NsWithHostname struct {

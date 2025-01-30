@@ -8,13 +8,14 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
-	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
+	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
 )
 
 var _ = Describe("GrpcJsonTranscoder helm test", func() {

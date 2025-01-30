@@ -6,11 +6,12 @@ import (
 	"net/http"
 	"time"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	"github.com/kgateway-dev/kgateway/test/gomega/assertions"
 	gloohelpers "github.com/kgateway-dev/kgateway/test/helpers"
 	"github.com/kgateway-dev/kgateway/test/testutils"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("HttpClientBuilder", func() {

@@ -12,13 +12,14 @@ import (
 	"os"
 	"time"
 
-	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	matchers "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	matchers "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/core/matchers"
 
 	// import for GKE
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"

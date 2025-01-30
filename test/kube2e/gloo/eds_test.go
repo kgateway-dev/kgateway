@@ -6,15 +6,16 @@ import (
 	"os/exec"
 
 	"github.com/google/uuid"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/kgateway-dev/kgateway/test/helpers"
 	"github.com/kgateway-dev/kgateway/test/kube2e"
 	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )

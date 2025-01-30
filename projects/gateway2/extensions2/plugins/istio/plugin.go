@@ -16,13 +16,14 @@ import (
 	sockets_raw_buffer "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/raw_buffer/v3"
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/solo-io/go-utils/contextutils"
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
 	ourwellknown "github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
-	"github.com/solo-io/go-utils/contextutils"
-	corev1 "k8s.io/api/core/v1"
 )
 
 var (

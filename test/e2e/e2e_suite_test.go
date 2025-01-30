@@ -15,9 +15,10 @@ import (
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/kgateway-dev/kgateway/test/services"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/test/helpers"
+
+	"github.com/kgateway-dev/kgateway/test/services"
 
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 )

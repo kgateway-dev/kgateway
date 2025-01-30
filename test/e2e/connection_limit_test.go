@@ -6,6 +6,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+
 	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
@@ -15,8 +18,6 @@ import (
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	gloohelpers "github.com/kgateway-dev/kgateway/test/helpers"
 	"github.com/kgateway-dev/kgateway/test/testutils"
-	"github.com/solo-io/solo-kit/pkg/utils/prototime"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

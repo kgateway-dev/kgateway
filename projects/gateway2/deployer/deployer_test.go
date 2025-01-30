@@ -8,12 +8,6 @@ import (
 	envoy_config_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"github.com/ghodss/yaml"
-	"github.com/kgateway-dev/kgateway/pkg/schemes"
-	"github.com/kgateway-dev/kgateway/pkg/version"
-	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/deployer"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/xds"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
@@ -28,6 +22,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	api "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/pkg/version"
+	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/deployer"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/xds"
 
 	// TODO BML tests in this suite fail if this no-op import is not imported first.
 	//

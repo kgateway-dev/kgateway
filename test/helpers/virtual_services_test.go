@@ -5,15 +5,16 @@ package helpers_test
 import (
 	"hash"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"github.com/solo-io/solo-kit/test/matchers"
+
 	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/cors"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/ssl"
 	"github.com/kgateway-dev/kgateway/test/gomega/assertions"
 	"github.com/kgateway-dev/kgateway/test/helpers"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"github.com/solo-io/solo-kit/test/matchers"
 )
 
 var _ = Describe("VirtualServiceBuilder", func() {

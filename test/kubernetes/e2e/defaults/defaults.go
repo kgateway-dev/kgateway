@@ -8,8 +8,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
 	"github.com/solo-io/skv2/codegen/util"
+
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
 )
 
 var (

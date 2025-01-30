@@ -10,6 +10,10 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	"github.com/solo-io/go-utils/contextutils"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
 	"github.com/kgateway-dev/kgateway/projects/gateway2/endpoints"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
@@ -20,9 +24,6 @@ import (
 	gwtranslator "github.com/kgateway-dev/kgateway/projects/gateway2/translator/gateway"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/utils"
-	"github.com/solo-io/go-utils/contextutils"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // Combines all the translators needed for xDS translation.

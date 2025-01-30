@@ -9,15 +9,16 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/settings"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
 	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/settings"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
 )
 
 type EndpointsSettings struct {

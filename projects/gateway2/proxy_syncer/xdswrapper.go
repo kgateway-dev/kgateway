@@ -7,6 +7,7 @@ import (
 	udpaannontations "github.com/cncf/xds/go/udpa/annotations"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+
 	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/xds"
 

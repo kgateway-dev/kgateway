@@ -3,11 +3,12 @@ package query
 import (
 	"errors"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway2/krtcollections"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/reports"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/krtcollections"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/reports"
 )
 
 func ProcessBackendError(err error, reporter reports.ParentRefReporter) {

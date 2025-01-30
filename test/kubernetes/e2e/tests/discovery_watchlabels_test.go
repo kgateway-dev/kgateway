@@ -9,12 +9,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/skv2/codegen/util"
+
 	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 	. "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/gloogateway"
 	"github.com/kgateway-dev/kgateway/test/testutils"
-	"github.com/solo-io/skv2/codegen/util"
 )
 
 // TestDiscoveryWatchlabels is the function which executes a series of tests against a given installation where

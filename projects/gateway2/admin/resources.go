@@ -3,9 +3,10 @@ package admin
 import (
 	"slices"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // TODO: these need to be updated

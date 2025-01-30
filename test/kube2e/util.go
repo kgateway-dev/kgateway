@@ -10,6 +10,14 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	errors "github.com/rotisserie/eris"
+	"github.com/solo-io/go-utils/stats"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"go.uber.org/zap/zapcore"
+
 	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/cmd/check"
 	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/cmd/options"
@@ -20,13 +28,6 @@ import (
 	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
 	newhelper "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/helper"
 	"github.com/kgateway-dev/kgateway/test/testutils"
-	"github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/go-utils/stats"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"go.uber.org/zap/zapcore"
 )
 
 const (

@@ -6,10 +6,11 @@ import (
 	"net"
 
 	"github.com/avast/retry-go"
-	"github.com/kgateway-dev/kgateway/test/ginkgo/parallel"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
+
+	"github.com/kgateway-dev/kgateway/test/ginkgo/parallel"
 )
 
 var _ = Describe("Ports", func() {

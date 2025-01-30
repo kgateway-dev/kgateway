@@ -13,8 +13,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
 
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/gloosnapshot"
 
@@ -29,14 +30,13 @@ import (
 
 	testutils "github.com/solo-io/k8s-utils/testutils/kube"
 
-	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
+	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
+
 	"k8s.io/apimachinery/pkg/labels"
 
-	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
@@ -44,6 +44,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
+	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 )
 
 var _ = Describe("Robustness tests", func() {

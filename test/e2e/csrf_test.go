@@ -13,11 +13,14 @@ import (
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
+
 	"github.com/kgateway-dev/kgateway/test/e2e"
 	"github.com/kgateway-dev/kgateway/test/helpers"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/onsi/gomega/types"
 
 	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
@@ -27,7 +30,6 @@ import (
 	glootype "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/envoy/type/v3"
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
-	"github.com/onsi/gomega/types"
 )
 
 const (

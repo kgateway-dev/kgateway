@@ -6,10 +6,11 @@ import (
 	"net/http"
 	"net/textproto"
 
-	"github.com/kgateway-dev/kgateway/test/gomega/transforms"
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
 	"github.com/onsi/gomega/types"
+
+	"github.com/kgateway-dev/kgateway/test/gomega/transforms"
 )
 
 // ContainHeaders produces a matcher that will only match if all provided headers

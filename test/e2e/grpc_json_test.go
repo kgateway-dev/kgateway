@@ -12,12 +12,19 @@ import (
 
 	"github.com/kgateway-dev/kgateway/test/services/envoy"
 
-	"github.com/kgateway-dev/kgateway/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+
+	"github.com/kgateway-dev/kgateway/test/helpers"
 
 	"github.com/onsi/gomega/format"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	gwdefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/core/matchers"
@@ -25,11 +32,6 @@ import (
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/grpc_json"
 	"github.com/kgateway-dev/kgateway/test/services"
 	"github.com/kgateway-dev/kgateway/test/v1helpers"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gstruct"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"

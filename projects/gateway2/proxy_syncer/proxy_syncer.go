@@ -19,6 +19,14 @@ import (
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/solo-io/go-utils/contextutils"
+	"google.golang.org/protobuf/proto"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+
 	extensions "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
@@ -32,13 +40,6 @@ import (
 	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/xds"
-	"github.com/solo-io/go-utils/contextutils"
-	"google.golang.org/protobuf/proto"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
 const gatewayV1A2Version = "v1alpha2"

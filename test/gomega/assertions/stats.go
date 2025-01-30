@@ -18,11 +18,12 @@ import (
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/test/gomega/transforms"
 
-	"github.com/kgateway-dev/kgateway/pkg/cliutil"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 	"github.com/solo-io/go-utils/stats"
+
+	"github.com/kgateway-dev/kgateway/pkg/cliutil"
 )
 
 // Gloo Edge exports statistics to provide details about how the system is behaving

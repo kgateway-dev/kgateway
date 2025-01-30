@@ -8,12 +8,13 @@ import (
 	"math"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/test/gomega"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	skerrors "github.com/solo-io/solo-kit/pkg/errors"
+
+	"github.com/kgateway-dev/kgateway/test/gomega"
 )
 
 // PatchResource mutates an existing persisted resource, retrying if a resourceVersionError is encountered

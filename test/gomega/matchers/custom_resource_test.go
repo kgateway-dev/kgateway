@@ -3,9 +3,6 @@
 package matchers_test
 
 import (
-	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
@@ -13,6 +10,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+
+	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 )
 
 var _ = Describe("CustomResource", func() {

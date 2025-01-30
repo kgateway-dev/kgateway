@@ -3,11 +3,12 @@ package listener
 import (
 	"slices"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
 	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/reports"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 const NormalizedHTTPSTLSType = "HTTPS/TLS"

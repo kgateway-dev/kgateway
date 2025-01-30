@@ -6,11 +6,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
-	"github.com/stretchr/testify/suite"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ e2e.NewSuiteFunc = NewK8sGatewayTestingSuite

@@ -4,6 +4,9 @@ import (
 	"context"
 	"maps"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
 	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugins/destrule"
@@ -13,8 +16,6 @@ import (
 	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugins/listenerpolicy"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugins/routepolicy"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugins/upstream"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 func mergedGw(funcs []extensionsplug.GwTranslatorFactory) extensionsplug.GwTranslatorFactory {

@@ -6,14 +6,15 @@ import (
 	"context"
 	"time"
 
+	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
 	testdefaults "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
-	"github.com/stretchr/testify/suite"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"

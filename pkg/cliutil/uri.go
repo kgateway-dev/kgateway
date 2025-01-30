@@ -17,6 +17,7 @@ import (
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
 
 	"github.com/avast/retry-go/v4"
+
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/portforward"
 
 	"github.com/hashicorp/go-multierror"

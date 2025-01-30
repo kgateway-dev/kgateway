@@ -7,10 +7,11 @@ import (
 
 	expect "github.com/Netflix/go-expect"
 	"github.com/hinshun/vt10x"
-	"github.com/kgateway-dev/kgateway/pkg/cliutil"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
+
+	"github.com/kgateway-dev/kgateway/pkg/cliutil"
 )
 
 func Stdio(c *expect.Console) terminal.Stdio {

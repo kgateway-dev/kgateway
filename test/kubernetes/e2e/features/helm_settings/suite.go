@@ -14,9 +14,10 @@ import (
 
 	"text/template"
 
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite

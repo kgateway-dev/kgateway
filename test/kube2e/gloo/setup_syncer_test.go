@@ -20,19 +20,21 @@ import (
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/syncer/setup"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/xds"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/grpc/validation"
-	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/test/kube2e"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"google.golang.org/grpc"
+
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/grpc/validation"
+	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/test/kube2e"
 )
 
 var _ = Describe("Setup Syncer", func() {

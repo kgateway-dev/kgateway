@@ -4,6 +4,8 @@ package samples
 
 import (
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	gwv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
@@ -14,7 +16,6 @@ import (
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/static"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/ssl"
 	gloohelpers "github.com/kgateway-dev/kgateway/test/helpers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 func SimpleUpstream() *v1.Upstream {

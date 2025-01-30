@@ -23,24 +23,27 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/form3tech-oss/jwt-go"
-	aws2 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/envoy/extensions/aws"
-	"github.com/kgateway-dev/kgateway/test/helpers"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	testmatchers "github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	aws2 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/envoy/extensions/aws"
+	"github.com/kgateway-dev/kgateway/test/helpers"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	testmatchers "github.com/kgateway-dev/kgateway/test/gomega/matchers"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	"github.com/kgateway-dev/kgateway/test/services"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	gw1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	gwdefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/core/matchers"
 	aws_plugin "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/aws"

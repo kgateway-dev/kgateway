@@ -9,8 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/cluster"
 	"github.com/solo-io/skv2/codegen/util"
+
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/cluster"
 
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
 
@@ -21,13 +22,14 @@ import (
 
 	"github.com/kgateway-dev/kgateway/test/services"
 
+	"github.com/solo-io/go-utils/testutils"
+
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 	"github.com/kgateway-dev/kgateway/test/helpers"
 	"github.com/kgateway-dev/kgateway/test/kube2e"
 	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
 	testruntime "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/runtime"
 	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
-	"github.com/solo-io/go-utils/testutils"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

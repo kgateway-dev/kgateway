@@ -1,9 +1,10 @@
 package securityscanutils_test
 
 import (
-	. "github.com/kgateway-dev/kgateway/docs/cmd/securityscanutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kgateway-dev/kgateway/docs/cmd/securityscanutils"
 )
 
 var _ = Describe("generate security scan docgen", func() {

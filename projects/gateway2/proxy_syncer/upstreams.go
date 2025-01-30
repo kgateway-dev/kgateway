@@ -5,13 +5,14 @@ import (
 	"fmt"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	"github.com/solo-io/go-utils/contextutils"
+	"go.uber.org/zap"
+	"istio.io/istio/pkg/kube/krt"
+
 	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/translator/irtranslator"
 	ggv2utils "github.com/kgateway-dev/kgateway/projects/gateway2/utils"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
-	"github.com/solo-io/go-utils/contextutils"
-	"go.uber.org/zap"
-	"istio.io/istio/pkg/kube/krt"
 )
 
 type uccWithCluster struct {

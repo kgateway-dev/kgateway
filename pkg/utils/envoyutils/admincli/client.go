@@ -10,10 +10,11 @@ import (
 	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	"github.com/solo-io/go-utils/threadsafe"
+
 	"github.com/kgateway-dev/kgateway/pkg/utils/cmdutils"
 	"github.com/kgateway-dev/kgateway/pkg/utils/protoutils"
 	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
-	"github.com/solo-io/go-utils/threadsafe"
 
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/portforward"

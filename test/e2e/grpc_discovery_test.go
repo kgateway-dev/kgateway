@@ -17,11 +17,12 @@ import (
 	testmatchers "github.com/kgateway-dev/kgateway/test/gomega/matchers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/kgateway-dev/kgateway/test/services"
-	"github.com/kgateway-dev/kgateway/test/v1helpers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
+
+	"github.com/kgateway-dev/kgateway/test/services"
+	"github.com/kgateway-dev/kgateway/test/v1helpers"
 
 	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"

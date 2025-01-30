@@ -7,9 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/test/helpers"
-	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
@@ -19,6 +16,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+
+	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/test/helpers"
+	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
 )
 
 // Checks GetNamespacedStatuses status for gloo installation namespace
