@@ -3,7 +3,6 @@ Name|Version|License
 [fybrik.io/crdoc](https://fybrik.io/crdoc)|v0.6.3|Apache License 2.0
 [semver/v3](https://github.com/Masterminds/semver)|v3.3.0|MIT License
 [Netflix/go-expect](https://github.com/Netflix/go-expect)|v0.0.0-20180928190340-9d1f4485533b|Apache License 2.0
-[ahmetb/gen-crd-api-reference-docs](https://github.com/ahmetb/gen-crd-api-reference-docs)|v0.3.1-0.20240214155107-6cf1ede4da61|Apache License 2.0
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License
 [xds/go](https://github.com/cncf/xds)|v0.0.0-20241223141626-cff3c89139a3|Apache License 2.0
