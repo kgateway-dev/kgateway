@@ -18,12 +18,12 @@ import (
 
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/test/services/utils"
 	"github.com/kgateway-dev/kgateway/test/testutils"
 	"github.com/kgateway-dev/kgateway/test/testutils/version"
 	"github.com/onsi/ginkgo/v2"
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/skv2/codegen/util"
 )
 
 var _ Factory = new(factoryImpl)
@@ -107,7 +107,7 @@ func mustGetEnvoyGlooTag() string {
 		return eit
 	}
 
-	makefile := filepath.Join(util.GetModuleRoot(), "Makefile")
+	makefile := filepath.Join(fsutils.GetModuleRoot(), "Makefile")
 	inFile, err := os.Open(makefile)
 	if err != nil {
 		ginkgo.Fail(errors.Wrapf(err, "failed to open Makefile").Error())
