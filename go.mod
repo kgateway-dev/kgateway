@@ -3,13 +3,21 @@ module github.com/kgateway-dev/kgateway
 go 1.23.3
 
 require (
+	fybrik.io/crdoc v0.6.3
 	github.com/Masterminds/semver/v3 v3.3.0
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
+	github.com/ahmetb/gen-crd-api-reference-docs v0.3.1-0.20240214155107-6cf1ede4da61
 	github.com/avast/retry-go v2.4.3+incompatible
+	github.com/avast/retry-go/v4 v4.3.3
 	github.com/cncf/xds/go v0.0.0-20241223141626-cff3c89139a3
 	github.com/envoyproxy/go-control-plane v0.13.2-0.20241022220226-23b7e55d7f65
+	github.com/fgrosse/zaptest v1.1.0
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
+	github.com/go-logr/logr v1.4.2
+	github.com/go-logr/zapr v1.3.0
+	github.com/golang/mock v1.6.0
+	github.com/google/go-cmp v0.6.0
 	github.com/google/go-github/v32 v32.0.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/hashicorp/go-multierror v1.1.1
@@ -20,51 +28,40 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rotisserie/eris v0.5.4
 	github.com/saiskee/gettercheck v0.0.0-20210820204958-38443d06ebe0
+	github.com/solo-io/envoy-gloo/go v0.0.0-20250102165327-33a74fcf9966
 	github.com/solo-io/go-list-licenses v0.1.4
 	github.com/solo-io/go-utils v0.27.3
 	github.com/spf13/afero v1.11.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
+	github.com/stoewer/go-strcase v1.3.0
+	github.com/stretchr/testify v1.9.0
 	go.opencensus.io v0.24.0
 	go.uber.org/zap v1.27.0
+	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56
+	golang.org/x/net v0.30.0
 	golang.org/x/tools v0.26.0
 	google.golang.org/grpc v1.67.1
 	google.golang.org/protobuf v1.36.1
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	helm.sh/helm/v3 v3.16.2
+	istio.io/api v1.24.0-alpha.0.0.20241106042855-9e26cdd3450a
+	istio.io/client-go v1.24.0-alpha.0.0.20241106043554-b5828356941f
+	istio.io/istio v0.0.0-20241107203726-094b9e700412
 	k8s.io/api v0.31.2
 	k8s.io/apiextensions-apiserver v0.31.2
 	k8s.io/apimachinery v0.31.2
 	k8s.io/client-go v0.31.2
 	k8s.io/code-generator v0.31.2
 	k8s.io/component-base v0.31.2
+	k8s.io/kube-openapi v0.0.0-20240423202451-8948a665c108
 	k8s.io/utils v0.0.0-20240921022957-49e7df575cb6
 	knative.dev/pkg v0.0.0-20211206113427-18589ac7627e
 	sigs.k8s.io/controller-runtime v0.19.1
-	sigs.k8s.io/gateway-api v1.2.0
-	sigs.k8s.io/yaml v1.4.0
-)
-
-require (
-	fybrik.io/crdoc v0.6.3
-	github.com/ahmetb/gen-crd-api-reference-docs v0.3.1-0.20240214155107-6cf1ede4da61
-	github.com/avast/retry-go/v4 v4.3.3
-	github.com/fgrosse/zaptest v1.1.0
-	github.com/go-logr/logr v1.4.2
-	github.com/go-logr/zapr v1.3.0
-	github.com/golang/mock v1.6.0
-	github.com/google/go-cmp v0.6.0
-	github.com/solo-io/envoy-gloo/go v0.0.0-20250102165327-33a74fcf9966
-	github.com/stoewer/go-strcase v1.3.0
-	github.com/stretchr/testify v1.9.0
-	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56
-	golang.org/x/net v0.30.0
-	istio.io/api v1.24.0-alpha.0.0.20241106042855-9e26cdd3450a
-	istio.io/client-go v1.24.0-alpha.0.0.20241106043554-b5828356941f
-	istio.io/istio v0.0.0-20241107203726-094b9e700412
-	k8s.io/kube-openapi v0.0.0-20240423202451-8948a665c108
 	sigs.k8s.io/controller-tools v0.16.5
+	sigs.k8s.io/gateway-api v1.2.0
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1
+	sigs.k8s.io/yaml v1.4.0
 )
 
 require (
