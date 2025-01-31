@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 	"github.com/onsi/gomega"
-	"github.com/solo-io/skv2/codegen/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,8 +18,8 @@ import (
 )
 
 var (
-	routeWithUpstreamManifest = filepath.Join(util.MustGetThisDir(), "inputs/route-with-upstream.yaml")
-	upstreamManifest          = filepath.Join(util.MustGetThisDir(), "inputs/upstream-for-route.yaml")
+	routeWithUpstreamManifest = filepath.Join(fsutils.MustGetThisDir(), "inputs/route-with-upstream.yaml")
+	upstreamManifest          = filepath.Join(fsutils.MustGetThisDir(), "inputs/upstream-for-route.yaml")
 
 	// Proxy resource to be translated
 	glooProxyObjectMeta = metav1.ObjectMeta{

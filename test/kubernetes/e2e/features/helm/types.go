@@ -5,13 +5,13 @@ package helm
 import (
 	"path/filepath"
 
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests/base"
-	"github.com/solo-io/skv2/codegen/util"
 )
 
 var (
-	productionRecommendationsSetup = filepath.Join(util.MustGetThisDir(), "testdata/manifests", "production-recommendations.yaml")
-	configMapChangeSetup           = filepath.Join(util.MustGetThisDir(), "testdata/manifests", "config-map-change.yaml")
+	productionRecommendationsSetup = filepath.Join(fsutils.MustGetThisDir(), "testdata/manifests", "production-recommendations.yaml")
+	configMapChangeSetup           = filepath.Join(fsutils.MustGetThisDir(), "testdata/manifests", "config-map-change.yaml")
 
 	helmTestCases = map[string]*base.TestCase{
 		"TestProductionRecommendations": {

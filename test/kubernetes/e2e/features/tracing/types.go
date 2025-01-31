@@ -5,7 +5,7 @@ package tracing
 import (
 	"path/filepath"
 
-	"github.com/solo-io/skv2/codegen/util"
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -19,10 +19,10 @@ const (
 )
 
 var (
-	setupOtelcolManifest        = filepath.Join(util.MustGetThisDir(), "testdata", "setup-otelcol.yaml")
-	tracingConfigManifest       = filepath.Join(util.MustGetThisDir(), "testdata", "tracing.yaml")
-	gatewayConfigManifest       = filepath.Join(util.MustGetThisDir(), "testdata", "gateway.yaml")
-	gatewayProxyServiceManifest = filepath.Join(util.MustGetThisDir(), "testdata", "gw-proxy-tracing-service.yaml")
+	setupOtelcolManifest        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup-otelcol.yaml")
+	tracingConfigManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tracing.yaml")
+	gatewayConfigManifest       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway.yaml")
+	gatewayProxyServiceManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gw-proxy-tracing-service.yaml")
 
 	otelcolPod = &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{Name: "otel-collector", Namespace: "default"},

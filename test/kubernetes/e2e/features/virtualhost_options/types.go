@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	e2edefaults "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
-	"github.com/solo-io/skv2/codegen/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,15 +18,15 @@ import (
 
 var (
 	setupManifests = []string{
-		filepath.Join(util.MustGetThisDir(), "testdata", "setup.yaml"),
+		filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml"),
 		e2edefaults.CurlPodManifest,
 	}
 
-	manifestVhoRemoveXBar      = filepath.Join(util.MustGetThisDir(), "testdata", "vho-remove-x-bar.yaml")
-	manifestVhoSectionAddXFoo  = filepath.Join(util.MustGetThisDir(), "testdata", "vho-section-add-x-foo.yaml")
-	manifestVhoRemoveXBaz      = filepath.Join(util.MustGetThisDir(), "testdata", "vho-remove-x-baz.yaml")
-	manifestVhoWebhookReject   = filepath.Join(util.MustGetThisDir(), "testdata", "vho-webhook-reject.yaml")
-	manifestVhoMergeRemoveXBaz = filepath.Join(util.MustGetThisDir(), "testdata", "vho-merge-remove-x-baz.yaml")
+	manifestVhoRemoveXBar      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "vho-remove-x-bar.yaml")
+	manifestVhoSectionAddXFoo  = filepath.Join(fsutils.MustGetThisDir(), "testdata", "vho-section-add-x-foo.yaml")
+	manifestVhoRemoveXBaz      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "vho-remove-x-baz.yaml")
+	manifestVhoWebhookReject   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "vho-webhook-reject.yaml")
+	manifestVhoMergeRemoveXBaz = filepath.Join(fsutils.MustGetThisDir(), "testdata", "vho-merge-remove-x-baz.yaml")
 
 	// When we apply the setup file, we expect resources to be created with this metadata
 	glooProxyObjectMeta = metav1.ObjectMeta{

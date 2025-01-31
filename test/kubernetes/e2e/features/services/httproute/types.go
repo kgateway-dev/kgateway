@@ -8,7 +8,7 @@ import (
 
 	testmatchers "github.com/kgateway-dev/kgateway/test/gomega/matchers"
 
-	"github.com/solo-io/skv2/codegen/util"
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 
 	"github.com/kgateway-dev/kgateway/projects/gateway2/crds"
 	"github.com/onsi/gomega/gstruct"
@@ -18,8 +18,8 @@ import (
 )
 
 var (
-	routeWithServiceManifest = filepath.Join(util.MustGetThisDir(), "testdata", "route-with-service.yaml")
-	serviceManifest          = filepath.Join(util.MustGetThisDir(), "testdata", "service-for-route.yaml")
+	routeWithServiceManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "route-with-service.yaml")
+	serviceManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service-for-route.yaml")
 	tcpRouteCrdManifest      = filepath.Join(crds.AbsPathToCrd("tcproute-crd.yaml"))
 
 	// Proxy resource to be translated

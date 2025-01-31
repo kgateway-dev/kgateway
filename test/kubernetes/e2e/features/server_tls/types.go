@@ -7,9 +7,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	"github.com/onsi/gomega"
-	"github.com/solo-io/skv2/codegen/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -88,7 +88,7 @@ const (
 )
 
 func manifestFromFile(fname string) ([]byte, error) {
-	return withSubstitutions(filepath.Join(util.MustGetThisDir(), "testdata", fname))
+	return withSubstitutions(filepath.Join(fsutils.MustGetThisDir(), "testdata", fname))
 }
 func withSubstitutions(fname string) ([]byte, error) {
 	// VS with secret should be accepted, need to substitute the secret ns

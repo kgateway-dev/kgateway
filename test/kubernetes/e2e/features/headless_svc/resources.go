@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/solo-io/skv2/codegen/util"
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 	v1 "github.com/solo-io/solo-apis/pkg/api/gateway.solo.io/v1"
 	soloapis_gloov1 "github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1"
 	"github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1/core/matchers"
@@ -31,7 +31,7 @@ const (
 )
 
 var (
-	headlessSvcSetupManifest = filepath.Join(util.MustGetThisDir(), "testdata", "setup.yaml")
+	headlessSvcSetupManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
 
 	// GetEdgeGatewayResources returns the Gloo Gateway Edge API resources
 	GetEdgeGatewayResources = func(installNamespace string) []client.Object {

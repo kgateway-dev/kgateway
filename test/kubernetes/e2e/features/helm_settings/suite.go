@@ -14,8 +14,8 @@ import (
 
 	"text/template"
 
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
-	"github.com/solo-io/skv2/codegen/util"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -56,7 +56,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 }
 
 func (s *testingSuite) TestApplySettingsManifestsFromUnitTests() {
-	settingsFixturesFolder := filepath.Join(util.GetModuleRoot(), "install", "test", "fixtures", "settings")
+	settingsFixturesFolder := filepath.Join(fsutils.GetModuleRoot(), "install", "test", "fixtures", "settings")
 
 	err := filepath.Walk(settingsFixturesFolder, func(settingsFixtureFile string, info os.FileInfo, err error) error {
 		if err != nil {
