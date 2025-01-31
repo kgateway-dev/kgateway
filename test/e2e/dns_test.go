@@ -8,10 +8,11 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/test/e2e"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/test/e2e"
 )
 
 var _ = Describe("DNS E2E Test", func() {

@@ -8,11 +8,12 @@ import (
 
 	"github.com/kgateway-dev/kgateway/test/testutils"
 
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 	"github.com/solo-io/go-utils/stats"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 )
 
 // LogLevelAssertion returns an Assertion to verify that the dynamic log level matches the provided value

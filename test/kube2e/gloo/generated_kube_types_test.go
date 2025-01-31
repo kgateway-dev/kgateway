@@ -3,12 +3,13 @@
 package gloo_test
 
 import (
-	kubetestclients "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/clients"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	kubetestclients "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/clients"
 
 	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	gatewayv1kubetypes "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"

@@ -10,6 +10,7 @@ import (
 	"github.com/kgateway-dev/kgateway/test/ginkgo/decorators"
 
 	"github.com/golang/protobuf/ptypes/duration"
+
 	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/test/e2e"
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
@@ -18,13 +19,15 @@ import (
 
 	consulplugin "github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/consul"
 
-	"github.com/kgateway-dev/kgateway/test/helpers"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	"github.com/kgateway-dev/kgateway/test/helpers"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/hashicorp/consul/api"
+
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	consulapi "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/consul"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/upstreams/consul"

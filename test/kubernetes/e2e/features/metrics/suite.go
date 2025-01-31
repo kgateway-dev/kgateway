@@ -10,6 +10,9 @@ import (
 	"time"
 
 	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
+	"github.com/onsi/gomega"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/kgateway-dev/kgateway/pkg/utils/envoyutils/admincli"
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
@@ -20,8 +23,6 @@ import (
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests/base"
-	"github.com/onsi/gomega"
-	"github.com/stretchr/testify/suite"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite

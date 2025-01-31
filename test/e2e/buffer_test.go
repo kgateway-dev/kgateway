@@ -11,15 +11,17 @@ import (
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
+
 	"github.com/kgateway-dev/kgateway/test/e2e"
 	"github.com/kgateway-dev/kgateway/test/helpers"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
 	buffer "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("buffer", func() {

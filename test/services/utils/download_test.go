@@ -11,9 +11,10 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/kgateway-dev/kgateway/test/services/utils"
 	"github.com/kgateway-dev/kgateway/test/testutils"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestGetBinaryFromEnv(t *testing.T) {

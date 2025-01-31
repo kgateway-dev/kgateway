@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"io"
 
+	"github.com/rotisserie/eris"
+	"github.com/solo-io/go-utils/threadsafe"
+
 	"github.com/kgateway-dev/kgateway/pkg/utils/cmdutils"
 	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/admin"
-	"github.com/rotisserie/eris"
-	"github.com/solo-io/go-utils/threadsafe"
 )
 
 const (

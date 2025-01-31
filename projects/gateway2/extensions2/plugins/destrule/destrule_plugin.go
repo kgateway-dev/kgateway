@@ -11,14 +11,15 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/endpoints"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
 	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube/krt"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/endpoints"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/common"
+	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
 )
 
 const (

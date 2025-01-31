@@ -7,9 +7,10 @@ import (
 	"net/http"
 	"time"
 
-	. "github.com/kgateway-dev/kgateway/pkg/utils/probes"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kgateway-dev/kgateway/pkg/utils/probes"
 )
 
 var _ = Describe("Probes", func() {

@@ -10,8 +10,9 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"go.uber.org/zap"
 
-	"github.com/kgateway-dev/kgateway/projects/sds/pkg/server"
 	"github.com/solo-io/go-utils/contextutils"
+
+	"github.com/kgateway-dev/kgateway/projects/sds/pkg/server"
 )
 
 func Run(ctx context.Context, secrets []server.Secret, sdsClient, sdsServerAddress string) error {

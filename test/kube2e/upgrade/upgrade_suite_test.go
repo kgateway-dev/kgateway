@@ -10,15 +10,17 @@ import (
 
 	"github.com/kgateway-dev/kgateway/pkg/utils/helmutils"
 
-	"github.com/kgateway-dev/kgateway/test/kube2e"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/helper"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/versionutils"
 	"github.com/solo-io/skv2/codegen/util"
 
-	"github.com/kgateway-dev/kgateway/test/helpers"
+	"github.com/kgateway-dev/kgateway/test/kube2e"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/helper"
+
 	. "github.com/onsi/ginkgo/v2"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
+
+	"github.com/kgateway-dev/kgateway/test/helpers"
 )
 
 func TestUpgrade(t *testing.T) {

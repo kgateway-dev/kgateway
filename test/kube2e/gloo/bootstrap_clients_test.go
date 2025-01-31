@@ -22,24 +22,27 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/hashicorp/consul/api"
-	gatewaydefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
-	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	vault_client "github.com/kgateway-dev/kgateway/projects/gloo/pkg/bootstrap/clients/vault"
-	"github.com/kgateway-dev/kgateway/test/helpers"
-	"github.com/kgateway-dev/kgateway/test/services"
 	skclients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 
-	. "github.com/kgateway-dev/kgateway/test/gomega"
+	gatewaydefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
+	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	vault_client "github.com/kgateway-dev/kgateway/projects/gloo/pkg/bootstrap/clients/vault"
+	"github.com/kgateway-dev/kgateway/test/helpers"
+	"github.com/kgateway-dev/kgateway/test/services"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	. "github.com/kgateway-dev/kgateway/test/gomega"
+
 	vaultapi "github.com/hashicorp/vault/api"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/bootstrap/clients"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/bootstrap/clients"
 )
 
 // Kubernetes tests for clients generated from projects/gloo/pkg/bootstrap/clients

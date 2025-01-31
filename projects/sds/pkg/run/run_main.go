@@ -10,10 +10,11 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kgateway-dev/kgateway/pkg/version"
-	"github.com/kgateway-dev/kgateway/projects/sds/pkg/server"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/stats"
+
+	"github.com/kgateway-dev/kgateway/pkg/version"
+	"github.com/kgateway-dev/kgateway/projects/sds/pkg/server"
 )
 
 var (

@@ -3,12 +3,13 @@ package schemes
 import (
 	"fmt"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
 
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )

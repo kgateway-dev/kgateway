@@ -11,12 +11,13 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 
-	glootest "github.com/kgateway-dev/kgateway/test/v1helpers/test_grpc_service/glootest/protos"
 	"github.com/solo-io/go-utils/healthchecker"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
+
+	glootest "github.com/kgateway-dev/kgateway/test/v1helpers/test_grpc_service/glootest/protos"
 )
 
 // For reflection to work, this uses the golang/proto plugin. To install it, run this command:

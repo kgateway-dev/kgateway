@@ -3,9 +3,10 @@
 package matchers_test
 
 import (
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 )
 
 var _ = Describe("ContainSubstrings", func() {

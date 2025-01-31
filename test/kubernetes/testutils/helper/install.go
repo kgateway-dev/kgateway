@@ -17,12 +17,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
-	test_runtime "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/runtime"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils/exec"
+
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
+	test_runtime "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/runtime"
 )
 
 // Default test configuration

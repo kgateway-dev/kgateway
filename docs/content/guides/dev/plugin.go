@@ -11,11 +11,12 @@ import (
 	"time"
 
 	cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/discovery"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	// add these imports to use Envoy's API
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"

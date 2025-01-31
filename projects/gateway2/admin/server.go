@@ -10,9 +10,10 @@ import (
 	"sort"
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/controller"
 	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/kube/krt"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/controller"
 )
 
 const (

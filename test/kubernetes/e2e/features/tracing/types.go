@@ -5,9 +5,10 @@ package tracing
 import (
 	"path/filepath"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 )
 
 const (

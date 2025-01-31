@@ -10,13 +10,15 @@ import (
 
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 
-	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/test/e2e"
-	gloohelpers "github.com/kgateway-dev/kgateway/test/helpers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/test/e2e"
+	gloohelpers "github.com/kgateway-dev/kgateway/test/helpers"
+
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/cors"
 )

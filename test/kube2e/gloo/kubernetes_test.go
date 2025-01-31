@@ -11,16 +11,17 @@ import (
 
 	"github.com/solo-io/solo-kit/test/helpers"
 
-	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	kubepluginapi "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/kubernetes"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/discovery"
-	kubeplugin "github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/kubernetes"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	kubepluginapi "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/kubernetes"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/discovery"
+	kubeplugin "github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/kubernetes"
 
 	"k8s.io/client-go/kubernetes"
 )

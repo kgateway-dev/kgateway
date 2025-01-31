@@ -3,6 +3,9 @@
 package e2e_test
 
 import (
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	bootstrap "github.com/kgateway-dev/kgateway/projects/gloo/pkg/bootstrap/clients"
@@ -10,8 +13,6 @@ import (
 	"github.com/kgateway-dev/kgateway/test/e2e"
 	"github.com/kgateway-dev/kgateway/test/ginkgo/decorators"
 	"github.com/kgateway-dev/kgateway/test/services"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

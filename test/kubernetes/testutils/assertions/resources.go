@@ -6,10 +6,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/test/helpers"
-	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
+
+	"github.com/kgateway-dev/kgateway/test/helpers"
+	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
 )
 
 func (p *Provider) EventuallyResourceExists(getter helpers.ResourceGetter, timeout ...time.Duration) {

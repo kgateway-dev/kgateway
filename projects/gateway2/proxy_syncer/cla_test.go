@@ -5,10 +5,11 @@ import (
 
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	endpointv3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/endpoints"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/endpoints"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
 )
 
 func TestTranslatesDestrulesFailoverPriority(t *testing.T) {

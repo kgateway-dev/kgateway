@@ -10,11 +10,12 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/kgateway-dev/kgateway/test/testutils"
 	"github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/kgateway-dev/kgateway/test/testutils"
 )
 
 const (

@@ -4,12 +4,13 @@ import (
 	"context"
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"github.com/rotisserie/eris"
+	"github.com/solo-io/go-utils/contextutils"
+
 	"github.com/kgateway-dev/kgateway/pkg/utils/envoyutils/bootstrap"
 	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/projects/envoyinit/pkg/runner"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/xds"
-	"github.com/rotisserie/eris"
-	"github.com/solo-io/go-utils/contextutils"
 )
 
 const (

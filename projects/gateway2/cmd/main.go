@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 
+	"github.com/solo-io/go-utils/log"
+
 	"github.com/kgateway-dev/kgateway/pkg/utils/probes"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/setup"
-	"github.com/solo-io/go-utils/log"
 )
 
 func main() {

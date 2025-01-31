@@ -6,8 +6,9 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
 )
 
 var _ cache.NodeHash = new(nodeRoleHasher)

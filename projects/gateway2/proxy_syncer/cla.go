@@ -5,10 +5,11 @@ import (
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 	"go.uber.org/zap"
 	"istio.io/istio/pkg/kube/krt"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 )
 
 func prioritize(ep ir.EndpointsForUpstream) *envoy_config_endpoint_v3.ClusterLoadAssignment {

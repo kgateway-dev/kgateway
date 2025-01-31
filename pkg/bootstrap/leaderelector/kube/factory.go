@@ -6,12 +6,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector"
-	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
 	"github.com/solo-io/go-utils/contextutils"
 	"k8s.io/client-go/rest"
 	k8sleaderelection "k8s.io/client-go/tools/leaderelection"
 	"sigs.k8s.io/controller-runtime/pkg/leaderelection"
+
+	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector"
+	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
 )
 
 var _ leaderelector.ElectionFactory = new(kubeElectionFactory)

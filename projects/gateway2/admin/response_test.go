@@ -1,12 +1,13 @@
 package admin_test
 
 import (
-	"github.com/kgateway-dev/kgateway/projects/gateway2/admin"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/admin"
 )
 
 var _ = Describe("SnapshotResponseData", func() {

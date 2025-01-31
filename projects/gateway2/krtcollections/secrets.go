@@ -1,10 +1,11 @@
 package krtcollections
 
 import (
-	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
 )
 
 type From struct {

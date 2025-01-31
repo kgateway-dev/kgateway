@@ -29,20 +29,22 @@ import (
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/core/matchers"
 	static_plugin_gloo "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/static"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/ssl"
 	testhelpers "github.com/kgateway-dev/kgateway/test/helpers"
 
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/test/services"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/test/services"
 )
 
 var _ = Describe("tunneling", func() {

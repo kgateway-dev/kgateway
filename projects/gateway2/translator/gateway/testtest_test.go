@@ -17,8 +17,9 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 	"istio.io/istio/pkg/kube/kclient/clienttest"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 )
 
 func xTestRun(t *testing.T) {

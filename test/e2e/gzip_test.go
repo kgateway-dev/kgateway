@@ -15,10 +15,11 @@ import (
 	"github.com/kgateway-dev/kgateway/test/e2e"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
-	gloogzip "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2"
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	gloogzip "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2"
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 )
 
 var _ = Describe("gzip", func() {

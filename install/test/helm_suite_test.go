@@ -11,11 +11,6 @@ import (
 	"text/template"
 
 	"github.com/ghodss/yaml"
-	"github.com/kgateway-dev/kgateway/pkg/cliutil/helm"
-	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/cmd/install"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
-	"github.com/kgateway-dev/kgateway/test/makefile"
-	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
@@ -30,6 +25,12 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/kgateway-dev/kgateway/pkg/cliutil/helm"
+	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/cmd/install"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/test/makefile"
+	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
 )
 
 const (

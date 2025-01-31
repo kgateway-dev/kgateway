@@ -4,9 +4,10 @@ import (
 	"context"
 	"sync/atomic"
 
-	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector"
 )
 
 var _ = Describe("Leader Startup Action", func() {

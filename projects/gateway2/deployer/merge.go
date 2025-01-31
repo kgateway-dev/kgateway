@@ -1,9 +1,10 @@
 package deployer
 
 import (
-	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 )
 
 // mergePointers will decide whether to use dst or src without dereferencing or recursing

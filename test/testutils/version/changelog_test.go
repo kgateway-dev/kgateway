@@ -5,10 +5,11 @@ package version_test
 import (
 	"fmt"
 
-	"github.com/kgateway-dev/kgateway/test/testutils/version"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
+	"github.com/kgateway-dev/kgateway/test/testutils/version"
 )
 
 type mockDirEntry struct {

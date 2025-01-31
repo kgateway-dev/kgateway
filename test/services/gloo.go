@@ -56,10 +56,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 
+	"google.golang.org/grpc"
+
 	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/bootstrap"
-	"google.golang.org/grpc"
 
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.uber.org/zap"
@@ -67,12 +68,13 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 
-	fds_syncer "github.com/kgateway-dev/kgateway/projects/discovery/pkg/fds/syncer"
-	uds_syncer "github.com/kgateway-dev/kgateway/projects/discovery/pkg/uds/syncer"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes"
+
+	fds_syncer "github.com/kgateway-dev/kgateway/projects/discovery/pkg/fds/syncer"
+	uds_syncer "github.com/kgateway-dev/kgateway/projects/discovery/pkg/uds/syncer"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 )
 
 var glooPortBase = uint32(30400)

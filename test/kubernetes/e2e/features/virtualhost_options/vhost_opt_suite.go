@@ -10,6 +10,11 @@ import (
 	"github.com/onsi/gomega/gstruct"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
@@ -17,10 +22,6 @@ import (
 	"github.com/kgateway-dev/kgateway/test/helpers"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 	testdefaults "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite

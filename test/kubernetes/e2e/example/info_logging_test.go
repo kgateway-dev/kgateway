@@ -14,8 +14,9 @@ import (
 	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/test/testutils"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/example"

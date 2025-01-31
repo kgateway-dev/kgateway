@@ -1,9 +1,10 @@
 package curl_test
 
 import (
-	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
+
+	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
 
 	. "github.com/onsi/ginkgo/v2"
 )

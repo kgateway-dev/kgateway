@@ -16,6 +16,8 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/onsi/ginkgo/v2"
 
+	"github.com/solo-io/go-utils/threadsafe"
+
 	"github.com/kgateway-dev/kgateway/pkg/cliutil/install"
 	"github.com/kgateway-dev/kgateway/pkg/utils/envoyutils/admincli"
 	glooAdminCli "github.com/kgateway-dev/kgateway/pkg/utils/glooadminutils/admincli"
@@ -23,7 +25,6 @@ import (
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/portforward"
 	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/admin"
-	"github.com/solo-io/go-utils/threadsafe"
 )
 
 // StandardGlooDumpOnFail creates adump of the kubernetes state and certain envoy data from

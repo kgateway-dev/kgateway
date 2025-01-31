@@ -5,8 +5,9 @@ package helpers
 import (
 	"time"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/statusutils"
 	"github.com/onsi/gomega/types"
+
+	"github.com/kgateway-dev/kgateway/pkg/utils/statusutils"
 
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 

@@ -5,9 +5,10 @@ package zero_downtime_rollout
 import (
 	"path/filepath"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests/base"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 

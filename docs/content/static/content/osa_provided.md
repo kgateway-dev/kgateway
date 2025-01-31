@@ -2,7 +2,6 @@ Name|Version|License
 ---|---|---
 [fybrik.io/crdoc](https://fybrik.io/crdoc)|v0.6.3|Apache License 2.0
 [semver/v3](https://github.com/Masterminds/semver)|v3.3.0|MIT License
-[Netflix/go-expect](https://github.com/Netflix/go-expect)|v0.0.0-20180928190340-9d1f4485533b|Apache License 2.0
 [ahmetb/gen-crd-api-reference-docs](https://github.com/ahmetb/gen-crd-api-reference-docs)|v0.3.1-0.20240214155107-6cf1ede4da61|Apache License 2.0
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License
@@ -16,7 +15,6 @@ Name|Version|License
 [google/go-cmp](https://github.com/google/go-cmp)|v0.6.0|BSD 3-clause "New" or "Revised" License
 [go-github/v32](https://github.com/google/go-github)|v32.0.0|BSD 3-clause "New" or "Revised" License
 [grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.4.0|Apache License 2.0
-[hinshun/vt10x](https://github.com/hinshun/vt10x)|v0.0.0-20180809195222-d55458df857c|MIT License
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
 [ginkgo/v2](https://github.com/onsi/ginkgo)|v2.20.2|MIT License
 [onsi/gomega](https://github.com/onsi/gomega)|v1.35.0|MIT License
@@ -35,7 +33,6 @@ Name|Version|License
 [x/tools](https://golang.org/x/tools)|v0.26.0|BSD 3-clause "New" or "Revised" License
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.67.1|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.36.1|BSD 3-clause "New" or "Revised" License
-[AlecAivazis/survey.v1](https://gopkg.in/AlecAivazis/survey.v1)|v1.8.7|MIT License
 [helm/v3](https://helm.sh/helm/v3)|v3.16.2|Apache License 2.0
 [istio.io/api](https://istio.io/api)|v1.24.0-alpha.0.0.20241106042855-9e26cdd3450a|Apache License 2.0
 [istio.io/client-go](https://istio.io/client-go)|v1.24.0-alpha.0.0.20241106043554-b5828356941f|Apache License 2.0

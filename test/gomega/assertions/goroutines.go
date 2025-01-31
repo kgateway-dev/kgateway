@@ -5,10 +5,11 @@ package assertions
 import (
 	"time"
 
-	"github.com/kgateway-dev/kgateway/test/helpers"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gleak"
 	"github.com/onsi/gomega/types"
+
+	"github.com/kgateway-dev/kgateway/test/helpers"
 )
 
 // GoRoutineMonitor is a helper for monitoring goroutine leaks in tests

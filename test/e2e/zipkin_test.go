@@ -15,10 +15,14 @@ import (
 
 	"github.com/kgateway-dev/kgateway/test/testutils"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/translator"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
@@ -28,12 +32,11 @@ import (
 	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/tracing"
 	gloohelpers "github.com/kgateway-dev/kgateway/test/helpers"
 	"github.com/kgateway-dev/kgateway/test/v1helpers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	. "github.com/kgateway-dev/kgateway/test/gomega"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kgateway-dev/kgateway/test/gomega"
 
 	"github.com/kgateway-dev/kgateway/test/services"
 )

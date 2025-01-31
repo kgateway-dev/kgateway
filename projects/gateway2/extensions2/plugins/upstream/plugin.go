@@ -13,6 +13,13 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	awspb "github.com/solo-io/envoy-gloo/go/config/filter/http/aws_lambda/v2"
+	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
+	"istio.io/istio/pkg/kube/kclient"
+	"istio.io/istio/pkg/kube/krt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
 	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
@@ -20,12 +27,6 @@ import (
 	"github.com/kgateway-dev/kgateway/projects/gateway2/krtcollections"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/projects/gateway2/plugins"
-	awspb "github.com/solo-io/envoy-gloo/go/config/filter/http/aws_lambda/v2"
-	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
-	"istio.io/istio/pkg/kube/kclient"
-	"istio.io/istio/pkg/kube/krt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 const (

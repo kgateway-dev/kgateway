@@ -134,15 +134,9 @@ include Makefile.ci
 init:
 	git config core.hooksPath .githooks
 
-# Runs [`goimports`](https://pkg.go.dev/golang.org/x/tools/cmd/goimports) which updates imports and formats code
-# TODO: deprecate in favor of using fmt-v2
+# Formats code and imports
 .PHONY: fmt
 fmt:
-	go run golang.org/x/tools/cmd/goimports -w $(shell ls -d */ | grep -v vendor)
-
-# Formats code and imports
-.PHONY: fmt-v2
-fmt-v2:
 	go run golang.org/x/tools/cmd/goimports -local "github.com/kgateway-dev/kgateway/"  -w $(shell ls -d */ | grep -v vendor)
 
 .PHONY: fmt-changed

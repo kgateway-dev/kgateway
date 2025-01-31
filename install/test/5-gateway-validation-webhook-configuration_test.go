@@ -10,11 +10,11 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
-	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
 	"github.com/onsi/gomega/types"
 	v1 "k8s.io/api/admissionregistration/v1"
 
-	gloostringutils "github.com/kgateway-dev/kgateway/pkg/utils/stringutils"
+	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/stringutils"
@@ -23,6 +23,8 @@ import (
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
+
+	gloostringutils "github.com/kgateway-dev/kgateway/pkg/utils/stringutils"
 )
 
 const (

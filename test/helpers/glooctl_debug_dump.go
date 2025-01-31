@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kgateway-dev/kgateway/pkg/cliutil"
 	"github.com/solo-io/go-utils/testutils"
+
+	"github.com/kgateway-dev/kgateway/pkg/cliutil"
 )
 
 func RegisterGlooDebugLogPrintHandlerAndClearLogs() {

@@ -6,18 +6,20 @@ import (
 	"fmt"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/kgateway-dev/kgateway/projects/gloo/constants"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/projects/gloo/constants"
+
 	v1 "github.com/solo-io/solo-apis/pkg/api/gateway.solo.io/v1"
 	soloapis_gloov1 "github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1"
 	"github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1/core/matchers"
 	soloapis_kubernetes "github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1/options/kubernetes"
 	"github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1/ssl"
 	gloocore "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 )
 
 type UpstreamConfigOpts struct {

@@ -16,12 +16,13 @@ import (
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
+	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen"
+
 	"github.com/kgateway-dev/kgateway/pkg/utils/envoyutils/admincli"
 	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests/base"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/helper"
-	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite

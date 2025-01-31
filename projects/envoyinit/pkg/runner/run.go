@@ -8,10 +8,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/cmdutils"
-	"github.com/kgateway-dev/kgateway/projects/envoyinit/pkg/downward"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
+
+	"github.com/kgateway-dev/kgateway/pkg/utils/cmdutils"
+	"github.com/kgateway-dev/kgateway/projects/envoyinit/pkg/downward"
 )
 
 const (
