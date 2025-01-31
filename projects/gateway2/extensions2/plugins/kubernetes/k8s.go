@@ -9,16 +9,17 @@ import (
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	"github.com/solo-io/gloo/projects/gateway2/extensions2/common"
-	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
-	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
-	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
-	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/common"
+	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/settings"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/krtcollections"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 )
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
@@ -26,13 +27,17 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	services := krt.WrapClient(serviceClient, commoncol.KrtOpts.ToOptions("Services")...)
 	epSliceClient := kclient.New[*discoveryv1.EndpointSlice](commoncol.Client)
 	endpointSlices := krt.WrapClient(epSliceClient, commoncol.KrtOpts.ToOptions("EndpointSlices")...)
-	return NewPluginFromCollections(ctx, commoncol.KrtOpts, commoncol.Settings, commoncol.Pods, services, endpointSlices)
+	return NewPluginFromCollections(ctx, commoncol.KrtOpts, commoncol.Pods, services, endpointSlices, commoncol.Settings)
 }
 
-func NewPluginFromCollections(ctx context.Context, krtOpts krtutil.KrtOptions,
-	settings krt.Singleton[glookubev1.Settings],
+func NewPluginFromCollections(
+	ctx context.Context,
+	krtOpts krtutil.KrtOptions,
 	pods krt.Collection[krtcollections.LocalityPod],
-	services krt.Collection[*corev1.Service], endpointSlices krt.Collection[*discoveryv1.EndpointSlice]) extensionsplug.Plugin {
+	services krt.Collection[*corev1.Service],
+	endpointSlices krt.Collection[*discoveryv1.EndpointSlice],
+	stngs settings.Settings,
+) extensionsplug.Plugin {
 	gk := schema.GroupKind{
 		Group: corev1.GroupName,
 		Kind:  "Service",
@@ -58,7 +63,7 @@ func NewPluginFromCollections(ctx context.Context, krtOpts krtutil.KrtOptions,
 		return uss
 	}, krtOpts.ToOptions("KubernetesServiceUpstreams")...)
 
-	inputs := krtcollections.NewGlooK8sEndpointInputs(settings, krtOpts, endpointSlices, pods, k8sServiceUpstreams)
+	inputs := krtcollections.NewGlooK8sEndpointInputs(stngs, krtOpts, endpointSlices, pods, k8sServiceUpstreams)
 	k8sServiceEndpoints := krtcollections.NewGlooK8sEndpoints(ctx, inputs)
 
 	return extensionsplug.Plugin{

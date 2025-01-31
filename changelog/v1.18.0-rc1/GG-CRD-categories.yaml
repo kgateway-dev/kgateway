@@ -1,5 +1,0 @@
-changelog:
-- type: NEW_FEATURE
-  description: Adds a common category to all Gloo Gateway CRDs. `kubectl get gloo-gateway -A` can now be used to list all GG CRs on your cluster. Also adds the "solo-io" category to GG enterprise CRDs.
-  issueLink: https://github.com/solo-io/solo-projects/issues/6605
-  resolvesIssue: false

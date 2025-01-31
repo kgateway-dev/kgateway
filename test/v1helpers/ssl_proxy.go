@@ -1,3 +1,5 @@
+//go:build ignore
+
 package v1helpers
 
 import (
@@ -11,7 +13,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/solo-io/gloo/test/helpers"
+	"github.com/kgateway-dev/kgateway/test/helpers"
 )
 
 func StartSslProxy(ctx context.Context, port uint32) uint32 {

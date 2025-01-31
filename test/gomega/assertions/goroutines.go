@@ -1,3 +1,5 @@
+//go:build ignore
+
 package assertions
 
 import (
@@ -6,7 +8,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gleak"
 	"github.com/onsi/gomega/types"
-	"github.com/solo-io/gloo/test/helpers"
+
+	"github.com/kgateway-dev/kgateway/test/helpers"
 )
 
 // GoRoutineMonitor is a helper for monitoring goroutine leaks in tests

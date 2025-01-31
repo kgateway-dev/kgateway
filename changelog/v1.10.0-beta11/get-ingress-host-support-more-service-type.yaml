@@ -1,6 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/gloo/issues/5670
-    description: >
-      GetIngressHost support more types of services.
-    resolvesIssue: false

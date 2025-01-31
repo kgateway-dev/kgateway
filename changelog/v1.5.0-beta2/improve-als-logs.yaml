@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Improve access logging docs
-    issueLink: https://github.com/solo-io/gloo/issues/3122

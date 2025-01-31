@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/solo-io/gloo/projects/sds/pkg/run"
+	"github.com/kgateway-dev/kgateway/projects/sds/pkg/run"
 )
 
 func main() {

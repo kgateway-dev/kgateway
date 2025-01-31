@@ -1,32 +1,36 @@
+//go:build ignore
+
 package watch_namespace_selector
 
 import (
 	"path/filepath"
 
-	"github.com/solo-io/gloo/test/kubernetes/e2e/tests/base"
-	"github.com/solo-io/skv2/codegen/util"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	e2edefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests/base"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
+	e2edefaults "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
 )
 
 var (
-	installNamespaceVSManifest = filepath.Join(util.MustGetThisDir(), "testdata", "vs-install-ns.yaml")
+	installNamespaceVSManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "vs-install-ns.yaml")
 
-	unlabeledRandomNamespaceManifest = filepath.Join(util.MustGetThisDir(), "testdata", "random-ns-unlabeled.yaml")
+	unlabeledRandomNamespaceManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "random-ns-unlabeled.yaml")
 	randomNamespace                  = &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "random",
 		},
 	}
 
-	randomVSManifest = filepath.Join(util.MustGetThisDir(), "testdata", "vs-random.yaml")
+	randomVSManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "vs-random.yaml")
 
-	randomUpstreamManifest                       = filepath.Join(util.MustGetThisDir(), "testdata", "upstream-random.yaml")
-	installNamespaceWithRandomUpstreamVSManifest = filepath.Join(util.MustGetThisDir(), "testdata", "vs-upstream.yaml")
+	randomUpstreamManifest                       = filepath.Join(fsutils.MustGetThisDir(), "testdata", "upstream-random.yaml")
+	installNamespaceWithRandomUpstreamVSManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "vs-upstream.yaml")
 
 	randomNamespaceVS = &gatewayv1.VirtualService{
 		ObjectMeta: metav1.ObjectMeta{

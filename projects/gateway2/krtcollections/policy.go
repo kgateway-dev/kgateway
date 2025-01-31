@@ -5,10 +5,6 @@ import (
 	"fmt"
 	"slices"
 
-	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
-	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/translator/backendref"
-	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -16,6 +12,11 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+
+	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/translator/backendref"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 )
 
 var (
@@ -39,7 +40,11 @@ type UpstreamIndex struct {
 	krtopts             krtutil.KrtOptions
 }
 
-func NewUpstreamIndex(krtopts krtutil.KrtOptions, backendRefExtension []extensionsplug.GetBackendForRefPlugin, policies *PolicyIndex) *UpstreamIndex {
+func NewUpstreamIndex(
+	krtopts krtutil.KrtOptions,
+	backendRefExtension []extensionsplug.GetBackendForRefPlugin,
+	policies *PolicyIndex,
+) *UpstreamIndex {
 	return &UpstreamIndex{
 		policies:            policies,
 		availableUpstreams:  map[schema.GroupKind]krt.Collection[ir.Upstream]{},
@@ -70,7 +75,8 @@ func (ui *UpstreamIndex) Upstreams() []krt.Collection[ir.Upstream] {
 
 func (ui *UpstreamIndex) AddUpstreams(gk schema.GroupKind, col krt.Collection[ir.Upstream]) {
 	ucol := krt.NewCollection(col, func(kctx krt.HandlerContext, u ir.Upstream) *ir.Upstream {
-		u.AttachedPolicies = toAttachedPolicies(ui.policies.getTargetingPolicies(kctx, extensionsplug.UpstreamAttachmentPoint, u.ObjectSource, ""))
+		policies := ui.policies.getTargetingPolicies(kctx, extensionsplug.UpstreamAttachmentPoint, u.ObjectSource, "")
+		u.AttachedPolicies = toAttachedPolicies(policies)
 		return &u
 	}, ui.krtopts.ToOptions("")...)
 	ui.availableUpstreams[gk] = ucol
@@ -145,7 +151,12 @@ type GatewayIndex struct {
 	Gateways krt.Collection[ir.Gateway]
 }
 
-func NewGatewayIndex(krtopts krtutil.KrtOptions, isOurGw func(gw *gwv1.Gateway) bool, policies *PolicyIndex, gws krt.Collection[*gwv1.Gateway]) *GatewayIndex {
+func NewGatewayIndex(
+	krtopts krtutil.KrtOptions,
+	isOurGw func(gw *gwv1.Gateway) bool,
+	policies *PolicyIndex,
+	gws krt.Collection[*gwv1.Gateway],
+) *GatewayIndex {
 	h := &GatewayIndex{policies: policies}
 	h.Gateways = krt.NewCollection(gws, func(kctx krt.HandlerContext, i *gwv1.Gateway) *ir.Gateway {
 		if !isOurGw(i) {
@@ -200,6 +211,7 @@ type PolicyIndex struct {
 
 	hasSyncedFuncs []func() bool
 }
+type policyFetcherMap = map[schema.GroupKind]func(n string, ns string) ir.PolicyIR
 
 func (h *PolicyIndex) HasSynced() bool {
 	for _, f := range h.hasSyncedFuncs {
@@ -211,20 +223,23 @@ func (h *PolicyIndex) HasSynced() bool {
 }
 
 func NewPolicyIndex(krtopts krtutil.KrtOptions, contributesPolicies extensionsplug.ContributesPolicies) *PolicyIndex {
-
-	h := &PolicyIndex{policiesFetch: map[schema.GroupKind]func(n string, ns string) ir.PolicyIR{}}
+	h := &PolicyIndex{policiesFetch: policyFetcherMap{}}
 
 	var policycols []krt.Collection[ir.PolicyWrapper]
-	for gk, ext := range contributesPolicies {
-		if ext.Policies != nil {
-			policycols = append(policycols, ext.Policies)
-			h.hasSyncedFuncs = append(h.hasSyncedFuncs, ext.Policies.Synced().HasSynced)
+	for gk, plugin := range contributesPolicies {
+		if plugin.Policies != nil {
+			policycols = append(policycols, plugin.Policies)
+			h.hasSyncedFuncs = append(h.hasSyncedFuncs, plugin.Policies.Synced().HasSynced)
 		}
-		if ext.PoliciesFetch != nil {
-			h.policiesFetch[gk] = ext.PoliciesFetch
+		if plugin.PoliciesFetch != nil {
+			h.policiesFetch[gk] = plugin.PoliciesFetch
 		}
-		if ext.GlobalPolicies != nil {
-			h.globalPolicies = append(h.globalPolicies, globalPolicy{GroupKind: gk, ir: ext.GlobalPolicies, points: ext.AttachmentPoints()})
+		if plugin.GlobalPolicies != nil {
+			h.globalPolicies = append(h.globalPolicies, globalPolicy{
+				GroupKind: gk,
+				ir:        plugin.GlobalPolicies,
+				points:    plugin.AttachmentPoints(),
+			})
 		}
 	}
 
@@ -245,10 +260,13 @@ func NewPolicyIndex(krtopts krtutil.KrtOptions, contributesPolicies extensionspl
 
 // Attachment happens during collection creation (i.e. this file), and not translation. so these methods don't need to be public!
 // note: we may want to change that for global policies maybe.
-func (p *PolicyIndex) getTargetingPolicies(kctx krt.HandlerContext, pnt extensionsplug.AttachmentPoints, targetRef ir.ObjectSource, sectionName string) []ir.PolicyAtt {
-
+func (p *PolicyIndex) getTargetingPolicies(
+	kctx krt.HandlerContext,
+	pnt extensionsplug.AttachmentPoints,
+	targetRef ir.ObjectSource,
+	sectionName string,
+) []ir.PolicyAtt {
 	var ret []ir.PolicyAtt
-
 	for _, gp := range p.globalPolicies {
 		if gp.points.Has(pnt) {
 			if p := gp.ir(kctx, pnt); p != nil {
@@ -430,7 +448,14 @@ func (h *RoutesIndex) HasSynced() bool {
 	return h.httpRoutes.Synced().HasSynced() && h.routes.Synced().HasSynced() && h.policies.HasSynced() && h.upstreams.HasSynced() && h.refgrants.HasSynced()
 }
 
-func NewRoutesIndex(krtopts krtutil.KrtOptions, httproutes krt.Collection[*gwv1.HTTPRoute], tcproutes krt.Collection[*gwv1a2.TCPRoute], policies *PolicyIndex, upstreams *UpstreamIndex, refgrants *RefGrantIndex) *RoutesIndex {
+func NewRoutesIndex(
+	krtopts krtutil.KrtOptions,
+	httproutes krt.Collection[*gwv1.HTTPRoute],
+	tcproutes krt.Collection[*gwv1a2.TCPRoute],
+	policies *PolicyIndex,
+	upstreams *UpstreamIndex,
+	refgrants *RefGrantIndex,
+) *RoutesIndex {
 
 	h := &RoutesIndex{policies: policies, refgrants: refgrants, upstreams: upstreams}
 	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.Synced().HasSynced, tcproutes.Synced().HasSynced)

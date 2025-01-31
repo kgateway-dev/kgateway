@@ -1,6 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/solo-projects/issues/7286
-    resolvesIssue: false
-    description: >-
-      Changes endpointslice logging level to debug for transformK8sEndpoints() function.

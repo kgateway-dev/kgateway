@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
 
 	"k8s.io/client-go/rest"
 
@@ -17,11 +17,12 @@ import (
 	"strings"
 
 	"github.com/rotisserie/eris"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
 
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/skv2/pkg/multicluster/kubeconfig"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
 var _ PortForwarder = &apiPortForwarder{}
@@ -63,7 +64,7 @@ func (f *apiPortForwarder) Start(ctx context.Context, options ...retry.Option) e
 func (f *apiPortForwarder) startOnce(ctx context.Context) error {
 	logger := contextutils.LoggerFrom(ctx)
 
-	config, err := kubeconfig.GetRestConfigWithContext(f.properties.kubeConfig, f.properties.kubeContext, "")
+	config, err := GetRestConfigWithContext(f.properties.kubeConfig, f.properties.kubeContext, "")
 	if err != nil {
 		return err
 	}
@@ -197,4 +198,40 @@ func (f *apiPortForwarder) getPodName(ctx context.Context) (string, error) {
 	}
 
 	return "", eris.Errorf("Could not determine pod name for resourceType: %s", f.properties.resourceType)
+}
+
+// Fetch ClientConfig. If kubeConfigPath is not specified, retrieve the kubeconfig from environment in which this is invoked.
+// Override the API Server URL and current context if specified.
+func GetClientConfigWithContext(kubeConfigPath, kubeContext, apiServerUrl string) (clientcmd.ClientConfig, error) {
+
+	// default loading rules checks for KUBECONFIG env var
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	// also check recommended default kubeconfig file locations
+	loadingRules.Precedence = append(loadingRules.Precedence, clientcmd.RecommendedHomeFile)
+
+	// explicit path overrides all loading rules, will error if not found
+	if kubeConfigPath != "" {
+		loadingRules.ExplicitPath = kubeConfigPath
+	}
+
+	overrides := &clientcmd.ConfigOverrides{}
+	if kubeContext != "" {
+		overrides.CurrentContext = kubeContext
+	}
+	if apiServerUrl != "" {
+		overrides.ClusterInfo = clientcmdapi.Cluster{
+			Server: apiServerUrl,
+		}
+	}
+
+	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, overrides), nil
+}
+
+// Fetch rest.Config for environment in which this is invoked, override the API Server URL and current context if specified.
+func GetRestConfigWithContext(kubeConfigPath, kubeContext, apiServerUrl string) (*rest.Config, error) {
+	clientConfig, err := GetClientConfigWithContext(kubeConfigPath, kubeContext, apiServerUrl)
+	if err != nil {
+		return nil, err
+	}
+	return clientConfig.ClientConfig()
 }

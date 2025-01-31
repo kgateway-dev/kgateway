@@ -9,9 +9,10 @@ import (
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/onsi/gomega"
-	. "github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+
+	. "github.com/kgateway-dev/kgateway/projects/gateway2/proxy_syncer"
 )
 
 func mustAny(src proto.Message) *anypb.Any {

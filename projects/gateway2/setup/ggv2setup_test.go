@@ -21,7 +21,6 @@ import (
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	jsonpb "google.golang.org/protobuf/encoding/protojson"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,10 +30,6 @@ import (
 
 	discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/go-logr/zapr"
-	"github.com/solo-io/gloo/projects/gateway2/controller"
-	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
-	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
-	ggv2setup "github.com/solo-io/gloo/projects/gateway2/setup"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -46,10 +41,14 @@ import (
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/slices"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/yaml"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/controller"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/krtcollections"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/proxy_syncer"
+	ggv2setup "github.com/kgateway-dev/kgateway/projects/gateway2/setup"
 )
 
 func getAssetsDir(t *testing.T) string {
@@ -111,11 +110,16 @@ func init() {
 func TestScenarios(t *testing.T) {
 	proxy_syncer.UseDetailedUnmarshalling = true
 	writer.set(t)
-	os.Setenv("POD_NAMESPACE", "gwtest")
+
+	os.Setenv("POD_NAMESPACE", "gwtest") // TODO: is this still needed?
+	// set global settings env vars; current ggv2setup_tests all assume these are set to true
+	os.Setenv("KGW_ENABLEISTIOINTEGRATION", "true")
+	os.Setenv("KGW_ENABLEAUTOMTLS", "true")
+
 	testEnv := &envtest.Environment{
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "crds"),
-			filepath.Join("..", "..", "..", "install", "helm", "gloo", "crds"),
+			filepath.Join("..", "..", "..", "install", "helm", "kgateway", "crds"),
 			filepath.Join("testdata", "istiocrds"),
 		},
 		ErrorIfCRDPathMissing: true,
@@ -185,9 +189,7 @@ func TestScenarios(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		ggv2setup.StartGGv2WithConfig(ctx, setupOpts, cfg, builder, nil, nil,
-			types.NamespacedName{Name: "default", Namespace: "default"},
-		)
+		ggv2setup.StartGGv2WithConfig(ctx, setupOpts, cfg, builder, nil, nil)
 	}()
 	// give ggv2 time to initialize so we don't get
 	// "ggv2 not initialized" error
@@ -213,19 +215,27 @@ func TestScenarios(t *testing.T) {
 				// that we get test pollution.
 				// once we change it to only include the ones in the proxy, we can re-enable this
 				//				t.Parallel()
-				testScenario(t, ctx, setupOpts.KrtDebugger, snapCache, client, xdsPort, fullpath)
+				testScenario(t, ctx, setupOpts.KrtDebugger, client, xdsPort, fullpath)
 
 			})
 		}
 	}
 }
 
-func testScenario(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler,
-	snapCache cache.SnapshotCache, client istiokube.CLIClient, xdsPort int, f string) {
+func testScenario(
+	t *testing.T,
+	ctx context.Context,
+	kdbg *krt.DebugHandler,
+	client istiokube.CLIClient,
+	xdsPort int,
+	f string,
+) {
 	fext := filepath.Ext(f)
 	fpre := strings.TrimSuffix(f, fext)
-	fout := fpre + "-out" + fext
+	t.Logf("running scenario for test file: %s", f)
+
 	// read the out file
+	fout := fpre + "-out" + fext
 	write := false
 	ya, err := os.ReadFile(fout)
 	// if not exist
@@ -288,10 +298,8 @@ func testScenario(t *testing.T, ctx context.Context, kdbg *krt.DebugHandler,
 
 	dump := dumper.Dump(t, ctx)
 	if len(dump.Listeners) == 0 {
-		//		xdsDump := iosnapshot.GetXdsSnapshotDataFromCache(snapCache).MarshalJSONString()
 		j, _ := kdbg.MarshalJSON()
 		t.Logf("timed out waiting - krt state for test: %s %s", t.Name(), string(j))
-		//		t.Logf("timed out waiting - xds state for test: %s %s", t.Name(), xdsDump)
 		t.Fatalf("timed out waiting for listeners")
 	}
 	if write {
@@ -535,14 +543,16 @@ func (x *xdsDump) Compare(t *testing.T, other xdsDump) {
 	for _, c := range x.Clusters {
 		clusterset[c.Name] = c
 	}
-	for _, c := range other.Clusters {
-		otherc := clusterset[c.Name]
-		if otherc == nil {
-			t.Errorf("cluster %v not found", c.Name)
+	for _, otherc := range other.Clusters {
+		ourc := clusterset[otherc.Name]
+		if ourc == nil {
+			t.Errorf("cluster %v not found", otherc.Name)
 			continue
 		}
-		if !proto.Equal(c, otherc) {
-			t.Errorf("cluster %v not equal", c.Name)
+		if !proto.Equal(otherc, ourc) {
+			t.Errorf("cluster %v not equal", otherc.Name)
+			t.Errorf("got: %s", ourc.String())
+			t.Errorf("expected: %s", otherc.String())
 		}
 	}
 	listenerset := map[string]*envoylistener.Listener{}

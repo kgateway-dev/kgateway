@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Remove comments from template for ratelimit value, which is no longer present.

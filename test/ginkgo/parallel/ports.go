@@ -1,3 +1,5 @@
+//go:build ignore
+
 package parallel
 
 import (
@@ -100,9 +102,9 @@ func portInUseListen(proposedPort uint32) error {
 }
 
 var denyListPorts = map[uint32]struct{}{
-	// See gloo/pkg/servers/admin/server.go
-	// See https://github.com/solo-io/solo-projects/issues/7307 for more details
-	9095: {},
+	// See projects/gateway2/admin/server.go
+	// This port is reserved for the admin server
+	9097: {},
 }
 
 func portInDenyList(proposedPort uint32) error {

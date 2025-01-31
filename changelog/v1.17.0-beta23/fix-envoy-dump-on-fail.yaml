@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Fix a bug that caused Envoy dumps on failure to be incomplete.
-  - type: NON_USER_FACING
-    description: Fix a bug that caused kube dumps on failure to only include logs for one pod.

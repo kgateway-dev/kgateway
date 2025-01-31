@@ -5,12 +5,14 @@ import (
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	"github.com/solo-io/gloo/projects/gateway2/ir"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/solo-io/gloo/projects/gateway2/reports"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/reports"
 )
 
 type AttachmentPoints uint
@@ -52,16 +54,16 @@ type UpstreamPlugin struct {
 	Endpoints krt.Collection[ir.EndpointsForUpstream]
 }
 
-type K8sGwTranslator interface {
+type KGwTranslator interface {
 	// This function is called by the reconciler when a K8s Gateway resource is created or updated.
-	// It returns an instance of the k8sgateway Proxy resource, that should configure a target k8sgateway Proxy workload.
-	// A null return value indicates the K8s Gateway resource failed to translate into a k8sgateway Proxy. The error will be reported on the provided reporter.
+	// It returns an instance of the kgateway Proxy resource, that should configure a target kgateway Proxy workload.
+	// A null return value indicates the K8s Gateway resource failed to translate into a kgateway Proxy. The error will be reported on the provided reporter.
 	Translate(kctx krt.HandlerContext,
 		ctx context.Context,
 		gateway *ir.Gateway,
 		reporter reports.Reporter) *ir.GatewayIR
 }
-type GwTranslatorFactory func(gw *gwv1.Gateway) K8sGwTranslator
+type GwTranslatorFactory func(gw *gwv1.Gateway) KGwTranslator
 type ContributesPolicies map[schema.GroupKind]PolicyPlugin
 
 type Plugin struct {

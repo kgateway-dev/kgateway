@@ -1,3 +1,5 @@
+//go:build ignore
+
 package assertions
 
 import (
@@ -9,10 +11,10 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
-	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/pkg/utils/envoyutils/admincli"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/portforward"
+	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 )
 
 func (p *Provider) AssertEnvoyAdminApi(
@@ -33,7 +35,7 @@ func (p *Provider) AssertEnvoyAdminApi(
 		portForwarder.WaitForStop()
 	}()
 
-	// the port-forward returns before it completely starts up (https://github.com/solo-io/gloo/issues/9353),
+	// the port-forward returns before it completely starts up (https://github.com/kgateway-dev/kgateway/issues/9353),
 	// so as a workaround we try to keep dialing the address until it succeeds
 	p.Gomega.Eventually(func(g Gomega) {
 		_, err = net.Dial("tcp", portForwarder.Address())

@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/6732
-    description: Add note about recovering from last-applied-config error, and some other docs updates.

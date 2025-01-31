@@ -1,6 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/gloo/issues/3520
-    resolvesIssue: false
-    description: >-
-      Check the validity of Gloo Gateway License using `glooctl license validate --license-key <key>`. 

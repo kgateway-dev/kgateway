@@ -5,10 +5,11 @@ import (
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"go.uber.org/zap"
 	"istio.io/istio/pkg/kube/krt"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 )
 
 func prioritize(ep ir.EndpointsForUpstream) *envoy_config_endpoint_v3.ClusterLoadAssignment {
@@ -68,7 +69,10 @@ func (ie *PerClientEnvoyEndpoints) FetchEndpointsForClient(kctx krt.HandlerConte
 	return krt.Fetch(kctx, ie.endpoints, krt.FilterIndex(ie.index, ucc.ResourceName()))
 }
 
-func NewPerClientEnvoyEndpoints(logger *zap.Logger, krtopts krtutil.KrtOptions, uccs krt.Collection[ir.UniqlyConnectedClient],
+func NewPerClientEnvoyEndpoints(
+	logger *zap.Logger,
+	krtopts krtutil.KrtOptions,
+	uccs krt.Collection[ir.UniqlyConnectedClient],
 	glooEndpoints krt.Collection[ir.EndpointsForUpstream],
 	translateEndpoints func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, ep ir.EndpointsForUpstream) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64),
 ) PerClientEnvoyEndpoints {

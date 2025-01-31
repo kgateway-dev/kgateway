@@ -1,3 +1,5 @@
+//go:build ignore
+
 package example
 
 import (
@@ -6,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite

@@ -1,3 +1,5 @@
+//go:build ignore
+
 package test
 
 import (
@@ -9,18 +11,20 @@ import (
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/onsi/gomega/types"
-	glootestutils "github.com/solo-io/gloo/test/testutils"
 	v1 "k8s.io/api/admissionregistration/v1"
+
+	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	gloostringutils "github.com/solo-io/gloo/pkg/utils/stringutils"
 	"github.com/solo-io/go-utils/stringutils"
 	"github.com/solo-io/k8s-utils/installutils/kuberesource"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
+
+	gloostringutils "github.com/kgateway-dev/kgateway/pkg/utils/stringutils"
 )
 
 const (

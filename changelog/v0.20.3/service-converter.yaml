@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Use ServiceConverter interface to apply UseHttp2 option in UDS

@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >- 
-      Fixes broken ext-auth opa-auth options proto 
-

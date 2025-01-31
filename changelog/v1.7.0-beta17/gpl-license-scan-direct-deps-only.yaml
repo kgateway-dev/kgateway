@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >
-      GPL license scanning will now only scan direct dependencies of gloo edge.

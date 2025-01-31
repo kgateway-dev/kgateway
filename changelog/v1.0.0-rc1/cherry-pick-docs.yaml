@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Port recent docs updates from old docs repo.
-    issueLink: https://github.com/solo-io/gloo/issues/1444

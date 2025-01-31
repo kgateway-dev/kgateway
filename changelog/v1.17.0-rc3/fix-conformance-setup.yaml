@@ -1,8 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink:
-    resolvesIssue: false
-    description: >-
-      Select more specifically for determining pod subnet when setting up MetalLB for conformance tests
-      
-      skipCI-docs-build:true

@@ -12,12 +12,7 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	sologatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	sologatewayv1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
-	extauthkubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1/kube/apis/enterprise.gloo.solo.io/v1"
-	graphqlv1beta1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1/kube/apis/graphql.gloo.solo.io/v1beta1"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	ratelimitv1alpha1 "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
+	sologatewayv1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 )
 
 // SchemeBuilder contains all the Schemes for registering the CRDs with which Gloo Gateway interacts.
@@ -38,17 +33,14 @@ var SchemeBuilder = runtime.SchemeBuilder{
 	// Solo Kubernetes Gateway API resources
 	sologatewayv1alpha1.AddToScheme,
 
-	// Solo Edge Gateway API resources
-	sologatewayv1.AddToScheme,
-
 	// Solo Edge Gloo API resources
-	gloov1.AddToScheme,
+	// gloov1.AddToScheme,
 
 	// Enterprise Extensions
 	// These are packed in the OSS Helm Chart, and therefore we register the schemes here as well
-	graphqlv1beta1.AddToScheme,
-	extauthkubev1.AddToScheme,
-	ratelimitv1alpha1.AddToScheme,
+	// graphqlv1beta1.AddToScheme,
+	// extauthkubev1.AddToScheme,
+	// ratelimitv1alpha1.AddToScheme,
 }
 
 func AddToScheme(s *runtime.Scheme) error {
@@ -57,7 +49,7 @@ func AddToScheme(s *runtime.Scheme) error {
 
 // DefaultScheme returns a scheme with all the types registered for Gloo Gateway
 // We intentionally do not perform this operation in an init!!
-// See https://github.com/solo-io/gloo/pull/9692 for context
+// See https://github.com/kgateway-dev/kgateway/pull/9692 for context
 func DefaultScheme() *runtime.Scheme {
 	s := runtime.NewScheme()
 	_ = AddToScheme(s)

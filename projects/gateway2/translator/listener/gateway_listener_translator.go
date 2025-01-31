@@ -16,16 +16,17 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
-	"github.com/solo-io/gloo/projects/gateway2/ports"
-	"github.com/solo-io/gloo/projects/gateway2/query"
-	"github.com/solo-io/gloo/projects/gateway2/reports"
-	route "github.com/solo-io/gloo/projects/gateway2/translator/httproute"
-	"github.com/solo-io/gloo/projects/gateway2/translator/routeutils"
-	"github.com/solo-io/gloo/projects/gateway2/translator/sslutils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/krtcollections"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ports"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/query"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/reports"
+	route "github.com/kgateway-dev/kgateway/projects/gateway2/translator/httproute"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/translator/routeutils"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/translator/sslutils"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils"
 )
 
 // TranslateListeners translates the set of gloo listeners required to produce a full output proxy (either form one Gateway or multiple merged Gateways)
@@ -157,7 +158,6 @@ func (ml *MergedListeners) appendHttpsListener(
 		sniDomain:           listener.Hostname,
 		tls:                 listener.TLS,
 		routesWithHosts:     routesWithHosts,
-		queries:             ml.Queries,
 		attachedPolicies:    listener.AttachedPolicies,
 	}
 
@@ -573,7 +573,6 @@ type httpsFilterChain struct {
 	sniDomain           *gwv1.Hostname
 	tls                 *gwv1.GatewayTLSConfig
 	routesWithHosts     []*query.RouteInfo
-	queries             query.GatewayQueries
 	attachedPolicies    ir.AttachedPolicies
 }
 

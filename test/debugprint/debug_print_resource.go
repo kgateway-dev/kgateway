@@ -1,3 +1,5 @@
+//go:build ignore
+
 package debugprint
 
 import (
@@ -7,10 +9,11 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/onsi/ginkgo/v2"
-	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"sigs.k8s.io/yaml"
+
+	"github.com/kgateway-dev/kgateway/pkg/utils/protoutils"
 )
 
 func PrintYaml(ress ...proto.Message) {

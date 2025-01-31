@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Use klog shim to prevent klog from trying to write files

@@ -3,7 +3,8 @@ package curl_test
 import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
-	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
+
+	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
 
 	. "github.com/onsi/ginkgo/v2"
 )

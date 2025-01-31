@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: |
-      Disabling flaky test TestConfigureTCPRouteBackingDestinationsWithMultiServices
-    issueLink: https://github.com/solo-io/gloo/issues/10366
-    resolvesIssue: false

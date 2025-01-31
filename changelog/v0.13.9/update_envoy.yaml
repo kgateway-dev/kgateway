@@ -1,4 +1,0 @@
-changelog:
-  - type: FIX
-    description: Use updated envoy for upstream bug fix.
-    issueLink: https://github.com/solo-io/gloo/issues/635

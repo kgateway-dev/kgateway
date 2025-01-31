@@ -5,11 +5,11 @@ import (
 	envoy_config_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/structpb"
 
-	. "github.com/solo-io/gloo/projects/envoyinit/pkg/downward"
+	. "github.com/kgateway-dev/kgateway/projects/envoyinit/pkg/downward"
 )
 
 var _ = Describe("Transform", func() {

@@ -4,7 +4,7 @@ metadata:
   name: http-gw-for-test
   namespace: gwtest
 spec:
-  gatewayClassName: gloo-gateway
+  gatewayClassName: kgateway
   listeners:
   - protocol: HTTP
     port: 8080
@@ -75,7 +75,7 @@ spec:
         - name: reviews
           port: 8080
 ---
-apiVersion: gateway.gloo.solo.io/v1alpha1
+apiVersion: gateway.kgateway.dev/v1alpha1
 kind: ListenerPolicy
 metadata:
   name: buffer-limit

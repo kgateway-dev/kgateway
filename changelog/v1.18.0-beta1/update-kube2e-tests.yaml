@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Update how bugs report for gateway kube2e
-      Update all glooctl check tests to omit xds-metrics. This is a short term fix for nackdetector in solo-projects.
-      Add TODO to fix the underlying issue along with a link to a related envoy issue.

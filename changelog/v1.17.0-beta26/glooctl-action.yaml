@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/6029
-    resolvesIssue: false
-    description: >-
-      Migrate some glooctl tests to the new framework as a way of demonstrating how to use glooctl in tests.

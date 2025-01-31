@@ -1,10 +1,13 @@
+//go:build ignore
+
 package test
 
 import (
 	"fmt"
 
-	glootestutils "github.com/solo-io/gloo/test/testutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

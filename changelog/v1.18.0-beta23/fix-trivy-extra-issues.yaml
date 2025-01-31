@@ -1,6 +1,0 @@
-changelog:
-  - type: DEPENDENCY_BUMP
-    dependencyOwner: solo-io
-    dependencyRepo: go-utils
-    dependencyTag: 0.27.0
-    description: Bump go-utils to ensure security scans only open issues for releases with CVEs

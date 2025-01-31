@@ -1,23 +1,18 @@
 # Pull Requests
 
-This doc explains the best practices for submitting a pull request to the [Gloo Gateway project](https://github.com/solo-io/gloo).
+This doc explains the best practices for submitting a pull request to the [kgateway project](https://github.com/kgateway-dev/kgateway).
 It should serve as a reference for all contributors, and be useful especially useful to new and infrequent submitters.
+This document serves as a [kgateway](https://github.com/kgateway-dev/kgateway) repo extension of the [org-level contribution guidelines](https://github.com/kgateway-dev/community/blob/main/CONTRIBUTING.md)
+
+
 
 # Submission Process
 Merging a pull request requires the following steps to be completed before the pull request will be merged automatically.
-
 - [Open a pull request](https://help.github.com/articles/about-pull-requests/)
 - Pass all [automated tests](automation.md)
 - Get all necessary approvals from reviewers and code owners
 
-## Marking Unfinished Pull Requests
-If you want to solicit reviews before the implementation of your pull request is complete, there are a few methods to achieve this:
 
-1. Open a Draft PR. This will run the minimum set of tests, but not the Kubernetes e2e tests
-2. Remove the `Keep PR Updated` label. Automation on PRs will attempt to keep feature branches up to date with the target branch. Removing this label will prevent that and avoid CI running unnecessarily on branches that we know are not ready to merge.
-3. Add the `Work In Progress` label. This will allow all tests to run will prevent the PR from merging automatically, even when all tests are passing and there are two approving reviews.
-
-Even if you have followed these steps, it is good practice to add a `# WORK IN PROGRESS` section to the PR and outline the work that is still to be done.
 
 ## Best Practices for Pull Requests
 Below are some best practices we have found to help PRs get reviewed quickly
@@ -25,18 +20,13 @@ Below are some best practices we have found to help PRs get reviewed quickly
 ### Follow Project Conventions
 * [Coding conventions](conventions.md)
 
-### Include a Changelog Entry
-All PRs are required to contain a changelog entry. This is enforced by the [changelog bot](automation.md). If you do not include one, the first reviewer should ask for this.
-
-You can use the [changelog.sh script](/devel/tools#changelog-creation-tool) to generate a changelog template for submission.
-
 ### Smaller Is Better
 Small PRs are more likely to be reviewed quickly and thoroughly. If the PR takes **>45 minutes** to review, the review may be less thorough and more likely to miss something important.
 
 #### Use Commits to Tell the Story
 Having a series of discrete commits makes it easier to understand the idea of the PR, and break up the review into smaller chunks
 
-When PRs merge in Gloo Gateway, they are squashed into a single commit, so it is not necessary to squash your commits before merging.
+When PRs merge in kgateway, they are squashed into a single commit, so it is not necessary to squash your commits before merging.
 
 #### Avoid Squashing Previous Commits and Using Force Pushes
 This can make it difficult to understand the history of the PR, and can make it difficult to understand the changes in the future.
@@ -47,7 +37,7 @@ If you encounter cosmetic changes to the project that you wish to improve (e.g. 
 As always, use your judgment. A few small changes are fine, but if you find yourself making many changes to unrelated files, it is probably best to split them up.
 
 #### Gather Feedback Early
-If your changes are large, or you are unsure of the approach, it is best to gather feedback early. This can be done by opening a draft PR, or by asking for feedback in [Slack](https://slack.solo.io/).
+If your changes are large, or you are unsure of the approach, it is best to gather feedback early. This can be done by opening a draft PR, or by asking for feedback in [the CNCF slack channel](https://cloud-native.slack.com/archives/C080D3PJMS4) 
 
 ### Comments Matter More Over Time
 In your code, if someone might not understand why you did something, they definitely won't remember later. To avoid this, add comments to your code that express the *why*, since the code should express the *how*.

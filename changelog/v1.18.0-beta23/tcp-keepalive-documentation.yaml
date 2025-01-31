@@ -1,8 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/9656
-    resolvesIssue: false
-    description:
-      Improved documentation for TCP keepalive on downstream and upstream connections
-
-      skipCI-kube-tests:true

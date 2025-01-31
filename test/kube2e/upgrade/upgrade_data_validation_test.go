@@ -1,9 +1,11 @@
+//go:build ignore
+
 package upgrade_test
 
 import (
 	"time"
 
-	"github.com/solo-io/gloo/test/kube2e/helper"
+	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
 )
 
 // this package follows the current strategy in enterprise upgrade tests of using curl to test validity of traffic routing.

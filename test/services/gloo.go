@@ -1,14 +1,16 @@
+//go:build ignore
+
 package services
 
 import (
 	"context"
 	"fmt"
 
-	v1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
-	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	graphqlv1beta1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients/vault"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
+	v1alpha1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/solo/ratelimit"
+	extauthv1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	graphqlv1beta1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/bootstrap/clients/vault"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/xds"
 
 	"net"
 	"net/http"
@@ -17,7 +19,7 @@ import (
 
 	"github.com/hashicorp/consul/api"
 
-	"github.com/solo-io/gloo/test/ginkgo/parallel"
+	"github.com/kgateway-dev/kgateway/test/ginkgo/parallel"
 
 	"github.com/golang/protobuf/proto"
 
@@ -28,19 +30,19 @@ import (
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
-	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
+	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector/singlereplica"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/gloosnapshot"
 
-	"github.com/solo-io/gloo/pkg/utils/settingsutil"
+	"github.com/kgateway-dev/kgateway/pkg/utils/settingsutil"
 
-	"github.com/solo-io/gloo/pkg/utils/statusutils"
+	"github.com/kgateway-dev/kgateway/pkg/utils/statusutils"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/syncer/setup"
 
-	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
+	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/translator"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/upstreams/consul"
 
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -54,10 +56,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"google.golang.org/grpc"
+
+	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/bootstrap"
 
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.uber.org/zap"
@@ -67,10 +70,11 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	fds_syncer "github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
-	uds_syncer "github.com/solo-io/gloo/projects/discovery/pkg/uds/syncer"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"k8s.io/client-go/kubernetes"
+
+	fds_syncer "github.com/kgateway-dev/kgateway/projects/discovery/pkg/fds/syncer"
+	uds_syncer "github.com/kgateway-dev/kgateway/projects/discovery/pkg/uds/syncer"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 )
 
 var glooPortBase = uint32(30400)
@@ -209,7 +213,7 @@ func constructTestSettings(runOptions *RunOptions) *gloov1.Settings {
 		Gateway: &gloov1.GatewayOptions{
 			Validation: &gloov1.GatewayOptions_ValidationOptions{
 				// To validate transformations, we call out to an Envoy binary running in validate mode
-				// https://github.com/solo-io/gloo/blob/01d04751f72c168e304977c4f67fdbcbf30232a9/projects/gloo/pkg/bootstrap/bootstrap_validation.go#L28
+				// https://github.com/kgateway-dev/kgateway/blob/01d04751f72c168e304977c4f67fdbcbf30232a9/projects/gloo/pkg/bootstrap/bootstrap_validation.go#L28
 				// This binary is present in our CI/CD pipeline. But when running locally it is not, so we fallback to the Upstream Envoy binary
 				// which doesn't have the custom Solo.io types registered with the deserializer. Therefore, when running locally tests will fail,
 				// and the logs will contain:
@@ -378,10 +382,10 @@ func constructTestOpts(ctx context.Context, runOptions *RunOptions, settings *gl
 		GatewayControllerEnabled: settings.GetGateway().GetEnableGatewayController().GetValue(),
 		ValidationOpts:           validationOpts,
 		Identity:                 singlereplica.Identity(),
-		GlooGateway: bootstrap.GlooGateway{
+		GlooGateway:              bootstrap.GlooGateway{
 			// The K8s Gateway Integration depends on a functioning k8s cluster
-			// These tests are designed to be run in-memory, without a true cluster, so we disable the relevant controller
-			EnableK8sGatewayController: false,
+			// These tests are designed to be run in-memory, without a true cluster
+			// TODO: delete any tests that cannot run when k8s gw api is used
 		},
 	}
 }

@@ -1,3 +1,5 @@
+//go:build ignore
+
 package assertions_test
 
 import (

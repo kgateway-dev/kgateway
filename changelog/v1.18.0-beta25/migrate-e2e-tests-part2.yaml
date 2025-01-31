@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink:
-    description: >-
-      Remove kube2e/helm tests which are duplicated in our new e2e tests, and add a new test

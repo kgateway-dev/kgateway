@@ -1,6 +1,0 @@
-changelog:
-  - type: HELM
-    issueLink: https://github.com/solo-io/solo-projects/issues/6107
-    description: >-
-      Rename the kube gateway envoy container image helm value from `kubeGateway.gatewayParameters.glooGateway.image` to
-      `kubeGateway.gatewayParameters.glooGateway.envoyContainer.image`.

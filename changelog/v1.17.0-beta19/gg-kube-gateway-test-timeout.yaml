@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Increase the timeout for a curl request in the Gateway Kube Suite. We added retries to the curl
-      in https://github.com/solo-io/gloo/pull/9335, but forgot to increase the timeout of the entire request,
-      so the retries aren't being respected.

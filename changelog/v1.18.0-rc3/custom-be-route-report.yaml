@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Fix route report issues when we write multiple values
-      for a status, or when we're reporting for a custom backend
-      type.

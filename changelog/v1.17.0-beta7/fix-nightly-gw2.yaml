@@ -1,6 +1,0 @@
-changelog:
-- type: NON_USER_FACING  
-  description: >- 
-   Exclude gateway2 tests from nightly performance tests to avoid compilation failure.
-   skipCI-kube-tests:true
-   skipCI-docs-build:true

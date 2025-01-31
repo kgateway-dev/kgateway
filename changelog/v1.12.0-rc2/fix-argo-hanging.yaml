@@ -1,5 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/6729
-    resolvesIssue: false
-    description: Fix ArgoCD hanging on job during install/upgrade.

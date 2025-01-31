@@ -5,14 +5,21 @@ import (
 
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"go.uber.org/zap"
 	"istio.io/istio/pkg/kube/krt"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 )
 
-func snapshotPerClient(l *zap.Logger, krtopts krtutil.KrtOptions, uccCol krt.Collection[ir.UniqlyConnectedClient],
-	mostXdsSnapshots krt.Collection[GatewayXdsResources], endpoints PerClientEnvoyEndpoints, clusters PerClientEnvoyClusters) krt.Collection[XdsSnapWrapper] {
+func snapshotPerClient(
+	l *zap.Logger,
+	krtopts krtutil.KrtOptions,
+	uccCol krt.Collection[ir.UniqlyConnectedClient],
+	mostXdsSnapshots krt.Collection[GatewayXdsResources],
+	endpoints PerClientEnvoyEndpoints,
+	clusters PerClientEnvoyClusters,
+) krt.Collection[XdsSnapWrapper] {
 
 	xdsSnapshotsForUcc := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient) *XdsSnapWrapper {
 		maybeMostlySnap := krt.FetchOne(kctx, mostXdsSnapshots, krt.FilterKey(ucc.Role))

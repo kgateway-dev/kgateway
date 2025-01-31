@@ -1,5 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/solo-projects/issues/5695
-    description: >-
-      Added support for `settings.gloo.istioOptions.enableAutoMtls` to implement auto mTLS via Envoy transport_socket_match.

@@ -1,3 +1,5 @@
+//go:build ignore
+
 package e2e
 
 import (
@@ -11,14 +13,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/actions"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/assertions"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
-	testruntime "github.com/solo-io/gloo/test/kubernetes/testutils/runtime"
-	"github.com/solo-io/gloo/test/testutils"
+	"github.com/kgateway-dev/kgateway/test/helpers"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/actions"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/assertions"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/cluster"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/gloogateway"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/helper"
+	testruntime "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/runtime"
+	"github.com/kgateway-dev/kgateway/test/testutils"
 )
 
 // MustTestHelper returns the SoloTestHelper used for e2e tests

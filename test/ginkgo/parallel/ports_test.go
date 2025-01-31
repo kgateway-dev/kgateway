@@ -1,3 +1,5 @@
+//go:build ignore
+
 package parallel_test
 
 import (
@@ -7,7 +9,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/test/ginkgo/parallel"
+
+	"github.com/kgateway-dev/kgateway/test/ginkgo/parallel"
 )
 
 var _ = Describe("Ports", func() {

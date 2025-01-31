@@ -3,12 +3,13 @@
 package v1alpha1
 
 import (
-	internal "github.com/solo-io/gloo/projects/gateway2/api/applyconfiguration/internal"
-	apiv1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
+
+	internal "github.com/kgateway-dev/kgateway/projects/gateway2/api/applyconfiguration/internal"
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 )
 
 // ListenerPolicyApplyConfiguration represents a declarative configuration of the ListenerPolicy type for use
@@ -27,7 +28,7 @@ func ListenerPolicy(name, namespace string) *ListenerPolicyApplyConfiguration {
 	b.WithName(name)
 	b.WithNamespace(namespace)
 	b.WithKind("ListenerPolicy")
-	b.WithAPIVersion("gateway.gloo.solo.io/v1alpha1")
+	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b
 }
 
@@ -55,7 +56,7 @@ func ExtractListenerPolicyStatus(listenerPolicy *apiv1alpha1.ListenerPolicy, fie
 
 func extractListenerPolicy(listenerPolicy *apiv1alpha1.ListenerPolicy, fieldManager string, subresource string) (*ListenerPolicyApplyConfiguration, error) {
 	b := &ListenerPolicyApplyConfiguration{}
-	err := managedfields.ExtractInto(listenerPolicy, internal.Parser().Type("com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.ListenerPolicy"), fieldManager, b, subresource)
+	err := managedfields.ExtractInto(listenerPolicy, internal.Parser().Type("com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.ListenerPolicy"), fieldManager, b, subresource)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +64,7 @@ func extractListenerPolicy(listenerPolicy *apiv1alpha1.ListenerPolicy, fieldMana
 	b.WithNamespace(listenerPolicy.Namespace)
 
 	b.WithKind("ListenerPolicy")
-	b.WithAPIVersion("gateway.gloo.solo.io/v1alpha1")
+	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b, nil
 }
 

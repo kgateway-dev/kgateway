@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: update brew command to use native instead of tap

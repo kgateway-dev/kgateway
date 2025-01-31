@@ -1,5 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    description: Solves part of https://github.com/solo-io/gloo/issues/668 - allow configuration connection settings.
-    resolvesIssue: false
-    issueLink: https://github.com/solo-io/gloo/issues/668

@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//  GENERATED FILE -- DO NOT EDIT
+//  (PREVIOUSLY WAS A) GENERATED FILE -- DO NOT EDIT
 
 package filter_types
 
@@ -328,42 +328,10 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/ratelimit/service/ratelimit/v3"
 
 	// gloo filter types
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/annotations"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/cluster"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/route"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/common/mutation_rules/v3"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/listener/tls_cipher_inspector/v3"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/matching/custom_matchers/server_name/v3"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/matching/inputs/cipher_detection_input/v3"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/advanced_http"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/cache/grpc"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/extauth"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/ext_proc/v3"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/graphql/v2"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/jwt_authn/v3"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/wasm/v3"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/http_path"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/jwt"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/proxylatency"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation_ee"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformers/xslt"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/upstream_wait"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/waf"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/wasm/v3"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/xff_offset"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/service/ext_proc/v3"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/metadata/v3"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/tracing/v3"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
+	_ "github.com/solo-io/envoy-gloo/go/config/filter/http/aws_lambda/v2"
+	_ "github.com/solo-io/envoy-gloo/go/config/filter/http/nats/streaming/v2"
+	_ "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
+	_ "github.com/solo-io/envoy-gloo/go/config/filter/http/upstream_wait/v2"
+	_ "github.com/solo-io/envoy-gloo/go/config/transformer/aws_lambda/v2"
+	_ "github.com/solo-io/envoy-gloo/go/type/streaming"
 )

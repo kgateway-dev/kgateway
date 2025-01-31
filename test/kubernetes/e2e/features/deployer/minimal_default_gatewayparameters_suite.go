@@ -1,15 +1,18 @@
+//go:build ignore
+
 package deployer
 
 import (
 	"context"
 
-	testdefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	testdefaults "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 )
 
 var _ e2e.NewSuiteFunc = NewMinimalDefaultGatewayParametersTestingSuite

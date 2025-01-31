@@ -1,6 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/solo-projects/issues/5741
-    resolvesIssue: false
-    description: >-
-      Fix `glooctl check` to not rely on existence of proxy deployments when checking proxies.

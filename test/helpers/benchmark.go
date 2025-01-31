@@ -1,3 +1,5 @@
+//go:build ignore
+
 package helpers
 
 import (
@@ -6,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/gloo/test/testutils"
+	"github.com/kgateway-dev/kgateway/test/testutils"
 
 	"github.com/onsi/gomega/types"
 )

@@ -1,3 +1,5 @@
+//go:build ignore
+
 package transforms
 
 import (
@@ -7,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
 )
 
 const (

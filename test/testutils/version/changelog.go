@@ -1,3 +1,5 @@
+//go:build ignore
+
 package version
 
 import (
@@ -8,7 +10,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/solo-io/go-utils/changelogutils"
 	"github.com/solo-io/go-utils/versionutils"
-	"github.com/solo-io/skv2/codegen/util"
+
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 )
 
 // GetLastReleaseOfCurrentBranch returns the Version of the latest patch version for the current minor version
@@ -16,7 +19,7 @@ import (
 // Be aware, that while this has the benefit of not using an external API,
 // we may hit issues where a release failed and therefore the returned version is not actually published.
 func GetLastReleaseOfCurrentBranch() (*versionutils.Version, error) {
-	changelogDir := filepath.Join(util.GetModuleRoot(), "changelog")
+	changelogDir := filepath.Join(fsutils.GetModuleRoot(), "changelog")
 	directoryEntries, err := os.ReadDir(changelogDir)
 	if err != nil {
 		return nil, changelogutils.ReadChangelogDirError(err)

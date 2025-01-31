@@ -6,21 +6,11 @@ body:
     attributes:
       value: |
         **Note**: This is a public repo. Be sure to obscure or redact any sensitive information.
-  - type: dropdown
-    id: product
-    attributes:
-      label: Gloo Edge Product
-      description: Which Edge product are you using?
-      options:
-        - Open Source
-        - Enterprise
-    validations:
-      required: true
   - type: input
     id: version
     attributes:
-      label: Gloo Edge Version
-      description: What version of your product are you using? Please specify a specific patch version
+      label: kgateway version
+      description: What version of kgateway are you using? Please specify a specific patch version
       placeholder: eg v1.14.2
     validations:
       required: true
@@ -35,7 +25,7 @@ body:
     attributes:
       label: Describe the solution you'd like
       description: A clear and concise description of what you want to happen
-      placeholder: Ex. Gloo should automatically [...]
+      placeholder: Ex. kgateway should automatically [...]
   - type: textarea
     id: alternatives-details
     attributes:

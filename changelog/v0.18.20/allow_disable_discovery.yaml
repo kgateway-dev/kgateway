@@ -1,5 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    description: Allow disabling discovery deployment
-    issueLink: https://github.com/solo-io/gloo/issues/1026
-    resolvesIssue: false

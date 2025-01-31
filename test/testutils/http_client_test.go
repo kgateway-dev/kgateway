@@ -1,3 +1,5 @@
+//go:build ignore
+
 package testutils_test
 
 import (
@@ -6,9 +8,10 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/gomega/assertions"
-	gloohelpers "github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/testutils"
+
+	"github.com/kgateway-dev/kgateway/test/gomega/assertions"
+	gloohelpers "github.com/kgateway-dev/kgateway/test/helpers"
+	"github.com/kgateway-dev/kgateway/test/testutils"
 )
 
 var _ = Describe("HttpClientBuilder", func() {

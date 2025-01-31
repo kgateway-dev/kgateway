@@ -1,5 +1,0 @@
-changelog:
-  - type: FIX
-    resolvesIssue: false
-    issueLink: https://github.com/solo-io/gloo/issues/6041
-    description: Fix indentation with selector in discovery service

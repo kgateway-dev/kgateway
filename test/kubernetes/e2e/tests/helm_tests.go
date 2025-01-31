@@ -1,9 +1,11 @@
+//go:build ignore
+
 package tests
 
 import (
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/helm"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/helm_settings"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/helm"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/helm_settings"
 )
 
 func HelmSuiteRunner() e2e.SuiteRunner {

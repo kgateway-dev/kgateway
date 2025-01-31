@@ -12,9 +12,6 @@ on:
   # Day of the week ([0,6] with 0=Sunday)
   schedule:
     - cron: "0 5 * * *" # every day @ 05:00 UTC, run tests against latest main
-    - cron: "0 6 * * 1" # monday    @ 06:00 UTC, run expanded tests against v1.18.x
-    - cron: "0 7 * * 1" # monday    @ 07:00 UTC, run expanded tests against v1.17.x
-    - cron: "0 8 * * 1" # monday    @ 08:00 UTC, run expanded tests against v1.16.x
   workflow_dispatch:
     inputs:
       branch:
@@ -22,457 +19,35 @@ on:
         type: choice
         options:
           - main
-          - v1.18.x
-          - v1.17.x
-          - v1.16.x
           - workflow_initiating_branch
-      run-regression:
-        description: "Run regression tests"
-        type: boolean
-        default: false
-      run-performance:
-        description: "Run performance tests"
-        type: boolean
-        default: false
       run-conformance:
         description: "Run conformance tests"
         type: boolean
         default: false
-      run-kubernetes-end-to-end:
-        # Runs all tests in /tests/kubernetes/e2e/...
-        description: "Run Kubernetes e2e tests"
-        type: boolean
-        default: false
-      kubernetes-end-to-end-run-regex:
-        # The regex that will be passed to the go test -run invocation
-        # This allows users to run just the subset of tests that they care about
-        description: "Kubernetes e2e tests -run regex"
-        type: string
-        required: false
-        default: '^Test'
+      # run-regression:
+      #   description: "Run regression tests"
+      #   type: boolean
+      #   default: false
+      # run-performance:
+      #   description: "Run performance tests"
+      #   type: boolean
+      #   default: false
+      # run-kubernetes-end-to-end:
+      #   # Runs all tests in /tests/kubernetes/e2e/...
+      #   description: "Run Kubernetes e2e tests"
+      #   type: boolean
+      #   default: false
+      # kubernetes-end-to-end-run-regex:
+      #   # The regex that will be passed to the go test -run invocation
+      #   # This allows users to run just the subset of tests that they care about
+      #   description: "Kubernetes e2e tests -run regex"
+      #   type: string
+      #   required: false
+      #   default: '^Test'
 
+# TODO(tim): Add back in main branch tests once they're green.
+# TODO(tim): Evaluate whether we want to publish nightly results to Slack.
 jobs:
-  end_to_end_tests_on_demand:
-    name: End-to-End (branch=${{ github.ref_name }}, cluster=${{ matrix.test.cluster-name }}, version=${{ matrix.version-files.label }} )
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run-kubernetes-end-to-end && inputs.branch == 'workflow_initiating_branch' }}
-    runs-on: ubuntu-22.04
-    timeout-minutes: 180
-    strategy:
-      # Since we are running these on a schedule, there is no value in failing fast
-      # In fact, we want to ensure that all tests run, so that we have a clearer picture of which tests are prone to flaking
-      fail-fast: false
-      matrix:
-        test:
-          # When running the tests at night, there is no value in splitting the tests across multiple clusters and running them in parallel.
-          # As a result, we increase the threshold for the tests, since they all run serially on a single cluster
-          - cluster-name: 'cluster-one'
-            go-test-args: '-v -timeout=150m'
-            go-test-run-regex: ${{ inputs.kubernetes-end-to-end-run-regex }}
-        # In our nightly tests, we run the suite of tests using the lower and upper ends of versions that we claim to support
-        # The versions should mirror: https://docs.solo.io/gloo-edge/latest/reference/support/
-        version-files:
-          - label: 'min'
-            file: './.github/workflows/.env/nightly-tests/min_versions.env'
-          - label: 'max'
-            file: './.github/workflows/.env/nightly-tests/max_versions.env'
-
-    steps:
-      # Checkout the branch that initiated the action
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref_name }}
-      # The dotenv action is used to load key-value pairs from files.
-      # In this case, the file is specified in the matrix and will contain the versions of the tools to use
-      - name: Dotenv Action
-        uses: falti/dotenv-action@v1.1.4
-        id: dotenv
-        with:
-          path: ${{ matrix.version-files.file }}
-          log-variables: true
-      - name: Prep Go Runner
-        uses: ./.github/workflows/composite-actions/prep-go-runner
-      # Set up the KinD cluster that the tests will use
-      - id: setup-kind-cluster
-        name: Setup KinD Cluster
-        uses: ./.github/workflows/composite-actions/setup-kind-cluster
-        with:
-          cluster-name: ${{ matrix.test.cluster-name }}
-          kind-node-version: ${{ steps.dotenv.outputs.node_version }}
-          kind-version: ${{ steps.dotenv.outputs.kind_version }}
-          kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
-          helm-version: ${{ steps.dotenv.outputs.helm_version }}
-          istio-version: ${{ steps.dotenv.outputs.istio_version }}
-          k8sgateway-api-version: ${{ steps.dotenv.outputs.k8sgateway_api_version }}
-      # Run the tests
-      - id: run-tests
-        name: Run Kubernetes e2e Tests
-        uses: ./.github/workflows/composite-actions/kubernetes-e2e-tests
-        with:
-          cluster-name: ${{ matrix.test.cluster-name }}
-          test-args: ${{ matrix.test.go-test-args }}
-          run-regex: ${{ matrix.test.go-test-run-regex }}
-          istio-version: ${{ steps.dotenv.outputs.istio_version }}
-          matrix-label: ${{ matrix.version-files.label }}
-
-  end_to_end_tests_main:
-    name: End-to-End (branch=main, cluster=${{ matrix.test.cluster-name }}, version=${{ matrix.version-files.label }} )
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-kubernetes-end-to-end && inputs.branch == 'main') || github.event.schedule == '0 5 * * *' }}
-    runs-on: ubuntu-22.04
-    timeout-minutes: 180
-    strategy:
-      # Since we are running these on a schedule, there is no value in failing fast
-      # In fact, we want to ensure that all tests run, so that we have a clearer picture of which tests are prone to flaking
-      fail-fast: false
-      matrix:
-        test:
-          # When running the tests at night, there is no value in splitting the tests across multiple clusters and running them in parallel.
-          # As a result, we increase the threshold for the tests, since they all run serially on a single cluster
-          - cluster-name: 'cluster-one'
-            go-test-args: '-v -timeout=150m'
-            # Specifying an empty regex means all tests will be run.
-            go-test-run-regex: ""
-        # In our nightly tests, we run the suite of tests using the lower and upper ends of versions that we claim to support
-        # The versions should mirror: https://docs.solo.io/gloo-edge/latest/reference/support/
-        version-files:
-          - label: 'min'
-            file: './.github/workflows/.env/nightly-tests/min_versions.env'
-          - label: 'max'
-            file: './.github/workflows/.env/nightly-tests/max_versions.env'
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-      # The dotenv action is used to load key-value pairs from files.
-      # In this case, the file is specified in the matrix and will contain the versions of the tools to use
-      - name: Dotenv Action
-        uses: falti/dotenv-action@v1.1.4
-        id: dotenv
-        with:
-          path: ${{ matrix.version-files.file }}
-          log-variables: true
-      - name: Prep Go Runner
-        uses: ./.github/workflows/composite-actions/prep-go-runner
-      # Set up the KinD cluster that the tests will use
-      - id: setup-kind-cluster
-        name: Setup KinD Cluster
-        uses: ./.github/workflows/composite-actions/setup-kind-cluster
-        with:
-          cluster-name: ${{ matrix.test.cluster-name }}
-          kind-node-version: ${{ steps.dotenv.outputs.node_version }}
-          kind-version: ${{ steps.dotenv.outputs.kind_version }}
-          kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
-          helm-version: ${{ steps.dotenv.outputs.helm_version }}
-          istio-version: ${{ steps.dotenv.outputs.istio_version }}
-          k8sgateway-api-version: ${{ steps.dotenv.outputs.k8sgateway_api_version }}
-      # Run the tests
-      - id: run-tests
-        name: Run Kubernetes e2e Tests
-        uses: ./.github/workflows/composite-actions/kubernetes-e2e-tests
-        with:
-          cluster-name: ${{ matrix.test.cluster-name }}
-          test-args: ${{ matrix.test.go-test-args }}
-          run-regex: ${{ matrix.test.go-test-run-regex }}
-          istio-version: ${{ steps.dotenv.outputs.istio_version }}
-          matrix-label: ${{ matrix.version-files.label }}
-
-  # Reminder: when setting up the job next release branch, copy from "end_to_end_tests_main" not the previous release job as configuration may have changed
-  end_to_end_tests_18:
-    name: End-to-End (branch=v1.18.x, cluster=${{ matrix.test.cluster-name }}, version=${{ matrix.version-files.label }} )
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-kubernetes-end-to-end && inputs.branch == 'v1.18.x') || github.event.schedule == '0 6 * * 1' }}
-    runs-on: ubuntu-22.04
-    timeout-minutes: 180
-    strategy:
-      # Since we are running these on a schedule, there is no value in failing fast
-      # In fact, we want to ensure that all tests run, so that we have a clearer picture of which tests are prone to flaking
-      fail-fast: false
-      matrix:
-        test:
-          # When running the tests at night, there is no value in splitting the tests across multiple clusters and running them in parallel.
-          # As a result, we increase the threshold for the tests, since they all run serially on a single cluster
-          - cluster-name: 'cluster-one'
-            go-test-args: '-v -timeout=150m'
-            # Specifying an empty regex means all tests will be run.
-            go-test-run-regex: ""
-        # In our nightly tests, we run the suite of tests using the lower and upper ends of versions that we claim to support
-        # The versions should mirror: https://docs.solo.io/gloo-edge/latest/reference/support/
-        version-files:
-          - label: 'min'
-            file: './.github/workflows/.env/nightly-tests/min_versions.env'
-          - label: 'max'
-            file: './.github/workflows/.env/nightly-tests/max_versions.env'
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-      # The dotenv action is used to load key-value pairs from files.
-      # In this case, the file is specified in the matrix and will contain the versions of the tools to use
-      - name: Dotenv Action
-        uses: falti/dotenv-action@v1.1.4
-        id: dotenv
-        with:
-          path: ${{ matrix.version-files.file }}
-          log-variables: true
-      - name: Prep Go Runner
-        uses: ./.github/workflows/composite-actions/prep-go-runner
-      # Set up the KinD cluster that the tests will use
-      - id: setup-kind-cluster
-        name: Setup KinD Cluster
-        uses: ./.github/workflows/composite-actions/setup-kind-cluster
-        with:
-          cluster-name: ${{ matrix.test.cluster-name }}
-          kind-node-version: ${{ steps.dotenv.outputs.node_version }}
-          kind-version: ${{ steps.dotenv.outputs.kind_version }}
-          kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
-          helm-version: ${{ steps.dotenv.outputs.helm_version }}
-          istio-version: ${{ steps.dotenv.outputs.istio_version }}
-          k8sgateway-api-version: ${{ steps.dotenv.outputs.k8sgateway_api_version }}
-      # Run the tests
-      - id: run-tests
-        name: Run Kubernetes e2e Tests
-        uses: ./.github/workflows/composite-actions/kubernetes-e2e-tests
-        with:
-          cluster-name: ${{ matrix.test.cluster-name }}
-          test-args: ${{ matrix.test.go-test-args }}
-          run-regex: ${{ matrix.test.go-test-run-regex }}
-          istio-version: ${{ steps.dotenv.outputs.istio_version }}
-          matrix-label: ${{ matrix.version-files.label }}
-
-  end_to_end_tests_17:
-    name: End-to-End (branch=v1.17.x, cluster=${{ matrix.test.cluster-name }}, version=${{ matrix.version-files.label }} )
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-kubernetes-end-to-end && inputs.branch == 'v1.17.x') || github.event.schedule == '0 7 * * 1' }}
-    runs-on: ubuntu-22.04
-    timeout-minutes: 150
-    strategy:
-      # Since we are running these on a schedule, there is no value in failing fast
-      # In fact, we want to ensure that all tests run, so that we have a clearer picture of which tests are prone to flaking
-      fail-fast: false
-      matrix:
-        test:
-          # When running the tests at night, there is no value in splitting the tests across multiple clusters and running them in parallel.
-          # As a result, we increase the threshold for the tests, since they all run serially on a single cluster
-          - cluster-name: 'cluster-one'
-            go-test-args: '-v -timeout=120m'
-            # Specifying an empty regex means all tests will be run.
-            go-test-run-regex: ""
-        # In our nightly tests, we run the suite of tests using the lower and upper ends of versions that we claim to support
-        # The versions should mirror: https://docs.solo.io/gloo-edge/latest/reference/support/
-        version-files:
-          - label: 'min'
-            file: './.github/workflows/.env/nightly-tests/min_versions.env'
-          - label: 'max'
-            file: './.github/workflows/.env/nightly-tests/max_versions.env'
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: v1.17.x
-      # The dotenv action is used to load key-value pairs from files.
-      # In this case, the file is specified in the matrix and will contain the versions of the tools to use
-      - name: Dotenv Action
-        uses: falti/dotenv-action@v1.1.4
-        id: dotenv
-        with:
-          path: ${{ matrix.version-files.file }}
-          log-variables: true
-      - name: Prep Go Runner
-        uses: ./.github/workflows/composite-actions/prep-go-runner
-      # Set up the KinD cluster that the tests will use
-      - id: setup-kind-cluster
-        name: Setup KinD Cluster
-        uses: ./.github/workflows/composite-actions/setup-kind-cluster
-        with:
-          cluster-name: ${{ matrix.test.cluster-name }}
-          kind-node-version: ${{ steps.dotenv.outputs.node_version }}
-          kind-version: ${{ steps.dotenv.outputs.kind_version }}
-          kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
-          helm-version: ${{ steps.dotenv.outputs.helm_version }}
-          istio-version: ${{ steps.dotenv.outputs.istio_version }}
-      # Run the tests
-      - id: run-tests
-        name: Run Kubernetes e2e Tests
-        uses: ./.github/workflows/composite-actions/kubernetes-e2e-tests
-        with:
-          cluster-name: ${{ matrix.test.cluster-name }}
-          test-args: ${{ matrix.test.go-test-args }}
-          run-regex: ${{ matrix.test.go-test-run-regex }}
-          istio-version: ${{ steps.dotenv.outputs.istio_version }}
-          matrix-label: ${{ matrix.version-files.label }}
-
-  regression_tests_on_demand:
-    name: on demand regression tests
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run-regression && inputs.branch == 'workflow_initiating_branch' }}
-    runs-on: ubuntu-22.04
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        kube-e2e-test-type: ['gateway', 'gloo', 'upgrade']
-        kube-version: [ { node: 'v1.25.16@sha256:5da57dfc290ac3599e775e63b8b6c49c0c85d3fec771cd7d55b45fae14b38d3b', kubectl: 'v1.25.16', kind: 'v0.20.0', helm: 'v3.13.2' },
-                        { node: 'v1.31.0@sha256:53df588e04085fd41ae12de0c3fe4c72f7013bba32a20e7325357a1ac94ba865', kubectl: 'v1.31.0', kind: 'v0.24.0', helm: 'v3.14.4' }]
-        image-variant:
-          - standard
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        ref: ${{ github.ref_name }}
-    - uses: ./.github/workflows/composite-actions/regression-tests
-
-  regression_tests_main:
-    name: main regression tests
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression && inputs.branch == 'main') || github.event.schedule == '0 5 * * *' }}
-    runs-on: ubuntu-22.04
-    timeout-minutes: 60
-    # Previously, there was an environment variable, RELEASED_VERSION="LATEST" set.  This made use of some internal code:
-    #       https://github.com/solo-io/gloo/blob/main/test/kube2e/util.go#L229-L241
-    # which modified our testing process to pull the latest beta release.
-    #
-    # NOW, however, running this job is the same as normal CI.  (building a local chart, then using it)
-    strategy:
-      fail-fast: false
-      matrix:
-        # TODO:
-        #   As part of the end_to_end_tests_main job, we added support for importing versions from a .env file
-        #   We should extend the support/usage of those .env files to these other jobs.
-        #   The tests are currently in flux, and some of these regression tests are being migrated, so we decided
-        #   to limit the scope (and potentially unnecessary work) for now
-        kube-e2e-test-type: ['gateway', 'gloo', 'upgrade']
-        kube-version: [ { node: 'v1.27.3@sha256:3966ac761ae0136263ffdb6cfd4db23ef8a83cba8a463690e98317add2c9ba72', kubectl: 'v1.27.3', kind: 'v0.20.0', helm: 'v3.13.2' },
-                        { node: 'v1.31.0@sha256:53df588e04085fd41ae12de0c3fe4c72f7013bba32a20e7325357a1ac94ba865', kubectl: 'v1.31.0', kind: 'v0.24.0', helm: 'v3.14.4' }]
-        image-variant:
-          - standard
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        ref: main
-    - uses: ./.github/workflows/composite-actions/regression-tests
-
-  regression_tests_18:
-    name: v1.18.x regression tests
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression && inputs.branch == 'v1.18.x') || github.event.schedule == '0 6 * * 1' }}
-    runs-on: ubuntu-22.04
-    timeout-minutes: 60
-    # Previously, there was an environment variable, RELEASED_VERSION="LATEST" set.  This made use of some internal code:
-    #       https://github.com/solo-io/gloo/blob/main/test/kube2e/util.go#L229-L241
-    # which modified our testing process to pull the latest beta release.
-    #
-    # NOW, however, running this job is the same as normal CI.  (building a local chart, then using it)
-    strategy:
-      fail-fast: false
-      matrix:
-        # TODO:
-        #   As part of the end_to_end_tests_main job, we added support for importing versions from a .env file
-        #   We should extend the support/usage of those .env files to these other jobs.
-        #   The tests are currently in flux, and some of these regression tests are being migrated, so we decided
-        #   to limit the scope (and potentially unnecessary work) for now
-        kube-e2e-test-type: [ 'gateway', 'gloo', 'upgrade' ]
-        kube-version: [ { node: 'v1.27.3@sha256:3966ac761ae0136263ffdb6cfd4db23ef8a83cba8a463690e98317add2c9ba72', kubectl: 'v1.27.3', kind: 'v0.20.0', helm: 'v3.13.2' },
-                        { node: 'v1.31.0@sha256:53df588e04085fd41ae12de0c3fe4c72f7013bba32a20e7325357a1ac94ba865', kubectl: 'v1.31.0', kind: 'v0.24.0', helm: 'v3.14.4' } ]
-        image-variant:
-          - standard
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: v1.18.x
-      - uses: ./.github/workflows/composite-actions/regression-tests
-
-
-  regression_tests_17:
-    name: v1.17.x regression tests
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression && inputs.branch == 'v1.17.x') || github.event.schedule == '0 7 * * 1' }}
-    runs-on: ubuntu-22.04
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        # ingress are deprecated from 1.17. Ref: https://solo-io-corp.slack.com/archives/G01EERAK3KJ/p1716389614777799
-        kube-e2e-test-type: [ 'gateway', 'gloo', 'helm', 'upgrade' ]
-        kube-version: [ { node: 'v1.25.16@sha256:5da57dfc290ac3599e775e63b8b6c49c0c85d3fec771cd7d55b45fae14b38d3b', kubectl: 'v1.25.16', kind: 'v0.20.0', helm: 'v3.13.2' },
-                        { node: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245', kubectl: 'v1.29.2', kind: 'v0.20.0', helm: 'v3.14.4' } ]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: v1.17.x
-      - uses: ./.github/workflows/composite-actions/regression-tests
-
-  regression_tests_16:
-    name: v1.16.x regression tests
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression && inputs.branch == 'v1.16.x') || github.event.schedule == '0 8 * * 1' }}
-    runs-on: ubuntu-22.04
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade']
-        kube-version: [ { node: 'v1.25.16@sha256:5da57dfc290ac3599e775e63b8b6c49c0c85d3fec771cd7d55b45fae14b38d3b', kubectl: 'v1.25.16', kind: 'v0.20.0', helm: 'v3.13.2' },
-                        { node: 'v1.28.0@sha256:b7a4cad12c197af3ba43202d3efe03246b3f0793f162afb40a33c923952d5b31', kubectl: 'v1.28.4', kind: 'v0.20.0', helm: 'v3.14.4' }]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: v1.16.x
-      - uses: ./.github/workflows/composite-actions/regression-tests
-
-  performance_tests_on_demand:
-    name: on demand performance tests
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'workflow_initiating_branch' }}
-    runs-on: ubuntu-22.04
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref_name }}
-      - uses: ./.github/workflows/composite-actions/prep-go-runner
-      - uses: ./.github/workflows/composite-actions/performance-tests
-
-  performance_tests_main:
-    name: main performance tests
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'main') || github.event.schedule == '0 5 * * *' }}
-    runs-on: ubuntu-22.04
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-      - uses: ./.github/workflows/composite-actions/prep-go-runner
-      - uses: ./.github/workflows/composite-actions/performance-tests
-
-  performance_tests_18:
-    name: v1.18.x performance tests
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'v1.18.x') || github.event.schedule == '0 6 * * 1' }}
-    runs-on: ubuntu-22.04
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: v1.18.x
-      - uses: ./.github/workflows/composite-actions/prep-go-runner
-      - uses: ./.github/workflows/composite-actions/performance-tests
-
-  performance_tests_17:
-    name: v1.17.x performance tests
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'v1.17.x') || github.event.schedule == '0 7 * * 1' }}
-    runs-on: ubuntu-22.04
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: v1.17.x
-      - uses: ./.github/workflows/composite-actions/prep-go-runner
-      - uses: ./.github/workflows/composite-actions/performance-tests
-
-  performance_tests_16:
-    name: v1.16.x performance tests
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'v1.16.x') || github.event.schedule == '0 8 * * 1' }}
-    runs-on: ubuntu-22.04
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: v1.16.x
-      - uses: ./.github/workflows/composite-actions/prep-go-runner
-      - uses: ./.github/workflows/composite-actions/performance-tests
-
   kube_gateway_api_conformance_tests_main:
     name: Conformance (branch=main, type=Kubernetes Gateway API, version=${{matrix.kube-version.node}} )
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-conformance && inputs.branch == 'main') || github.event.schedule == '0 5 * * *' }}
@@ -489,106 +64,199 @@ jobs:
     - uses: actions/checkout@v4
       with:
         ref: main
-    - uses: ./.github/workflows/composite-actions/kube-gateway-api-conformance-tests
+    - uses: ./.github/actions/kube-gateway-api-conformance-tests
 
-  kube_gateway_api_conformance_tests_18:
-    name: Conformance (branch=v1.18.x, type=Kubernetes Gateway API, version=${{matrix.kube-version.node}} )
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-conformance && inputs.branch == 'v1.18.x') || github.event.schedule == '0 6 * * 1' }}
-    runs-on: ubuntu-22.04
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        kube-version: [ { node: 'v1.27.3@sha256:3966ac761ae0136263ffdb6cfd4db23ef8a83cba8a463690e98317add2c9ba72', kubectl: 'v1.27.3', kind: 'v0.20.0', helm: 'v3.13.2' },
-                        { node: 'v1.31.0@sha256:53df588e04085fd41ae12de0c3fe4c72f7013bba32a20e7325357a1ac94ba865', kubectl: 'v1.31.0', kind: 'v0.24.0', helm: 'v3.14.4' }]
-        image-variant:
-          - standard
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: v1.18.x
-      - uses: ./.github/workflows/composite-actions/kube-gateway-api-conformance-tests
+  # end_to_end_tests_on_demand:
+  #   name: End-to-End (branch=${{ github.ref_name }}, cluster=${{ matrix.test.cluster-name }}, version=${{ matrix.version-files.label }} )
+  #   if: ${{ github.event_name == 'workflow_dispatch' && inputs.run-kubernetes-end-to-end && inputs.branch == 'workflow_initiating_branch' }}
+  #   runs-on: ubuntu-22.04
+  #   timeout-minutes: 180
+  #   strategy:
+  #     # Since we are running these on a schedule, there is no value in failing fast
+  #     # In fact, we want to ensure that all tests run, so that we have a clearer picture of which tests are prone to flaking
+  #     fail-fast: false
+  #     matrix:
+  #       test:
+  #         # When running the tests at night, there is no value in splitting the tests across multiple clusters and running them in parallel.
+  #         # As a result, we increase the threshold for the tests, since they all run serially on a single cluster
+  #         - cluster-name: 'cluster-one'
+  #           go-test-args: '-v -timeout=150m'
+  #           go-test-run-regex: ${{ inputs.kubernetes-end-to-end-run-regex }}
+  #       # In our nightly tests, we run the suite of tests using the lower and upper ends of versions that we claim to support
+  #       # The versions should mirror: https://docs.solo.io/gloo-edge/latest/reference/support/
+  #       version-files:
+  #         - label: 'min'
+  #           file: './.github/workflows/.env/nightly-tests/min_versions.env'
+  #         - label: 'max'
+  #           file: './.github/workflows/.env/nightly-tests/max_versions.env'
+  #   steps:
+  #     # Checkout the branch that initiated the action
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         ref: ${{ github.ref_name }}
+  #     # The dotenv action is used to load key-value pairs from files.
+  #     # In this case, the file is specified in the matrix and will contain the versions of the tools to use
+  #     - name: Dotenv Action
+  #       uses: falti/dotenv-action@v1.1.4
+  #       id: dotenv
+  #       with:
+  #         path: ${{ matrix.version-files.file }}
+  #         log-variables: true
+  #     - name: Prep Go Runner
+  #       uses: ./.github/actions/prep-go-runner
+  #     # Set up the KinD cluster that the tests will use
+  #     - id: setup-kind-cluster
+  #       name: Setup KinD Cluster
+  #       uses: ./.github/actions/setup-kind-cluster
+  #       with:
+  #         cluster-name: ${{ matrix.test.cluster-name }}
+  #         kind-node-version: ${{ steps.dotenv.outputs.node_version }}
+  #         kind-version: ${{ steps.dotenv.outputs.kind_version }}
+  #         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
+  #         helm-version: ${{ steps.dotenv.outputs.helm_version }}
+  #         istio-version: ${{ steps.dotenv.outputs.istio_version }}
+  #         kgateway-api-version: ${{ steps.dotenv.outputs.kgateway_api_version }}
+  #     # Run the tests
+  #     - id: run-tests
+  #       name: Run Kubernetes e2e Tests
+  #       uses: ./.github/actions/kubernetes-e2e-tests
+  #       with:
+  #         cluster-name: ${{ matrix.test.cluster-name }}
+  #         test-args: ${{ matrix.test.go-test-args }}
+  #         run-regex: ${{ matrix.test.go-test-run-regex }}
+  #         istio-version: ${{ steps.dotenv.outputs.istio_version }}
+  #         matrix-label: ${{ matrix.version-files.label }}
 
+  # end_to_end_tests_main:
+  #   name: End-to-End (branch=main, cluster=${{ matrix.test.cluster-name }}, version=${{ matrix.version-files.label }} )
+  #   if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-kubernetes-end-to-end && inputs.branch == 'main') || github.event.schedule == '0 5 * * *' }}
+  #   runs-on: ubuntu-22.04
+  #   timeout-minutes: 180
+  #   strategy:
+  #     # Since we are running these on a schedule, there is no value in failing fast
+  #     # In fact, we want to ensure that all tests run, so that we have a clearer picture of which tests are prone to flaking
+  #     fail-fast: false
+  #     matrix:
+  #       test:
+  #         # When running the tests at night, there is no value in splitting the tests across multiple clusters and running them in parallel.
+  #         # As a result, we increase the threshold for the tests, since they all run serially on a single cluster
+  #         - cluster-name: 'cluster-one'
+  #           go-test-args: '-v -timeout=150m'
+  #           # Specifying an empty regex means all tests will be run.
+  #           go-test-run-regex: ""
+  #       # In our nightly tests, we run the suite of tests using the lower and upper ends of versions that we claim to support
+  #       # The versions should mirror: https://docs.solo.io/gloo-edge/latest/reference/support/
+  #       version-files:
+  #         - label: 'min'
+  #           file: './.github/workflows/.env/nightly-tests/min_versions.env'
+  #         - label: 'max'
+  #           file: './.github/workflows/.env/nightly-tests/max_versions.env'
 
-  kube_gateway_api_conformance_tests_17:
-    name: Conformance (branch=v1.17.x, type=Kubernetes Gateway API, version=${{matrix.kube-version.node}} )
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-conformance && inputs.branch == 'v1.17.x') || github.event.schedule == '0 7 * * 1' }}
-    runs-on: ubuntu-22.04
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        kube-version: [ { node: 'v1.25.16@sha256:5da57dfc290ac3599e775e63b8b6c49c0c85d3fec771cd7d55b45fae14b38d3b', kubectl: 'v1.25.16', kind: 'v0.20.0', helm: 'v3.13.2' },
-                        { node: 'v1.29.2@sha256:51a1434a5397193442f0be2a297b488b6c919ce8a3931be0ce822606ea5ca245', kubectl: 'v1.29.2', kind: 'v0.20.0', helm: 'v3.14.4' } ]
-        image-variant:
-          - standard
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: v1.17.x
-      - uses: ./.github/workflows/composite-actions/kube-gateway-api-conformance-tests
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         ref: main
+  #     # The dotenv action is used to load key-value pairs from files.
+  #     # In this case, the file is specified in the matrix and will contain the versions of the tools to use
+  #     - name: Dotenv Action
+  #       uses: falti/dotenv-action@v1.1.4
+  #       id: dotenv
+  #       with:
+  #         path: ${{ matrix.version-files.file }}
+  #         log-variables: true
+  #     - name: Prep Go Runner
+  #       uses: ./.github/actions/prep-go-runner
+  #     # Set up the KinD cluster that the tests will use
+  #     - id: setup-kind-cluster
+  #       name: Setup KinD Cluster
+  #       uses: ./.github/actions/setup-kind-cluster
+  #       with:
+  #         cluster-name: ${{ matrix.test.cluster-name }}
+  #         kind-node-version: ${{ steps.dotenv.outputs.node_version }}
+  #         kind-version: ${{ steps.dotenv.outputs.kind_version }}
+  #         kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
+  #         helm-version: ${{ steps.dotenv.outputs.helm_version }}
+  #         istio-version: ${{ steps.dotenv.outputs.istio_version }}
+  #         kgateway-api-version: ${{ steps.dotenv.outputs.kgateway_api_version }}
+  #     # Run the tests
+  #     - id: run-tests
+  #       name: Run Kubernetes e2e Tests
+  #       uses: ./.github/actions/kubernetes-e2e-tests
+  #       with:
+  #         cluster-name: ${{ matrix.test.cluster-name }}
+  #         test-args: ${{ matrix.test.go-test-args }}
+  #         run-regex: ${{ matrix.test.go-test-run-regex }}
+  #         istio-version: ${{ steps.dotenv.outputs.istio_version }}
+  #         matrix-label: ${{ matrix.version-files.label }}
 
-  publish_results:
-    runs-on: ubuntu-22.04
-    timeout-minutes: 5
-    if: ${{ always() }}
-    needs:
-      - end_to_end_tests_main
-      - end_to_end_tests_18
-      - end_to_end_tests_17
-      - regression_tests_main
-      - regression_tests_18
-      - regression_tests_17
-      - regression_tests_16
-      - performance_tests_main
-      - performance_tests_18
-      - performance_tests_17
-      - performance_tests_16
-      - kube_gateway_api_conformance_tests_main
-      - kube_gateway_api_conformance_tests_18
-      - kube_gateway_api_conformance_tests_17
-      - end_to_end_tests_on_demand
-      - regression_tests_on_demand
-      - performance_tests_on_demand
-    steps:
-      - uses: actions/checkout@v4
-      - name: compute-preamble
-        id: compute-preamble
-        shell: bash
-        run: |
-          echo "SLACK_CHANNEL=C04CJMXAH7A" >> $GITHUB_ENV     #edge-nightly-results by default
-          if [[ ${{github.event_name == 'workflow_dispatch'}} = true ]]; then
-            trigger="Gloo OSS Manual run"
-            branch=${{ inputs.branch }}
-            echo "SLACK_CHANNEL=C0314KESVNV" >> $GITHUB_ENV   #slack-integration-testing if manually run
-          elif [[ ${{github.event.schedule == '0 5 * * *'}} = true ]]; then
-            trigger="Gloo OSS nightlies"
-            branch="main"
-          elif [[ ${{github.event.schedule == '0 6 * * 1'}} = true ]]; then
-            trigger="Gloo OSS weeklies"
-            branch="v1.18.x"
-          elif [[ ${{github.event.schedule == '0 7 * * 1'}} = true ]]; then
-            trigger="Gloo OSS weeklies"
-            branch="v1.17.x"
-          elif [[ ${{github.event.schedule == '0 8 * * 1'}} = true ]]; then
-            trigger="Gloo OSS nightlies"
-            branch="v1.16.x"
-          fi
-          preamble="$trigger ($branch)"
-          echo "Setting PREAMBLE as $preamble"
-          echo "preamble=$preamble" >> $GITHUB_OUTPUT
-      - uses: actions/setup-go@v5
-        with:
-          # Caching in setup-go is on by default
-          # In our prep-go-runner we use a more configurable cache https://github.com/actions/cache
-          # In this step, we don't need to store a new cache entry because it runs infrequently and
-          # will pollute the cache entries
-          cache: false
-          go-version-file: go.mod
-      - name: Send Slack Message
-        env:
-          PARENT_JOB_URL: https://github.com/k8sgateway/k8sgateway/actions/runs/${{github.run_id}} # parent job hyperlink
-          PREAMBLE: ${{ steps.compute-preamble.outputs.preamble }}  # text to hyperlink at start of slack message
-          SLACKBOT_BEARER: ${{ secrets.SLACKBOT_BEARER }}
-        run: |
-          go run .github/workflows/helpers/notify/slack.go '${{ toJSON(needs) }}'
+  # regression_tests_on_demand:
+  #   name: on demand regression tests
+  #   if: ${{ github.event_name == 'workflow_dispatch' && inputs.run-regression && inputs.branch == 'workflow_initiating_branch' }}
+  #   runs-on: ubuntu-22.04
+  #   timeout-minutes: 60
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       kube-e2e-test-type: ['gateway', 'gloo', 'upgrade']
+  #       kube-version: [ { node: 'v1.25.16@sha256:5da57dfc290ac3599e775e63b8b6c49c0c85d3fec771cd7d55b45fae14b38d3b', kubectl: 'v1.25.16', kind: 'v0.20.0', helm: 'v3.13.2' },
+  #                       { node: 'v1.31.0@sha256:53df588e04085fd41ae12de0c3fe4c72f7013bba32a20e7325357a1ac94ba865', kubectl: 'v1.31.0', kind: 'v0.24.0', helm: 'v3.14.4' }]
+  #       image-variant:
+  #         - standard
+  #   steps:
+  #   - uses: actions/checkout@v4
+  #     with:
+  #       ref: ${{ github.ref_name }}
+  #   - uses: ./.github/actions/regression-tests
+
+  # regression_tests_main:
+  #   name: main regression tests
+  #   if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression && inputs.branch == 'main') || github.event.schedule == '0 5 * * *' }}
+  #   runs-on: ubuntu-22.04
+  #   timeout-minutes: 60
+  #   # Previously, there was an environment variable, RELEASED_VERSION="LATEST" set.  This made use of some internal code:
+  #   #       https://github.com/kgateway-dev/kgateway/blob/main/test/kube2e/util.go#L229-L241
+  #   # which modified our testing process to pull the latest beta release.
+  #   #
+  #   # NOW, however, running this job is the same as normal CI.  (building a local chart, then using it)
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       # TODO:
+  #       #   As part of the end_to_end_tests_main job, we added support for importing versions from a .env file
+  #       #   We should extend the support/usage of those .env files to these other jobs.
+  #       #   The tests are currently in flux, and some of these regression tests are being migrated, so we decided
+  #       #   to limit the scope (and potentially unnecessary work) for now
+  #       kube-e2e-test-type: ['gateway', 'gloo', 'upgrade']
+  #       kube-version: [ { node: 'v1.27.3@sha256:3966ac761ae0136263ffdb6cfd4db23ef8a83cba8a463690e98317add2c9ba72', kubectl: 'v1.27.3', kind: 'v0.20.0', helm: 'v3.13.2' },
+  #                       { node: 'v1.31.0@sha256:53df588e04085fd41ae12de0c3fe4c72f7013bba32a20e7325357a1ac94ba865', kubectl: 'v1.31.0', kind: 'v0.24.0', helm: 'v3.14.4' }]
+  #       image-variant:
+  #         - standard
+  #   steps:
+  #   - uses: actions/checkout@v4
+  #     with:
+  #       ref: main
+  #   - uses: ./.github/actions/regression-tests
+
+  # performance_tests_on_demand:
+  #   name: on demand performance tests
+  #   if: ${{ github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'workflow_initiating_branch' }}
+  #   runs-on: ubuntu-22.04
+  #   timeout-minutes: 60
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         ref: ${{ github.ref_name }}
+  #     - uses: ./.github/actions/prep-go-runner
+  #     - uses: ./.github/actions/performance-tests
+
+  # performance_tests_main:
+  #   name: main performance tests
+  #   if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'main') || github.event.schedule == '0 5 * * *' }}
+  #   runs-on: ubuntu-22.04
+  #   timeout-minutes: 60
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         ref: main
+  #     - uses: ./.github/actions/prep-go-runner
+  #     - uses: ./.github/actions/performance-tests

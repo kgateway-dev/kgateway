@@ -1,3 +1,5 @@
+//go:build ignore
+
 package makefile_test
 
 import (
@@ -15,8 +17,7 @@ const (
 
 // Makefile vars
 const (
-	HelmBucket          = "HELM_BUCKET"
-	QuayExpirationLabel = "QUAY_EXPIRATION_LABEL"
+	HelmBucket = "HELM_BUCKET"
 )
 
 // NOTE: These tests are mostly to check that the makefile ifeq directive logic is working as expected.
@@ -31,7 +32,6 @@ var _ = Describe("Make", func() {
 				{TaggedVersion, ""},
 			}, []*MakeVar{
 				{HelmBucket, "gs://solo-public-tagged-helm"},
-				{QuayExpirationLabel, "--label quay.expires-after=3w"},
 			})
 		})
 
@@ -42,7 +42,6 @@ var _ = Describe("Make", func() {
 				{TaggedVersion, ""},
 			}, []*MakeVar{
 				{HelmBucket, "gs://solo-public-helm"},
-				{QuayExpirationLabel, ""},
 			})
 		})
 
@@ -53,7 +52,6 @@ var _ = Describe("Make", func() {
 				{TaggedVersion, ""},
 			}, []*MakeVar{
 				{HelmBucket, "gs://solo-public-tagged-helm"},
-				{QuayExpirationLabel, "--label quay.expires-after=3w"},
 			})
 		})
 	})

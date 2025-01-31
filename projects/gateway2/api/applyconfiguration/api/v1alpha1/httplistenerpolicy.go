@@ -3,12 +3,13 @@
 package v1alpha1
 
 import (
-	internal "github.com/solo-io/gloo/projects/gateway2/api/applyconfiguration/internal"
-	apiv1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
+
+	internal "github.com/kgateway-dev/kgateway/projects/gateway2/api/applyconfiguration/internal"
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 )
 
 // HttpListenerPolicyApplyConfiguration represents a declarative configuration of the HttpListenerPolicy type for use
@@ -27,7 +28,7 @@ func HttpListenerPolicy(name, namespace string) *HttpListenerPolicyApplyConfigur
 	b.WithName(name)
 	b.WithNamespace(namespace)
 	b.WithKind("HttpListenerPolicy")
-	b.WithAPIVersion("gateway.gloo.solo.io/v1alpha1")
+	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b
 }
 
@@ -55,7 +56,7 @@ func ExtractHttpListenerPolicyStatus(httpListenerPolicy *apiv1alpha1.HttpListene
 
 func extractHttpListenerPolicy(httpListenerPolicy *apiv1alpha1.HttpListenerPolicy, fieldManager string, subresource string) (*HttpListenerPolicyApplyConfiguration, error) {
 	b := &HttpListenerPolicyApplyConfiguration{}
-	err := managedfields.ExtractInto(httpListenerPolicy, internal.Parser().Type("com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.HttpListenerPolicy"), fieldManager, b, subresource)
+	err := managedfields.ExtractInto(httpListenerPolicy, internal.Parser().Type("com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.HttpListenerPolicy"), fieldManager, b, subresource)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +64,7 @@ func extractHttpListenerPolicy(httpListenerPolicy *apiv1alpha1.HttpListenerPolic
 	b.WithNamespace(httpListenerPolicy.Namespace)
 
 	b.WithKind("HttpListenerPolicy")
-	b.WithAPIVersion("gateway.gloo.solo.io/v1alpha1")
+	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b, nil
 }
 

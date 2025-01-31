@@ -1,6 +1,8 @@
+//go:build ignore
+
 package helpers
 
-import v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+import v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 
 // EndpointBuilder contains options for building Endpoints to be included in scaled Snapshots
 // there are no options currently configurable for the endpointBuilder

@@ -1,9 +1,0 @@
-# Gloo Plugins
-
-This directory defines the plugins that Gloo uses for configuration translation.
-
-To implement a new plugin, create a new struct that implements the `Plugin` [interface](https://github.com/solo-io/gloo/blob/d895f83cf01011e89702975dcc12dff1eb6f8986/projects/gloo/pkg/plugins/plugins.go#L18), and add it to the [registry](https://github.com/solo-io/gloo/blob/d895f83cf01011e89702975dcc12dff1eb6f8986/projects/gloo/pkg/plugins/registry/registry.go#L71).
-
-There are several [types of plugins](https://github.com/solo-io/gloo/blob/d895f83cf01011e89702975dcc12dff1eb6f8986/projects/gloo/pkg/plugins/registry/registry.go#L139). Plugins declare their types in their definition (see [gzip](https://github.com/solo-io/gloo/blob/d895f83cf01011e89702975dcc12dff1eb6f8986/projects/gloo/pkg/plugins/gzip/plugin.go#L15-L18) for an example, which declares itself to be an `HttpFilterPlugin`, or [csrf](https://github.com/solo-io/gloo/blob/d895f83cf01011e89702975dcc12dff1eb6f8986/projects/gloo/pkg/plugins/csrf/plugin.go#L21-L25), which declares itself to be several types of plugins). Note that because of this, the plugin type does not need to be specified when it is added to the registry; rather, the plugin registry iterates through all plugins and determines their types dynamically and adds them accordingly to the group of plugins by that type. Naturally, each time a plugin is declared to be of a certain type, it must implement the requisite interfaces to be associated as that plugin's type. These interface types are also defined in [plugins.go](https://github.com/solo-io/gloo/blob/d895f83cf01011e89702975dcc12dff1eb6f8986/projects/gloo/pkg/plugins/plugins.go#L86-L182).
-
-This architecture defines how Gloo is able to extensibly implement support for several types of Gateway proxy settings (Virtual Hosts, Http Filters, Upstreams, etc.) while separating their translation implementations from the control plane's core logic.

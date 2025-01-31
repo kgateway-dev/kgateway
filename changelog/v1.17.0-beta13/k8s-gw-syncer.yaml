@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Ensure the xDS syncer of the k8s gateway integration correctly updates Proxy entries in the in-memory cache

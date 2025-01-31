@@ -1,8 +1,0 @@
-changelog:
-- type: NON_USER_FACING  
-  description: >- 
-    Removes references to WebAssembly Hub and `wasme` CLI.
-    Updates the old WAH image to one stored in GCR.
-    skipCI-kube-tests:true
-  issueLink: https://github.com/solo-io/doctopus/issues/79
-  resolvesIssue: false

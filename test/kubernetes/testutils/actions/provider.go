@@ -1,11 +1,13 @@
+//go:build ignore
+
 package actions
 
 import (
-	"github.com/solo-io/gloo/pkg/utils/helmutils"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
+	"github.com/kgateway-dev/kgateway/pkg/utils/helmutils"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
+	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/testutils"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/cluster"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/gloogateway"
 )
 
 // Provider is the entity that creates actions.

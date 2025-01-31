@@ -1,3 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: Rename validation service request and response objects to be more in line with the convention.

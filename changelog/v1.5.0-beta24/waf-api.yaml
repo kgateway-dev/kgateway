@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: APIs to skip body processing in WAF.
-    

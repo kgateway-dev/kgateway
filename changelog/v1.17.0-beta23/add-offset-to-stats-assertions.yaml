@@ -1,6 +1,0 @@
-changelog:
-- type: NON_USER_FACING  
-  description: >- 
-    Update ExpectStatLastValueMatches and ExpectStatSumMatches stats assertions to use `GinkgoHelper()` instead of Offsets.
-    Adjust a timeout in the secret deletion gateway test
-  resolvesIssue: false

@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    resolvesIssue: false
-    description: Fixing typo to kick off 1.16 build. 
-    skipCI-kube-tests: true

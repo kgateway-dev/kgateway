@@ -6,8 +6,8 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-// +kubebuilder:rbac:groups=gateway.gloo.solo.io,resources=upstreams,verbs=get;list;watch
-// +kubebuilder:rbac:groups=gateway.gloo.solo.io,resources=upstreams/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=upstreams,verbs=get;list;watch
+// +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=upstreams/status,verbs=get;update;patch
 
 // +genclient
 // +kubebuilder:object:root=true

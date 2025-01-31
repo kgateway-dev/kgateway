@@ -1,8 +1,0 @@
-gateway:
-  persistProxySpec: false
-  validation:
-    allowWarnings: true
-    alwaysAcceptResources: true
-    # this is needed to run the ServerTls tests which verify that with this setting, we 
-    # will not bring down an entire https gateway from a missing tls secret
-    warnMissingTlsSecret: true

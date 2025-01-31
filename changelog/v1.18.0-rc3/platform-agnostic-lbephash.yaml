@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Don't use native endian-ness when generating hashes.
-      This creates difficulty reproducing tests on different machines
-      where the hashes end up in goldenfiles.

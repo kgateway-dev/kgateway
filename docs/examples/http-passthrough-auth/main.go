@@ -1,7 +1,7 @@
 package main
 
 import (
-	v1 "github.com/solo-io/gloo/examples/http-passthrough-auth/pkg/auth/v1"
+	v1 "github.com/kgateway-dev/kgateway/examples/http-passthrough-auth/pkg/auth/v1"
 )
 
 func main() {

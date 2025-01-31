@@ -1,6 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/solo-projects/issues/6029
-    resolvesIssue: false
-    description: >-
-      Refactor our TestInstallation to make it more re-usable with Portal E2E tests.

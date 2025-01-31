@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/9390
-    resolvesIssue: false
-    description: >-
-      Attempt to resolve a data race, by re-using the same client (and output receiver)
-      instead of recreating it each time

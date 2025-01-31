@@ -1,3 +1,5 @@
+//go:build ignore
+
 package helpers
 
 import (
@@ -21,7 +23,7 @@ import (
 // If your tests fail for other reasons, and this leak detector is running, there may be Goroutines that
 // were not cleaned up by the test due to the failure.
 //
-// NOTE TO DEVS: We would like to extend the usage of this across more test suites: https://github.com/solo-io/gloo/issues/7147
+// NOTE TO DEVS: We would like to extend the usage of this across more test suites: https://github.com/kgateway-dev/kgateway/issues/7147
 func DeferredGoroutineLeakDetector(t *testing.T) func(...goleak.Option) {
 	leakOptions := []goleak.Option{
 		goleak.IgnoreCurrent(),

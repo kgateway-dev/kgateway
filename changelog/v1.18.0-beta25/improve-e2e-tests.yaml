@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/6047
-    resolvesIssue: false
-    description: >-
-      Update deployer tests to introduce test cases that were previously defined in GG Enterprise.
-      Enabled tests which previously were disabled in CI.

@@ -1,9 +1,11 @@
+//go:build ignore
+
 package envoy
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 
-	"github.com/solo-io/gloo/test/ginkgo/parallel"
+	"github.com/kgateway-dev/kgateway/test/ginkgo/parallel"
 )
 
 var (

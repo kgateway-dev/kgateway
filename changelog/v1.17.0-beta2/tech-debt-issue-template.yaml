@@ -1,7 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: >-
-    Add issue template for tracking tech debt and code improvement
-    skipCI-kube-tests:true
-    skipCI-docs-build:true
-

@@ -1,6 +1,0 @@
-changelog:
-- type: FIX
-  issueLink: https://github.com/solo-io/solo-projects/issues/7082
-  resolvesIssue: false
-  description: Fixes a bug where gloo segfaults if resources are applied to a unwatched namespace.
-

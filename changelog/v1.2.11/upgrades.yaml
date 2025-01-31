@@ -1,4 +1,0 @@
-changelog:
-- type: FIX
-  description: Make the code around upgrade configs more defensive
-  issueLink: https://github.com/solo-io/gloo/issues/1979

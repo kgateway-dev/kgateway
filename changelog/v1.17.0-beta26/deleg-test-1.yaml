@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/6121
-    resolvesIssue: false
-    description: |
-      - Report unresolved reference in status when parent route can't resolve to a child route.
-      - Add tests for unresolved reference status reporting and scenario where a child route is invalid in the context of a parent route delegating to it but is valid when it attaches to a Gateway.

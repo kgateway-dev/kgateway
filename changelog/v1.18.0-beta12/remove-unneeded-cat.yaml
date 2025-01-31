@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Remove unneeded cat calls from our docs
-
-      skipCI-kube-tests:true

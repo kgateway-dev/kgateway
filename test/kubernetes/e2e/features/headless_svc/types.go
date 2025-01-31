@@ -1,3 +1,5 @@
+//go:build ignore
+
 package headless_svc
 
 import (
@@ -8,8 +10,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
-	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
+	testmatchers "github.com/kgateway-dev/kgateway/test/gomega/matchers"
 )
 
 var (

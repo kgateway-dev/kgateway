@@ -1,4 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: Fixes the flaky TestMatchLabels that could be caused by not removing the label on a namespace after the test.
-

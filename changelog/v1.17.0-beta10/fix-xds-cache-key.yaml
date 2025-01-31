@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Fix the node_hash implementation so that non-proxy workloads (such as ext-auth-service and rate-limit-service)
-      ask for a cache key that is not prefixed with the custom proxy prefix. Without this fix, Enterprise services
-      could not communicate with the Control Plane to pick up configuration.

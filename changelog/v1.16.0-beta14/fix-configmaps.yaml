@@ -1,6 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/8392
-    resolvesIssue: true
-    description: This ensures that a new deployment is rolled if the configmap it references changes. This is done by adding a `checksum/<configmap-name>` annotation on any deployment that uses a configmap as a container volume.
-

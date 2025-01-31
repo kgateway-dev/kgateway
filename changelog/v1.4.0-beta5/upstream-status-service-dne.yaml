@@ -1,4 +1,0 @@
-changelog:
-  - type: FIX
-    description: Fix upstream status to report when an upstream points to a service that does not exist.
-    issueLink: https://github.com/solo-io/gloo/issues/2660

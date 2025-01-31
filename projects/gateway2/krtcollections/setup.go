@@ -9,15 +9,16 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 
-	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
-	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"istio.io/istio/pkg/config/schema/gvk"
 	"istio.io/istio/pkg/config/schema/gvr"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+
+	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 )
 
 func registerTypes() {
@@ -53,13 +54,32 @@ func registerTypes() {
 	)
 }
 
-func initCollectionsWithGateways(ctx context.Context,
+func InitCollections(
+	ctx context.Context,
+	extensions extensionsplug.Plugin,
+	istioClient kube.Client,
+	isOurGw func(gw *gwv1.Gateway) bool,
+	refgrants *RefGrantIndex,
+	krtopts krtutil.KrtOptions,
+) (*GatewayIndex, *RoutesIndex, krt.Collection[ir.Upstream], krt.Collection[ir.EndpointsForUpstream]) {
+	registerTypes()
+
+	httpRoutes := krt.WrapClient(kclient.New[*gwv1.HTTPRoute](istioClient), krtopts.ToOptions("HTTPRoute")...)
+	tcproutes := krt.WrapClient(kclient.New[*gwv1a2.TCPRoute](istioClient), krtopts.ToOptions("TCPRoute")...)
+	kubeRawGateways := krt.WrapClient(kclient.New[*gwv1.Gateway](istioClient), krtopts.ToOptions("KubeGateways")...)
+
+	return initCollectionsWithGateways(isOurGw, kubeRawGateways, httpRoutes, tcproutes, refgrants, extensions, krtopts)
+}
+
+func initCollectionsWithGateways(
 	isOurGw func(gw *gwv1.Gateway) bool,
 	kubeRawGateways krt.Collection[*gwv1.Gateway],
 	httpRoutes krt.Collection[*gwv1.HTTPRoute],
 	tcproutes krt.Collection[*gwv1a2.TCPRoute],
 	refgrants *RefGrantIndex,
-	extensions extensionsplug.Plugin, krtopts krtutil.KrtOptions) (*GatewayIndex, *RoutesIndex, krt.Collection[ir.Upstream], krt.Collection[ir.EndpointsForUpstream]) {
+	extensions extensionsplug.Plugin,
+	krtopts krtutil.KrtOptions,
+) (*GatewayIndex, *RoutesIndex, krt.Collection[ir.Upstream], krt.Collection[ir.EndpointsForUpstream]) {
 
 	policies := NewPolicyIndex(krtopts, extensions.ContributesPolicies)
 
@@ -71,7 +91,7 @@ func initCollectionsWithGateways(ctx context.Context,
 	}
 
 	upstreamIndex := NewUpstreamIndex(krtopts, backendRefPlugins, policies)
-	finalUpstreams, endpointIRs := initUpstreams(ctx, extensions, upstreamIndex, krtopts)
+	finalUpstreams, endpointIRs := initUpstreams(extensions, upstreamIndex, krtopts)
 
 	kubeGateways := NewGatewayIndex(krtopts, isOurGw, policies, kubeRawGateways)
 
@@ -79,23 +99,11 @@ func initCollectionsWithGateways(ctx context.Context,
 	return kubeGateways, routes, finalUpstreams, endpointIRs
 }
 
-func InitCollections(ctx context.Context,
+func initUpstreams(
 	extensions extensionsplug.Plugin,
-	istioClient kube.Client,
-	isOurGw func(gw *gwv1.Gateway) bool,
-	refgrants *RefGrantIndex,
-	krtopts krtutil.KrtOptions) (*GatewayIndex, *RoutesIndex, krt.Collection[ir.Upstream], krt.Collection[ir.EndpointsForUpstream]) {
-	registerTypes()
-
-	httpRoutes := krt.WrapClient(kclient.New[*gwv1.HTTPRoute](istioClient), krtopts.ToOptions("HTTPRoute")...)
-	tcproutes := krt.WrapClient(kclient.New[*gwv1a2.TCPRoute](istioClient), krtopts.ToOptions("TCPRoute")...)
-	kubeRawGateways := krt.WrapClient(kclient.New[*gwv1.Gateway](istioClient), krtopts.ToOptions("KubeGateways")...)
-
-	return initCollectionsWithGateways(ctx, isOurGw, kubeRawGateways, httpRoutes, tcproutes, refgrants, extensions, krtopts)
-}
-
-func initUpstreams(ctx context.Context,
-	extensions extensionsplug.Plugin, upstreamIndex *UpstreamIndex, krtopts krtutil.KrtOptions) (krt.Collection[ir.Upstream], krt.Collection[ir.EndpointsForUpstream]) {
+	upstreamIndex *UpstreamIndex,
+	krtopts krtutil.KrtOptions,
+) (krt.Collection[ir.Upstream], krt.Collection[ir.EndpointsForUpstream]) {
 
 	allEndpoints := []krt.Collection[ir.EndpointsForUpstream]{}
 	for k, col := range extensions.ContributesUpstreams {

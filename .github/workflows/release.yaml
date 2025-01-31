@@ -1,0 +1,117 @@
+name: Release
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+      - '!v0.0.0-main'
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  setup:
+    name: Setup release inputs
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.set_vars.outputs.version }}
+      goreleaser_args: ${{ steps.set_vars.outputs.goreleaser_args }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set the release related variables
+        id: set_vars
+        run: |
+          GIT_TAG=$(git describe --tags --abbrev=0 --always)
+          GIT_SHA=$(git rev-parse --short HEAD)
+          GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD | sed -e "s/\//-/g")
+
+          # Set version based on event type
+          if [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
+            VERSION="${GIT_TAG}-${GIT_SHA}"
+            echo "goreleaser_args=--clean --skip=validate" >> $GITHUB_OUTPUT
+          elif [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/}"
+            echo "goreleaser_args=--clean" >> $GITHUB_OUTPUT
+          elif [[ $GITHUB_REF == refs/heads/main ]]; then
+            VERSION="v0.0.0-main"
+            echo "goreleaser_args=--clean --skip=validate" >> $GITHUB_OUTPUT
+          elif [[ $GITHUB_REF == refs/pull/* ]]; then
+            PR_NUM=$(echo "${GITHUB_REF}" | sed -E 's|refs/pull/([^/]+)/?.*|\1|')
+            VERSION="${GIT_TAG}-pr.${PR_NUM}-${GIT_SHA}"
+            echo "goreleaser_args=--snapshot --clean" >> $GITHUB_OUTPUT
+          else
+            VERSION="${GIT_TAG}-${GIT_BRANCH}-${GIT_SHA}"
+            echo "goreleaser_args=--snapshot --clean" >> $GITHUB_OUTPUT
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+  helm:
+    name: Package helm charts
+    needs: setup
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Helm login to ${{ env.IMAGE_REGISTRY }}
+        if: ${{ github.event_name != 'pull_request' }}
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
+
+      - name: Lint kgateway chart on PRs
+        if: ${{ github.event_name == 'pull_request' }}
+        run: helm lint install/helm/kgateway
+
+      - name: Package kgateway chart
+        run: make package-kgateway-chart
+        env:
+          VERSION: ${{ needs.setup.outputs.version }}
+
+      - name: Push kgateway chart to registry
+        if: ${{ github.event_name != 'pull_request' }}
+        run: |
+          helm push _test/kgateway-${{ needs.setup.outputs.version }}.tgz oci://${{ env.IMAGE_REGISTRY }}/charts
+
+  goreleaser:
+    name: goreleaser
+    needs: [setup, helm]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Log into ghcr.io
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: "docker/setup-qemu-action@v3"
+      - uses: "docker/setup-buildx-action@v3"
+
+      - name: Run goreleaser
+        run: make release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.setup.outputs.version }}
+          IMAGE_REGISTRY: ${{ env.IMAGE_REGISTRY }}
+          GORELEASER_ARGS: ${{ needs.setup.outputs.goreleaser_args }}
+          GORELEASER_CURRENT_TAG: ${{ needs.setup.outputs.version }}

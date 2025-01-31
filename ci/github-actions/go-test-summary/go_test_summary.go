@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 
-	"github.com/solo-io/gloo/ci/github-actions/go-test-summary/summary"
+	"github.com/kgateway-dev/kgateway/ci/github-actions/go-test-summary/summary"
 )
 
 func main() {

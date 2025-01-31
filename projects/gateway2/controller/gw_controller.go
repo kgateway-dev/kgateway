@@ -4,7 +4,6 @@ import (
 	"context"
 	"slices"
 
-	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -12,10 +11,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	api "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/deployer"
 )
 
 const (
-	GatewayAutoDeployAnnotationKey = "gateway.gloo.solo.io/auto-deploy"
+	GatewayAutoDeployAnnotationKey = "gateway.kgateway.dev/auto-deploy"
 )
 
 type gatewayReconciler struct {

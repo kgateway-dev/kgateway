@@ -9,13 +9,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/solo-io/gloo/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/pkg/schemes"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils/protoutils"
-	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
-	"github.com/solo-io/gloo/projects/gateway2/translator/irtranslator"
+	"google.golang.org/protobuf/proto"
+
+	"github.com/kgateway-dev/kgateway/pkg/utils/protoutils"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/translator/irtranslator"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -26,7 +27,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/skv2/contrib/pkg/sets"
 )
 
 var (
@@ -137,7 +137,7 @@ func parseFile(ctx context.Context, filename string) ([]runtime.Object, error) {
 				zap.Error(err),
 				zap.String("filename", filename),
 				zap.String("resourceKind", gvk.String()),
-				zap.String("resourceId", sets.Key(obj.(client.Object))),
+				zap.String("resourceId", obj.(client.Object).GetName()+"."+obj.(client.Object).GetNamespace()),
 				zap.String("truncatedYamlDoc", truncateString(string(objYaml), 100)),
 			)
 			continue

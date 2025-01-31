@@ -1,4 +1,0 @@
-changelog:
-  - type: FIX
-    description: --vault-token flag incorrectly had the description associated with --vault-address
-    issueLink: https://github.com/solo-io/gloo/issues/7469

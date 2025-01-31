@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Update upstream protoc setup action
-    issueLink: https://github.com/solo-io/gloo/issues/3810

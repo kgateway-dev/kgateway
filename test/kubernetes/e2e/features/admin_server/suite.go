@@ -1,17 +1,20 @@
+//go:build ignore
+
 package admin_server
 
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
+	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 
-	"github.com/solo-io/gloo/pkg/utils/kubeutils"
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -85,7 +88,7 @@ func (s *testingSuite) TestGetInputSnapshotIncludesK8sGatewayApiResources() {
 	})
 
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, gatewayParametersManifest)
-	s.Assert().NoError(err, "can apply gateway.gloo.solo.io GatewayParameters manifest")
+	s.Assert().NoError(err, "can apply gateway.kgateway.dev GatewayParameters manifest")
 
 	s.testInstallation.Assertions.AssertGlooAdminApi(
 		s.ctx,

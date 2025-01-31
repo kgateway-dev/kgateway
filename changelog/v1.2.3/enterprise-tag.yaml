@@ -1,5 +1,0 @@
-changelog:
-  - type: FIX
-    description: >
-      Calculate the enterprise tag from the gloo-ee helm repo index file (https://storage.googleapis.com/gloo-ee-helm/index.yaml) instead of hardcoding it.
-    issueLink: https://github.com/solo-io/gloo/issues/1831

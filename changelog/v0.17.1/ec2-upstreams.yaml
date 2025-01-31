@@ -1,4 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    description: Introduce EC2 upstream type.
-    issueLink: https://github.com/solo-io/gloo/issues/799

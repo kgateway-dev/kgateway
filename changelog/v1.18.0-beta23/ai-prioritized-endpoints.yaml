@@ -1,5 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/solo-projects/issues/6957
-    description: >- 
-      Add an API to allow configuring prioritized pools of LLM backends.

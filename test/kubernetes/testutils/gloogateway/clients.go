@@ -1,13 +1,15 @@
+//go:build ignore
+
 package gloogateway
 
 import (
 	"context"
 
-	v1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1alpha1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/solo/ratelimit"
+	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
+	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/cluster"
 
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"

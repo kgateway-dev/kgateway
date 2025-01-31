@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Move changelogs to 1.18.0-rc1
-
-      skipCI-kube-tests:true
-      skipCI-docs-build:true

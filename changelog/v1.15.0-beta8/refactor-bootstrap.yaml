@@ -1,5 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: >-
-    Refactor bootstrap package to add clarifying distinction between opts and clients. Additionally, breaks
-    clients into their own files to make it easier to work with.

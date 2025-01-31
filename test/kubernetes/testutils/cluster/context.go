@@ -1,3 +1,5 @@
+//go:build ignore
+
 package cluster
 
 import (
@@ -5,7 +7,7 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
 )
 
 // Context contains the metadata about a Kubernetes cluster

@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Allow gloo tests to print gloo debug logs during pre fail handling

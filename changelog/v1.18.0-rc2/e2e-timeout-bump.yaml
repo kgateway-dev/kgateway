@@ -1,6 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/10380
-    resolvesIssue: true
-    description: >-
-      Bump the timeout for the nightly e2e tests

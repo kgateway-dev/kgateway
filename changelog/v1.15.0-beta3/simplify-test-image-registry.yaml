@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/5471
-    resolvesIssue: false
-    description: >-
-      Simplify how we setup a kind cluster used in our kubernetes regression tests.

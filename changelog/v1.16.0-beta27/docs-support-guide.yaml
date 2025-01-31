@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >- 
-      Adds support guide. 
-      skipCI-kube-tests:true

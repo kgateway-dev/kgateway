@@ -1,9 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/10364
-    resolvesIssue: false
-    description: >-
-      When setting up our kind cluster for tests, we need to ensure that the correct version of the k8sgateway APIs are loaded, as
-      we support multiple versions of Istio that use different versions of the rapidly changing k8sgateway APIs.
-      To support this, `k8sgateway_api_version` has been added to the the min/max environment variables for the test matrix
-      and the value are set as the `CONFORMANCE_VERSION` environment variable when running the setup-kind script.

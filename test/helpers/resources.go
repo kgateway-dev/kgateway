@@ -1,12 +1,15 @@
+//go:build ignore
+
 package helpers
 
 import (
 	"time"
 
 	"github.com/onsi/gomega/types"
-	"github.com/solo-io/gloo/pkg/utils/statusutils"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/pkg/utils/statusutils"
+
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"

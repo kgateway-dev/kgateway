@@ -1,3 +1,5 @@
+//go:build ignore
+
 package crd_categories
 
 import (
@@ -6,9 +8,10 @@ import (
 	"io"
 	"strings"
 
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/helm"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/helm"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite

@@ -3,20 +3,22 @@ package gateway
 import (
 	"context"
 
-	"github.com/solo-io/gloo/pkg/utils/statsutils"
-	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
-	"github.com/solo-io/gloo/projects/gateway2/ir"
 	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/kube/krt"
 
-	"github.com/solo-io/gloo/projects/gateway2/query"
-	"github.com/solo-io/gloo/projects/gateway2/reports"
-	"github.com/solo-io/gloo/projects/gateway2/translator/listener"
+	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/query"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/reports"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/translator/listener"
 )
 
-func NewTranslator(queries query.GatewayQueries) extensionsplug.K8sGwTranslator {
+func NewTranslator(queries query.GatewayQueries) extensionsplug.KGwTranslator {
 	return &translator{
 		queries: queries,
 	}
@@ -32,7 +34,7 @@ func (t *translator) Translate(
 	gateway *ir.Gateway,
 	reporter reports.Reporter,
 ) *ir.GatewayIR {
-	stopwatch := statsutils.NewTranslatorStopWatch("TranslateProxy")
+	stopwatch := utils.NewTranslatorStopWatch("TranslateProxy")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 

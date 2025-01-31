@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Updates Lambda upstream doc for new upwrapAsApiGateway setting.
-    issueLink: https://github.com/solo-io/gloo/issues/6764

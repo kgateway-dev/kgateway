@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/5723
-    resolvesIssue: false
-    description: >-
-      Improve the utilities that are necessary to write an e2e test framework.

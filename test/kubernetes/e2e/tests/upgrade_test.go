@@ -1,3 +1,5 @@
+//go:build ignore
+
 package tests_test
 
 import (
@@ -7,10 +9,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	. "github.com/solo-io/gloo/test/kubernetes/e2e/tests"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	. "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/gloogateway"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/helper"
 )
 
 // The upgrade tests delegate the installs, upgrades and deletions to each individual test within the suite

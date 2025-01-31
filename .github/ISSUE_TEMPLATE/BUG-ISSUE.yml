@@ -6,20 +6,10 @@ body:
     attributes:
       value: |
         **Note**: This is a public repo. Be sure to obscure or redact any sensitive information.
-  - type: dropdown
-    id: product
-    attributes:
-      label: Gloo Edge Product
-      description: Which Edge product are you using?
-      options:
-        - Open Source
-        - Enterprise
-    validations:
-      required: true
   - type: input
     id: version
     attributes:
-      label: Gloo Edge Version
+      label: kgateway version
       description: What version of your product are you using? Please specify a specific patch version
       placeholder: eg v1.14.2
     validations:
@@ -28,7 +18,7 @@ body:
     id: kube-version
     attributes:
       label: Kubernetes Version
-      description: What version of Kubernetes are you using with Gloo Edge?
+      description: What version of Kubernetes are you using with kgateway?
       placeholder: eg v1.26.6
     validations:
       required: true
@@ -71,8 +61,8 @@ body:
       description: Please include details about any other tools or integrations that may be relevant, and their versions
       placeholder: |
         eg:
-        Using keycloak v21.1.0 as IDP
-        Using argo CD v2.7.5 to manage cluster
+        Using Keycloak v21.1.0 as IDP
+        Using ArgoCD v2.7.5 to manage cluster
   - type: textarea
     id: additional-context
     attributes:
@@ -80,7 +70,7 @@ body:
       description: Please include any additional context in the form of logs, screenshots, links, etc.
       placeholder: |
         eg:
-        Logs can be found [here](my-logs.com?runid=123)
+        Logs can be found [here](my-logs.example.com?runid=123)
 
         Relevant section:
         ```

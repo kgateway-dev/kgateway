@@ -1,8 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Bump golangci-lint for parity with CI
-      Bump the timeout for static analysis to 10 min.
-
-      skipCI-kube-tests:true
-      skipCI-docs-build:true

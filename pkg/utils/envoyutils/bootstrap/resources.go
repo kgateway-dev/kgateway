@@ -1,14 +1,15 @@
 package bootstrap
 
 import (
+	"errors"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_extensions_transport_sockets_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	"github.com/rotisserie/eris"
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
+	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	envoyresource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 )
 
 type EnvoyResources struct {
@@ -21,7 +22,7 @@ type EnvoyResources struct {
 	endpoints []*envoy_config_endpoint_v3.ClusterLoadAssignment
 }
 
-func resourcesFromSnapshot(snap envoycache.Snapshot) (*EnvoyResources, error) {
+func resourcesFromSnapshot(snap envoycache.ResourceSnapshot) (*EnvoyResources, error) {
 	listeners, err := listenersFromSnapshot(snap)
 	if err != nil {
 		return nil, err
@@ -49,12 +50,12 @@ func resourcesFromSnapshot(snap envoycache.Snapshot) (*EnvoyResources, error) {
 
 // listenersFromSnapshot accepts a Snapshot and extracts from it a slice of pointers to
 // the Listener structs contained in the Snapshot.
-func listenersFromSnapshot(snap envoycache.Snapshot) ([]*envoy_config_listener_v3.Listener, error) {
+func listenersFromSnapshot(snap envoycache.ResourceSnapshot) ([]*envoy_config_listener_v3.Listener, error) {
 	var listeners []*envoy_config_listener_v3.Listener
-	for _, v := range snap.GetResources(types.ListenerTypeV3).Items {
-		l, ok := v.ResourceProto().(*envoy_config_listener_v3.Listener)
+	for _, v := range snap.GetResources(envoyresource.ListenerType) {
+		l, ok := v.(*envoy_config_listener_v3.Listener)
 		if !ok {
-			return nil, eris.New("invalid listener type found")
+			return nil, errors.New("invalid listener type found")
 		}
 		listeners = append(listeners, l)
 	}
@@ -63,12 +64,12 @@ func listenersFromSnapshot(snap envoycache.Snapshot) ([]*envoy_config_listener_v
 
 // clustersFromSnapshot accepts a Snapshot and extracts from it a slice of pointers to
 // the Cluster structs contained in the Snapshot.
-func clustersFromSnapshot(snap envoycache.Snapshot) ([]*envoy_config_cluster_v3.Cluster, error) {
+func clustersFromSnapshot(snap envoycache.ResourceSnapshot) ([]*envoy_config_cluster_v3.Cluster, error) {
 	var clusters []*envoy_config_cluster_v3.Cluster
-	for _, v := range snap.GetResources(types.ClusterTypeV3).Items {
-		c, ok := v.ResourceProto().(*envoy_config_cluster_v3.Cluster)
+	for _, v := range snap.GetResources(envoyresource.ClusterType) {
+		c, ok := v.(*envoy_config_cluster_v3.Cluster)
 		if !ok {
-			return nil, eris.New("invalid cluster type found")
+			return nil, errors.New("invalid cluster type found")
 		}
 		clusters = append(clusters, c)
 	}
@@ -77,12 +78,12 @@ func clustersFromSnapshot(snap envoycache.Snapshot) ([]*envoy_config_cluster_v3.
 
 // routesFromSnapshot accepts a Snapshot and extracts from it a slice of pointers to
 // the RouteConfiguration structs contained in the Snapshot.
-func routesFromSnapshot(snap envoycache.Snapshot) ([]*envoy_config_route_v3.RouteConfiguration, error) {
+func routesFromSnapshot(snap envoycache.ResourceSnapshot) ([]*envoy_config_route_v3.RouteConfiguration, error) {
 	var routes []*envoy_config_route_v3.RouteConfiguration
-	for _, v := range snap.GetResources(types.RouteTypeV3).Items {
-		r, ok := v.ResourceProto().(*envoy_config_route_v3.RouteConfiguration)
+	for _, v := range snap.GetResources(envoyresource.RouteType) {
+		r, ok := v.(*envoy_config_route_v3.RouteConfiguration)
 		if !ok {
-			return nil, eris.New("invalid route type found")
+			return nil, errors.New("invalid route type found")
 		}
 		routes = append(routes, r)
 	}
@@ -91,12 +92,12 @@ func routesFromSnapshot(snap envoycache.Snapshot) ([]*envoy_config_route_v3.Rout
 
 // endpointsFromSnapshot accepts a Snapshot and extracts from it a slice of pointers to
 // the ClusterLoadAssignment structs contained in the Snapshot.
-func endpointsFromSnapshot(snap envoycache.Snapshot) ([]*envoy_config_endpoint_v3.ClusterLoadAssignment, error) {
+func endpointsFromSnapshot(snap envoycache.ResourceSnapshot) ([]*envoy_config_endpoint_v3.ClusterLoadAssignment, error) {
 	var endpoints []*envoy_config_endpoint_v3.ClusterLoadAssignment
-	for _, v := range snap.GetResources(types.EndpointTypeV3).Items {
-		e, ok := v.ResourceProto().(*envoy_config_endpoint_v3.ClusterLoadAssignment)
+	for _, v := range snap.GetResources(envoyresource.EndpointType) {
+		e, ok := v.(*envoy_config_endpoint_v3.ClusterLoadAssignment)
 		if !ok {
-			return nil, eris.New("invalid endpoint type found")
+			return nil, errors.New("invalid endpoint type found")
 		}
 		endpoints = append(endpoints, e)
 	}

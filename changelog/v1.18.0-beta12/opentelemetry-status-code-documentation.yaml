@@ -1,8 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/9313
-    resolvesIssue: false
-    description: >-
-      Update documentation regarding how to interpret the Status code in OpenTelemetry Spans
-
-      skipCI-kube-tests:true

@@ -1,8 +1,0 @@
-changelog:
-- type: FIX
-  description: >
-    If we are searching for resources (e.g. upstreams) in a nonexistent namespace
-    during `glooctl get`, we now return a helpful error.
-  issueLink: https://github.com/solo-io/gloo/issues/1647
-
-

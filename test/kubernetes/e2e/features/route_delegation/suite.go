@@ -1,3 +1,5 @@
+//go:build ignore
+
 package route_delegation
 
 import (
@@ -10,11 +12,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
-	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
+	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
+	testmatchers "github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/gloogateway"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite

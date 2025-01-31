@@ -1,3 +1,5 @@
+//go:build ignore
+
 package watch_namespace_selector
 
 import (
@@ -7,8 +9,8 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/tests/base"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests/base"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite

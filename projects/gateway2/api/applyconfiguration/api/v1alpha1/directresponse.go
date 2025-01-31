@@ -3,12 +3,13 @@
 package v1alpha1
 
 import (
-	internal "github.com/solo-io/gloo/projects/gateway2/api/applyconfiguration/internal"
-	apiv1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
+
+	internal "github.com/kgateway-dev/kgateway/projects/gateway2/api/applyconfiguration/internal"
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 )
 
 // DirectResponseApplyConfiguration represents a declarative configuration of the DirectResponse type for use
@@ -27,7 +28,7 @@ func DirectResponse(name, namespace string) *DirectResponseApplyConfiguration {
 	b.WithName(name)
 	b.WithNamespace(namespace)
 	b.WithKind("DirectResponse")
-	b.WithAPIVersion("gateway.gloo.solo.io/v1alpha1")
+	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b
 }
 
@@ -55,7 +56,7 @@ func ExtractDirectResponseStatus(directResponse *apiv1alpha1.DirectResponse, fie
 
 func extractDirectResponse(directResponse *apiv1alpha1.DirectResponse, fieldManager string, subresource string) (*DirectResponseApplyConfiguration, error) {
 	b := &DirectResponseApplyConfiguration{}
-	err := managedfields.ExtractInto(directResponse, internal.Parser().Type("com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.DirectResponse"), fieldManager, b, subresource)
+	err := managedfields.ExtractInto(directResponse, internal.Parser().Type("com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.DirectResponse"), fieldManager, b, subresource)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +64,7 @@ func extractDirectResponse(directResponse *apiv1alpha1.DirectResponse, fieldMana
 	b.WithNamespace(directResponse.Namespace)
 
 	b.WithKind("DirectResponse")
-	b.WithAPIVersion("gateway.gloo.solo.io/v1alpha1")
+	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b, nil
 }
 

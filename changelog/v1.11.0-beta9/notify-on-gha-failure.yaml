@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Disbled docs gen for community PRs.  Notify dev team on docs build failure.

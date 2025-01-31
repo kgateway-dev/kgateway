@@ -1,3 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: Added github action to run check-code-and-docs-gen, removed corresponding cloudbuild step.

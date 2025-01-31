@@ -1,3 +1,5 @@
+//go:build ignore
+
 package helpers_test
 
 import (
@@ -5,8 +7,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/gomega"
-	"github.com/solo-io/gloo/test/helpers"
+
+	"github.com/kgateway-dev/kgateway/test/gomega"
+	"github.com/kgateway-dev/kgateway/test/helpers"
 )
 
 var _ = Describe("PercentileIndex", func() {

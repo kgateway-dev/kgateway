@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Default release name to `gloo` during template rendering in CLI.

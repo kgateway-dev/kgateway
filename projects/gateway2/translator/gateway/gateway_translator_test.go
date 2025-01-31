@@ -7,14 +7,15 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/skv2/codegen/util"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
-	"github.com/solo-io/gloo/projects/gateway2/reports"
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/reports"
 )
 
 type translatorTestCase struct {
@@ -28,7 +29,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 	func(in translatorTestCase) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		dir := util.MustGetThisDir()
+		dir := fsutils.MustGetThisDir()
 
 		results, err := TestCase{
 			InputFiles: []string{filepath.Join(dir, "testutils/inputs/", in.inputFile)},
@@ -305,7 +306,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 var _ = DescribeTable("Route Delegation translator",
 	func(inputFile string, errdesc string) {
 		ctx := context.TODO()
-		dir := util.MustGetThisDir()
+		dir := fsutils.MustGetThisDir()
 
 		results, err := TestCase{
 			InputFiles: []string{filepath.Join(dir, "testutils/inputs/delegation", inputFile)},

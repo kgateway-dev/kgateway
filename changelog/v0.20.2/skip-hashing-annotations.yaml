@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Reduce snapshot jitter by ignoring annotations on endpoints and artifacts

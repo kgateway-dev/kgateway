@@ -1,9 +1,12 @@
+//go:build ignore
+
 package helpers
 
 import (
 	"github.com/golang/protobuf/proto"
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 )
 
 // RouteTableBuilder simplifies the process of generating RouteTables in tests

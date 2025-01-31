@@ -1,3 +1,5 @@
+//go:build ignore
+
 package assertions
 
 import (
@@ -9,10 +11,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kgateway-dev/kgateway/test/helpers"
 )
 
 func (p *Provider) EventuallyObjectsExist(ctx context.Context, objects ...client.Object) {

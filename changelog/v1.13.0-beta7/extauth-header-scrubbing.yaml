@@ -1,5 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issuelink: https://github.com/solo-io/gloo/issues/6539
-    resolvesIssue: true
-    description: Expose option to remove headers in the transformation filter

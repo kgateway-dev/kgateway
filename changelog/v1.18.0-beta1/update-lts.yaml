@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/6264
-    resolvesIssue: false
-    description: >-
-      Update the set of LTS branches that run tests at night

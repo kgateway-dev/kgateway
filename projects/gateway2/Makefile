@@ -3,7 +3,7 @@ ifneq (,$(TAGGED_VERSION))
 VERSION := $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 endif
 
-LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
+LDFLAGS := "-X github.com/kgateway-dev/kgateway/pkg/version.Version=$(VERSION)"
 
 # TODO (Law[revert]): need to add CLI tests here, see CI pr.yaml workflow
 .PHONY: test
@@ -14,7 +14,7 @@ test:
 test-full:
 	go test -ldflags=$(LDFLAGS) -count=1 ./...
 
-# internal target used by controller_suite_test.go
+# internal target used by ./controller/controller_suite_test.go & ./setup/ggv2setup_test.go
 envtest:
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)"
 

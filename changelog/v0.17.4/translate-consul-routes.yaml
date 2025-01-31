@@ -1,5 +1,0 @@
-changelog:
-- type: NEW_FEATURE
-  description: Translate Consul routing destinations.
-  issueLink: https://github.com/solo-io/gloo/issues/803
-  resolvesIssue: true

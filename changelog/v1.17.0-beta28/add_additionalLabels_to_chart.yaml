@@ -1,5 +1,0 @@
-changelog:
-- type: HELM
-  issueLink: https://github.com/solo-io/gloo/issues/9035
-  resolvesIssue: false
-  description: Adds a new helm value `global.additionalLabels` that specifies additional labels to add to gloo resources.

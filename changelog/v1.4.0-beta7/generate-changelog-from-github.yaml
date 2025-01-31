@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/2799
-    description: Ensure hosted docs shows changelogs for new releases from all branches by getting the info from Github's release API.

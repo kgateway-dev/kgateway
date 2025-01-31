@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: remove GHA warnings for "set-output".  It is breaking starting May '23

@@ -5,9 +5,10 @@ package v1alpha1
 import (
 	"net/http"
 
-	v1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
-	"github.com/solo-io/gloo/projects/gateway2/pkg/client/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
+
+	v1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/pkg/client/clientset/versioned/scheme"
 )
 
 type GatewayV1alpha1Interface interface {
@@ -20,7 +21,7 @@ type GatewayV1alpha1Interface interface {
 	UpstreamsGetter
 }
 
-// GatewayV1alpha1Client is used to interact with features provided by the gateway.gloo.solo.io group.
+// GatewayV1alpha1Client is used to interact with features provided by the gateway.kgateway.dev group.
 type GatewayV1alpha1Client struct {
 	restClient rest.Interface
 }

@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: upgrade alpine and envoy-gloo (to upgrade alpine refs there)

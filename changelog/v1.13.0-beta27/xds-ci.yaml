@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Set USE_XDS_RELAY env variable during the step that actually runs tests.

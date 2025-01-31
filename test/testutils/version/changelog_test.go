@@ -1,3 +1,5 @@
+//go:build ignore
+
 package version_test
 
 import (
@@ -5,8 +7,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/testutils/version"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
+	"github.com/kgateway-dev/kgateway/test/testutils/version"
 )
 
 type mockDirEntry struct {

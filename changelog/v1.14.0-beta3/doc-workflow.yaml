@@ -1,3 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: Update deprecated features in the GitHub Actions for the doc generation workflow.

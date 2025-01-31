@@ -3,7 +3,7 @@
 package v1alpha1
 
 import (
-	apiv1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 )
 
 // GatewayParametersSpecApplyConfiguration represents a declarative configuration of the GatewayParametersSpec type for use

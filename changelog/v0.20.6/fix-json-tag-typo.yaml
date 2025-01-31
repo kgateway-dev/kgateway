@@ -1,3 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: Fix typo in Helm value JSON tag.

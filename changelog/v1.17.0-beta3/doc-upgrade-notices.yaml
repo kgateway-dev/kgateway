@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >- 
-      Adds in upgrade notices for Gloo Edge version 1.16.   
-      skipCI-kube-tests:true

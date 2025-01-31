@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Add cluster-five to the set of KinD clusters that execute our Kubernetes tests. This is to ensure
-      that our existing 4 clusters do not exceed the 25 minute time limit.

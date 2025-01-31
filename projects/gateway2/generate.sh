@@ -10,15 +10,14 @@ set -x
 APIS_PKG=""
 
 readonly SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE}")" && pwd)"
-readonly OUTPUT_PKG=github.com/solo-io/gloo/projects/gateway2/pkg/client
-readonly APIS_PKG=github.com/solo-io/gloo/projects/gateway2
+readonly OUTPUT_PKG=github.com/kgateway-dev/kgateway/projects/gateway2/pkg/client
+readonly APIS_PKG=github.com/kgateway-dev/kgateway/projects/gateway2
 readonly CLIENTSET_NAME=versioned
 readonly CLIENTSET_PKG_NAME=clientset
 readonly VERSIONS=(v1alpha1)
 
 echo "Generating clientset at ${OUTPUT_PKG}/${CLIENTSET_PKG_NAME} for versions: ${VERSIONS[@]}"
 echo "Running from directory: ${SCRIPT_ROOT}"
-
 
 API_INPUT_DIRS_SPACE=""
 API_INPUT_DIRS_COMMA=""
@@ -30,11 +29,9 @@ done
 API_INPUT_DIRS_SPACE="${API_INPUT_DIRS_SPACE%,}" # drop trailing space
 API_INPUT_DIRS_COMMA="${API_INPUT_DIRS_COMMA%,}" # drop trailing comma
 
-
 go run k8s.io/code-generator/cmd/register-gen --output-file zz_generated.register.go ${API_INPUT_DIRS_SPACE}
-go run sigs.k8s.io/controller-tools/cmd/controller-gen crd:maxDescLen=0 object rbac:roleName=k8sgw-controller paths="${APIS_PKG}/api/${VERSION}" \
-    output:crd:artifacts:config=${SCRIPT_ROOT}/../../install/helm/gloo/crds/ output:rbac:artifacts:config=${SCRIPT_ROOT}/../../install/helm/gloo/files/rbac
-
+go run sigs.k8s.io/controller-tools/cmd/controller-gen crd:maxDescLen=0 object rbac:roleName=kgateway paths="${APIS_PKG}/api/${VERSION}" \
+    output:crd:artifacts:config=${SCRIPT_ROOT}/../../install/helm/kgateway/crds/ output:rbac:artifacts:config=${SCRIPT_ROOT}/../../install/helm/kgateway/templates
 
 # throw away
 new_report="$(mktemp -t "$(basename "$0").api_violations.XXXXXX")"

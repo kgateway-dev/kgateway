@@ -12,7 +12,7 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	sologatewayv1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
+	sologatewayv1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 )
 
 // SchemeBuilder contains all the Schemes for registering the CRDs with which Gloo Gateway interacts.
@@ -41,7 +41,7 @@ func AddToScheme(s *runtime.Scheme) error {
 
 // DefaultScheme returns a scheme with all the types registered for Gloo Gateway
 // We intentionally do not perform this operation in an init!!
-// See https://github.com/solo-io/gloo/pull/9692 for context
+// See https://github.com/kgateway-dev/kgateway/pull/9692 for context
 func DefaultScheme() *runtime.Scheme {
 	s := runtime.NewScheme()
 	_ = AddToScheme(s)

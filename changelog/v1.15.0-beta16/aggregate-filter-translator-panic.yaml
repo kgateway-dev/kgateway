@@ -1,6 +1,0 @@
-changelog:
-- type: FIX
-  issueLink: https://github.com/solo-io/gloo/issues/8405
-  description: >
-    Fix a panic caused by a nil pointer dereference when reporting errors in
-    aggregate filter translator

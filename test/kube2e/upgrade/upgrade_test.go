@@ -1,3 +1,5 @@
+//go:build ignore
+
 package upgrade_test
 
 import (
@@ -11,24 +13,27 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/cliutil"
-	"github.com/solo-io/gloo/pkg/utils/helmutils"
 	"github.com/solo-io/skv2/codegen/util"
 
-	kubetestclients "github.com/solo-io/gloo/test/kubernetes/testutils/clients"
+	"github.com/kgateway-dev/kgateway/pkg/cliutil"
+	"github.com/kgateway-dev/kgateway/pkg/utils/helmutils"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	kubetestclients "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/clients"
+
 	exec_utils "github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/helpers"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/gloo/test/kube2e/helper"
+
+	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/cmd/version"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/test/kube2e"
+	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -330,7 +335,7 @@ func upgradeCrds(crdDir string) {
 }
 
 func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, targetReleasedVersion string, crdDir string, strictValidation bool, additionalArgs []string) {
-	// With the fix for custom readiness probe : https://github.com/solo-io/gloo/pull/8831
+	// With the fix for custom readiness probe : https://github.com/kgateway-dev/kgateway/pull/8831
 	// The resource rollout job is not longer in a post hook and the job ttl has changed from 60 to 300
 	// As a consequence the job is not automatically cleaned as part of the hook deletion policy
 	// or within the time between installing gloo and upgrading it in the test.

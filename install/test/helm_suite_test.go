@@ -1,3 +1,5 @@
+//go:build ignore
+
 package test
 
 import (
@@ -12,11 +14,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
-	"github.com/solo-io/gloo/pkg/cliutil/helm"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/gloo/test/makefile"
-	glootestutils "github.com/solo-io/gloo/test/testutils"
 	soloHelm "github.com/solo-io/go-utils/helmutils"
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/k8s-utils/installutils/kuberesource"
@@ -28,6 +25,12 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/kgateway-dev/kgateway/pkg/cliutil/helm"
+	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/cmd/install"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/test/makefile"
+	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
 )
 
 const (

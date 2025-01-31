@@ -1,7 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/9743
-    resolvesIssue: false
-    description: |
-      Fix a bug where the service and function names of a discovered gRPC service are not printed in JSON and YAML 
-      output when running glooctl get upstreams

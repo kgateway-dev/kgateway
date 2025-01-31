@@ -1,5 +1,0 @@
-changelog:
-  - type: DEPENDENCY_BUMP
-    dependencyOwner: golang
-    dependencyRepo: go
-    dependencyTag: v1.18.1

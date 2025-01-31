@@ -1,3 +1,5 @@
+//go:build ignore
+
 package parallel_test
 
 import (

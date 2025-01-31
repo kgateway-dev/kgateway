@@ -1,3 +1,5 @@
+//go:build ignore
+
 package tracing
 
 import (
@@ -5,18 +7,19 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/utils/kubeutils"
-	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
-	gloo_defaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/gloo/test/gomega/matchers"
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	testdefaults "github.com/solo-io/gloo/test/kubernetes/e2e/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
+	gloo_defaults "github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	testdefaults "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -117,7 +120,7 @@ func (s *testingSuite) BeforeTest(string, string) {
 	)
 
 	// Technical Debt!!
-	// https://github.com/k8sgateway/k8sgateway/issues/10293
+	// https://github.com/kgateway-dev/kgateway/issues/10293
 	// There is a bug in the Control Plane that results in an Error reported on the status
 	// when the Upstream of the Tracing Collector is not found. This results in the VirtualService
 	// that references that Upstream being rejected. What should occur is a Warning is reported,

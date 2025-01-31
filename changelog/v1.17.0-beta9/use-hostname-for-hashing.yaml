@@ -1,6 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/gloo/issues/9138
-    resolvesIssue: false
-    description: |
-      Expose use_hostname_for_hashing, the hostname will be used for hashing when using maglev for example, useful when using multiple host in the upstreams that resolve to the same IP.

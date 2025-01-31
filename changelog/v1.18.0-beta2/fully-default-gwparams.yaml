@@ -1,7 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/solo-projects/issues/6381
-    resolvesIssue: false
-    description: >-
-      Move remaining non-user-facing default values for dynamically provisioned gateway proxies from internal helm chart
-      to main Gloo Gateway helm chart. This allows features like Security Context to be configured/disabled.

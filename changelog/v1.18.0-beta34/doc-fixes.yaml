@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Weekly doc fixes, including API proto doc format changes and an update to the docs copy workflow.
-      skipCI-kube-tests:true

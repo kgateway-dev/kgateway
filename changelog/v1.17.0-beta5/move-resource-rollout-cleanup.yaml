@@ -1,5 +1,0 @@
-changelog:
-- type: FIX
-  issueLink: https://github.com/solo-io/gloo/issues/9033
-  resolvesIssue: false
-  description: When deploying edge with tilt + helm, the resource-rollout-job is deleted before the install completes which causes the deployment to fail. The cleanup for the resource-rollout job is now moved to a pre-upgrade hook to ensure that the job exists so deployments now succeed.

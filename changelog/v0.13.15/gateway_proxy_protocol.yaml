@@ -1,4 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    description: Add proxy protocol support for gateway deployments.
-    issueLink: https://github.com/solo-io/gloo/pull/676

@@ -1,3 +1,5 @@
+//go:build ignore
+
 package e2e_test
 
 import (
@@ -11,9 +13,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/solo-io/gloo/test/testutils"
+	"github.com/kgateway-dev/kgateway/test/testutils"
 
-	"github.com/solo-io/gloo/test/services/envoy"
+	"github.com/kgateway-dev/kgateway/test/services/envoy"
 
 	errors "github.com/rotisserie/eris"
 
@@ -21,29 +23,32 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/form3tech-oss/jwt-go"
-	aws2 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
-	"github.com/solo-io/gloo/test/helpers"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	aws2 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/envoy/extensions/aws"
+	"github.com/kgateway-dev/kgateway/test/helpers"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
+
+	testmatchers "github.com/kgateway-dev/kgateway/test/gomega/matchers"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
-	"github.com/solo-io/gloo/test/services"
+	"github.com/kgateway-dev/kgateway/test/services"
 
-	gw1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	aws_plugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
+	gw1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
+	gwdefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
+
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/core/matchers"
+	aws_plugin "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/aws"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/hcm"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/transformation"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 )

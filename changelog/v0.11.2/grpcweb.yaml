@@ -1,4 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    description: grpc web support. Enabled by default, can be disabled with a gateway setting.
-    issueLink: https://github.com/solo-io/gloo/issues/555

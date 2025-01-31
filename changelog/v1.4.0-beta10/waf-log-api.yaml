@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Adding WAF gloo-ee API and docs.

@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Update Github workflow to trigger on pr opened, reopened, synchronize and ready for review.

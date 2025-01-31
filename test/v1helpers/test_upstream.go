@@ -1,3 +1,5 @@
+//go:build ignore
+
 package v1helpers
 
 import (
@@ -14,7 +16,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/solo-io/gloo/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
@@ -22,14 +24,15 @@ import (
 	"github.com/mccutchen/go-httpbin/v2/httpbin"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
-	"github.com/solo-io/gloo/test/helpers"
-	testgrpcservice "github.com/solo-io/gloo/test/v1helpers/test_grpc_service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	static_plugin_gloo "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/static"
+	"github.com/kgateway-dev/kgateway/test/helpers"
+	testgrpcservice "github.com/kgateway-dev/kgateway/test/v1helpers/test_grpc_service"
 )
 
 // TestUpstream is a testing utility (used in in-memory e2e tests) to compose the following concepts:

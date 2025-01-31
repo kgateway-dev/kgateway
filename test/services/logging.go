@@ -1,3 +1,5 @@
+//go:build ignore
+
 package services
 
 import (
@@ -10,9 +12,10 @@ import (
 
 	"github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/test/testutils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/kgateway-dev/kgateway/test/testutils"
 )
 
 const (

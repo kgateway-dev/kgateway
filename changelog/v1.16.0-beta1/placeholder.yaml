@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Placeholder for 1.16.0-beta1
-      skipCI-kube-tests:true
-      skipCI-docs-build:true

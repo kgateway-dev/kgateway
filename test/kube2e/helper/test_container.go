@@ -1,3 +1,5 @@
+//go:build ignore
+
 package helper
 
 import (
@@ -7,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
 
 	"github.com/pkg/errors"
 	"github.com/solo-io/go-utils/log"

@@ -1,5 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: >
-    Use `HttpConnectionManager.CommonHttpProtocolOptions.IdleTimeout` instead of the deprecated `HttpConnectionManager.IdleTimeout`.
-  issueLink: https://github.com/solo-io/gloo/issues/2297

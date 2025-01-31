@@ -1,6 +1,0 @@
-changelog:
-- type: NON_USER_FACING  
-  description: >- 
-    Adds information about the extproc breaking changes that we introduce in 1.17. 
-    skipCI-kube-tests:true
-  resolvesIssue: false

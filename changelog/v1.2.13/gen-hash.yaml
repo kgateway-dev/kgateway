@@ -1,4 +1,0 @@
-changelog:
-- type: NEW_FEATURE
-  description: Generate hash functions to improve CPU performance
-  issueLink: https://github.com/solo-io/gloo/issues/1711

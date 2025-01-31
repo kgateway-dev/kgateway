@@ -1,4 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/5386
-    description: Fix typo in glooctl check when detecting Gloo Fed.

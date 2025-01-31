@@ -1,8 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/7307
-    resolvesIssue: false
-    description: >-
-      Ensure that tests which are dynamically selecting ports always skip port 9095.
-      Due to recent changes, when Gloo is running, this port will always be used.
-      We choose to skip this, as it is the easiest way to avoid issues.

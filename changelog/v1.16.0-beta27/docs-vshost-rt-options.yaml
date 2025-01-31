@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >- 
-      Adds documentation for separating options settings in virtual hosts and route tables into their own virtualhostoption or routetableoption resource. 
-      skipCI-kube-tests:true

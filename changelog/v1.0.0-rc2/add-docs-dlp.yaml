@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Add docs for DLP.
-    issueLink: https://github.com/solo-io/gloo/issues/1500

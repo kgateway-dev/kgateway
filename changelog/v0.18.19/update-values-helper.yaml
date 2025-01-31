@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Support updating helm values in gateway-proxy deployment during template render

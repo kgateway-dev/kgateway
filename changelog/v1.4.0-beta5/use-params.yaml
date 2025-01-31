@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >
-      Use Params instead of RouteParams in an internal interface.

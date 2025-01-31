@@ -1,5 +1,0 @@
-changelog:
-  - type: BREAKING_CHANGE
-    description: Remove deprecated messages from rbac and jwt.
-    issueLink: https://github.com/solo-io/gloo/issues/1171
-    resolvesIssue: false

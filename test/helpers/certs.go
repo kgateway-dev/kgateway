@@ -1,3 +1,5 @@
+//go:build ignore
+
 package helpers
 
 // from here: https://golang.org/src/crypto/tls/generate_cert.go
@@ -19,9 +21,10 @@ import (
 	"sync"
 	"time"
 
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	corev1 "k8s.io/api/core/v1"
+
+	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 
 	"golang.org/x/crypto/ocsp"
 

@@ -1,5 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/solo-projects/issues/3380
-    description: >
-      Add "gloo" to the created-by labels and documentation around what the label means.

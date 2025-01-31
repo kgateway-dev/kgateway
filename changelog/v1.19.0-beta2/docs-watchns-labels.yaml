@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/docs/issues/574
-    resolvesIssue: true
-    description: >-
-      Expand doc for multi-install via ns scoping to include new watchNamespaceSelectors setting and observability tips.
-      skipCI-kube-tests:true

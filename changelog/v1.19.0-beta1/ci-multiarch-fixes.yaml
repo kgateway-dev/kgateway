@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Build & push multiarch images tocGCS besides quay instead of retagging them in CI build.
-      Also enabled publishing images to GCR for dev build so we can catch errors before running GA build.
-
-      skipCI-docs-build:true

@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/docs/issues/631
-    resolvesIssue: false
-    description: Update API docs for OpaAuthServer availability in Gloo Gateway.
-      skipCI-kube-tests:true

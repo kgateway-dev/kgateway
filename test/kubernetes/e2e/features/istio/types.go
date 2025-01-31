@@ -1,3 +1,5 @@
+//go:build ignore
+
 package istio
 
 import (
@@ -5,24 +7,25 @@ import (
 	"path/filepath"
 
 	"github.com/onsi/gomega"
-	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
-	"github.com/solo-io/skv2/codegen/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
+	testmatchers "github.com/kgateway-dev/kgateway/test/gomega/matchers"
+
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
 )
 
 var (
-	setupManifest = filepath.Join(util.MustGetThisDir(), "testdata", "setup.yaml")
+	setupManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "setup.yaml")
 
-	strictPeerAuthManifest     = filepath.Join(util.MustGetThisDir(), "testdata", "strict-peer-auth.yaml")
-	permissivePeerAuthManifest = filepath.Join(util.MustGetThisDir(), "testdata", "permissive-peer-auth.yaml")
-	disablePeerAuthManifest    = filepath.Join(util.MustGetThisDir(), "testdata", "disable-peer-auth.yaml")
+	strictPeerAuthManifest     = filepath.Join(fsutils.MustGetThisDir(), "testdata", "strict-peer-auth.yaml")
+	permissivePeerAuthManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "permissive-peer-auth.yaml")
+	disablePeerAuthManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "disable-peer-auth.yaml")
 
-	k8sRoutingSvcManifest      = filepath.Join(util.MustGetThisDir(), "testdata", "k8s-routing-svc.yaml")
-	k8sRoutingUpstreamManifest = filepath.Join(util.MustGetThisDir(), "testdata", "k8s-routing-upstream.yaml")
+	k8sRoutingSvcManifest      = filepath.Join(fsutils.MustGetThisDir(), "testdata", "k8s-routing-svc.yaml")
+	k8sRoutingUpstreamManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "k8s-routing-upstream.yaml")
 
 	// When we apply the fault injection manifest files, we expect resources to be created with this metadata
 	glooProxyObjectMeta = metav1.ObjectMeta{

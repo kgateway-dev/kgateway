@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/8621
-    description: >
-      Bump Istio supported version to 1.18 in docs and CI
-      Fix istio-proxy container definition in gateway-proxy template
-      Add new e2e tests that handles Istio SDS case, ensuring mTLS occurs as expected

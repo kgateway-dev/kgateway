@@ -1,4 +1,0 @@
-changelog:
-  - type: HELM
-    description: Allow for adding custom options for the default HTTP and HTTPS gateways
-    issueLink: https://github.com/solo-io/gloo/issues/2535

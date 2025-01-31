@@ -9,9 +9,10 @@ import (
 	"time"
 
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils/cmdutils"
-	"github.com/solo-io/gloo/projects/envoyinit/pkg/downward"
 	"github.com/solo-io/go-utils/contextutils"
+
+	"github.com/kgateway-dev/kgateway/pkg/utils/cmdutils"
+	"github.com/kgateway-dev/kgateway/projects/envoyinit/pkg/downward"
 )
 
 const (

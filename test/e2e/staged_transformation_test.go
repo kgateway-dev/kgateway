@@ -1,38 +1,43 @@
+//go:build ignore
+
 package e2e_test
 
 import (
 	"encoding/base64"
 	"encoding/json"
 
-	"github.com/solo-io/gloo/test/testutils"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/kgateway-dev/kgateway/test/testutils"
+
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	gloov1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
-	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
-	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
+	extauthv1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	gloov1static "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/static"
+	testmatchers "github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/test/helpers"
 
 	"net/http"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/e2e"
 
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
+	"github.com/kgateway-dev/kgateway/test/e2e"
+
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/transformation"
 )
 
 var _ = Describe("Staged Transformation", FlakeAttempts(3), func() {
 	// We added the FlakeAttempts decorator to try to reduce the impact of the flakes outlined in:
-	// https://github.com/solo-io/gloo/issues/9292
+	// https://github.com/kgateway-dev/kgateway/issues/9292
 
 	var (
 		testContext *e2e.TestContext

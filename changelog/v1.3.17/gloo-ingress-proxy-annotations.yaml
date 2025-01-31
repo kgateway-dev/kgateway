@@ -1,4 +1,0 @@
-changelog:
-  - type: HELM
-    description: Added the option to have annotation specified for ingress proxy
-    issueLink: https://github.com/solo-io/gloo/issues/2685

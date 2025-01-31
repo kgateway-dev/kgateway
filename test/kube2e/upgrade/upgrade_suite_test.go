@@ -1,3 +1,5 @@
+//go:build ignore
+
 package upgrade_test
 
 import (
@@ -6,17 +8,19 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/solo-io/gloo/pkg/utils/helmutils"
+	"github.com/kgateway-dev/kgateway/pkg/utils/helmutils"
 
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/helper"
 	"github.com/solo-io/go-utils/versionutils"
 	"github.com/solo-io/skv2/codegen/util"
 
+	"github.com/kgateway-dev/kgateway/test/kube2e"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/helper"
+
 	. "github.com/onsi/ginkgo/v2"
-	"github.com/solo-io/gloo/test/helpers"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
+
+	"github.com/kgateway-dev/kgateway/test/helpers"
 )
 
 func TestUpgrade(t *testing.T) {

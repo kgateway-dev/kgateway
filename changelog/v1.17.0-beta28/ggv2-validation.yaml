@@ -1,6 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/solo-projects/issues/6063
-    resolvesIssue: true
-    description: |
-      Adds webhook validation for Gloo Gateway Policies (e.g. RouteOption and VirtualHostOption) when used with Kubernetes Gateway API

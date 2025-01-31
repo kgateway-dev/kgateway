@@ -1,4 +1,0 @@
-changelog:
-- type: FIX
-  description: Fix default version output type and server type.
-  issueLink: https://github.com/solo-io/gloo/issues/3381

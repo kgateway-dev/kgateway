@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Fixes github ratelimit issue by caching RepositoryRelease response from Github.
-
-

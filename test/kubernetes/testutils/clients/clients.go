@@ -1,8 +1,11 @@
+//go:build ignore
+
 package clients
 
 import (
-	"github.com/solo-io/gloo/pkg/utils/kubeutils"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
 )
 
 // MustClientset returns the Kubernetes Clientset, or panics

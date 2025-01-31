@@ -9,8 +9,6 @@ import (
 	"github.com/fgrosse/zaptest"
 	"github.com/onsi/gomega"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
 	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
@@ -21,6 +19,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 )
 
 func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
@@ -1087,10 +1088,9 @@ func TestEndpoints(t *testing.T) {
 			nodes := NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
 			pods := NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})
 			pods.Synced().WaitUntilSynced(context.Background().Done())
-			es := EndpointsSettings{
+			endpointSettings := EndpointsSettings{
 				EnableAutoMtls: false,
 			}
-			endpointSettings := krt.NewStatic(&es, true)
 
 			// Get the EndpointSlices collection
 			endpointSlices := krttest.GetMockCollection[*discoveryv1.EndpointSlice](mock)

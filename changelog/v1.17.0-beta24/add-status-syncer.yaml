@@ -1,6 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/solo-projects/issues/6084
-    resolvesIssue: true
-    description: >-
-      Fix RouteOption resource statuses used for policy attachment (via targetRef) with separate status syncer.

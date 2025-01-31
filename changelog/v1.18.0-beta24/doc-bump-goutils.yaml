@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >- 
-      Bumping the go-utils version to 0.27.1 to fix duplicate changelog entries.
-      skipCI-kube-tests:true

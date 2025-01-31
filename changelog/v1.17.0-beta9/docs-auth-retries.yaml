@@ -1,6 +1,0 @@
-changelog:
-- type: NON_USER_FACING  
-  description: >- 
-    Adds documentation for how to do retries in grpc passthrough auth. 
-    skipCI-kube-tests:true
-  resolvesIssue: false

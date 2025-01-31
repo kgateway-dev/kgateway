@@ -1,6 +1,0 @@
-changelog:
-- type: FIX
-  issueLink: https://github.com/solo-io/gloo/issues/5885
-  resolvesIssue: false
-  description: Fix a bug that causes edge to try to list endpoints across all namespaces when no upstreams exist.
-

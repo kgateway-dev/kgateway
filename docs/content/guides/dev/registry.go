@@ -6,28 +6,28 @@ package docs_demo
 // package registry
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/azure"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/basicroute"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/cors"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/faultinjection"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/bootstrap"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/aws"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/azure"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/basicroute"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/consul"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/cors"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/faultinjection"
 
 	// add our plugin's import here:
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/gce"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/grpc"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/linkerd"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/loadbalancer"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/rest"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/static"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/stats"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/upstreamconn"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/upstreamssl"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/gce"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/grpc"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/hcm"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/kubernetes"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/linkerd"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/loadbalancer"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/rest"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/static"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/stats"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/transformation"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/upstreamconn"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/upstreamssl"
 )
 
 type registry struct {

@@ -5,9 +5,10 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
-	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
 	"github.com/solo-io/go-utils/threadsafe"
+
+	"github.com/kgateway-dev/kgateway/pkg/utils/envoyutils/admincli"
+	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
 )
 
 var _ = Describe("Client", func() {

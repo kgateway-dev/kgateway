@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Add preserve IP to gcp lbs doc

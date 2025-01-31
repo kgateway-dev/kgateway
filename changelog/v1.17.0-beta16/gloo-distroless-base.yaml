@@ -1,3 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: Create custom distroless images that contain ca-certificates and the binaries required for the probes / lifecycle hooks. This image can be used as the base for all distroless image variants.

@@ -1,4 +1,0 @@
-changelog:
-- type: FIX
-  description: Don't error on install if gloo installation namespace already exists.
-  issueLink: https://github.com/solo-io/gloo/issues/1988

@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: For community PRs, do not add the 'keep-pr-updated' label

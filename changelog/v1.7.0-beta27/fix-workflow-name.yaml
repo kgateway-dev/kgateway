@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >
-      Fix the workflow name to trigger rebuilding the docs after trivy security scan is run on release.

@@ -1,3 +1,5 @@
+//go:build ignore
+
 package envoy
 
 import (
@@ -10,10 +12,10 @@ import (
 
 	"github.com/solo-io/go-utils/threadsafe"
 
-	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
-	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/pkg/utils/envoyutils/admincli"
+	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
 
-	"github.com/solo-io/gloo/test/services"
+	"github.com/kgateway-dev/kgateway/test/services"
 
 	"sync"
 	"text/template"

@@ -3,13 +3,14 @@ package validation
 import (
 	"context"
 
+	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils/envoyutils/bootstrap"
-	"github.com/solo-io/gloo/pkg/utils/envutils"
-	"github.com/solo-io/gloo/projects/envoyinit/pkg/runner"
-	"github.com/solo-io/gloo/projects/gloo/constants"
 	"github.com/solo-io/go-utils/contextutils"
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
+
+	"github.com/kgateway-dev/kgateway/pkg/utils/envoyutils/bootstrap"
+	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/projects/envoyinit/pkg/runner"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/xds"
 )
 
 const (
@@ -20,10 +21,13 @@ const (
 	// projects/envoyinit/cmd/Dockerfile.envoyinit
 	// https://github.com/solo-io/envoy-gloo/blob/v1.30.4-patch5/ci/Dockerfile
 	defaultEnvoyPath = "/usr/local/bin/envoy"
+
+	// only usage, copied from projects/gloo/constants/envoy.go
+	EnvoyBinaryEnv = "ENVOY_BINARY"
 )
 
 func ValidateBootstrap(ctx context.Context, bootstrap string) error {
-	return runner.RunEnvoyValidate(ctx, envutils.GetOrDefault(constants.EnvoyBinaryEnv, defaultEnvoyPath, false), bootstrap)
+	return runner.RunEnvoyValidate(ctx, envutils.GetOrDefault(EnvoyBinaryEnv, defaultEnvoyPath, false), bootstrap)
 }
 
 // ValidateSnapshot accepts an xDS snapshot, clones it, and does the necessary
@@ -33,12 +37,12 @@ func ValidateBootstrap(ctx context.Context, bootstrap string) error {
 // and some configurations may require the context of the destination such as mounted files.
 func ValidateSnapshot(
 	ctx context.Context,
-	snap envoycache.Snapshot,
+	snap *envoycache.Snapshot,
 ) error {
 	// THIS IS CRITICAL SO WE DO NOT INTERFERE WITH THE CONTROL PLANE.
 	// The logic for converting xDS to static bootstrap mutates some of
 	// the inputs, which is unacceptable when calling from translation.
-	snap = snap.Clone()
+	snap = xds.CloneSnap(snap)
 
 	bootstrapJson, err := bootstrap.FromSnapshot(ctx, snap)
 	if err != nil {

@@ -1,9 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/solo-projects/issues/6847
-    resolvesIssue: false
-    description: >-
-      The existing Helm values `settings.aws.enableServiceAccountCredentials` and `settings.aws.stsCredentialsRegion` are now respected when using Kubernetes Gateway API,
-      as part of supporting [AWS Lambda with EKS ServiceAccounts](https://docs.solo.io/gloo-edge/latest/guides/traffic_management/destination_types/aws_lambda/eks-service-accounts/).
-      When `settings.aws.enableServiceAccountCredentials` is true, a `aws_sts_cluster` cluster, configured with the STS endpoint specified by `settings.aws.stsCredentialsRegion`,
-      will automatically be added to dynamically provisioned proxies, so that Envoy can reach AWS to assume the role needed to access Lambdas.

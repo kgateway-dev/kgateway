@@ -5,7 +5,7 @@ metadata:
   name: http
   namespace: gloo-system
 spec:
-  gatewayClassName: gloo-gateway
+  gatewayClassName: kgateway
   listeners:
   - protocol: HTTP
     port: 8080
@@ -43,10 +43,10 @@ spec:
     - type: ExtensionRef
       extensionRef:
         name: robots-txt
-        group: gateway.gloo.solo.io
+        group: gateway.kgateway.dev
         kind: DirectResponse
 ---
-apiVersion: gateway.gloo.solo.io/v1alpha1
+apiVersion: gateway.kgateway.dev/v1alpha1
 kind: DirectResponse
 metadata:
   name: robots-txt

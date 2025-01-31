@@ -1,7 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/solo-projects/issues/5890
-    resolvesIssue: false
-    description: >-
-      Properly pass through the `json_to_proto` value from the gloo API to the envoy API for 
-      dynamic metadata transformations.

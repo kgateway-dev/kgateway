@@ -1,4 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    description: Introduce examples project for organizing resources associated with docs and tutorials.
-    issueLink: https://github.com/solo-io/gloo/issues/1460

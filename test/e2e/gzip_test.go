@@ -1,22 +1,25 @@
+//go:build ignore
+
 package e2e_test
 
 import (
-	"github.com/solo-io/gloo/test/gomega/matchers"
-	"github.com/solo-io/gloo/test/gomega/transforms"
-	"github.com/solo-io/gloo/test/testutils"
+	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/test/gomega/transforms"
+	"github.com/kgateway-dev/kgateway/test/testutils"
 
 	"net/http"
 
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
+	gatewaydefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
 
-	"github.com/solo-io/gloo/test/e2e"
+	"github.com/kgateway-dev/kgateway/test/e2e"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	gloogzip "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+
+	gloogzip "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2"
+	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
 )
 
 var _ = Describe("gzip", func() {

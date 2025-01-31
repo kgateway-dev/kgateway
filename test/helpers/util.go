@@ -1,3 +1,5 @@
+//go:build ignore
+
 package helpers
 
 import (
@@ -7,11 +9,12 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	skerrors "github.com/solo-io/solo-kit/pkg/errors"
+
+	"github.com/kgateway-dev/kgateway/test/gomega"
 )
 
 // PatchResource mutates an existing persisted resource, retrying if a resourceVersionError is encountered
@@ -24,7 +27,7 @@ func PatchResource(ctx context.Context, resourceRef *core.ResourceRef, mutator f
 // The mutator method must return the full object that will be persisted, any side effects from the mutator will be ignored
 func PatchResourceWithOffset(offset int, ctx context.Context, resourceRef *core.ResourceRef, mutator func(resource resources.Resource) resources.Resource, client clients.ResourceClient) error {
 	// There is a potential bug in our resource writing implementation that leads to test flakes
-	// https://github.com/solo-io/gloo/issues/7044
+	// https://github.com/kgateway-dev/kgateway/issues/7044
 	// This is a temporary solution to ensure that tests do not flake
 
 	var patchErr error

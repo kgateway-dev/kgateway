@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/7223
-    resolvesIssue: true
-    description: >-
-      Remove hard-coded namespaces from the tracing tests. This issue is causing tests to pass in OSS gloo, but fail in solo-projects.

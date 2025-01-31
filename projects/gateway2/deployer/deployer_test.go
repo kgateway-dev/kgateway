@@ -11,15 +11,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
-	"github.com/solo-io/gloo/pkg/schemes"
-	"github.com/solo-io/gloo/pkg/version"
-	gw2_v1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
-	"github.com/solo-io/gloo/projects/gateway2/deployer"
-	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-	wellknownkube "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/wellknown"
-	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
-	"github.com/solo-io/gloo/test/gomega/matchers"
 	jsonpb "google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	appsv1 "k8s.io/api/apps/v1"
@@ -32,6 +23,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/pkg/version"
+	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/deployer"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/xds"
+
 	// TODO BML tests in this suite fail if this no-op import is not imported first.
 	//
 	// I know, I know, you're reading this, and you're skeptical. I can feel it.
@@ -39,7 +37,13 @@ import (
 	//
 	// There is some import within this package that this suite relies on. Chasing that down is
 	// *hard* tho due to the import tree, and best done in a followup.
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	// _ "github.com/kgateway-dev/kgateway/projects/gloo/pkg/translator"
+	//
+	// The above TODO is a result of proto types being registered for free somewhere through
+	// the translator import. What we really need is to register all proto types, which is
+	// "correctly" available to use via `envoyinit`; note that the autogeneration of these types
+	// is currently broken. see: https://github.com/kgateway-dev/kgateway/issues/10491
+	_ "github.com/kgateway-dev/kgateway/projects/envoyinit/hack/filter_types"
 )
 
 // testBootstrap implements resources.Resource in order to use protoutils.UnmarshalYAML
@@ -113,6 +117,20 @@ func (objs *clientObjects) getEnvoyConfig(namespace, name string) *envoy_config_
 
 func proxyName(name string) string {
 	return fmt.Sprintf("gloo-proxy-%s", name)
+}
+
+// containMapElements produces a matcher that will only match if all provided map elements
+// are completely accounted for. The actual value is expected to not be nil or empty since
+// there are other, more appropriate matchers for those cases.
+func containMapElements[keyT comparable, valT any](m map[keyT]valT) types.GomegaMatcher {
+	subMatchers := []types.GomegaMatcher{
+		Not(BeNil()),
+		Not(BeEmpty()),
+	}
+	for k, v := range m {
+		subMatchers = append(subMatchers, HaveKeyWithValue(k, v))
+	}
+	return And(subMatchers...)
 }
 
 var _ = Describe("Deployer", func() {
@@ -430,10 +448,10 @@ var _ = Describe("Deployer", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(gvks).To(HaveLen(4))
 			Expect(gvks).To(ConsistOf(
-				wellknownkube.DeploymentGVK,
-				wellknownkube.ServiceGVK,
-				wellknownkube.ServiceAccountGVK,
-				wellknownkube.ConfigMapGVK,
+				wellknown.DeploymentGVK,
+				wellknown.ServiceGVK,
+				wellknown.ServiceAccountGVK,
+				wellknown.ConfigMapGVK,
 			))
 		})
 
@@ -816,7 +834,7 @@ var _ = Describe("Deployer", func() {
 				}
 				Expect(dep.Spec.Template.Spec.Containers[0].ImagePullPolicy).To(Equal(*expectedGwp.EnvoyContainer.Image.PullPolicy))
 
-				Expect(dep.Spec.Template.Annotations).To(matchers.ContainMapElements(expectedGwp.PodTemplate.ExtraAnnotations))
+				Expect(dep.Spec.Template.Annotations).To(containMapElements(expectedGwp.PodTemplate.ExtraAnnotations))
 				Expect(dep.Spec.Template.Annotations).To(HaveKeyWithValue("prometheus.io/scrape", "true"))
 				Expect(dep.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(expectedGwp.PodTemplate.SecurityContext.RunAsUser))
 				Expect(dep.Spec.Template.Spec.SecurityContext.RunAsGroup).To(Equal(expectedGwp.PodTemplate.SecurityContext.RunAsGroup))
@@ -824,18 +842,18 @@ var _ = Describe("Deployer", func() {
 				svc := objs.findService(defaultNamespace, defaultServiceName)
 				Expect(svc).ToNot(BeNil())
 				Expect(svc.GetAnnotations()).ToNot(BeNil())
-				Expect(svc.GetAnnotations()).To(matchers.ContainMapElements(expectedGwp.Service.ExtraAnnotations))
+				Expect(svc.GetAnnotations()).To(containMapElements(expectedGwp.Service.ExtraAnnotations))
 				Expect(svc.GetLabels()).ToNot(BeNil())
-				Expect(svc.GetLabels()).To(matchers.ContainMapElements(expectedGwp.Service.ExtraLabels))
+				Expect(svc.GetLabels()).To(containMapElements(expectedGwp.Service.ExtraLabels))
 				Expect(svc.Spec.Type).To(Equal(*expectedGwp.Service.Type))
 				Expect(svc.Spec.ClusterIP).To(Equal(*expectedGwp.Service.ClusterIP))
 
 				sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
 				Expect(sa).ToNot(BeNil())
 				Expect(sa.GetAnnotations()).ToNot(BeNil())
-				Expect(sa.GetAnnotations()).To(matchers.ContainMapElements(expectedGwp.ServiceAccount.ExtraAnnotations))
+				Expect(sa.GetAnnotations()).To(containMapElements(expectedGwp.ServiceAccount.ExtraAnnotations))
 				Expect(sa.GetLabels()).ToNot(BeNil())
-				Expect(sa.GetLabels()).To(matchers.ContainMapElements(expectedGwp.ServiceAccount.ExtraLabels))
+				Expect(sa.GetLabels()).To(containMapElements(expectedGwp.ServiceAccount.ExtraLabels))
 
 				cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 				Expect(cm).ToNot(BeNil())
@@ -871,7 +889,7 @@ var _ = Describe("Deployer", func() {
 			Expect(dep.Spec.Replicas).ToNot(BeNil())
 			Expect(*dep.Spec.Replicas).To(Equal(int32(*expectedGwp.Deployment.Replicas)))
 
-			Expect(dep.Spec.Template.Annotations).To(matchers.ContainMapElements(expectedGwp.PodTemplate.ExtraAnnotations))
+			Expect(dep.Spec.Template.Annotations).To(containMapElements(expectedGwp.PodTemplate.ExtraAnnotations))
 
 			// assert envoy container
 			expectedEnvoyImage := fmt.Sprintf("%s/%s",
@@ -940,18 +958,18 @@ var _ = Describe("Deployer", func() {
 			svc := objs.findService(defaultNamespace, defaultServiceName)
 			Expect(svc).ToNot(BeNil())
 			Expect(svc.GetAnnotations()).ToNot(BeNil())
-			Expect(svc.GetAnnotations()).To(matchers.ContainMapElements(expectedGwp.Service.ExtraAnnotations))
+			Expect(svc.GetAnnotations()).To(containMapElements(expectedGwp.Service.ExtraAnnotations))
 			Expect(svc.GetLabels()).ToNot(BeNil())
-			Expect(svc.GetLabels()).To(matchers.ContainMapElements(expectedGwp.Service.ExtraLabels))
+			Expect(svc.GetLabels()).To(containMapElements(expectedGwp.Service.ExtraLabels))
 			Expect(svc.Spec.Type).To(Equal(*expectedGwp.Service.Type))
 			Expect(svc.Spec.ClusterIP).To(Equal(*expectedGwp.Service.ClusterIP))
 
 			sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
 			Expect(sa).ToNot(BeNil())
 			Expect(sa.GetAnnotations()).ToNot(BeNil())
-			Expect(sa.GetAnnotations()).To(matchers.ContainMapElements(expectedGwp.ServiceAccount.ExtraAnnotations))
+			Expect(sa.GetAnnotations()).To(containMapElements(expectedGwp.ServiceAccount.ExtraAnnotations))
 			Expect(sa.GetLabels()).ToNot(BeNil())
-			Expect(sa.GetLabels()).To(matchers.ContainMapElements(expectedGwp.ServiceAccount.ExtraLabels))
+			Expect(sa.GetLabels()).To(containMapElements(expectedGwp.ServiceAccount.ExtraLabels))
 
 			cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 			Expect(cm).ToNot(BeNil())
@@ -1078,15 +1096,12 @@ var _ = Describe("Deployer", func() {
 				if sdsContainer.SecurityContext != nil {
 					Expect(sdsContainer.SecurityContext.RunAsUser).To(BeNil())
 				}
-
 				if gwContainer.SecurityContext != nil {
 					Expect(gwContainer.SecurityContext.RunAsUser).To(BeNil())
 				}
-
 				if istioProxyContainer.SecurityContext != nil {
 					Expect(istioProxyContainer.SecurityContext.RunAsUser).To(BeNil())
 				}
-
 				if aiContainer.SecurityContext != nil {
 					Expect(aiContainer.SecurityContext.RunAsUser).To(BeNil())
 				}
@@ -1229,7 +1244,7 @@ var _ = Describe("Deployer", func() {
 						APIVersion: "gateway.solo.io/v1beta1",
 					},
 					Spec: api.GatewaySpec{
-						GatewayClassName: "gloo-gateway",
+						GatewayClassName: wellknown.GatewayClassName,
 					},
 				},
 				defaultGwp: defaultGatewayParams(),
@@ -1263,7 +1278,7 @@ var _ = Describe("Deployer", func() {
 						APIVersion: "gateway.solo.io/v1beta1",
 					},
 					Spec: api.GatewaySpec{
-						GatewayClassName: "gloo-gateway",
+						GatewayClassName: wellknown.GatewayClassName,
 						Listeners: []api.Listener{
 							{
 								Name: "listener-1",
@@ -1326,7 +1341,7 @@ var _ = Describe("Deployer", func() {
 					// make sure the envoy node metadata looks right
 					node := envoyConfig["node"].(map[string]any)
 					Expect(node).To(HaveKeyWithValue("metadata", map[string]any{
-						xds.RoleKey: fmt.Sprintf("%s~%s~%s", glooutils.GatewayApiProxyValue, gw.Namespace, gw.Name),
+						xds.RoleKey: fmt.Sprintf("%s~%s~%s", wellknown.GatewayApiProxyValue, gw.Namespace, gw.Name),
 					}))
 
 					// make sure the stats listener is enabled
@@ -1371,7 +1386,7 @@ var _ = Describe("Deployer", func() {
 					// make sure the envoy node metadata looks right
 					node := envoyConfig["node"].(map[string]any)
 					Expect(node).To(HaveKeyWithValue("metadata", map[string]any{
-						xds.RoleKey: fmt.Sprintf("%s~%s~%s", glooutils.GatewayApiProxyValue, gw.Namespace, gw.Name),
+						xds.RoleKey: fmt.Sprintf("%s~%s~%s", wellknown.GatewayApiProxyValue, gw.Namespace, gw.Name),
 					}))
 
 					// make sure the stats listener is enabled

@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: existing GitHub actions now consume a common helper action as a base

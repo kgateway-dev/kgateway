@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/10152
-    resolvesIssue: true
-    description: >-
-      Adds `darwin` operating system support for the Consul and Vault dependencies
-      used by Kubernetes e2e testing.

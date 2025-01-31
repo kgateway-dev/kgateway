@@ -1,7 +1,0 @@
-changelog:
-  - type: HELM
-    issueLink: https://github.com/solo-io/gloo/issues/3470
-    description: >
-      Add partial to be defined in enterprise to allow enterprise-only settings in
-      Open source manifest, without leaking enterprise structs/datatypes.
-

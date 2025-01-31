@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Fix a bug that prevented kube dumps on failure from being populated as intended.

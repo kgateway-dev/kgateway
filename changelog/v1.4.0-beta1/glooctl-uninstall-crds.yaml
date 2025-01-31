@@ -1,5 +1,0 @@
-changelog:
-  - type: FIX
-    description: >
-      `glooctl uninstall --all` and `glooctl uninstall --delete-crds` will now properly delete CRDs for enterprise Gloo.
-    issueLink: https://github.com/solo-io/gloo/issues/2219

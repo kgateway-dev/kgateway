@@ -1,8 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: |
-      Strengthed VHO kubernetes/e2e tests. Addressed issue with checking for `content-length` 
-      header in response containing `transfer-encoding: chunked` header.
-      Added to confirm previously conflicting VHO being accepted after blocker is deleted.
-    issueLink: https://github.com/k8sgateway/k8sgateway/issues/10310
-    resolvesIssue: false

@@ -1,4 +1,0 @@
-changelog:
-  - type: BREAKING_CHANGE
-    description: Extend the route params for the plugins to have the vhost included.
-    issueLink: https://github.com/solo-io/gloo/pull/766

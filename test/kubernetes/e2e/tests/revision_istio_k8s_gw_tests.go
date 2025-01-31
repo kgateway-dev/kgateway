@@ -1,8 +1,10 @@
+//go:build ignore
+
 package tests
 
 import (
-	"github.com/solo-io/gloo/test/kubernetes/e2e"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/istio"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/istio"
 )
 
 func RevisionIstioK8sGatewaySuiteRunner() e2e.SuiteRunner {

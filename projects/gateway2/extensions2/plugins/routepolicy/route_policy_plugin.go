@@ -9,14 +9,15 @@ import (
 
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
-	"github.com/solo-io/gloo/projects/gateway2/extensions2/common"
-	extensionplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
-	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
-	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"istio.io/istio/pkg/kube/krt"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/common"
+	extensionplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
+	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/plugins"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
 )
 
 type routeOptsPlugin struct {
@@ -40,7 +41,6 @@ type routeOptsPluginGwPass struct {
 }
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionplug.Plugin {
-
 	col := krtutil.SetupCollectionDynamic[v1alpha1.RoutePolicy](
 		ctx,
 		commoncol.Client,
@@ -48,17 +48,17 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		commoncol.KrtOpts.ToOptions("RoutePolicy")...,
 	)
 	gk := v1alpha1.RoutePolicyGVK.GroupKind()
-	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.RoutePolicy) *ir.PolicyWrapper {
+	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy) *ir.PolicyWrapper {
 		var pol = &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
 				Group:     gk.Group,
 				Kind:      gk.Kind,
-				Namespace: i.Namespace,
-				Name:      i.Name,
+				Namespace: policyCR.Namespace,
+				Name:      policyCR.Name,
 			},
-			Policy:     i,
-			PolicyIR:   &routeOptsPlugin{ct: i.CreationTimestamp.Time, spec: i.Spec},
-			TargetRefs: convert(i.Spec.TargetRef),
+			Policy:     policyCR,
+			PolicyIR:   &routeOptsPlugin{ct: policyCR.CreationTimestamp.Time, spec: policyCR.Spec},
+			TargetRefs: convert(policyCR.Spec.TargetRef),
 		}
 		return pol
 	})

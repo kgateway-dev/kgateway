@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/7255
-    resolvesIssue: false
-    description: >-
-      Remove `tcproute-crd.yaml` symlink and get the crd location from the crd package.

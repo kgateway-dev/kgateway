@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/5812
-    resolvesIssue: false
-    description: >-
-      Update the DefaultHost for the e2e testcontext to use `jsonplaceholder.typicode.com/` with the HttpRequestBuilder instead of 
-      the inconsistent/not meant for testing `test.com`

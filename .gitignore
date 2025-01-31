@@ -1,7 +1,6 @@
 vendor*
 .vendor-new
 _output
-example/proxycontroller/_output
 _local
 _test
 _artifacts
@@ -17,8 +16,6 @@ docker-local
 themes
 install/gloo.yaml
 
-cloudbuild-local*.yaml
-
 # OSX files
 .DS_Store
 docs/helm-values.md
@@ -26,10 +23,6 @@ docs/helm-values.md
 # ignore intermediate files that gomock sometimes generates
 **/gomock_reflect*
 
-## START Temporary exclusion while master/v0.20.x branch is supported
-old_docs_temp_dir/
-
-## END Temporary exclusion while master/v0.20.x branch is supported
 .vscode/launch.json
 .vscode/settings.json
 *__debug_bin
@@ -64,3 +57,5 @@ istio-*/*
 
 # Bin directory created by e2e test
 .bin/
+# Added by goreleaser init:
+dist/

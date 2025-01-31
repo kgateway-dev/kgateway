@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/9330
-    description: >-
-      Initialize extensions with kick channel, allowing them to kick XDS to resync based on changes in the extension inputs.

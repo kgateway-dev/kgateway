@@ -1,9 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/7157
-    resolvesIssue: false
-    description: >-
-      Update trivyignore contents
-      
-      skipCI-kube-tests:true
-      skipCI-docs-build:true

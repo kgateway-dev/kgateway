@@ -3,12 +3,13 @@
 package v1alpha1
 
 import (
-	internal "github.com/solo-io/gloo/projects/gateway2/api/applyconfiguration/internal"
-	apiv1alpha1 "github.com/solo-io/gloo/projects/gateway2/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
+
+	internal "github.com/kgateway-dev/kgateway/projects/gateway2/api/applyconfiguration/internal"
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
 )
 
 // UpstreamApplyConfiguration represents a declarative configuration of the Upstream type for use
@@ -27,7 +28,7 @@ func Upstream(name, namespace string) *UpstreamApplyConfiguration {
 	b.WithName(name)
 	b.WithNamespace(namespace)
 	b.WithKind("Upstream")
-	b.WithAPIVersion("gateway.gloo.solo.io/v1alpha1")
+	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b
 }
 
@@ -55,7 +56,7 @@ func ExtractUpstreamStatus(upstream *apiv1alpha1.Upstream, fieldManager string) 
 
 func extractUpstream(upstream *apiv1alpha1.Upstream, fieldManager string, subresource string) (*UpstreamApplyConfiguration, error) {
 	b := &UpstreamApplyConfiguration{}
-	err := managedfields.ExtractInto(upstream, internal.Parser().Type("com.github.solo-io.gloo.projects.gateway2.api.v1alpha1.Upstream"), fieldManager, b, subresource)
+	err := managedfields.ExtractInto(upstream, internal.Parser().Type("com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.Upstream"), fieldManager, b, subresource)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +64,7 @@ func extractUpstream(upstream *apiv1alpha1.Upstream, fieldManager string, subres
 	b.WithNamespace(upstream.Namespace)
 
 	b.WithKind("Upstream")
-	b.WithAPIVersion("gateway.gloo.solo.io/v1alpha1")
+	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b, nil
 }
 

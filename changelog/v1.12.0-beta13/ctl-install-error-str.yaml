@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Make glooctl install gateway enterprise mimic error output of glooctl install gateway

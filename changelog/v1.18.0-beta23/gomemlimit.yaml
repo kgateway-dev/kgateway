@@ -1,8 +1,0 @@
-changelog:
-  - type: HELM
-    issueLink: https://github.com/solo-io/gloo/issues/10062
-    resolvesIssue: false
-    description: >-
-      Automatically set the GOMAXPROCS environment variable in the gloo and discovery pods when CPU resource limits are set (via the `resources.limits.cpu` deployment helm value).
-      Automatically set the GOMEMLIMIT environment variable in the gloo and discovery pods when memory resource limits are set (via the `resources.limits.memory` deployment helm value).
-      These may help limit CPU/memory usage when resource limits are set on the pods.

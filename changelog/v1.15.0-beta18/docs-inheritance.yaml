@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >- 
-      Adds concept docs for inheritance and links to existing examples. 
-      skipCI-kube-tests:true

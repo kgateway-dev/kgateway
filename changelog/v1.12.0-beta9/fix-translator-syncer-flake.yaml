@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Fix translator syncer test flake by waiting for status to be ready.
-    issueLink: https://github.com/solo-io/gloo/issues/6388

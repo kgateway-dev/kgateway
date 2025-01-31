@@ -1,3 +1,5 @@
+//go:build ignore
+
 package services
 
 import (
@@ -6,7 +8,7 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/solo-io/gloo/test/testutils"
+	"github.com/kgateway-dev/kgateway/test/testutils"
 
 	"github.com/avast/retry-go"
 

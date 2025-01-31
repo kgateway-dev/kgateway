@@ -1,3 +1,5 @@
+//go:build ignore
+
 package test
 
 import (
@@ -16,12 +18,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
-	values "github.com/solo-io/gloo/install/helm/gloo/generate"
-	"github.com/solo-io/gloo/install/test/securitycontext"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils"
-	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/test/gomega/matchers"
-	glootestutils "github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/k8s-utils/installutils/kuberesource"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -36,6 +32,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/pointer"
+
+	values "github.com/kgateway-dev/kgateway/install/helm/gloo/generate"
+	"github.com/kgateway-dev/kgateway/install/test/securitycontext"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
 )
 
 func GetPodNamespaceStats() corev1.EnvVar {
@@ -2836,7 +2839,7 @@ spec:
 							"prometheus.io/path":   "/metrics",
 							"prometheus.io/port":   "8081",
 							"prometheus.io/scrape": "true",
-							// This annotation was introduced to resolve https://github.com/solo-io/gloo/issues/8392
+							// This annotation was introduced to resolve https://github.com/kgateway-dev/kgateway/issues/8392
 							// It triggers a new rollout of the gateway proxy if the config map it uses changes
 							// As of PR 8733, changing the values of the deployment spec doesn't change the gateway-proxy config map, so it is safe to hardcode the checksum in the tests
 							"checksum/gateway-proxy-envoy-config": "27068cd033014d38f6c77522484e957ab25fa1be34a900a1f5241b8f7d62f525",
@@ -3521,7 +3524,7 @@ spec:
 						Expect(istioProxyContainer.Image).To(Equal("my-istio-reg/my-istio-repo:my-istio-tag"))
 						Expect(istioProxyContainer.ImagePullPolicy).To(Equal(corev1.PullAlways))
 
-						// Volumes env added to support more recent istio versions as of https://github.com/solo-io/gloo/pull/8666
+						// Volumes env added to support more recent istio versions as of https://github.com/kgateway-dev/kgateway/pull/8666
 						Expect(istioProxyContainer.VolumeMounts[4]).To(Equal(corev1.VolumeMount{Name: "credential-socket", MountPath: "/var/run/secrets/credential-uds"}))
 						Expect(istioProxyContainer.VolumeMounts[5]).To(Equal(corev1.VolumeMount{Name: "workload-socket", MountPath: "/var/run/secrets/workload-spiffe-uds"}))
 						Expect(istioProxyContainer.VolumeMounts[6]).To(Equal(corev1.VolumeMount{Name: "workload-certs", MountPath: "/var/run/secrets/workload-spiffe-credentials"}))
@@ -3558,7 +3561,7 @@ spec:
 						Expect(istioProxyContainer.Image).To(Equal("my-istio-reg/my-istio-repo:my-istio-tag"))
 						Expect(istioProxyContainer.ImagePullPolicy).To(Equal(corev1.PullAlways))
 
-						// Volumes env added to support more recent istio versions as of https://github.com/solo-io/gloo/pull/8666
+						// Volumes env added to support more recent istio versions as of https://github.com/kgateway-dev/kgateway/pull/8666
 						Expect(istioProxyContainer.VolumeMounts[4]).To(Equal(corev1.VolumeMount{Name: "credential-socket", MountPath: "/var/run/secrets/credential-uds"}))
 						Expect(istioProxyContainer.VolumeMounts[5]).To(Equal(corev1.VolumeMount{Name: "workload-socket", MountPath: "/var/run/secrets/workload-spiffe-uds"}))
 						Expect(istioProxyContainer.VolumeMounts[6]).To(Equal(corev1.VolumeMount{Name: "workload-certs", MountPath: "/var/run/secrets/workload-spiffe-credentials"}))
@@ -7382,7 +7385,7 @@ metadata:
 			})
 		})
 
-		// Lines ending with whitespace causes malformatted config map (https://github.com/solo-io/gloo/issues/4645)
+		// Lines ending with whitespace causes malformatted config map (https://github.com/kgateway-dev/kgateway/issues/4645)
 		It("should not contain trailing whitespace", func() {
 			out, err := exec.Command("helm", "template", "../helm/gloo").Output()
 			Expect(err).NotTo(HaveOccurred(), "Helm template Generation error")
@@ -7419,7 +7422,7 @@ metadata:
 func appendIfNilPath(queue []reflect.Type, newVal reflect.Type) []reflect.Type {
 	if newVal.Kind() == reflect.Struct {
 		pkgName := newVal.PkgPath()
-		if pkgName == "github.com/solo-io/gloo/install/helm/gloo/generate" {
+		if pkgName == "github.com/kgateway-dev/kgateway/install/helm/gloo/generate" {
 			return append(queue, newVal)
 		}
 	}

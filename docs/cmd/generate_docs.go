@@ -20,11 +20,12 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v32/github"
 	"github.com/rotisserie/eris"
-	. "github.com/solo-io/gloo/docs/cmd/securityscanutils"
 	changelogdocutils "github.com/solo-io/go-utils/changeloggenutils"
 	"github.com/solo-io/go-utils/githubutils"
 	"github.com/solo-io/go-utils/versionutils"
 	"github.com/spf13/cobra"
+
+	. "github.com/kgateway-dev/kgateway/docs/cmd/securityscanutils"
 )
 
 func main() {
@@ -196,8 +197,8 @@ const (
 	glooEnterpriseRepo = "solo-projects"
 
 	// donated names
-	repoOwnerDonated      = "k8sgateway"
-	donatedOpenSourceRepo = "k8sgateway"
+	repoOwnerDonated      = "kgateway-dev"
+	donatedOpenSourceRepo = "kgateway"
 )
 
 const (

@@ -1,8 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/solo-projects/issues/7256
-    resolvesIssue: false
-    description: >-
-      Create a new SuiteRunner for the ValidationTests which does not include the split validation test, which
-      fails when imported by other projects. https://github.com/k8sgateway/k8sgateway/issues/10374 created to
-      track a fix that will allow tests that update Helm values to be exported.

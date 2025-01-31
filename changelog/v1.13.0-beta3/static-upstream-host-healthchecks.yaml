@@ -1,4 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/6770
-    description: Hosts now respect top-level healthChecks when provided

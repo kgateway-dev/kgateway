@@ -1,4 +1,0 @@
-changelog:
-  - type: HELM
-    description: Provision to add extra Annotations to the helm deployments
-    issueLink: https://github.com/solo-io/gloo/issues/4232

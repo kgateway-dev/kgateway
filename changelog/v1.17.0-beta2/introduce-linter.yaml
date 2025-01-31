@@ -1,9 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/6686
-    resolvesIssue: false
-    description: >-
-      Introduce linter with minimal set of rules to start with. This is intended to introduce the linter
-      so that future devs can easily expand its usage.
-      
-      skipCI-docs-build:true

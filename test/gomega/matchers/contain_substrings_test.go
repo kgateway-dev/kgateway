@@ -1,9 +1,12 @@
+//go:build ignore
+
 package matchers_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/gomega/matchers"
+
+	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 )
 
 var _ = Describe("ContainSubstrings", func() {

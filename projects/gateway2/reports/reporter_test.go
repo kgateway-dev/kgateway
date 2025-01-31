@@ -13,7 +13,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
-	"github.com/solo-io/gloo/projects/gateway2/reports"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/reports"
 )
 
 var _ = Describe("Reporting Infrastructure", func() {
@@ -121,7 +121,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 				// initialize RouteReporter to mimic translation loop (i.e. report gets initialized for all Routes)
 				reporter.Route(obj)
 
-				status := rm.BuildRouteStatus(context.Background(), obj, "gloo-gateway")
+				status := rm.BuildRouteStatus(context.Background(), obj, "kgateway")
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(1))
@@ -142,7 +142,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 					Reason: gwv1.RouteReasonBackendNotFound,
 				})
 
-				status := rm.BuildRouteStatus(context.Background(), obj, "gloo-gateway")
+				status := rm.BuildRouteStatus(context.Background(), obj, "kgateway")
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(1))
@@ -171,7 +171,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 					Reason: gwv1.RouteReasonBackendNotFound,
 				})
 
-				status := rm.BuildRouteStatus(context.Background(), obj, "gloo-gateway")
+				status := rm.BuildRouteStatus(context.Background(), obj, "kgateway")
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(1))
@@ -193,7 +193,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 				// initialize RouteReporter to mimic translation loop (i.e. report gets initialized for all Routes)
 				reporter.Route(obj)
 
-				status := rm.BuildRouteStatus(context.Background(), obj, "gloo-gateway")
+				status := rm.BuildRouteStatus(context.Background(), obj, "kgateway")
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(1))
@@ -212,7 +212,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 					Fail(fmt.Sprintf("unsupported route type: %T", obj))
 				}
 
-				status = rm.BuildRouteStatus(context.Background(), obj, "gloo-gateway")
+				status = rm.BuildRouteStatus(context.Background(), obj, "kgateway")
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(1))
@@ -249,7 +249,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 				// Initialize RouteReporter to mimic translation loop
 				reporter.Route(obj)
 
-				status := rm.BuildRouteStatus(context.Background(), obj, "gloo-gateway")
+				status := rm.BuildRouteStatus(context.Background(), obj, "kgateway")
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(2))
@@ -291,8 +291,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 				reporter.Route(route1)
 				reporter.Route(route2)
 
-				status1 := rm.BuildRouteStatus(context.Background(), route1, "gloo-gateway")
-				status2 := rm.BuildRouteStatus(context.Background(), route2, "gloo-gateway")
+				status1 := rm.BuildRouteStatus(context.Background(), route1, "kgateway")
+				status2 := rm.BuildRouteStatus(context.Background(), route2, "kgateway")
 
 				Expect(status1).NotTo(BeNil())
 				Expect(status1.Parents[0].Conditions).To(HaveLen(2))
@@ -328,7 +328,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 
 			// Initialize RouteReporter to mimic translation loop
 			reporter.Route(route)
-			status := rm.BuildRouteStatus(context.Background(), route, "gloo-gateway")
+			status := rm.BuildRouteStatus(context.Background(), route, "kgateway")
 
 			Expect(status).NotTo(BeNil())
 			Expect(status.Parents).To(BeEmpty())

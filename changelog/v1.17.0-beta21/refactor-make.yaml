@@ -1,4 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: Refactor Makefile by breaking up large docker and kind targets
-

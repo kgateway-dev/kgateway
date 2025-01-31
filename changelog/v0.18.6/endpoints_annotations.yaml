@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Allow for annotations on the endpoints to propagate to the xds snapshot.

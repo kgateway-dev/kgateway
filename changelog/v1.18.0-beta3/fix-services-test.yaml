@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Fix test that was never run on PRs to run on PRs. Also fix the test so it will pass.

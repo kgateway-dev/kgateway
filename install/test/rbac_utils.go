@@ -1,3 +1,5 @@
+//go:build ignore
+
 package test
 
 import "github.com/solo-io/k8s-utils/manifesttestutils"

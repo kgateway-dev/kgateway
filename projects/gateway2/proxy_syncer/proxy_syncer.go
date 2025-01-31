@@ -10,8 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
-	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/controllers"
 	"istio.io/istio/pkg/kube/krt"
@@ -21,20 +19,6 @@ import (
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/solo-io/gloo/pkg/utils/statsutils"
-	extensions "github.com/solo-io/gloo/projects/gateway2/extensions2"
-	"github.com/solo-io/gloo/projects/gateway2/extensions2/common"
-	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
-	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
-	"github.com/solo-io/gloo/projects/gateway2/reports"
-	"github.com/solo-io/gloo/projects/gateway2/translator"
-	"github.com/solo-io/gloo/projects/gateway2/translator/irtranslator"
-	ggv2utils "github.com/solo-io/gloo/projects/gateway2/utils"
-	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
-	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/proto"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,6 +26,20 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+
+	extensions "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/common"
+	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/krtcollections"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/reports"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/translator"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/translator/irtranslator"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils"
+	ggv2utils "github.com/kgateway-dev/kgateway/projects/gateway2/utils"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/xds"
 )
 
 const gatewayV1A2Version = "v1alpha2"
@@ -84,7 +82,7 @@ type GatewayXdsResources struct {
 }
 
 func (r GatewayXdsResources) ResourceName() string {
-	return xds.OwnerNamespaceNameID(glooutils.GatewayApiProxyValue, r.Namespace, r.Name)
+	return xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, r.Namespace, r.Name)
 }
 func (r GatewayXdsResources) Equals(in GatewayXdsResources) bool {
 	return r.NamespacedName == in.NamespacedName && report{r.reports}.Equals(report{in.reports}) && r.ClustersHash == in.ClustersHash &&
@@ -128,8 +126,6 @@ func toResources(gw ir.Gateway, xdsSnap irtranslator.TranslationResult, r report
 // The provided GatewayInputChannels are used to trigger syncs.
 func NewProxySyncer(
 	ctx context.Context,
-	initialSettings *glookubev1.Settings,
-	settings krt.Singleton[glookubev1.Settings],
 	controllerName string,
 	mgr manager.Manager,
 	client kube.Client,
@@ -199,7 +195,14 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 
 	s.translatorSyncer.Init(ctx, isOurGw)
 
-	kubeGateways, routes, finalUpstreams, endpointIRs := krtcollections.InitCollections(ctx, s.extensions, s.istioClient, isOurGw, s.commonCols.RefGrants, krtopts)
+	kubeGateways, routes, finalUpstreams, endpointIRs := krtcollections.InitCollections(
+		ctx,
+		s.extensions,
+		s.istioClient,
+		isOurGw,
+		s.commonCols.RefGrants,
+		krtopts,
+	)
 
 	s.mostXdsSnapshots = krt.NewCollection(kubeGateways.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
 		logger.Debugf("building proxy for kube gw %s version %s", client.ObjectKeyFromObject(gw.Obj), gw.Obj.GetResourceVersion())
@@ -212,9 +215,28 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 		return toResources(gw, *xdsSnap, rm)
 	}, krtopts.ToOptions("MostXdsSnapshots")...)
 
-	epPerClient := NewPerClientEnvoyEndpoints(logger.Desugar(), krtopts, s.uniqueClients, endpointIRs, s.translatorSyncer.TranslateEndpoints)
-	clustersPerClient := NewPerClientEnvoyClusters(ctx, krtopts, s.translatorSyncer.GetUpstreamTranslator(), finalUpstreams, s.uniqueClients)
-	s.perclientSnapCollection = snapshotPerClient(logger.Desugar(), krtopts, s.uniqueClients, s.mostXdsSnapshots, epPerClient, clustersPerClient)
+	epPerClient := NewPerClientEnvoyEndpoints(
+		logger.Desugar(),
+		krtopts,
+		s.uniqueClients,
+		endpointIRs,
+		s.translatorSyncer.TranslateEndpoints,
+	)
+	clustersPerClient := NewPerClientEnvoyClusters(
+		ctx,
+		krtopts,
+		s.translatorSyncer.GetUpstreamTranslator(),
+		finalUpstreams,
+		s.uniqueClients,
+	)
+	s.perclientSnapCollection = snapshotPerClient(
+		logger.Desugar(),
+		krtopts,
+		s.uniqueClients,
+		s.mostXdsSnapshots,
+		epPerClient,
+		clustersPerClient,
+	)
 
 	// as proxies are created, they also contain a reportMap containing status for the Gateway and associated xRoutes (really parentRefs)
 	// here we will merge reports that are per-Proxy to a singleton Report used to persist to k8s on a timer
@@ -362,7 +384,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap) {
 	ctx = contextutils.WithLogger(ctx, "routeStatusSyncer")
 	logger := contextutils.LoggerFrom(ctx)
-	stopwatch := statsutils.NewTranslatorStopWatch("RouteStatusSyncer")
+	stopwatch := utils.NewTranslatorStopWatch("RouteStatusSyncer")
 	stopwatch.Start()
 	defer stopwatch.Stop(ctx)
 
@@ -439,7 +461,7 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 func (s *ProxySyncer) syncGatewayStatus(ctx context.Context, rm reports.ReportMap) {
 	ctx = contextutils.WithLogger(ctx, "statusSyncer")
 	logger := contextutils.LoggerFrom(ctx)
-	stopwatch := statsutils.NewTranslatorStopWatch("GatewayStatusSyncer")
+	stopwatch := utils.NewTranslatorStopWatch("GatewayStatusSyncer")
 	stopwatch.Start()
 
 	// TODO: retry within loop per GW rathen that as a full block

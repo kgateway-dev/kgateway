@@ -1,3 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: Fix text that is erroneously interpreted as HTML comment in LDAP proto message.

@@ -3,7 +3,8 @@ package leaderelector_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
+
+	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector"
 )
 
 var _ = Describe("Identity", func() {

@@ -1,5 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: >-
-    Document the new Grafana integration settings `dashboardPrefix` && `extraMetricQueryParameters`
-    skipCI-kube-tests:true

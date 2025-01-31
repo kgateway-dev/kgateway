@@ -1,5 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/gloo/issues/6858
-    description: Build a kubectl image for use during install/upgrade/cleanup jobs.
-    resolvesIssue: false

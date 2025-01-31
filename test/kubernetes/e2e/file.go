@@ -1,9 +1,11 @@
+//go:build ignore
+
 package e2e
 
 import (
 	"path/filepath"
 
-	"github.com/solo-io/skv2/codegen/util"
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 )
 
 var (
@@ -25,7 +27,7 @@ var (
 // These are all stored in the tests/manifests directory
 func ManifestPath(pathParts ...string) string {
 	manifestPathParts := append([]string{
-		util.MustGetThisDir(),
+		fsutils.MustGetThisDir(),
 		"tests",
 		"manifests",
 	}, pathParts...)

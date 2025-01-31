@@ -1,3 +1,5 @@
+//go:build ignore
+
 package assertions
 
 import (
@@ -7,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/solo-io/gloo/test/kubernetes/testutils/cluster"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/gloogateway"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/cluster"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/gloogateway"
 )
 
 // Provider is the entity that provides methods which assert behaviors of a Kubernetes Cluster

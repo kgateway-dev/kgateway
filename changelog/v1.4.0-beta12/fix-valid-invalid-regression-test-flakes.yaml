@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Ensure invalid resources have been deleted before enabling validation, which could fail our regression tests

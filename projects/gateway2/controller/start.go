@@ -7,8 +7,9 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/config"
 
-	glooschemes "github.com/solo-io/gloo/pkg/schemes"
 	"github.com/solo-io/go-utils/contextutils"
+
+	glooschemes "github.com/kgateway-dev/kgateway/pkg/schemes"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -18,23 +19,24 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/solo-io/gloo/projects/gateway2/deployer"
-	"github.com/solo-io/gloo/projects/gateway2/extensions2"
-	"github.com/solo-io/gloo/projects/gateway2/extensions2/common"
-	extensionsplug "github.com/solo-io/gloo/projects/gateway2/extensions2/plugin"
-	"github.com/solo-io/gloo/projects/gateway2/extensions2/registry"
-	"github.com/solo-io/gloo/projects/gateway2/ir"
-	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
-	"github.com/solo-io/gloo/projects/gateway2/pkg/client/clientset/versioned"
-	"github.com/solo-io/gloo/projects/gateway2/proxy_syncer"
-	"github.com/solo-io/gloo/projects/gateway2/utils/krtutil"
-	"github.com/solo-io/gloo/projects/gateway2/wellknown"
-	glookubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	uzap "go.uber.org/zap"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	istiolog "istio.io/istio/pkg/log"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
+
+	"github.com/kgateway-dev/kgateway/projects/gateway2/deployer"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/common"
+	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/registry"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/settings"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/krtcollections"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/pkg/client/clientset/versioned"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/proxy_syncer"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
 )
 
 const (
@@ -68,9 +70,6 @@ type StartConfig struct {
 	AugmentedPods krt.Collection[krtcollections.LocalityPod]
 	UniqueClients krt.Collection[ir.UniqlyConnectedClient]
 
-	InitialSettings *glookubev1.Settings
-	Settings        krt.Singleton[glookubev1.Settings]
-
 	KrtOptions krtutil.KrtOptions
 }
 
@@ -82,6 +81,7 @@ type ControllerBuilder struct {
 	cfg         StartConfig
 	mgr         ctrl.Manager
 	isOurGw     func(gw *apiv1.Gateway) bool
+	settings    settings.Settings
 }
 
 func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuilder, error) {
@@ -129,7 +129,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	// TODO: replace this with something that checks that we have xds snapshot ready (or that we don't need one).
 	mgr.AddReadyzCheck("ready-ping", healthz.Ping)
 
-	setupLog.Info("initializing k8sgateway extensions")
+	setupLog.Info("initializing kgateway extensions")
 	cli, err := versioned.NewForConfig(cfg.RestConfig)
 	if err != nil {
 		return nil, err
@@ -138,8 +138,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.KrtOptions,
 		cfg.Client,
 		cli,
-		cfg.InitialSettings,
-		cfg.Settings,
+		setupLog,
 	)
 	gwClasses := sets.New(append(cfg.SetupOpts.ExtraGatewayClasses, wellknown.GatewayClassName)...)
 	isOurGw := func(gw *apiv1.Gateway) bool {
@@ -149,8 +148,6 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	setupLog.Info("initializing proxy syncer")
 	proxySyncer := proxy_syncer.NewProxySyncer(
 		ctx,
-		cfg.InitialSettings,
-		cfg.Settings,
 		wellknown.GatewayControllerName,
 		mgr,
 		cfg.Client,
@@ -160,17 +157,19 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cfg.SetupOpts.Cache,
 	)
 	proxySyncer.Init(ctx, isOurGw, cfg.KrtOptions)
+
 	if err := mgr.Add(proxySyncer); err != nil {
 		setupLog.Error(err, "unable to add proxySyncer runnable")
 		return nil, err
 	}
-	setupLog.Info("starting controller builder", "GatewayClasses", sets.List(gwClasses))
 
+	setupLog.Info("starting controller builder", "GatewayClasses", sets.List(gwClasses))
 	return &ControllerBuilder{
 		proxySyncer: proxySyncer,
 		cfg:         cfg,
 		mgr:         mgr,
 		isOurGw:     isOurGw,
+		settings:    commoncol.Settings,
 	}, nil
 }
 
@@ -195,23 +194,21 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 
 	logger.Info("got xds address for deployer", uzap.String("xds_host", xdsHost), uzap.Int32("xds_port", xdsPort))
 
-	integrationEnabled := c.cfg.InitialSettings.Spec.GetGloo().GetIstioOptions().GetEnableIntegration().GetValue()
+	integrationEnabled := c.settings.EnableIstioIntegration
 
 	// copy over relevant aws options (if any) from Settings
 	var awsInfo *deployer.AwsInfo
-	awsOpts := c.cfg.InitialSettings.Spec.GetGloo().GetAwsOptions()
-	if awsOpts != nil {
-		credOpts := awsOpts.GetServiceAccountCredentials()
-		if credOpts != nil {
-			awsInfo = &deployer.AwsInfo{
-				EnableServiceAccountCredentials: true,
-				StsClusterName:                  credOpts.GetCluster(),
-				StsUri:                          credOpts.GetUri(),
-			}
-		} else {
-			awsInfo = &deployer.AwsInfo{
-				EnableServiceAccountCredentials: false,
-			}
+	stsCluster := c.settings.StsClusterName
+	stsUri := c.settings.StsUri
+	if stsCluster != "" && stsUri != "" {
+		awsInfo = &deployer.AwsInfo{
+			EnableServiceAccountCredentials: true,
+			StsClusterName:                  stsCluster,
+			StsUri:                          stsUri,
+		}
+	} else {
+		awsInfo = &deployer.AwsInfo{
+			EnableServiceAccountCredentials: false,
 		}
 	}
 

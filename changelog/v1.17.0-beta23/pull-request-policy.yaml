@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Update the devel/contributing docs for pull request guidelines.
-      
-      skipCI-kube-tests:true
-      skipCI-docs-build:true

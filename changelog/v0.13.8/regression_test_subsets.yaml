@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Added regression tests for upstream groups and subsets
-    issueLink: https://github.com/solo-io/gloo/issues/633

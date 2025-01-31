@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Upgraded go-control-plane to version v0.10.1

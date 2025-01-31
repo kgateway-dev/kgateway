@@ -1,9 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/solo-projects/issues/6675
-    resolvesIssue: false
-    description: |
-      gateway2/route-options: merge extensionRef based attachments
-
-      Enables merging of multiple ExtensionRef based RouteOption
-      attachments for a rule within an HTTPRoute.

@@ -1,3 +1,5 @@
+//go:build ignore
+
 package helpers
 
 import (
@@ -14,14 +16,15 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/onsi/ginkgo/v2"
 
-	"github.com/solo-io/gloo/pkg/cliutil/install"
-	"github.com/solo-io/gloo/pkg/utils/envoyutils/admincli"
-	glooAdminCli "github.com/solo-io/gloo/pkg/utils/glooadminutils/admincli"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/kubectl"
-	"github.com/solo-io/gloo/pkg/utils/kubeutils/portforward"
-	"github.com/solo-io/gloo/pkg/utils/requestutils/curl"
-	"github.com/solo-io/gloo/projects/gloo/pkg/servers/admin"
 	"github.com/solo-io/go-utils/threadsafe"
+
+	"github.com/kgateway-dev/kgateway/pkg/cliutil/install"
+	"github.com/kgateway-dev/kgateway/pkg/utils/envoyutils/admincli"
+	glooAdminCli "github.com/kgateway-dev/kgateway/pkg/utils/glooadminutils/admincli"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/portforward"
+	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/projects/gateway2/admin"
 )
 
 // StandardGlooDumpOnFail creates adump of the kubernetes state and certain envoy data from
@@ -127,7 +130,7 @@ func recordKubeState(f *os.File) {
 		"httproutes.gateway.networking.k8s.io",
 		"referencegrants.gateway.networking.k8s.io",
 		// GG Kube GW resources
-		"gatewayparameters.gateway.gloo.solo.io",
+		"gatewayparameters.gateway.kgateway.dev",
 		"listeneroptions.gateway.solo.io",     // only implemented for kube gw as of now
 		"httplisteneroptions.gateway.solo.io", // only implemented for kube gw as of now
 		// GG Gloo resources

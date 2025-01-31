@@ -1,6 +1,6 @@
 # Pull Request Reviews
 
-This doc explains the best practices for reviewing a pull request in the [Gloo Gateway project](https://github.com/solo-io/gloo).
+This doc explains the best practices for reviewing a pull request in the [kgateway project](https://github.com/kgateway-dev/kgateway).
 If you are looking to contribute to the project, check out the [writing pull requests guide](pull-requests.md).
 
 - [Reviewing Pull Requests](#reviewing-pull-requests)
@@ -73,8 +73,6 @@ By approving a pull request, you are indicating that you have reviewed the chang
 *If the changes look good to you, but you recognize that you are not the best person to review the changes, instead of approving the PR, comment that the changes look good to you and clarify why you aren't comfortable approving.*
 
 ### Open Conversations
-We have branch protection rules that prevent a PR from merging when there are open conversations on a PR.
-
 It it up to the author and reviewers to make sure all conversations are resolved, though we recommend the following strategy:
 - If there is a trivial technical proposal that the PR author implemented, they can resolve the conversation when it's completed
 - If there is a nit, the PR author has complete autonomy to decide how to proceed

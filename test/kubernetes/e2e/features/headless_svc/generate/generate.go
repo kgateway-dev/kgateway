@@ -1,14 +1,17 @@
+//go:build ignore
+
 package main
 
 import (
 	"log"
 	"path/filepath"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/gloo/test/kubernetes/e2e/features/headless_svc"
-	"github.com/solo-io/gloo/test/kubernetes/testutils/resources"
-	"github.com/solo-io/skv2/codegen/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/headless_svc"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/resources"
 )
 
 // Dev tool to generate the manifest files for the test suite for demo and docs purposes
@@ -19,7 +22,7 @@ func main() {
 
 	// use the k8s gateway api resources
 	k8sApiResources := []client.Object{headless_svc.K8sGateway, headless_svc.HeadlessSvcHTTPRoute}
-	k8sApiRoutingGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", headless_svc.K8sApiRoutingGeneratedFileName)
+	k8sApiRoutingGeneratedExample := filepath.Join(fsutils.MustGetThisDir(), "generated_example", headless_svc.K8sApiRoutingGeneratedFileName)
 
 	err := resources.WriteResourcesToFile(k8sApiResources, k8sApiRoutingGeneratedExample)
 	if err != nil {
@@ -29,7 +32,7 @@ func main() {
 	// use the Gloo Edge Gateway api resources
 	exampleNs := defaults.GlooSystem
 	edgeGatewayApiResources := headless_svc.GetEdgeGatewayResources(exampleNs)
-	edgeGatewayApiRoutingGeneratedExample := filepath.Join(util.MustGetThisDir(), "generated_example", headless_svc.EdgeGatewayApiRoutingGeneratedFileName)
+	edgeGatewayApiRoutingGeneratedExample := filepath.Join(fsutils.MustGetThisDir(), "generated_example", headless_svc.EdgeGatewayApiRoutingGeneratedFileName)
 	err = resources.WriteResourcesToFile(edgeGatewayApiResources, edgeGatewayApiRoutingGeneratedExample)
 	if err != nil {
 		panic(err)
