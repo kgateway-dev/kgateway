@@ -13,7 +13,6 @@ Name|Version|License
 [go-logr/logr](https://github.com/go-logr/logr)|v1.4.2|Apache License 2.0
 [go-logr/zapr](https://github.com/go-logr/zapr)|v1.3.0|Apache License 2.0
 [google/go-cmp](https://github.com/google/go-cmp)|v0.6.0|BSD 3-clause "New" or "Revised" License
-[go-github/v32](https://github.com/google/go-github)|v32.0.0|BSD 3-clause "New" or "Revised" License
 [grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.4.0|Apache License 2.0
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
 [ginkgo/v2](https://github.com/onsi/ginkgo)|v2.20.2|MIT License
@@ -22,9 +21,6 @@ Name|Version|License
 [rotisserie/eris](https://github.com/rotisserie/eris)|v0.5.4|MIT License
 [saiskee/gettercheck](https://github.com/saiskee/gettercheck)|v0.0.0-20210820204958-38443d06ebe0|MIT License
 [spf13/afero](https://github.com/spf13/afero)|v1.11.0|Apache License 2.0
-[spf13/cobra](https://github.com/spf13/cobra)|v1.8.1|Apache License 2.0
-[spf13/pflag](https://github.com/spf13/pflag)|v1.0.5|BSD 3-clause "New" or "Revised" License
-[stoewer/go-strcase](https://github.com/stoewer/go-strcase)|v1.3.0|MIT License
 [stretchr/testify](https://github.com/stretchr/testify)|v1.9.0|MIT License
 [go.opencensus.io](https://go.opencensus.io)|v0.24.0|Apache License 2.0
 [go.uber.org/zap](https://go.uber.org/zap)|v1.27.0|MIT License
