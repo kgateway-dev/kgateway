@@ -118,6 +118,7 @@ func (r *gatewayQueries) GetRouteChain(
 		children = r.getDelegatedChildren(kctx, ctx, parentRef, typedRoute, nil)
 	case *ir.TcpRouteIR:
 		// TODO (danehans): Should TCPRoute delegation support be added in the future?
+	case *ir.TlsRouteIR:
 	default:
 		return nil
 	}
@@ -137,11 +138,11 @@ func (r *gatewayQueries) allowedRoutes(gw *gwv1.Gateway, l *gwv1.Listener) (func
 	// Determine the allowed route kinds based on the listener's protocol
 	switch l.Protocol {
 	case gwv1.HTTPSProtocolType:
-		fallthrough
+		fallthrough // TLS ??
 	case gwv1.HTTPProtocolType:
 		allowedKinds = []metav1.GroupKind{{Kind: wellknown.HTTPRouteKind, Group: gwv1.GroupName}}
 	case gwv1.TLSProtocolType:
-		fallthrough
+		allowedKinds = []metav1.GroupKind{{Kind: wellknown.TLSRouteKind, Group: gwv1.GroupName}} // TCP?
 	case gwv1.TCPProtocolType:
 		allowedKinds = []metav1.GroupKind{{Kind: wellknown.TCPRouteKind, Group: gwv1a2.GroupName}}
 	case gwv1.UDPProtocolType:
@@ -352,7 +353,17 @@ func (r *gatewayQueries) processRoute(
 			if routeKind == wellknown.HTTPRouteKind {
 				if hr, ok := route.(*ir.HttpRouteIR); ok {
 					var ok bool
-					ok, hostnames = hostnameIntersect(&l, hr)
+					ok, hostnames = hostnameIntersect(&l, hr.GetHostnames())
+					if !ok {
+						continue
+					}
+					anyHostsMatch = true
+				}
+			}
+			if routeKind == wellknown.TLSRouteKind {
+				if tr, ok := route.(*ir.TlsRouteIR); ok {
+					var ok bool
+					ok, hostnames = hostnameIntersect(&l, tr.GetHostnames())
 					if !ok {
 						continue
 					}
@@ -413,6 +424,7 @@ func namespacedName(o Namespaced) types.NamespacedName {
 //
 //   - HTTPRouteList
 //   - TCPRouteList
+//   - TLSRouteList
 func getRouteItems(list client.ObjectList) ([]client.Object, error) {
 	switch routes := list.(type) {
 	case *gwv1.HTTPRouteList:
@@ -422,6 +434,12 @@ func getRouteItems(list client.ObjectList) ([]client.Object, error) {
 		}
 		return objs, nil
 	case *gwv1a2.TCPRouteList:
+		var objs []client.Object
+		for i := range routes.Items {
+			objs = append(objs, &routes.Items[i])
+		}
+		return objs, nil
+	case *gwv1a2.TLSRouteList:
 		var objs []client.Object
 		for i := range routes.Items {
 			objs = append(objs, &routes.Items[i])
