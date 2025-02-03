@@ -15,6 +15,7 @@ type ReportMap struct {
 	Gateways   map[types.NamespacedName]*GatewayReport
 	HTTPRoutes map[types.NamespacedName]*RouteReport
 	TCPRoutes  map[types.NamespacedName]*RouteReport
+	TLSRoutes  map[types.NamespacedName]*RouteReport
 }
 
 type GatewayReport struct {
@@ -47,10 +48,12 @@ func NewReportMap() ReportMap {
 	gr := make(map[types.NamespacedName]*GatewayReport)
 	hr := make(map[types.NamespacedName]*RouteReport)
 	tr := make(map[types.NamespacedName]*RouteReport)
+	tlsReports := make(map[types.NamespacedName]*RouteReport)
 	return ReportMap{
 		Gateways:   gr,
 		HTTPRoutes: hr,
 		TCPRoutes:  tr,
+		TLSRoutes:  tlsReports,
 	}
 }
 

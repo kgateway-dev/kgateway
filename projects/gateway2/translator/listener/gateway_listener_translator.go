@@ -95,6 +95,11 @@ func (ml *MergedListeners) AppendListener(
 	// TODO default handling
 	case gwv1.TCPProtocolType:
 		ml.AppendTcpListener(listener, routes, reporter)
+	case gwv1.TLSProtocolType:
+		// TODO
+		// this could be tcp or tls route, both supported
+		// If you need to forward traffic to a single target for a TLS listener, you could choose to use a TCPRoute with a TLS listener.
+		ml.AppendTlsListener(listener, routes, reporter)
 	default:
 		return eris.Errorf("unsupported protocol: %v", listener.Protocol)
 	}
@@ -192,7 +197,7 @@ func (ml *MergedListeners) AppendTcpListener(
 ) {
 	var validRouteInfos []*query.RouteInfo
 
-	for _, routeInfo := range routeInfos {
+	for _, routeInfo := range routeInfos { // WHY are we doing this check
 		tRoute, ok := routeInfo.Object.(*ir.TcpRouteIR)
 		if !ok {
 			continue
@@ -245,6 +250,74 @@ func (ml *MergedListeners) AppendTcpListener(
 		listenerReporter: reporter,
 		listener:         listener,
 	})
+}
+
+func (ml *MergedListeners) AppendTlsListener(
+	listener ir.Listener,
+	routeInfos []*query.RouteInfo,
+	reporter reports.ListenerReporter,
+) {
+	var validRouteInfos []*query.RouteInfo
+
+	for _, routeInfo := range routeInfos {
+		tRoute, ok := routeInfo.Object.(*ir.TlsRouteIR) // Check TCP ??
+		if !ok {
+			continue
+		}
+
+		if len(tRoute.ParentRefs) == 0 {
+			contextutils.LoggerFrom(context.Background()).Warnf(
+				"No parent references found for TLSRoute %s", tRoute.Name,
+			)
+			continue
+		}
+
+		validRouteInfos = append(validRouteInfos, routeInfo)
+	}
+
+	// If no valid routes are found, do not create a listener
+	if len(validRouteInfos) == 0 {
+		contextutils.LoggerFrom(context.Background()).Errorf(
+			"No valid routes found for listener %s", listener.Name,
+		)
+		return
+	}
+
+	// TODO !!!!!
+
+	parent := tcpFilterChainParent{
+		gatewayListenerName: string(listener.Name),
+		routesWithHosts:     validRouteInfos,
+	}
+
+	fc := tcpFilterChain{
+		parents:   parent,
+		tls:       listener.TLS,
+		sniDomain: listener.Hostname,
+	}
+
+	listenerName := string(listener.Name)
+	finalPort := gwv1.PortNumber(ports.TranslatePort(uint16(listener.Port)))
+
+	for _, lis := range ml.Listeners {
+		if lis.port == finalPort {
+			// concatenate the names on the parent output listener
+			lis.name += "~" + listenerName
+			lis.TcpFilterChains = append(lis.TcpFilterChains, fc)
+			return
+		}
+	}
+
+	// create a new filter chain for the listener
+	ml.Listeners = append(ml.Listeners, &MergedListener{
+		name:             listenerName,
+		gatewayNamespace: ml.GatewayNamespace,
+		port:             finalPort,
+		TcpFilterChains:  []tcpFilterChain{fc},
+		listenerReporter: reporter,
+		listener:         listener,
+	})
+	return // TODO
 }
 
 func getWeight(backendRef gwv1.BackendRef) *wrapperspb.UInt32Value {
@@ -383,7 +456,9 @@ func (ml *MergedListener) TranslateListener(
 // (with distinct filter chains). In the case where no Gateway listener merging takes place, every listener
 // will use a Gloo AggregatedListener with one TCP filter chain.
 type tcpFilterChain struct {
-	parents tcpFilterChainParent
+	parents   tcpFilterChainParent
+	tls       *gwv1.GatewayTLSConfig
+	sniDomain *gwv1.Hostname
 }
 
 type tcpFilterChainParent struct {
@@ -467,9 +542,22 @@ func (tc *tcpFilterChain) translateTcpFilterChain(listener ir.Listener, reporter
 		return nil
 	}
 
+	// need this? tcp with tls with terminate would need this !
+	// if tc.tls != nil {
+
+	var matcher ir.FilterChainMatch
+	if tc.sniDomain != nil {
+		// is this correct?
+		// does the sniDomain come from listener or from the TLS route
+		matcher.SniDomains = []string{string(*tc.sniDomain)}
+	}
+
 	return &ir.TcpIR{
 		FilterChainCommon: ir.FilterChainCommon{
 			FilterChainName: tcpHostName,
+			// we need this only for terminate
+			TLS:     nil, // TODO and make sure nil doesn't mean something
+			Matcher: matcher,
 		},
 		BackendRefs: backends,
 	}
@@ -570,8 +658,8 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 
 type httpsFilterChain struct {
 	gatewayListenerName string
-	sniDomain           *gwv1.Hostname
-	tls                 *gwv1.GatewayTLSConfig
+	sniDomain           *gwv1.Hostname         // do we need this on tls listener?
+	tls                 *gwv1.GatewayTLSConfig // do we need this on tls?
 	routesWithHosts     []*query.RouteInfo
 	attachedPolicies    ir.AttachedPolicies
 }
