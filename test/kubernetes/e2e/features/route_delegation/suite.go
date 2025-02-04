@@ -16,7 +16,6 @@ import (
 	testmatchers "github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/gloogateway"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -70,9 +69,6 @@ func (s *tsuite) SetupSuite() {
 		routeOptionsManifest:                {routeRoot, routeTeam1, routeTeam2},
 		matcherInheritanceManifest:          {routeParent1, routeParent2, routeTeam1},
 	}
-	clients, err := gloogateway.NewResourceClients(s.ctx, s.ti.ClusterContext)
-	s.Require().NoError(err)
-	s.ti.ResourceClients = clients
 }
 
 func (s *tsuite) TearDownSuite() {

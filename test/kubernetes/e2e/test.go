@@ -85,9 +85,6 @@ func CreateTestInstallationForCluster(
 		// Maintain a reference to the Metadata used for this installation
 		Metadata: glooGatewayContext,
 
-		// ResourceClients are only available _after_ installing Gloo Gateway
-		ResourceClients: nil,
-
 		// Create an actions provider, and point it to the running installation
 		Actions: actions.NewActionsProvider().
 			WithClusterContext(clusterContext).
@@ -121,9 +118,6 @@ type TestInstallation struct {
 
 	// Metadata contains the properties used to install Gloo Gateway
 	Metadata *gloogateway.Context
-
-	// ResourceClients is a set of clients that can manipulate resources owned by Gloo Gateway
-	ResourceClients gloogateway.ResourceClients
 
 	// Actions is the entity that creates actions that can be executed by the Operator
 	Actions *actions.Provider
@@ -201,11 +195,6 @@ func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installFn fun
 		i.Assertions.EventuallyInstallationSucceeded(ctx)
 		i.Assertions.EventuallyGlooReachesConsistentState(i.Metadata.InstallNamespace)
 	}
-
-	// We can only create the ResourceClients after the CRDs exist in the Cluster
-	clients, err := gloogateway.NewResourceClients(ctx, i.ClusterContext)
-	i.Assertions.Require.NoError(err)
-	i.ResourceClients = clients
 }
 
 // UninstallGlooGatewayWithTestHelper is the common way to uninstall Gloo Gateway.
