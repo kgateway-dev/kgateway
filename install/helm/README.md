@@ -8,4 +8,4 @@ This directory contains the resources to deploy the project via [Helm](https://h
 
 ### /kgateway
 
-The kgateway chart contains the new Kubernetes Gateway API implementation. The RBAC configurations in `templates/rbac.yaml` are generated from the API definitions in `projects/gateway2/api/v1alpha1` using kubebuilder's controller-gen tool.
+The kgateway chart contains the new Kubernetes Gateway API implementation. The RBAC configurations in `templates/rbac.yaml` are generated from the API definitions in `api/v1alpha1` using kubebuilder's controller-gen tool.

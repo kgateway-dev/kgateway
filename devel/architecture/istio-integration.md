@@ -87,7 +87,7 @@ ci/kind/setup-kind.sh; make kind-build-and-load
 2. Install Istio
 
 ```shell
-./projects/gateway2/istio.sh
+./internal/gateway2/istio.sh
 ```
 
 ```shell
@@ -184,7 +184,7 @@ glooctl istio enable-mtls --upstream bookinfo-productpage-9080 -n gloo-system
 
 This adds the following settings to the upstream:
 
-```shell 
+```shell
 sslConfig:
   alpnProtocols:
   - istio
@@ -197,13 +197,13 @@ sslConfig:
 
 This should fix the curl:
 
-```shell 
+```shell
 curl -I localhost:8080/productpage -H "host: www.example.com" -v
 ```
 
 Delete resources:
 
-``` 
+```
 kubectl delete VirtualService test-vs -n gloo-system
 ```
 
@@ -236,7 +236,7 @@ EOF
 ```
 
 This should create a new gateway in the `default` namespace named `gloo-proxy-http`:
-```shell  
+```shell
 ❯ kubectl get deployments
 NAME              READY   UP-TO-DATE   AVAILABLE   AGE
 gloo-proxy-http   1/1     1            1           10m
@@ -270,14 +270,14 @@ Port-forward the new k8s gateway:
 
 ```shell
 kubectl port-forward deployment/gloo-proxy-http 8080:8080
-``` 
+```
 
 Now let's send traffic with the same curl as before, this time going through the new k8s Gateway API gateway.
 The first attempt will succeed because of automtls is still enabled on the settings policy:
 
 ```shell
 curl -I localhost:8080/productpage -H "host: www.example.com" -v
-``` 
+```
 
 If auto mtls is disabled on the settings, the same request will fail.
 

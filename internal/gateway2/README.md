@@ -105,7 +105,7 @@ This will create the kind cluster, build the docker images.
 Next we need to install Istio in the cluster along with the bookinfo test application in the mesh:
 
 ```shell
-./projects/gateway2/istio.sh
+./internal/gateway2/istio.sh
 ```
 
 Next use helm to install the gateway control plane with istio integration enabled:

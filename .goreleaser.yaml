@@ -5,7 +5,7 @@ before:
     - go mod download
 builds:
   - id: controller
-    main: ./projects/gateway2/cmd/
+    main: ./cmd/gateway2
     binary: kgateway-linux-{{ .Arch }}
     gcflags: "{{ .Env.GCFLAGS }}"
     ldflags: "{{ .Env.LDFLAGS }}"
@@ -21,7 +21,7 @@ builds:
       - amd64
       - arm64
   - id: sds
-    main: ./projects/sds/cmd/
+    main: ./cmd/sds
     binary: sds-linux-{{ .Arch }}
     gcflags: "{{ .Env.GCFLAGS }}"
     ldflags: "{{ .Env.LDFLAGS }}"
@@ -36,7 +36,7 @@ builds:
       - amd64
       - arm64
   - id: envoyinit
-    main: ./projects/envoyinit/cmd/
+    main: ./cmd/envoyinit
     binary: envoyinit-linux-{{ .Arch }}
     gcflags: "{{ .Env.GCFLAGS }}"
     ldflags: "{{ .Env.LDFLAGS }}"
@@ -54,7 +54,7 @@ dockers:
   - image_templates:
       - &controller_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
     use: buildx
-    dockerfile: &controller_dockerfile projects/gateway2/cmd/Dockerfile
+    dockerfile: &controller_dockerfile cmd/gateway2/Dockerfile
     goos: linux
     goarch: arm64
     build_flag_templates:
@@ -76,7 +76,7 @@ dockers:
   - image_templates:
       - &sds_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
     use: buildx
-    dockerfile: &sds_dockerfile projects/sds/cmd/Dockerfile
+    dockerfile: &sds_dockerfile cmd/sds/Dockerfile
     goos: linux
     goarch: arm64
     build_flag_templates:
@@ -98,17 +98,17 @@ dockers:
   - image_templates:
       - &envoyinit_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
     use: buildx
-    dockerfile: &envoyinit_dockerfile projects/envoyinit/cmd/Dockerfile.envoyinit
+    dockerfile: &envoyinit_dockerfile cmd/envoyinit/Dockerfile.envoyinit
     goos: linux
     goarch: arm64
     build_flag_templates:
       - "--pull"
       - "--platform=linux/arm64"
       - "--build-arg=GOARCH=arm64"
-      - "--build-arg=ENTRYPOINT_SCRIPT=/projects/envoyinit/cmd/docker-entrypoint.sh"
+      - "--build-arg=ENTRYPOINT_SCRIPT=/cmd/envoyinit/docker-entrypoint.sh"
       - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
     extra_files:
-      - projects/envoyinit/cmd/docker-entrypoint.sh
+      - cmd/envoyinit/docker-entrypoint.sh
   - image_templates:
       - &envoyinit_amd_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.VERSION }}-amd64"
     use: buildx
@@ -119,10 +119,10 @@ dockers:
       - "--pull"
       - "--platform=linux/amd64"
       - "--build-arg=GOARCH=amd64"
-      - "--build-arg=ENTRYPOINT_SCRIPT=/projects/envoyinit/cmd/docker-entrypoint.sh"
+      - "--build-arg=ENTRYPOINT_SCRIPT=/cmd/envoyinit/docker-entrypoint.sh"
       - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
     extra_files:
-      - projects/envoyinit/cmd/docker-entrypoint.sh
+      - cmd/envoyinit/docker-entrypoint.sh
 docker_manifests:
   - name_template: "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}"
     image_templates:
