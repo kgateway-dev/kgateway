@@ -301,7 +301,7 @@ generated-code: fmt
 
 .PHONY: go-generate-all
 go-generate-all: ## Run all go generate directives in the repo, including codegen for protos, mockgen, and more
-	GO111MODULE=on go generate ./internal/gateway2/...
+	GO111MODULE=on go generate ./hack/...
 
 .PHONY: go-generate-mocks
 go-generate-mocks: ## Runs all generate directives for mockgen in the repo
