@@ -82,6 +82,13 @@ func (c *Cli) RunCommand(ctx context.Context, args ...string) error {
 	return c.Command(ctx, args...).Run().Cause()
 }
 
+// RunCommandWithOutput creates a Cmd and then runs it.
+// If an error occurred, it will be returned along with the output of the command
+func (c *Cli) RunCommandWithOutput(ctx context.Context, args ...string) (string, error) {
+	runErr := c.Command(ctx, args...).Run()
+	return runErr.OutputString(), runErr.Cause()
+}
+
 // Namespaces returns a sorted list of namespaces or an error if one occurred
 func (c *Cli) Namespaces(ctx context.Context) ([]string, error) {
 	stdout, _, err := c.Execute(ctx, "get", "namespaces", "--sort-by", "metadata.name", "-o", "jsonpath={.items[*].metadata.name}")

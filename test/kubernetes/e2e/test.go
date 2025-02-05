@@ -235,7 +235,7 @@ func (i *TestInstallation) PreFailHandler(ctx context.Context) {
 	i.Assertions.Require.NoError(err)
 
 	// Dump the logs and state of the cluster
-	helpers.StandardGlooDumpOnFail(os.Stdout, failureDir, namespaces)()
+	helpers.StandardKgatewayDumpOnFail(os.Stdout, failureDir, namespaces)()
 }
 
 // GeneratedFiles is a collection of files that are generated during the execution of a set of tests

@@ -72,7 +72,7 @@ func StartTestHelper() {
 
 	outDir := filepath.Join(util.GetModuleRoot(), "_output", "kube2e-artifacts")
 	namespaces := []string{testHelper.InstallNamespace}
-	skhelpers.RegisterPreFailHandler(helpers.StandardGlooDumpOnFail(GinkgoWriter, outDir, namespaces))
+	skhelpers.RegisterPreFailHandler(helpers.StandardKgatewayDumpOnFail(GinkgoWriter, outDir, namespaces))
 
 	kubeCli = kubectl.NewCli().WithReceiver(GinkgoWriter)
 
