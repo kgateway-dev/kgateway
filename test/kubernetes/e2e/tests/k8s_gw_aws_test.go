@@ -11,7 +11,7 @@ import (
 	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 	. "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/gloogateway"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/kgateway"
 	"github.com/kgateway-dev/kgateway/test/testutils"
 )
 
@@ -22,12 +22,12 @@ func TestK8sGatewayAws(t *testing.T) {
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "k8s-gw-aws-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
-		&gloogateway.Context{
+		&kgateway.Context{
 			InstallNamespace:          installNs,
 			ProfileValuesManifestFile: e2e.KubernetesGatewayProfilePath,
 			ValuesManifestFile:        e2e.ManifestPath("aws-lambda-helm.yaml"),
 			// these should correspond to the `settings.aws.*` values in the aws-lambda-helm.yaml manifest
-			AwsOptions: &gloogateway.AwsOptions{
+			AwsOptions: &kgateway.AwsOptions{
 				EnableServiceAccountCredentials: true,
 				StsCredentialsRegion:            "us-west-2",
 			},

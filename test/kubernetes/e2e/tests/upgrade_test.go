@@ -11,7 +11,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 	. "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/gloogateway"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/kgateway"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/helper"
 )
 
@@ -26,7 +26,7 @@ func TestUpgradeFromLastPatchPreviousMinor(t *testing.T) {
 
 	testInstallation := e2e.CreateTestInstallation(
 		t,
-		&gloogateway.Context{
+		&kgateway.Context{
 			InstallNamespace:          "upgrade-from-last-patch-previous-minor",
 			ProfileValuesManifestFile: e2e.FullGatewayProfilePath,
 			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
@@ -52,7 +52,7 @@ func TestUpgradeFromCurrentPatchLatestMinor(t *testing.T) {
 
 	testInstallation := e2e.CreateTestInstallation(
 		t,
-		&gloogateway.Context{
+		&kgateway.Context{
 			InstallNamespace:          "upgrade-from-current-patch-latest-minor",
 			ProfileValuesManifestFile: e2e.FullGatewayProfilePath,
 			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
