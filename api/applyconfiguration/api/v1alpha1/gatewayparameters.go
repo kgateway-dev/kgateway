@@ -56,7 +56,7 @@ func ExtractGatewayParametersStatus(gatewayParameters *apiv1alpha1.GatewayParame
 
 func extractGatewayParameters(gatewayParameters *apiv1alpha1.GatewayParameters, fieldManager string, subresource string) (*GatewayParametersApplyConfiguration, error) {
 	b := &GatewayParametersApplyConfiguration{}
-	err := managedfields.ExtractInto(gatewayParameters, internal.Parser().Type("com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.GatewayParameters"), fieldManager, b, subresource)
+	err := managedfields.ExtractInto(gatewayParameters, internal.Parser().Type("com.github.kgateway-dev.kgateway.api.v1alpha1.GatewayParameters"), fieldManager, b, subresource)
 	if err != nil {
 		return nil, err
 	}

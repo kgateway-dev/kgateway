@@ -56,7 +56,7 @@ func ExtractRoutePolicyStatus(routePolicy *apiv1alpha1.RoutePolicy, fieldManager
 
 func extractRoutePolicy(routePolicy *apiv1alpha1.RoutePolicy, fieldManager string, subresource string) (*RoutePolicyApplyConfiguration, error) {
 	b := &RoutePolicyApplyConfiguration{}
-	err := managedfields.ExtractInto(routePolicy, internal.Parser().Type("com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.RoutePolicy"), fieldManager, b, subresource)
+	err := managedfields.ExtractInto(routePolicy, internal.Parser().Type("com.github.kgateway-dev.kgateway.api.v1alpha1.RoutePolicy"), fieldManager, b, subresource)
 	if err != nil {
 		return nil, err
 	}

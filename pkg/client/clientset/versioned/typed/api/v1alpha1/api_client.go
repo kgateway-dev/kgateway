@@ -8,7 +8,7 @@ import (
 	rest "k8s.io/client-go/rest"
 
 	v1alpha1 "github.com/kgateway-dev/kgateway/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/pkg/client/clientset/versioned/scheme"
+	"github.com/kgateway-dev/kgateway/pkg/client/clientset/versioned/scheme"
 )
 
 type GatewayV1alpha1Interface interface {

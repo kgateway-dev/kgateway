@@ -15,8 +15,8 @@ import (
 	"github.com/kgateway-dev/kgateway/internal/gateway2/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/internal/gateway2/ir"
 	"github.com/kgateway-dev/kgateway/internal/gateway2/krtcollections"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/internal/gateway2/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/pkg/client/clientset/versioned"
 )
 
 type CommonCollections struct {

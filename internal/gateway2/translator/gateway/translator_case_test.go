@@ -30,12 +30,12 @@ import (
 	"github.com/kgateway-dev/kgateway/internal/gateway2/extensions2/registry"
 	"github.com/kgateway-dev/kgateway/internal/gateway2/ir"
 	"github.com/kgateway-dev/kgateway/internal/gateway2/krtcollections"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/pkg/client/clientset/versioned/fake"
 	"github.com/kgateway-dev/kgateway/internal/gateway2/reports"
 	"github.com/kgateway-dev/kgateway/internal/gateway2/translator"
 	"github.com/kgateway-dev/kgateway/internal/gateway2/translator/gateway/testutils"
 	"github.com/kgateway-dev/kgateway/internal/gateway2/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/internal/gateway2/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/pkg/client/clientset/versioned/fake"
 )
 
 type TestCase struct {

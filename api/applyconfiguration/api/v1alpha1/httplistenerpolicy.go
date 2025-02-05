@@ -56,7 +56,7 @@ func ExtractHttpListenerPolicyStatus(httpListenerPolicy *apiv1alpha1.HttpListene
 
 func extractHttpListenerPolicy(httpListenerPolicy *apiv1alpha1.HttpListenerPolicy, fieldManager string, subresource string) (*HttpListenerPolicyApplyConfiguration, error) {
 	b := &HttpListenerPolicyApplyConfiguration{}
-	err := managedfields.ExtractInto(httpListenerPolicy, internal.Parser().Type("com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.HttpListenerPolicy"), fieldManager, b, subresource)
+	err := managedfields.ExtractInto(httpListenerPolicy, internal.Parser().Type("com.github.kgateway-dev.kgateway.api.v1alpha1.HttpListenerPolicy"), fieldManager, b, subresource)
 	if err != nil {
 		return nil, err
 	}

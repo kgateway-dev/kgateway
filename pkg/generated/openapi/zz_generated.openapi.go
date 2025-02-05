@@ -16,51 +16,51 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.AiExtension":                schema_projects_gateway2_api_v1alpha1_AiExtension(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.AiExtensionStats":           schema_projects_gateway2_api_v1alpha1_AiExtensionStats(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.AwsUpstream":                schema_projects_gateway2_api_v1alpha1_AwsUpstream(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.CustomLabel":                schema_projects_gateway2_api_v1alpha1_CustomLabel(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.DirectResponse":             schema_projects_gateway2_api_v1alpha1_DirectResponse(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.DirectResponseList":         schema_projects_gateway2_api_v1alpha1_DirectResponseList(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.DirectResponseSpec":         schema_projects_gateway2_api_v1alpha1_DirectResponseSpec(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.DirectResponseStatus":       schema_projects_gateway2_api_v1alpha1_DirectResponseStatus(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.EnvoyBootstrap":             schema_projects_gateway2_api_v1alpha1_EnvoyBootstrap(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.EnvoyContainer":             schema_projects_gateway2_api_v1alpha1_EnvoyContainer(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.GatewayParameters":          schema_projects_gateway2_api_v1alpha1_GatewayParameters(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.GatewayParametersList":      schema_projects_gateway2_api_v1alpha1_GatewayParametersList(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.GatewayParametersSpec":      schema_projects_gateway2_api_v1alpha1_GatewayParametersSpec(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.GatewayParametersStatus":    schema_projects_gateway2_api_v1alpha1_GatewayParametersStatus(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.GracefulShutdownSpec":       schema_projects_gateway2_api_v1alpha1_GracefulShutdownSpec(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.Host":                       schema_projects_gateway2_api_v1alpha1_Host(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.HttpListenerPolicy":         schema_projects_gateway2_api_v1alpha1_HttpListenerPolicy(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.HttpListenerPolicyList":     schema_projects_gateway2_api_v1alpha1_HttpListenerPolicyList(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.HttpListenerPolicySpec":     schema_projects_gateway2_api_v1alpha1_HttpListenerPolicySpec(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.Image":                      schema_projects_gateway2_api_v1alpha1_Image(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.IstioContainer":             schema_projects_gateway2_api_v1alpha1_IstioContainer(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.IstioIntegration":           schema_projects_gateway2_api_v1alpha1_IstioIntegration(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.KubernetesProxyConfig":      schema_projects_gateway2_api_v1alpha1_KubernetesProxyConfig(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.ListenerPolicy":             schema_projects_gateway2_api_v1alpha1_ListenerPolicy(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.ListenerPolicyList":         schema_projects_gateway2_api_v1alpha1_ListenerPolicyList(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.ListenerPolicySpec":         schema_projects_gateway2_api_v1alpha1_ListenerPolicySpec(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.LocalPolicyTargetReference": schema_projects_gateway2_api_v1alpha1_LocalPolicyTargetReference(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.Pod":                        schema_projects_gateway2_api_v1alpha1_Pod(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.PolicyAncestorStatus":       schema_projects_gateway2_api_v1alpha1_PolicyAncestorStatus(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.PolicyStatus":               schema_projects_gateway2_api_v1alpha1_PolicyStatus(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.ProxyDeployment":            schema_projects_gateway2_api_v1alpha1_ProxyDeployment(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.RoutePolicy":                schema_projects_gateway2_api_v1alpha1_RoutePolicy(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.RoutePolicyList":            schema_projects_gateway2_api_v1alpha1_RoutePolicyList(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.RoutePolicySpec":            schema_projects_gateway2_api_v1alpha1_RoutePolicySpec(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.SdsBootstrap":               schema_projects_gateway2_api_v1alpha1_SdsBootstrap(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.SdsContainer":               schema_projects_gateway2_api_v1alpha1_SdsContainer(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.SelfManagedGateway":         schema_projects_gateway2_api_v1alpha1_SelfManagedGateway(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.Service":                    schema_projects_gateway2_api_v1alpha1_Service(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.ServiceAccount":             schema_projects_gateway2_api_v1alpha1_ServiceAccount(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.StaticUpstream":             schema_projects_gateway2_api_v1alpha1_StaticUpstream(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.StatsConfig":                schema_projects_gateway2_api_v1alpha1_StatsConfig(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.Upstream":                   schema_projects_gateway2_api_v1alpha1_Upstream(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.UpstreamList":               schema_projects_gateway2_api_v1alpha1_UpstreamList(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.UpstreamSpec":               schema_projects_gateway2_api_v1alpha1_UpstreamSpec(ref),
-		"github.com/kgateway-dev/kgateway/api/v1alpha1.UpstreamStatus":             schema_projects_gateway2_api_v1alpha1_UpstreamStatus(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.AiExtension":                schema_kgateway_dev_kgateway_api_v1alpha1_AiExtension(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.AiExtensionStats":           schema_kgateway_dev_kgateway_api_v1alpha1_AiExtensionStats(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.AwsUpstream":                schema_kgateway_dev_kgateway_api_v1alpha1_AwsUpstream(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.CustomLabel":                schema_kgateway_dev_kgateway_api_v1alpha1_CustomLabel(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.DirectResponse":             schema_kgateway_dev_kgateway_api_v1alpha1_DirectResponse(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.DirectResponseList":         schema_kgateway_dev_kgateway_api_v1alpha1_DirectResponseList(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.DirectResponseSpec":         schema_kgateway_dev_kgateway_api_v1alpha1_DirectResponseSpec(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.DirectResponseStatus":       schema_kgateway_dev_kgateway_api_v1alpha1_DirectResponseStatus(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.EnvoyBootstrap":             schema_kgateway_dev_kgateway_api_v1alpha1_EnvoyBootstrap(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.EnvoyContainer":             schema_kgateway_dev_kgateway_api_v1alpha1_EnvoyContainer(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.GatewayParameters":          schema_kgateway_dev_kgateway_api_v1alpha1_GatewayParameters(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.GatewayParametersList":      schema_kgateway_dev_kgateway_api_v1alpha1_GatewayParametersList(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.GatewayParametersSpec":      schema_kgateway_dev_kgateway_api_v1alpha1_GatewayParametersSpec(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.GatewayParametersStatus":    schema_kgateway_dev_kgateway_api_v1alpha1_GatewayParametersStatus(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.GracefulShutdownSpec":       schema_kgateway_dev_kgateway_api_v1alpha1_GracefulShutdownSpec(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.Host":                       schema_kgateway_dev_kgateway_api_v1alpha1_Host(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.HttpListenerPolicy":         schema_kgateway_dev_kgateway_api_v1alpha1_HttpListenerPolicy(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.HttpListenerPolicyList":     schema_kgateway_dev_kgateway_api_v1alpha1_HttpListenerPolicyList(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.HttpListenerPolicySpec":     schema_kgateway_dev_kgateway_api_v1alpha1_HttpListenerPolicySpec(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.Image":                      schema_kgateway_dev_kgateway_api_v1alpha1_Image(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.IstioContainer":             schema_kgateway_dev_kgateway_api_v1alpha1_IstioContainer(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.IstioIntegration":           schema_kgateway_dev_kgateway_api_v1alpha1_IstioIntegration(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.KubernetesProxyConfig":      schema_kgateway_dev_kgateway_api_v1alpha1_KubernetesProxyConfig(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.ListenerPolicy":             schema_kgateway_dev_kgateway_api_v1alpha1_ListenerPolicy(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.ListenerPolicyList":         schema_kgateway_dev_kgateway_api_v1alpha1_ListenerPolicyList(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.ListenerPolicySpec":         schema_kgateway_dev_kgateway_api_v1alpha1_ListenerPolicySpec(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.LocalPolicyTargetReference": schema_kgateway_dev_kgateway_api_v1alpha1_LocalPolicyTargetReference(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.Pod":                        schema_kgateway_dev_kgateway_api_v1alpha1_Pod(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.PolicyAncestorStatus":       schema_kgateway_dev_kgateway_api_v1alpha1_PolicyAncestorStatus(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.PolicyStatus":               schema_kgateway_dev_kgateway_api_v1alpha1_PolicyStatus(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.ProxyDeployment":            schema_kgateway_dev_kgateway_api_v1alpha1_ProxyDeployment(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.RoutePolicy":                schema_kgateway_dev_kgateway_api_v1alpha1_RoutePolicy(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.RoutePolicyList":            schema_kgateway_dev_kgateway_api_v1alpha1_RoutePolicyList(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.RoutePolicySpec":            schema_kgateway_dev_kgateway_api_v1alpha1_RoutePolicySpec(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.SdsBootstrap":               schema_kgateway_dev_kgateway_api_v1alpha1_SdsBootstrap(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.SdsContainer":               schema_kgateway_dev_kgateway_api_v1alpha1_SdsContainer(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.SelfManagedGateway":         schema_kgateway_dev_kgateway_api_v1alpha1_SelfManagedGateway(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.Service":                    schema_kgateway_dev_kgateway_api_v1alpha1_Service(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.ServiceAccount":             schema_kgateway_dev_kgateway_api_v1alpha1_ServiceAccount(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.StaticUpstream":             schema_kgateway_dev_kgateway_api_v1alpha1_StaticUpstream(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.StatsConfig":                schema_kgateway_dev_kgateway_api_v1alpha1_StatsConfig(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.Upstream":                   schema_kgateway_dev_kgateway_api_v1alpha1_Upstream(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.UpstreamList":               schema_kgateway_dev_kgateway_api_v1alpha1_UpstreamList(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.UpstreamSpec":               schema_kgateway_dev_kgateway_api_v1alpha1_UpstreamSpec(ref),
+		"github.com/kgateway-dev/kgateway/api/v1alpha1.UpstreamStatus":             schema_kgateway_dev_kgateway_api_v1alpha1_UpstreamStatus(ref),
 		"k8s.io/api/core/v1.AWSElasticBlockStoreVolumeSource":                      schema_k8sio_api_core_v1_AWSElasticBlockStoreVolumeSource(ref),
 		"k8s.io/api/core/v1.Affinity":                                              schema_k8sio_api_core_v1_Affinity(ref),
 		"k8s.io/api/core/v1.AppArmorProfile":                                       schema_k8sio_api_core_v1_AppArmorProfile(ref),
@@ -412,7 +412,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_AiExtension(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_AiExtension(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -486,7 +486,7 @@ func schema_projects_gateway2_api_v1alpha1_AiExtension(ref common.ReferenceCallb
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_AiExtensionStats(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_AiExtensionStats(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -513,7 +513,7 @@ func schema_projects_gateway2_api_v1alpha1_AiExtensionStats(ref common.Reference
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_AwsUpstream(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_AwsUpstream(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -539,7 +539,7 @@ func schema_projects_gateway2_api_v1alpha1_AwsUpstream(ref common.ReferenceCallb
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_CustomLabel(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_CustomLabel(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -582,7 +582,7 @@ func schema_projects_gateway2_api_v1alpha1_CustomLabel(ref common.ReferenceCallb
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_DirectResponse(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_DirectResponse(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -629,7 +629,7 @@ func schema_projects_gateway2_api_v1alpha1_DirectResponse(ref common.ReferenceCa
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_DirectResponseList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_DirectResponseList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -677,7 +677,7 @@ func schema_projects_gateway2_api_v1alpha1_DirectResponseList(ref common.Referen
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_DirectResponseSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_DirectResponseSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -706,7 +706,7 @@ func schema_projects_gateway2_api_v1alpha1_DirectResponseSpec(ref common.Referen
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_DirectResponseStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_DirectResponseStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -717,7 +717,7 @@ func schema_projects_gateway2_api_v1alpha1_DirectResponseStatus(ref common.Refer
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_EnvoyBootstrap(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_EnvoyBootstrap(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -753,7 +753,7 @@ func schema_projects_gateway2_api_v1alpha1_EnvoyBootstrap(ref common.ReferenceCa
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_EnvoyContainer(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_EnvoyContainer(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -792,7 +792,7 @@ func schema_projects_gateway2_api_v1alpha1_EnvoyContainer(ref common.ReferenceCa
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_GatewayParameters(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_GatewayParameters(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -839,7 +839,7 @@ func schema_projects_gateway2_api_v1alpha1_GatewayParameters(ref common.Referenc
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_GatewayParametersList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_GatewayParametersList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -887,7 +887,7 @@ func schema_projects_gateway2_api_v1alpha1_GatewayParametersList(ref common.Refe
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_GatewayParametersSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_GatewayParametersSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -914,7 +914,7 @@ func schema_projects_gateway2_api_v1alpha1_GatewayParametersSpec(ref common.Refe
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_GatewayParametersStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_GatewayParametersStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -925,7 +925,7 @@ func schema_projects_gateway2_api_v1alpha1_GatewayParametersStatus(ref common.Re
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_GracefulShutdownSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_GracefulShutdownSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -951,7 +951,7 @@ func schema_projects_gateway2_api_v1alpha1_GracefulShutdownSpec(ref common.Refer
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_Host(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_Host(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -978,7 +978,7 @@ func schema_projects_gateway2_api_v1alpha1_Host(ref common.ReferenceCallback) co
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_HttpListenerPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_HttpListenerPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1024,7 +1024,7 @@ func schema_projects_gateway2_api_v1alpha1_HttpListenerPolicy(ref common.Referen
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_HttpListenerPolicyList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_HttpListenerPolicyList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1072,7 +1072,7 @@ func schema_projects_gateway2_api_v1alpha1_HttpListenerPolicyList(ref common.Ref
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_HttpListenerPolicySpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_HttpListenerPolicySpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1098,7 +1098,7 @@ func schema_projects_gateway2_api_v1alpha1_HttpListenerPolicySpec(ref common.Ref
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_Image(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_Image(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1147,7 +1147,7 @@ func schema_projects_gateway2_api_v1alpha1_Image(ref common.ReferenceCallback) c
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_IstioContainer(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_IstioContainer(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1208,7 +1208,7 @@ func schema_projects_gateway2_api_v1alpha1_IstioContainer(ref common.ReferenceCa
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_IstioIntegration(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_IstioIntegration(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1243,7 +1243,7 @@ func schema_projects_gateway2_api_v1alpha1_IstioIntegration(ref common.Reference
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_KubernetesProxyConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_KubernetesProxyConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1319,7 +1319,7 @@ func schema_projects_gateway2_api_v1alpha1_KubernetesProxyConfig(ref common.Refe
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_ListenerPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_ListenerPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1365,7 +1365,7 @@ func schema_projects_gateway2_api_v1alpha1_ListenerPolicy(ref common.ReferenceCa
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_ListenerPolicyList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_ListenerPolicyList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1413,7 +1413,7 @@ func schema_projects_gateway2_api_v1alpha1_ListenerPolicyList(ref common.Referen
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_ListenerPolicySpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_ListenerPolicySpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1439,7 +1439,7 @@ func schema_projects_gateway2_api_v1alpha1_ListenerPolicySpec(ref common.Referen
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_LocalPolicyTargetReference(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_LocalPolicyTargetReference(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1477,7 +1477,7 @@ func schema_projects_gateway2_api_v1alpha1_LocalPolicyTargetReference(ref common
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_Pod(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_Pod(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1605,7 +1605,7 @@ func schema_projects_gateway2_api_v1alpha1_Pod(ref common.ReferenceCallback) com
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_PolicyAncestorStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_PolicyAncestorStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1657,7 +1657,7 @@ func schema_projects_gateway2_api_v1alpha1_PolicyAncestorStatus(ref common.Refer
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_PolicyStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_PolicyStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1706,7 +1706,7 @@ func schema_projects_gateway2_api_v1alpha1_PolicyStatus(ref common.ReferenceCall
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_ProxyDeployment(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_ProxyDeployment(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1726,7 +1726,7 @@ func schema_projects_gateway2_api_v1alpha1_ProxyDeployment(ref common.ReferenceC
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_RoutePolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_RoutePolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1772,7 +1772,7 @@ func schema_projects_gateway2_api_v1alpha1_RoutePolicy(ref common.ReferenceCallb
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_RoutePolicyList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_RoutePolicyList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1820,7 +1820,7 @@ func schema_projects_gateway2_api_v1alpha1_RoutePolicyList(ref common.ReferenceC
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_RoutePolicySpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_RoutePolicySpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1846,7 +1846,7 @@ func schema_projects_gateway2_api_v1alpha1_RoutePolicySpec(ref common.ReferenceC
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_SdsBootstrap(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_SdsBootstrap(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1866,7 +1866,7 @@ func schema_projects_gateway2_api_v1alpha1_SdsBootstrap(ref common.ReferenceCall
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_SdsContainer(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_SdsContainer(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1905,7 +1905,7 @@ func schema_projects_gateway2_api_v1alpha1_SdsContainer(ref common.ReferenceCall
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_SelfManagedGateway(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_SelfManagedGateway(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1915,7 +1915,7 @@ func schema_projects_gateway2_api_v1alpha1_SelfManagedGateway(ref common.Referen
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_Service(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_Service(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1975,7 +1975,7 @@ func schema_projects_gateway2_api_v1alpha1_Service(ref common.ReferenceCallback)
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_ServiceAccount(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_ServiceAccount(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -2019,7 +2019,7 @@ func schema_projects_gateway2_api_v1alpha1_ServiceAccount(ref common.ReferenceCa
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_StaticUpstream(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_StaticUpstream(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -2046,7 +2046,7 @@ func schema_projects_gateway2_api_v1alpha1_StaticUpstream(ref common.ReferenceCa
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_StatsConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_StatsConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -2087,7 +2087,7 @@ func schema_projects_gateway2_api_v1alpha1_StatsConfig(ref common.ReferenceCallb
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_Upstream(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_Upstream(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -2133,7 +2133,7 @@ func schema_projects_gateway2_api_v1alpha1_Upstream(ref common.ReferenceCallback
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_UpstreamList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_UpstreamList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -2181,7 +2181,7 @@ func schema_projects_gateway2_api_v1alpha1_UpstreamList(ref common.ReferenceCall
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_UpstreamSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_UpstreamSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -2205,7 +2205,7 @@ func schema_projects_gateway2_api_v1alpha1_UpstreamSpec(ref common.ReferenceCall
 	}
 }
 
-func schema_projects_gateway2_api_v1alpha1_UpstreamStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_dev_kgateway_api_v1alpha1_UpstreamStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{

@@ -12,7 +12,7 @@ import (
 
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/api/applyconfiguration/api/v1alpha1"
 	v1alpha1 "github.com/kgateway-dev/kgateway/api/v1alpha1"
-	scheme "github.com/kgateway-dev/kgateway/internal/gateway2/pkg/client/clientset/versioned/scheme"
+	scheme "github.com/kgateway-dev/kgateway/pkg/client/clientset/versioned/scheme"
 )
 
 // HttpListenerPoliciesGetter has a method to return a HttpListenerPolicyInterface.

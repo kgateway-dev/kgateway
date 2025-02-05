@@ -22,8 +22,8 @@ import (
 	"github.com/kgateway-dev/kgateway/internal/gateway2/extensions2/common"
 	extensionplug "github.com/kgateway-dev/kgateway/internal/gateway2/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/internal/gateway2/ir"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/pkg/client/clientset/versioned"
 	"github.com/kgateway-dev/kgateway/internal/gateway2/plugins"
+	"github.com/kgateway-dev/kgateway/pkg/client/clientset/versioned"
 )
 
 type directResponse struct {

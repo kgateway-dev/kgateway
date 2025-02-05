@@ -56,7 +56,7 @@ func ExtractListenerPolicyStatus(listenerPolicy *apiv1alpha1.ListenerPolicy, fie
 
 func extractListenerPolicy(listenerPolicy *apiv1alpha1.ListenerPolicy, fieldManager string, subresource string) (*ListenerPolicyApplyConfiguration, error) {
 	b := &ListenerPolicyApplyConfiguration{}
-	err := managedfields.ExtractInto(listenerPolicy, internal.Parser().Type("com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.ListenerPolicy"), fieldManager, b, subresource)
+	err := managedfields.ExtractInto(listenerPolicy, internal.Parser().Type("com.github.kgateway-dev.kgateway.api.v1alpha1.ListenerPolicy"), fieldManager, b, subresource)
 	if err != nil {
 		return nil, err
 	}

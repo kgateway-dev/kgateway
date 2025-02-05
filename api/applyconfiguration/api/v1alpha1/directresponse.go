@@ -56,7 +56,7 @@ func ExtractDirectResponseStatus(directResponse *apiv1alpha1.DirectResponse, fie
 
 func extractDirectResponse(directResponse *apiv1alpha1.DirectResponse, fieldManager string, subresource string) (*DirectResponseApplyConfiguration, error) {
 	b := &DirectResponseApplyConfiguration{}
-	err := managedfields.ExtractInto(directResponse, internal.Parser().Type("com.github.kgateway-dev.kgateway.projects.gateway2.api.v1alpha1.DirectResponse"), fieldManager, b, subresource)
+	err := managedfields.ExtractInto(directResponse, internal.Parser().Type("com.github.kgateway-dev.kgateway.api.v1alpha1.DirectResponse"), fieldManager, b, subresource)
 	if err != nil {
 		return nil, err
 	}
