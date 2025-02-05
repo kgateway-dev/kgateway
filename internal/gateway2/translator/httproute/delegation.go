@@ -15,10 +15,10 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/query"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/reports"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/query"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/reports"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/wellknown"
 )
 
 type DelegationCtx struct {

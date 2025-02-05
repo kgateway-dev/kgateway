@@ -20,13 +20,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/krtcollections"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/pkg/client/clientset/versioned"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/plugins"
+	"github.com/kgateway-dev/kgateway/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/extensions2/common"
+	extensionsplug "github.com/kgateway-dev/kgateway/internal/gateway2/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/krtcollections"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/pkg/client/clientset/versioned"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/plugins"
 )
 
 const (

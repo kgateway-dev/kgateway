@@ -13,8 +13,8 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/stats"
 
+	"github.com/kgateway-dev/kgateway/internal/sds/pkg/server"
 	"github.com/kgateway-dev/kgateway/pkg/version"
-	"github.com/kgateway-dev/kgateway/projects/sds/pkg/server"
 )
 
 var (

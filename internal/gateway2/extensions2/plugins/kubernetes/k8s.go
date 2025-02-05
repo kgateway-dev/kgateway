@@ -14,12 +14,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/settings"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/krtcollections"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/extensions2/common"
+	extensionsplug "github.com/kgateway-dev/kgateway/internal/gateway2/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/extensions2/settings"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/krtcollections"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/utils/krtutil"
 )
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {

@@ -5,8 +5,8 @@ import (
 
 	"github.com/solo-io/go-utils/log"
 
+	"github.com/kgateway-dev/kgateway/internal/gateway2/setup"
 	"github.com/kgateway-dev/kgateway/pkg/utils/probes"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/setup"
 )
 
 func main() {

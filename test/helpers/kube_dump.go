@@ -18,13 +18,13 @@ import (
 
 	"github.com/solo-io/go-utils/threadsafe"
 
+	"github.com/kgateway-dev/kgateway/internal/gateway2/admin"
 	"github.com/kgateway-dev/kgateway/pkg/cliutil/install"
 	"github.com/kgateway-dev/kgateway/pkg/utils/envoyutils/admincli"
 	glooAdminCli "github.com/kgateway-dev/kgateway/pkg/utils/glooadminutils/admincli"
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/portforward"
 	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/admin"
 )
 
 // StandardGlooDumpOnFail creates adump of the kubernetes state and certain envoy data from

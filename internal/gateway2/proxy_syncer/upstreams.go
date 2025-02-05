@@ -9,10 +9,10 @@ import (
 	"go.uber.org/zap"
 	"istio.io/istio/pkg/kube/krt"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/translator/irtranslator"
-	ggv2utils "github.com/kgateway-dev/kgateway/projects/gateway2/utils"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/translator/irtranslator"
+	ggv2utils "github.com/kgateway-dev/kgateway/internal/gateway2/utils"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/utils/krtutil"
 )
 
 type uccWithCluster struct {

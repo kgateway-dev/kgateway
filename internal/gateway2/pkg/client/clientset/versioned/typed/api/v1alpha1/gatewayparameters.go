@@ -10,9 +10,9 @@ import (
 	watch "k8s.io/apimachinery/pkg/watch"
 	gentype "k8s.io/client-go/gentype"
 
-	apiv1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/applyconfiguration/api/v1alpha1"
-	v1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
-	scheme "github.com/kgateway-dev/kgateway/projects/gateway2/pkg/client/clientset/versioned/scheme"
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/api/applyconfiguration/api/v1alpha1"
+	v1alpha1 "github.com/kgateway-dev/kgateway/api/v1alpha1"
+	scheme "github.com/kgateway-dev/kgateway/internal/gateway2/pkg/client/clientset/versioned/scheme"
 )
 
 // GatewayParametersesGetter has a method to return a GatewayParametersInterface.

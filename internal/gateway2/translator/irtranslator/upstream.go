@@ -12,8 +12,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+	extensionsplug "github.com/kgateway-dev/kgateway/internal/gateway2/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/ir"
 )
 
 var (

@@ -11,13 +11,13 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"istio.io/istio/pkg/kube/krt"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/common"
-	extensionplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
-	extensionsplug "github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/plugins"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/extensions2/common"
+	extensionplug "github.com/kgateway-dev/kgateway/internal/gateway2/extensions2/plugin"
+	extensionsplug "github.com/kgateway-dev/kgateway/internal/gateway2/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/plugins"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/utils/krtutil"
 )
 
 type routeOptsPlugin struct {

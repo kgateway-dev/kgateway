@@ -8,8 +8,8 @@ import (
 	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 
-	internal "github.com/kgateway-dev/kgateway/projects/gateway2/api/applyconfiguration/internal"
-	apiv1alpha1 "github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
+	internal "github.com/kgateway-dev/kgateway/api/applyconfiguration/internal"
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/api/v1alpha1"
 )
 
 // GatewayParametersApplyConfiguration represents a declarative configuration of the GatewayParameters type for use

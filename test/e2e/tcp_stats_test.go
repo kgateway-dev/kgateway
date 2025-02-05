@@ -12,10 +12,10 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
-	gatewaydefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/ssl"
+	gatewayv1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
+	gatewaydefaults "github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
+	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/ssl"
 	"github.com/kgateway-dev/kgateway/test/e2e"
 	gloohelpers "github.com/kgateway-dev/kgateway/test/helpers"
 )

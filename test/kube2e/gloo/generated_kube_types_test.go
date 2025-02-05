@@ -11,14 +11,14 @@ import (
 
 	kubetestclients "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/clients"
 
-	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
-	gatewayv1kubetypes "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
-	gatewayv1kube "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1/kube/client/clientset/versioned/typed/gateway.solo.io/v1"
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/core/matchers"
-	gloov1kubetypes "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	gloov1kube "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/kube/client/clientset/versioned/typed/gloo.solo.io/v1"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/static"
+	gatewayv1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
+	gatewayv1kubetypes "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
+	gatewayv1kube "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1/kube/client/clientset/versioned/typed/gateway.solo.io/v1"
+	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/core/matchers"
+	gloov1kubetypes "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+	gloov1kube "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/kube/client/clientset/versioned/typed/gloo.solo.io/v1"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/static"
 )
 
 // Tests generated code in projects/gateway/pkg/api/v1/kube

@@ -7,7 +7,7 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/ir"
 )
 
 func defaultMatcher() gwv1.HTTPRouteMatch {

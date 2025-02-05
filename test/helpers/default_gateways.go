@@ -5,8 +5,8 @@ package helpers
 import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
-	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
+	v1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
 )
 
 func WriteDefaultGateways(writeNamespace string, gatewayClient v1.GatewayClient) error {

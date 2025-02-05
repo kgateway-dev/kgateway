@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/kube/krt"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway2/controller"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/controller"
 )
 
 const (

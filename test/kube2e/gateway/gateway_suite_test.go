@@ -19,9 +19,9 @@ import (
 
 	kubeutils2 "github.com/kgateway-dev/kgateway/test/testutils"
 
-	gatewaydefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
+	gatewaydefaults "github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
 
-	gloodefaults "github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
+	gloodefaults "github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
 
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 

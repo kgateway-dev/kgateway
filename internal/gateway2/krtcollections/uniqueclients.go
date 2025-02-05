@@ -17,9 +17,9 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/xds"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/xds"
 )
 
 type ConnectedClient struct {

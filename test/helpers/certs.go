@@ -24,7 +24,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	corev1 "k8s.io/api/core/v1"
 
-	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	v1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
 
 	"golang.org/x/crypto/ocsp"
 

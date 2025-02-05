@@ -5,10 +5,10 @@ package admin_server
 import (
 	"context"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
-	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/api/v1alpha1"
+	v1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
 
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

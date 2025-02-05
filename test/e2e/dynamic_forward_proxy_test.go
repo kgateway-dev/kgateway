@@ -7,22 +7,22 @@ import (
 
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 
-	defaults2 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
+	defaults2 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
 
 	"net/http"
 
 	"github.com/kgateway-dev/kgateway/test/e2e"
 	"github.com/kgateway-dev/kgateway/test/helpers"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/dynamic_forward_proxy"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/dynamic_forward_proxy"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/transformation"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/transformation"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	gatewayv1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
+	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
 )
 
 var _ = Describe("dynamic forward proxy", func() {

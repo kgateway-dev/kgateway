@@ -19,7 +19,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/resources"
 )
 

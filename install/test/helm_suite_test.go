@@ -26,9 +26,9 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 
+	"github.com/kgateway-dev/kgateway/internal/gloo/cli/pkg/cmd/install"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
 	"github.com/kgateway-dev/kgateway/pkg/cliutil/helm"
-	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/cmd/install"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 	"github.com/kgateway-dev/kgateway/test/makefile"
 	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
 )

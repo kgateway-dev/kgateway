@@ -17,7 +17,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/test/services"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
 
 	"github.com/onsi/ginkgo/v2"
 	errors "github.com/rotisserie/eris"

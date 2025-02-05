@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway2/ports"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/ports"
 )
 
 var _ = Describe("Ports", func() {

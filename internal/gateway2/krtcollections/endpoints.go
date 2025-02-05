@@ -15,10 +15,10 @@ import (
 	discoveryv1 "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway2/extensions2/settings"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/ir"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/extensions2/settings"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/wellknown"
 )
 
 type EndpointsSettings struct {

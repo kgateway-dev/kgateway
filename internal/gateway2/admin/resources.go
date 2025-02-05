@@ -5,8 +5,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
+	"github.com/kgateway-dev/kgateway/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/wellknown"
 )
 
 // TODO: these need to be updated

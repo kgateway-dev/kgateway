@@ -16,11 +16,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	. "github.com/kgateway-dev/kgateway/projects/gateway2/krtcollections"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/utils"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/utils/krtutil"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/xds"
+	. "github.com/kgateway-dev/kgateway/internal/gateway2/krtcollections"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/utils"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/wellknown"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/xds"
 )
 
 func TestUniqueClients(t *testing.T) {

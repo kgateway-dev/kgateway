@@ -6,11 +6,11 @@ import (
 	"context"
 	"fmt"
 
-	v1alpha1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/solo/ratelimit"
-	extauthv1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	graphqlv1beta1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/bootstrap/clients/vault"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/xds"
+	v1alpha1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/external/solo/ratelimit"
+	extauthv1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	graphqlv1beta1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/bootstrap/clients/vault"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/xds"
 
 	"net"
 	"net/http"
@@ -32,17 +32,17 @@ import (
 
 	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector/singlereplica"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/gloosnapshot"
 
 	"github.com/kgateway-dev/kgateway/pkg/utils/settingsutil"
 
 	"github.com/kgateway-dev/kgateway/pkg/utils/statusutils"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/syncer/setup"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/syncer/setup"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/translator"
+	"github.com/kgateway-dev/kgateway/internal/gateway/pkg/translator"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/upstreams/consul"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/upstreams/consul"
 
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -58,9 +58,9 @@ import (
 
 	"google.golang.org/grpc"
 
-	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/bootstrap"
+	gatewayv1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
+	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/bootstrap"
 
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.uber.org/zap"
@@ -72,9 +72,9 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes"
 
-	fds_syncer "github.com/kgateway-dev/kgateway/projects/discovery/pkg/fds/syncer"
-	uds_syncer "github.com/kgateway-dev/kgateway/projects/discovery/pkg/uds/syncer"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
+	fds_syncer "github.com/kgateway-dev/kgateway/internal/discovery/pkg/fds/syncer"
+	uds_syncer "github.com/kgateway-dev/kgateway/internal/discovery/pkg/uds/syncer"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
 )
 
 var glooPortBase = uint32(30400)

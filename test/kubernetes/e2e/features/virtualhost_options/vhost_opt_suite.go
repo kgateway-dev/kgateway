@@ -15,9 +15,9 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/test/helpers"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"

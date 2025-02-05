@@ -31,9 +31,9 @@ import (
 	api "sigs.k8s.io/gateway-api/apis/v1"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/controller"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/wellknown"
+	"github.com/kgateway-dev/kgateway/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/controller"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/wellknown"
 )
 
 var (

@@ -13,8 +13,8 @@ import (
 	"github.com/spf13/afero"
 	"google.golang.org/grpc"
 
-	"github.com/kgateway-dev/kgateway/projects/sds/pkg/server"
-	"github.com/kgateway-dev/kgateway/projects/sds/pkg/testutils"
+	"github.com/kgateway-dev/kgateway/internal/sds/pkg/server"
+	"github.com/kgateway-dev/kgateway/internal/sds/pkg/testutils"
 )
 
 var _ = Describe("SDS Server", func() {
