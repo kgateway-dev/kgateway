@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/test/gomega"
 	. "github.com/onsi/gomega"
+
+	"github.com/kgateway-dev/kgateway/test/gomega"
 )
 
 const (
