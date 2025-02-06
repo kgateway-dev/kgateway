@@ -24,7 +24,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/test/gomega/transforms"
-	"github.com/kgateway-dev/kgateway/test/helpers"
 )
 
 const (
@@ -79,21 +78,6 @@ var (
 	DefaultCurlTimeout        = time.Second * 20 // DefaultCurlTimeout is the default timeout for "Eventually" curl assertions
 	DefaultCurlPollingTimeout = time.Second * 2  // DefaultCurlPollingTimeout is the default pollinginterval for "Eventually" curl assertions
 )
-
-var getTimeoutsAsInterfaces = helpers.GetDefaultTimingsTransform(DefaultCurlTimeout, DefaultCurlPollingTimeout)
-
-func GetTimeouts(timeout ...time.Duration) (currentTimeout, pollingInterval time.Duration) {
-	// Convert the timeouts to interface{}s
-	interfaceTimeouts := make([]interface{}, len(timeout))
-	for i, t := range timeout {
-		interfaceTimeouts[i] = t
-	}
-
-	timeoutAny, pollingIntervalAny := getTimeoutsAsInterfaces(interfaceTimeouts...)
-	currentTimeout = timeoutAny.(time.Duration)
-	pollingInterval = pollingIntervalAny.(time.Duration)
-	return currentTimeout, pollingInterval
-}
 
 func (t *testContainer) CurlEventuallyShouldOutput(opts CurlOpts, expectedOutput interface{}, ginkgoOffset int, timeout ...time.Duration) {
 	t.CurlEventuallyShouldRespond(opts, expectedOutput, ginkgoOffset, timeout...)

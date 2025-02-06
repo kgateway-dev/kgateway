@@ -18,7 +18,7 @@ import (
 	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/test/gomega/transforms"
-	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
+	"github.com/kgateway-dev/kgateway/test/helpers"
 	e2edefaults "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
 )
 
@@ -40,7 +40,7 @@ func (p *Provider) AssertEventualCurlReturnResponse(
 		},
 	})
 
-	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
 
 	var curlHttpResponse *http.Response
 	p.Gomega.Eventually(func(g Gomega) {
@@ -124,7 +124,7 @@ func (p *Provider) AssertEventuallyConsistentCurlResponse(
 	pollTimeout := 3 * time.Second
 	pollInterval := 1 * time.Second
 	if len(timeout) > 0 {
-		pollTimeout, pollInterval = helper.GetTimeouts(timeout...)
+		pollTimeout, pollInterval = helpers.GetTimeouts(timeout...)
 	}
 
 	p.Gomega.Consistently(func(g Gomega) {
@@ -162,7 +162,7 @@ func (p *Provider) AssertEventualCurlError(
 	pollTimeout := 5 * time.Second
 	pollInterval := 500 * time.Millisecond
 	if len(timeout) > 0 {
-		pollTimeout, pollInterval = helper.GetTimeouts(timeout...)
+		pollTimeout, pollInterval = helpers.GetTimeouts(timeout...)
 	}
 
 	testMessage := fmt.Sprintf("Expected curl error %d", expectedErrorCode)

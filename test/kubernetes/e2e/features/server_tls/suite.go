@@ -13,7 +13,7 @@ import (
 	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
+	"github.com/kgateway-dev/kgateway/test/helpers"
 	testdefaults "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
 
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
@@ -199,7 +199,7 @@ func (s *serverTlsTestingSuite) TestTwoVirtualServicesOneMissingTlsSecret() {
 	err = s.testInstallation.Actions.Kubectl().RestartDeploymentAndWait(s.ctx, "gloo", "-n", s.ns)
 	s.NoError(err, "can restart gloo deployment")
 
-	timeout, polling := helper.GetTimeouts(time.Second*10, time.Second)
+	timeout, polling := helpers.GetTimeouts(time.Second*10, time.Second)
 
 	// Assert that we have traffic working on VS 1 but failed traffic on VS 2.
 	s.assertEventuallyConsistentResponse(vs1.GetName(), expectedHealthyResponse1, timeout, polling)
