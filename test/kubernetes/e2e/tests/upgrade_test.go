@@ -11,8 +11,8 @@ import (
 
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 	. "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/kgateway"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/helper"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/kgateway"
 )
 
 // The upgrade tests delegate the installs, upgrades and deletions to each individual test within the suite

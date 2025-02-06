@@ -17,8 +17,8 @@ import (
 	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/actions"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/assertions"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/cluster"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/kgateway"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/helper"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/kgateway"
 	testruntime "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/runtime"
 	"github.com/kgateway-dev/kgateway/test/testutils"
 )
