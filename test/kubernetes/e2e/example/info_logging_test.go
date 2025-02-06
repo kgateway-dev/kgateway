@@ -20,7 +20,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/example"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/gloogateway"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/kgateway"
 )
 
 // TestInstallationWithInfoLogLevel is the function which executes a series of tests against a given installation
@@ -29,7 +29,7 @@ func TestInstallationWithInfoLogLevel(t *testing.T) {
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "info-log-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
-		&gloogateway.Context{
+		&kgateway.Context{
 			InstallNamespace:          installNs,
 			ProfileValuesManifestFile: filepath.Join(fsutils.MustGetThisDir(), "manifests", "example-profile.yaml"),
 			ValuesManifestFile:        filepath.Join(fsutils.MustGetThisDir(), "manifests", "info-example.yaml"),

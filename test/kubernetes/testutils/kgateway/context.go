@@ -1,6 +1,6 @@
 //go:build ignore
 
-package gloogateway
+package kgateway
 
 import (
 	"github.com/rotisserie/eris"

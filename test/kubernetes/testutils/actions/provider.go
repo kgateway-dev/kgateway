@@ -7,7 +7,7 @@ import (
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/testutils"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/cluster"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/gloogateway"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/kgateway"
 )
 
 // Provider is the entity that creates actions.
@@ -18,7 +18,7 @@ type Provider struct {
 	glooCli *testutils.GlooCli
 	helmCli *helmutils.Client
 
-	glooGatewayContext *gloogateway.Context
+	glooGatewayContext *kgateway.Context
 }
 
 // NewActionsProvider returns an Provider
@@ -38,7 +38,7 @@ func (p *Provider) WithClusterContext(clusterContext *cluster.Context) *Provider
 }
 
 // WithGlooGatewayContext sets the provider to point to the provided Gloo Gateway installation
-func (p *Provider) WithGlooGatewayContext(ggContext *gloogateway.Context) *Provider {
+func (p *Provider) WithGlooGatewayContext(ggContext *kgateway.Context) *Provider {
 	p.glooGatewayContext = ggContext
 	return p
 }
