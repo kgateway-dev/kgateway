@@ -17,8 +17,8 @@ import (
 	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/actions"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/assertions"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/cluster"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/gloogateway"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/helper"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/kgateway"
 	testruntime "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/runtime"
 	"github.com/kgateway-dev/kgateway/test/testutils"
 )
@@ -50,12 +50,12 @@ func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper
 // It is syntactic sugar on top of CreateTestInstallationForCluster
 func CreateTestInstallation(
 	t *testing.T,
-	glooGatewayContext *gloogateway.Context,
+	glooGatewayContext *kgateway.Context,
 ) *TestInstallation {
 	runtimeContext := testruntime.NewContext()
 	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName)
 
-	if err := gloogateway.ValidateGlooGatewayContext(glooGatewayContext); err != nil {
+	if err := kgateway.ValidateGlooGatewayContext(glooGatewayContext); err != nil {
 		// We error loudly if the context is misconfigured
 		panic(err)
 	}
@@ -73,7 +73,7 @@ func CreateTestInstallationForCluster(
 	t *testing.T,
 	runtimeContext testruntime.Context,
 	clusterContext *cluster.Context,
-	glooGatewayContext *gloogateway.Context,
+	glooGatewayContext *kgateway.Context,
 ) *TestInstallation {
 	installation := &TestInstallation{
 		// RuntimeContext contains the set of properties that are defined at runtime by whoever is invoking tests
@@ -117,7 +117,7 @@ type TestInstallation struct {
 	ClusterContext *cluster.Context
 
 	// Metadata contains the properties used to install Gloo Gateway
-	Metadata *gloogateway.Context
+	Metadata *kgateway.Context
 
 	// Actions is the entity that creates actions that can be executed by the Operator
 	Actions *actions.Provider
