@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	// TearDown is used to TearDown assets after a test completes. This is used in kube2e tests to uninstall
+	// TearDown is used to TearDown assets after a test completes. This is used in kubernetes e2e tests to uninstall
 	// Gloo after a test suite completes
 	TearDown = "TEAR_DOWN"
 
@@ -22,9 +22,6 @@ const (
 	// This is used to test against an existing installation of Istio so that the
 	// test framework does not need to install/uninstall Istio.
 	SkipIstioInstall = "SKIP_ISTIO_INSTALL"
-
-	// KubeTestType is used to indicate which kube2e suite should be run while executing regression tests
-	KubeTestType = "KUBE2E_TESTS"
 
 	// InvalidTestReqsEnvVar is used to define the behavior for running tests locally when the provided requirements
 	// are not met. See ValidateRequirementsAndNotifyGinkgo for a detail of available behaviors
