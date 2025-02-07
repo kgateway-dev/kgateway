@@ -18,12 +18,12 @@ import (
 
 	"github.com/solo-io/go-utils/threadsafe"
 
+	"github.com/kgateway-dev/kgateway/internal/gateway2/admin"
 	kgatewayAdminCli "github.com/kgateway-dev/kgateway/pkg/utils/controllerutils/admincli"
 	"github.com/kgateway-dev/kgateway/pkg/utils/envoyutils/admincli"
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/portforward"
 	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/admin"
 )
 
 // StandardKgatewayDumpOnFail creates a dump of the kubernetes state and certain envoy data from

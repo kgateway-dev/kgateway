@@ -15,16 +15,16 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/gloosnapshot"
 
 	gloostatusutils "github.com/kgateway-dev/kgateway/pkg/utils/statusutils"
 
 	"github.com/rotisserie/eris"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/services/k8sadmission"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/kgateway-dev/kgateway/internal/gateway/pkg/services/k8sadmission"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/core/matchers"
 	"github.com/kgateway-dev/kgateway/test/helpers"
 	"github.com/kgateway-dev/kgateway/test/kube2e"
 
@@ -45,8 +45,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	gatewayv1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
+	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
 )
 
 var _ = Describe("Robustness tests", func() {

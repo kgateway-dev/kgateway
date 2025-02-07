@@ -35,8 +35,8 @@ import (
 
 	values "github.com/kgateway-dev/kgateway/install/helm/gloo/generate"
 	"github.com/kgateway-dev/kgateway/install/test/securitycontext"
+	"github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
-	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
 )

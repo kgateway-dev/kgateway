@@ -9,10 +9,10 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/cmd/check"
-	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/cmd/options"
-	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/cmd/version"
-	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/printers"
+	"github.com/kgateway-dev/kgateway/internal/gloo/cli/pkg/cmd/check"
+	"github.com/kgateway-dev/kgateway/internal/gloo/cli/pkg/cmd/options"
+	"github.com/kgateway-dev/kgateway/internal/gloo/cli/pkg/cmd/version"
+	"github.com/kgateway-dev/kgateway/internal/gloo/cli/pkg/printers"
 )
 
 // EventuallyCheckResourcesOk asserts that `glooctl check` eventually responds Ok

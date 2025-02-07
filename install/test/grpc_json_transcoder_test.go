@@ -14,7 +14,7 @@ import (
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
 	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
 )
 

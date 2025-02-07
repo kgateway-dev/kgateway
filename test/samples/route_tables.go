@@ -7,10 +7,10 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/core/matchers"
+	v1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
+	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/core/matchers"
 )
 
 func LinkedRouteTablesWithVirtualService(vsName, namespace string) (*v1.VirtualService, v1.RouteTableList) {

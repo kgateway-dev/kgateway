@@ -13,7 +13,7 @@ on:
   push:
     tags:
       - 'v*'
-      - '!v0.0.0-main'
+      - '!v2.0.0-main'
     branches:
       - main
   pull_request:
@@ -58,7 +58,7 @@ jobs:
             VERSION="${GITHUB_REF#refs/tags/}"
             echo "goreleaser_args=--clean" >> $GITHUB_OUTPUT
           elif [[ $GITHUB_REF == refs/heads/main ]]; then
-            VERSION="v0.0.0-main"
+            VERSION="v2.0.0-main"
             echo "goreleaser_args=--clean --skip=validate" >> $GITHUB_OUTPUT
           elif [[ $GITHUB_REF == refs/pull/* ]]; then
             GIT_TAG=$(git describe --tags --abbrev=0)

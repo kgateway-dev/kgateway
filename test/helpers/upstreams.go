@@ -5,9 +5,9 @@ package helpers
 import (
 	"fmt"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/envoy/api/v2/core"
-	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/ssl"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/external/envoy/api/v2/core"
+	v1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/ssl"
 )
 
 // UpstreamBuilder contains options for building Upstreams to be included in scaled Snapshots

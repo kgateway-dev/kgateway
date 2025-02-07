@@ -7,13 +7,13 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
 
 	"github.com/avast/retry-go"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/gloosnapshot"
 )
 
 var _ SnapshotWriter = new(SnapshotWriterImpl)

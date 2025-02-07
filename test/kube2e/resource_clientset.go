@@ -17,11 +17,11 @@ import (
 	gwclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 	gatewayclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/typed/apis/v1"
 
-	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
-	kubeconverters "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/converters/kube"
-	externalrl "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/solo/ratelimit"
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	extauthv1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	gatewayv1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
+	kubeconverters "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/converters/kube"
+	externalrl "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/external/solo/ratelimit"
+	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
+	extauthv1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/kgateway-dev/kgateway/test/helpers"
 )
 

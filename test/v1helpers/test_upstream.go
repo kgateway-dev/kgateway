@@ -29,8 +29,8 @@ import (
 	"google.golang.org/grpc/credentials"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	static_plugin_gloo "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/static"
+	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
+	static_plugin_gloo "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/static"
 	"github.com/kgateway-dev/kgateway/test/helpers"
 	testgrpcservice "github.com/kgateway-dev/kgateway/test/v1helpers/test_grpc_service"
 )

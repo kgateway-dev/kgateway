@@ -17,19 +17,19 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/gloosnapshot"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/hcm"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/translator"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/hcm"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/translator"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
-	gatewaydefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
-	envoytrace_gloo "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/envoy/config/trace/v3"
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	static_plugin_gloo "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/static"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/tracing"
+	gatewayv1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
+	gatewaydefaults "github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
+	envoytrace_gloo "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/external/envoy/config/trace/v3"
+	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
+	static_plugin_gloo "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/static"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/tracing"
 	gloohelpers "github.com/kgateway-dev/kgateway/test/helpers"
 	"github.com/kgateway-dev/kgateway/test/v1helpers"
 

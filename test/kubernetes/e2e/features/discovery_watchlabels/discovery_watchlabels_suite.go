@@ -9,9 +9,9 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/kubernetes"
+	v1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/plugins/kubernetes"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"

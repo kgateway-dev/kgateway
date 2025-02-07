@@ -9,8 +9,8 @@ import (
 
 	"net/http"
 
-	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
-	gatewaydefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
+	v1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
+	gatewaydefaults "github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
 
 	"github.com/kgateway-dev/kgateway/test/e2e"
 
@@ -18,8 +18,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	gloogzip "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2"
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	gloogzip "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2"
+	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
 )
 
 var _ = Describe("gzip", func() {

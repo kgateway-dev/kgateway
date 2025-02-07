@@ -3,7 +3,7 @@
 package envoy
 
 import (
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
 
 	"github.com/kgateway-dev/kgateway/test/ginkgo/parallel"
 )

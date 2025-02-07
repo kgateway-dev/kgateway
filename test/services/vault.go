@@ -21,7 +21,7 @@ import (
 	"github.com/kgateway-dev/kgateway/test/services/utils"
 	"github.com/kgateway-dev/kgateway/test/testutils"
 
-	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	v1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega/gexec"

@@ -16,9 +16,9 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
-	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	fault "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/faultinjection"
+	v1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
+	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
+	fault "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/faultinjection"
 )
 
 var _ = Describe("Fault Injection", func() {

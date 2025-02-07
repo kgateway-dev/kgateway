@@ -12,17 +12,17 @@ import (
 
 	"github.com/golang/protobuf/ptypes/duration"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/core/selectors"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/core/selectors"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
-	gatewaydefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/ssl"
+	v1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
+	gatewaydefaults "github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
+	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/ssl"
 	gloohelpers "github.com/kgateway-dev/kgateway/test/helpers"
 )
 

@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/cmd/istio"
+	"github.com/kgateway-dev/kgateway/internal/gloo/cli/pkg/cmd/istio"
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
 )
@@ -22,7 +22,7 @@ import (
 var _ e2e.NewSuiteFunc = NewIstioIntegrationTestingSuite
 
 // istioIntegrationDeployerSuite is the entire Suite of tests for the "deployer" feature that relies on an Istio installation
-// The "deployer" code can be found here: /projects/gateway2/deployer
+// The "deployer" code can be found here: /internal/gateway2/deployer
 type istioIntegrationDeployerSuite struct {
 	suite.Suite
 

@@ -11,13 +11,13 @@ import (
 
 	"github.com/golang/protobuf/ptypes/duration"
 
-	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
+	v1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/test/e2e"
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 
 	"github.com/kgateway-dev/kgateway/test/testutils"
 
-	consulplugin "github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/consul"
+	consulplugin "github.com/kgateway-dev/kgateway/internal/gloo/pkg/plugins/consul"
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -28,9 +28,9 @@ import (
 
 	"github.com/hashicorp/consul/api"
 
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	consulapi "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/consul"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/upstreams/consul"
+	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
+	consulapi "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/consul"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/upstreams/consul"
 	"github.com/kgateway-dev/kgateway/test/services"
 	"github.com/kgateway-dev/kgateway/test/v1helpers"
 )

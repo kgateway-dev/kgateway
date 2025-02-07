@@ -25,16 +25,16 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
-	gwdefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/grpc_json"
+	gatewayv1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
+	gwdefaults "github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/core/matchers"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/grpc_json"
 	"github.com/kgateway-dev/kgateway/test/services"
 	"github.com/kgateway-dev/kgateway/test/v1helpers"
 
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
+	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
 	testmatchers "github.com/kgateway-dev/kgateway/test/gomega/matchers"
 )
 
