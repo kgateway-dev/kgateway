@@ -14,8 +14,6 @@ jobs:
     name: Prepare Environment
     runs-on: ubuntu-22.04
     timeout-minutes: 5
-    outputs:
-      should-auto-succeed-regression-tests: ${{ steps.run-strategy.outputs.auto_succeed }}
     steps:
     - name: Cancel Previous Actions
       uses: styfle/cancel-workflow-action@0.12.1
@@ -27,17 +25,6 @@ jobs:
         # We require gathering the branch and tag history since we rely on a `git diff`
         # which compares the state of two branches
         fetch-depth: 0
-    - id: process-skip-directives
-      uses: ./.github/actions/process-skip-directives
-      with:
-        base-ref: ${{ github.base_ref }}
-    - id: run-strategy
-      name: Determine Test Run Strategy
-      run: |
-        skip_kube_tests=${{ steps.process-skip-directives.outputs.skip-kube-tests }}
-        if [[ ! -z $skip_kube_tests && $skip_kube_tests = true ]] ; then
-          echo "auto_succeed=true" >> $GITHUB_OUTPUT
-        fi
 
   # regression_tests:
   #   name: k8s regression tests (${{matrix.kube-e2e-test-type}})
@@ -63,12 +50,7 @@ jobs:
   #   steps:
   #   - uses: actions/checkout@v4
   #   - id: run-tests
-  #     if: needs.prepare_env.outputs.should-auto-succeed-regression-tests != 'true'
   #     uses: ./.github/actions/regression-tests
-  #   - id: auto-succeed-tests
-  #     if: needs.prepare_env.outputs.should-auto-succeed-regression-tests == 'true'
-  #     run: |
-  #       echo "Regression tests auto-succeeded"
 
   kube_gateway_api_conformance_tests:
     name: kubernetes gateway api conformance tests (${{matrix.image-variant}})
@@ -86,10 +68,5 @@ jobs:
           - standard
     steps:
     - uses: actions/checkout@v4
-    - id: auto-succeed-tests
-      if: needs.prepare_env.outputs.should-auto-succeed-regression-tests == 'true'
-      run: |
-        echo "Kubernetes Gateway API conformance tests auto-succeeded"
     - id: run-tests
-      if: needs.prepare_env.outputs.should-auto-succeed-regression-tests != 'true'
       uses: ./.github/actions/kube-gateway-api-conformance-tests
