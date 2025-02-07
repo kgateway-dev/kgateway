@@ -12,7 +12,7 @@ spec:
   group: gateway.kgateway.dev
   names:
     categories:
-    - gloo-gateway
+    - kgateway
     kind: GatewayParameters
     listKind: GatewayParametersList
     plural: gatewayparameters
