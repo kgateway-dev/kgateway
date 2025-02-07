@@ -72,6 +72,24 @@ func IndexerByObjType(obj client.Object) []string {
 			}
 			results = append(results, nns.String())
 		}
+	case *gwv1a2.TLSRoute:
+		for _, pRef := range resource.Spec.ParentRefs {
+			if pRef.Group != nil && *pRef.Group != gwv1a2.GroupName {
+				continue
+			}
+			if pRef.Kind != nil && *pRef.Kind != wellknown.GatewayKind {
+				continue
+			}
+			ns := resolveNs(pRef.Namespace)
+			if ns == "" {
+				ns = resource.Namespace
+			}
+			nns := types.NamespacedName{
+				Namespace: ns,
+				Name:      string(pRef.Name),
+			}
+			results = append(results, nns.String())
+		}
 	case *gwv1b1.ReferenceGrant:
 		for _, from := range resource.Spec.From {
 			if from.Namespace != "" {
