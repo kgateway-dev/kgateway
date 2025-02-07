@@ -15,12 +15,12 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/onsi/ginkgo/v2"
-
 	"github.com/solo-io/go-utils/threadsafe"
 
 	"github.com/kgateway-dev/kgateway/internal/gateway2/admin"
 	kgatewayAdminCli "github.com/kgateway-dev/kgateway/pkg/utils/controllerutils/admincli"
 	"github.com/kgateway-dev/kgateway/pkg/utils/envoyutils/admincli"
+	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/portforward"
 	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
@@ -481,7 +481,7 @@ func writeControllerLog(ctx context.Context, outDir string, ns string, podName s
 	// Get the kgateway controller logs
 	controllerLogsFile := fileAtPath(filepath.Join(outDir, fmt.Sprintf("%s.controller.log", podName)))
 	controllerLogsCmd := kubectlCli.WithReceiver(controllerLogsFile).Command(ctx,
-		"-n", ns, "logs", podName, "-c", "kgateway", "--tail=1000")
+		"-n", ns, "logs", podName, "-c", kubeutils.KgatewayContainerName, "--tail=1000")
 	err := controllerLogsCmd.Run().Cause()
 	if err != nil {
 		fmt.Printf("error running controller logs for %s in %s command: %v\n", podName, ns, err)
