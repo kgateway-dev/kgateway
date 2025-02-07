@@ -280,6 +280,10 @@ clean-test-logs:
 # Generated Code and Docs
 #----------------------------------------------------------------------------------
 
+.PHONY: verify
+verify: generate-all  ## Verify that generated code is up to date
+	git diff -U3 --exit-code
+
 .PHONY: generate-all
 generate-all: generated-code
 
