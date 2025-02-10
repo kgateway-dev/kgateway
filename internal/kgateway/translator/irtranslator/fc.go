@@ -23,10 +23,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/internal/gateway2/ir"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/plugins"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/reports"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/utils"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/plugins"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/reports"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/utils"
 )
 
 const (

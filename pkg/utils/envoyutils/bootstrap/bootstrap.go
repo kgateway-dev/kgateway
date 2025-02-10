@@ -18,7 +18,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	"github.com/kgateway-dev/kgateway/internal/gateway2/utils"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/utils"
 )
 
 var (

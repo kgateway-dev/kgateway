@@ -11,10 +11,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kgateway-dev/kgateway/internal/gateway2/ir"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/krtcollections"
-	. "github.com/kgateway-dev/kgateway/internal/gateway2/krtcollections"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/krtcollections"
+	. "github.com/kgateway-dev/kgateway/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/utils/krtutil"
 )
 
 func TestPods(t *testing.T) {

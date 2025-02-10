@@ -14,16 +14,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/internal/gateway2/endpoints"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/internal/gateway2/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/ir"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/krtcollections"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/query"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/reports"
-	gwtranslator "github.com/kgateway-dev/kgateway/internal/gateway2/translator/gateway"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/translator/irtranslator"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/utils"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/endpoints"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/common"
+	extensionsplug "github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/query"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/reports"
+	gwtranslator "github.com/kgateway-dev/kgateway/internal/kgateway/translator/gateway"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/translator/irtranslator"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/utils"
 )
 
 // Combines all the translators needed for xDS translation.

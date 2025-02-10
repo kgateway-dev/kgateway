@@ -8,7 +8,7 @@ import (
 	cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/kgateway-dev/kgateway/internal/gateway2/wellknown"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/wellknown"
 )
 
 var _ cache.NodeHash = new(nodeRoleHasher)

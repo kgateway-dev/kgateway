@@ -45,10 +45,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kgateway-dev/kgateway/internal/gateway2/controller"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/krtcollections"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/proxy_syncer"
-	ggv2setup "github.com/kgateway-dev/kgateway/internal/gateway2/setup"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/controller"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/proxy_syncer"
+	ggv2setup "github.com/kgateway-dev/kgateway/internal/kgateway/setup"
 )
 
 func getAssetsDir(t *testing.T) string {

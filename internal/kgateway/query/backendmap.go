@@ -1,7 +1,7 @@
 package query
 
 import (
-	"github.com/kgateway-dev/kgateway/internal/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/ir"
 )
 
 // BackendMap is a generic type used to manage mappings of backends for Gateway API configurations.

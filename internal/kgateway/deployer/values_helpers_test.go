@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kgateway-dev/kgateway/internal/gateway2/deployer"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/deployer"
 )
 
 var _ = Describe("Values Helpers", func() {

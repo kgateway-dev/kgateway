@@ -8,7 +8,7 @@ import (
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 
-	"github.com/kgateway-dev/kgateway/internal/gateway2/xds"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
 
 	"istio.io/istio/pkg/kube/krt"

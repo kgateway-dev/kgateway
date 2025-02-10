@@ -19,10 +19,10 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/kgateway-dev/kgateway/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/extensions2/common"
-	extensionplug "github.com/kgateway-dev/kgateway/internal/gateway2/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/ir"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/plugins"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/common"
+	extensionplug "github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/pkg/client/clientset/versioned"
 )
 

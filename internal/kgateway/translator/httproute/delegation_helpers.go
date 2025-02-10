@@ -10,9 +10,9 @@ import (
 	"k8s.io/utils/ptr"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/internal/gateway2/ir"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/query"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/wellknown"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/query"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/wellknown"
 )
 
 // inheritMatcherAnnotation is the annotation used on an child HTTPRoute that

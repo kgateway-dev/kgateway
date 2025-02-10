@@ -5,7 +5,7 @@ import (
 
 	"github.com/solo-io/go-utils/log"
 
-	"github.com/kgateway-dev/kgateway/internal/gateway2/setup"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/setup"
 	"github.com/kgateway-dev/kgateway/pkg/utils/probes"
 )
 

@@ -18,7 +18,7 @@ import (
 
 	"github.com/solo-io/go-utils/threadsafe"
 
-	"github.com/kgateway-dev/kgateway/internal/gateway2/admin"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/admin"
 	"github.com/kgateway-dev/kgateway/pkg/cliutil/install"
 	"github.com/kgateway-dev/kgateway/pkg/utils/envoyutils/admincli"
 	glooAdminCli "github.com/kgateway-dev/kgateway/pkg/utils/glooadminutils/admincli"

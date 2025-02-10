@@ -15,7 +15,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/kgateway-dev/kgateway/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/translator/irtranslator"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/pkg/utils/protoutils"
 
 	"github.com/ghodss/yaml"

@@ -8,8 +8,8 @@ import (
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kgateway-dev/kgateway/internal/gateway2/endpoints"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/ir"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/endpoints"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/ir"
 )
 
 func TestTranslatesDestrulesFailoverPriority(t *testing.T) {

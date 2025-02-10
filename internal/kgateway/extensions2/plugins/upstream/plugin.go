@@ -21,11 +21,11 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/internal/gateway2/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/ir"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/krtcollections"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/plugins"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/common"
+	extensionsplug "github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/pkg/client/clientset/versioned"
 )
 

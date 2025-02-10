@@ -15,7 +15,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
 
-	"github.com/kgateway-dev/kgateway/internal/gateway2/reports"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/reports"
 )
 
 type translatorTestCase struct {

@@ -18,15 +18,15 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kgateway-dev/kgateway/internal/gateway2/ir"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/krtcollections"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/ports"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/query"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/reports"
-	route "github.com/kgateway-dev/kgateway/internal/gateway2/translator/httproute"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/translator/routeutils"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/translator/sslutils"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/utils"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/ports"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/query"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/reports"
+	route "github.com/kgateway-dev/kgateway/internal/kgateway/translator/httproute"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/translator/routeutils"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/translator/sslutils"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/utils"
 )
 
 // TranslateListeners translates the set of gloo listeners required to produce a full output proxy (either form one Gateway or multiple merged Gateways)

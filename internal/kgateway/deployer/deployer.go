@@ -28,8 +28,8 @@ import (
 	api "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/helm"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/wellknown"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/helm"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/pkg/version"
 )
 

@@ -6,16 +6,16 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/kube/krt"
 
-	extensionsplug "github.com/kgateway-dev/kgateway/internal/gateway2/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/ir"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/utils"
+	extensionsplug "github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/utils"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/internal/gateway2/query"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/reports"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/translator/listener"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/query"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/reports"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/translator/listener"
 )
 
 func NewTranslator(queries query.GatewayQueries) extensionsplug.KGwTranslator {
