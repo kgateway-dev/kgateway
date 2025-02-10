@@ -3,7 +3,7 @@ module github.com/kgateway-dev/kgateway
 go 1.23.3
 
 require (
-	fybrik.io/crdoc v0.6.4
+	fybrik.io/crdoc v0.6.3
 	github.com/Masterminds/semver/v3 v3.3.0
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.1-0.20240214155107-6cf1ede4da61
 	github.com/avast/retry-go v2.4.3+incompatible
