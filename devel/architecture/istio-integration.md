@@ -87,7 +87,7 @@ hack/kind/setup-kind.sh; make kind-build-and-load
 2. Install Istio
 
 ```shell
-./internal/gateway2/istio.sh
+./internal/kgateway/istio.sh
 ```
 
 ```shell

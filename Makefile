@@ -314,7 +314,7 @@ go-generate-mocks: ## Runs all generate directives for mockgen in the repo
 # TODO: do we still want this?
 .PHONY: getter-check
 getter-check:
-	go run github.com/saiskee/gettercheck -ignoretests -ignoregenerated -write ./internal/gateway2/...
+	go run github.com/saiskee/gettercheck -ignoretests -ignoregenerated -write ./internal/kgateway/...
 
 .PHONY: mod-tidy
 mod-tidy:
@@ -363,7 +363,7 @@ distroless-with-utils-docker: distroless-docker $(DISTROLESS_OUTPUT_DIR)/Dockerf
 # Controller
 #----------------------------------------------------------------------------------
 
-K8S_GATEWAY_DIR=internal/gateway2
+K8S_GATEWAY_DIR=internal/kgateway
 K8S_GATEWAY_SOURCES=$(call get_sources,$(K8S_GATEWAY_DIR))
 CONTROLLER_OUTPUT_DIR=$(OUTPUT_DIR)/$(K8S_GATEWAY_DIR)
 export CONTROLLER_IMAGE_REPO ?= kgateway

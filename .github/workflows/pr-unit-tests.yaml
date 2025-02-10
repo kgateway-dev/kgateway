@@ -11,7 +11,7 @@ env:
   GITHUB_TOKEN: ${{ github.token }}
 
 jobs:
-  # Runs the unit tests for `internal/gateway2`
+  # Runs the unit tests for `internal/kgateway`
   kube_gateway_project:
     # TODO(tim): rename this job or consolidate with the other workflows.
     name: projects/gateway2
@@ -24,14 +24,14 @@ jobs:
       with:
         go-version-file: go.mod
     - name: Build
-      run: go build -v ./internal/gateway2/...
+      run: go build -v ./internal/kgateway/...
     - name: Install Test Utils
       shell: bash
-      run: make -C ./internal/gateway2/ install-go-tools
+      run: make -C ./internal/kgateway/ install-go-tools
     - name: Run Tests
       shell: bash
       env:
-        TEST_PKG: "./internal/gateway2/..."
+        TEST_PKG: "./internal/kgateway/..."
       run: make go-test-with-coverage
     - name: Validate Test Coverage
       shell: bash
