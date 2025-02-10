@@ -34,7 +34,7 @@ For these tests to run, we require the following conditions:
 - A KinD cluster is set up and loaded with the images to be installed by the helm chart
 
 #### Use the CI Install Script
-[hack/hack/setup-kind.sh](/hack/hack/setup-kind.sh) gets run in CI to setup the test environment for the above requirements.
+[hack/kind/setup-kind.sh](/hack/kind/setup-kind.sh) gets run in CI to setup the test environment for the above requirements.
 It accepts a number of environment variables, to control the creation of a kind cluster and deployment of Gloo resources to that kind cluster.
 
 | Name                 | Default   | Description                                                                                                                  |
@@ -47,7 +47,7 @@ It accepts a number of environment variables, to control the creation of a kind 
 
 Example:
 ```bash
-CLUSTER_NAME=solo-test-cluster CLUSTER_NODE_VERSION=v1.28.0 VERSION=v1.0.0-solo-test hack/hack/setup-kind.sh
+CLUSTER_NAME=solo-test-cluster CLUSTER_NODE_VERSION=v1.28.0 VERSION=v1.0.0-solo-test hack/kind/setup-kind.sh
 ```
 
 #### Verify Your Setup
