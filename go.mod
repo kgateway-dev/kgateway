@@ -1,6 +1,6 @@
 module github.com/kgateway-dev/kgateway
 
-go 1.23.3
+go 1.23.6
 
 require (
 	fybrik.io/crdoc v0.6.3
