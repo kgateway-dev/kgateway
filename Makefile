@@ -183,7 +183,7 @@ test-with-coverage: test
 	go tool cover -html $(OUTPUT_DIR)/coverage.cov
 
 .PHONY: run-tests
-run-tests: GINKGO_FLAGS += -skip-package=e2e,gateway2,test/kubernetes/testutils/helper ## Run all non E2E tests, or only run the test package at {TEST_PKG} if it is specified
+run-tests: GINKGO_FLAGS += -skip-package=e2e,kgateway,test/kubernetes/testutils/helper ## Run all non E2E tests, or only run the test package at {TEST_PKG} if it is specified
 run-tests: GINKGO_FLAGS += --label-filter="!end-to-end && !performance"
 run-tests: test
 
@@ -191,7 +191,7 @@ run-tests: test
 # Performance tests are filtered using a Ginkgo label
 # This means that any tests which do not rely on Ginkgo, will by default be compiled and run
 # Since this is not the desired behavior, we explicitly skip these packages
-run-performance-tests: GINKGO_FLAGS += -skip-package=gateway2,kubernetes/e2e,test/kube2e
+run-performance-tests: GINKGO_FLAGS += -skip-package=kgateway,kubernetes/e2e,test/kube2e
 run-performance-tests: GINKGO_FLAGS += --label-filter="performance" ## Run only tests with the Performance label
 run-performance-tests: test
 

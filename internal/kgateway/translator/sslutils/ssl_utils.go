@@ -53,7 +53,7 @@ func cleanedSslKeyPair(certChain, privateKey, rootCa string) (cleanedChain strin
 	// this might not be needed once we have larger envoy validation
 	candidateCert, err := cert.ParseCertsPEM([]byte(certChain))
 	if err != nil {
-		// return err rather than sanitize. This is to maintain UX with older versions and to keep in line with gateway2 pkg.
+		// return err rather than sanitize. This is to maintain UX with older versions and to keep in line with kgateway pkg.
 		return "", err
 	}
 	cleanedChainBytes, err := cert.EncodeCertificates(candidateCert...)

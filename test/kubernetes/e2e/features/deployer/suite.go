@@ -32,7 +32,7 @@ import (
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
 // testingSuite is the entire Suite of tests for the "deployer" feature
-// The "deployer" code can be found here: /internal/gateway2/deployer
+// The "deployer" code can be found here: /internal/kgateway/deployer
 type testingSuite struct {
 	suite.Suite
 

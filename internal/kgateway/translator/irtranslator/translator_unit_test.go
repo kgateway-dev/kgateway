@@ -57,7 +57,7 @@ package irtranslator_test
 // 		}
 // 	}
 
-// 	// TODO(Law): consolidate this with iterators in gateway2/controller.go
+// 	// TODO(Law): consolidate this with iterators in kgateway/controller.go
 // 	fakeClient := testutils.BuildIndexedFakeClient(
 // 		dependencies,
 // 		gwquery.IterateIndices,
