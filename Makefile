@@ -371,12 +371,12 @@ export CONTROLLER_IMAGE_REPO ?= kgateway
 # We include the files in EDGE_GATEWAY_DIR and K8S_GATEWAY_DIR as dependencies to the gloo build
 # so changes in those directories cause the make target to rebuild
 $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH): $(K8S_GATEWAY_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ cmd/gateway2/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ cmd/kgateway/main.go
 
 .PHONY: kgateway
 kgateway: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH)
 
-$(CONTROLLER_OUTPUT_DIR)/Dockerfile: cmd/gateway2/Dockerfile
+$(CONTROLLER_OUTPUT_DIR)/Dockerfile: cmd/kgateway/Dockerfile
 	cp $< $@
 
 .PHONY: kgateway-docker
@@ -386,7 +386,7 @@ kgateway-docker: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(CONTROLLER_
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)
 
-$(CONTROLLER_OUTPUT_DIR)/Dockerfile.distroless: cmd/gateway2/Dockerfile.distroless
+$(CONTROLLER_OUTPUT_DIR)/Dockerfile.distroless: cmd/kgateway/Dockerfile.distroless
 	cp $< $@
 
 # Explicitly specify the base image is amd64 as we only build the amd64 flavour of envoy
