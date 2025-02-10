@@ -12,7 +12,7 @@ spec:
   group: gateway.kgateway.dev
   names:
     categories:
-    - gloo-gateway
+    - kgateway
     kind: DirectResponse
     listKind: DirectResponseList
     plural: directresponses
