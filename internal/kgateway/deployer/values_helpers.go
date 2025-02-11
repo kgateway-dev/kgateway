@@ -11,8 +11,8 @@ import (
 	"k8s.io/utils/ptr"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/ports"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ports"
 )
 
 // This file contains helper functions that generate helm values in the format needed

@@ -21,9 +21,9 @@ import (
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils/exec"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
-	test_runtime "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/runtime"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
+	test_runtime "github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/runtime"
 )
 
 // Default test configuration

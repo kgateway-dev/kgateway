@@ -5,11 +5,11 @@ package e2e_test
 import (
 	"testing"
 
-	"github.com/kgateway-dev/kgateway/test/services/envoy"
+	"github.com/kgateway-dev/kgateway/v2/test/services/envoy"
 
-	"github.com/kgateway-dev/kgateway/test/ginkgo/labels"
+	"github.com/kgateway-dev/kgateway/v2/test/ginkgo/labels"
 
-	"github.com/kgateway-dev/kgateway/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -18,9 +18,9 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/test/helpers"
 
-	"github.com/kgateway-dev/kgateway/test/services"
+	"github.com/kgateway-dev/kgateway/v2/test/services"
 
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/defaults"
 )
 
 func TestE2e(t *testing.T) {

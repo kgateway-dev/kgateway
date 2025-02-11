@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
-	. "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/kgateway"
-	"github.com/kgateway-dev/kgateway/test/testutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	. "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/tests"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 func TestWatchNamespaceSelector(t *testing.T) {

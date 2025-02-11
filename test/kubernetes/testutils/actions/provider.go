@@ -3,11 +3,11 @@
 package actions
 
 import (
-	"github.com/kgateway-dev/kgateway/internal/gloo/cli/pkg/testutils"
-	"github.com/kgateway-dev/kgateway/pkg/utils/helmutils"
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/cluster"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/cli/pkg/testutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/helmutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/cluster"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/kgateway"
 )
 
 // Provider is the entity that creates actions.

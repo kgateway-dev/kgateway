@@ -6,8 +6,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
-	"github.com/kgateway-dev/kgateway/test/gomega/assertions"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/assertions"
 
 	"github.com/solo-io/go-utils/stats"
 

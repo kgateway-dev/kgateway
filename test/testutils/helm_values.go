@@ -10,8 +10,8 @@ import (
 	"knative.dev/pkg/test/helpers"
 	k8syamlutil "sigs.k8s.io/yaml"
 
-	"github.com/kgateway-dev/kgateway/install/helm/gloo/generate"
-	"github.com/kgateway-dev/kgateway/pkg/utils/helmutils"
+	"github.com/kgateway-dev/kgateway/v2/install/helm/gloo/generate"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/helmutils"
 )
 
 // HelmValues is a struct that holds the values that will be passed to a Helm chart

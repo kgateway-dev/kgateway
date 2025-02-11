@@ -8,8 +8,8 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 
-	"github.com/kgateway-dev/kgateway/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 )
 
 func processStatic(ctx context.Context, in *v1alpha1.StaticUpstream, out *envoy_config_cluster_v3.Cluster) {

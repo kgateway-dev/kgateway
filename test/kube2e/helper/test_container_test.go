@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	. "github.com/kgateway-dev/kgateway/test/kube2e/helper"
+	. "github.com/kgateway-dev/kgateway/v2/test/kube2e/helper"
 
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils"

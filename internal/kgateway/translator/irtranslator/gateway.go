@@ -7,9 +7,9 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	extensionsplug "github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/reports"
+	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 )
 
 type Translator struct {

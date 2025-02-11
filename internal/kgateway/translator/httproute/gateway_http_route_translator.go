@@ -11,10 +11,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 
-	"github.com/kgateway-dev/kgateway/internal/kgateway/query"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/reports"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 )
 
 var (

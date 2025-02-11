@@ -17,13 +17,13 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/solo-io/go-utils/threadsafe"
 
-	"github.com/kgateway-dev/kgateway/internal/kgateway/admin"
-	kgatewayAdminCli "github.com/kgateway-dev/kgateway/pkg/utils/controllerutils/admincli"
-	"github.com/kgateway-dev/kgateway/pkg/utils/envoyutils/admincli"
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/portforward"
-	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/admin"
+	kgatewayAdminCli "github.com/kgateway-dev/kgateway/v2/pkg/utils/controllerutils/admincli"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envoyutils/admincli"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 )
 
 // StandardKgatewayDumpOnFail creates a dump of the kubernetes state and certain envoy data from

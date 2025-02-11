@@ -10,13 +10,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kgateway-dev/kgateway/test/services/envoy"
+	"github.com/kgateway-dev/kgateway/v2/test/services/envoy"
 
-	"github.com/kgateway-dev/kgateway/test/testutils"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
-	"github.com/kgateway-dev/kgateway/test/helpers"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	. "github.com/onsi/ginkgo/v2"
@@ -25,9 +25,9 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
-	glooec2 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/aws/ec2"
-	"github.com/kgateway-dev/kgateway/test/services"
+	gloov1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	glooec2 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/options/aws/ec2"
+	"github.com/kgateway-dev/kgateway/v2/test/services"
 )
 
 /*

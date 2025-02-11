@@ -6,21 +6,21 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/kgateway-dev/kgateway/test/testutils"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	gatewayv1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/test/e2e"
-	gloohelpers "github.com/kgateway-dev/kgateway/test/helpers"
+	gatewayv1 "github.com/kgateway-dev/kgateway/v2/internal/gateway/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	gloohelpers "github.com/kgateway-dev/kgateway/v2/test/helpers"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
-	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/cors"
+	gloov1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/options/cors"
 )
 
 const (

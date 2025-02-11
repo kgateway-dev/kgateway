@@ -10,7 +10,7 @@ import (
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
 
-	gatewayv1alpha1 "github.com/kgateway-dev/kgateway/pkg/client/clientset/versioned/typed/api/v1alpha1"
+	gatewayv1alpha1 "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/typed/api/v1alpha1"
 )
 
 type Interface interface {

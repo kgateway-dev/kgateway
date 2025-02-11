@@ -19,15 +19,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	zaputil "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	"github.com/kgateway-dev/kgateway/internal/kgateway/admin"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/controller"
-	extensionsplug "github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/utils/krtutil"
-	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
-	"github.com/kgateway-dev/kgateway/pkg/utils/namespaces"
-	"github.com/kgateway-dev/kgateway/pkg/version"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/admin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
+	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
+	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 )
 
 const (

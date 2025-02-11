@@ -18,10 +18,10 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 
-	"github.com/kgateway-dev/kgateway/test/services/utils"
-	"github.com/kgateway-dev/kgateway/test/testutils"
+	"github.com/kgateway-dev/kgateway/v2/test/services/utils"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 
-	v1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
+	v1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega/gexec"

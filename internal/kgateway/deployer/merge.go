@@ -4,7 +4,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/kgateway-dev/kgateway/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
 // mergePointers will decide whether to use dst or src without dereferencing or recursing

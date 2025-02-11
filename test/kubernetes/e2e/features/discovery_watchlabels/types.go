@@ -5,7 +5,7 @@ package discovery_watchlabels
 import (
 	"path/filepath"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 )
 
 var (

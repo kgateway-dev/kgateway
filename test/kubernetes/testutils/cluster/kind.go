@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kgateway-dev/kgateway/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -15,8 +15,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
 )
 
 // MustKindContext returns the Context for a KinD cluster with the given name

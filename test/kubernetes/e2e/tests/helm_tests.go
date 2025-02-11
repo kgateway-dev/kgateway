@@ -3,9 +3,9 @@
 package tests
 
 import (
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/helm"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/helm_settings"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/helm"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/helm_settings"
 )
 
 func HelmSuiteRunner() e2e.SuiteRunner {

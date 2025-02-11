@@ -9,7 +9,7 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
 
-	"github.com/kgateway-dev/kgateway/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )

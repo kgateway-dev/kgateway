@@ -5,7 +5,7 @@ package clients
 import (
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 // MustClientset returns the Kubernetes Clientset, or panics

@@ -9,12 +9,12 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/test/matchers"
 
-	gatewayv1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
-	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/cors"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/ssl"
-	"github.com/kgateway-dev/kgateway/test/gomega/assertions"
-	"github.com/kgateway-dev/kgateway/test/helpers"
+	gatewayv1 "github.com/kgateway-dev/kgateway/v2/internal/gateway/pkg/api/v1"
+	gloov1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/options/cors"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/ssl"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/assertions"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 )
 
 var _ = Describe("VirtualServiceBuilder", func() {

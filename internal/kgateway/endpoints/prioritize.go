@@ -7,7 +7,7 @@ import (
 	"go.uber.org/zap"
 	"istio.io/api/networking/v1alpha3"
 
-	"github.com/kgateway-dev/kgateway/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"

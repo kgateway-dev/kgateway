@@ -19,11 +19,11 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/ir"
-	ourwellknown "github.com/kgateway-dev/kgateway/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
+	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	ourwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 )
 
 var (

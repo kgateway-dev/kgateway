@@ -7,29 +7,29 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/test/services/envoy"
-	"github.com/kgateway-dev/kgateway/test/testutils"
+	"github.com/kgateway-dev/kgateway/v2/test/services/envoy"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
-	"github.com/kgateway-dev/kgateway/test/e2e"
-	"github.com/kgateway-dev/kgateway/test/helpers"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/onsi/gomega/types"
 
-	gatewayv1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
-	gatewaydefaults "github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
-	gloo_config_core "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/external/envoy/config/core/v3"
-	csrf "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
-	gloo_type_matcher "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/external/envoy/type/matcher/v3"
-	glootype "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/external/envoy/type/v3"
-	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
+	gatewayv1 "github.com/kgateway-dev/kgateway/v2/internal/gateway/pkg/api/v1"
+	gatewaydefaults "github.com/kgateway-dev/kgateway/v2/internal/gateway/pkg/defaults"
+	gloo_config_core "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/external/envoy/config/core/v3"
+	csrf "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
+	gloo_type_matcher "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/external/envoy/type/matcher/v3"
+	glootype "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/external/envoy/type/v3"
+	gloov1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/defaults"
 )
 
 const (

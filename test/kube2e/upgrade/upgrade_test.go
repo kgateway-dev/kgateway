@@ -15,25 +15,25 @@ import (
 
 	"github.com/solo-io/skv2/codegen/util"
 
-	"github.com/kgateway-dev/kgateway/pkg/cliutil"
-	"github.com/kgateway-dev/kgateway/pkg/utils/helmutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/cliutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/helmutils"
 
-	kubetestclients "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/clients"
+	kubetestclients "github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/clients"
 
 	exec_utils "github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/kgateway-dev/kgateway/internal/gloo/cli/pkg/helpers"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/cli/pkg/helpers"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kgateway-dev/kgateway/internal/gloo/cli/pkg/cmd/version"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
-	"github.com/kgateway-dev/kgateway/test/kube2e"
-	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/cli/pkg/cmd/version"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/kube2e"
+	"github.com/kgateway-dev/kgateway/v2/test/kube2e/helper"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

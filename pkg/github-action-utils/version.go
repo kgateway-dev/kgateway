@@ -10,7 +10,7 @@ import (
 	"github.com/solo-io/go-utils/versionutils"
 	"github.com/solo-io/go-utils/vfsutils"
 
-	"github.com/kgateway-dev/kgateway/pkg/version"
+	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 )
 
 // GetLatestEnterpriseVersion computes the latest Gloo Enterprise version.

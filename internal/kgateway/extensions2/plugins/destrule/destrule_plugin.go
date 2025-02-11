@@ -16,10 +16,10 @@ import (
 	"istio.io/istio/pkg/config/schema/gvr"
 	"istio.io/istio/pkg/kube/krt"
 
-	"github.com/kgateway-dev/kgateway/internal/kgateway/endpoints"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
+	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 )
 
 const (

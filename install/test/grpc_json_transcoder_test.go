@@ -14,8 +14,8 @@ import (
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
-	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
+	"github.com/kgateway-dev/kgateway/v2/internal/gateway/pkg/defaults"
+	glootestutils "github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var _ = Describe("GrpcJsonTranscoder helm test", func() {

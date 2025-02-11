@@ -13,7 +13,7 @@ import (
 	"github.com/onsi/gomega/types"
 	v1 "k8s.io/api/admissionregistration/v1"
 
-	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
+	glootestutils "github.com/kgateway-dev/kgateway/v2/test/testutils"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
 
-	gloostringutils "github.com/kgateway-dev/kgateway/pkg/utils/stringutils"
+	gloostringutils "github.com/kgateway-dev/kgateway/v2/pkg/utils/stringutils"
 )
 
 const (

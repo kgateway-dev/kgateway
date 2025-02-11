@@ -8,8 +8,8 @@ import (
 	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 
-	internal "github.com/kgateway-dev/kgateway/api/applyconfiguration/internal"
-	apiv1alpha1 "github.com/kgateway-dev/kgateway/api/v1alpha1"
+	internal "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration/internal"
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
 // GatewayParametersApplyConfiguration represents a declarative configuration of the GatewayParameters type for use
@@ -56,7 +56,7 @@ func ExtractGatewayParametersStatus(gatewayParameters *apiv1alpha1.GatewayParame
 
 func extractGatewayParameters(gatewayParameters *apiv1alpha1.GatewayParameters, fieldManager string, subresource string) (*GatewayParametersApplyConfiguration, error) {
 	b := &GatewayParametersApplyConfiguration{}
-	err := managedfields.ExtractInto(gatewayParameters, internal.Parser().Type("com.github.kgateway-dev.kgateway.api.v1alpha1.GatewayParameters"), fieldManager, b, subresource)
+	err := managedfields.ExtractInto(gatewayParameters, internal.Parser().Type("com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GatewayParameters"), fieldManager, b, subresource)
 	if err != nil {
 		return nil, err
 	}

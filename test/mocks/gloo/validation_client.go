@@ -13,7 +13,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 
-	validation "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/grpc/validation"
+	validation "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/grpc/validation"
 )
 
 // MockGlooValidationServiceClient is a mock of GlooValidationServiceClient interface.

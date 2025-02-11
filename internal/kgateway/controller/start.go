@@ -9,7 +9,7 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 
-	glooschemes "github.com/kgateway-dev/kgateway/pkg/schemes"
+	glooschemes "github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -25,18 +25,18 @@ import (
 	istiolog "istio.io/istio/pkg/log"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/internal/kgateway/deployer"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/extensions2"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/registry"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/settings"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/krtcollections"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/proxy_syncer"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/utils/krtutil"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/pkg/client/clientset/versioned"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
+	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 )
 
 const (

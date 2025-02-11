@@ -9,10 +9,10 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests/base"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/helper"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/tests/base"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/helper"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite

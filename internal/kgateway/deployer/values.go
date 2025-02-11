@@ -3,7 +3,7 @@ package deployer
 import (
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kgateway-dev/kgateway/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
 // The top-level helm values used by the deployer.

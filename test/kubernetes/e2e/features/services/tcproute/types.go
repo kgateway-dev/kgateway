@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"time"
 
-	testmatchers "github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 
 	"github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"

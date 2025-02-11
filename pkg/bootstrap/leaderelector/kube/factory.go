@@ -11,8 +11,8 @@ import (
 	k8sleaderelection "k8s.io/client-go/tools/leaderelection"
 	"sigs.k8s.io/controller-runtime/pkg/leaderelection"
 
-	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector"
-	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/bootstrap/leaderelector"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 )
 
 var _ leaderelector.ElectionFactory = new(kubeElectionFactory)

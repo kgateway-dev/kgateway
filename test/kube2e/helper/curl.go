@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega/types"
@@ -22,8 +22,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/solo-io/go-utils/log"
 
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/test/gomega/transforms"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/transforms"
 )
 
 const (

@@ -12,14 +12,14 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.opencensus.io/stats/view"
 
-	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
-	v1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	bootstrap "github.com/kgateway-dev/kgateway/internal/gloo/pkg/bootstrap/clients"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/bootstrap/clients/vault"
-	"github.com/kgateway-dev/kgateway/test/e2e"
-	"github.com/kgateway-dev/kgateway/test/ginkgo/decorators"
-	"github.com/kgateway-dev/kgateway/test/gomega/assertions"
-	"github.com/kgateway-dev/kgateway/test/testutils"
+	gloov1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	v1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	bootstrap "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/bootstrap/clients"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/bootstrap/clients/vault"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/ginkgo/decorators"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/assertions"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 const (

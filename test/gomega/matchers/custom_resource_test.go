@@ -11,9 +11,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 
-	v1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
-	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	v1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	gloov1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
 
 var _ = Describe("CustomResource", func() {

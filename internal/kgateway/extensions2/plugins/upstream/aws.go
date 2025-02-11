@@ -14,9 +14,9 @@ import (
 	awspb "github.com/solo-io/envoy-gloo/go/config/filter/http/aws_lambda/v2"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	"github.com/kgateway-dev/kgateway/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/pluginutils"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 )
 
 const (

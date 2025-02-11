@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/cmdutils"
-	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmdutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 
 	"github.com/avast/retry-go/v4"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/portforward"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
 )
 
 // Cli is a utility for executing `kubectl` commands

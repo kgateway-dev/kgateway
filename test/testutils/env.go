@@ -3,7 +3,7 @@
 package testutils
 
 import (
-	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 )
 
 const (

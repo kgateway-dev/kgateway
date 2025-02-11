@@ -8,7 +8,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/kgateway-dev/kgateway/test/gomega"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega"
 )
 
 const (

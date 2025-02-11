@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kgateway-dev/kgateway/pkg/utils/sliceutils"
+	. "github.com/kgateway-dev/kgateway/v2/pkg/utils/sliceutils"
 )
 
 var _ = Describe("SliceUtils", func() {

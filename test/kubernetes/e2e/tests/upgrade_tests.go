@@ -3,8 +3,8 @@
 package tests
 
 import (
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/upgrade"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/upgrade"
 )
 
 func UpgradeSuiteRunner() e2e.SuiteRunner {

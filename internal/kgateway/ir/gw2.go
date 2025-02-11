@@ -4,7 +4,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/internal/kgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 )
 
 // This is the IR that is used in the translation to XDS. it is self contained and no IO/krt is

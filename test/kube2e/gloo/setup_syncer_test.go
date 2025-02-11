@@ -8,21 +8,21 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/portforward"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/settingsutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/settingsutil"
 
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/bootstrap"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/syncer/setup"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/xds"
-	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector"
-	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector/singlereplica"
-	"github.com/kgateway-dev/kgateway/pkg/utils/setuputils"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/bootstrap"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/syncer/setup"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/bootstrap/leaderelector"
+	"github.com/kgateway-dev/kgateway/v2/pkg/bootstrap/leaderelector/singlereplica"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/setuputils"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/defaults"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
@@ -32,9 +32,9 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"google.golang.org/grpc"
 
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/grpc/validation"
-	v1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/test/kube2e"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/grpc/validation"
+	v1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/v2/test/kube2e"
 )
 
 var _ = Describe("Setup Syncer", func() {

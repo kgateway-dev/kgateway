@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector/kube"
-	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
-	kubetestclients "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/clients"
+	"github.com/kgateway-dev/kgateway/v2/pkg/bootstrap/leaderelector/kube"
+	"github.com/kgateway-dev/kgateway/v2/test/kube2e/helper"
+	kubetestclients "github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/clients"
 
 	"github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -27,22 +27,22 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 
-	gatewaydefaults "github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
-	v1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
-	vault_client "github.com/kgateway-dev/kgateway/internal/gloo/pkg/bootstrap/clients/vault"
-	"github.com/kgateway-dev/kgateway/test/helpers"
-	"github.com/kgateway-dev/kgateway/test/services"
+	gatewaydefaults "github.com/kgateway-dev/kgateway/v2/internal/gateway/pkg/defaults"
+	v1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	vault_client "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/bootstrap/clients/vault"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
+	"github.com/kgateway-dev/kgateway/v2/test/services"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kgateway-dev/kgateway/test/gomega"
+	. "github.com/kgateway-dev/kgateway/v2/test/gomega"
 
 	vaultapi "github.com/hashicorp/vault/api"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/bootstrap/clients"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/bootstrap/clients"
 )
 
 // Kubernetes tests for clients generated from projects/gloo/pkg/bootstrap/clients

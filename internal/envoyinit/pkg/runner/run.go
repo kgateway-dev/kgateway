@@ -11,8 +11,8 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 
-	"github.com/kgateway-dev/kgateway/internal/envoyinit/pkg/downward"
-	"github.com/kgateway-dev/kgateway/pkg/utils/cmdutils"
+	"github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/downward"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmdutils"
 )
 
 const (

@@ -6,7 +6,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	. "github.com/kgateway-dev/kgateway/internal/kgateway/utils"
+	. "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
 type testType struct {

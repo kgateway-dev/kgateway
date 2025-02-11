@@ -5,7 +5,7 @@ package kube2e
 import (
 	"context"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -17,12 +17,12 @@ import (
 	gwclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 	gatewayclient "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/typed/apis/v1"
 
-	gatewayv1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
-	kubeconverters "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/converters/kube"
-	externalrl "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/external/solo/ratelimit"
-	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
-	extauthv1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	"github.com/kgateway-dev/kgateway/test/helpers"
+	gatewayv1 "github.com/kgateway-dev/kgateway/v2/internal/gateway/pkg/api/v1"
+	kubeconverters "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/converters/kube"
+	externalrl "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/external/solo/ratelimit"
+	gloov1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	extauthv1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 )
 
 var _ helpers.ResourceClientSet = new(KubeResourceClientSet)

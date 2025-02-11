@@ -17,10 +17,10 @@ import (
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	extensionplug "github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/plugin"
-	extensionsplug "github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/plugins"
+	extensionplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 )
 
 var (

@@ -13,14 +13,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/test/helpers"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/actions"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/assertions"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/cluster"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/helper"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/kgateway"
-	testruntime "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/runtime"
-	"github.com/kgateway-dev/kgateway/test/testutils"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/actions"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/assertions"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/cluster"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/helper"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/kgateway"
+	testruntime "github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/runtime"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 // MustTestHelper returns the SoloTestHelper used for e2e tests

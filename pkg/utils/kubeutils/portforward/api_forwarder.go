@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 
 	"k8s.io/client-go/rest"
 

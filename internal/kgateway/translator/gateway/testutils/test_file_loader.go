@@ -9,14 +9,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/kgateway-dev/kgateway/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 
 	"github.com/rotisserie/eris"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/kgateway-dev/kgateway/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/translator/irtranslator"
-	"github.com/kgateway-dev/kgateway/pkg/utils/protoutils"
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/protoutils"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"

@@ -14,16 +14,16 @@ import (
 
 	"k8s.io/utils/pointer"
 
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/test/gomega/transforms"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/transforms"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 	"github.com/solo-io/go-utils/stats"
 
-	"github.com/kgateway-dev/kgateway/pkg/cliutil"
+	"github.com/kgateway-dev/kgateway/v2/pkg/cliutil"
 )
 
 // Gloo Edge exports statistics to provide details about how the system is behaving

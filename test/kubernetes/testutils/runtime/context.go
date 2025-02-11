@@ -5,9 +5,9 @@ package runtime
 import (
 	"os"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 
-	"github.com/kgateway-dev/kgateway/test/testutils"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 // Context contains the set of properties that are defined at runtime by whoever is invoking tests.

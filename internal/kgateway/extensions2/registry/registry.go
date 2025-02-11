@@ -7,15 +7,15 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/common"
-	extensionsplug "github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/plugins/destrule"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/plugins/directresponse"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/plugins/istio"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/plugins/kubernetes"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/plugins/listenerpolicy"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/plugins/routepolicy"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/extensions2/plugins/upstream"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
+	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/destrule"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/directresponse"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/istio"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/kubernetes"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/listenerpolicy"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/routepolicy"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/upstream"
 )
 
 func mergedGw(funcs []extensionsplug.GwTranslatorFactory) extensionsplug.GwTranslatorFactory {

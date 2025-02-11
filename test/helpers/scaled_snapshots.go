@@ -5,20 +5,20 @@ package helpers
 import (
 	"fmt"
 
-	v12 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	v12 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/gloosnapshot"
 
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/defaults"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	v3 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/external/envoy/config/core/v3"
-	v1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/core/matchers"
-	v1static "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/static"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/ssl"
+	v3 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/external/envoy/config/core/v3"
+	v1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/core/matchers"
+	v1static "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/options/static"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/ssl"
 )
 
 // ScaledSnapshotBuilder enumerates the number of each type of resource that should be included in a snapshot and

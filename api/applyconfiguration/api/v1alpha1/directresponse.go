@@ -8,8 +8,8 @@ import (
 	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 
-	internal "github.com/kgateway-dev/kgateway/api/applyconfiguration/internal"
-	apiv1alpha1 "github.com/kgateway-dev/kgateway/api/v1alpha1"
+	internal "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration/internal"
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
 // DirectResponseApplyConfiguration represents a declarative configuration of the DirectResponse type for use
@@ -56,7 +56,7 @@ func ExtractDirectResponseStatus(directResponse *apiv1alpha1.DirectResponse, fie
 
 func extractDirectResponse(directResponse *apiv1alpha1.DirectResponse, fieldManager string, subresource string) (*DirectResponseApplyConfiguration, error) {
 	b := &DirectResponseApplyConfiguration{}
-	err := managedfields.ExtractInto(directResponse, internal.Parser().Type("com.github.kgateway-dev.kgateway.api.v1alpha1.DirectResponse"), fieldManager, b, subresource)
+	err := managedfields.ExtractInto(directResponse, internal.Parser().Type("com.github.kgateway-dev.kgateway.v2.api.v1alpha1.DirectResponse"), fieldManager, b, subresource)
 	if err != nil {
 		return nil, err
 	}

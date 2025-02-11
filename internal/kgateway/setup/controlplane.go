@@ -18,7 +18,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	"github.com/kgateway-dev/kgateway/internal/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 )
 
 func NewControlPlane(

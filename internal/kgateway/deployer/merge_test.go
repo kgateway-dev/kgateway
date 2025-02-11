@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/utils/ptr"
 
-	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/api/v1alpha1"
+	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
 var _ = Describe("deepMergeGatewayParameters", func() {

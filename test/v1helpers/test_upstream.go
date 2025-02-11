@@ -16,7 +16,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
@@ -29,10 +29,10 @@ import (
 	"google.golang.org/grpc/credentials"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
-	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
-	static_plugin_gloo "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/static"
-	"github.com/kgateway-dev/kgateway/test/helpers"
-	testgrpcservice "github.com/kgateway-dev/kgateway/test/v1helpers/test_grpc_service"
+	gloov1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	static_plugin_gloo "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/options/static"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
+	testgrpcservice "github.com/kgateway-dev/kgateway/v2/test/v1helpers/test_grpc_service"
 )
 
 // TestUpstream is a testing utility (used in in-memory e2e tests) to compose the following concepts:

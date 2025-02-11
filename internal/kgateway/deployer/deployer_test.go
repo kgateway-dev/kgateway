@@ -23,12 +23,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 
-	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/deployer"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/internal/kgateway/xds"
-	"github.com/kgateway-dev/kgateway/pkg/schemes"
-	"github.com/kgateway-dev/kgateway/pkg/version"
+	gw2_v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
+	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 
 	// TODO BML tests in this suite fail if this no-op import is not imported first.
 	//
@@ -37,13 +37,13 @@ import (
 	//
 	// There is some import within this package that this suite relies on. Chasing that down is
 	// *hard* tho due to the import tree, and best done in a followup.
-	// _ "github.com/kgateway-dev/kgateway/internal/gloo/pkg/translator"
+	// _ "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/translator"
 	//
 	// The above TODO is a result of proto types being registered for free somewhere through
 	// the translator import. What we really need is to register all proto types, which is
 	// "correctly" available to use via `envoyinit`; note that the autogeneration of these types
 	// is currently broken. see: https://github.com/kgateway-dev/kgateway/issues/10491
-	_ "github.com/kgateway-dev/kgateway/internal/envoyinit/hack/filter_types"
+	_ "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/hack/filter_types"
 )
 
 // testBootstrap implements resources.Resource in order to use protoutils.UnmarshalYAML

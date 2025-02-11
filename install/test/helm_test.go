@@ -33,12 +33,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/pointer"
 
-	values "github.com/kgateway-dev/kgateway/install/helm/gloo/generate"
-	"github.com/kgateway-dev/kgateway/install/test/securitycontext"
-	"github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
-	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
+	values "github.com/kgateway-dev/kgateway/v2/install/helm/gloo/generate"
+	"github.com/kgateway-dev/kgateway/v2/install/test/securitycontext"
+	"github.com/kgateway-dev/kgateway/v2/internal/gateway/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	glootestutils "github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 func GetPodNamespaceStats() corev1.EnvVar {
@@ -7422,7 +7422,7 @@ metadata:
 func appendIfNilPath(queue []reflect.Type, newVal reflect.Type) []reflect.Type {
 	if newVal.Kind() == reflect.Struct {
 		pkgName := newVal.PkgPath()
-		if pkgName == "github.com/kgateway-dev/kgateway/install/helm/gloo/generate" {
+		if pkgName == "github.com/kgateway-dev/kgateway/v2/install/helm/gloo/generate" {
 			return append(queue, newVal)
 		}
 	}
