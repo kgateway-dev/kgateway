@@ -183,7 +183,7 @@ test-with-coverage: test
 	go tool cover -html $(OUTPUT_DIR)/coverage.cov
 
 .PHONY: run-tests
-run-tests: GINKGO_FLAGS += -skip-package=e2e,gateway2,test/kubernetes/testutils/helper ## Run all non E2E tests, or only run the test package at {TEST_PKG} if it is specified
+run-tests: GINKGO_FLAGS += -skip-package=e2e,kgateway,test/kubernetes/testutils/helper ## Run all non E2E tests, or only run the test package at {TEST_PKG} if it is specified
 run-tests: GINKGO_FLAGS += --label-filter="!end-to-end && !performance"
 run-tests: test
 
@@ -191,7 +191,7 @@ run-tests: test
 # Performance tests are filtered using a Ginkgo label
 # This means that any tests which do not rely on Ginkgo, will by default be compiled and run
 # Since this is not the desired behavior, we explicitly skip these packages
-run-performance-tests: GINKGO_FLAGS += -skip-package=gateway2,kubernetes/e2e,test/kube2e
+run-performance-tests: GINKGO_FLAGS += -skip-package=kgateway,kubernetes/e2e,test/kube2e
 run-performance-tests: GINKGO_FLAGS += --label-filter="performance" ## Run only tests with the Performance label
 run-performance-tests: test
 
@@ -314,7 +314,7 @@ go-generate-mocks: ## Runs all generate directives for mockgen in the repo
 # TODO: do we still want this?
 .PHONY: getter-check
 getter-check:
-	go run github.com/saiskee/gettercheck -ignoretests -ignoregenerated -write ./internal/gateway2/...
+	go run github.com/saiskee/gettercheck -ignoretests -ignoregenerated -write ./internal/kgateway/...
 
 .PHONY: mod-tidy
 mod-tidy:
@@ -363,7 +363,7 @@ distroless-with-utils-docker: distroless-docker $(DISTROLESS_OUTPUT_DIR)/Dockerf
 # Controller
 #----------------------------------------------------------------------------------
 
-K8S_GATEWAY_DIR=internal/gateway2
+K8S_GATEWAY_DIR=internal/kgateway
 K8S_GATEWAY_SOURCES=$(call get_sources,$(K8S_GATEWAY_DIR))
 CONTROLLER_OUTPUT_DIR=$(OUTPUT_DIR)/$(K8S_GATEWAY_DIR)
 export CONTROLLER_IMAGE_REPO ?= kgateway
@@ -371,12 +371,12 @@ export CONTROLLER_IMAGE_REPO ?= kgateway
 # We include the files in EDGE_GATEWAY_DIR and K8S_GATEWAY_DIR as dependencies to the gloo build
 # so changes in those directories cause the make target to rebuild
 $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH): $(K8S_GATEWAY_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ cmd/gateway2/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ cmd/kgateway/main.go
 
 .PHONY: kgateway
 kgateway: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH)
 
-$(CONTROLLER_OUTPUT_DIR)/Dockerfile: cmd/gateway2/Dockerfile
+$(CONTROLLER_OUTPUT_DIR)/Dockerfile: cmd/kgateway/Dockerfile
 	cp $< $@
 
 .PHONY: kgateway-docker
@@ -386,7 +386,7 @@ kgateway-docker: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(CONTROLLER_
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)
 
-$(CONTROLLER_OUTPUT_DIR)/Dockerfile.distroless: cmd/gateway2/Dockerfile.distroless
+$(CONTROLLER_OUTPUT_DIR)/Dockerfile.distroless: cmd/kgateway/Dockerfile.distroless
 	cp $< $@
 
 # Explicitly specify the base image is amd64 as we only build the amd64 flavour of envoy

@@ -8,7 +8,7 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/kgateway-dev/kgateway/internal/envoyinit/pkg/runner"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/xds"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/pkg/utils/envoyutils/bootstrap"
 	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
 )

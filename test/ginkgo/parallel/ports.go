@@ -102,7 +102,7 @@ func portInUseListen(proposedPort uint32) error {
 }
 
 var denyListPorts = map[uint32]struct{}{
-	// See internal/gateway2/admin/server.go
+	// See internal/kgateway/admin/server.go
 	// This port is reserved for the admin server
 	9097: {},
 }

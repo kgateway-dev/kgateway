@@ -5,7 +5,7 @@ before:
     - go mod download
 builds:
   - id: controller
-    main: ./cmd/gateway2
+    main: ./cmd/kgateway
     binary: kgateway-linux-{{ .Arch }}
     gcflags: "{{ .Env.GCFLAGS }}"
     ldflags: "{{ .Env.LDFLAGS }}"
@@ -54,7 +54,7 @@ dockers:
   - image_templates:
       - &controller_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
     use: buildx
-    dockerfile: &controller_dockerfile cmd/gateway2/Dockerfile
+    dockerfile: &controller_dockerfile cmd/kgateway/Dockerfile
     goos: linux
     goarch: arm64
     build_flag_templates:

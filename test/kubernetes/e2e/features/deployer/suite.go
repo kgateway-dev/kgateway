@@ -20,9 +20,9 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/internal/gateway2/wellknown"
 	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/syncer/setup"
 	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/utils"
+	"github.com/kgateway-dev/kgateway/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/pkg/utils/envoyutils/admincli"
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
@@ -32,7 +32,7 @@ import (
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
 // testingSuite is the entire Suite of tests for the "deployer" feature
-// The "deployer" code can be found here: /internal/gateway2/deployer
+// The "deployer" code can be found here: /internal/kgateway/deployer
 type testingSuite struct {
 	suite.Suite
 

@@ -22,7 +22,7 @@ import (
 var _ e2e.NewSuiteFunc = NewIstioIntegrationTestingSuite
 
 // istioIntegrationDeployerSuite is the entire Suite of tests for the "deployer" feature that relies on an Istio installation
-// The "deployer" code can be found here: /internal/gateway2/deployer
+// The "deployer" code can be found here: /internal/kgateway/deployer
 type istioIntegrationDeployerSuite struct {
 	suite.Suite
 
