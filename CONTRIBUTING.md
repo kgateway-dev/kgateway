@@ -1,82 +1,81 @@
-# Contributing to Gloo Gateway
+# Contributing to KGateway
 
-Excited about Gloo Gateway and want to help make it better?
+KGateway is an Apache 2.0 licensed project and accepts contributions via GitHub pull requests (PRs). We're excited to have you contribute to making kgateway better!
 
-At Solo we strive to make the world of microservices, serverless and service mesh available to everyone.
-If you want to help but don't know where to start, let us know, and we'll find something for you.
+## Communication Channels
 
-If you haven't already, make sure you sign up for the [Solo Slack](https://slack.solo.io).
+- GitHub Discussions: For miscellaneous discussions
+- GitHub Issues: For bugs, feature requests, CI flakes, etc.
+- Community Meetings: Check our [community repository](https://github.com/kgateway-dev/community) for meeting schedules
 
-Here are some of the ways you can contribute:
+## Find something to work on
 
-* [Filing issues](#filing-issues)
-* [Improving the documentation](#improving-the-documentation)
-* [Small bug fixes](#small-bug-fixes)
-* [Big pull requests](#big-prs)
-* [Code review guidelines](#code-review-guidelines)
+The project uses [GitHub issues](https://github.com/kgateway-dev/kgateway/issues) to track bugs and features. Issues labeled with the `good first issue` label are a great place to start.
 
-## Filing issues
+Additionally, the project has a [milestone](https://github.com/kgateway-dev/kgateway/milestones) for the next release. Any issues labeled with a milestone are a great source of things to work on. If an issue has not been assigned to a milestone, you can ask to work on it by leaving a comment on the issue.
 
-If you encounter a bug, please file an issue on GitHub.
-If an issue you have is already reported, please add additional information or add a 👍 reaction to indicate your agreement.
+Flaky tests are a common source of issues and a good place to start contributing to the project. If you see a test that is failing regularly, you can leave a comment asking if someone is working on it.
 
-## Improving the documentation
+## Contributing Process
 
-The docs for Gloo Gateway are built from the contents found in the [`docs/content`](/docs/content) directory of this repository.
+### Filing Issues
 
-Improving the documentation, adding examples or use cases can be the easiest way to contribute to Gloo Gateway. If you see a piece of content that can be better, open a PR with an improvement, it doesn't matter how small!
+If you encounter a bug or have a feature request:
+1. Search existing issues first
+2. If no existing issue addresses your case, create a new one
+3. Use issue templates when available
+4. Add additional information or 👍 reactions to existing issues
 
-For more detailed guidance on contributing to the documentation, check out the guide on the [docs website](https://docs.solo.io/gloo-edge/latest/contributing).
+### Code Contributions
 
-## Setting up the development environment
+#### Small Changes (Bug Fixes)
 
-Instructions for setting the development environment can be found in the [developer guide](https://docs.solo.io/gloo-edge/latest/guides/dev/setting-up-dev-environment/).
+For small changes (less than 100 lines of code):
 
-Useful make commands:
+1. Open a pull request
+2. Ensure tests verify the fix
+3. Update documentation if needed
 
-| Command                                                   | Description |
-| ---                                                       |   ---      |
-| make install-go-tools generated-code -B                   | Makes all generated code which is required to get past CI. |
-| make glooctl                                              | Makes glooctl binary and places it in _output/glooctl |
-| make build-test-chart                                     | Makes the .tgz helm file that locally-built instances of glooctl require to install gloo |
-| make docker TAGGED_VERSION=(version)                      | Builds the docker images needed for the helm charts and tests |
-| make clean build-test-assets -B TAGGED_VERSION=v(version) | Builds a zipped helm chart for gloo that is configured to use the specified gloo version. This version must be a valid image in quay. This can include non-standard versions used for testing. |
-| make install-go-tools                                     | Updates the go dependencies |
+#### Large Changes (Features/Refactoring)
 
-## Small bug fixes
+For significant changes:
 
-If your bug fix is small (around 20 lines of code) just open a pull request. We will try to merge it as soon as possible,
-just make sure that you include a test that verifies the bug you are fixing.
+1. **Open an issue first** - Discuss your proposed changes
+2. **Design discussion** - Engage with maintainers on the implementation approach
+3. **Implementation plan** - Agree on the implementation strategy
+4. **Work-in-progress PR** - Submit a draft PR for early feedback
+5. **Review & iterate** - Address feedback from maintainers
+6. **Merge** - Once approved, a maintainer will merge
 
-## Big PRs
+### Code Review Guidelines
 
-This includes:
+All code must be reviewed by at least one maintainer. Key requirements:
 
-- Big bug fixes
-- New features
+1. **Code Style**
+   - Follow [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
+   - Follow [Effective Go](https://golang.org/doc/effective_go)
+   - Run `make analyze` to check for common issues before submitting
 
-For significant changes to the repository, it’s important to settle on a design before starting on the implementation. Reaching out to us early will help minimize the amount of possible wasted effort and will ensure that major improvements are given enough attention.
+2. **Testing**
+   - Add unit tests for new functionality
+   - Ensure existing tests pass
+   - Include integration and e2e tests when needed
 
-1. **Open an issue.** Open an issue about your bug in this repo.
-2. **Message us on Slack.** Reach out to us to discuss your proposed changes.
-3. **Agree on implementation plan.** Write a plan for how this feature or bug fix should be implemented. Should this be one pull request or multiple incremental improvements? Who is going to do each part?
-4. **Submit a work-in-progress PR** It's important to get feedback as early as possible to ensure that any big improvements end up being merged. Submit a pull request and label it `work in progress` to start getting feedback.
-5. **Review.** At least one Solo team member should sign off on the change before it’s merged. Look at the “code review” section below to learn about what we're looking for.
-6. **A Solo team member will merge and release!**
+3. **Documentation**
+   - Update relevant documentation
+   - Include code comments for non-obvious logic
+   - Update API documentation if changing interfaces
 
-## Code review guidelines
+### Documentation Contributions
 
-It’s important that every piece of code in Gloo Gateway is reviewed by at least one Solo team member familiar with that codebase.
+The project documentation lives in a separate repository: [kgateway-dev/kgateway.dev](https://github.com/kgateway-dev/kgateway.dev). Any developer documentation contributions should be made in that repository (via README.md files).
 
-1. **Changelog** Every PR in Gloo Gateway needs a changelog entry. For more information about changelogs, see the [readme](https://github.com/solo-io/go-utils/tree/main/changelogutils).
-2. **CI check** A Solo team member needs to kick off the CI process by commenting `/test` on your PR.
-3. **Testing** Please write tests for your changes. Bias towards fast / unit testing.
-4. **Comments** The code reviewer may leave comments to discuss changes. Minor preferences are often called out with `nit`.
+## Questions?
 
-## Testing with coverage:
+Don't hesitate to ask questions in:
 
-To see coverage, run your tests in the package like so
+- GitHub Discussions
+- Issue comments
+- Pull Request comments
 
-```
-ginkgo -cover && go tool cover -html *.coverprofile
-```
+We aim to be a welcoming community and help contributors get started!
