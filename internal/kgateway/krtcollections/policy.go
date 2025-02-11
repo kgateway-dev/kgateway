@@ -37,6 +37,7 @@ type UpstreamIndex struct {
 	availableUpstreams  map[schema.GroupKind]krt.Collection[ir.Upstream]
 	backendRefExtension []extensionsplug.GetBackendForRefPlugin
 	policies            *PolicyIndex
+	refgrants           *RefGrantIndex
 	krtopts             krtutil.KrtOptions
 }
 
@@ -44,9 +45,11 @@ func NewUpstreamIndex(
 	krtopts krtutil.KrtOptions,
 	backendRefExtension []extensionsplug.GetBackendForRefPlugin,
 	policies *PolicyIndex,
+	refgrants *RefGrantIndex,
 ) *UpstreamIndex {
 	return &UpstreamIndex{
 		policies:            policies,
+		refgrants:           refgrants,
 		availableUpstreams:  map[schema.GroupKind]krt.Collection[ir.Upstream]{},
 		krtopts:             krtopts,
 		backendRefExtension: backendRefExtension,
@@ -55,6 +58,9 @@ func NewUpstreamIndex(
 
 func (s *UpstreamIndex) HasSynced() bool {
 	if !s.policies.HasSynced() {
+		return false
+	}
+	if !s.refgrants.HasSynced() {
 		return false
 	}
 	for _, col := range s.availableUpstreams {
@@ -143,6 +149,22 @@ func (i *UpstreamIndex) getUpstream(kctx krt.HandlerContext, gk schema.GroupKind
 func (i *UpstreamIndex) getUpstreamFromRef(kctx krt.HandlerContext, localns string, ref gwv1.BackendObjectReference) (*ir.Upstream, error) {
 	resolved := toFromBackendRef(localns, ref)
 	return i.getUpstream(kctx, resolved.GetGroupKind(), types.NamespacedName{Namespace: resolved.Namespace, Name: resolved.Name}, ref.Port)
+}
+
+func (i *UpstreamIndex) GetUpstreamFromRef(kctx krt.HandlerContext, src ir.ObjectSource, ref gwv1.BackendObjectReference) (*ir.Upstream, error) {
+	fromns := src.Namespace
+
+	fromgk := schema.GroupKind{
+		Group: src.Group,
+		Kind:  src.Kind,
+	}
+	to := toFromBackendRef(fromns, ref)
+
+	if i.refgrants.ReferenceAllowed(kctx, fromgk, fromns, to) {
+		return i.getUpstreamFromRef(kctx, src.Namespace, ref)
+	} else {
+		return nil, ErrMissingReferenceGrant
+	}
 }
 
 type GatewayIndex struct {
@@ -655,17 +677,8 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 			continue
 		}
 
-		var upstream *ir.Upstream
-		fromgk := schema.GroupKind{
-			Group: src.Group,
-			Kind:  src.Kind,
-		}
-		var err error
-		if h.refgrants.ReferenceAllowed(kctx, fromgk, fromns, to) {
-			upstream, err = h.upstreams.getUpstreamFromRef(kctx, src.Namespace, ref.BackendRef.BackendObjectReference)
-		} else {
-			err = ErrMissingReferenceGrant
-		}
+		upstream, err := h.upstreams.GetUpstreamFromRef(kctx, src, ref.BackendRef.BackendObjectReference)
+
 		// TODO: if we can't find the upstream, should we
 		// still use its cluster name in case it comes up later?
 		// if so we need to think about the way create cluster names,
@@ -692,25 +705,12 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 func (h *RoutesIndex) getTcpBackends(kctx krt.HandlerContext, src ir.ObjectSource, i []gwv1.BackendRef) []ir.Backend {
 	backends := make([]ir.Backend, 0, len(i))
 	for _, ref := range i {
-		fromns := src.Namespace
-
-		to := toFromBackendRef(fromns, ref.BackendObjectReference)
-		var upstream *ir.Upstream
-		fromgk := schema.GroupKind{
-			Group: src.Group,
-			Kind:  src.Kind,
-		}
-		var err error
-		if h.refgrants.ReferenceAllowed(kctx, fromgk, fromns, to) {
-			upstream, err = h.upstreams.getUpstreamFromRef(kctx, src.Namespace, ref.BackendObjectReference)
-		} else {
-			err = ErrMissingReferenceGrant
-		}
+		upstream, err := h.upstreams.GetUpstreamFromRef(kctx, src, ref.BackendObjectReference)
 		clusterName := "blackhole-cluster"
 		if upstream != nil {
 			clusterName = upstream.ClusterName()
 		} else if err == nil {
-			err = &NotFoundError{NotFoundObj: to}
+			err = &NotFoundError{NotFoundObj: toFromBackendRef(src.Namespace, ref.BackendObjectReference)}
 		}
 		backends = append(backends, ir.Backend{
 			Upstream:    upstream,

@@ -193,9 +193,7 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
 	logger := contextutils.LoggerFrom(ctx)
 
-	s.translatorSyncer.Init(ctx, isOurGw)
-
-	kubeGateways, routes, finalUpstreams, endpointIRs := krtcollections.InitCollections(
+	kubeGateways, routes, upstreamIndex, endpointIRs := krtcollections.InitCollections(
 		ctx,
 		s.extensions,
 		s.istioClient,
@@ -203,6 +201,13 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 		s.commonCols.RefGrants,
 		krtopts,
 	)
+
+	finalUpstreams := krt.JoinCollection(upstreamIndex.Upstreams(), krtopts.ToOptions("FinalUpstreams")...)
+
+	// add the upstreams to the common collections, so they are available for policies.
+	s.commonCols.Upstreams = upstreamIndex
+
+	s.translatorSyncer.Init(ctx, routes)
 
 	s.mostXdsSnapshots = krt.NewCollection(kubeGateways.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
 		logger.Debugf("building proxy for kube gw %s version %s", client.ObjectKeyFromObject(gw.Obj), gw.Obj.GetResourceVersion())
@@ -279,6 +284,7 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 	s.waitForSync = []cache.InformerSynced{
 		endpointIRs.Synced().HasSynced,
 		endpointIRs.Synced().HasSynced,
+		upstreamIndex.HasSynced,
 		finalUpstreams.Synced().HasSynced,
 		kubeGateways.Gateways.Synced().HasSynced,
 		s.perclientSnapCollection.Synced().HasSynced,

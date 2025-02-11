@@ -12,7 +12,6 @@ import (
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"github.com/solo-io/go-utils/contextutils"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/endpoints"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -62,12 +61,11 @@ func NewCombinedTranslator(
 }
 
 // Note: isOurGw is shared between us and the deployer.
-func (s *CombinedTranslator) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) bool) error {
+func (s *CombinedTranslator) Init(ctx context.Context, routes *krtcollections.RoutesIndex) error {
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
 
 	nsCol := krtcollections.NewNamespaceCollection(ctx, s.commonCols.Client, s.commonCols.KrtOpts)
 
-	kubeGateways, routes, finalUpstreams, endpointIRs := krtcollections.InitCollections(ctx, s.extensions, s.commonCols.Client, isOurGw, s.commonCols.RefGrants, s.commonCols.KrtOpts)
 	queries := query.NewData(
 		routes,
 		s.commonCols.Secrets,
@@ -86,11 +84,7 @@ func (s *CombinedTranslator) Init(ctx context.Context, isOurGw func(gw *gwv1.Gat
 	}
 
 	s.waitForSync = append(s.waitForSync,
-		endpointIRs.Synced().HasSynced,
-		endpointIRs.Synced().HasSynced,
 		s.commonCols.HasSynced,
-		finalUpstreams.Synced().HasSynced,
-		kubeGateways.Gateways.Synced().HasSynced,
 		s.extensions.HasSynced,
 		routes.HasSynced,
 	)

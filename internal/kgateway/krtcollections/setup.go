@@ -61,7 +61,7 @@ func InitCollections(
 	isOurGw func(gw *gwv1.Gateway) bool,
 	refgrants *RefGrantIndex,
 	krtopts krtutil.KrtOptions,
-) (*GatewayIndex, *RoutesIndex, krt.Collection[ir.Upstream], krt.Collection[ir.EndpointsForUpstream]) {
+) (*GatewayIndex, *RoutesIndex, *UpstreamIndex, krt.Collection[ir.EndpointsForUpstream]) {
 	registerTypes()
 
 	httpRoutes := krt.WrapClient(kclient.New[*gwv1.HTTPRoute](istioClient), krtopts.ToOptions("HTTPRoute")...)
@@ -79,7 +79,7 @@ func initCollectionsWithGateways(
 	refgrants *RefGrantIndex,
 	extensions extensionsplug.Plugin,
 	krtopts krtutil.KrtOptions,
-) (*GatewayIndex, *RoutesIndex, krt.Collection[ir.Upstream], krt.Collection[ir.EndpointsForUpstream]) {
+) (*GatewayIndex, *RoutesIndex, *UpstreamIndex, krt.Collection[ir.EndpointsForUpstream]) {
 
 	policies := NewPolicyIndex(krtopts, extensions.ContributesPolicies)
 
@@ -90,20 +90,20 @@ func initCollectionsWithGateways(
 		}
 	}
 
-	upstreamIndex := NewUpstreamIndex(krtopts, backendRefPlugins, policies)
-	finalUpstreams, endpointIRs := initUpstreams(extensions, upstreamIndex, krtopts)
+	upstreamIndex := NewUpstreamIndex(krtopts, backendRefPlugins, policies, refgrants)
+	endpointIRs := initUpstreams(extensions, upstreamIndex, krtopts)
 
 	kubeGateways := NewGatewayIndex(krtopts, isOurGw, policies, kubeRawGateways)
 
 	routes := NewRoutesIndex(krtopts, httpRoutes, tcproutes, policies, upstreamIndex, refgrants)
-	return kubeGateways, routes, finalUpstreams, endpointIRs
+	return kubeGateways, routes, upstreamIndex, endpointIRs
 }
 
 func initUpstreams(
 	extensions extensionsplug.Plugin,
 	upstreamIndex *UpstreamIndex,
 	krtopts krtutil.KrtOptions,
-) (krt.Collection[ir.Upstream], krt.Collection[ir.EndpointsForUpstream]) {
+) krt.Collection[ir.EndpointsForUpstream] {
 
 	allEndpoints := []krt.Collection[ir.EndpointsForUpstream]{}
 	for k, col := range extensions.ContributesUpstreams {
@@ -115,10 +115,8 @@ func initUpstreams(
 		}
 	}
 
-	finalUpstreams := krt.JoinCollection(upstreamIndex.Upstreams(), krtopts.ToOptions("FinalUpstreams")...)
-
 	// build Endpoint intermediate representation from kubernetes service and extensions
 	// TODO move kube service to be an extension
 	endpointIRs := krt.JoinCollection(allEndpoints, krtopts.ToOptions("EndpointIRs")...)
-	return finalUpstreams, endpointIRs
+	return endpointIRs
 }

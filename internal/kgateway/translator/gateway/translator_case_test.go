@@ -195,17 +195,18 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		return true
 	}
 
-	translator := translator.NewCombinedTranslator(ctx, extensions, commoncol)
-	translator.Init(ctx, isOurGw)
-
 	gi, ri, ui, ei := krtcollections.InitCollections(ctx, extensions, cli, isOurGw, commoncol.RefGrants, krtOpts)
+
+	translator := translator.NewCombinedTranslator(ctx, extensions, commoncol)
+	translator.Init(ctx, ri)
+
 	cli.RunAndWait(ctx.Done())
 	gi.Gateways.Synced().WaitUntilSynced(ctx.Done())
 	kubeclient.WaitForCacheSync("routes", ctx.Done(), ri.HasSynced)
 	kubeclient.WaitForCacheSync("extensions", ctx.Done(), extensions.HasSynced)
 	kubeclient.WaitForCacheSync("commoncol", ctx.Done(), commoncol.HasSynced)
 	kubeclient.WaitForCacheSync("translator", ctx.Done(), translator.HasSynced)
-	kubeclient.WaitForCacheSync("upstreams", ctx.Done(), ui.Synced().HasSynced)
+	kubeclient.WaitForCacheSync("upstreams", ctx.Done(), ui.HasSynced)
 	kubeclient.WaitForCacheSync("endpoints", ctx.Done(), ei.Synced().HasSynced)
 
 	results := make(map[types.NamespacedName]ActualTestResult)

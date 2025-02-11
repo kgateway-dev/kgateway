@@ -24,6 +24,8 @@ type CommonCollections struct {
 	Client    kube.Client
 	KrtOpts   krtutil.KrtOptions
 	Secrets   *krtcollections.SecretIndex
+	Upstreams *krtcollections.UpstreamIndex
+
 	Pods      krt.Collection[krtcollections.LocalityPod]
 	RefGrants *krtcollections.RefGrantIndex
 

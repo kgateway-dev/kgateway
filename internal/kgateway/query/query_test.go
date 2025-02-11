@@ -754,11 +754,11 @@ func newQueries(initObjs ...client.Object) query.GatewayQueries {
 	}
 	mock := krttest.NewMock(GinkgoT(), anys)
 	services := krttest.GetMockCollection[*corev1.Service](mock)
+	refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*apiv1beta1.ReferenceGrant](mock))
 
 	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, extensionsplug.ContributesPolicies{})
-	upstreams := krtcollections.NewUpstreamIndex(krtutil.KrtOptions{}, nil, policies)
+	upstreams := krtcollections.NewUpstreamIndex(krtutil.KrtOptions{}, nil, policies, refgrants)
 	upstreams.AddUpstreams(SvcGk, k8sUpstreams(services))
-	refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*apiv1beta1.ReferenceGrant](mock))
 
 	httproutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)

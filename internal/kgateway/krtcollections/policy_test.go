@@ -335,9 +335,9 @@ func preRouteIndex(t *testing.T, inputs []any) *RoutesIndex {
 	services := krttest.GetMockCollection[*corev1.Service](mock)
 
 	policies := NewPolicyIndex(krtutil.KrtOptions{}, extensionsplug.ContributesPolicies{})
-	upstreams := NewUpstreamIndex(krtutil.KrtOptions{}, nil, policies)
-	upstreams.AddUpstreams(SvcGk, k8sUpstreams(services))
 	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock))
+	upstreams := NewUpstreamIndex(krtutil.KrtOptions{}, nil, policies, refgrants)
+	upstreams.AddUpstreams(SvcGk, k8sUpstreams(services))
 
 	httproutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
