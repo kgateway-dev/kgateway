@@ -15,16 +15,16 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/compress"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/compress"
 
 	gloo_matchers "github.com/solo-io/solo-kit/test/matchers"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/gloosnapshot"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/utils"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/utils"
 
 	"google.golang.org/grpc"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/grpc/debug"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/grpc/debug"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -45,19 +45,19 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"sigs.k8s.io/yaml"
 
-	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/core/matchers"
-	gloov1plugins "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/cors"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/headers"
-	glootransformation "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/transformation"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/ssl"
-	defaults2 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
-	kubernetesplugin "github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/kubernetes"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/linkerd"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/translator"
+	gatewayv1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
+	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/core/matchers"
+	gloov1plugins "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/cors"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/headers"
+	glootransformation "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/transformation"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/ssl"
+	defaults2 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
+	kubernetesplugin "github.com/kgateway-dev/kgateway/internal/gloo/pkg/plugins/kubernetes"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/plugins/linkerd"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/translator"
 	"github.com/kgateway-dev/kgateway/test/helpers"
 	"github.com/kgateway-dev/kgateway/test/kube2e"
 	"github.com/kgateway-dev/kgateway/test/kube2e/helper"

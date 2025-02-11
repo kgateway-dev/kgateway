@@ -7,10 +7,10 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 
+	"github.com/kgateway-dev/kgateway/internal/envoyinit/pkg/runner"
+	"github.com/kgateway-dev/kgateway/internal/gateway2/xds"
 	"github.com/kgateway-dev/kgateway/pkg/utils/envoyutils/bootstrap"
 	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
-	"github.com/kgateway-dev/kgateway/projects/envoyinit/pkg/runner"
-	"github.com/kgateway-dev/kgateway/projects/gateway2/xds"
 )
 
 const (

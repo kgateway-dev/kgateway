@@ -25,7 +25,7 @@ import (
 	"github.com/form3tech-oss/jwt-go"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	aws2 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/envoy/extensions/aws"
+	aws2 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/external/envoy/extensions/aws"
 	"github.com/kgateway-dev/kgateway/test/helpers"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -40,15 +40,15 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	gw1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
-	gwdefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
+	gw1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
+	gwdefaults "github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
+	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/core/matchers"
-	aws_plugin "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/aws"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/hcm"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/transformation"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/core/matchers"
+	aws_plugin "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/aws"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/hcm"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/transformation"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 )

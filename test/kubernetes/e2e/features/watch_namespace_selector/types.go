@@ -13,7 +13,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
+	gatewayv1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	e2edefaults "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
 )
 

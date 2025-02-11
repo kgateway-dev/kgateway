@@ -11,10 +11,10 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
 	"github.com/kgateway-dev/kgateway/pkg/utils/envoyutils/admincli"
 	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/portforward"
 	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/defaults"
 )
 
 func (p *Provider) AssertEnvoyAdminApi(

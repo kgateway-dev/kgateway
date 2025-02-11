@@ -18,10 +18,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	kubepluginapi "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/kubernetes"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/discovery"
-	kubeplugin "github.com/kgateway-dev/kgateway/projects/gloo/pkg/plugins/kubernetes"
+	v1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
+	kubepluginapi "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/kubernetes"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/discovery"
+	kubeplugin "github.com/kgateway-dev/kgateway/internal/gloo/pkg/plugins/kubernetes"
 
 	"k8s.io/client-go/kubernetes"
 )

@@ -12,7 +12,7 @@ spec:
   group: gateway.kgateway.dev
   names:
     categories:
-    - gateway
+    - kgateway
     kind: Upstream
     listKind: UpstreamList
     plural: upstreams

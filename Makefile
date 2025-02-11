@@ -132,12 +132,12 @@ fmt-changed:
 
 # must be a separate target so that make waits for it to complete before moving on
 .PHONY: mod-download
-mod-download: check-go-version
+mod-download:
 	go mod download all
 
 .PHONY: check-format
 check-format:
-	NOT_FORMATTED=$$(gofmt -l ./projects/ ./pkg/ ./test/) && if [ -n "$$NOT_FORMATTED" ]; then echo These files are not formatted: $$NOT_FORMATTED; exit 1; fi
+	NOT_FORMATTED=$$(gofmt -l ./pkg/ ./internal/ ./test/) && if [ -n "$$NOT_FORMATTED" ]; then echo These files are not formatted: $$NOT_FORMATTED; exit 1; fi
 
 .PHONY: check-spelling
 check-spelling:
@@ -280,6 +280,10 @@ clean-test-logs:
 # Generated Code and Docs
 #----------------------------------------------------------------------------------
 
+.PHONY: verify
+verify: generate-all  ## Verify that generated code is up to date
+	git diff -U3 --exit-code
+
 .PHONY: generate-all
 generate-all: generated-code
 
@@ -293,7 +297,6 @@ generate-all-debug: generate-all
 
 # Generates all required code, cleaning and formatting as well; this target is executed in CI
 .PHONY: generated-code
-generated-code: check-go-version
 generated-code: go-generate-all getter-check mod-tidy
 generated-code: update-licenses
 # generated-code: generate-crd-reference-docs
@@ -301,7 +304,7 @@ generated-code: fmt
 
 .PHONY: go-generate-all
 go-generate-all: ## Run all go generate directives in the repo, including codegen for protos, mockgen, and more
-	GO111MODULE=on go generate ./projects/gateway2/...
+	GO111MODULE=on go generate ./hack/...
 
 .PHONY: go-generate-mocks
 go-generate-mocks: ## Runs all generate directives for mockgen in the repo
@@ -311,16 +314,11 @@ go-generate-mocks: ## Runs all generate directives for mockgen in the repo
 # TODO: do we still want this?
 .PHONY: getter-check
 getter-check:
-	go run github.com/saiskee/gettercheck -ignoretests -ignoregenerated -write ./projects/gateway2/...
+	go run github.com/saiskee/gettercheck -ignoretests -ignoregenerated -write ./internal/gateway2/...
 
 .PHONY: mod-tidy
 mod-tidy:
 	go mod tidy
-
-# Validates that local Go version matches go.mod
-.PHONY: check-go-version
-check-go-version:
-	./ci/check-go-version.sh
 
 #----------------------------------------------------------------------------------
 # Generate CRD Reference Documentation
@@ -336,7 +334,7 @@ generate-crd-reference-docs:
 # Distroless base images
 #----------------------------------------------------------------------------------
 
-DISTROLESS_DIR=projects/distroless
+DISTROLESS_DIR=internal/distroless
 DISTROLESS_OUTPUT_DIR=$(OUTPUT_DIR)/$(DISTROLESS_DIR)
 
 $(DISTROLESS_OUTPUT_DIR)/Dockerfile: $(DISTROLESS_DIR)/Dockerfile
@@ -365,7 +363,7 @@ distroless-with-utils-docker: distroless-docker $(DISTROLESS_OUTPUT_DIR)/Dockerf
 # Controller
 #----------------------------------------------------------------------------------
 
-K8S_GATEWAY_DIR=projects/gateway2
+K8S_GATEWAY_DIR=internal/gateway2
 K8S_GATEWAY_SOURCES=$(call get_sources,$(K8S_GATEWAY_DIR))
 CONTROLLER_OUTPUT_DIR=$(OUTPUT_DIR)/$(K8S_GATEWAY_DIR)
 export CONTROLLER_IMAGE_REPO ?= kgateway
@@ -373,12 +371,12 @@ export CONTROLLER_IMAGE_REPO ?= kgateway
 # We include the files in EDGE_GATEWAY_DIR and K8S_GATEWAY_DIR as dependencies to the gloo build
 # so changes in those directories cause the make target to rebuild
 $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH): $(K8S_GATEWAY_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ $(K8S_GATEWAY_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ cmd/gateway2/main.go
 
 .PHONY: kgateway
 kgateway: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH)
 
-$(CONTROLLER_OUTPUT_DIR)/Dockerfile: $(K8S_GATEWAY_DIR)/cmd/Dockerfile
+$(CONTROLLER_OUTPUT_DIR)/Dockerfile: cmd/gateway2/Dockerfile
 	cp $< $@
 
 .PHONY: kgateway-docker
@@ -388,7 +386,7 @@ kgateway-docker: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(CONTROLLER_
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(CONTROLLER_IMAGE_REPO):$(VERSION)
 
-$(CONTROLLER_OUTPUT_DIR)/Dockerfile.distroless: $(K8S_GATEWAY_DIR)/cmd/Dockerfile.distroless
+$(CONTROLLER_OUTPUT_DIR)/Dockerfile.distroless: cmd/gateway2/Dockerfile.distroless
 	cp $< $@
 
 # Explicitly specify the base image is amd64 as we only build the amd64 flavour of envoy
@@ -404,18 +402,18 @@ kgateway-distroless-docker: $(CONTROLLER_OUTPUT_DIR)/kgateway-linux-$(GOARCH) $(
 # SDS Server - gRPC server for serving Secret Discovery Service config
 #----------------------------------------------------------------------------------
 
-SDS_DIR=projects/sds
+SDS_DIR=internal/sds
 SDS_SOURCES=$(call get_sources,$(SDS_DIR))
 SDS_OUTPUT_DIR=$(OUTPUT_DIR)/$(SDS_DIR)
 export SDS_IMAGE_REPO ?= sds
 
 $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH): $(SDS_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ $(SDS_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ cmd/sds/main.go
 
 .PHONY: sds
 sds: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH)
 
-$(SDS_OUTPUT_DIR)/Dockerfile.sds: $(SDS_DIR)/cmd/Dockerfile
+$(SDS_OUTPUT_DIR)/Dockerfile.sds: cmd/sds/Dockerfile
 	cp $< $@
 
 .PHONY: sds-docker
@@ -425,7 +423,7 @@ sds-docker: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) $(SDS_OUTPUT_DIR)/Dockerfile.s
 		--build-arg BASE_IMAGE=$(ALPINE_BASE_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(SDS_IMAGE_REPO):$(VERSION)
 
-$(SDS_OUTPUT_DIR)/Dockerfile.sds.distroless: $(SDS_DIR)/cmd/Dockerfile.distroless
+$(SDS_OUTPUT_DIR)/Dockerfile.sds.distroless: cmd/sds/Dockerfile.distroless
 	cp $< $@
 
 .PHONY: sds-distroless-docker
@@ -439,21 +437,21 @@ sds-distroless-docker: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) $(SDS_OUTPUT_DIR)/D
 # Envoy init (BASE/SIDECAR)
 #----------------------------------------------------------------------------------
 
-ENVOYINIT_DIR=projects/envoyinit/cmd
+ENVOYINIT_DIR=internal/envoyinit
 ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR))
 ENVOYINIT_OUTPUT_DIR=$(OUTPUT_DIR)/$(ENVOYINIT_DIR)
 export ENVOYINIT_IMAGE_REPO ?= envoy-wrapper
 
 $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH): $(ENVOYINIT_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ $(ENVOYINIT_DIR)/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ cmd/envoyinit/main.go
 
 .PHONY: envoyinit
 envoyinit: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH)
 
-$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DIR)/Dockerfile.envoyinit
+$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: cmd/envoyinit/Dockerfile.envoyinit
 	cp $< $@
 
-$(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: $(ENVOYINIT_DIR)/docker-entrypoint.sh
+$(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: cmd/envoyinit/docker-entrypoint.sh
 	cp $< $@
 
 .PHONY: envoy-wrapper-docker
@@ -463,7 +461,7 @@ envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYI
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)
 
-$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless: $(ENVOYINIT_DIR)/Dockerfile.envoyinit.distroless
+$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless: cmd/envoyinit/Dockerfile.envoyinit.distroless
 	cp $< $@
 
 # Explicitly specify the base image is amd64 as we only build the amd64 flavour of envoy
@@ -503,21 +501,19 @@ docker-push-%:
 	docker push $(IMAGE_REGISTRY)/$*:$(VERSION)
 
 .PHONY: docker-standard
-docker-standard: check-go-version ## Build docker images (standard only)
-docker-standard: kgateway-docker
+docker-standard: kgateway-docker ## Build docker images (standard only)
 docker-standard: envoy-wrapper-docker
 docker-standard: sds-docker
 
 .PHONY: docker-distroless
-docker-distroless: check-go-version ## Build docker images (distroless only)
-docker-distroless: kgateway-distroless-docker
+docker-distroless: kgateway-distroless-docker ## Build docker images (distroless only)
 docker-distroless: envoy-wrapper-distroless-docker
 docker-distroless: sds-distroless-docker
 
 IMAGE_VARIANT ?= all
 # Build docker images using the defined IMAGE_REGISTRY, VERSION
 .PHONY: docker
-docker: check-go-version ## Build all docker images (standard and distroless)
+docker: ## Build all docker images (standard and distroless)
 docker: # Standard images
 ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all standard))
 docker: docker-standard
@@ -578,7 +574,7 @@ CLUSTER_NAME ?= kind
 INSTALL_NAMESPACE ?= kgateway-system
 
 kind-setup:
-	VERSION=${VERSION} CLUSTER_NAME=${CLUSTER_NAME} ./ci/kind/setup-kind.sh
+	VERSION=${VERSION} CLUSTER_NAME=${CLUSTER_NAME} ./hack/kind/setup-kind.sh
 
 kind-load-%-distroless:
 	kind load docker-image $(IMAGE_REGISTRY)/$*:$(VERSION)-distroless --name $(CLUSTER_NAME)
@@ -714,44 +710,14 @@ conformance-%: $(TEST_ASSET_DIR)/conformance/conformance_test.go
 	-run-test=$*
 
 #----------------------------------------------------------------------------------
-# Security Scan
-#----------------------------------------------------------------------------------
-# Locally run the Trivy security scan to generate result report as markdown
-
-SCAN_DIR ?= $(OUTPUT_DIR)/scans
-SCAN_BUCKET ?= solo-gloo-security-scans
-# The minimum version to scan with trivy
-# ON_LTS_UPDATE - bump version
-MIN_SCANNED_VERSION ?= v1.15.0
-
-.PHONY: run-security-scans
-run-security-scan:
-	MIN_SCANNED_VERSION=$(MIN_SCANNED_VERSION) GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r gloo -a github-issue-latest
-	MIN_SCANNED_VERSION=$(MIN_SCANNED_VERSION) GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r glooe -a github-issue-latest
-
-.PHONY: publish-security-scan
-publish-security-scan:
-	# These directories are generated by the generated_docs.go script. They contain scan results for each image for each version
-	# of gloo and gloo enterprise. Do NOT change these directories without changing the corresponding output directories in
-	# generate_docs.go
-	gsutil cp -r $(SCAN_DIR)/gloo/markdown_results/** gs://$(SCAN_BUCKET)/gloo
-	gsutil cp -r $(SCAN_DIR)/solo-projects/markdown_results/** gs://$(SCAN_BUCKET)/solo-projects
-
-.PHONY: scan-version
-scan-version: ## Scan all Gloo images with the tag matching {VERSION} env variable
-	PATH=$(DEPSGOBIN):$$PATH GO111MODULE=on go run github.com/solo-io/go-utils/securityscanutils/cli scan-version -v \
-		-r $(IMAGE_REGISTRY)\
-		-t $(VERSION)\
-		--images kgateway,envoy-wrapper,sds
-
-#----------------------------------------------------------------------------------
 # Third Party License Management
 #----------------------------------------------------------------------------------
+
 .PHONY: update-licenses
-update-licenses:
+update-licenses: ## Update the licenses for the project
 	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -c "GNU General Public License v2.0,GNU General Public License v3.0,GNU Lesser General Public License v2.1,GNU Lesser General Public License v3.0,GNU Affero General Public License v3.0"
-	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -s "Mozilla Public License 2.0,GNU General Public License v2.0,GNU General Public License v3.0,GNU Lesser General Public License v2.1,GNU Lesser General Public License v3.0,GNU Affero General Public License v3.0"> docs/content/static/content/osa_provided.md
-	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -i "Mozilla Public License 2.0"> docs/content/static/content/osa_included.md
+	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -s "Mozilla Public License 2.0,GNU General Public License v2.0,GNU General Public License v3.0,GNU Lesser General Public License v2.1,GNU Lesser General Public License v3.0,GNU Affero General Public License v3.0"> hack/utils/oss_compliance/osa_provided.md
+	GO111MODULE=on go run hack/utils/oss_compliance/oss_compliance.go osagen -i "Mozilla Public License 2.0"> hack/utils/oss_compliance/osa_included.md
 
 #----------------------------------------------------------------------------------
 # Printing makefile variables utility

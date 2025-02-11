@@ -15,11 +15,11 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
+	gatewayv1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
 
 	"github.com/kgateway-dev/kgateway/test/testutils"
 
-	v3 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/external/envoy/config/core/v3"
+	v3 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/external/envoy/config/core/v3"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
@@ -35,11 +35,11 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
+	gwdefaults "github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
+	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/core/matchers"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/translator"
 	"github.com/kgateway-dev/kgateway/pkg/utils/api_conversion"
-	gwdefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/translator"
 	. "github.com/kgateway-dev/kgateway/test/gomega"
 	"github.com/kgateway-dev/kgateway/test/services"
 	"github.com/kgateway-dev/kgateway/test/v1helpers"

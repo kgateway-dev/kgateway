@@ -13,7 +13,7 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/onsi/gomega/gstruct"
 
-	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
+	v1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/test/e2e"
 	testmatchers "github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/test/gomega/transforms"
@@ -23,8 +23,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/options/transformation"
+	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/transformation"
 )
 
 var _ = Describe("Transformations", func() {

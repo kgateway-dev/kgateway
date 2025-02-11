@@ -15,8 +15,8 @@ import (
 	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/actions"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/assertions"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/cluster"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/gloogateway"
 	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/helper"
+	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/kgateway"
 	testruntime "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/runtime"
 	"github.com/kgateway-dev/kgateway/test/testutils"
 )
@@ -48,12 +48,12 @@ func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper
 // It is syntactic sugar on top of CreateTestInstallationForCluster
 func CreateTestInstallation(
 	t *testing.T,
-	glooGatewayContext *gloogateway.Context,
+	glooGatewayContext *kgateway.Context,
 ) *TestInstallation {
 	runtimeContext := testruntime.NewContext()
 	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName)
 
-	if err := gloogateway.ValidateGlooGatewayContext(glooGatewayContext); err != nil {
+	if err := kgateway.ValidateGlooGatewayContext(glooGatewayContext); err != nil {
 		// We error loudly if the context is misconfigured
 		panic(err)
 	}
@@ -71,7 +71,7 @@ func CreateTestInstallationForCluster(
 	t *testing.T,
 	runtimeContext testruntime.Context,
 	clusterContext *cluster.Context,
-	glooGatewayContext *gloogateway.Context,
+	glooGatewayContext *kgateway.Context,
 ) *TestInstallation {
 	installation := &TestInstallation{
 		// RuntimeContext contains the set of properties that are defined at runtime by whoever is invoking tests
@@ -82,9 +82,6 @@ func CreateTestInstallationForCluster(
 
 		// Maintain a reference to the Metadata used for this installation
 		Metadata: glooGatewayContext,
-
-		// ResourceClients are only available _after_ installing Gloo Gateway
-		ResourceClients: nil,
 
 		// Create an actions provider, and point it to the running installation
 		Actions: actions.NewActionsProvider().
@@ -118,10 +115,7 @@ type TestInstallation struct {
 	ClusterContext *cluster.Context
 
 	// Metadata contains the properties used to install Gloo Gateway
-	Metadata *gloogateway.Context
-
-	// ResourceClients is a set of clients that can manipulate resources owned by Gloo Gateway
-	ResourceClients gloogateway.ResourceClients
+	Metadata *kgateway.Context
 
 	// Actions is the entity that creates actions that can be executed by the Operator
 	Actions *actions.Provider
@@ -199,11 +193,6 @@ func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installFn fun
 		i.Assertions.EventuallyInstallationSucceeded(ctx)
 		i.Assertions.EventuallyGlooReachesConsistentState(i.Metadata.InstallNamespace)
 	}
-
-	// We can only create the ResourceClients after the CRDs exist in the Cluster
-	clients, err := gloogateway.NewResourceClients(ctx, i.ClusterContext)
-	i.Assertions.Require.NoError(err)
-	i.ResourceClients = clients
 }
 
 // UninstallGlooGatewayWithTestHelper is the common way to uninstall Gloo Gateway.

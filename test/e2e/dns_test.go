@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/test/e2e"
 )
 

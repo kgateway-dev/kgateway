@@ -27,9 +27,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 
-	gatewaydefaults "github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
-	v1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
-	vault_client "github.com/kgateway-dev/kgateway/projects/gloo/pkg/bootstrap/clients/vault"
+	gatewaydefaults "github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
+	v1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
+	vault_client "github.com/kgateway-dev/kgateway/internal/gloo/pkg/bootstrap/clients/vault"
 	"github.com/kgateway-dev/kgateway/test/helpers"
 	"github.com/kgateway-dev/kgateway/test/services"
 
@@ -42,7 +42,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/bootstrap/clients"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/bootstrap/clients"
 )
 
 // Kubernetes tests for clients generated from projects/gloo/pkg/bootstrap/clients

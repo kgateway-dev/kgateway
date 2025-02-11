@@ -6,7 +6,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	v1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
+	v1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
 )
 
 // RouteTableBuilder simplifies the process of generating RouteTables in tests

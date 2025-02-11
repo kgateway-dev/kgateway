@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kgateway-dev/kgateway/projects/gateway/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
 	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
 	testdefaults "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
 

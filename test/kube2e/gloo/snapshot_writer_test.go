@@ -8,11 +8,11 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/kgateway-dev/kgateway/test/kube2e"
 
-	gatewayv1 "github.com/kgateway-dev/kgateway/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/kgateway-dev/kgateway/projects/gloo/pkg/api/v1"
+	gatewayv1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
+	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
 	"github.com/kgateway-dev/kgateway/test/helpers"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
