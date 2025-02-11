@@ -29,11 +29,16 @@ type UpstreamList struct {
 	Items           []Upstream `json:"items"`
 }
 
-// +kubebuilder:validation:XValidation:message="There must one and only one upstream type set",rule="1 == (self.aws != null?1:0) + (self.static != null?1:0)"
+// +kubebuilder:validation:XValidation:message="There must one and only one upstream type set",rule="1 == (self.aws != null?1:0) + (self.static != null?1:0) + (self.dynamicForwardProxy != null?1:0)"
 type UpstreamSpec struct {
-	Aws    *AwsUpstream    `json:"aws,omitempty"`
-	Static *StaticUpstream `json:"static,omitempty"`
+	Aws                 *AwsUpstream         `json:"aws,omitempty"`
+	Static              *StaticUpstream      `json:"static,omitempty"`
+	DynamicForwardProxy *DynamicForwardProxy `json:"dynamicForwardProxy,omitempty"`
 }
+
+type DynamicForwardProxy struct {
+}
+
 type AwsUpstream struct {
 	Region    string                      `json:"region,omitempty"`
 	SecretRef corev1.LocalObjectReference `json:"secretRef,omitempty"`

@@ -6,6 +6,7 @@ import (
 	"maps"
 	"time"
 
+	"google.golang.org/protobuf/proto"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
@@ -13,6 +14,7 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoydfp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_forward_proxy/v3"
 	awspb "github.com/solo-io/envoy-gloo/go/config/filter/http/aws_lambda/v2"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
@@ -62,7 +64,8 @@ func (d *upstreamDestination) Equals(in any) bool {
 }
 
 type UpstreamIr struct {
-	AwsSecret *ir.Secret
+	AwsSecret       *ir.Secret
+	dfpFilterConfig *envoydfp.FilterConfig
 }
 
 func (u *UpstreamIr) data() map[string][]byte {
@@ -77,13 +80,17 @@ func (u *UpstreamIr) Equals(other any) bool {
 	if !ok {
 		return false
 	}
-	return maps.EqualFunc(u.data(), otherUpstream.data(), func(a, b []byte) bool {
+	if !maps.EqualFunc(u.data(), otherUpstream.data(), func(a, b []byte) bool {
 		return bytes.Equal(a, b)
-	})
+	}) {
+		return false
+	}
+	return proto.Equal(otherUpstream.dfpFilterConfig, u.dfpFilterConfig)
 }
 
 type plugin2 struct {
-	needFilter map[string]bool
+	needAwsFilter   map[string]bool
+	neededDfpFilter map[string]map[string]*envoydfp.FilterConfig
 }
 
 func registerTypes(ourCli versioned.Interface) {
@@ -171,6 +178,14 @@ func buildTranslateFunc(secrets *krtcollections.SecretIndex) func(krtctx krt.Han
 				// return error
 			}
 		}
+		if i.Spec.DynamicForwardProxy != nil {
+			ir.dfpFilterConfig = &envoydfp.FilterConfig{
+				ImplementationSpecifier: &envoydfp.FilterConfig_SubClusterConfig{
+					SubClusterConfig: &envoydfp.SubClusterConfig{},
+				},
+			}
+		}
+
 		return &ir
 	}
 }
@@ -195,6 +210,8 @@ func processUpstream(ctx context.Context, in ir.Upstream, out *envoy_config_clus
 		processStatic(ctx, spec.Static, out)
 	case spec.Aws != nil:
 		processAws(ctx, spec.Aws, ir, out)
+	case spec.DynamicForwardProxy != nil:
+		processDFPCluster(ctx, spec.DynamicForwardProxy, out)
 	}
 }
 
@@ -221,7 +238,10 @@ func processEndpoints(up *v1alpha1.Upstream) *ir.EndpointsForUpstream {
 }
 
 func newPlug(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {
-	return &plugin2{}
+	return &plugin2{
+		needAwsFilter:   map[string]bool{},
+		neededDfpFilter: map[string]map[string]*envoydfp.FilterConfig{},
+	}
 }
 
 func (p *plugin2) Name() string {
@@ -237,7 +257,7 @@ func (p *plugin2) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostCont
 
 // called 0 or more times
 func (p *plugin2) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoy_config_route_v3.Route) error {
-
+	p.processDFPRoute(ctx, pCtx, outputRoute)
 	return nil
 }
 
@@ -257,16 +277,20 @@ func (p *plugin2) ApplyForRouteBackend(
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
 func (p *plugin2) HttpFilters(ctx context.Context, fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
-	if !p.needFilter[fc.FilterChainName] {
-		return nil, nil
+	var ret []plugins.StagedHttpFilter
+	if p.needAwsFilter[fc.FilterChainName] {
+		filterConfig := &awspb.AWSLambdaConfig{}
+		pluginStage := plugins.DuringStage(plugins.OutAuthStage)
+		f, _ := plugins.NewStagedFilter(FilterName, filterConfig, pluginStage)
+		ret = append(ret, f)
 	}
-	filterConfig := &awspb.AWSLambdaConfig{}
-	pluginStage := plugins.DuringStage(plugins.OutAuthStage)
-	f, _ := plugins.NewStagedFilter(FilterName, filterConfig, pluginStage)
+	for clstrName, filterConfig := range p.neededDfpFilter[fc.FilterChainName] {
+		pluginStage := plugins.DuringStage(plugins.OutAuthStage)
+		f, _ := plugins.NewStagedFilter(clstrName, filterConfig, pluginStage)
+		ret = append(ret, f)
+	}
 
-	return []plugins.StagedHttpFilter{
-		f,
-	}, nil
+	return ret, nil
 }
 
 func (p *plugin2) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {

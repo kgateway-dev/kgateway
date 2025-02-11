@@ -35,8 +35,9 @@ func (r *RouteBackendContext) AddTypedConfig(key string, v *anypb.Any) {
 }
 
 type RouteContext struct {
-	Policy PolicyIR
-	In     HttpRouteRuleMatchIR
+	FilterChainName string
+	Policy          PolicyIR
+	In              HttpRouteRuleMatchIR
 }
 
 type ProxyTranslationPass interface {

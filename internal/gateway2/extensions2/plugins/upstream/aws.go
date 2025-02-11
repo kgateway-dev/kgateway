@@ -110,10 +110,10 @@ func (p *plugin2) processBackendAws(
 ) error {
 
 	functionName := dest.FunctionName
-	if p.needFilter == nil {
-		p.needFilter = make(map[string]bool)
+	if p.needAwsFilter == nil {
+		p.needAwsFilter = make(map[string]bool)
 	}
-	p.needFilter[pCtx.FilterChainName] = true
+	p.needAwsFilter[pCtx.FilterChainName] = true
 
 	lambdaRouteFunc := &awspb.AWSLambdaPerRoute{
 		Async: false,
