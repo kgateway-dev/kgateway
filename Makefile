@@ -132,7 +132,7 @@ fmt-changed:
 
 # must be a separate target so that make waits for it to complete before moving on
 .PHONY: mod-download
-mod-download: check-go-version
+mod-download:
 	go mod download all
 
 .PHONY: check-format
@@ -280,6 +280,10 @@ clean-test-logs:
 # Generated Code and Docs
 #----------------------------------------------------------------------------------
 
+.PHONY: verify
+verify: generate-all  ## Verify that generated code is up to date
+	git diff -U3 --exit-code
+
 .PHONY: generate-all
 generate-all: generated-code
 
@@ -293,7 +297,6 @@ generate-all-debug: generate-all
 
 # Generates all required code, cleaning and formatting as well; this target is executed in CI
 .PHONY: generated-code
-generated-code: check-go-version
 generated-code: go-generate-all getter-check mod-tidy
 generated-code: update-licenses
 # generated-code: generate-crd-reference-docs
@@ -316,11 +319,6 @@ getter-check:
 .PHONY: mod-tidy
 mod-tidy:
 	go mod tidy
-
-# Validates that local Go version matches go.mod
-.PHONY: check-go-version
-check-go-version:
-	./ci/check-go-version.sh
 
 #----------------------------------------------------------------------------------
 # Generate CRD Reference Documentation
@@ -503,21 +501,19 @@ docker-push-%:
 	docker push $(IMAGE_REGISTRY)/$*:$(VERSION)
 
 .PHONY: docker-standard
-docker-standard: check-go-version ## Build docker images (standard only)
-docker-standard: kgateway-docker
+docker-standard: kgateway-docker ## Build docker images (standard only)
 docker-standard: envoy-wrapper-docker
 docker-standard: sds-docker
 
 .PHONY: docker-distroless
-docker-distroless: check-go-version ## Build docker images (distroless only)
-docker-distroless: kgateway-distroless-docker
+docker-distroless: kgateway-distroless-docker ## Build docker images (distroless only)
 docker-distroless: envoy-wrapper-distroless-docker
 docker-distroless: sds-distroless-docker
 
 IMAGE_VARIANT ?= all
 # Build docker images using the defined IMAGE_REGISTRY, VERSION
 .PHONY: docker
-docker: check-go-version ## Build all docker images (standard and distroless)
+docker: ## Build all docker images (standard and distroless)
 docker: # Standard images
 ifeq ($(IMAGE_VARIANT),$(filter $(IMAGE_VARIANT),all standard))
 docker: docker-standard
@@ -578,7 +574,7 @@ CLUSTER_NAME ?= kind
 INSTALL_NAMESPACE ?= kgateway-system
 
 kind-setup:
-	VERSION=${VERSION} CLUSTER_NAME=${CLUSTER_NAME} ./ci/kind/setup-kind.sh
+	VERSION=${VERSION} CLUSTER_NAME=${CLUSTER_NAME} ./hack/kind/setup-kind.sh
 
 kind-load-%-distroless:
 	kind load docker-image $(IMAGE_REGISTRY)/$*:$(VERSION)-distroless --name $(CLUSTER_NAME)

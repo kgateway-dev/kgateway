@@ -18,7 +18,7 @@ The Kubernetes Gateway API integration is defined in the [api](./api) directory.
 To create the local test environment in kind, run:
 
 ```shell
-./ci/kind/setup-kind.sh
+./hack/kind/setup-kind.sh
 ```
 
 This will create the kind cluster and build the docker images.
@@ -99,7 +99,7 @@ curl -I localhost:8080/productpage -H "host: www.example.com" -v
 This will create the kind cluster, build the docker images.
 
 ```shell
-./ci/kind/setup-kind.sh
+./hack/kind/setup-kind.sh
 ```
 
 Next we need to install Istio in the cluster along with the bookinfo test application in the mesh:

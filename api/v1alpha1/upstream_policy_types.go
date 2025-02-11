@@ -12,7 +12,7 @@ import (
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:metadata:labels={app=gateway,app.kubernetes.io/name=gateway}
-// +kubebuilder:resource:categories=gateway,shortName=up
+// +kubebuilder:resource:categories=kgateway,shortName=up
 // +kubebuilder:subresource:status
 type Upstream struct {
 	metav1.TypeMeta   `json:",inline"`

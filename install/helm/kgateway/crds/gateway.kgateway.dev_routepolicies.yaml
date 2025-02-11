@@ -13,7 +13,7 @@ spec:
   group: gateway.kgateway.dev
   names:
     categories:
-    - gateway
+    - kgateway
     kind: RoutePolicy
     listKind: RoutePolicyList
     plural: routepolicies

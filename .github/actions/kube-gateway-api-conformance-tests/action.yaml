@@ -36,7 +36,7 @@ runs:
       CLUSTER_NODE_VERSION: ${{ matrix.kube-version.node }}
       IMAGE_VARIANT: ${{ matrix.image-variant }}
       CONFORMANCE: "true"
-    run: ./ci/kind/setup-kind.sh
+    run: ./hack/kind/setup-kind.sh
   - name: Install kgateway via helm
     shell: bash
     run: |

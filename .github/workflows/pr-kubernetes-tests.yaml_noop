@@ -12,8 +12,6 @@
 #     name: Prepare Environment
 #     runs-on: ubuntu-22.04
 #     timeout-minutes: 5
-#     outputs:
-#       should-auto-succeed-kube-tests: ${{ steps.run-strategy.outputs.auto_succeed }}
 #     steps:
 #     - name: Cancel Previous Actions
 #       uses: styfle/cancel-workflow-action@0.12.1
@@ -25,17 +23,6 @@
 #         # We require gathering the branch and tag history since we rely on a `git diff`
 #         # which compares the state of two branches
 #         fetch-depth: 0
-#     - id: process-skip-directives
-#       uses: ./.github/actions/process-skip-directives
-#       with:
-#         base-ref: ${{ github.base_ref }}
-#     - id: run-strategy
-#       name: Determine Test Run Strategy
-#       run: |
-#         skip_kube_tests=${{ steps.process-skip-directives.outputs.skip-kube-tests }}
-#         if [[ ! -z $skip_kube_tests && $skip_kube_tests = true ]] ; then
-#           echo "auto_succeed=true" >> $GITHUB_OUTPUT
-#         fi
 
 #   end_to_end_tests:
 #     name: End-to-End (${{ matrix.test.cluster-name }})
@@ -95,26 +82,19 @@
 #         version-files:
 #           - file: './.github/workflows/.env/pr-tests/versions.env'
 #     steps:
-#     - id: auto-succeed-tests
-#       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests == 'true'
-#       run: |
-#         echo "Regression tests auto-succeeded"
 #     - uses: actions/checkout@v4
 #     - name: Prep Go Runner
 #       uses: ./.github/actions/prep-go-runner
-#       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
 #     # The dotenv action is used to load key-value pairs from files.
 #     # In this case, the file is specified in the matrix and will contain the versions of the tools to use
 #     - name: Dotenv Action
 #       uses: falti/dotenv-action@v1.1.4
-#       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
 #       id: dotenv
 #       with:
 #         path: ${{ matrix.version-files.file }}
 #         log-variables: true
 #     - id: setup-kind-cluster
 #       name: Setup KinD Cluster
-#       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
 #       uses: ./.github/actions/setup-kind-cluster
 #       with:
 #         cluster-name: ${{ matrix.test.cluster-name }}
@@ -124,7 +104,6 @@
 #         helm-version: ${{ steps.dotenv.outputs.helm_version }}
 #         istio-version: ${{ steps.dotenv.outputs.istio_version }}
 #     - id: run-tests
-#       if: needs.prepare_env.outputs.should-auto-succeed-kube-tests != 'true'
 #       uses: ./.github/actions/kubernetes-e2e-tests
 #       with:
 #         cluster-name: ${{ matrix.test.cluster-name }}

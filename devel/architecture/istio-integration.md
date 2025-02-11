@@ -81,7 +81,7 @@ can be manually tested by following the steps below on a kind cluster:
 1. Setup environment and kind cluster
 
 ```shell
-ci/kind/setup-kind.sh; make kind-build-and-load
+hack/kind/setup-kind.sh; make kind-build-and-load
 ```
 
 2. Install Istio

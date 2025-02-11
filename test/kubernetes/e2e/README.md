@@ -83,6 +83,6 @@ Below are a set of known areas of improvement. The goal is to provide a starting
 - **Debug Improvements**: On test failure, we should emit a report about the entire state of the cluster. This should be a CLI utility as well.
 - **Curl assertion**: We need a re-usable way to execute Curl requests against a Pod, and assert properties of the response.
 - **Improved install action(s)**: We rely on the [SoloTestHelper](/test/kube2e/helper/install.go) currently, and it would be nice if we relied directly on Helm or Glooctl.
-- **Cluster provisioning**: We rely on the [setup-kind](/ci/kind/setup-kind.sh) script to provision a cluster. We should make this more flexible by providing a configurable, declarative way to do this.
+- **Cluster provisioning**: We rely on the [setup-kind](/hack/kind/setup-kind.sh) script to provision a cluster. We should make this more flexible by providing a configurable, declarative way to do this.
 - **Istio action**: We need a way to perform Istio actions against a cluster.
 - **Argo action**: We need an easy utility to perform ArgoCD commands against a cluster.
