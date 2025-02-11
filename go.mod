@@ -1,4 +1,4 @@
-module github.com/kgateway-dev/kgateway
+module github.com/kgateway-dev/kgateway/v2
 
 go 1.23.6
 
