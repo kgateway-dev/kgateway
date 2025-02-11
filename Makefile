@@ -42,7 +42,7 @@ SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 # universal header validation has been enabled and if so, we expect
 # failures in `test/e2e/header_validation_test.go`.
 export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.31.2-patch3
-export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/pkg/version.Version=$(VERSION)'
+export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/pkg/version.Version=$(VERSION)'
 export GCFLAGS ?=
 
 UNAME_M := $(shell uname -m)
@@ -124,7 +124,7 @@ get_sources = $(shell find $(1) -name "*.go" | grep -v test | grep -v generated.
 
 .PHONY: fmt
 fmt:
-	go run golang.org/x/tools/cmd/goimports -local "github.com/kgateway-dev/kgateway/"  -w $(shell ls -d */ | grep -v vendor)
+	go run golang.org/x/tools/cmd/goimports -local "github.com/kgateway-dev/kgateway/v2/"  -w $(shell ls -d */ | grep -v vendor)
 
 .PHONY: fmt-changed
 fmt-changed:
