@@ -1,1 +1,1 @@
-Please refer to the [contributor's guide](https://github.com/kgateway-dev/community/blob/main/CONTRIBUTING.md) in the Community repo.
+Please refer to the [contributing guide](https://github.com/kgateway-dev/community/blob/main/CONTRIBUTING.md) in the Community repo.
