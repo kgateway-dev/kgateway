@@ -287,12 +287,9 @@ func testScenario(
 
 	t.Cleanup(func() {
 		if t.Failed() {
-			j, err := kdbg.MarshalJSON()
-			if err != nil {
-				t.Logf("failed to marshal krt state: %v", err)
-			} else {
-				t.Logf("krt state for failed test: %s %s", t.Name(), string(j))
-			}
+			logKrtState(t, fmt.Sprintf("krt state for failed test: %s", t.Name()), kdbg)
+		} else if os.Getenv("KGW_DUMP_KRT_ON_SUCCESS") == "true" {
+			logKrtState(t, fmt.Sprintf("krt state for successful test: %s", t.Name()), kdbg)
 		}
 	})
 
@@ -314,6 +311,17 @@ func testScenario(
 	}
 	dump.Compare(t, expectedXdsDump)
 	fmt.Println("test done")
+}
+
+// logKrtState logs the krt state with a message
+func logKrtState(t *testing.T, msg string, kdbg *krt.DebugHandler) {
+	t.Helper()
+	j, err := kdbg.MarshalJSON()
+	if err != nil {
+		t.Logf("failed to marshal krt state: %v", err)
+	} else {
+		t.Logf("%s: %s", msg, string(j))
+	}
 }
 
 type xdsDumper struct {
