@@ -22,7 +22,7 @@ spec:
   parentRefs:
     - name: http-gw-for-test
   hostnames:
-    - "www.example.com"
+    - "test"
   rules:
     - matches:
         - path:
@@ -44,27 +44,7 @@ spec:
     kind: HTTPRoute
     name: vertexai
   ai:
-    promptEnrichment:
-      prepend:
-        - role: SYSTEM
-          content: "respond to all questions in French"
-        - role: SYSTEM
-          content: "Say hello before each response"
-    promptGuard:
-      request:
-        customResponse:
-          message: "Rejected due to inappropriate content"
-          statusCode: 400
-        regex:
-          matches:
-            - "credit card"
-      response:
-        regex:
-          builtins:
-            - PHONE_NUMBER
-            - EMAIL
-            - SSN
-            - CREDIT_CARD
+    routeType: CHAT_STREAMING
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Upstream
@@ -76,12 +56,13 @@ metadata:
 spec:
   ai:
     llm:
-      vertexAi:
+      vertexai:
         model: gemini-1.5-flash-001
         apiVersion: v1
         location: us-central1
         projectId: gloo-ee
         publisher: GOOGLE
         authToken:
+          kind: "Inline"
           inline: mysecretkey
 ---
