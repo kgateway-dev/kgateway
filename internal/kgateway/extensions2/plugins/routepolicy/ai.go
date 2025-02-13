@@ -26,5 +26,20 @@ func processAIRoutePolicy(ctx context.Context, aiConfig *v1alpha1.AIRoutePolicy,
 		outputRoute.TypedPerFilterConfig = make(map[string]*anypb.Any)
 	}
 
+
+
+	upstreams := getAiUpstreams(pCtx.In.Backends)
+	if len(upstreams) != 0 {
+
+	}
+
 	return nil
+}
+
+func getAiUpstreams(backends []ir.HttpBackend) []*ir.Upstream {
+	var upstreams []*ir.Upstream
+	for _, backend := range backends {
+		if backend.Backend.Upstream.ObjIr
+	}
+	return upstreams
 }

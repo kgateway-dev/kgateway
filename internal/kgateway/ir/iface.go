@@ -25,6 +25,7 @@ type RouteBackendContext struct {
 	FilterChainName string
 	Upstream        *Upstream
 	// todo: make this not public
+	// TODO: or change this to be proto.mesage (do the any conversion -> get the extproc)
 	TypedFiledConfig *map[string]*anypb.Any
 }
 
