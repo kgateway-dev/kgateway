@@ -9,6 +9,7 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
@@ -169,8 +170,57 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 			}
 			upstreamIr.AwsSecret = secret
 		}
+		if i.Spec.AI != nil {
+			ns := i.GetNamespace()
+			if i.Spec.AI.LLM != nil {
+				secretRef := getAISecretRef(i.Spec.AI.LLM)
+				// if secretRef is used, set the secret on the upstream ir
+				if secretRef != nil {
+					secret, err := getSecretIr(secrets, krtctx, secretRef.Name, ns)
+					if err != nil {
+						contextutils.LoggerFrom(ctx).Error(err)
+					}
+					upstreamIr.AISecret = secret
+				}
+			} else if i.Spec.AI.MultiPool != nil {
+				upstreamIr.AIMultiSecret = map[string]*ir.Secret{}
+				for idx, priority := range i.Spec.AI.MultiPool.Priorities {
+					for jdx, pool := range priority.Pool {
+						secretRef := getAISecretRef(&pool)
+						// if secretRef is used, set the secret on the upstream ir
+						if secretRef != nil {
+							secret, err := getSecretIr(secrets, krtctx, secretRef.Name, ns)
+							if err != nil {
+								contextutils.LoggerFrom(ctx).Error(err)
+							}
+							upstreamIr.AIMultiSecret[getMultiPoolSecretKey(idx, jdx, secretRef.Name)] = secret
+						}
+					}
+				}
+			}
+
+		}
 		return &upstreamIr
 	}
+}
+
+func getAISecretRef(llm *v1alpha1.LLMProviders) *corev1.LocalObjectReference {
+	var secretRef *corev1.LocalObjectReference
+	if llm.OpenAI != nil {
+		secretRef = llm.OpenAI.AuthToken.SecretRef
+	} else if llm.Mistral != nil {
+		secretRef = llm.Mistral.AuthToken.SecretRef
+	} else if llm.Anthropic != nil {
+		secretRef = llm.Anthropic.AuthToken.SecretRef
+	} else if llm.AzureOpenAI != nil {
+		secretRef = llm.AzureOpenAI.AuthToken.SecretRef
+	} else if llm.Gemini != nil {
+		secretRef = llm.Gemini.AuthToken.SecretRef
+	} else if llm.VertexAI != nil {
+		secretRef = llm.VertexAI.AuthToken.SecretRef
+	}
+
+	return secretRef
 }
 
 func processUpstream(ctx context.Context, in ir.Upstream, out *envoy_config_cluster_v3.Cluster) {
@@ -299,4 +349,8 @@ func getSecretIr(secrets *krtcollections.SecretIndex, krtctx krt.HandlerContext,
 	} else {
 		return nil, eris.Wrapf(err, fmt.Sprintf("unable to find the secret %s", secretRef.Name))
 	}
+}
+
+func getMultiPoolSecretKey(priorityIdx, poolIdx int, secretName string) string {
+	return fmt.Sprintf("%d-%d-%s", priorityIdx, poolIdx, secretName)
 }

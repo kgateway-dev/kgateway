@@ -13,6 +13,31 @@ spec:
         namespaces:
           from: All
 ---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openai-secret
+  namespace: gwtest
+type: Opaque
+data:
+  Authorization: bXlzZWNyZXRrZXk=
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Upstream
+metadata:
+  labels:
+    app: kgateway
+  name: openai
+  namespace: gwtest
+spec:
+  ai:
+    llm:
+      openai:
+        authToken:
+          kind: "SecretRef"
+          secretRef:
+            name: openai-secret
+---
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
@@ -22,7 +47,7 @@ spec:
   parentRefs:
     - name: http-gw-for-test
   hostnames:
-    - "www.example.com"
+    - "test"
   rules:
     - matches:
         - path:
@@ -57,7 +82,7 @@ spec:
           statusCode: 400
         regex:
           matches:
-            - "credit card"
+          - pattern: "credit card"
       response:
         regex:
           builtins:
@@ -65,31 +90,3 @@ spec:
             - EMAIL
             - SSN
             - CREDIT_CARD
----
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Upstream
-metadata:
-  labels:
-    app: kgateway
-  name: openai
-  namespace: gwtest
-spec:
-  ai:
-    llm:
-      openai:
-        authToken:
-          kind: "SecretRef"
-          secretRef:
-            name: openai-secret
----
-apiVersion: v1
-data:
-  Authorization: mysecretkey
-kind: Secret
-metadata:
-  annotations:
-    kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"v1","data":{"Authorization":"mysecretkey"},"kind":"Secret","metadata":{"annotations":{},"creationTimestamp":null,"name":"openai-secret","namespace":"gwtest"}}
-  name: openai-secret
-  namespace: gwtest
-type: Opaque
