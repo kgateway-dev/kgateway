@@ -66,6 +66,9 @@ type Upstream struct {
 	// i think so, assuming obj -> objir is a 1:1 mapping.
 	ObjIr interface{ Equals(any) bool }
 
+	// AI config
+	LLM string
+
 	AttachedPolicies AttachedPolicies
 }
 

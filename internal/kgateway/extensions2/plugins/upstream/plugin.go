@@ -298,6 +298,13 @@ func (p *upstreamPlugin) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContex
 	return nil
 }
 
+// Run on upstream, regardless of policy (based on upstream gvk)
+// share route proto message
+//func ApplyForBackend()
+
+// Only called if policy attatched (extension ref)
+// Can implement in route policy for ai (prompt guard, etc.)
+// Alt. apply regardless if policy is present...?
 func (p *upstreamPlugin) ApplyForRouteBackend(
 	ctx context.Context, policy ir.PolicyIR,
 	pCtx *ir.RouteBackendContext,
