@@ -6,7 +6,7 @@ type DirectResponseExpansion interface{}
 
 type GatewayParametersExpansion interface{}
 
-type HttpListenerPolicyExpansion interface{}
+type HTTPListenerPolicyExpansion interface{}
 
 type ListenerPolicyExpansion interface{}
 

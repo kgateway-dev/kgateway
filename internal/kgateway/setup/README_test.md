@@ -13,3 +13,16 @@ The test will rename the gateway, so that the tests can run in parallel. Make su
 in the scenario yamls are unique (though currently tests won't run in parallel).
 
 The test will apply the resources in the yaml file, ask for an xDS snapshot, and finally compare the snapshot with the `-out.yaml` file.
+
+## How to run
+
+From the `kgateway/internal/kgateway` directory run:
+
+```shell
+make install-go-tools
+```
+
+Then run the tests in the setup directory:
+```yaml
+go test -v ./setup/
+```

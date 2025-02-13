@@ -9,7 +9,11 @@ import (
 // definition for the proto in the form of a *pany.Any, errors if nil or if the proto type doesnt exist or if there is
 // a marshalling error
 func MessageToAny(msg proto.Message) (*anypb.Any, error) {
-	return anypb.New(msg)
+	anyPb := &anypb.Any{}
+	err := anypb.MarshalFrom(anyPb, msg, proto.MarshalOptions{
+		Deterministic: true,
+	})
+	return anyPb, err
 }
 
 func AnyToMessage(a *anypb.Any) (proto.Message, error) {

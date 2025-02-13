@@ -12,58 +12,58 @@ import (
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
-// HttpListenerPolicyApplyConfiguration represents a declarative configuration of the HttpListenerPolicy type for use
+// HTTPListenerPolicyApplyConfiguration represents a declarative configuration of the HTTPListenerPolicy type for use
 // with apply.
-type HttpListenerPolicyApplyConfiguration struct {
+type HTTPListenerPolicyApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Spec                             *HttpListenerPolicySpecApplyConfiguration `json:"spec,omitempty"`
+	Spec                             *HTTPListenerPolicySpecApplyConfiguration `json:"spec,omitempty"`
 	Status                           *PolicyStatusApplyConfiguration           `json:"status,omitempty"`
 }
 
-// HttpListenerPolicy constructs a declarative configuration of the HttpListenerPolicy type for use with
+// HTTPListenerPolicy constructs a declarative configuration of the HTTPListenerPolicy type for use with
 // apply.
-func HttpListenerPolicy(name, namespace string) *HttpListenerPolicyApplyConfiguration {
-	b := &HttpListenerPolicyApplyConfiguration{}
+func HTTPListenerPolicy(name, namespace string) *HTTPListenerPolicyApplyConfiguration {
+	b := &HTTPListenerPolicyApplyConfiguration{}
 	b.WithName(name)
 	b.WithNamespace(namespace)
-	b.WithKind("HttpListenerPolicy")
+	b.WithKind("HTTPListenerPolicy")
 	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b
 }
 
-// ExtractHttpListenerPolicy extracts the applied configuration owned by fieldManager from
-// httpListenerPolicy. If no managedFields are found in httpListenerPolicy for fieldManager, a
-// HttpListenerPolicyApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// ExtractHTTPListenerPolicy extracts the applied configuration owned by fieldManager from
+// hTTPListenerPolicy. If no managedFields are found in hTTPListenerPolicy for fieldManager, a
+// HTTPListenerPolicyApplyConfiguration is returned with only the Name, Namespace (if applicable),
 // APIVersion and Kind populated. It is possible that no managed fields were found for because other
 // field managers have taken ownership of all the fields previously owned by fieldManager, or because
 // the fieldManager never owned fields any fields.
-// httpListenerPolicy must be a unmodified HttpListenerPolicy API object that was retrieved from the Kubernetes API.
-// ExtractHttpListenerPolicy provides a way to perform a extract/modify-in-place/apply workflow.
+// hTTPListenerPolicy must be a unmodified HTTPListenerPolicy API object that was retrieved from the Kubernetes API.
+// ExtractHTTPListenerPolicy provides a way to perform a extract/modify-in-place/apply workflow.
 // Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
 // applied if another fieldManager has updated or force applied any of the previously applied fields.
 // Experimental!
-func ExtractHttpListenerPolicy(httpListenerPolicy *apiv1alpha1.HttpListenerPolicy, fieldManager string) (*HttpListenerPolicyApplyConfiguration, error) {
-	return extractHttpListenerPolicy(httpListenerPolicy, fieldManager, "")
+func ExtractHTTPListenerPolicy(hTTPListenerPolicy *apiv1alpha1.HTTPListenerPolicy, fieldManager string) (*HTTPListenerPolicyApplyConfiguration, error) {
+	return extractHTTPListenerPolicy(hTTPListenerPolicy, fieldManager, "")
 }
 
-// ExtractHttpListenerPolicyStatus is the same as ExtractHttpListenerPolicy except
+// ExtractHTTPListenerPolicyStatus is the same as ExtractHTTPListenerPolicy except
 // that it extracts the status subresource applied configuration.
 // Experimental!
-func ExtractHttpListenerPolicyStatus(httpListenerPolicy *apiv1alpha1.HttpListenerPolicy, fieldManager string) (*HttpListenerPolicyApplyConfiguration, error) {
-	return extractHttpListenerPolicy(httpListenerPolicy, fieldManager, "status")
+func ExtractHTTPListenerPolicyStatus(hTTPListenerPolicy *apiv1alpha1.HTTPListenerPolicy, fieldManager string) (*HTTPListenerPolicyApplyConfiguration, error) {
+	return extractHTTPListenerPolicy(hTTPListenerPolicy, fieldManager, "status")
 }
 
-func extractHttpListenerPolicy(httpListenerPolicy *apiv1alpha1.HttpListenerPolicy, fieldManager string, subresource string) (*HttpListenerPolicyApplyConfiguration, error) {
-	b := &HttpListenerPolicyApplyConfiguration{}
-	err := managedfields.ExtractInto(httpListenerPolicy, internal.Parser().Type("com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HttpListenerPolicy"), fieldManager, b, subresource)
+func extractHTTPListenerPolicy(hTTPListenerPolicy *apiv1alpha1.HTTPListenerPolicy, fieldManager string, subresource string) (*HTTPListenerPolicyApplyConfiguration, error) {
+	b := &HTTPListenerPolicyApplyConfiguration{}
+	err := managedfields.ExtractInto(hTTPListenerPolicy, internal.Parser().Type("com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HTTPListenerPolicy"), fieldManager, b, subresource)
 	if err != nil {
 		return nil, err
 	}
-	b.WithName(httpListenerPolicy.Name)
-	b.WithNamespace(httpListenerPolicy.Namespace)
+	b.WithName(hTTPListenerPolicy.Name)
+	b.WithNamespace(hTTPListenerPolicy.Namespace)
 
-	b.WithKind("HttpListenerPolicy")
+	b.WithKind("HTTPListenerPolicy")
 	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b, nil
 }
@@ -71,7 +71,7 @@ func extractHttpListenerPolicy(httpListenerPolicy *apiv1alpha1.HttpListenerPolic
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Kind field is set to the value of the last call.
-func (b *HttpListenerPolicyApplyConfiguration) WithKind(value string) *HttpListenerPolicyApplyConfiguration {
+func (b *HTTPListenerPolicyApplyConfiguration) WithKind(value string) *HTTPListenerPolicyApplyConfiguration {
 	b.Kind = &value
 	return b
 }
@@ -79,7 +79,7 @@ func (b *HttpListenerPolicyApplyConfiguration) WithKind(value string) *HttpListe
 // WithAPIVersion sets the APIVersion field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the APIVersion field is set to the value of the last call.
-func (b *HttpListenerPolicyApplyConfiguration) WithAPIVersion(value string) *HttpListenerPolicyApplyConfiguration {
+func (b *HTTPListenerPolicyApplyConfiguration) WithAPIVersion(value string) *HTTPListenerPolicyApplyConfiguration {
 	b.APIVersion = &value
 	return b
 }
@@ -87,7 +87,7 @@ func (b *HttpListenerPolicyApplyConfiguration) WithAPIVersion(value string) *Htt
 // WithName sets the Name field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Name field is set to the value of the last call.
-func (b *HttpListenerPolicyApplyConfiguration) WithName(value string) *HttpListenerPolicyApplyConfiguration {
+func (b *HTTPListenerPolicyApplyConfiguration) WithName(value string) *HTTPListenerPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.Name = &value
 	return b
@@ -96,7 +96,7 @@ func (b *HttpListenerPolicyApplyConfiguration) WithName(value string) *HttpListe
 // WithGenerateName sets the GenerateName field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the GenerateName field is set to the value of the last call.
-func (b *HttpListenerPolicyApplyConfiguration) WithGenerateName(value string) *HttpListenerPolicyApplyConfiguration {
+func (b *HTTPListenerPolicyApplyConfiguration) WithGenerateName(value string) *HTTPListenerPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.GenerateName = &value
 	return b
@@ -105,7 +105,7 @@ func (b *HttpListenerPolicyApplyConfiguration) WithGenerateName(value string) *H
 // WithNamespace sets the Namespace field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Namespace field is set to the value of the last call.
-func (b *HttpListenerPolicyApplyConfiguration) WithNamespace(value string) *HttpListenerPolicyApplyConfiguration {
+func (b *HTTPListenerPolicyApplyConfiguration) WithNamespace(value string) *HTTPListenerPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.Namespace = &value
 	return b
@@ -114,7 +114,7 @@ func (b *HttpListenerPolicyApplyConfiguration) WithNamespace(value string) *Http
 // WithUID sets the UID field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the UID field is set to the value of the last call.
-func (b *HttpListenerPolicyApplyConfiguration) WithUID(value types.UID) *HttpListenerPolicyApplyConfiguration {
+func (b *HTTPListenerPolicyApplyConfiguration) WithUID(value types.UID) *HTTPListenerPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.UID = &value
 	return b
@@ -123,7 +123,7 @@ func (b *HttpListenerPolicyApplyConfiguration) WithUID(value types.UID) *HttpLis
 // WithResourceVersion sets the ResourceVersion field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ResourceVersion field is set to the value of the last call.
-func (b *HttpListenerPolicyApplyConfiguration) WithResourceVersion(value string) *HttpListenerPolicyApplyConfiguration {
+func (b *HTTPListenerPolicyApplyConfiguration) WithResourceVersion(value string) *HTTPListenerPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ResourceVersion = &value
 	return b
@@ -132,7 +132,7 @@ func (b *HttpListenerPolicyApplyConfiguration) WithResourceVersion(value string)
 // WithGeneration sets the Generation field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Generation field is set to the value of the last call.
-func (b *HttpListenerPolicyApplyConfiguration) WithGeneration(value int64) *HttpListenerPolicyApplyConfiguration {
+func (b *HTTPListenerPolicyApplyConfiguration) WithGeneration(value int64) *HTTPListenerPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.Generation = &value
 	return b
@@ -141,7 +141,7 @@ func (b *HttpListenerPolicyApplyConfiguration) WithGeneration(value int64) *Http
 // WithCreationTimestamp sets the CreationTimestamp field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the CreationTimestamp field is set to the value of the last call.
-func (b *HttpListenerPolicyApplyConfiguration) WithCreationTimestamp(value metav1.Time) *HttpListenerPolicyApplyConfiguration {
+func (b *HTTPListenerPolicyApplyConfiguration) WithCreationTimestamp(value metav1.Time) *HTTPListenerPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.CreationTimestamp = &value
 	return b
@@ -150,7 +150,7 @@ func (b *HttpListenerPolicyApplyConfiguration) WithCreationTimestamp(value metav
 // WithDeletionTimestamp sets the DeletionTimestamp field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the DeletionTimestamp field is set to the value of the last call.
-func (b *HttpListenerPolicyApplyConfiguration) WithDeletionTimestamp(value metav1.Time) *HttpListenerPolicyApplyConfiguration {
+func (b *HTTPListenerPolicyApplyConfiguration) WithDeletionTimestamp(value metav1.Time) *HTTPListenerPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.DeletionTimestamp = &value
 	return b
@@ -159,7 +159,7 @@ func (b *HttpListenerPolicyApplyConfiguration) WithDeletionTimestamp(value metav
 // WithDeletionGracePeriodSeconds sets the DeletionGracePeriodSeconds field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the DeletionGracePeriodSeconds field is set to the value of the last call.
-func (b *HttpListenerPolicyApplyConfiguration) WithDeletionGracePeriodSeconds(value int64) *HttpListenerPolicyApplyConfiguration {
+func (b *HTTPListenerPolicyApplyConfiguration) WithDeletionGracePeriodSeconds(value int64) *HTTPListenerPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.DeletionGracePeriodSeconds = &value
 	return b
@@ -169,7 +169,7 @@ func (b *HttpListenerPolicyApplyConfiguration) WithDeletionGracePeriodSeconds(va
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, the entries provided by each call will be put on the Labels field,
 // overwriting an existing map entries in Labels field with the same key.
-func (b *HttpListenerPolicyApplyConfiguration) WithLabels(entries map[string]string) *HttpListenerPolicyApplyConfiguration {
+func (b *HTTPListenerPolicyApplyConfiguration) WithLabels(entries map[string]string) *HTTPListenerPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	if b.Labels == nil && len(entries) > 0 {
 		b.Labels = make(map[string]string, len(entries))
@@ -184,7 +184,7 @@ func (b *HttpListenerPolicyApplyConfiguration) WithLabels(entries map[string]str
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, the entries provided by each call will be put on the Annotations field,
 // overwriting an existing map entries in Annotations field with the same key.
-func (b *HttpListenerPolicyApplyConfiguration) WithAnnotations(entries map[string]string) *HttpListenerPolicyApplyConfiguration {
+func (b *HTTPListenerPolicyApplyConfiguration) WithAnnotations(entries map[string]string) *HTTPListenerPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	if b.Annotations == nil && len(entries) > 0 {
 		b.Annotations = make(map[string]string, len(entries))
@@ -198,7 +198,7 @@ func (b *HttpListenerPolicyApplyConfiguration) WithAnnotations(entries map[strin
 // WithOwnerReferences adds the given value to the OwnerReferences field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the OwnerReferences field.
-func (b *HttpListenerPolicyApplyConfiguration) WithOwnerReferences(values ...*v1.OwnerReferenceApplyConfiguration) *HttpListenerPolicyApplyConfiguration {
+func (b *HTTPListenerPolicyApplyConfiguration) WithOwnerReferences(values ...*v1.OwnerReferenceApplyConfiguration) *HTTPListenerPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	for i := range values {
 		if values[i] == nil {
@@ -212,7 +212,7 @@ func (b *HttpListenerPolicyApplyConfiguration) WithOwnerReferences(values ...*v1
 // WithFinalizers adds the given value to the Finalizers field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Finalizers field.
-func (b *HttpListenerPolicyApplyConfiguration) WithFinalizers(values ...string) *HttpListenerPolicyApplyConfiguration {
+func (b *HTTPListenerPolicyApplyConfiguration) WithFinalizers(values ...string) *HTTPListenerPolicyApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	for i := range values {
 		b.Finalizers = append(b.Finalizers, values[i])
@@ -220,7 +220,7 @@ func (b *HttpListenerPolicyApplyConfiguration) WithFinalizers(values ...string) 
 	return b
 }
 
-func (b *HttpListenerPolicyApplyConfiguration) ensureObjectMetaApplyConfigurationExists() {
+func (b *HTTPListenerPolicyApplyConfiguration) ensureObjectMetaApplyConfigurationExists() {
 	if b.ObjectMetaApplyConfiguration == nil {
 		b.ObjectMetaApplyConfiguration = &v1.ObjectMetaApplyConfiguration{}
 	}
@@ -229,7 +229,7 @@ func (b *HttpListenerPolicyApplyConfiguration) ensureObjectMetaApplyConfiguratio
 // WithSpec sets the Spec field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Spec field is set to the value of the last call.
-func (b *HttpListenerPolicyApplyConfiguration) WithSpec(value *HttpListenerPolicySpecApplyConfiguration) *HttpListenerPolicyApplyConfiguration {
+func (b *HTTPListenerPolicyApplyConfiguration) WithSpec(value *HTTPListenerPolicySpecApplyConfiguration) *HTTPListenerPolicyApplyConfiguration {
 	b.Spec = value
 	return b
 }
@@ -237,13 +237,13 @@ func (b *HttpListenerPolicyApplyConfiguration) WithSpec(value *HttpListenerPolic
 // WithStatus sets the Status field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Status field is set to the value of the last call.
-func (b *HttpListenerPolicyApplyConfiguration) WithStatus(value *PolicyStatusApplyConfiguration) *HttpListenerPolicyApplyConfiguration {
+func (b *HTTPListenerPolicyApplyConfiguration) WithStatus(value *PolicyStatusApplyConfiguration) *HTTPListenerPolicyApplyConfiguration {
 	b.Status = value
 	return b
 }
 
 // GetName retrieves the value of the Name field in the declarative configuration.
-func (b *HttpListenerPolicyApplyConfiguration) GetName() *string {
+func (b *HTTPListenerPolicyApplyConfiguration) GetName() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
 	return b.Name
 }

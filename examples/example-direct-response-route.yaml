@@ -3,7 +3,6 @@ kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1
 metadata:
   name: http
-  namespace: gloo-system
 spec:
   gatewayClassName: kgateway
   listeners:
@@ -18,7 +17,6 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: httpbin
-  namespace: httpbin
   labels:
     app: httpbin
 spec:
@@ -26,7 +24,6 @@ spec:
   - "www.example.com"
   parentRefs:
   - name: gw
-    namespace: default
   rules:
   - matches:
     - path:
@@ -50,7 +47,6 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 kind: DirectResponse
 metadata:
   name: robots-txt
-  namespace: httpbin
 spec:
   status: 200
   body: "User-agent: *\nDisallow: /custom\n"

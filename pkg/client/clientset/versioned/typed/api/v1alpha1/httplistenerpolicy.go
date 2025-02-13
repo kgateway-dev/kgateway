@@ -15,44 +15,44 @@ import (
 	scheme "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/scheme"
 )
 
-// HttpListenerPoliciesGetter has a method to return a HttpListenerPolicyInterface.
+// HTTPListenerPoliciesGetter has a method to return a HTTPListenerPolicyInterface.
 // A group's client should implement this interface.
-type HttpListenerPoliciesGetter interface {
-	HttpListenerPolicies(namespace string) HttpListenerPolicyInterface
+type HTTPListenerPoliciesGetter interface {
+	HTTPListenerPolicies(namespace string) HTTPListenerPolicyInterface
 }
 
-// HttpListenerPolicyInterface has methods to work with HttpListenerPolicy resources.
-type HttpListenerPolicyInterface interface {
-	Create(ctx context.Context, httpListenerPolicy *v1alpha1.HttpListenerPolicy, opts v1.CreateOptions) (*v1alpha1.HttpListenerPolicy, error)
-	Update(ctx context.Context, httpListenerPolicy *v1alpha1.HttpListenerPolicy, opts v1.UpdateOptions) (*v1alpha1.HttpListenerPolicy, error)
+// HTTPListenerPolicyInterface has methods to work with HTTPListenerPolicy resources.
+type HTTPListenerPolicyInterface interface {
+	Create(ctx context.Context, hTTPListenerPolicy *v1alpha1.HTTPListenerPolicy, opts v1.CreateOptions) (*v1alpha1.HTTPListenerPolicy, error)
+	Update(ctx context.Context, hTTPListenerPolicy *v1alpha1.HTTPListenerPolicy, opts v1.UpdateOptions) (*v1alpha1.HTTPListenerPolicy, error)
 	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-	UpdateStatus(ctx context.Context, httpListenerPolicy *v1alpha1.HttpListenerPolicy, opts v1.UpdateOptions) (*v1alpha1.HttpListenerPolicy, error)
+	UpdateStatus(ctx context.Context, hTTPListenerPolicy *v1alpha1.HTTPListenerPolicy, opts v1.UpdateOptions) (*v1alpha1.HTTPListenerPolicy, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.HttpListenerPolicy, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.HttpListenerPolicyList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.HTTPListenerPolicy, error)
+	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.HTTPListenerPolicyList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.HttpListenerPolicy, err error)
-	Apply(ctx context.Context, httpListenerPolicy *apiv1alpha1.HttpListenerPolicyApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.HttpListenerPolicy, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.HTTPListenerPolicy, err error)
+	Apply(ctx context.Context, hTTPListenerPolicy *apiv1alpha1.HTTPListenerPolicyApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.HTTPListenerPolicy, err error)
 	// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
-	ApplyStatus(ctx context.Context, httpListenerPolicy *apiv1alpha1.HttpListenerPolicyApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.HttpListenerPolicy, err error)
-	HttpListenerPolicyExpansion
+	ApplyStatus(ctx context.Context, hTTPListenerPolicy *apiv1alpha1.HTTPListenerPolicyApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.HTTPListenerPolicy, err error)
+	HTTPListenerPolicyExpansion
 }
 
-// httpListenerPolicies implements HttpListenerPolicyInterface
-type httpListenerPolicies struct {
-	*gentype.ClientWithListAndApply[*v1alpha1.HttpListenerPolicy, *v1alpha1.HttpListenerPolicyList, *apiv1alpha1.HttpListenerPolicyApplyConfiguration]
+// hTTPListenerPolicies implements HTTPListenerPolicyInterface
+type hTTPListenerPolicies struct {
+	*gentype.ClientWithListAndApply[*v1alpha1.HTTPListenerPolicy, *v1alpha1.HTTPListenerPolicyList, *apiv1alpha1.HTTPListenerPolicyApplyConfiguration]
 }
 
-// newHttpListenerPolicies returns a HttpListenerPolicies
-func newHttpListenerPolicies(c *GatewayV1alpha1Client, namespace string) *httpListenerPolicies {
-	return &httpListenerPolicies{
-		gentype.NewClientWithListAndApply[*v1alpha1.HttpListenerPolicy, *v1alpha1.HttpListenerPolicyList, *apiv1alpha1.HttpListenerPolicyApplyConfiguration](
+// newHTTPListenerPolicies returns a HTTPListenerPolicies
+func newHTTPListenerPolicies(c *GatewayV1alpha1Client, namespace string) *hTTPListenerPolicies {
+	return &hTTPListenerPolicies{
+		gentype.NewClientWithListAndApply[*v1alpha1.HTTPListenerPolicy, *v1alpha1.HTTPListenerPolicyList, *apiv1alpha1.HTTPListenerPolicyApplyConfiguration](
 			"httplistenerpolicies",
 			c.RESTClient(),
 			scheme.ParameterCodec,
 			namespace,
-			func() *v1alpha1.HttpListenerPolicy { return &v1alpha1.HttpListenerPolicy{} },
-			func() *v1alpha1.HttpListenerPolicyList { return &v1alpha1.HttpListenerPolicyList{} }),
+			func() *v1alpha1.HTTPListenerPolicy { return &v1alpha1.HTTPListenerPolicy{} },
+			func() *v1alpha1.HTTPListenerPolicyList { return &v1alpha1.HTTPListenerPolicyList{} }),
 	}
 }

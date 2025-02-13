@@ -13,6 +13,7 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	awspb "github.com/solo-io/envoy-gloo/go/config/filter/http/aws_lambda/v2"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
@@ -82,7 +83,7 @@ func (u *UpstreamIr) Equals(other any) bool {
 	})
 }
 
-type plugin2 struct {
+type upstreamPlugin struct {
 	needFilter map[string]bool
 }
 
@@ -125,7 +126,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		}
 	})
 
-	epndpoints := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Upstream) *ir.EndpointsForUpstream {
+	endpoints := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Upstream) *ir.EndpointsForUpstream {
 		return processEndpoints(i)
 	})
 	return extensionsplug.Plugin{
@@ -134,7 +135,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				UpstreamInit: ir.UpstreamInit{
 					InitUpstream: processUpstream,
 				},
-				Endpoints: epndpoints,
+				Endpoints: endpoints,
 				Upstreams: ucol,
 			},
 		},
@@ -221,27 +222,33 @@ func processEndpoints(up *v1alpha1.Upstream) *ir.EndpointsForUpstream {
 }
 
 func newPlug(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {
-	return &plugin2{}
+	return &upstreamPlugin{}
 }
 
-func (p *plugin2) Name() string {
+func (p *upstreamPlugin) Name() string {
 	return "upstream"
 }
 
 // called 1 time for each listener
-func (p *plugin2) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *envoy_config_listener_v3.Listener) {
+func (p *upstreamPlugin) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *envoy_config_listener_v3.Listener) {
 }
 
-func (p *plugin2) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostContext, out *envoy_config_route_v3.VirtualHost) {
+func (p *upstreamPlugin) ApplyHCM(ctx context.Context,
+	pCtx *ir.HcmContext,
+	out *envoy_hcm.HttpConnectionManager) error { //no-op
+	return nil
+}
+
+func (p *upstreamPlugin) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostContext, out *envoy_config_route_v3.VirtualHost) {
 }
 
 // called 0 or more times
-func (p *plugin2) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoy_config_route_v3.Route) error {
+func (p *upstreamPlugin) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoy_config_route_v3.Route) error {
 
 	return nil
 }
 
-func (p *plugin2) ApplyForRouteBackend(
+func (p *upstreamPlugin) ApplyForRouteBackend(
 	ctx context.Context, policy ir.PolicyIR,
 	pCtx *ir.RouteBackendContext,
 ) error {
@@ -256,7 +263,7 @@ func (p *plugin2) ApplyForRouteBackend(
 // called 1 time per listener
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
-func (p *plugin2) HttpFilters(ctx context.Context, fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
+func (p *upstreamPlugin) HttpFilters(ctx context.Context, fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	if !p.needFilter[fc.FilterChainName] {
 		return nil, nil
 	}
@@ -269,15 +276,15 @@ func (p *plugin2) HttpFilters(ctx context.Context, fc ir.FilterChainCommon) ([]p
 	}, nil
 }
 
-func (p *plugin2) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {
+func (p *upstreamPlugin) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {
 	return nil, nil
 }
 
-func (p *plugin2) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
+func (p *upstreamPlugin) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
 	return nil, nil
 }
 
 // called 1 time (per envoy proxy). replaces GeneratedResources
-func (p *plugin2) ResourcesToAdd(ctx context.Context) ir.Resources {
+func (p *upstreamPlugin) ResourcesToAdd(ctx context.Context) ir.Resources {
 	return ir.Resources{}
 }

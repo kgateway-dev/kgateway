@@ -14,8 +14,8 @@ spec:
   names:
     categories:
     - kgateway
-    kind: HttpListenerPolicy
-    listKind: HttpListenerPolicyList
+    kind: HTTPListenerPolicy
+    listKind: HTTPListenerPolicyList
     plural: httplistenerpolicies
     shortNames:
     - hlp
@@ -34,6 +34,433 @@ spec:
             type: object
           spec:
             properties:
+              accessLog:
+                items:
+                  properties:
+                    fileSink:
+                      properties:
+                        jsonFormat:
+                          type: object
+                          x-kubernetes-preserve-unknown-fields: true
+                        path:
+                          type: string
+                        stringFormat:
+                          type: string
+                      required:
+                      - path
+                      type: object
+                      x-kubernetes-validations:
+                      - message: only one of 'StringFormat' or 'JsonFormat' may be
+                          set
+                        rule: (has(self.stringFormat) && !has(self.jsonFormat)) ||
+                          (!has(self.stringFormat) && has(self.jsonFormat))
+                    filter:
+                      allOf:
+                      - maxProperties: 1
+                        minProperties: 1
+                      - maxProperties: 1
+                        minProperties: 1
+                      properties:
+                        andFilter:
+                          items:
+                            maxProperties: 1
+                            minProperties: 1
+                            properties:
+                              celFilter:
+                                properties:
+                                  match:
+                                    type: string
+                                required:
+                                - match
+                                type: object
+                              durationFilter:
+                                properties:
+                                  op:
+                                    enum:
+                                    - EQ
+                                    - GE
+                                    - LE
+                                    type: string
+                                  value:
+                                    format: int32
+                                    maximum: 4294967295
+                                    minimum: 0
+                                    type: integer
+                                required:
+                                - op
+                                type: object
+                              grpcStatusFilter:
+                                properties:
+                                  exclude:
+                                    type: boolean
+                                  statuses:
+                                    items:
+                                      enum:
+                                      - OK
+                                      - CANCELED
+                                      - UNKNOWN
+                                      - INVALID_ARGUMENT
+                                      - DEADLINE_EXCEEDED
+                                      - NOT_FOUND
+                                      - ALREADY_EXISTS
+                                      - PERMISSION_DENIED
+                                      - RESOURCE_EXHAUSTED
+                                      - FAILED_PRECONDITION
+                                      - ABORTED
+                                      - OUT_OF_RANGE
+                                      - UNIMPLEMENTED
+                                      - INTERNAL
+                                      - UNAVAILABLE
+                                      - DATA_LOSS
+                                      - UNAUTHENTICATED
+                                      type: string
+                                    minItems: 1
+                                    type: array
+                                type: object
+                              headerFilter:
+                                properties:
+                                  header:
+                                    properties:
+                                      name:
+                                        maxLength: 256
+                                        minLength: 1
+                                        pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                        type: string
+                                      type:
+                                        default: Exact
+                                        enum:
+                                        - Exact
+                                        - RegularExpression
+                                        type: string
+                                      value:
+                                        maxLength: 4096
+                                        minLength: 1
+                                        type: string
+                                    required:
+                                    - name
+                                    - value
+                                    type: object
+                                required:
+                                - header
+                                type: object
+                              notHealthCheckFilter:
+                                type: boolean
+                              responseFlagFilter:
+                                properties:
+                                  flags:
+                                    items:
+                                      type: string
+                                    minItems: 1
+                                    type: array
+                                required:
+                                - flags
+                                type: object
+                              statusCodeFilter:
+                                properties:
+                                  op:
+                                    enum:
+                                    - EQ
+                                    - GE
+                                    - LE
+                                    type: string
+                                  value:
+                                    format: int32
+                                    maximum: 4294967295
+                                    minimum: 0
+                                    type: integer
+                                required:
+                                - op
+                                type: object
+                              traceableFilter:
+                                type: boolean
+                            type: object
+                          minItems: 2
+                          type: array
+                        celFilter:
+                          properties:
+                            match:
+                              type: string
+                          required:
+                          - match
+                          type: object
+                        durationFilter:
+                          properties:
+                            op:
+                              enum:
+                              - EQ
+                              - GE
+                              - LE
+                              type: string
+                            value:
+                              format: int32
+                              maximum: 4294967295
+                              minimum: 0
+                              type: integer
+                          required:
+                          - op
+                          type: object
+                        grpcStatusFilter:
+                          properties:
+                            exclude:
+                              type: boolean
+                            statuses:
+                              items:
+                                enum:
+                                - OK
+                                - CANCELED
+                                - UNKNOWN
+                                - INVALID_ARGUMENT
+                                - DEADLINE_EXCEEDED
+                                - NOT_FOUND
+                                - ALREADY_EXISTS
+                                - PERMISSION_DENIED
+                                - RESOURCE_EXHAUSTED
+                                - FAILED_PRECONDITION
+                                - ABORTED
+                                - OUT_OF_RANGE
+                                - UNIMPLEMENTED
+                                - INTERNAL
+                                - UNAVAILABLE
+                                - DATA_LOSS
+                                - UNAUTHENTICATED
+                                type: string
+                              minItems: 1
+                              type: array
+                          type: object
+                        headerFilter:
+                          properties:
+                            header:
+                              properties:
+                                name:
+                                  maxLength: 256
+                                  minLength: 1
+                                  pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                  type: string
+                                type:
+                                  default: Exact
+                                  enum:
+                                  - Exact
+                                  - RegularExpression
+                                  type: string
+                                value:
+                                  maxLength: 4096
+                                  minLength: 1
+                                  type: string
+                              required:
+                              - name
+                              - value
+                              type: object
+                          required:
+                          - header
+                          type: object
+                        notHealthCheckFilter:
+                          type: boolean
+                        orFilter:
+                          items:
+                            maxProperties: 1
+                            minProperties: 1
+                            properties:
+                              celFilter:
+                                properties:
+                                  match:
+                                    type: string
+                                required:
+                                - match
+                                type: object
+                              durationFilter:
+                                properties:
+                                  op:
+                                    enum:
+                                    - EQ
+                                    - GE
+                                    - LE
+                                    type: string
+                                  value:
+                                    format: int32
+                                    maximum: 4294967295
+                                    minimum: 0
+                                    type: integer
+                                required:
+                                - op
+                                type: object
+                              grpcStatusFilter:
+                                properties:
+                                  exclude:
+                                    type: boolean
+                                  statuses:
+                                    items:
+                                      enum:
+                                      - OK
+                                      - CANCELED
+                                      - UNKNOWN
+                                      - INVALID_ARGUMENT
+                                      - DEADLINE_EXCEEDED
+                                      - NOT_FOUND
+                                      - ALREADY_EXISTS
+                                      - PERMISSION_DENIED
+                                      - RESOURCE_EXHAUSTED
+                                      - FAILED_PRECONDITION
+                                      - ABORTED
+                                      - OUT_OF_RANGE
+                                      - UNIMPLEMENTED
+                                      - INTERNAL
+                                      - UNAVAILABLE
+                                      - DATA_LOSS
+                                      - UNAUTHENTICATED
+                                      type: string
+                                    minItems: 1
+                                    type: array
+                                type: object
+                              headerFilter:
+                                properties:
+                                  header:
+                                    properties:
+                                      name:
+                                        maxLength: 256
+                                        minLength: 1
+                                        pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                        type: string
+                                      type:
+                                        default: Exact
+                                        enum:
+                                        - Exact
+                                        - RegularExpression
+                                        type: string
+                                      value:
+                                        maxLength: 4096
+                                        minLength: 1
+                                        type: string
+                                    required:
+                                    - name
+                                    - value
+                                    type: object
+                                required:
+                                - header
+                                type: object
+                              notHealthCheckFilter:
+                                type: boolean
+                              responseFlagFilter:
+                                properties:
+                                  flags:
+                                    items:
+                                      type: string
+                                    minItems: 1
+                                    type: array
+                                required:
+                                - flags
+                                type: object
+                              statusCodeFilter:
+                                properties:
+                                  op:
+                                    enum:
+                                    - EQ
+                                    - GE
+                                    - LE
+                                    type: string
+                                  value:
+                                    format: int32
+                                    maximum: 4294967295
+                                    minimum: 0
+                                    type: integer
+                                required:
+                                - op
+                                type: object
+                              traceableFilter:
+                                type: boolean
+                            type: object
+                          minItems: 2
+                          type: array
+                        responseFlagFilter:
+                          properties:
+                            flags:
+                              items:
+                                type: string
+                              minItems: 1
+                              type: array
+                          required:
+                          - flags
+                          type: object
+                        statusCodeFilter:
+                          properties:
+                            op:
+                              enum:
+                              - EQ
+                              - GE
+                              - LE
+                              type: string
+                            value:
+                              format: int32
+                              maximum: 4294967295
+                              minimum: 0
+                              type: integer
+                          required:
+                          - op
+                          type: object
+                        traceableFilter:
+                          type: boolean
+                      type: object
+                    grpcService:
+                      properties:
+                        additionalRequestHeadersToLog:
+                          items:
+                            type: string
+                          type: array
+                        additionalResponseHeadersToLog:
+                          items:
+                            type: string
+                          type: array
+                        additionalResponseTrailersToLog:
+                          items:
+                            type: string
+                          type: array
+                        backendRef:
+                          properties:
+                            group:
+                              default: ""
+                              maxLength: 253
+                              pattern: ^$|^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                              type: string
+                            kind:
+                              default: Service
+                              maxLength: 63
+                              minLength: 1
+                              pattern: ^[a-zA-Z]([-a-zA-Z0-9]*[a-zA-Z0-9])?$
+                              type: string
+                            name:
+                              maxLength: 253
+                              minLength: 1
+                              type: string
+                            namespace:
+                              maxLength: 63
+                              minLength: 1
+                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                              type: string
+                            port:
+                              format: int32
+                              maximum: 65535
+                              minimum: 1
+                              type: integer
+                            weight:
+                              default: 1
+                              format: int32
+                              maximum: 1000000
+                              minimum: 0
+                              type: integer
+                          required:
+                          - name
+                          type: object
+                          x-kubernetes-validations:
+                          - message: Must have port for Service reference
+                            rule: '(size(self.group) == 0 && self.kind == ''Service'')
+                              ? has(self.port) : true'
+                        logName:
+                          type: string
+                      required:
+                      - backendRef
+                      - logName
+                      type: object
+                  type: object
+                type: array
               compress:
                 type: boolean
               targetRef:

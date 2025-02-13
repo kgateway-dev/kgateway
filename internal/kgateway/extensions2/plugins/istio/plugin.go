@@ -60,7 +60,7 @@ func (i IstioSettings) Equals(in any) bool {
 var _ ir.PolicyIR = &IstioSettings{}
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
-	p := plugin{}
+	p := istioPlugin{}
 
 	// TODO: if plumb settings from gw class; then they should be in the new translation pass
 	// the problem is that they get applied to an upstream, and currently we don't have access to the gateway
@@ -78,7 +78,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				Name:            "istio",
 				ProcessUpstream: p.processUpstream,
 				GlobalPolicies: func(_ krt.HandlerContext, _ extensionsplug.AttachmentPoints) ir.PolicyIR {
-					// return static settings which do not change post plugin creation
+					// return static settings which do not change post istioPlugin creation
 					return istioSettings
 				},
 			},
@@ -86,7 +86,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-type plugin struct{}
+type istioPlugin struct{}
 
 func isDisabledForUpstream(_ ir.Upstream) bool {
 	// return in.GetDisableIstioAutoMtls().GetValue()
@@ -103,7 +103,7 @@ func doesClusterHaveSslConfigPresent(_ *envoy_config_cluster_v3.Cluster) bool {
 	return false
 }
 
-func (p plugin) processUpstream(ctx context.Context, ir ir.PolicyIR, in ir.Upstream, out *envoy_config_cluster_v3.Cluster) {
+func (p istioPlugin) processUpstream(ctx context.Context, ir ir.PolicyIR, in ir.Upstream, out *envoy_config_cluster_v3.Cluster) {
 	var socketmatches []*envoy_config_cluster_v3.Cluster_TransportSocketMatch
 
 	st, ok := ir.(IstioSettings)

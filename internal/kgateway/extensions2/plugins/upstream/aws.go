@@ -103,7 +103,7 @@ func processEndpointsAws(in *v1alpha1.AwsUpstream) *ir.EndpointsForUpstream {
 	return nil
 }
 
-func (p *plugin2) processBackendAws(
+func (p *upstreamPlugin) processBackendAws(
 	ctx context.Context,
 	pCtx *ir.RouteBackendContext,
 	dest *upstreamDestination,

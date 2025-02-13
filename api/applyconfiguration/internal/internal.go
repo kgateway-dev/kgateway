@@ -23,6 +23,57 @@ func Parser() *typed.Parser {
 var parserOnce sync.Once
 var parser *typed.Parser
 var schemaYAML = typed.YAMLObject(`types:
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AccessLog
+  map:
+    fields:
+    - name: fileSink
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.FileSink
+    - name: filter
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AccessLogFilter
+    - name: grpcService
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GrpcService
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AccessLogFilter
+  map:
+    fields:
+    - name: andFilter
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.FilterType
+          elementRelationship: atomic
+    - name: celFilter
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CELFilter
+    - name: durationFilter
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.DurationFilter
+    - name: grpcStatusFilter
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GrpcStatusFilter
+    - name: headerFilter
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderFilter
+    - name: notHealthCheckFilter
+      type:
+        scalar: boolean
+    - name: orFilter
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.FilterType
+          elementRelationship: atomic
+    - name: responseFlagFilter
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ResponseFlagFilter
+    - name: statusCodeFilter
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StatusCodeFilter
+    - name: traceableFilter
+      type:
+        scalar: boolean
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AiExtension
   map:
     fields:
@@ -72,6 +123,13 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: io.k8s.api.core.v1.LocalObjectReference
       default: {}
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CELFilter
+  map:
+    fields:
+    - name: match
+      type:
+        scalar: string
+      default: ""
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomLabel
   map:
     fields:
@@ -132,6 +190,15 @@ var schemaYAML = typed.YAMLObject(`types:
         elementType:
           namedType: __untyped_deduced_
         elementRelationship: separable
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.DurationFilter
+  map:
+    fields:
+    - name: op
+      type:
+        scalar: string
+    - name: value
+      type:
+        scalar: numeric
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.EnvoyBootstrap
   map:
     fields:
@@ -158,6 +225,46 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: securityContext
       type:
         namedType: io.k8s.api.core.v1.SecurityContext
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.FileSink
+  map:
+    fields:
+    - name: jsonFormat
+      type:
+        namedType: __untyped_atomic_
+    - name: path
+      type:
+        scalar: string
+      default: ""
+    - name: stringFormat
+      type:
+        scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.FilterType
+  map:
+    fields:
+    - name: celFilter
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CELFilter
+    - name: durationFilter
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.DurationFilter
+    - name: grpcStatusFilter
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GrpcStatusFilter
+    - name: headerFilter
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderFilter
+    - name: notHealthCheckFilter
+      type:
+        scalar: boolean
+    - name: responseFlagFilter
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ResponseFlagFilter
+    - name: statusCodeFilter
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StatusCodeFilter
+    - name: traceableFilter
+      type:
+        scalar: boolean
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GatewayParameters
   map:
     fields:
@@ -209,18 +316,47 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: sleepTimeSeconds
       type:
         scalar: numeric
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Host
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GrpcService
   map:
     fields:
-    - name: host
+    - name: additionalRequestHeadersToLog
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: additionalResponseHeadersToLog
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: additionalResponseTrailersToLog
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+    - name: backendRef
+      type:
+        namedType: io.k8s.sigs.gateway-api.apis.v1.BackendRef
+    - name: logName
       type:
         scalar: string
       default: ""
-    - name: port
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GrpcStatusFilter
+  map:
+    fields:
+    - name: exclude
       type:
-        scalar: numeric
-      default: 0
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HttpListenerPolicy
+        scalar: boolean
+    - name: statuses
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HTTPListenerPolicy
   map:
     fields:
     - name: apiVersion
@@ -235,15 +371,21 @@ var schemaYAML = typed.YAMLObject(`types:
       default: {}
     - name: spec
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HttpListenerPolicySpec
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HTTPListenerPolicySpec
       default: {}
     - name: status
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PolicyStatus
       default: {}
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HttpListenerPolicySpec
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HTTPListenerPolicySpec
   map:
     fields:
+    - name: accessLog
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AccessLog
+          elementRelationship: atomic
     - name: compress
       type:
         scalar: boolean
@@ -251,6 +393,24 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LocalPolicyTargetReference
       default: {}
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderFilter
+  map:
+    fields:
+    - name: header
+      type:
+        namedType: io.k8s.sigs.gateway-api.apis.v1.HTTPHeaderMatch
+      default: {}
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Host
+  map:
+    fields:
+    - name: host
+      type:
+        scalar: string
+      default: ""
+    - name: port
+      type:
+        scalar: numeric
+      default: 0
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Image
   map:
     fields:
@@ -474,6 +634,15 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: replicas
       type:
         scalar: numeric
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ResponseFlagFilter
+  map:
+    fields:
+    - name: flags
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: atomic
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.RoutePolicy
   map:
     fields:
@@ -594,6 +763,15 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: statsRoutePrefixRewrite
       type:
         scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StatusCodeFilter
+  map:
+    fields:
+    - name: op
+      type:
+        scalar: string
+    - name: value
+      type:
+        scalar: numeric
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Upstream
   map:
     fields:
@@ -1616,8 +1794,56 @@ var schemaYAML = typed.YAMLObject(`types:
     elementRelationship: atomic
 - name: io.k8s.apimachinery.pkg.apis.meta.v1.Time
   scalar: untyped
+- name: io.k8s.apimachinery.pkg.runtime.RawExtension
+  map:
+    elementType:
+      scalar: untyped
+      list:
+        elementType:
+          namedType: __untyped_atomic_
+        elementRelationship: atomic
+      map:
+        elementType:
+          namedType: __untyped_deduced_
+        elementRelationship: separable
 - name: io.k8s.apimachinery.pkg.util.intstr.IntOrString
   scalar: untyped
+- name: io.k8s.sigs.gateway-api.apis.v1.BackendRef
+  map:
+    fields:
+    - name: group
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: name
+      type:
+        scalar: string
+      default: ""
+    - name: namespace
+      type:
+        scalar: string
+    - name: port
+      type:
+        scalar: numeric
+    - name: weight
+      type:
+        scalar: numeric
+- name: io.k8s.sigs.gateway-api.apis.v1.HTTPHeaderMatch
+  map:
+    fields:
+    - name: name
+      type:
+        scalar: string
+      default: ""
+    - name: type
+      type:
+        scalar: string
+    - name: value
+      type:
+        scalar: string
+      default: ""
 - name: io.k8s.sigs.gateway-api.apis.v1.ParentReference
   map:
     fields:

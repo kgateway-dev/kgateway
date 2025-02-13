@@ -16,25 +16,35 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLog":                  schema_kgateway_v2_api_v1alpha1_AccessLog(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLogFilter":            schema_kgateway_v2_api_v1alpha1_AccessLogFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtension":                schema_kgateway_v2_api_v1alpha1_AiExtension(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtensionStats":           schema_kgateway_v2_api_v1alpha1_AiExtensionStats(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsUpstream":                schema_kgateway_v2_api_v1alpha1_AwsUpstream(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CELFilter":                  schema_kgateway_v2_api_v1alpha1_CELFilter(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ComparisonFilter":           schema_kgateway_v2_api_v1alpha1_ComparisonFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CustomLabel":                schema_kgateway_v2_api_v1alpha1_CustomLabel(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DirectResponse":             schema_kgateway_v2_api_v1alpha1_DirectResponse(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DirectResponseList":         schema_kgateway_v2_api_v1alpha1_DirectResponseList(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DirectResponseSpec":         schema_kgateway_v2_api_v1alpha1_DirectResponseSpec(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DirectResponseStatus":       schema_kgateway_v2_api_v1alpha1_DirectResponseStatus(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DurationFilter":             schema_kgateway_v2_api_v1alpha1_DurationFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EnvoyBootstrap":             schema_kgateway_v2_api_v1alpha1_EnvoyBootstrap(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EnvoyContainer":             schema_kgateway_v2_api_v1alpha1_EnvoyContainer(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FileSink":                   schema_kgateway_v2_api_v1alpha1_FileSink(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FilterType":                 schema_kgateway_v2_api_v1alpha1_FilterType(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GatewayParameters":          schema_kgateway_v2_api_v1alpha1_GatewayParameters(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GatewayParametersList":      schema_kgateway_v2_api_v1alpha1_GatewayParametersList(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GatewayParametersSpec":      schema_kgateway_v2_api_v1alpha1_GatewayParametersSpec(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GatewayParametersStatus":    schema_kgateway_v2_api_v1alpha1_GatewayParametersStatus(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GracefulShutdownSpec":       schema_kgateway_v2_api_v1alpha1_GracefulShutdownSpec(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GrpcService":                schema_kgateway_v2_api_v1alpha1_GrpcService(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GrpcStatusFilter":           schema_kgateway_v2_api_v1alpha1_GrpcStatusFilter(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HTTPListenerPolicy":         schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicy(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HTTPListenerPolicyList":     schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicyList(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HTTPListenerPolicySpec":     schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicySpec(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderFilter":               schema_kgateway_v2_api_v1alpha1_HeaderFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host":                       schema_kgateway_v2_api_v1alpha1_Host(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HttpListenerPolicy":         schema_kgateway_v2_api_v1alpha1_HttpListenerPolicy(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HttpListenerPolicyList":     schema_kgateway_v2_api_v1alpha1_HttpListenerPolicyList(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HttpListenerPolicySpec":     schema_kgateway_v2_api_v1alpha1_HttpListenerPolicySpec(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Image":                      schema_kgateway_v2_api_v1alpha1_Image(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.IstioContainer":             schema_kgateway_v2_api_v1alpha1_IstioContainer(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.IstioIntegration":           schema_kgateway_v2_api_v1alpha1_IstioIntegration(ref),
@@ -47,6 +57,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyAncestorStatus":       schema_kgateway_v2_api_v1alpha1_PolicyAncestorStatus(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyStatus":               schema_kgateway_v2_api_v1alpha1_PolicyStatus(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProxyDeployment":            schema_kgateway_v2_api_v1alpha1_ProxyDeployment(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ResponseFlagFilter":         schema_kgateway_v2_api_v1alpha1_ResponseFlagFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RoutePolicy":                schema_kgateway_v2_api_v1alpha1_RoutePolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RoutePolicyList":            schema_kgateway_v2_api_v1alpha1_RoutePolicyList(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.RoutePolicySpec":            schema_kgateway_v2_api_v1alpha1_RoutePolicySpec(ref),
@@ -57,6 +68,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ServiceAccount":             schema_kgateway_v2_api_v1alpha1_ServiceAccount(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StaticUpstream":             schema_kgateway_v2_api_v1alpha1_StaticUpstream(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StatsConfig":                schema_kgateway_v2_api_v1alpha1_StatsConfig(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StatusCodeFilter":           schema_kgateway_v2_api_v1alpha1_StatusCodeFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Upstream":                   schema_kgateway_v2_api_v1alpha1_Upstream(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.UpstreamList":               schema_kgateway_v2_api_v1alpha1_UpstreamList(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.UpstreamSpec":               schema_kgateway_v2_api_v1alpha1_UpstreamSpec(ref),
@@ -412,6 +424,126 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_AccessLog(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "AccessLog represents the top-level access log configuration.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"fileSink": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Output access logs to local file",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FileSink"),
+						},
+					},
+					"grpcService": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Send access logs to gRPC service",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GrpcService"),
+						},
+					},
+					"filter": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Filter access logs configuration",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLogFilter"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLogFilter", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FileSink", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GrpcService"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_AccessLogFilter(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "AccessLogFilter represents the top-level filter structure. Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-accesslogfilter",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"statusCodeFilter": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StatusCodeFilter"),
+						},
+					},
+					"durationFilter": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DurationFilter"),
+						},
+					},
+					"notHealthCheckFilter": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Filters for requests that are not health check requests. Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"traceableFilter": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Filters for requests that are traceable. Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"headerFilter": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderFilter"),
+						},
+					},
+					"responseFlagFilter": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ResponseFlagFilter"),
+						},
+					},
+					"grpcStatusFilter": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GrpcStatusFilter"),
+						},
+					},
+					"celFilter": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CELFilter"),
+						},
+					},
+					"andFilter": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Performs a logical \"and\" operation on the result of each individual filter. Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-andfilter",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FilterType"),
+									},
+								},
+							},
+						},
+					},
+					"orFilter": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Performs a logical \"or\" operation on the result of each individual filter. Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-orfilter",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FilterType"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CELFilter", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DurationFilter", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FilterType", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GrpcStatusFilter", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderFilter", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ResponseFlagFilter", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StatusCodeFilter"},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_AiExtension(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -536,6 +668,54 @@ func schema_kgateway_v2_api_v1alpha1_AwsUpstream(ref common.ReferenceCallback) c
 		},
 		Dependencies: []string{
 			"k8s.io/api/core/v1.LocalObjectReference"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_CELFilter(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "CELFilter filters requests based on Common Expression Language (CEL).",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"match": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The CEL expressions to evaluate. AccessLogs are only emitted when the CEL expressions evaluates to true. see: https://www.envoyproxy.io/docs/envoy/v1.33.0/xds/type/v3/cel.proto.html#common-expression-language-cel-proto",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"match"},
+			},
+		},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_ComparisonFilter(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ComparisonFilter represents a filter based on a comparison. Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-comparisonfilter",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"op": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"value": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Value to compare against.",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -717,6 +897,32 @@ func schema_kgateway_v2_api_v1alpha1_DirectResponseStatus(ref common.ReferenceCa
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_DurationFilter(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "DurationFilter filters based on request duration. Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-durationfilter",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"op": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"value": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Value to compare against.",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_EnvoyBootstrap(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -789,6 +995,102 @@ func schema_kgateway_v2_api_v1alpha1_EnvoyContainer(ref common.ReferenceCallback
 		},
 		Dependencies: []string{
 			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EnvoyBootstrap", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Image", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_FileSink(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "FileSink represents the file sink configuration for access logs.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"path": {
+						SchemaProps: spec.SchemaProps{
+							Description: "the file path to which the file access logging service will sink",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"stringFormat": {
+						SchemaProps: spec.SchemaProps{
+							Description: "the format string by which envoy will format the log lines https://www.envoyproxy.io/docs/envoy/v1.33.0/configuration/observability/access_log/usage#format-strings",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"jsonFormat": {
+						SchemaProps: spec.SchemaProps{
+							Description: "the format object by which to envoy will emit the logs in a structured way. https://www.envoyproxy.io/docs/envoy/v1.33.0/configuration/observability/access_log/usage#format-dictionaries",
+							Ref:         ref("k8s.io/apimachinery/pkg/runtime.RawExtension"),
+						},
+					},
+				},
+				Required: []string{"path"},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/runtime.RawExtension"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_FilterType(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "FilterType represents the type of filter to apply (only one of these should be set). Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-accesslogfilter",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"statusCodeFilter": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StatusCodeFilter"),
+						},
+					},
+					"durationFilter": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DurationFilter"),
+						},
+					},
+					"notHealthCheckFilter": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Filters for requests that are not health check requests. Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-nothealthcheckfilter",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"traceableFilter": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Filters for requests that are traceable. Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-traceablefilter",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"headerFilter": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderFilter"),
+						},
+					},
+					"responseFlagFilter": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ResponseFlagFilter"),
+						},
+					},
+					"grpcStatusFilter": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GrpcStatusFilter"),
+						},
+					},
+					"celFilter": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CELFilter"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CELFilter", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DurationFilter", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GrpcStatusFilter", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderFilter", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ResponseFlagFilter", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StatusCodeFilter"},
 	}
 }
 
@@ -951,34 +1253,115 @@ func schema_kgateway_v2_api_v1alpha1_GracefulShutdownSpec(ref common.ReferenceCa
 	}
 }
 
-func schema_kgateway_v2_api_v1alpha1_Host(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_v2_api_v1alpha1_GrpcService(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "GrpcService represents the gRPC service configuration for access logs.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"host": {
+					"logName": {
 						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
+							Description: "name of log stream",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
-					"port": {
+					"backendRef": {
 						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int32",
+							Description: "The backend gRPC service. Can be any type of supported backed (Kubernetes Service, kgateway Upstream, etc..)",
+							Ref:         ref("sigs.k8s.io/gateway-api/apis/v1.BackendRef"),
+						},
+					},
+					"additionalRequestHeadersToLog": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Additional request headers to log in the access log",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"additionalResponseHeadersToLog": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Additional response headers to log in the access log",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"additionalResponseTrailersToLog": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Additional response trailers to log in the access log",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
 						},
 					},
 				},
-				Required: []string{"host", "port"},
+				Required: []string{"logName", "backendRef"},
+			},
+		},
+		Dependencies: []string{
+			"sigs.k8s.io/gateway-api/apis/v1.BackendRef"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_GrpcStatusFilter(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "GrpcStatusFilter filters gRPC requests based on their response status. Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#enum-config-accesslog-v3-grpcstatusfilter-status",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"statuses": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"exclude": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
+				},
 			},
 		},
 	}
 }
 
-func schema_kgateway_v2_api_v1alpha1_HttpListenerPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1007,7 +1390,7 @@ func schema_kgateway_v2_api_v1alpha1_HttpListenerPolicy(ref common.ReferenceCall
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HttpListenerPolicySpec"),
+							Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HTTPListenerPolicySpec"),
 						},
 					},
 					"status": {
@@ -1020,11 +1403,11 @@ func schema_kgateway_v2_api_v1alpha1_HttpListenerPolicy(ref common.ReferenceCall
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HttpListenerPolicySpec", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HTTPListenerPolicySpec", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
-func schema_kgateway_v2_api_v1alpha1_HttpListenerPolicyList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicyList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1057,7 +1440,7 @@ func schema_kgateway_v2_api_v1alpha1_HttpListenerPolicyList(ref common.Reference
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HttpListenerPolicy"),
+										Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HTTPListenerPolicy"),
 									},
 								},
 							},
@@ -1068,11 +1451,11 @@ func schema_kgateway_v2_api_v1alpha1_HttpListenerPolicyList(ref common.Reference
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HttpListenerPolicy", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HTTPListenerPolicy", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
-func schema_kgateway_v2_api_v1alpha1_HttpListenerPolicySpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicySpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -1090,11 +1473,74 @@ func schema_kgateway_v2_api_v1alpha1_HttpListenerPolicySpec(ref common.Reference
 							Format: "",
 						},
 					},
+					"accessLog": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AccessLoggingConfig contains various settings for Envoy's access logging service. See here for more information: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLog"),
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLog", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_HeaderFilter(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "HeaderFilter filters requests based on headers. Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-headerfilter",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"header": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("sigs.k8s.io/gateway-api/apis/v1.HTTPHeaderMatch"),
+						},
+					},
+				},
+				Required: []string{"header"},
+			},
+		},
+		Dependencies: []string{
+			"sigs.k8s.io/gateway-api/apis/v1.HTTPHeaderMatch"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_Host(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"host": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"port": {
+						SchemaProps: spec.SchemaProps{
+							Default: 0,
+							Type:    []string{"integer"},
+							Format:  "int32",
+						},
+					},
+				},
+				Required: []string{"host", "port"},
+			},
+		},
 	}
 }
 
@@ -1726,6 +2172,34 @@ func schema_kgateway_v2_api_v1alpha1_ProxyDeployment(ref common.ReferenceCallbac
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_ResponseFlagFilter(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ResponseFlagFilter filters based on response flags. Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-responseflagfilter",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"flags": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"flags"},
+			},
+		},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_RoutePolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -2079,6 +2553,32 @@ func schema_kgateway_v2_api_v1alpha1_StatsConfig(ref common.ReferenceCallback) c
 							Description: "The Envoy stats endpoint with general metrics for the additional stats route",
 							Type:        []string{"string"},
 							Format:      "",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_StatusCodeFilter(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "StatusCodeFilter filters based on HTTP status code. Based on: https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/config/accesslog/v3/accesslog.proto#envoy-v3-api-msg-config-accesslog-v3-statuscodefilter",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"op": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"value": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Value to compare against.",
+							Type:        []string{"integer"},
+							Format:      "int64",
 						},
 					},
 				},

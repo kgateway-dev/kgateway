@@ -44,7 +44,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			gk: {
 				Name:                      "destrule",
 				PerClientProcessUpstream:  d.processUpstream,
-				PerClientProcessEndpoints: d.processEnddpoints,
+				PerClientProcessEndpoints: d.processEndpoints,
 			},
 		},
 	}
@@ -54,7 +54,7 @@ type destrulePlugin struct {
 	destinationRulesIndex DestinationRuleIndex
 }
 
-func (d *destrulePlugin) processEnddpoints(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.EndpointsForUpstream) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64) {
+func (d *destrulePlugin) processEndpoints(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.EndpointsForUpstream) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64) {
 	destrule := d.destinationRulesIndex.FetchDestRulesFor(kctx, ucc.Namespace, in.Hostname, ucc.Labels)
 	if destrule == nil {
 		return nil, 0

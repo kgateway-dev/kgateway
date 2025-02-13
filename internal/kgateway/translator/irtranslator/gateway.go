@@ -52,6 +52,7 @@ func (t *Translator) ComputeListener(ctx context.Context, pass TranslationPassPl
 	for _, hfc := range l.HttpFilterChain {
 		fct := filterChainTranslator{
 			listener:        l,
+			gateway:         gw,
 			routeConfigName: hfc.FilterChainName,
 			PluginPass:      pass,
 		}
@@ -86,6 +87,7 @@ func (t *Translator) ComputeListener(ctx context.Context, pass TranslationPassPl
 
 	fct := filterChainTranslator{
 		listener:   l,
+		gateway:    gw,
 		PluginPass: pass,
 	}
 
