@@ -281,7 +281,7 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(ctx context.Context, l i
 	// 2. Configure the router filter
 	// As outlined by the Envoy docs, the last configured filter has to be a terminal filter.
 	// We set the Router filter (https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#config-http-filters-router)
-	// as the terminal filter in k8sgateway.
+	// as the terminal filter in kgateway.
 	routerV3 := routerv3.Router{}
 
 	h.computeUpstreamHTTPFilters(ctx, l, &routerV3)
