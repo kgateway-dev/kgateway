@@ -3,9 +3,12 @@ package upstream
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"maps"
 	"time"
 
+	"github.com/rotisserie/eris"
+	"github.com/solo-io/go-utils/contextutils"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
@@ -63,7 +66,9 @@ func (d *upstreamDestination) Equals(in any) bool {
 }
 
 type UpstreamIr struct {
-	AwsSecret *ir.Secret
+	AwsSecret     *ir.Secret
+	AISecret      *ir.Secret
+	AIMultiSecret map[string]*ir.Secret
 }
 
 func (u *UpstreamIr) data() map[string][]byte {
@@ -106,7 +111,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	col := krt.WrapClient(kclient.New[*v1alpha1.Upstream](commoncol.Client), commoncol.KrtOpts.ToOptions("Upstreams")...)
 
 	gk := v1alpha1.UpstreamGVK.GroupKind()
-	translate := buildTranslateFunc(commoncol.Secrets)
+	translate := buildTranslateFunc(ctx, commoncol.Secrets)
 	ucol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Upstream) *ir.Upstream {
 		// resolve secrets
 		return &ir.Upstream{
@@ -152,24 +157,19 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-func buildTranslateFunc(secrets *krtcollections.SecretIndex) func(krtctx krt.HandlerContext, i *v1alpha1.Upstream) *UpstreamIr {
+func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex) func(krtctx krt.HandlerContext, i *v1alpha1.Upstream) *UpstreamIr {
 	return func(krtctx krt.HandlerContext, i *v1alpha1.Upstream) *UpstreamIr {
 		// resolve secrets
-		var ir UpstreamIr
+		var upstreamIr UpstreamIr
 		if i.Spec.Aws != nil {
 			ns := i.GetNamespace()
-			secretRef := gwv1.SecretObjectReference{
-				Name: gwv1.ObjectName(i.Spec.Aws.SecretRef.Name),
+			secret, err := getSecretIr(secrets, krtctx, i.Spec.Aws.SecretRef.Name, ns)
+			if err != nil {
+				contextutils.LoggerFrom(ctx).Error(err)
 			}
-			secret, _ := secrets.GetSecret(krtctx, krtcollections.From{GroupKind: v1alpha1.UpstreamGVK.GroupKind(), Namespace: ns}, secretRef)
-			if secret != nil {
-				ir.AwsSecret = secret
-			} else {
-				// TODO: handle error and write it to status
-				// return error
-			}
+			upstreamIr.AwsSecret = secret
 		}
-		return &ir
+		return &upstreamIr
 	}
 }
 
@@ -193,6 +193,12 @@ func processUpstream(ctx context.Context, in ir.Upstream, out *envoy_config_clus
 		processStatic(ctx, spec.Static, out)
 	case spec.Aws != nil:
 		processAws(ctx, spec.Aws, ir, out)
+	case spec.AI != nil:
+		err := processAIUpstream(ctx, spec.AI, ir, out)
+		if err != nil {
+			// TODO: report error on status
+			contextutils.LoggerFrom(ctx).Error(err)
+		}
 	}
 }
 
@@ -281,4 +287,16 @@ func (p *upstreamPlugin) NetworkFilters(ctx context.Context) ([]plugins.StagedNe
 // called 1 time (per envoy proxy). replaces GeneratedResources
 func (p *upstreamPlugin) ResourcesToAdd(ctx context.Context) ir.Resources {
 	return ir.Resources{}
+}
+
+func getSecretIr(secrets *krtcollections.SecretIndex, krtctx krt.HandlerContext, secretName, ns string) (*ir.Secret, error) {
+	secretRef := gwv1.SecretObjectReference{
+		Name: gwv1.ObjectName(secretName),
+	}
+	secret, err := secrets.GetSecret(krtctx, krtcollections.From{GroupKind: v1alpha1.UpstreamGVK.GroupKind(), Namespace: ns}, secretRef)
+	if secret != nil {
+		return secret, nil
+	} else {
+		return nil, eris.Wrapf(err, fmt.Sprintf("unable to find the secret %s", secretRef.Name))
+	}
 }

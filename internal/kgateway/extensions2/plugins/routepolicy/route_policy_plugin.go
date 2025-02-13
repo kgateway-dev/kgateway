@@ -5,6 +5,7 @@ import (
 	"time"
 
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -111,6 +112,14 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 
 	if policy.spec.Timeout > 0 && outputRoute.GetRoute() != nil {
 		outputRoute.GetRoute().Timeout = durationpb.New(time.Second * time.Duration(policy.spec.Timeout))
+	}
+
+	if policy.spec.AI != nil {
+		err := processAIRoutePolicy(ctx, policy.spec.AI, outputRoute, pCtx)
+		if err != nil {
+			// TODO: report error on status
+			contextutils.LoggerFrom(ctx).Error(err)
+		}
 	}
 
 	return nil

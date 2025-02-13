@@ -1,0 +1,95 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: http-gw-for-test
+  namespace: gwtest
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: All
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: route-to-upstream
+  namespace: gwtest
+spec:
+  parentRefs:
+    - name: http-gw-for-test
+  hostnames:
+    - "www.example.com"
+  rules:
+    - matches:
+        - path:
+            type: Exact
+            value: /v1/chat/completions
+    - backendRefs:
+        - name: openai
+          kind: Upstream
+          group: gateway.kgateway.dev
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: RoutePolicy
+metadata:
+  name: route-test
+  namespace: gwtest
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: openai
+  ai:
+    promptEnrichment:
+      prepend:
+        - role: SYSTEM
+          content: "respond to all questions in French"
+        - role: SYSTEM
+          content: "Say hello before each response"
+    promptGuard:
+      request:
+        customResponse:
+          message: "Rejected due to inappropriate content"
+          statusCode: 400
+        regex:
+          matches:
+            - "credit card"
+      response:
+        regex:
+          builtins:
+            - PHONE_NUMBER
+            - EMAIL
+            - SSN
+            - CREDIT_CARD
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Upstream
+metadata:
+  labels:
+    app: kgateway
+  name: openai
+  namespace: gwtest
+spec:
+  ai:
+    llm:
+      openai:
+        authToken:
+          kind: "SecretRef"
+          secretRef:
+            name: openai-secret
+---
+apiVersion: v1
+data:
+  Authorization: mysecretkey
+kind: Secret
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"Authorization":"mysecretkey"},"kind":"Secret","metadata":{"annotations":{},"creationTimestamp":null,"name":"openai-secret","namespace":"gwtest"}}
+  name: openai-secret
+  namespace: gwtest
+type: Opaque
