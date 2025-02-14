@@ -21,8 +21,8 @@ func (c *FakeGatewayV1alpha1) GatewayParameterses(namespace string) v1alpha1.Gat
 	return &FakeGatewayParameterses{c, namespace}
 }
 
-func (c *FakeGatewayV1alpha1) HttpListenerPolicies(namespace string) v1alpha1.HttpListenerPolicyInterface {
-	return &FakeHttpListenerPolicies{c, namespace}
+func (c *FakeGatewayV1alpha1) HTTPListenerPolicies(namespace string) v1alpha1.HTTPListenerPolicyInterface {
+	return &FakeHTTPListenerPolicies{c, namespace}
 }
 
 func (c *FakeGatewayV1alpha1) ListenerPolicies(namespace string) v1alpha1.ListenerPolicyInterface {

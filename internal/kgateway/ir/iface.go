@@ -8,6 +8,7 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	anypb "google.golang.org/protobuf/types/known/anypb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -39,6 +40,10 @@ type RouteContext struct {
 	In     HttpRouteRuleMatchIR
 }
 
+type HcmContext struct {
+	Policy PolicyIR
+}
+
 type ProxyTranslationPass interface {
 	//	Name() string
 	// called 1 time for each listener
@@ -47,6 +52,10 @@ type ProxyTranslationPass interface {
 		pCtx *ListenerContext,
 		out *envoy_config_listener_v3.Listener,
 	)
+	// called 1 time per filter chain after listeners
+	ApplyHCM(ctx context.Context,
+		pCtx *HcmContext,
+		out *envoy_hcm.HttpConnectionManager) error
 
 	ApplyVhostPlugin(
 		ctx context.Context,

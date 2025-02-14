@@ -36,6 +36,7 @@ const (
 
 type filterChainTranslator struct {
 	listener        ir.ListenerIR
+	gateway         ir.GatewayIR
 	routeConfigName string
 
 	PluginPass TranslationPassPlugins
@@ -117,6 +118,7 @@ func (n *filterChainTranslator) computeNetworkFiltersForHttp(ctx context.Context
 		routeConfigName: n.routeConfigName,
 		PluginPass:      n.PluginPass,
 		reporter:        reporter,
+		gateway:         n.gateway, // corresponds to Gateway API listener
 	}
 	networkFilters := sortNetworkFilters(n.computePreHCMFilters(ctx, l, reporter))
 	networkFilter, err := hcm.computeNetworkFilters(ctx, l)
@@ -181,30 +183,48 @@ type hcmNetworkFilterTranslator struct {
 	routeConfigName string
 	PluginPass      TranslationPassPlugins
 	reporter        reports.ListenerReporter
-	listener        ir.HttpFilterChainIR
+	listener        ir.HttpFilterChainIR // policies attached to listener
+	gateway         ir.GatewayIR         // policies attached to gateway
 }
 
 func (h *hcmNetworkFilterTranslator) computeNetworkFilters(ctx context.Context, l ir.HttpFilterChainIR) (*envoy_config_listener_v3.Filter, error) {
 	ctx = contextutils.WithLogger(ctx, "compute_http_connection_manager")
 
-	// 1. Initialize the HCM
+	// 1. Initialize the HttpConnectionManager (HCM)
 	httpConnectionManager := h.initializeHCM()
 
 	// 2. Apply HttpFilters
 	var err error
 	httpConnectionManager.HttpFilters = h.computeHttpFilters(ctx, l)
 
+	pass := h.PluginPass
 	// 3. Allow any HCM plugins to make their changes, with respect to any changes the core plugin made
-	//	for _, hcmPlugin := range h.hcmPlugins {
-	//		if err := hcmPlugin.ProcessHcmNetworkFilter(params, h.parentListener, h.listener, httpConnectionManager); err != nil {
-	//			h.reporter.SetCondition(reports.ListenerCondition{
-	//				Type:    gwv1.ListenerConditionProgrammed,
-	//				Reason:  gwv1.ListenerReasonInvalid,
-	//				Status:  metav1.ConditionFalse,
-	//				Message: "Error processing HCM plugin: " + err.Error(),
-	//			})
-	//		}
-	//	}
+	attachedPoliciesSlice := []ir.AttachedPolicies{
+		h.gateway.AttachedHttpPolicies,
+		l.AttachedPolicies,
+	}
+	for _, attachedPolicies := range attachedPoliciesSlice {
+		for gk, pols := range attachedPolicies.Policies {
+			pass := pass[gk]
+			if pass == nil {
+				// TODO: report user error - they attached a non http policy
+				continue
+			}
+			for _, pol := range pols {
+				pctx := &ir.HcmContext{
+					Policy: pol.PolicyIr,
+				}
+				if err := pass.ApplyHCM(ctx, pctx, httpConnectionManager); err != nil {
+					h.reporter.SetCondition(reports.ListenerCondition{
+						Type:    gwv1.ListenerConditionProgrammed,
+						Reason:  gwv1.ListenerReasonInvalid,
+						Status:  metav1.ConditionFalse,
+						Message: "Error processing HCM plugin: " + err.Error(),
+					})
+				}
+			}
+		}
+	}
 	// TODO: should we enable websockets by default?
 
 	// 4. Generate the typedConfig for the HCM
@@ -258,7 +278,6 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(ctx context.Context, l i
 				Status:  metav1.ConditionFalse,
 				Message: "Error processing http plugin: " + err.Error(),
 			})
-			// TODO: return false?
 		}
 
 		for _, httpFilter := range stagedFilters {

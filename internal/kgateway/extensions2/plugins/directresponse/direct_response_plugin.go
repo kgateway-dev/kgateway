@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -44,7 +45,12 @@ func (d *directResponse) Equals(in any) bool {
 	return d.spec == d2.spec
 }
 
-type directResponseGwPass struct {
+type directResponsePluginGwPass struct {
+}
+
+func (p *directResponsePluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {
+	// no op
+	return nil
 }
 
 func registerTypes(ourCli versioned.Interface) {
@@ -96,18 +102,18 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 }
 
 func NewGatewayTranslationPass(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {
-	return &directResponseGwPass{}
+	return &directResponsePluginGwPass{}
 }
 
 // called 1 time for each listener
-func (p *directResponseGwPass) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *envoy_config_listener_v3.Listener) {
+func (p *directResponsePluginGwPass) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *envoy_config_listener_v3.Listener) {
 }
 
-func (p *directResponseGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostContext, out *envoy_config_route_v3.VirtualHost) {
+func (p *directResponsePluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostContext, out *envoy_config_route_v3.VirtualHost) {
 }
 
 // called 0 or more times
-func (p *directResponseGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoy_config_route_v3.Route) error {
+func (p *directResponsePluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoy_config_route_v3.Route) error {
 	dr, ok := pCtx.Policy.(*directResponse)
 	if !ok {
 		return fmt.Errorf("internal error: expected *directResponse, got %T", pCtx.Policy)
@@ -140,7 +146,7 @@ func (p *directResponseGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Route
 	return nil
 }
 
-func (p *directResponseGwPass) ApplyForRouteBackend(
+func (p *directResponsePluginGwPass) ApplyForRouteBackend(
 	ctx context.Context,
 	policy ir.PolicyIR,
 	pCtx *ir.RouteBackendContext,
@@ -151,19 +157,19 @@ func (p *directResponseGwPass) ApplyForRouteBackend(
 // called 1 time per listener
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
-func (p *directResponseGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
+func (p *directResponsePluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	return nil, nil
 }
 
-func (p *directResponseGwPass) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {
+func (p *directResponsePluginGwPass) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {
 	return nil, nil
 }
 
-func (p *directResponseGwPass) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
+func (p *directResponsePluginGwPass) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
 	return nil, nil
 }
 
 // called 1 time (per envoy proxy). replaces GeneratedResources
-func (p *directResponseGwPass) ResourcesToAdd(ctx context.Context) ir.Resources {
+func (p *directResponsePluginGwPass) ResourcesToAdd(ctx context.Context) ir.Resources {
 	return ir.Resources{}
 }

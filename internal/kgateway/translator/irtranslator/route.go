@@ -95,7 +95,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	}
 
 	// run the http plugins that are attached to the listener or gateway on the virtual host
-	h.runVostPlugins(ctx, out)
+	h.runVhostPlugins(ctx, out)
 	for gvk, pols := range h.listener.AttachedPolicies.Policies {
 		pass := h.PluginPass[gvk]
 		if pass == nil {
@@ -165,7 +165,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	return out
 }
 
-func (h *httpRouteConfigurationTranslator) runVostPlugins(ctx context.Context, out *envoy_config_route_v3.VirtualHost) {
+func (h *httpRouteConfigurationTranslator) runVhostPlugins(ctx context.Context, out *envoy_config_route_v3.VirtualHost) {
 	attachedPoliciesSlice := []ir.AttachedPolicies{
 		h.gw.AttachedHttpPolicies,
 		h.listener.AttachedPolicies,

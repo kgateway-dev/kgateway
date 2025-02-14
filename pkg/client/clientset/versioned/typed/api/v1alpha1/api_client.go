@@ -15,7 +15,7 @@ type GatewayV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	DirectResponsesGetter
 	GatewayParametersesGetter
-	HttpListenerPoliciesGetter
+	HTTPListenerPoliciesGetter
 	ListenerPoliciesGetter
 	RoutePoliciesGetter
 	UpstreamsGetter
@@ -34,8 +34,8 @@ func (c *GatewayV1alpha1Client) GatewayParameterses(namespace string) GatewayPar
 	return newGatewayParameterses(c, namespace)
 }
 
-func (c *GatewayV1alpha1Client) HttpListenerPolicies(namespace string) HttpListenerPolicyInterface {
-	return newHttpListenerPolicies(c, namespace)
+func (c *GatewayV1alpha1Client) HTTPListenerPolicies(namespace string) HTTPListenerPolicyInterface {
+	return newHTTPListenerPolicies(c, namespace)
 }
 
 func (c *GatewayV1alpha1Client) ListenerPolicies(namespace string) ListenerPolicyInterface {

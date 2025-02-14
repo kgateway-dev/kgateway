@@ -17,34 +17,52 @@ import (
 func ForKind(kind schema.GroupVersionKind) interface{} {
 	switch kind {
 	// Group=gateway.kgateway.dev, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithKind("AccessLog"):
+		return &apiv1alpha1.AccessLogApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AccessLogFilter"):
+		return &apiv1alpha1.AccessLogFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AiExtension"):
 		return &apiv1alpha1.AiExtensionApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AiExtensionStats"):
 		return &apiv1alpha1.AiExtensionStatsApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AwsUpstream"):
 		return &apiv1alpha1.AwsUpstreamApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("CELFilter"):
+		return &apiv1alpha1.CELFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CustomLabel"):
 		return &apiv1alpha1.CustomLabelApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("DirectResponse"):
 		return &apiv1alpha1.DirectResponseApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("DirectResponseSpec"):
 		return &apiv1alpha1.DirectResponseSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("DurationFilter"):
+		return &apiv1alpha1.DurationFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("EnvoyBootstrap"):
 		return &apiv1alpha1.EnvoyBootstrapApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("EnvoyContainer"):
 		return &apiv1alpha1.EnvoyContainerApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("FileSink"):
+		return &apiv1alpha1.FileSinkApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("FilterType"):
+		return &apiv1alpha1.FilterTypeApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("GatewayParameters"):
 		return &apiv1alpha1.GatewayParametersApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("GatewayParametersSpec"):
 		return &apiv1alpha1.GatewayParametersSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("GracefulShutdownSpec"):
 		return &apiv1alpha1.GracefulShutdownSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("GrpcService"):
+		return &apiv1alpha1.GrpcServiceApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("GrpcStatusFilter"):
+		return &apiv1alpha1.GrpcStatusFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("HeaderFilter"):
+		return &apiv1alpha1.HeaderFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Host"):
 		return &apiv1alpha1.HostApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("HttpListenerPolicy"):
-		return &apiv1alpha1.HttpListenerPolicyApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("HttpListenerPolicySpec"):
-		return &apiv1alpha1.HttpListenerPolicySpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("HTTPListenerPolicy"):
+		return &apiv1alpha1.HTTPListenerPolicyApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("HTTPListenerPolicySpec"):
+		return &apiv1alpha1.HTTPListenerPolicySpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Image"):
 		return &apiv1alpha1.ImageApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("IstioContainer"):
@@ -67,6 +85,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.PolicyStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ProxyDeployment"):
 		return &apiv1alpha1.ProxyDeploymentApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("ResponseFlagFilter"):
+		return &apiv1alpha1.ResponseFlagFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("RoutePolicy"):
 		return &apiv1alpha1.RoutePolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("RoutePolicySpec"):
@@ -83,6 +103,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.StaticUpstreamApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("StatsConfig"):
 		return &apiv1alpha1.StatsConfigApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("StatusCodeFilter"):
+		return &apiv1alpha1.StatusCodeFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Upstream"):
 		return &apiv1alpha1.UpstreamApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("UpstreamSpec"):
