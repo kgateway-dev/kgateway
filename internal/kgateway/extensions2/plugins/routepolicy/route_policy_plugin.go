@@ -4,14 +4,14 @@ import (
 	"context"
 	"time"
 
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	"github.com/solo-io/go-utils/contextutils"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -20,6 +20,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 type routePolicy struct {
@@ -116,10 +117,24 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 	}
 
 	if policy.spec.AI != nil {
-		err := processAIRoutePolicy(ctx, policy.spec.AI, outputRoute, pCtx)
-		if err != nil {
-			// TODO: report error on status
-			contextutils.LoggerFrom(ctx).Error(err)
+		return ir.ErrNotAttachable
+	}
+
+	// TODO: err/warn/ignore if targetRef is set with AI options
+
+	return nil
+}
+
+// ApplyForBackend applies regardless if policy is attached
+func (p *routePolicyPluginGwPass) ApplyForBackend(
+	ctx context.Context,
+	pCtx *ir.RouteBackendContext,
+	in ir.HttpBackend,
+	out *envoy_config_route_v3.Route,
+) error {
+	if pCtx.AutoHostRewrite {
+		out.GetRoute().HostRewriteSpecifier = &envoy_config_route_v3.RouteAction_AutoHostRewrite{
+			AutoHostRewrite: wrapperspb.Bool(true),
 		}
 	}
 
@@ -131,6 +146,27 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend(
 	policy ir.PolicyIR,
 	pCtx *ir.RouteBackendContext,
 ) error {
+	extprocSettingsProto := pCtx.GetConfig(wellknown.ExtProcFilterName)
+	if extprocSettingsProto != nil {
+		return nil
+	}
+	extprocSettings, ok := extprocSettingsProto.(*envoy_ext_proc_v3.ExtProcPerRoute)
+	if !ok {
+		// TODO: internal error
+		return nil
+	}
+	routePolicy, ok := policy.(*routePolicy)
+	if !ok {
+		return nil
+	}
+
+	err := processAIRoutePolicy(ctx, routePolicy.spec.AI, pCtx, extprocSettings)
+	if err != nil {
+		// TODO: report error on status
+		return err
+	}
+	pCtx.AddTypedConfig(wellknown.ExtProcFilterName, extprocSettings)
+
 	return nil
 }
 

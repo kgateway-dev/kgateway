@@ -7,16 +7,21 @@ import (
 	"maps"
 	"time"
 
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	awspb "github.com/solo-io/envoy-gloo/go/config/filter/http/aws_lambda/v2"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
@@ -300,7 +305,114 @@ func (p *upstreamPlugin) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContex
 
 // Run on upstream, regardless of policy (based on upstream gvk)
 // share route proto message
-//func ApplyForBackend()
+func (p *upstreamPlugin) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoy_config_route_v3.Route) error {
+	upstream := pCtx.Upstream.Obj.(*v1alpha1.Upstream)
+	if upstream.Spec.AI != nil {
+
+		// Setup ext-proc route filter config, we will conditionally modify it based on certain route options.
+		// A heavily used part of this config is the `GrpcInitialMetadata`.
+		// This is used to add headers to the ext-proc request.
+		// These headers are used to configure the AI server on a per-request basis.
+		// This was the best available way to pass per-route configuration to the AI server.
+		extProcRouteSettings := &envoy_ext_proc_v3.ExtProcPerRoute{
+			Override: &envoy_ext_proc_v3.ExtProcPerRoute_Overrides{
+				Overrides: &envoy_ext_proc_v3.ExtProcOverrides{},
+			},
+		}
+
+		var llmModel string
+		byType := map[string]struct{}{}
+		aiUpstream := upstream.Spec.AI
+		if aiUpstream.LLM != nil {
+			llmModel = getUpstreamModel(aiUpstream.LLM, byType)
+		} else if aiUpstream.MultiPool != nil {
+			for _, priority := range aiUpstream.MultiPool.Priorities {
+				for _, pool := range priority.Pool {
+					llmModel = getUpstreamModel(&pool, byType)
+				}
+			}
+		}
+
+		if len(byType) != 1 {
+			return eris.Errorf("multiple AI backend types found for single ai route %+v", byType)
+		}
+
+		// This is only len(1)
+		var llmProvider string
+		for k := range byType {
+			llmProvider = k
+		}
+
+		// Add things which require basic AI upstream.
+		pCtx.AddTypedConfig("AutoHostRewrite", wrapperspb.Bool(true))
+
+		// We only want to add the transformation filter if we have a single AI backend
+		// Otherwise we already have the transformation filter added by the weighted destination
+		// Setup initial transformation template. This may be modified by further AI RoutePolicy config.
+		//if _, ok := p.transformationsByRoute[in]; !ok {
+		//	p.transformationsByRoute[in] = []*transformationWithOutput{
+		//		{
+		//			// It's safe to use the first as they will all be of the same type at this point in the code
+		//			transformation:  getTransformationTemplateForUpstream(params.Ctx, aiUpstreams[0], in.GetOptions()),
+		//			perFilterConfig: out.TypedPerFilterConfig,
+		//		},
+		//	}
+		//}
+
+		extProcRouteSettings.GetOverrides().GrpcInitialMetadata = append(extProcRouteSettings.GetOverrides().GetGrpcInitialMetadata(),
+			&envoy_config_core_v3.HeaderValue{
+				Key:   "x-llm-provider",
+				Value: llmProvider,
+			},
+		)
+		// If the Upstream specifies a model, add a header to the ext-proc request
+		if llmModel != "" {
+			extProcRouteSettings.GetOverrides().GrpcInitialMetadata = append(extProcRouteSettings.GetOverrides().GetGrpcInitialMetadata(),
+				&envoy_config_core_v3.HeaderValue{
+					Key:   "x-llm-model",
+					Value: llmModel,
+				})
+		}
+
+		// Add the x-request-id header to the ext-proc request.
+		// This is an optimization to allow us to not have to wait for the headers request to
+		// Initialize our logger/handler classes.
+		extProcRouteSettings.GetOverrides().GrpcInitialMetadata = append(extProcRouteSettings.GetOverrides().GetGrpcInitialMetadata(),
+			&envoy_config_core_v3.HeaderValue{
+				Key:   "x-request-id",
+				Value: "%REQ(X-REQUEST-ID)%",
+			},
+		)
+
+		pCtx.AddTypedConfig(wellknown.ExtProcFilterName, extProcRouteSettings)
+	}
+
+	return nil
+}
+
+func getUpstreamModel(llm *v1alpha1.LLMProviders, byType map[string]struct{}) string {
+	llmModel := ""
+	if llm.OpenAI != nil {
+		byType["openai"] = struct{}{}
+		llmModel = llm.OpenAI.Model
+	} else if llm.Mistral != nil {
+		byType["mistral"] = struct{}{}
+		llmModel = llm.Mistral.Model
+	} else if llm.Anthropic != nil {
+		byType["anthropic"] = struct{}{}
+		llmModel = llm.Anthropic.Model
+	} else if llm.AzureOpenAI != nil {
+		byType["azure_openai"] = struct{}{}
+		llmModel = llm.AzureOpenAI.DeploymentName
+	} else if llm.Gemini != nil {
+		byType["gemini"] = struct{}{}
+		llmModel = llm.Gemini.Model
+	} else if llm.VertexAI != nil {
+		byType["vertex-ai"] = struct{}{}
+		llmModel = llm.VertexAI.Model
+	}
+	return llmModel
+}
 
 // Only called if policy attatched (extension ref)
 // Can implement in route policy for ai (prompt guard, etc.)
