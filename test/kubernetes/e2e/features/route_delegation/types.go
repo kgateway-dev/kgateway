@@ -23,7 +23,7 @@ const (
 var (
 	commonManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "common.yaml")
 	proxyMeta      = metav1.ObjectMeta{
-		Name:      "gloo-proxy-http-gateway",
+		Name:      "http-gateway",
 		Namespace: "infra",
 	}
 	proxyDeployment = &appsv1.Deployment{ObjectMeta: proxyMeta}
@@ -93,7 +93,7 @@ var (
 	gatewayTestPort = 8090
 
 	proxyTestMeta = metav1.ObjectMeta{
-		Name:      "gloo-proxy-http-gateway-test",
+		Name:      "http-gateway-test",
 		Namespace: "infra",
 	}
 	proxyTestDeployment = &appsv1.Deployment{ObjectMeta: proxyTestMeta}

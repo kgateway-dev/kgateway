@@ -1,7 +1,7 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
-  name: gloo-proxy-gw
+  name: gw
   annotations:
     gateway.kgateway.dev/gateway-parameters-name: "gw-params"
 spec:

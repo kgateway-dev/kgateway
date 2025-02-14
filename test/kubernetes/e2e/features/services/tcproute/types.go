@@ -96,7 +96,7 @@ var (
 	}
 
 	singleGlooProxy = metav1.ObjectMeta{
-		Name:      "gloo-proxy-single-tcp-gateway",
+		Name:      "single-tcp-gateway",
 		Namespace: singleSvcNsName,
 	}
 	singleSvcProxyDeployment = &appsv1.Deployment{ObjectMeta: singleGlooProxy}
@@ -109,7 +109,7 @@ var (
 	}
 
 	multiGlooProxy = metav1.ObjectMeta{
-		Name:      "gloo-proxy-multi-tcp-gateway",
+		Name:      "multi-tcp-gateway",
 		Namespace: multiSvcNsName,
 	}
 	multiProxyDeployment = &appsv1.Deployment{ObjectMeta: multiGlooProxy}
@@ -125,14 +125,14 @@ var (
 	}
 
 	crossNsGlooProxy = metav1.ObjectMeta{
-		Name:      "gloo-proxy-gateway",
+		Name:      "gateway",
 		Namespace: crossNsClientName,
 	}
 	crossNsProxyDeployment = &appsv1.Deployment{ObjectMeta: crossNsGlooProxy}
 	crossNsProxyService    = &corev1.Service{ObjectMeta: crossNsGlooProxy}
 
 	crossNsNoRefGrantGlooProxy = metav1.ObjectMeta{
-		Name:      "gloo-proxy-gateway",
+		Name:      "gateway",
 		Namespace: crossNsNoRefGrantClientNsName,
 	}
 	crossNsNoRefGrantProxyDeployment = &appsv1.Deployment{ObjectMeta: crossNsNoRefGrantGlooProxy}
