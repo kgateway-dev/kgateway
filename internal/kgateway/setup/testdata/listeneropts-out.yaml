@@ -131,6 +131,7 @@ listeners:
             resourceApiVersion: V3
           routeConfigName: http
         statPrefix: http
+        useRemoteAddress: true
     name: http
   name: http
   perConnectionBufferLimitBytes: 42000
@@ -156,6 +157,7 @@ listeners:
             resourceApiVersion: V3
           routeConfigName: other
         statPrefix: http
+        useRemoteAddress: true
     name: other
   name: other
   perConnectionBufferLimitBytes: 42000

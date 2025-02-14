@@ -244,10 +244,11 @@ func (h *hcmNetworkFilterTranslator) initializeHCM() *envoyhttp.HttpConnectionMa
 	}
 
 	return &envoyhttp.HttpConnectionManager{
-		CodecType:     envoyhttp.HttpConnectionManager_AUTO,
-		StatPrefix:    statPrefix,
-		NormalizePath: wrapperspb.Bool(true),
-		MergeSlashes:  true,
+		CodecType:        envoyhttp.HttpConnectionManager_AUTO,
+		StatPrefix:       statPrefix,
+		NormalizePath:    wrapperspb.Bool(true),
+		MergeSlashes:     true,
+		UseRemoteAddress: wrapperspb.Bool(true),
 		RouteSpecifier: &envoyhttp.HttpConnectionManager_Rds{
 			Rds: &envoyhttp.Rds{
 				ConfigSource: &envoy_config_core_v3.ConfigSource{

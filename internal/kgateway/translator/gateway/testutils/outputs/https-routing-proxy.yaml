@@ -21,6 +21,7 @@ Listeners:
             resourceApiVersion: V3
           routeConfigName: https
         statPrefix: http
+        use_remote_address: true
     name: https
     transportSocket:
       name: envoy.transport_sockets.tls
@@ -52,6 +53,7 @@ Listeners:
             resourceApiVersion: V3
           routeConfigName: https-with-hostname
         statPrefix: http
+        use_remote_address: true
     name: https-with-hostname
     transportSocket:
       name: envoy.transport_sockets.tls
