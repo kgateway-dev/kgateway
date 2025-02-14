@@ -15,7 +15,7 @@ Expand the name of the chart.
 */}}
 {{- define "gloo-gateway.gateway.name" -}}
 {{- if .Values.gateway.name }}
-{{- .Values.gateway.name | printf "gloo-proxy-%s" | trunc 63 | trimSuffix "-" }}
+{{- .Values.gateway.name | trunc 63 | trimSuffix "-" }}
 {{- else }}
 {{- default .Chart.Name .Values.gateway.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
@@ -31,7 +31,7 @@ If release name contains chart name it will be used as a full name.
 {{- .Values.gateway.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
 {{- $name := default .Release.Name .Values.gateway.nameOverride }}
-{{- .Release.Name | printf "gloo-proxy-%s" | trunc 63 | trimSuffix "-" }}
+{{- .Release.Name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 {{- end }}
 

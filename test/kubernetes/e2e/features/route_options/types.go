@@ -33,10 +33,10 @@ var (
 
 	// When we apply the fault injection manifest files, we expect resources to be created with this metadata
 	proxyService = &corev1.Service{
-		ObjectMeta: objectMetaInDefault("gloo-proxy-gw"),
+		ObjectMeta: objectMetaInDefault("gw"),
 	}
 	proxyDeployment = &appsv1.Deployment{
-		ObjectMeta: objectMetaInDefault("gloo-proxy-gw"),
+		ObjectMeta: objectMetaInDefault("gw"),
 	}
 	nginxPod = &corev1.Pod{
 		ObjectMeta: objectMetaInDefault("nginx"),
