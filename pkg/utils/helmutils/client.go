@@ -31,14 +31,14 @@ type InstallOpts struct {
 	// ValuesFile is the path to the YAML values for the installation.
 	ValuesFile string
 
-	// ReleaseName is the name of the release to install. Usually will be "gloo".
+	// ReleaseName is the name of the release to install. Usually will be "kgateway".
 	ReleaseName string
 
 	// Repository is the remote repo to use. Usually will be one of the constants exported
 	// from this package. Ignored if LocalChartPath is set.
 	Repository string
 
-	// ChartName is the name of the chart to use. Usually will be "gloo". Ignored if LocalChartPath is set.
+	// ChartName is the name of the chart to use. Usually will be "kgateway". Ignored if LocalChartPath is set.
 	ChartName string
 
 	// LocalChartPath is the path to a locally built tarballed chart to install
@@ -152,15 +152,15 @@ func (c *Client) AddRepository(ctx context.Context, chartName string, chartUrl s
 	return c.RunCommand(ctx, args...)
 }
 
-func (c *Client) AddGlooRepository(ctx context.Context, extraArgs ...string) error {
+func (c *Client) AddKgatewayRepository(ctx context.Context, extraArgs ...string) error {
 	return c.AddRepository(ctx, ChartName, ChartRepositoryUrl, extraArgs...)
 }
 
-func (c *Client) AddPrGlooRepository(ctx context.Context, extraArgs ...string) error {
+func (c *Client) AddPrKgatewayRepository(ctx context.Context, extraArgs ...string) error {
 	return c.AddRepository(ctx, ChartName, PrChartRepositoryUrl, extraArgs...)
 }
 
-func (c *Client) InstallGloo(ctx context.Context, installOpts InstallOpts, extraArgs ...string) error {
+func (c *Client) InstallKgateway(ctx context.Context, installOpts InstallOpts, extraArgs ...string) error {
 	args := append(installOpts.all(), extraArgs...)
 	return c.Install(ctx, args...)
 }

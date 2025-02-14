@@ -3,7 +3,7 @@ package helmutils
 import "fmt"
 
 const (
-	ChartName = "gloo"
+	ChartName = "kgateway"
 
 	ChartRepositoryUrl     = "https://storage.googleapis.com/solo-public-helm"
 	PrChartRepositoryUrl   = "https://storage.googleapis.com/solo-public-tagged-helm"

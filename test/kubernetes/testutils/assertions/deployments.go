@@ -6,15 +6,14 @@ import (
 	"context"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
-	"github.com/kgateway-dev/kgateway/v2/test/gomega/assertions"
-
-	"github.com/solo-io/go-utils/stats"
-
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
+	"github.com/solo-io/go-utils/stats"
 	"go.uber.org/zap/zapcore"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/assertions"
 )
 
 func (p *Provider) EventuallyRunningReplicas(ctx context.Context, deploymentMeta metav1.ObjectMeta, replicaMatcher types.GomegaMatcher) {
