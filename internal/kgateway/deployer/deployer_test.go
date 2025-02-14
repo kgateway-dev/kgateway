@@ -115,10 +115,6 @@ func (objs *clientObjects) getEnvoyConfig(namespace, name string) *envoy_config_
 	return &bootstrapCfg
 }
 
-func proxyName(name string) string {
-	return fmt.Sprintf("gloo-proxy-%s", name)
-}
-
 // containMapElements produces a matcher that will only match if all provided map elements
 // are completely accounted for. The actual value is expected to not be nil or empty since
 // there are other, more appropriate matchers for those cases.
@@ -251,7 +247,7 @@ var _ = Describe("Deployer", func() {
 			}
 		}
 
-		defaultDeploymentName     = proxyName(defaultGateway().Name)
+		defaultDeploymentName     = defaultGateway().Name
 		defaultConfigMapName      = defaultDeploymentName
 		defaultServiceName        = defaultDeploymentName
 		defaultServiceAccountName = defaultDeploymentName
@@ -332,10 +328,10 @@ var _ = Describe("Deployer", func() {
 			objs, err = d.GetObjsToDeploy(context.Background(), gw)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(objs).To(HaveLen(4))
-			Expect(objs.findDeployment(defaultNamespace, proxyName(gw.Name))).ToNot(BeNil())
-			Expect(objs.findService(defaultNamespace, proxyName(gw.Name))).ToNot(BeNil())
-			Expect(objs.findConfigMap(defaultNamespace, proxyName(gw.Name))).ToNot(BeNil())
-			Expect(objs.findServiceAccount(defaultNamespace, proxyName(gw.Name))).ToNot(BeNil())
+			Expect(objs.findDeployment(defaultNamespace, gw.Name)).ToNot(BeNil())
+			Expect(objs.findService(defaultNamespace, gw.Name)).ToNot(BeNil())
+			Expect(objs.findConfigMap(defaultNamespace, gw.Name)).ToNot(BeNil())
+			Expect(objs.findServiceAccount(defaultNamespace, gw.Name)).ToNot(BeNil())
 		})
 	})
 
@@ -508,24 +504,24 @@ var _ = Describe("Deployer", func() {
 			objs1, err = d1.GetObjsToDeploy(context.Background(), gw1)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(objs1).NotTo(BeEmpty())
-			Expect(objs1.findDeployment(defaultNamespace, proxyName(gw1.Name))).ToNot(BeNil())
-			Expect(objs1.findService(defaultNamespace, proxyName(gw1.Name))).ToNot(BeNil())
-			Expect(objs1.findConfigMap(defaultNamespace, proxyName(gw1.Name))).ToNot(BeNil())
-			Expect(objs1.findServiceAccount(defaultNamespace, proxyName(gw1.Name))).ToNot(BeNil())
+			Expect(objs1.findDeployment(defaultNamespace, gw1.Name)).ToNot(BeNil())
+			Expect(objs1.findService(defaultNamespace, gw1.Name)).ToNot(BeNil())
+			Expect(objs1.findConfigMap(defaultNamespace, gw1.Name)).ToNot(BeNil())
+			Expect(objs1.findServiceAccount(defaultNamespace, gw1.Name)).ToNot(BeNil())
 
 			objs2, err = d2.GetObjsToDeploy(context.Background(), gw2)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(objs2).NotTo(BeEmpty())
-			Expect(objs2.findDeployment(defaultNamespace, proxyName(gw2.Name))).ToNot(BeNil())
-			Expect(objs2.findService(defaultNamespace, proxyName(gw2.Name))).ToNot(BeNil())
-			Expect(objs2.findConfigMap(defaultNamespace, proxyName(gw2.Name))).ToNot(BeNil())
-			Expect(objs2.findServiceAccount(defaultNamespace, proxyName(gw2.Name))).ToNot(BeNil())
+			Expect(objs2.findDeployment(defaultNamespace, gw2.Name)).ToNot(BeNil())
+			Expect(objs2.findService(defaultNamespace, gw2.Name)).ToNot(BeNil())
+			Expect(objs2.findConfigMap(defaultNamespace, gw2.Name)).ToNot(BeNil())
+			Expect(objs2.findServiceAccount(defaultNamespace, gw2.Name)).ToNot(BeNil())
 
 			for _, obj := range objs1 {
-				Expect(obj.GetName()).To(Equal("gloo-proxy-foo"))
+				Expect(obj.GetName()).To(Equal(gw1.Name))
 			}
 			for _, obj := range objs2 {
-				Expect(obj.GetName()).To(Equal("gloo-proxy-bar"))
+				Expect(obj.GetName()).To(Equal(gw2.Name))
 			}
 		})
 	})

@@ -235,11 +235,11 @@ spec:
 EOF
 ```
 
-This should create a new gateway in the `default` namespace named `gloo-proxy-http`:
+This should create a new gateway in the `default` namespace named `http`:
 ```shell
 ❯ kubectl get deployments
-NAME              READY   UP-TO-DATE   AVAILABLE   AGE
-gloo-proxy-http   1/1     1            1           10m
+NAME   READY   UP-TO-DATE   AVAILABLE   AGE
+http   1/1     1            1           10m
 ```
 
 Apply an HTTPRoute equivalent to the VirtualService we tested earlier:
@@ -269,7 +269,7 @@ EOF
 Port-forward the new k8s gateway:
 
 ```shell
-kubectl port-forward deployment/gloo-proxy-http 8080:8080
+kubectl port-forward deployment/http 8080:8080
 ```
 
 Now let's send traffic with the same curl as before, this time going through the new k8s Gateway API gateway.

@@ -26,7 +26,7 @@ import (
 
 type httpListenerPolicy struct {
 	ct        time.Time
-	spec      v1alpha1.HTTPListenerPolicySpec
+	compress  bool
 	accessLog []*envoyaccesslog.AccessLog
 }
 
@@ -41,20 +41,11 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 	}
 
 	// Check the TargetRef and Compress fields
-	if d.spec.TargetRef != d2.spec.TargetRef || d.spec.Compress != d2.spec.Compress {
+	if d.compress != d2.compress {
 		return false
 	}
 
 	// Check the AccessLog slice
-	if len(d.spec.AccessLog) != len(d2.spec.AccessLog) {
-		return false
-	}
-	for i := range d.spec.AccessLog {
-		if d.spec.AccessLog[i] != d2.spec.AccessLog[i] {
-			return false
-		}
-	}
-
 	if !slices.EqualFunc(d.accessLog, d2.accessLog, func(log *envoyaccesslog.AccessLog, log2 *envoyaccesslog.AccessLog) bool {
 		return proto.Equal(log, log2)
 	}) {
@@ -101,7 +92,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			Policy:       i,
 			PolicyIR: &httpListenerPolicy{
 				ct:        i.CreationTimestamp.Time,
-				spec:      i.Spec,
+				compress:  i.Spec.Compress,
 				accessLog: accessLog,
 			},
 			TargetRefs: convert(i.Spec.TargetRef),
@@ -147,11 +138,7 @@ func (p *httpListenerPolicyPluginGwPass) ApplyHCM(
 	}
 
 	// translate access logging configuration
-	if policy.spec.AccessLog != nil {
-		if policy.accessLog != nil {
-			out.AccessLog = append(out.GetAccessLog(), policy.accessLog...)
-		}
-	}
+	out.AccessLog = append(out.GetAccessLog(), policy.accessLog...)
 	return nil
 }
 
