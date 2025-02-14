@@ -190,6 +190,7 @@ listeners:
             resourceApiVersion: V3
           routeConfigName: http
         statPrefix: http
+        useRemoteAddress: true
     name: http
   name: http
 - address:
@@ -273,6 +274,7 @@ listeners:
             resourceApiVersion: V3
           routeConfigName: other
         statPrefix: http
+        useRemoteAddress: true
     name: other
   name: other
 routes:
