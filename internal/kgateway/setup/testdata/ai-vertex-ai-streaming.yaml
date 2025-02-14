@@ -32,6 +32,12 @@ spec:
         - name: vertexai
           kind: Upstream
           group: gateway.kgateway.dev
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: gateway.kgateway.dev/v1alpha1
+            kind: RoutePolicy
+            name: route-test
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: RoutePolicy
@@ -39,10 +45,6 @@ metadata:
   name: route-test
   namespace: gwtest
 spec:
-  targetRef:
-    group: gateway.networking.k8s.io
-    kind: HTTPRoute
-    name: vertexai
   ai:
     routeType: CHAT_STREAMING
 ---

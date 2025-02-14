@@ -13,30 +13,18 @@ spec:
         namespaces:
           from: All
 ---
-apiVersion: v1
-kind: Secret
-metadata:
-  name: openai-secret
-  namespace: gwtest
-type: Opaque
-data:
-  Authorization: bXlzZWNyZXRrZXk=
----
-apiVersion: gateway.kgateway.dev/v1alpha1
+apiVersion: gloo.solo.io/v1
 kind: Upstream
 metadata:
   labels:
     app: kgateway
-  name: openai
+  name: anthropic
   namespace: gwtest
 spec:
   ai:
-    llm:
-      openai:
-        authToken:
-          kind: "SecretRef"
-          secretRef:
-            name: openai-secret
+    anthropic:
+      authToken:
+        kind: "Passthrough"
 ---
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
@@ -54,7 +42,7 @@ spec:
             type: Exact
             value: /v1/chat/completions
     - backendRefs:
-        - name: openai
+        - name: anthropic
           kind: Upstream
           group: gateway.kgateway.dev
       filters:
@@ -71,24 +59,6 @@ metadata:
   namespace: gwtest
 spec:
   ai:
-    promptEnrichment:
-      prepend:
-        - role: SYSTEM
-          content: "respond to all questions in French"
-        - role: SYSTEM
-          content: "Say hello before each response"
-    promptGuard:
-      request:
-        customResponse:
-          message: "Rejected due to inappropriate content"
-          statusCode: 400
-        regex:
-          matches:
-          - pattern: "credit card"
-      response:
-        regex:
-          builtins:
-            - PHONE_NUMBER
-            - EMAIL
-            - SSN
-            - CREDIT_CARD
+    defaults:
+    - field: "temperature"
+      value: "0.5"

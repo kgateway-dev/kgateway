@@ -14,12 +14,13 @@ import (
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
