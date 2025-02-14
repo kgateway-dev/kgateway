@@ -85,7 +85,7 @@ EOF
 Expose the gateway that gets created via the Gateway resource:
 
 ```shell
-kubectl port-forward deployment/gloo-proxy-http 8080:8080
+kubectl port-forward deployment/http 8080:8080
 ```
 
 Send some traffic through the gateway:
@@ -125,7 +125,7 @@ settings:
 Then expose the gateway that gets created via the Gateway resource:
 
 ```shell
-kubectl port-forward deployment/gloo-proxy-http 8080:8080
+kubectl port-forward deployment/http 8080:8080
 ```
 
 Send some traffic through the gateway:
