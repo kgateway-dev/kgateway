@@ -17,7 +17,7 @@ import (
 var (
 	// When we apply the manifest file, we expect resources to be created with this metadata
 	k8sApiProxyObjectMeta = metav1.ObjectMeta{
-		Name:      "gloo-proxy-gw",
+		Name:      "gw",
 		Namespace: "default",
 	}
 	k8sApiProxyDeployment = &appsv1.Deployment{ObjectMeta: k8sApiProxyObjectMeta}

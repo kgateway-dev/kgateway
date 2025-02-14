@@ -25,7 +25,7 @@ var (
 	// When we apply the deployer-provision.yaml file, we expect resources to be created with this metadata
 	glooProxyObjectMeta = func(ns string) metav1.ObjectMeta {
 		return metav1.ObjectMeta{
-			Name:      "gloo-proxy-gw",
+			Name:      "gw",
 			Namespace: ns,
 		}
 	}

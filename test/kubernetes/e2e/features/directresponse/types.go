@@ -25,7 +25,7 @@ var (
 	invalidBackendRefFilterManifests             = filepath.Join(fsutils.MustGetThisDir(), "testdata", "invalid-backendRef-filter.yaml")
 
 	glooProxyObjectMeta = metav1.ObjectMeta{
-		Name:      "gloo-proxy-gw",
+		Name:      "gw",
 		Namespace: "default",
 	}
 	gwRouteMeta = metav1.ObjectMeta{

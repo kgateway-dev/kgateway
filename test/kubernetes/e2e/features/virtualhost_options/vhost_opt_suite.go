@@ -61,7 +61,7 @@ func (s *testingSuite) SetupSuite() {
 		})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(),
 		metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/name=gloo-proxy-gw",
+			LabelSelector: "app.kubernetes.io/name=gw",
 		})
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(),
 		metav1.ListOptions{

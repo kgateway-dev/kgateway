@@ -46,8 +46,8 @@ func (s *testingSuite) TestZeroDowntimeRollout() {
 	// Run this for 30s which is long enough to restart the deployment since there's no easy way
 	// to stop this command once the test is over
 	// This executes 800 req @ 4 req/sec = 20s (3 * terminationGracePeriodSeconds (5) + buffer)
-	// kubectl exec -n hey hey -- hey -disable-keepalive -c 4 -q 10 --cpus 1 -n 1200 -m GET -t 1 -host example.com http://gloo-proxy-gw.default.svc.cluster.local:8080
-	args := []string{"exec", "-n", "hey", "hey", "--", "hey", "-disable-keepalive", "-c", "4", "-q", "10", "--cpus", "1", "-n", "800", "-m", "GET", "-t", "1", "-host", "example.com", "http://gloo-proxy-gw.default.svc.cluster.local:8080"}
+	// kubectl exec -n hey hey -- hey -disable-keepalive -c 4 -q 10 --cpus 1 -n 1200 -m GET -t 1 -host example.com http://gw.default.svc.cluster.local:8080
+	args := []string{"exec", "-n", "hey", "hey", "--", "hey", "-disable-keepalive", "-c", "4", "-q", "10", "--cpus", "1", "-n", "800", "-m", "GET", "-t", "1", "-host", "example.com", "http://gw.default.svc.cluster.local:8080"}
 
 	var err error
 	cmd := s.TestHelper.Cli.Command(s.Ctx, args...)
@@ -55,13 +55,13 @@ func (s *testingSuite) TestZeroDowntimeRollout() {
 	Expect(err).ToNot(HaveOccurred())
 
 	// Restart the deployment. There should be no downtime since the gloo gateway pod should have the readiness probes configured
-	err = s.TestHelper.RestartDeploymentAndWait(s.Ctx, "gloo-proxy-gw")
+	err = s.TestHelper.RestartDeploymentAndWait(s.Ctx, "gw")
 	Expect(err).ToNot(HaveOccurred())
 
 	time.Sleep(1 * time.Second)
 
 	// We're just flexing at this point
-	err = s.TestHelper.RestartDeploymentAndWait(s.Ctx, "gloo-proxy-gw")
+	err = s.TestHelper.RestartDeploymentAndWait(s.Ctx, "gw")
 	Expect(err).ToNot(HaveOccurred())
 
 	now := time.Now()
@@ -119,8 +119,8 @@ func (s *testingSuite) TestZeroDowntimeRollout() {
 	//   Status code distribution:
 	// 		[200]	779 responses
 	// 	Error distribution:
-	//   	[17]	Get http://gloo-proxy-gw.default.svc.cluster.local:8080: dial tcp 10.96.177.91:8080: connection refused
-	//   	[4]	Get http://gloo-proxy-gw.default.svc.cluster.local:8080: net/http: request canceled while waiting for connection
+	//   	[17]	Get http://gw.default.svc.cluster.local:8080: dial tcp 10.96.177.91:8080: connection refused
+	//   	[4]	Get http://gw.default.svc.cluster.local:8080: net/http: request canceled while waiting for connection
 
 	// Verify that there were no errors
 	Expect(cmd.Output()).To(ContainSubstring("[200]	800 responses"))

@@ -77,7 +77,7 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 	// so let's assert the proxy svc and pod is ready before moving on
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(), metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=gloo-proxy-gw",
+		LabelSelector: "app.kubernetes.io/name=gw",
 	})
 }
 
