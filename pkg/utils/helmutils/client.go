@@ -17,43 +17,49 @@ type Client struct {
 }
 
 // InstallOpts is a set of typical options for a helm install which can be passed in
-// instead of requiring the caller to remember the helm cli flags. extraArgs should
-// always be accepted and respected when using InstallOpts.
+// instead of requiring the caller to remember the helm cli flags.
 type InstallOpts struct {
 	// KubeContext is the kubernetes context to use.
 	KubeContext string
 
 	// Namespace is the namespace to which the release will be installed.
 	Namespace string
+
 	// CreateNamespace controls whether to create the namespace or error if it doesn't exist.
 	CreateNamespace bool
 
-	// ValuesFile is the path to the YAML values for the installation.
-	ValuesFile string
+	// ValuesFiles is a list of absolute paths to YAML values for the installation.
+	ValuesFiles []string
 
-	// ReleaseName is the name of the release to install. Usually will be "kgateway".
+	// ExtraArgs allows passing in arbitrary extra arguments to the install.
+	ExtraArgs []string
+
+	// ReleaseName is the name of the release to install.
 	ReleaseName string
 
-	// Repository is the remote repo to use. Usually will be one of the constants exported
-	// from this package. Ignored if LocalChartPath is set.
+	// Repository is the remote repo to use. Ignored if ChartUri is set.
 	Repository string
 
-	// ChartName is the name of the chart to use. Usually will be "kgateway". Ignored if LocalChartPath is set.
+	// ChartName is the name of the chart to use. Ignored if ChartUri is set.
 	ChartName string
 
-	// LocalChartPath is the path to a locally built tarballed chart to install
-	LocalChartPath string
+	// ChartUri may refer to a local chart path (e.g. to a tgz file) or a remote chart uri (e.g. oci://...) to install.
+	// If provided, then Repository and ChartName are ignored.
+	ChartUri string
+
+	// Version can be used to install a specific release version (e.g. v2.0.0)
+	Version string
 }
 
 func (o InstallOpts) all() []string {
-	return append([]string{o.chart(), o.release()}, o.flags()...)
+	return append([]string{o.release(), o.chart()}, o.flags()...)
 }
 
 func (o InstallOpts) flags() []string {
 	args := []string{}
-	appendIfNonEmpty := func(fld, flag string) {
-		if fld != "" {
-			args = append(args, flag, fld)
+	appendIfNonEmpty := func(flagVal, flagName string) {
+		if flagVal != "" {
+			args = append(args, flagName, flagVal)
 		}
 	}
 
@@ -62,21 +68,27 @@ func (o InstallOpts) flags() []string {
 	if o.CreateNamespace {
 		args = append(args, "--create-namespace")
 	}
-	appendIfNonEmpty(o.ValuesFile, "--values")
+	appendIfNonEmpty(o.Version, "--version")
+	for _, valsFile := range o.ValuesFiles {
+		appendIfNonEmpty(valsFile, "--values")
+	}
+	for _, extraArg := range o.ExtraArgs {
+		args = append(args, extraArg)
+	}
 
 	return args
 }
 
 func (o InstallOpts) chart() string {
-	if o.LocalChartPath != "" {
-		return o.LocalChartPath
+	if o.ChartUri != "" {
+		return o.ChartUri
 	}
 
-	if o.Repository == "" || o.ChartName == "" {
-		return RemoteChartName
+	if o.Repository != "" && o.ChartName != "" {
+		return fmt.Sprintf("%s/%s", o.Repository, o.ChartName)
 	}
 
-	return fmt.Sprintf("%s/%s", o.Repository, o.ChartName)
+	return DefaultChartUri
 }
 
 func (o InstallOpts) release() string {
@@ -126,11 +138,8 @@ func (c *Client) RunCommand(ctx context.Context, args ...string) error {
 	return c.Command(ctx, args...).Run().Cause()
 }
 
-func (c *Client) Install(ctx context.Context, extraArgs ...string) error {
-	args := append([]string{
-		"install",
-	}, extraArgs...)
-
+func (c *Client) Install(ctx context.Context, installOpts InstallOpts) error {
+	args := append([]string{"install"}, installOpts.all()...)
 	return c.RunCommand(ctx, args...)
 }
 
@@ -150,17 +159,4 @@ func (c *Client) AddRepository(ctx context.Context, chartName string, chartUrl s
 		chartUrl,
 	}, extraArgs...)
 	return c.RunCommand(ctx, args...)
-}
-
-func (c *Client) AddKgatewayRepository(ctx context.Context, extraArgs ...string) error {
-	return c.AddRepository(ctx, ChartName, ChartRepositoryUrl, extraArgs...)
-}
-
-func (c *Client) AddPrKgatewayRepository(ctx context.Context, extraArgs ...string) error {
-	return c.AddRepository(ctx, ChartName, PrChartRepositoryUrl, extraArgs...)
-}
-
-func (c *Client) InstallKgateway(ctx context.Context, installOpts InstallOpts, extraArgs ...string) error {
-	args := append(installOpts.all(), extraArgs...)
-	return c.Install(ctx, args...)
 }
