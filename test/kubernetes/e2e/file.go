@@ -1,20 +1,12 @@
-//go:build ignore
-
 package e2e
 
 import (
 	"path/filepath"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 )
 
 var (
-	EdgeGatewayProfilePath = ProfilePath("edge-gateway.yaml")
-
-	KubernetesGatewayProfilePath = ProfilePath("kubernetes-gateway.yaml")
-
-	FullGatewayProfilePath = ProfilePath("full-gateway.yaml")
-
 	CommonRecommendationManifest = ManifestPath("common-recommendations.yaml")
 
 	// EmptyValuesManifestPath returns the path to a manifest with no values
@@ -32,10 +24,4 @@ func ManifestPath(pathParts ...string) string {
 		"manifests",
 	}, pathParts...)
 	return filepath.Join(manifestPathParts...)
-}
-
-// ProfilePath returns the absolute path to a profile file.
-// These are all stored in the tests/manifests/profiles directory
-func ProfilePath(path string) string {
-	return ManifestPath("profiles", path)
 }

@@ -6,7 +6,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/test/helpers"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 )
 
 // WithPercentile returns a function that extracts the value at the given percentile from a slice of durations

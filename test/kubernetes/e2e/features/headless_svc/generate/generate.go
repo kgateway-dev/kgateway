@@ -8,10 +8,10 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
-	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/headless_svc"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/resources"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/headless_svc"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/resources"
 )
 
 // Dev tool to generate the manifest files for the test suite for demo and docs purposes

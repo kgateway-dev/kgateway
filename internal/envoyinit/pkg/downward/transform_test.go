@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	. "github.com/kgateway-dev/kgateway/internal/envoyinit/pkg/downward"
+	. "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/pkg/downward"
 )
 
 var _ = Describe("Transform", func() {

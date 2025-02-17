@@ -3,9 +3,9 @@
 package envoy
 
 import (
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/defaults"
 
-	"github.com/kgateway-dev/kgateway/test/ginkgo/parallel"
+	"github.com/kgateway-dev/kgateway/v2/test/ginkgo/parallel"
 )
 
 var (

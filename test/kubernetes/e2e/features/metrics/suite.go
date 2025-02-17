@@ -13,16 +13,16 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 
-	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/translator"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/upstreams/kubernetes"
-	"github.com/kgateway-dev/kgateway/pkg/utils/envoyutils/admincli"
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
-	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
-	testmatchers "github.com/kgateway-dev/kgateway/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests/base"
+	gloov1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/translator"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/upstreams/kubernetes"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envoyutils/admincli"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
+	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/tests/base"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite

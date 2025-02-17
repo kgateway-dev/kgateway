@@ -6,16 +6,16 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	gwv1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
-	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
-	v1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/core/matchers"
-	v1snap "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/gloosnapshot"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/hcm"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/static"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/ssl"
-	gloohelpers "github.com/kgateway-dev/kgateway/test/helpers"
+	gwv1 "github.com/kgateway-dev/kgateway/v2/internal/gateway/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/v2/internal/gateway/pkg/defaults"
+	gloov1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	v1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/core/matchers"
+	v1snap "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/options/hcm"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/options/static"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/ssl"
+	gloohelpers "github.com/kgateway-dev/kgateway/v2/test/helpers"
 )
 
 func SimpleUpstream() *v1.Upstream {

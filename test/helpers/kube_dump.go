@@ -15,22 +15,21 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/onsi/ginkgo/v2"
-
 	"github.com/solo-io/go-utils/threadsafe"
 
-	"github.com/kgateway-dev/kgateway/internal/gateway2/admin"
-	"github.com/kgateway-dev/kgateway/pkg/cliutil/install"
-	"github.com/kgateway-dev/kgateway/pkg/utils/envoyutils/admincli"
-	glooAdminCli "github.com/kgateway-dev/kgateway/pkg/utils/glooadminutils/admincli"
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/portforward"
-	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/admin"
+	kgatewayAdminCli "github.com/kgateway-dev/kgateway/v2/pkg/utils/controllerutils/admincli"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envoyutils/admincli"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 )
 
-// StandardGlooDumpOnFail creates adump of the kubernetes state and certain envoy data from
+// StandardKgatewayDumpOnFail creates a dump of the kubernetes state and certain envoy data from
 // the admin interface when a test fails.
 // Look at `KubeDumpOnFail` && `EnvoyDumpOnFail` for more details
-func StandardGlooDumpOnFail(outLog io.Writer, outDir string, namespaces []string) func() {
+func StandardKgatewayDumpOnFail(outLog io.Writer, outDir string, namespaces []string) func() {
 	return func() {
 		fmt.Printf("Test failed. Dumping state from %s...\n", strings.Join(namespaces, ", "))
 
@@ -65,7 +64,7 @@ func KubeDumpOnFail(ctx context.Context, kubectlCli *kubectl.Cli, outLog io.Writ
 
 		recordDockerState(fileAtPath(filepath.Join(outDir, "docker-state.log")))
 		recordProcessState(fileAtPath(filepath.Join(outDir, "process-state.log")))
-		recordKubeState(fileAtPath(filepath.Join(outDir, "kube-state.log")))
+		recordKubeState(ctx, kubectlCli, fileAtPath(filepath.Join(outDir, "kube-state.log")))
 
 		recordKubeDump(outDir, namespaces...)
 
@@ -111,11 +110,9 @@ func recordProcessState(f *os.File) {
 	f.WriteString("*** End Process state ***\n")
 }
 
-func recordKubeState(f *os.File) {
+func recordKubeState(ctx context.Context, kubectlCli *kubectl.Cli, f *os.File) {
 	defer f.Close()
-	kubeCli := &install.CmdKubectl{}
-
-	kubeState, err := kubeCli.KubectlOut(nil, "get", "all", "-A", "-o", "wide")
+	kubeState, err := kubectlCli.RunCommandWithOutput(ctx, "get", "all", "-A", "-o", "wide")
 	if err != nil {
 		f.WriteString("*** Unable to get kube state ***\n")
 		return
@@ -129,30 +126,16 @@ func recordKubeState(f *os.File) {
 		"gatewayclasses.gateway.networking.k8s.io",
 		"httproutes.gateway.networking.k8s.io",
 		"referencegrants.gateway.networking.k8s.io",
-		// GG Kube GW resources
+		// kgateway resources
+		"directresponses.gateway.kgateway.dev",
 		"gatewayparameters.gateway.kgateway.dev",
-		"listeneroptions.gateway.solo.io",     // only implemented for kube gw as of now
-		"httplisteneroptions.gateway.solo.io", // only implemented for kube gw as of now
-		// GG Gloo resources
-		"graphqlapis.graphql.gloo.solo.io",
-		"proxies.gloo.solo.io",
-		"settings.gloo.solo.io",
-		"upstreamgroups.gloo.solo.io",
-		"upstreams.gloo.solo.io",
-		// GG Edge GW resources
-		"gateways.gateway.solo.io",
-		"httpgateways.gateway.solo.io",
-		"tcpgateways.gateway.solo.io",
-		"virtualservices.gateway.solo.io",
-		// Shared GW resources
-		"routeoptions.gateway.solo.io",
-		"virtualhostoptions.gateway.solo.io",
-		// Dataplane extensions resources
-		"authconfigs.enterprise.gloo.solo.io",
-		"ratelimitconfigs.ratelimit.solo.io",
+		"httplistenerpolicies.gateway.kgateway.dev",
+		"listenerpolicies.gateway.kgateway.dev",
+		"routepolicies.gateway.kgateway.dev",
+		"upstreams.gateway.kgateway.dev",
 	}
 
-	kubeResources, err := kubeCli.KubectlOut(nil, "get", strings.Join(resourcesToGet, ","), "-A", "-owide")
+	kubeResources, err := kubectlCli.RunCommandWithOutput(ctx, "get", strings.Join(resourcesToGet, ","), "-A", "-owide")
 	if err != nil {
 		f.WriteString("*** Unable to get kube resources ***. Reason: " + err.Error() + " \n")
 		return
@@ -161,13 +144,13 @@ func recordKubeState(f *os.File) {
 	// Describe everything to identify the reason for issues such as Pods, LoadBalancers stuck in pending state
 	// (insufficient resources, unable to acquire an IP), etc.
 	// Ie: More context around the output of the previous command `kubectl get all -A`
-	kubeDescribe, err := kubeCli.KubectlOut(nil, "describe", "all", "-A")
+	kubeDescribe, err := kubectlCli.RunCommandWithOutput(ctx, "describe", "all", "-A")
 	if err != nil {
 		f.WriteString("*** Unable to get kube describe ***. Reason: " + err.Error() + " \n")
 		return
 	}
 
-	kubeEndpointsState, err := kubeCli.KubectlOut(nil, "get", "endpoints", "-A")
+	kubeEndpointsState, err := kubectlCli.RunCommandWithOutput(ctx, "get", "endpoints", "-A")
 	if err != nil {
 		f.WriteString("*** Unable to get endpoint state ***. Reason: " + err.Error() + " \n")
 		return
@@ -197,7 +180,7 @@ func recordKubeDump(outDir string, namespaces ...string) {
 	}
 }
 
-// recordPods records logs from each pod to _output/kube2e-artifacts/$namespace/pods/$pod.log
+// recordPods records logs from each pod to <output-dir>/$namespace/pods/$pod.log
 func recordPods(podDir, namespace string) error {
 	pods, _, err := kubeList(namespace, "pod")
 	if err != nil {
@@ -236,7 +219,7 @@ func recordPods(podDir, namespace string) error {
 	return outErr.ErrorOrNil()
 }
 
-// recordCRs records all unique CRs floating about to _output/kube2e-artifacts/$namespace/$crd/$cr.yaml
+// recordCRs records all unique CRs floating about to <output-dir>/$namespace/$crd/$cr.yaml
 func recordCRs(namespaceDir string, namespace string) error {
 	crds, _, err := kubeList(namespace, "crd")
 	if err != nil {
@@ -341,23 +324,23 @@ func ControllerDumpOnFail(ctx context.Context, kubectlCli *kubectl.Cli, outLog i
 	outDir string, namespaces []string) func() {
 	return func() {
 		for _, ns := range namespaces {
-			glooPodNames, err := kubectlCli.GetPodsInNsWithLabel(ctx, ns, "gloo=gloo")
+			controllerPodNames, err := kubectlCli.GetPodsInNsWithLabel(ctx, ns, "kgateway=kgateway")
 			if err != nil {
 				fmt.Printf("error fetching controller pod names: %f\n", err)
 				continue
 			}
 
-			if len(glooPodNames) == 0 {
-				fmt.Printf("no gloo=gloo pods found in namespace %s\n", ns)
+			if len(controllerPodNames) == 0 {
+				fmt.Printf("no kgateway=kgateway pods found in namespace %s\n", ns)
 				continue
 			}
 
-			fmt.Printf("found controller pods: %s\n", strings.Join(glooPodNames, ", "))
+			fmt.Printf("found controller pods: %s\n", strings.Join(controllerPodNames, ", "))
 
 			namespaceOutDir := filepath.Join(outDir, ns)
 			setupOutDir(namespaceOutDir)
 
-			for _, podName := range glooPodNames {
+			for _, podName := range controllerPodNames {
 				writeControllerLog(ctx, namespaceOutDir, ns, podName, kubectlCli)
 				writeMetricsLog(ctx, namespaceOutDir, ns, podName, kubectlCli)
 
@@ -375,7 +358,7 @@ func ControllerDumpOnFail(ctx context.Context, kubectlCli *kubectl.Cli, outLog i
 					portForwarder.WaitForStop()
 				}()
 
-				adminClient := glooAdminCli.NewClient().
+				adminClient := kgatewayAdminCli.NewClient().
 					WithReceiver(io.Discard).
 					WithCurlOptions(
 						curl.WithRetries(3, 0, 10),
@@ -412,18 +395,12 @@ func EnvoyDumpOnFail(ctx context.Context, kubectlCli *kubectl.Cli, _ io.Writer, 
 		for _, ns := range namespaces {
 			proxies := []string{}
 
+			// TODO need to get the right label, and pass in the Gateway namespaces
 			kubeGatewayProxies, err := kubectlCli.GetPodsInNsWithLabel(ctx, ns, "gloo=kube-gateway")
 			if err != nil {
 				fmt.Printf("error fetching kube-gateway proxies: %f\n", err)
 			} else {
 				proxies = append(proxies, kubeGatewayProxies...)
-			}
-
-			gatewayProxies, err := kubectlCli.GetPodsInNsWithLabel(ctx, ns, "gloo=gateway-proxy")
-			if err != nil {
-				fmt.Printf("error fetching gateway-proxy proxies: %f\n", err)
-			} else {
-				proxies = append(proxies, gatewayProxies...)
 			}
 
 			if len(proxies) == 0 {
@@ -501,10 +478,10 @@ func fileAtPath(path string) *os.File {
 }
 
 func writeControllerLog(ctx context.Context, outDir string, ns string, podName string, kubectlCli *kubectl.Cli) {
-	// Get the Gloo Gateway controller logs
+	// Get the kgateway controller logs
 	controllerLogsFile := fileAtPath(filepath.Join(outDir, fmt.Sprintf("%s.controller.log", podName)))
 	controllerLogsCmd := kubectlCli.WithReceiver(controllerLogsFile).Command(ctx,
-		"-n", ns, "logs", podName, "-c", "gloo", "--tail=1000")
+		"-n", ns, "logs", podName, "-c", kubeutils.KgatewayContainerName, "--tail=1000")
 	err := controllerLogsCmd.Run().Cause()
 	if err != nil {
 		fmt.Printf("error running controller logs for %s in %s command: %v\n", podName, ns, err)
@@ -512,7 +489,7 @@ func writeControllerLog(ctx context.Context, outDir string, ns string, podName s
 }
 
 func writeMetricsLog(ctx context.Context, outDir string, ns string, podName string, kubectlCli *kubectl.Cli) {
-	// Using an ephemeral debug pod fetch the metrics from the Gloo Gateway controller
+	// Using an ephemeral debug pod fetch the metrics from the kgateway controller
 	metricsFile := fileAtPath(filepath.Join(outDir, fmt.Sprintf("%s.metrics.log", podName)))
 	metricsCmd := kubectlCli.Command(ctx, "debug", "-n", ns,
 		"-it", "--image=curlimages/curl:7.83.1", podName, "--",

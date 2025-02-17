@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/test/services/envoy"
+	"github.com/kgateway-dev/kgateway/v2/test/services/envoy"
 
 	"github.com/rotisserie/eris"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -24,19 +24,19 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	corev1 "k8s.io/api/core/v1"
 
-	gatewayv1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
-	gatewaydefaults "github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
-	v3 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/external/envoy/config/core/v3"
-	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/core/matchers"
-	extauthv1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/ssl"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/translator"
-	"github.com/kgateway-dev/kgateway/pkg/utils/statsutils/metrics"
-	gloohelpers "github.com/kgateway-dev/kgateway/test/helpers"
-	"github.com/kgateway-dev/kgateway/test/services"
-	"github.com/kgateway-dev/kgateway/test/v1helpers"
+	gatewayv1 "github.com/kgateway-dev/kgateway/v2/internal/gateway/pkg/api/v1"
+	gatewaydefaults "github.com/kgateway-dev/kgateway/v2/internal/gateway/pkg/defaults"
+	v3 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/external/envoy/config/core/v3"
+	gloov1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/core/matchers"
+	extauthv1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/ssl"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/translator"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/statsutils/metrics"
+	gloohelpers "github.com/kgateway-dev/kgateway/v2/test/helpers"
+	"github.com/kgateway-dev/kgateway/v2/test/services"
+	"github.com/kgateway-dev/kgateway/v2/test/v1helpers"
 )
 
 const (

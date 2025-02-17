@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/cmdutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmdutils"
 )
 
 // Client is a utility for executing `helm` commands

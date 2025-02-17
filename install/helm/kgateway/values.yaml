@@ -70,7 +70,7 @@ gatewayClass:
   name: "kgateway"
   description: "KGateway Controller"
   # The controller name that will handle this GatewayClass
-  controllerName: "kgateway.io/kgateway"
+  controllerName: "kgateway.dev/kgateway"
   # Optional parameters reference
   parametersRef:
     enabled: true

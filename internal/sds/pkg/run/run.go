@@ -12,7 +12,7 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 
-	"github.com/kgateway-dev/kgateway/internal/sds/pkg/server"
+	"github.com/kgateway-dev/kgateway/v2/internal/sds/pkg/server"
 )
 
 func Run(ctx context.Context, secrets []server.Secret, sdsClient, sdsServerAddress string) error {

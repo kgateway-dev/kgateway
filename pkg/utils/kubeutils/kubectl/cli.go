@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/cmdutils"
-	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmdutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 
 	"github.com/avast/retry-go/v4"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/portforward"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
 )
 
 // Cli is a utility for executing `kubectl` commands
@@ -80,6 +80,13 @@ func (c *Cli) Command(ctx context.Context, args ...string) cmdutils.Cmd {
 // RunCommand creates a Cmd and then runs it
 func (c *Cli) RunCommand(ctx context.Context, args ...string) error {
 	return c.Command(ctx, args...).Run().Cause()
+}
+
+// RunCommandWithOutput creates a Cmd and then runs it.
+// If an error occurred, it will be returned along with the output of the command
+func (c *Cli) RunCommandWithOutput(ctx context.Context, args ...string) (string, error) {
+	runErr := c.Command(ctx, args...).Run()
+	return runErr.OutputString(), runErr.Cause()
 }
 
 // Namespaces returns a sorted list of namespaces or an error if one occurred

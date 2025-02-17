@@ -11,8 +11,8 @@ set -o pipefail
 set -x
 
 readonly ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE}")"/.. && pwd)"
-readonly OUTPUT_PKG=github.com/kgateway-dev/kgateway/pkg/client
-readonly APIS_PKG=github.com/kgateway-dev/kgateway
+readonly OUTPUT_PKG=github.com/kgateway-dev/kgateway/v2/pkg/client
+readonly APIS_PKG=github.com/kgateway-dev/kgateway/v2
 readonly CLIENTSET_NAME=versioned
 readonly CLIENTSET_PKG_NAME=clientset
 readonly VERSIONS=( v1alpha1 )
@@ -40,7 +40,7 @@ go run k8s.io/kube-openapi/cmd/openapi-gen \
   --output-file zz_generated.openapi.go \
   --report-filename "${new_report}" \
   --output-dir "${ROOT_DIR}/pkg/generated/openapi" \
-  --output-pkg "github.com/kgateway-dev/kgateway/pkg/generated/openapi" \
+  --output-pkg "github.com/kgateway-dev/kgateway/v2/pkg/generated/openapi" \
   $API_INPUT_DIRS_SPACE \
   sigs.k8s.io/gateway-api/apis/v1 \
   k8s.io/apimachinery/pkg/apis/meta/v1 \
@@ -53,7 +53,7 @@ go run k8s.io/kube-openapi/cmd/openapi-gen \
 go run k8s.io/code-generator/cmd/applyconfiguration-gen \
   --openapi-schema <(go run ${ROOT_DIR}/cmd/modelschema) \
   --output-dir "${ROOT_DIR}/api/applyconfiguration" \
-  --output-pkg "github.com/kgateway-dev/kgateway/api/applyconfiguration" \
+  --output-pkg "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration" \
   ${API_INPUT_DIRS_SPACE}
 
 go run k8s.io/code-generator/cmd/client-gen \

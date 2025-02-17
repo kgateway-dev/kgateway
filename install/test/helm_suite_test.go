@@ -26,11 +26,11 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/kgateway-dev/kgateway/internal/gloo/cli/pkg/cmd/install"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
-	"github.com/kgateway-dev/kgateway/pkg/cliutil/helm"
-	"github.com/kgateway-dev/kgateway/test/makefile"
-	glootestutils "github.com/kgateway-dev/kgateway/test/testutils"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/cli/pkg/cmd/install"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/v2/pkg/cliutil/helm"
+	"github.com/kgateway-dev/kgateway/v2/test/makefile"
+	glootestutils "github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 const (

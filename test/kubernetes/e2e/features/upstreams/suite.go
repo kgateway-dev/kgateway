@@ -10,10 +10,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
-	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite

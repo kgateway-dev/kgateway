@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/envutils"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
-	. "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/testutils/kgateway"
-	"github.com/kgateway-dev/kgateway/test/testutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	. "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/tests"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 // TestK8sGateway is the function which executes a series of tests against a given installation
@@ -21,7 +21,7 @@ func TestK8sGateway(t *testing.T) {
 		t,
 		&kgateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: e2e.KubernetesGatewayProfilePath,
+			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
 			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
 		},
 	)

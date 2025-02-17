@@ -3,11 +3,11 @@
 package tests
 
 import (
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/listener_options"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/port_routing"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/route_options"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/features/virtualhost_options"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/listener_options"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/port_routing"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/route_options"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/virtualhost_options"
 )
 
 func KubeGatewayNoValidationSuiteRunner() e2e.SuiteRunner {

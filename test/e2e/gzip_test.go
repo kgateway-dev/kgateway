@@ -3,23 +3,23 @@
 package e2e_test
 
 import (
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/test/gomega/transforms"
-	"github.com/kgateway-dev/kgateway/test/testutils"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/transforms"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 
 	"net/http"
 
-	v1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
-	gatewaydefaults "github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
+	v1 "github.com/kgateway-dev/kgateway/v2/internal/gateway/pkg/api/v1"
+	gatewaydefaults "github.com/kgateway-dev/kgateway/v2/internal/gateway/pkg/defaults"
 
-	"github.com/kgateway-dev/kgateway/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	gloogzip "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2"
-	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
+	gloogzip "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2"
+	gloov1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
 )
 
 var _ = Describe("gzip", func() {

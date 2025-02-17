@@ -18,9 +18,9 @@ import (
 	"github.com/solo-io/go-utils/githubutils"
 	"github.com/solo-io/go-utils/versionutils"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
-	"github.com/kgateway-dev/kgateway/test/testutils"
-	"github.com/kgateway-dev/kgateway/test/testutils/version"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils/version"
 )
 
 // Deprecated; if this is needed create a resource yaml for it.

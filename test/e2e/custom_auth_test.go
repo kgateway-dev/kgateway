@@ -8,11 +8,11 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/kgateway-dev/kgateway/test/services/envoy"
+	"github.com/kgateway-dev/kgateway/v2/test/services/envoy"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
-	"github.com/kgateway-dev/kgateway/test/helpers"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/gogo/googleapis/google/rpc"
@@ -24,13 +24,13 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc"
 
-	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/core/matchers"
-	v1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/static"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
-	"github.com/kgateway-dev/kgateway/test/services"
-	"github.com/kgateway-dev/kgateway/test/v1helpers"
+	gloov1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/core/matchers"
+	v1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/options/static"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/services"
+	"github.com/kgateway-dev/kgateway/v2/test/v1helpers"
 )
 
 var _ = Describe("CustomAuth", func() {

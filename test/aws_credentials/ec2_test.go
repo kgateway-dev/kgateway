@@ -7,25 +7,25 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 
-	"github.com/kgateway-dev/kgateway/test/testutils"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/plugins/aws/ec2"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/plugins/aws/ec2"
 
 	ec2api "github.com/aws/aws-sdk-go/service/ec2"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	glooec2 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/aws/ec2"
+	glooec2 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/options/aws/ec2"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	v1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
+	v1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
 )
 
 var _ = Describe("", func() {

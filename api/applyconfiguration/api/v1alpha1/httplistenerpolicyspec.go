@@ -2,23 +2,24 @@
 
 package v1alpha1
 
-// HttpListenerPolicySpecApplyConfiguration represents a declarative configuration of the HttpListenerPolicySpec type for use
+// HTTPListenerPolicySpecApplyConfiguration represents a declarative configuration of the HTTPListenerPolicySpec type for use
 // with apply.
-type HttpListenerPolicySpecApplyConfiguration struct {
+type HTTPListenerPolicySpecApplyConfiguration struct {
 	TargetRef *LocalPolicyTargetReferenceApplyConfiguration `json:"targetRef,omitempty"`
 	Compress  *bool                                         `json:"compress,omitempty"`
+	AccessLog []AccessLogApplyConfiguration                 `json:"accessLog,omitempty"`
 }
 
-// HttpListenerPolicySpecApplyConfiguration constructs a declarative configuration of the HttpListenerPolicySpec type for use with
+// HTTPListenerPolicySpecApplyConfiguration constructs a declarative configuration of the HTTPListenerPolicySpec type for use with
 // apply.
-func HttpListenerPolicySpec() *HttpListenerPolicySpecApplyConfiguration {
-	return &HttpListenerPolicySpecApplyConfiguration{}
+func HTTPListenerPolicySpec() *HTTPListenerPolicySpecApplyConfiguration {
+	return &HTTPListenerPolicySpecApplyConfiguration{}
 }
 
 // WithTargetRef sets the TargetRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the TargetRef field is set to the value of the last call.
-func (b *HttpListenerPolicySpecApplyConfiguration) WithTargetRef(value *LocalPolicyTargetReferenceApplyConfiguration) *HttpListenerPolicySpecApplyConfiguration {
+func (b *HTTPListenerPolicySpecApplyConfiguration) WithTargetRef(value *LocalPolicyTargetReferenceApplyConfiguration) *HTTPListenerPolicySpecApplyConfiguration {
 	b.TargetRef = value
 	return b
 }
@@ -26,7 +27,20 @@ func (b *HttpListenerPolicySpecApplyConfiguration) WithTargetRef(value *LocalPol
 // WithCompress sets the Compress field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Compress field is set to the value of the last call.
-func (b *HttpListenerPolicySpecApplyConfiguration) WithCompress(value bool) *HttpListenerPolicySpecApplyConfiguration {
+func (b *HTTPListenerPolicySpecApplyConfiguration) WithCompress(value bool) *HTTPListenerPolicySpecApplyConfiguration {
 	b.Compress = &value
+	return b
+}
+
+// WithAccessLog adds the given value to the AccessLog field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the AccessLog field.
+func (b *HTTPListenerPolicySpecApplyConfiguration) WithAccessLog(values ...*AccessLogApplyConfiguration) *HTTPListenerPolicySpecApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithAccessLog")
+		}
+		b.AccessLog = append(b.AccessLog, *values[i])
+	}
 	return b
 }

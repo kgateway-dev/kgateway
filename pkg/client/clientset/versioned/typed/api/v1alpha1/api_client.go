@@ -7,15 +7,15 @@ import (
 
 	rest "k8s.io/client-go/rest"
 
-	v1alpha1 "github.com/kgateway-dev/kgateway/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/pkg/client/clientset/versioned/scheme"
+	v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/scheme"
 )
 
 type GatewayV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	DirectResponsesGetter
 	GatewayParametersesGetter
-	HttpListenerPoliciesGetter
+	HTTPListenerPoliciesGetter
 	ListenerPoliciesGetter
 	RoutePoliciesGetter
 	UpstreamsGetter
@@ -34,8 +34,8 @@ func (c *GatewayV1alpha1Client) GatewayParameterses(namespace string) GatewayPar
 	return newGatewayParameterses(c, namespace)
 }
 
-func (c *GatewayV1alpha1Client) HttpListenerPolicies(namespace string) HttpListenerPolicyInterface {
-	return newHttpListenerPolicies(c, namespace)
+func (c *GatewayV1alpha1Client) HTTPListenerPolicies(namespace string) HTTPListenerPolicyInterface {
+	return newHTTPListenerPolicies(c, namespace)
 }
 
 func (c *GatewayV1alpha1Client) ListenerPolicies(namespace string) ListenerPolicyInterface {

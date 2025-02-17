@@ -2,7 +2,7 @@
 
 package helpers
 
-import v1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
+import v1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
 
 // SecretBuilder contains options for building Secrets to be included in scaled Snapshots
 // there are no options currently configurable for the SecretBuilder

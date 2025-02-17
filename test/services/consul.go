@@ -18,8 +18,8 @@ import (
 
 	"github.com/hashicorp/consul/api"
 
-	"github.com/kgateway-dev/kgateway/test/services/utils"
-	"github.com/kgateway-dev/kgateway/test/testutils"
+	"github.com/kgateway-dev/kgateway/v2/test/services/utils"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 type ConsulFactory struct {

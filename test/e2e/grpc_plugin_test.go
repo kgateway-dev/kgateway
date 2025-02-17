@@ -11,32 +11,32 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/kgateway-dev/kgateway/test/services/envoy"
+	"github.com/kgateway-dev/kgateway/v2/test/services/envoy"
 
-	"github.com/kgateway-dev/kgateway/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/options"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	gatewayv1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
-	gwdefaults "github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/core/matchers"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/grpc"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/transformation"
-	"github.com/kgateway-dev/kgateway/test/helpers"
-	"github.com/kgateway-dev/kgateway/test/services"
-	"github.com/kgateway-dev/kgateway/test/v1helpers"
+	gatewayv1 "github.com/kgateway-dev/kgateway/v2/internal/gateway/pkg/api/v1"
+	gwdefaults "github.com/kgateway-dev/kgateway/v2/internal/gateway/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/core/matchers"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/options/grpc"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/options/transformation"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
+	"github.com/kgateway-dev/kgateway/v2/test/services"
+	"github.com/kgateway-dev/kgateway/v2/test/v1helpers"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
+	gloov1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/defaults"
 )
 
 var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {

@@ -8,8 +8,8 @@ import (
 	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 	v1 "k8s.io/client-go/applyconfigurations/meta/v1"
 
-	internal "github.com/kgateway-dev/kgateway/api/applyconfiguration/internal"
-	apiv1alpha1 "github.com/kgateway-dev/kgateway/api/v1alpha1"
+	internal "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration/internal"
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
 // ListenerPolicyApplyConfiguration represents a declarative configuration of the ListenerPolicy type for use
@@ -56,7 +56,7 @@ func ExtractListenerPolicyStatus(listenerPolicy *apiv1alpha1.ListenerPolicy, fie
 
 func extractListenerPolicy(listenerPolicy *apiv1alpha1.ListenerPolicy, fieldManager string, subresource string) (*ListenerPolicyApplyConfiguration, error) {
 	b := &ListenerPolicyApplyConfiguration{}
-	err := managedfields.ExtractInto(listenerPolicy, internal.Parser().Type("com.github.kgateway-dev.kgateway.api.v1alpha1.ListenerPolicy"), fieldManager, b, subresource)
+	err := managedfields.ExtractInto(listenerPolicy, internal.Parser().Type("com.github.kgateway-dev.kgateway.v2.api.v1alpha1.ListenerPolicy"), fieldManager, b, subresource)
 	if err != nil {
 		return nil, err
 	}

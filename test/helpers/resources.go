@@ -7,9 +7,9 @@ import (
 
 	"github.com/onsi/gomega/types"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/statusutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/statusutils"
 
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/defaults"
 
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"

@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/test/services/envoy"
+	"github.com/kgateway-dev/kgateway/v2/test/services/envoy"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -23,18 +23,18 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	gatewaydefaults "github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
-	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/core/matchers"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/healthcheck"
-	routerV1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/router"
-	static_plugin_gloo "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/static"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/stats"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/ssl"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/defaults"
-	testhelpers "github.com/kgateway-dev/kgateway/test/helpers"
-	"github.com/kgateway-dev/kgateway/test/services"
-	"github.com/kgateway-dev/kgateway/test/v1helpers"
+	gatewaydefaults "github.com/kgateway-dev/kgateway/v2/internal/gateway/pkg/defaults"
+	gloov1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/core/matchers"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/options/healthcheck"
+	routerV1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/options/router"
+	static_plugin_gloo "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/options/static"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/options/stats"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/ssl"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/defaults"
+	testhelpers "github.com/kgateway-dev/kgateway/v2/test/helpers"
+	"github.com/kgateway-dev/kgateway/v2/test/services"
+	"github.com/kgateway-dev/kgateway/v2/test/v1helpers"
 )
 
 var _ = Describe("Happy path", func() {

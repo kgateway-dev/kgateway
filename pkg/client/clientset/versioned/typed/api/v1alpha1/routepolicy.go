@@ -10,9 +10,9 @@ import (
 	watch "k8s.io/apimachinery/pkg/watch"
 	gentype "k8s.io/client-go/gentype"
 
-	apiv1alpha1 "github.com/kgateway-dev/kgateway/api/applyconfiguration/api/v1alpha1"
-	v1alpha1 "github.com/kgateway-dev/kgateway/api/v1alpha1"
-	scheme "github.com/kgateway-dev/kgateway/pkg/client/clientset/versioned/scheme"
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration/api/v1alpha1"
+	v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	scheme "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/scheme"
 )
 
 // RoutePoliciesGetter has a method to return a RoutePolicyInterface.

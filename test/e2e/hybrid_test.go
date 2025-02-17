@@ -15,22 +15,22 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
-	gloohelpers "github.com/kgateway-dev/kgateway/test/helpers"
-	"github.com/kgateway-dev/kgateway/test/testutils"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	gloohelpers "github.com/kgateway-dev/kgateway/v2/test/helpers"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	v1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
-	gatewaydefaults "github.com/kgateway-dev/kgateway/internal/gateway/pkg/defaults"
-	v3 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/external/envoy/config/core/v3"
-	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/headers"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/proxy_protocol"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/ssl"
-	"github.com/kgateway-dev/kgateway/test/e2e"
+	v1 "github.com/kgateway-dev/kgateway/v2/internal/gateway/pkg/api/v1"
+	gatewaydefaults "github.com/kgateway-dev/kgateway/v2/internal/gateway/pkg/defaults"
+	v3 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/external/envoy/config/core/v3"
+	gloov1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/options/headers"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/options/proxy_protocol"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/ssl"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 )
 
 type ClientConnectionProperties struct {

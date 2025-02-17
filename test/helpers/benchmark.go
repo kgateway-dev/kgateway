@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/test/testutils"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 
 	"github.com/onsi/gomega/types"
 )

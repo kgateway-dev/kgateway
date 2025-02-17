@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	openapi "github.com/kgateway-dev/kgateway/pkg/generated/openapi"
+	openapi "github.com/kgateway-dev/kgateway/v2/pkg/generated/openapi"
 
 	"k8s.io/kube-openapi/pkg/common"
 	"k8s.io/kube-openapi/pkg/validation/spec"

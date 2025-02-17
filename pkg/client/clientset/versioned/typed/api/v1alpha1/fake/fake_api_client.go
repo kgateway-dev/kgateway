@@ -6,7 +6,7 @@ import (
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
 
-	v1alpha1 "github.com/kgateway-dev/kgateway/pkg/client/clientset/versioned/typed/api/v1alpha1"
+	v1alpha1 "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/typed/api/v1alpha1"
 )
 
 type FakeGatewayV1alpha1 struct {
@@ -21,8 +21,8 @@ func (c *FakeGatewayV1alpha1) GatewayParameterses(namespace string) v1alpha1.Gat
 	return &FakeGatewayParameterses{c, namespace}
 }
 
-func (c *FakeGatewayV1alpha1) HttpListenerPolicies(namespace string) v1alpha1.HttpListenerPolicyInterface {
-	return &FakeHttpListenerPolicies{c, namespace}
+func (c *FakeGatewayV1alpha1) HTTPListenerPolicies(namespace string) v1alpha1.HTTPListenerPolicyInterface {
+	return &FakeHTTPListenerPolicies{c, namespace}
 }
 
 func (c *FakeGatewayV1alpha1) ListenerPolicies(namespace string) v1alpha1.ListenerPolicyInterface {

@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/kgateway-dev/kgateway/test/testutils"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -17,22 +17,22 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	v1 "github.com/kgateway-dev/kgateway/internal/gateway/pkg/api/v1"
-	extauthv1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	gloov1static "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/static"
-	testmatchers "github.com/kgateway-dev/kgateway/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/test/helpers"
+	v1 "github.com/kgateway-dev/kgateway/v2/internal/gateway/pkg/api/v1"
+	extauthv1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	gloov1static "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/options/static"
+	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 
 	"net/http"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kgateway-dev/kgateway/test/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/e2e"
 
-	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/core/matchers"
-	"github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1/options/transformation"
+	gloov1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/core/matchers"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1/options/transformation"
 )
 
 var _ = Describe("Staged Transformation", FlakeAttempts(3), func() {

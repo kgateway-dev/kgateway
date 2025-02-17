@@ -5,7 +5,7 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 
-	"github.com/kgateway-dev/kgateway/pkg/bootstrap/leaderelector"
+	"github.com/kgateway-dev/kgateway/v2/pkg/bootstrap/leaderelector"
 )
 
 var _ leaderelector.ElectionFactory = new(singleReplicaElectionFactory)

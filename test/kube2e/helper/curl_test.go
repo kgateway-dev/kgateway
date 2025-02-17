@@ -5,8 +5,8 @@ package helper_test
 import (
 	"time"
 
-	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
-	. "github.com/kgateway-dev/kgateway/test/kube2e/helper"
+	"github.com/kgateway-dev/kgateway/v2/test/kube2e/helper"
+	. "github.com/kgateway-dev/kgateway/v2/test/kube2e/helper"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

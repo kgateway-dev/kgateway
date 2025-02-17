@@ -14,8 +14,8 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 
-	glooruntime "github.com/kgateway-dev/kgateway/test/kubernetes/testutils/runtime"
-	"github.com/kgateway-dev/kgateway/test/testutils"
+	glooruntime "github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/runtime"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 const (

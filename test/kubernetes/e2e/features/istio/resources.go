@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kgateway-dev/kgateway/internal/gloo/constants"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/constants"
 
 	v1 "github.com/solo-io/solo-apis/pkg/api/gateway.solo.io/v1"
 	soloapis_gloov1 "github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1"
@@ -19,7 +19,7 @@ import (
 	"github.com/solo-io/solo-apis/pkg/api/gloo.solo.io/v1/ssl"
 	gloocore "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	gloov1 "github.com/kgateway-dev/kgateway/internal/gloo/pkg/api/v1"
+	gloov1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
 )
 
 type UpstreamConfigOpts struct {

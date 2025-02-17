@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/kgateway-dev/kgateway/internal/sds/pkg/run"
+	"github.com/kgateway-dev/kgateway/v2/internal/sds/pkg/run"
 )
 
 func main() {
