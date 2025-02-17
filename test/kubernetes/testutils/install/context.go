@@ -1,4 +1,4 @@
-package kgateway
+package install
 
 import (
 	"github.com/rotisserie/eris"
@@ -30,14 +30,14 @@ type AwsOptions struct {
 	StsCredentialsRegion string
 }
 
-// ValidateKgatewayContext returns an error if the provided Context is invalid
-func ValidateKgatewayContext(context *Context) error {
-	return ValidateContext(context, validateKgatewayValuesManifest)
+// ValidateInstallContext returns an error if the provided Context is invalid
+func ValidateInstallContext(context *Context) error {
+	return ValidateContext(context, validateValuesManifest)
 }
 
-func validateKgatewayValuesManifest(name string, file string) error {
+func validateValuesManifest(name string, file string) error {
 	if file == "" {
-		return eris.Errorf("%s must be provided in kgateway.Context", name)
+		return eris.Errorf("%s must be provided in install.Context", name)
 	}
 
 	/*
