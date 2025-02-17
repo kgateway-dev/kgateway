@@ -1,5 +1,3 @@
-//go:build ignore
-
 package assertions
 
 import (
@@ -7,14 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/solo-kit/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 )
 
 func (p *Provider) EventuallyObjectsExist(ctx context.Context, objects ...client.Object) {
@@ -75,11 +69,6 @@ func (p *Provider) ConsistentlyObjectsNotExist(ctx context.Context, objects ...c
 func (p *Provider) ExpectNamespaceNotExist(ctx context.Context, ns string) {
 	_, err := p.clusterContext.Clientset.CoreV1().Namespaces().Get(ctx, ns, metav1.GetOptions{})
 	p.Gomega.Expect(apierrors.IsNotFound(err)).To(BeTrue(), fmt.Sprintf("namespace %s should not be found in cluster", ns))
-}
-
-func (p *Provider) ExpectGlooObjectNotExist(ctx context.Context, getter helpers.InputResourceGetter, meta *metav1.ObjectMeta) {
-	_, err := getter()
-	p.Gomega.Expect(errors.IsNotExist(err)).To(BeTrue(), fmt.Sprintf("obj %s.%s should not be found in cluster", meta.GetName(), meta.GetNamespace()))
 }
 
 // TODO clean up these functions, as the validation webhook has been removed
