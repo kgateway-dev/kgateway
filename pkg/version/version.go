@@ -1,27 +1,52 @@
 package version
 
 import (
-	"github.com/solo-io/go-utils/versionutils"
-	"github.com/solo-io/go-utils/versionutils/git"
+	"fmt"
+	"runtime/debug"
 )
 
 var (
+	// UndefinedVersion is the version of the kgateway controller
+	// if the version is not set.
 	UndefinedVersion = "undefined"
-	// Will be set by the linker during build. Does not include "v" prefix.
+	// Version is the version of the kgateway controller.
+	// This is set by the linker during build.
 	Version string
+	// ref is the version of the kgateway controller.
+	// Constructed from the build info during init
+	ref *version
 )
 
-func init() {
-	if Version == "" {
-		Version = UndefinedVersion
-	}
+type version struct {
+	controller string
+	commit     string
+	date       string
 }
 
-func IsReleaseVersion() bool {
-	if Version == UndefinedVersion {
-		return false
+func String() string {
+	return fmt.Sprintf("controller version %s, commit %s, built at %s", ref.controller, ref.commit, ref.date)
+}
+
+func init() {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		Version = UndefinedVersion
+		return
 	}
-	tag := git.AppendTagPrefix(Version)
-	_, err := versionutils.ParseVersion(tag)
-	return err == nil
+	v := Version
+	if v == "" {
+		// TODO(tim): use info.Main.Version instead of UndefinedVersion.
+		v = UndefinedVersion
+	}
+	ref = &version{
+		controller: v,
+	}
+	for _, setting := range info.Settings {
+		switch setting.Key {
+		case "vcs.revision":
+			ref.commit = setting.Value
+		case "vcs.time":
+			ref.date = setting.Value
+		}
+	}
 }
