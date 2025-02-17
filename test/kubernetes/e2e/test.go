@@ -43,7 +43,7 @@ func CreateTestInstallation(
 //
 //	runtime - These are properties that are supplied at runtime and will impact how tests are executed
 //	cluster - These are properties that are used to connect to the Kubernetes cluster
-//	kgateway - These are properties that are relevant to how kgateway will be configured
+//	install - These are properties that are relevant to how the kgateway installation will be configured
 func CreateTestInstallationForCluster(
 	t *testing.T,
 	runtimeContext testruntime.Context,
