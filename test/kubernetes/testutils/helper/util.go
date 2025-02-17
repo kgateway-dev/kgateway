@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
@@ -22,15 +21,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils/version"
 )
-
-// Deprecated; if this is needed create a resource yaml for it.
-func GetHttpEchoImage() string {
-	httpEchoImage := "hashicorp/http-echo"
-	if runtime.GOARCH == "arm64" {
-		httpEchoImage = "gcr.io/solo-test-236622/http-echo:0.2.4"
-	}
-	return httpEchoImage
-}
 
 // For nightly runs, we want to install a released version rather than using a locally built chart
 // To do this, set the environment variable RELEASED_VERSION with either a version name or "LATEST" to get the last release
@@ -49,29 +39,8 @@ func GetTestReleasedVersion(ctx context.Context, repoName string) string {
 		return current.String()
 	}
 
-	// Assume that releasedVersion is a valid version, for a previously released version of Gloo Edge
+	// Assume that releasedVersion is a valid version, for a previously released version of kgateway
 	return releasedVersion
-}
-
-func GetTestHelperForRootDir(ctx context.Context, rootDir, namespace string) (*SoloTestHelper, error) {
-	if useVersion := GetTestReleasedVersion(ctx, "gloo"); useVersion != "" {
-		return NewSoloTestHelper(func(defaults TestConfig) TestConfig {
-			defaults.RootDir = rootDir
-			defaults.HelmChartName = "gloo"
-			defaults.InstallNamespace = namespace
-			defaults.ReleasedVersion = useVersion
-			defaults.Verbose = true
-			return defaults
-		})
-	} else {
-		return NewSoloTestHelper(func(defaults TestConfig) TestConfig {
-			defaults.RootDir = rootDir
-			defaults.HelmChartName = "gloo"
-			defaults.InstallNamespace = namespace
-			defaults.Verbose = true
-			return defaults
-		})
-	}
 }
 
 // GetUpgradeVersions returns two semantic versions of a repository:
