@@ -11,16 +11,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
-	"github.com/kgateway-dev/kgateway/v2/test/testutils"
-
 	"github.com/stretchr/testify/suite"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/example"
-	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/install"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 // TestInstallationWithInfoLogLevel is the function which executes a series of tests against a given installation
@@ -29,7 +27,7 @@ func TestInstallationWithInfoLogLevel(t *testing.T) {
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "info-log-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
-		&kgateway.Context{
+		&install.Context{
 			InstallNamespace:          installNs,
 			ProfileValuesManifestFile: filepath.Join(fsutils.MustGetThisDir(), "manifests", "example-profile.yaml"),
 			ValuesManifestFile:        filepath.Join(fsutils.MustGetThisDir(), "manifests", "info-example.yaml"),

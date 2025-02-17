@@ -16,7 +16,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/assertions"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/cluster"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/helper"
-	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/install"
 	testruntime "github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/runtime"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
@@ -25,17 +25,17 @@ import (
 // It is syntactic sugar on top of CreateTestInstallationForCluster
 func CreateTestInstallation(
 	t *testing.T,
-	kgatewayContext *kgateway.Context,
+	installContext *install.Context,
 ) *TestInstallation {
 	runtimeContext := testruntime.NewContext()
 	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName)
 
-	if err := kgateway.ValidateKgatewayContext(kgatewayContext); err != nil {
+	if err := install.ValidateInstallContext(installContext); err != nil {
 		// We error loudly if the context is misconfigured
 		panic(err)
 	}
 
-	return CreateTestInstallationForCluster(t, runtimeContext, clusterContext, kgatewayContext)
+	return CreateTestInstallationForCluster(t, runtimeContext, clusterContext, installContext)
 }
 
 // CreateTestInstallationForCluster is the standard way to construct a TestInstallation
@@ -48,7 +48,7 @@ func CreateTestInstallationForCluster(
 	t *testing.T,
 	runtimeContext testruntime.Context,
 	clusterContext *cluster.Context,
-	kgatewayContext *kgateway.Context,
+	installContext *install.Context,
 ) *TestInstallation {
 	installation := &TestInstallation{
 		// RuntimeContext contains the set of properties that are defined at runtime by whoever is invoking tests
@@ -58,23 +58,23 @@ func CreateTestInstallationForCluster(
 		ClusterContext: clusterContext,
 
 		// Maintain a reference to the Metadata used for this installation
-		Metadata: kgatewayContext,
+		Metadata: installContext,
 
 		// Create an actions provider, and point it to the running installation
 		Actions: actions.NewActionsProvider().
 			WithClusterContext(clusterContext).
-			WithKgatewayContext(kgatewayContext),
+			WithInstallContext(installContext),
 
 		// Create an assertions provider, and point it to the running installation
 		Assertions: assertions.NewProvider(t).
 			WithClusterContext(clusterContext).
-			WithKgatewayContext(kgatewayContext),
+			WithInstallContext(installContext),
 
 		// GeneratedFiles contains the unique location where files generated during the execution
 		// of tests against this installation will be stored
 		// By creating a unique location, per TestInstallation and per Cluster.Name we guarantee isolation
 		// between TestInstallation outputs per CI run
-		GeneratedFiles: MustGeneratedFiles(kgatewayContext.InstallNamespace, clusterContext.Name),
+		GeneratedFiles: MustGeneratedFiles(installContext.InstallNamespace, clusterContext.Name),
 	}
 	runtime.SetFinalizer(installation, func(i *TestInstallation) { i.finalize() })
 	return installation
@@ -92,7 +92,7 @@ type TestInstallation struct {
 	ClusterContext *cluster.Context
 
 	// Metadata contains the properties used to install kgateway
-	Metadata *kgateway.Context
+	Metadata *install.Context
 
 	// Actions is the entity that creates actions that can be executed by the Operator
 	Actions *actions.Provider

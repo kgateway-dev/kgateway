@@ -12,7 +12,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	. "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/tests"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/helper"
-	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/install"
 )
 
 // The upgrade tests delegate the installs, upgrades and deletions to each individual test within the suite
@@ -26,7 +26,7 @@ func TestUpgradeFromLastPatchPreviousMinor(t *testing.T) {
 
 	testInstallation := e2e.CreateTestInstallation(
 		t,
-		&kgateway.Context{
+		&install.Context{
 			InstallNamespace:          "upgrade-from-last-patch-previous-minor",
 			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
 			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
@@ -52,7 +52,7 @@ func TestUpgradeFromCurrentPatchLatestMinor(t *testing.T) {
 
 	testInstallation := e2e.CreateTestInstallation(
 		t,
-		&kgateway.Context{
+		&install.Context{
 			InstallNamespace:          "upgrade-from-current-patch-latest-minor",
 			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
 			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
