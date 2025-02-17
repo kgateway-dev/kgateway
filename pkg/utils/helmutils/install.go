@@ -16,7 +16,8 @@ type InstallOpts struct {
 	// CreateNamespace controls whether to create the namespace or error if it doesn't exist.
 	CreateNamespace bool
 
-	// ValuesFiles is a list of absolute paths to YAML values for the installation.
+	// ValuesFiles is a list of absolute paths to YAML values for the installation. They will be
+	// applied in the order they are specified.
 	ValuesFiles []string
 
 	// ExtraArgs allows passing in arbitrary extra arguments to the install.

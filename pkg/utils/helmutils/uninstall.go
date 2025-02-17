@@ -6,7 +6,7 @@ type UninstallOpts struct {
 	// KubeContext is the kubernetes context to use.
 	KubeContext string
 
-	// Namespace is the namespace to which the release will be installed.
+	// Namespace is the namespace to which the release was installed.
 	Namespace string
 
 	// ReleaseName is the name of the release to uninstall.
