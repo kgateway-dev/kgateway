@@ -24,7 +24,7 @@ func TestK8sGatewayAws(t *testing.T) {
 		t,
 		&kgateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: e2e.KubernetesGatewayProfilePath,
+			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
 			ValuesManifestFile:        e2e.ManifestPath("aws-lambda-helm.yaml"),
 			// these should correspond to the `settings.aws.*` values in the aws-lambda-helm.yaml manifest
 			AwsOptions: &kgateway.AwsOptions{

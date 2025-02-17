@@ -26,7 +26,7 @@ func TestDiscoveryWatchlabels(t *testing.T) {
 		t,
 		&kgateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: e2e.KubernetesGatewayProfilePath,
+			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
 			ValuesManifestFile:        filepath.Join(fsutils.MustGetThisDir(), "manifests", "discovery-watchlabels-test-helm.yaml"),
 		},
 	)

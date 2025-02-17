@@ -24,7 +24,7 @@ func TestK8sGatewayMinimalDefaultGatewayParameters(t *testing.T) {
 		t,
 		&kgateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: e2e.KubernetesGatewayProfilePath,
+			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
 			ValuesManifestFile:        e2e.ManifestPath("k8s-gateway-minimal-default-gatewayparameters-test-helm.yaml"),
 		},
 	)

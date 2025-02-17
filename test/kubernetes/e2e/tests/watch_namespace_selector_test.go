@@ -22,7 +22,7 @@ func TestWatchNamespaceSelector(t *testing.T) {
 		t,
 		&kgateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: e2e.EdgeGatewayProfilePath,
+			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
 			ValuesManifestFile:        e2e.ManifestPath("watch-namespace-selector.yaml"),
 		},
 	)
