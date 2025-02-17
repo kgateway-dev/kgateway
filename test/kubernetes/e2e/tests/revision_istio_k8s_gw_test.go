@@ -24,7 +24,7 @@ func TestK8sGatewayIstioRevision(t *testing.T) {
 		t,
 		&kgateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: e2e.KubernetesGatewayProfilePath,
+			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
 			ValuesManifestFile:        e2e.ManifestPath("istio-revision-k8s-gateway-helm.yaml"),
 		},
 	)

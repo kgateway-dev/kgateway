@@ -23,7 +23,7 @@ func TestHelm(t *testing.T) {
 		t,
 		&kgateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: e2e.EdgeGatewayProfilePath,
+			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
 			ValuesManifestFile:        e2e.ManifestPath("test-helm.yaml"),
 		},
 	)
@@ -62,7 +62,7 @@ func TestHelmSettings(t *testing.T) {
 		t,
 		&kgateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: e2e.EdgeGatewayProfilePath,
+			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
 			ValuesManifestFile:        e2e.ManifestPath("test-helm.yaml"),
 		},
 	)

@@ -24,7 +24,7 @@ func TestFullEnvoyValidation(t *testing.T) {
 		t,
 		&kgateway.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: e2e.FullGatewayProfilePath,
+			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
 			ValuesManifestFile:        e2e.ManifestPath("full-envoy-validation-helm.yaml"),
 		},
 	)
