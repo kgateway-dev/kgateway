@@ -1,5 +1,3 @@
-//go:build ignore
-
 package runtime
 
 // RunSource identifies who/what triggered the test

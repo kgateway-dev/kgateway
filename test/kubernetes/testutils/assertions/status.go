@@ -28,7 +28,7 @@ func (p *Provider) EventuallyResourceStatusMatchesWarningReasons(getter helpers.
 	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
 	gomega.Eventually(func(g gomega.Gomega) {
 		statusWarningsMatcher := matchers.MatchStatusInNamespace(
-			p.glooGatewayContext.InstallNamespace,
+			p.installContext.InstallNamespace,
 			gomega.And(matchers.HaveWarningStateWithReasonSubstrings(desiredStatusReasons...), matchers.HaveReportedBy(desiredReporter)),
 		)
 
@@ -45,7 +45,7 @@ func (p *Provider) EventuallyResourceStatusMatchesRejectedReasons(getter helpers
 	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
 	gomega.Eventually(func(g gomega.Gomega) {
 		statusRejectionsMatcher := matchers.MatchStatusInNamespace(
-			p.glooGatewayContext.InstallNamespace,
+			p.installContext.InstallNamespace,
 			gomega.And(matchers.HaveRejectedStateWithReasonSubstrings(desiredStatusReasons...), matchers.HaveReportedBy(desiredReporter)),
 		)
 
@@ -65,7 +65,7 @@ func (p *Provider) EventuallyResourceStatusMatchesState(
 	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
 	p.Gomega.Eventually(func(g gomega.Gomega) {
 		statusStateMatcher := matchers.MatchStatusInNamespace(
-			p.glooGatewayContext.InstallNamespace,
+			p.installContext.InstallNamespace,
 			gomega.And(matchers.HaveState(desiredState), matchers.HaveReportedBy(desiredReporter)),
 		)
 		status, err := getResourceNamespacedStatus(getter)

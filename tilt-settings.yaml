@@ -2,7 +2,6 @@
 helm_installation_name: gloo-oss
 helm_values_files:
 - ./test/kubernetes/e2e/tests/manifests/common-recommendations.yaml
-# - ./test/kubernetes/e2e/tests/manifests/profiles/kubernetes-gateway.yaml
 helm_installation_namespace: gloo-system
 
 enabled_providers:

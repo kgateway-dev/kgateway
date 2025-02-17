@@ -1,5 +1,3 @@
-//go:build ignore
-
 package e2e
 
 import (
@@ -11,56 +9,33 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
-	"time"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/helmutils"
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/actions"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/assertions"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/cluster"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/helper"
-	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/install"
 	testruntime "github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/runtime"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
-// MustTestHelper returns the SoloTestHelper used for e2e tests
-// The SoloTestHelper is a wrapper around `glooctl` and we should eventually phase it out
-// in favor of using the exact tool that users rely on
-func MustTestHelper(ctx context.Context, installation *TestInstallation) *helper.SoloTestHelper {
-	testHelper, err := helper.GetTestHelperForRootDir(ctx, testutils.GitRootDirectory(), installation.Metadata.InstallNamespace)
-	if err != nil {
-		panic(err)
-	}
-
-	testHelper.SetKubeCli(installation.ClusterContext.Cli)
-
-	// TODO(npolshak) We should remove the test helper and have the test installation own this
-	// set installation metadata
-	installation.Metadata.TestAssetDir = testHelper.TestAssetDir
-	installation.Metadata.ChartVersion = testHelper.ChartVersion()
-	installation.Metadata.ReleasedVersion = testHelper.ReleasedVersion
-	installation.Metadata.HelmChartName = testHelper.HelmChartName
-	installation.Metadata.HelmRepoIndexFileName = testHelper.HelmRepoIndexFileName
-	installation.Metadata.ChartUri = filepath.Join(testutils.GitRootDirectory(), installation.Metadata.TestAssetDir, installation.Metadata.HelmChartName+"-"+installation.Metadata.ChartVersion+".tgz")
-
-	return testHelper
-}
-
-// CreateTestInstallation is the simplest way to construct a TestInstallation in Gloo Gateway OSS
+// CreateTestInstallation is the simplest way to construct a TestInstallation in kgateway.
 // It is syntactic sugar on top of CreateTestInstallationForCluster
 func CreateTestInstallation(
 	t *testing.T,
-	glooGatewayContext *kgateway.Context,
+	installContext *install.Context,
 ) *TestInstallation {
 	runtimeContext := testruntime.NewContext()
 	clusterContext := cluster.MustKindContext(runtimeContext.ClusterName)
 
-	if err := kgateway.ValidateGlooGatewayContext(glooGatewayContext); err != nil {
+	if err := install.ValidateInstallContext(installContext); err != nil {
 		// We error loudly if the context is misconfigured
 		panic(err)
 	}
 
-	return CreateTestInstallationForCluster(t, runtimeContext, clusterContext, glooGatewayContext)
+	return CreateTestInstallationForCluster(t, runtimeContext, clusterContext, installContext)
 }
 
 // CreateTestInstallationForCluster is the standard way to construct a TestInstallation
@@ -68,12 +43,12 @@ func CreateTestInstallation(
 //
 //	runtime - These are properties that are supplied at runtime and will impact how tests are executed
 //	cluster - These are properties that are used to connect to the Kubernetes cluster
-//	glooGateway - These are properties that are relevant to how Gloo Gateway will be configured
+//	install - These are properties that are relevant to how the kgateway installation will be configured
 func CreateTestInstallationForCluster(
 	t *testing.T,
 	runtimeContext testruntime.Context,
 	clusterContext *cluster.Context,
-	glooGatewayContext *kgateway.Context,
+	installContext *install.Context,
 ) *TestInstallation {
 	installation := &TestInstallation{
 		// RuntimeContext contains the set of properties that are defined at runtime by whoever is invoking tests
@@ -83,30 +58,30 @@ func CreateTestInstallationForCluster(
 		ClusterContext: clusterContext,
 
 		// Maintain a reference to the Metadata used for this installation
-		Metadata: glooGatewayContext,
+		Metadata: installContext,
 
 		// Create an actions provider, and point it to the running installation
 		Actions: actions.NewActionsProvider().
 			WithClusterContext(clusterContext).
-			WithGlooGatewayContext(glooGatewayContext),
+			WithInstallContext(installContext),
 
 		// Create an assertions provider, and point it to the running installation
 		Assertions: assertions.NewProvider(t).
 			WithClusterContext(clusterContext).
-			WithGlooGatewayContext(glooGatewayContext),
+			WithInstallContext(installContext),
 
 		// GeneratedFiles contains the unique location where files generated during the execution
 		// of tests against this installation will be stored
 		// By creating a unique location, per TestInstallation and per Cluster.Name we guarantee isolation
 		// between TestInstallation outputs per CI run
-		GeneratedFiles: MustGeneratedFiles(glooGatewayContext.InstallNamespace, clusterContext.Name),
+		GeneratedFiles: MustGeneratedFiles(installContext.InstallNamespace, clusterContext.Name),
 	}
 	runtime.SetFinalizer(installation, func(i *TestInstallation) { i.finalize() })
 	return installation
 }
 
 // TestInstallation is the structure around a set of tests that validate behavior for an installation
-// of Gloo Gateway.
+// of kgateway.
 type TestInstallation struct {
 	fmt.Stringer
 
@@ -116,8 +91,8 @@ type TestInstallation struct {
 	// ClusterContext contains the metadata about the Kubernetes Cluster that is used for this TestCluster
 	ClusterContext *cluster.Context
 
-	// Metadata contains the properties used to install Gloo Gateway
-	Metadata *kgateway.Context
+	// Metadata contains the properties used to install kgateway
+	Metadata *install.Context
 
 	// Actions is the entity that creates actions that can be executed by the Operator
 	Actions *actions.Provider
@@ -142,76 +117,71 @@ func (i *TestInstallation) finalize() {
 	}
 }
 
-func (i *TestInstallation) AddIstioctl(ctx context.Context) error {
-	istioctl, err := cluster.GetIstioctl(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to download istio: %w", err)
-	}
-	i.IstioctlBinary = istioctl
-	return nil
-}
+// TODO re-enable when adding back istio tests
+// func (i *TestInstallation) AddIstioctl(ctx context.Context) error {
+// 	istioctl, err := cluster.GetIstioctl(ctx)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to download istio: %w", err)
+// 	}
+// 	i.IstioctlBinary = istioctl
+// 	return nil
+// }
 
-func (i *TestInstallation) InstallMinimalIstio(ctx context.Context) error {
-	return cluster.InstallMinimalIstio(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext)
-}
+// func (i *TestInstallation) InstallMinimalIstio(ctx context.Context) error {
+// 	return cluster.InstallMinimalIstio(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext)
+// }
 
-func (i *TestInstallation) InstallRevisionedIstio(ctx context.Context, rev, profile string) error {
-	return cluster.InstallRevisionedIstio(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext, rev, profile)
-}
+// func (i *TestInstallation) InstallRevisionedIstio(ctx context.Context, rev, profile string) error {
+// 	return cluster.InstallRevisionedIstio(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext, rev, profile)
+// }
 
-func (i *TestInstallation) UninstallIstio() error {
-	return cluster.UninstallIstio(i.IstioctlBinary, i.ClusterContext.KubeContext)
-}
+// func (i *TestInstallation) UninstallIstio() error {
+// 	return cluster.UninstallIstio(i.IstioctlBinary, i.ClusterContext.KubeContext)
+// }
 
-func (i *TestInstallation) CreateIstioBugReport(ctx context.Context) {
-	cluster.CreateIstioBugReport(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext, i.GeneratedFiles.FailureDir)
-}
+// func (i *TestInstallation) CreateIstioBugReport(ctx context.Context) {
+// 	cluster.CreateIstioBugReport(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext, i.GeneratedFiles.FailureDir)
+// }
 
-// InstallGlooGatewayWithTestHelper is the common way to install Gloo Gateway.
-// However, it relies on a SoloTestHelper which is an artifact of the legacy e2e tests that we hope to deprecate
-func (i *TestInstallation) InstallGlooGatewayWithTestHelper(ctx context.Context, testHelper *helper.SoloTestHelper, timeout time.Duration) {
-	installFn := func(ctx context.Context) error {
-		return testHelper.InstallGloo(
-			ctx,
-			timeout,
-			// We layer the values that are provided to a given TestInstallation, as a way to reduce the complexity that developers
-			// have to concern themselves with.
-			//	1. First, we define the common recommendations. These are values which we want all tests to inherit by default.
-			//	2. Next, we define a "profile", which is a standard collection of values for a type of installation
-			//	3. Finally, we define test specific values, so that a test can have the final say over which values to define.
-			helper.WithExtraArgs("--values", CommonRecommendationManifest),
-			helper.WithExtraArgs("--values", i.Metadata.ProfileValuesManifestFile),
-			helper.WithExtraArgs("--values", i.Metadata.ValuesManifestFile),
-		)
-	}
-
-	i.InstallGlooGateway(ctx, installFn)
-}
-
-func (i *TestInstallation) InstallGlooGateway(ctx context.Context, installFn func(ctx context.Context) error) {
-	if !testutils.ShouldSkipInstall() {
-		err := installFn(ctx)
-		i.Assertions.Require.NoError(err)
-		i.Assertions.EventuallyInstallationSucceeded(ctx)
-		i.Assertions.EventuallyGlooReachesConsistentState(i.Metadata.InstallNamespace)
-	}
-}
-
-// UninstallGlooGatewayWithTestHelper is the common way to uninstall Gloo Gateway.
-// However, it relies on a SoloTestHelper which is an artifact of the legacy e2e tests that we hope to deprecate
-func (i *TestInstallation) UninstallGlooGatewayWithTestHelper(ctx context.Context, testHelper *helper.SoloTestHelper) {
-	uninstallFn := func(ctx context.Context) error {
-		return testHelper.UninstallGlooAll()
-	}
-
-	i.UninstallGlooGateway(ctx, uninstallFn)
-}
-
-func (i *TestInstallation) UninstallGlooGateway(ctx context.Context, uninstallFn func(ctx context.Context) error) {
+func (i *TestInstallation) InstallKgatewayFromLocalChart(ctx context.Context) {
 	if testutils.ShouldSkipInstall() {
 		return
 	}
-	err := uninstallFn(ctx)
+
+	chartUri, err := helper.GetLocalChartPath(helmutils.ChartName)
+	i.Assertions.Require.NoError(err)
+
+	err = i.Actions.Helm().Install(
+		ctx,
+		helmutils.InstallOpts{
+			Namespace:       i.Metadata.InstallNamespace,
+			CreateNamespace: true,
+			ValuesFiles:     []string{i.Metadata.ProfileValuesManifestFile, i.Metadata.ValuesManifestFile},
+			ReleaseName:     helmutils.ChartName,
+			ChartUri:        chartUri,
+		})
+	i.Assertions.Require.NoError(err)
+	i.Assertions.EventuallyInstallationSucceeded(ctx)
+}
+
+// TODO implement this when we add upgrade tests
+// func (i *TestInstallation) InstallKgatewayFromRelease(ctx context.Context, version string) {
+// 	if testutils.ShouldSkipInstall() {
+// 		return
+// 	}
+// }
+
+func (i *TestInstallation) UninstallKgateway(ctx context.Context) {
+	if testutils.ShouldSkipInstall() {
+		return
+	}
+	err := i.Actions.Helm().Uninstall(
+		ctx,
+		helmutils.UninstallOpts{
+			Namespace:   i.Metadata.InstallNamespace,
+			ReleaseName: helmutils.ChartName,
+		},
+	)
 	i.Assertions.Require.NoError(err)
 	i.Assertions.EventuallyUninstallationSucceeded(ctx)
 }

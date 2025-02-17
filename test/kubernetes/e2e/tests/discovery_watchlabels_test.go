@@ -13,7 +13,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	. "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/tests"
-	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/install"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
@@ -24,9 +24,9 @@ func TestDiscoveryWatchlabels(t *testing.T) {
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "discovery-watchlabels-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
-		&kgateway.Context{
+		&install.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: e2e.KubernetesGatewayProfilePath,
+			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
 			ValuesManifestFile:        filepath.Join(fsutils.MustGetThisDir(), "manifests", "discovery-watchlabels-test-helm.yaml"),
 		},
 	)

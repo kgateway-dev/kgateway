@@ -11,7 +11,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	. "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/tests"
-	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/kgateway"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/install"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
@@ -22,9 +22,9 @@ func TestFullEnvoyValidation(t *testing.T) {
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "full-envoy-validation-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
-		&kgateway.Context{
+		&install.Context{
 			InstallNamespace:          installNs,
-			ProfileValuesManifestFile: e2e.FullGatewayProfilePath,
+			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
 			ValuesManifestFile:        e2e.ManifestPath("full-envoy-validation-helm.yaml"),
 		},
 	)
