@@ -1,14 +1,10 @@
-//go:build ignore
-
-package kgateway
+package install
 
 import (
 	"github.com/rotisserie/eris"
-
-	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
-// Context contains the set of properties for a given installation of Gloo Gateway
+// Context contains the set of properties for a given installation of kgateway
 type Context struct {
 	InstallNamespace string
 
@@ -23,24 +19,6 @@ type Context struct {
 
 	// is populated if the installation has any AWS options configured (via `settings.aws.*` Helm values)
 	AwsOptions *AwsOptions
-
-	// TestAssetDir is the directory holding the test assets. Must be relative to RootDir.
-	TestAssetDir string
-
-	// Helm chart name
-	HelmChartName string
-
-	// Name of the helm index file name
-	HelmRepoIndexFileName string
-
-	// Install a released version of Gloo. This is the value of the github tag that may have a leading 'v'
-	ReleasedVersion string
-
-	// The version of the Helm chart. Calculated from either the chart or the released version. It will not have a leading 'v'
-	ChartVersion string
-
-	// The path to the local helm chart used for testing. Based on the TestAssertDir and relative to RootDir.
-	ChartUri string
 }
 
 // AWS options that the installation was configured with
@@ -52,29 +30,32 @@ type AwsOptions struct {
 	StsCredentialsRegion string
 }
 
-// ValidateGlooGatewayContext returns an error if the provided Context is invalid
-func ValidateGlooGatewayContext(context *Context) error {
-	return ValidateContext(context, validateGlooGatewayValuesManifest)
+// ValidateInstallContext returns an error if the provided Context is invalid
+func ValidateInstallContext(context *Context) error {
+	return ValidateContext(context, validateValuesManifest)
 }
 
-func validateGlooGatewayValuesManifest(name string, file string) error {
+func validateValuesManifest(name string, file string) error {
 	if file == "" {
-		return eris.Errorf("%s must be provided in glooGateway.Context", name)
+		return eris.Errorf("%s must be provided in install.Context", name)
 	}
 
-	values, err := testutils.BuildHelmValues(testutils.HelmValues{ValuesFile: file})
-	if err != nil {
-		return eris.Wrapf(err, "failed to build helm values for %s", name)
-	}
-	err = testutils.ValidateHelmValues(values)
-	if err != nil {
-		return eris.Wrapf(err, "failed to validate helm values for %s", name)
-	}
+	/*
+		// TODO consider adding back helm value validation https://github.com/kgateway-dev/kgateway/issues/10483#issuecomment-2651621134
+		values, err := testutils.BuildHelmValues(testutils.HelmValues{ValuesFile: file})
+		if err != nil {
+			return eris.Wrapf(err, "failed to build helm values for %s", name)
+		}
+		err = testutils.ValidateHelmValues(values)
+		if err != nil {
+			return eris.Wrapf(err, "failed to validate helm values for %s", name)
+		}
+	*/
 	return nil
 }
 
 // ValidateContext returns an error if the provided Context is invalid
-// This accepts a manifestValidator so that it can be used by Gloo Gateway Enterprise
+// This accepts a manifestValidator so that it can be overridden as needed.
 func ValidateContext(context *Context, manifestValidator func(string, string) error) error {
 	// We are intentionally restrictive, and expect a ProfileValuesManifestFile to be defined.
 	// This is because we want all existing and future tests to rely on this concept
