@@ -78,7 +78,6 @@ gatewayClass:
     kind: "GatewayParameters"
     # The name of the GatewayParameters which is attached by parametersRef to the GatewayClass
     name: "kgateway"
-    namespace: "kgateway-system"
 
 # Gateway proxy configuration
 gateway:
