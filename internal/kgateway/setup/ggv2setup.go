@@ -31,11 +31,11 @@ import (
 )
 
 const (
-	glooComponentName = "gloo"
+	componentName = "kgateway"
 )
 
 func Main(customCtx context.Context) error {
-	SetupLogging(customCtx, glooComponentName)
+	SetupLogging(customCtx, componentName)
 	return startSetupLoop(customCtx)
 }
 
@@ -56,7 +56,6 @@ func createKubeClient(restConfig *rest.Config) (istiokube.Client, error) {
 func StartGGv2(ctx context.Context,
 	extraPlugins []extensionsplug.Plugin,
 	extraGwClasses []string, // TODO: we can remove this and replace with something that watches all GW classes with our controller name
-
 ) error {
 	restConfig := ctrl.GetConfigOrDie()
 
