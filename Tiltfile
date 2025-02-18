@@ -227,7 +227,7 @@ def validate_registry() :
 def install_metallb():
     if not settings["metal_lb"]:
         return
-    local("./ci/kind/setup-metalllb-on-kind.sh")
+    local("./hack/kind/setup-metalllb-on-kind.sh")
 
 validate_registry()
 install_gloo()

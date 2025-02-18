@@ -8,21 +8,21 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	testdefaults "github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
+	testdefaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kgateway-dev/kgateway/projects/gloo/cli/pkg/cmd/istio"
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/internal/gloo/cli/pkg/cmd/istio"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 )
 
 var _ e2e.NewSuiteFunc = NewIstioIntegrationTestingSuite
 
 // istioIntegrationDeployerSuite is the entire Suite of tests for the "deployer" feature that relies on an Istio installation
-// The "deployer" code can be found here: /projects/gateway2/deployer
+// The "deployer" code can be found here: /internal/kgateway/deployer
 type istioIntegrationDeployerSuite struct {
 	suite.Suite
 
@@ -81,7 +81,7 @@ func (s *istioIntegrationDeployerSuite) AfterTest(suiteName, testName string) {
 func (s *istioIntegrationDeployerSuite) TestConfigureIstioIntegrationFromGatewayParameters() {
 	// Assert Istio integration is enabled and correct Istio image is set
 	listOpts := metav1.ListOptions{
-		LabelSelector: "app.kubernetes.io/name=gloo-proxy-gw",
+		LabelSelector: "app.kubernetes.io/name=gw",
 	}
 	matcher := gomega.And(
 		matchers.PodMatches(matchers.ExpectedPod{ContainerName: istio.SDSContainerName}),

@@ -1,0 +1,40 @@
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: http
+        statPrefix: http
+        use_remote_address: true
+    name: http
+  name: http
+Routes:
+- ignorePortInHostMatching: true
+  name: http
+  virtualHosts:
+  - domains:
+    - example.com
+    name: http~example_com
+    routes:
+    - match:
+        pathSeparatedPrefix: /a/1
+      name: http~example_com-route-0-httproute-route-a-a-0-0-matcher-0
+      route:
+        cluster: kube_a_svc-a_8080
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR

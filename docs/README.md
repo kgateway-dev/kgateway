@@ -1,50 +1,24 @@
-# Gloo Gateway (Gloo Edge API) docs
+# Documentation Has Moved
 
-> [!IMPORTANT]  
-> This information is relevant only for the Gloo Gateway (Gloo Edge API) docs that are built from this `solo-io/gloo/docs` GitHub repository and rendered on the [docs.solo.io/gloo-edge](https://docs.solo.io/gloo-edge/latest/) website.
-> For the documentation for Gloo Gateway (Kubernetes Gateway API), see the `solo-io/docs` GitHub repository or the [docs.solo.io/gateway](https://docs.solo.io/gateway/latest/) website.
+> [!NOTE]
+> The documentation for this project has moved! You can now find it in two locations:
 
-## Deploying to a test site
+* **Documentation Website**: [https://kgateway.dev/](https://kgateway.dev/)
+* **Documentation Source**: [github.com/kgateway-dev/kgateway.dev](https://github.com/kgateway-dev/kgateway.dev/)
 
-```
-make serve-site
-```
+## Legacy Content
 
-## Deploying to a versioned test site
+The content in this directory is no longer maintained. Please visit the new documentation locations listed above for the most up-to-date information.
 
-NOTE: this process should only be done from main
+For historical context, this directory previously contained:
 
-```
-make build-docs
-firebase hosting:channel:deploy $(git describe --tags) --project=solo-corp --config=docs/ci/firebase.json
-```
+* Product documentation
+* Build and deployment instructions
+* Firebase hosting configuration
 
-## Building the docs
+## Questions or Issues?
 
-Building the docs is now done directly from the main branch, and occurs each time main is updated.
-The docs are built using the `build-docs.sh` script. The script will build all relevant tags/branches of gloo
-and then package them in a way which they can be deployed to firebase. The versions used are determined by the 
-`active_versions.json` file.
+If you have any questions about the documentation, please:
 
-`active_versions.json` contains 3 fields.
-  1. "latest" is the name of the tag/branch which should be the default when visiting the docs. "latest" must
-  be present in "versions"
-  2. "versions" is the list of tags/branches which are considered up-to-date
-  3. "oldVersions" is the list of supported tags/branches which are behind latest.
-
-`build-docs.sh` clones gloo into a subdir, checks the repo out at each "version", and copies the [content](content) 
-directory to a temporary location. The main branch is then checked out, and each "version" of the docs are built by 
-replacing the main's content directory with content previously stored for that "version". The built docs are then
-moved into `docs/ci/public/edge/<tag>`. Once each version has been built, the whole folder can
-be deployed to firebase using the following command:
-
-`firebase deploy --only hosting --project=solo-corp --config=ci/firebase.json`
-
-Building the docs from main allows us to make changes to the way the docs are packaged and published without 
-needing to backport the changes each time. This allows the build, and styles to remain consistent.
-
-
-# Shortcode/Hugo tips
-- Shortcodes cannot be embedded in other shortcodes
-  - This means the "readfile" shortcode does not interpolate shortcodes embedded within the file
-  - "Nesting" is different and allowed: you can "nest" short codes in the same manner that you can nest html tags
+1. Visit the new documentation website
+2. Open an issue in the [kgateway-dev/kgateway.dev](https://github.com/kgateway-dev/kgateway.dev/) repository

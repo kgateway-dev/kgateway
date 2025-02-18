@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/afero"
 
-	"github.com/kgateway-dev/kgateway/pkg/version"
+	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 )
 
 var _ = Describe("LatestVersionFromRepo", func() {

@@ -12,8 +12,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
-	"github.com/kgateway-dev/kgateway/test/kube2e/helper"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 )
 
 // EventuallyPodsRunning asserts that the pod(s) are in the ready state
@@ -34,7 +34,7 @@ func (p *Provider) EventuallyPodsMatches(
 	matcher types.GomegaMatcher,
 	timeout ...time.Duration,
 ) {
-	currentTimeout, pollingInterval := helper.GetTimeouts(timeout...)
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
 
 	p.Gomega.Eventually(func(g gomega.Gomega) {
 		pods, err := p.clusterContext.Clientset.CoreV1().Pods(podNamespace).List(ctx, listOpt)

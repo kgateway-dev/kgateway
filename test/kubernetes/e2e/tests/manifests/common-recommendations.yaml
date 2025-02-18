@@ -1,117 +1,69 @@
-# This file defines the common recommendations for a user who wants to run Gloo Gateway.
-# As we call out in the [profiles README](./profiles/README.md), these should be reviewed and tested
-# before being adopted.
+# This file defines the common recommendations for a user who wants to run kgateway.
+# These should be reviewed and tested before being adopted.
 #
 # NOTE TO MAINTAINERS:
 # Our Helm API has a set of default values. In most cases, we chose to not default _new_ APIs as a way
 # of maintaining backwards compatibility. However, a side effect of that is that ideal configuration
 # is not the default. That is where this file comes in.
 # In this file we define any values which are not the default, but are the recommended pattern of installing,
-# and thus testing, Gloo Gateway. Any values in this file should ideally be converted into
+# and thus testing, kgateway. Any values in this file should ideally be converted into
 # defaults in our values-template.yaml overtime. That way, users of the product can have the easiest experience,
 # and gain the best value, without custom configuration.
 
-# Configuration that is global to Gloo Gateway
-global:
-  podSecurityStandards:
-    container:
-      enableRestrictedContainerDefaults: true
-
-# Configuration for the Settings CR
-settings:
-  # Gloo Gateway requires access to namespaces outside of the install namespace to watch and create Gateway resources
-  # singleNamespace=false must be set for namespace watch to work correctly. See: https://github.com/solo-io/solo-projects/issues/6058
-  # This is actually the default value, but we opted to include this because there is an issue with context around
-  # why this is the case
-  singleNamespace: false
-  invalidConfigPolicy:
-    # See https://docs.solo.io/gloo-edge/latest/guides/traffic_management/configuration_validation/invalid_route_replacement/ for more details
-    replaceInvalidRoutes: true
-
-# Configuration for the Edge Gateway integration in Gloo Gateway
-gateway:
-  # In earlier versions of Gloo Gateway (when it was named Gloo Edge) there were separate 'gloo' and 'gateway'
-  # pods, and the Proxy CR was persisted in etcD to allow that resource to be shared between the two pods.
-  # Those pods have since been combined, and persisting the resource in memory is unnecessary and costs
-  # unnecessary CPU to read/write and marshal/unmarshal
-  persistProxySpec: false
-  isolateVirtualHostsBySslConfig: true
-  validation:
-    # See https://github.com/solo-io/gloo/issues/9309 for more context around the default validation options,
-    # and some of the problems associated with it.
-    # Below, we define an appropriate set of defaults, so that our tests can rely on the preferred configuration
-    alwaysAcceptResources: false
-    warnRouteShortCircuiting: true
-    webhook:
-      # skipping delete validation due to flakes per https://github.com/solo-io/solo-projects/issues/6272
-      skipDeleteValidationResources:
-        - upstreams
-
-# Configuration for the Gloo pod
-gloo:
+# Configuration for the kgateway controller pod
+controller:
   # we need to be able to troubleshoot failures using logs; when users encounter problems enabling debug logging is
   # a very early step in the troubleshooting process
   logLevel: debug
-  deployment:
-    livenessProbeEnabled: true
-    customEnv:
-      # We scale the Gloo component frequently in tests, and need leadership to be established quickly
-      # Therefore, we set values to lower thresholds than the defaults
-      - name: LEADER_ELECTION_LEASE_DURATION
-        value: 4s
-      - name: LEADER_ELECTION_RENEW_PERIOD
-        value: 3s
-      - name: LEADER_ELECTION_RETRY_PERIOD
-        value: 1s
-    # Resource requests and limits should be identified by users directly
-    # We define them here to ensure that tests can pass with resources defined
-    resources:
-      requests:
-        #  We have limited GitHub action resources which can cause containers to not create
-        # therefore we lessen the cpu resource requests values from the default (500m) to 100m.
-        cpu: 100m
-        memory: 256Mi
-      limits:
-        cpu: 1000m
-        memory: 10Gi
-    stats:
-      enabled: true # enable stats server for gloo so we can collect the metrics in CI
+# TODO enable other values
+  # deployment:
+  #   livenessProbeEnabled: true
+  #   customEnv:
+  #     # We scale the Gloo component frequently in tests, and need leadership to be established quickly
+  #     # Therefore, we set values to lower thresholds than the defaults
+  #     - name: LEADER_ELECTION_LEASE_DURATION
+  #       value: 4s
+  #     - name: LEADER_ELECTION_RENEW_PERIOD
+  #       value: 3s
+  #     - name: LEADER_ELECTION_RETRY_PERIOD
+  #       value: 1s
+  #   # Resource requests and limits should be identified by users directly
+  #   # We define them here to ensure that tests can pass with resources defined
+  #   resources:
+  #     requests:
+  #       #  We have limited GitHub action resources which can cause containers to not create
+  #       # therefore we lessen the cpu resource requests values from the default (500m) to 100m.
+  #       cpu: 100m
+  #       memory: 256Mi
+  #     limits:
+  #       cpu: 1000m
+  #       memory: 10Gi
+  #   stats:
+  #     enabled: true # enable stats server for gloo so we can collect the metrics in CI
 
-# Configuration for the statically deployed gateway-proxy that ships by default with Gloo Gateway
-gatewayProxies:
-  gatewayProxy:
+# TODO Configuration for the dynaimcally deployed proxies
     # Panic mode allows Envoy load balancing to disregard host's health status.
     # With panic mode enabled, it's possible that breaking changes to our health status configuration will still pass CI.
-    # As a result, we disable panic mode in our tests. This is not necessarily a recommendation for users running Gloo Gateway,
+    # As a result, we disable panic mode in our tests. This is not necessarily a recommendation for users running kgateway,
     # but is a way of ensuring that our tests are validating health status configuration properly
-    # See https://github.com/solo-io/gloo/pull/3891 for more context
-    healthyPanicThreshold: 0
-    podTemplate:
-      # Enable a readiness probe
-      probes: true
-      # Enable a liveness probe
-      livenessProbeEnabled: true
-      # Graceful shutdown allows Envoy to begin failing healthchecks (that have been configured via the health check filter)
-      # and then sleep for a certain, customized amount of time.
-      # This is particularly when Gloo Gateway is running behind some external load-balancer, and we need to signal
-      # to that load balancer that the proxies should stop receiving traffic, without affecting the current traffic on the pods
-      # See https://github.com/solo-io/gloo/pull/3435 for more context
-      gracefulShutdown:
-        enabled: true
-        # This functionality isn't relied upon in our tests, but it's a good practice to define it,
-        # so we configure it here as an example
-        sleepTimeSeconds: 1
-      resources:
-        requests:
-          #  We have limited GitHub action resources which can cause containers to not create
-          # therefore we lessen the cpu resource requests values from the default (500m) to 100m.
-          cpu: 100m
-          memory: 256Mi
-
-# Configuration for the Discovery pod
-discovery:
-  # Discovery is not recommended for production, so we disable it
-  # NOTE TO TEST AUTHORS: Upstreams must be statically defined in the manifests
-  enabled: false
-
-
+    # healthyPanicThreshold: 0
+    # podTemplate:
+    #   # Enable a readiness probe
+    #   probes: true
+    #   # Enable a liveness probe
+    #   livenessProbeEnabled: true
+    #   # Graceful shutdown allows Envoy to begin failing healthchecks (that have been configured via the health check filter)
+    #   # and then sleep for a certain, customized amount of time.
+    #   # This is particularly when kgateway is running behind some external load-balancer, and we need to signal
+    #   # to that load balancer that the proxies should stop receiving traffic, without affecting the current traffic on the pods
+    #   gracefulShutdown:
+    #     enabled: true
+    #     # This functionality isn't relied upon in our tests, but it's a good practice to define it,
+    #     # so we configure it here as an example
+    #     sleepTimeSeconds: 1
+    #   resources:
+    #     requests:
+    #       #  We have limited GitHub action resources which can cause containers to not create
+    #       # therefore we lessen the cpu resource requests values from the default (500m) to 100m.
+    #       cpu: 100m
+    #       memory: 256Mi

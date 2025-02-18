@@ -20,8 +20,7 @@ jobs:
     - name: Prep Go Runner
       uses: ./.github/actions/prep-go-runner
     - name: Generate Code
-      run: |
-        ./ci/check-generated-code.sh
+      run: make verify
 
   static-analysis:
     name: Lint Checks

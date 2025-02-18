@@ -11,11 +11,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils/kubectl"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 
-	testmatchers "github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
 
 type testManifest struct {
@@ -51,7 +51,7 @@ var (
 
 	// When we apply the setup.yaml file, we expect resources to be created with this metadata
 	glooProxyObjectMeta = metav1.ObjectMeta{
-		Name:      "gloo-proxy-gw",
+		Name:      "gw",
 		Namespace: "default",
 	}
 	proxyDeployment = &appsv1.Deployment{ObjectMeta: glooProxyObjectMeta}

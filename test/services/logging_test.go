@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/kgateway-dev/kgateway/test/services"
+	"github.com/kgateway-dev/kgateway/v2/test/services"
 )
 
 var _ = Describe("Logging", func() {

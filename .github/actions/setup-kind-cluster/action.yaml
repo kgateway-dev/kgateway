@@ -48,4 +48,4 @@ runs:
         CLUSTER_NODE_VERSION: ${{ inputs.kind-node-version }}
         ISTIO_VERSION: ${{ inputs.istio-version }}
         CONFORMANCE_VERSION: ${{ inputs.kgateway-api-version }}
-      run: ./ci/kind/setup-kind.sh
+      run: ./hack/kind/setup-kind.sh

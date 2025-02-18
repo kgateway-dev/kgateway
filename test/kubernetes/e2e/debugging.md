@@ -20,12 +20,12 @@ For these tests to run, we require the following conditions:
 - `glooctl` is built in the `_output` folder
 - A KinD cluster is set up and loaded with the images to be installed by the helm chart
 
-[ci/kind/setup-kind.sh](/ci/kind/setup-kind.sh) gets run in CI to setup the test environment for the above requirements.
+[hack/kind/setup-kind.sh](/hack/kind/setup-kind.sh) gets run in CI to setup the test environment for the above requirements.
 It accepts a number of environment variables, to control the creation of a kind cluster and deployment of Gloo resources to that kind cluster. Please refer to the script itself to see what variables are available.
 
 Example:
 ```bash
-CLUSTER_NAME=solo-test-cluster CLUSTER_NODE_VERSION=v1.30.0 VERSION=v1.0.0-solo-test ci/kind/setup-kind.sh
+CLUSTER_NAME=solo-test-cluster CLUSTER_NODE_VERSION=v1.30.0 VERSION=v1.0.0-solo-test hack/kind/setup-kind.sh
 ```
 
 ## Step 2: Running Tests

@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/test/testutils"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 
 	"github.com/avast/retry-go"
 

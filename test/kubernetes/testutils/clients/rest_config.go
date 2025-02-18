@@ -5,7 +5,7 @@ package clients
 import (
 	"k8s.io/client-go/rest"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
 // MustRestConfig returns MustRestConfigWithContext with an empty Kubernetes Context

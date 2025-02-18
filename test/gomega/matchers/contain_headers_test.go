@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kgateway-dev/kgateway/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
 
 var _ = Describe("ContainHeaders", func() {

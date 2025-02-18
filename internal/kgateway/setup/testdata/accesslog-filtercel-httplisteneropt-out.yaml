@@ -1,0 +1,306 @@
+clusters:
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  metadata: {}
+  name: kube_default_kubernetes_443
+  transportSocketMatches:
+  - match:
+      tlsMode: istio
+    name: tlsMode-istio
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - istio
+          tlsCertificateSdsSecretConfigs:
+          - name: istio_server_cert
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: gateway_proxy_sds
+                setNodeOnFirstMessageOnly: true
+                transportApiVersion: V3
+              resourceApiVersion: V3
+          tlsParams: {}
+          validationContextSdsSecretConfig:
+            name: istio_validation_context
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: gateway_proxy_sds
+                setNodeOnFirstMessageOnly: true
+                transportApiVersion: V3
+              resourceApiVersion: V3
+        sni: outbound_.443_._.kubernetes.default.svc.cluster.local
+  - match: {}
+    name: tlsMode-disabled
+    transportSocket:
+      name: envoy.transport_sockets.raw_buffer
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
+  type: EDS
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  metadata: {}
+  name: kube_gwtest_reviews_8080
+  transportSocketMatches:
+  - match:
+      tlsMode: istio
+    name: tlsMode-istio
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - istio
+          tlsCertificateSdsSecretConfigs:
+          - name: istio_server_cert
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: gateway_proxy_sds
+                setNodeOnFirstMessageOnly: true
+                transportApiVersion: V3
+              resourceApiVersion: V3
+          tlsParams: {}
+          validationContextSdsSecretConfig:
+            name: istio_validation_context
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: gateway_proxy_sds
+                setNodeOnFirstMessageOnly: true
+                transportApiVersion: V3
+              resourceApiVersion: V3
+        sni: outbound_.8080_._.reviews.gwtest.svc.cluster.local
+  - match: {}
+    name: tlsMode-disabled
+    transportSocket:
+      name: envoy.transport_sockets.raw_buffer
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
+  type: EDS
+- connectTimeout: 5s
+  loadAssignment:
+    clusterName: upstream_gwtest_log_0
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 1.2.3.4
+              portValue: 8080
+          healthCheckConfig:
+            hostname: 1.2.3.4
+          hostname: 1.2.3.4
+  metadata: {}
+  name: upstream_gwtest_log_0
+  transportSocketMatches:
+  - match:
+      tlsMode: istio
+    name: tlsMode-istio
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - istio
+          tlsCertificateSdsSecretConfigs:
+          - name: istio_server_cert
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: gateway_proxy_sds
+                setNodeOnFirstMessageOnly: true
+                transportApiVersion: V3
+              resourceApiVersion: V3
+          tlsParams: {}
+          validationContextSdsSecretConfig:
+            name: istio_validation_context
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: gateway_proxy_sds
+                setNodeOnFirstMessageOnly: true
+                transportApiVersion: V3
+              resourceApiVersion: V3
+  - match: {}
+    name: tlsMode-disabled
+    transportSocket:
+      name: envoy.transport_sockets.raw_buffer
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
+  type: STATIC
+endpoints:
+- clusterName: kube_gwtest_reviews_8080
+  endpoints:
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
+            address: 10.244.1.11
+            portValue: 8080
+      loadBalancingWeight: 1
+    loadBalancingWeight: 1
+listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        accessLog:
+        - filter:
+            extensionFilter:
+              name: envoy.access_loggers.extension_filters.cel
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.access_loggers.filters.cel.v3.ExpressionFilter
+                expression: request.headers['test'].contains('cool-beans')
+          name: envoy.access_loggers.http_grpc
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.access_loggers.grpc.v3.HttpGrpcAccessLogConfig
+            commonConfig:
+              grpcService:
+                envoyGrpc:
+                  clusterName: log
+              logName: test-accesslog-service
+              transportApiVersion: V3
+        - filter:
+            extensionFilter:
+              name: envoy.access_loggers.extension_filters.cel
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.access_loggers.filters.cel.v3.ExpressionFilter
+                expression: request.headers['test'].contains('cool-beans')
+          name: envoy.access_loggers.http_grpc
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.access_loggers.grpc.v3.HttpGrpcAccessLogConfig
+            commonConfig:
+              grpcService:
+                envoyGrpc:
+                  clusterName: log
+              logName: test-accesslog-service
+              transportApiVersion: V3
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: http
+        statPrefix: http
+        useRemoteAddress: true
+    name: http
+  name: http
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8081
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        accessLog:
+        - filter:
+            extensionFilter:
+              name: envoy.access_loggers.extension_filters.cel
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.access_loggers.filters.cel.v3.ExpressionFilter
+                expression: request.headers['test'].contains('cool-beans')
+          name: envoy.access_loggers.http_grpc
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.access_loggers.grpc.v3.HttpGrpcAccessLogConfig
+            commonConfig:
+              grpcService:
+                envoyGrpc:
+                  clusterName: log
+              logName: test-accesslog-service
+              transportApiVersion: V3
+        - filter:
+            extensionFilter:
+              name: envoy.access_loggers.extension_filters.cel
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.access_loggers.filters.cel.v3.ExpressionFilter
+                expression: request.headers['test'].contains('cool-beans')
+          name: envoy.access_loggers.http_grpc
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.access_loggers.grpc.v3.HttpGrpcAccessLogConfig
+            commonConfig:
+              grpcService:
+                envoyGrpc:
+                  clusterName: log
+              logName: test-accesslog-service
+              transportApiVersion: V3
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: other
+        statPrefix: http
+        useRemoteAddress: true
+    name: other
+  name: other
+routes:
+- ignorePortInHostMatching: true
+  name: http
+  virtualHosts:
+  - domains:
+    - www.example.com
+    name: http~www_example_com
+    routes:
+    - match:
+        prefix: /
+      name: http~www_example_com-route-0-httproute-reviews-gwtest-0-0-matcher-0
+      route:
+        cluster: kube_gwtest_reviews_8080
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+- ignorePortInHostMatching: true
+  name: other
+  virtualHosts:
+  - domains:
+    - www.example.com
+    name: other~www_example_com
+    routes:
+    - match:
+        prefix: /
+      name: other~www_example_com-route-0-httproute-reviews-gwtest-0-0-matcher-0
+      route:
+        cluster: kube_gwtest_reviews_8080
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR

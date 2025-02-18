@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/kubeutils"
-	"github.com/kgateway-dev/kgateway/pkg/utils/requestutils/curl"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 )
 
 var _ e2e.NewSuiteFunc = NewIstioAutoMtlsSuite
@@ -51,7 +51,7 @@ func (s *istioAutoMtlsTestingSuite) BeforeTest(suiteName, testName string) {
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
 	// Check that test resources are running
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyDeployment.ObjectMeta.GetNamespace(),
-		metav1.ListOptions{LabelSelector: "app.kubernetes.io/name=gloo-proxy-gw"}, time.Minute*2)
+		metav1.ListOptions{LabelSelector: "app.kubernetes.io/name=gw"}, time.Minute*2)
 }
 
 func (s *istioAutoMtlsTestingSuite) AfterTest(suiteName, testName string) {

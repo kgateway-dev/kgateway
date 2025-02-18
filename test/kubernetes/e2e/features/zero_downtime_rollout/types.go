@@ -7,10 +7,10 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/defaults"
-	"github.com/kgateway-dev/kgateway/test/kubernetes/e2e/tests/base"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/tests/base"
 
-	"github.com/kgateway-dev/kgateway/pkg/utils/fsutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -22,7 +22,7 @@ var (
 	serviceManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "service-for-route.yaml")
 
 	glooProxyObjectMeta = metav1.ObjectMeta{
-		Name:      "gloo-proxy-gw",
+		Name:      "gw",
 		Namespace: "default",
 	}
 	proxyDeployment = &appsv1.Deployment{ObjectMeta: glooProxyObjectMeta}

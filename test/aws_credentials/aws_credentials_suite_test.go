@@ -5,7 +5,7 @@ package aws_credentials
 import (
 	"testing"
 
-	testhelpers "github.com/kgateway-dev/kgateway/test/testutils"
+	testhelpers "github.com/kgateway-dev/kgateway/v2/test/testutils"
 
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/solo-io/solo-kit/test/helpers"

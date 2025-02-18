@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
 
-	"github.com/kgateway-dev/kgateway/test/ginkgo/parallel"
+	"github.com/kgateway-dev/kgateway/v2/test/ginkgo/parallel"
 )
 
 var _ = Describe("Ports", func() {

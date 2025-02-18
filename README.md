@@ -1,8 +1,8 @@
 <h1 align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/content/img/kgateway/logo-dark.svg" alt="kgateway" width="400">
-    <source media="(prefers-color-scheme: light)" srcset="docs/content/img/kgateway/logo.svg" alt="kgateway" width="400">
-    <img alt="kgateway" src="docs/content/img/kgateway/logo.svg">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kgateway-dev/kgateway.dev/main/static/logo-dark.svg" alt="kgateway" width="400">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/kgateway-dev/kgateway.dev/main/static/logo.svg" alt="kgateway" width="400">
+    <img alt="kgateway" src="https://raw.githubusercontent.com/kgateway-dev/kgateway.dev/main/static/logo.svg">
   </picture>
   <br/>
   An Envoy-Powered, Kubernetes-Native API Gateway
@@ -19,7 +19,7 @@ Please see [the plan](https://github.com/kgateway-dev/kgateway/issues/10363) for
 &nbsp; [**Slack invite**](https://slack.cncf.io/) &nbsp; |
 &nbsp; [**Slack channel**](https://cloud-native.slack.com/archives/C080D3PJMS4)
 
-<BR><center><img align="center" src="docs/content/img/kgateway/component-architecture.svg" alt="kgateway Architecture" width="700"></center>
+<BR><center><img align="center" src="https://raw.githubusercontent.com/kgateway-dev/kgateway.dev/main/assets/img/component-architecture.svg" alt="kgateway Architecture" width="700"></center>
 
 ### Using kgateway
 - **Kubernetes Gateway API**: Kgateway is a feature-rich ingress controller, built on top of the Envoy Proxy and fully conformant with the Kubernetes Gateway API.
