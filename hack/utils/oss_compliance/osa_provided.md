@@ -1,7 +1,6 @@
 Name|Version|License
 ---|---|---
 [fybrik.io/crdoc](https://fybrik.io/crdoc)|v0.6.3|Apache License 2.0
-[semver/v3](https://github.com/Masterminds/semver)|v3.3.0|MIT License
 [ahmetb/gen-crd-api-reference-docs](https://github.com/ahmetb/gen-crd-api-reference-docs)|v0.3.1-0.20240214155107-6cf1ede4da61|Apache License 2.0
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License
@@ -21,6 +20,7 @@ Name|Version|License
 [rotisserie/eris](https://github.com/rotisserie/eris)|v0.5.4|MIT License
 [saiskee/gettercheck](https://github.com/saiskee/gettercheck)|v0.0.0-20210820204958-38443d06ebe0|MIT License
 [spf13/afero](https://github.com/spf13/afero)|v1.11.0|Apache License 2.0
+[spf13/cobra](https://github.com/spf13/cobra)|v1.8.1|Apache License 2.0
 [stretchr/testify](https://github.com/stretchr/testify)|v1.9.0|MIT License
 [go.opencensus.io](https://go.opencensus.io)|v0.24.0|Apache License 2.0
 [go.uber.org/zap](https://go.uber.org/zap)|v1.27.0|MIT License

@@ -14,10 +14,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	zaputil "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/version"
 	"github.com/kgateway-dev/kgateway/v2/pkg/bootstrap/leaderelector"
 	kube2 "github.com/kgateway-dev/kgateway/v2/pkg/bootstrap/leaderelector/kube"
 	"github.com/kgateway-dev/kgateway/v2/pkg/bootstrap/leaderelector/singlereplica"
-	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 )
 
 func startLeaderElection(ctx context.Context, settingsDir string, electionConfig *leaderelector.ElectionConfig) (leaderelector.Identity, error) {
