@@ -4,14 +4,10 @@ import (
 	"context"
 	"time"
 
-	"istio.io/istio/pkg/kube/krt"
-	"istio.io/istio/pkg/kube/krt/krttest"
-
-	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
+	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/kube/krt/krttest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -27,11 +23,11 @@ import (
 
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 )
 
 //go:generate go run github.com/golang/mock/mockgen -destination mocks/mock_queries.go -package mocks github.com/kgateway-dev/kgateway/internal/kgateway/query GatewayQueries
@@ -634,30 +630,6 @@ func refGrantSecret() *apiv1beta1.ReferenceGrant {
 	}
 }
 
-func refGrant() *apiv1beta1.ReferenceGrant {
-	return &apiv1beta1.ReferenceGrant{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default2",
-			Name:      "foo",
-		},
-		Spec: apiv1beta1.ReferenceGrantSpec{
-			From: []apiv1beta1.ReferenceGrantFrom{
-				{
-					Group:     apiv1.Group("gateway.networking.k8s.io"),
-					Kind:      apiv1.Kind("HTTPRoute"),
-					Namespace: apiv1.Namespace("default"),
-				},
-			},
-			To: []apiv1beta1.ReferenceGrantTo{
-				{
-					Group: apiv1.Group("core"),
-					Kind:  apiv1.Kind("Service"),
-				},
-			},
-		},
-	}
-}
-
 func httpRoute() *apiv1.HTTPRoute {
 	return &apiv1.HTTPRoute{
 		TypeMeta: metav1.TypeMeta{
@@ -689,15 +661,6 @@ func secret(ns string) *corev1.Secret {
 	}
 }
 
-func svc(ns string) *corev1.Service {
-	return &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: ns,
-			Name:      "foo",
-		},
-	}
-}
-
 func tcpRoute(name, ns string) *apiv1a2.TCPRoute {
 	return &apiv1a2.TCPRoute{
 		TypeMeta: metav1.TypeMeta{
@@ -714,30 +677,6 @@ func tcpRoute(name, ns string) *apiv1a2.TCPRoute {
 func nsptr(s string) *apiv1.Namespace {
 	var ns apiv1.Namespace = apiv1.Namespace(s)
 	return &ns
-}
-
-func refGrantForTCPRoute() *apiv1beta1.ReferenceGrant {
-	return &apiv1beta1.ReferenceGrant{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default2",
-			Name:      "foo",
-		},
-		Spec: apiv1beta1.ReferenceGrantSpec{
-			From: []apiv1beta1.ReferenceGrantFrom{
-				{
-					Group:     apiv1.Group(apiv1a2.GroupName),
-					Kind:      apiv1.Kind("TCPRoute"),
-					Namespace: apiv1.Namespace("default"),
-				},
-			},
-			To: []apiv1beta1.ReferenceGrantTo{
-				{
-					Group: apiv1.Group("core"),
-					Kind:  apiv1.Kind("Service"),
-				},
-			},
-		},
-	}
 }
 
 var (

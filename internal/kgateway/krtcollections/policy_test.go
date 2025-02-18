@@ -383,8 +383,3 @@ func translateRoute(t *testing.T, inputs []any) ir.Route {
 	}
 	return h
 }
-
-func translate(t *testing.T, inputs []any) *ir.HttpRouteIR {
-	rtidx := preRouteIndex(t, inputs)
-	return rtidx.FetchHttp(krt.TestingDummyContext{}, "default", "httproute")
-}

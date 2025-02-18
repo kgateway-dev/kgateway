@@ -9,6 +9,7 @@ import (
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	kubeclient "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"
+	"istio.io/istio/pkg/kube/kclient/clienttest"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/test"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,15 +18,10 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"istio.io/istio/pkg/kube/kclient/clienttest"
-
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 )
 
-func xTestRun(t *testing.T) {
-
-	ctx := context.Background()
-	ctx = ctx
+func TestRun(t *testing.T) {
 	if true {
 		skubeclient.Register[*gwv1.HTTPRoute](
 			gvr.HTTPRoute_v1,

@@ -4,7 +4,6 @@ import (
 	"container/list"
 	"context"
 
-	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/types"
@@ -17,11 +16,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 )
 
-var (
-	awsMissingFuncRefError                = eris.New("upstreams must have a logical name specified in the backend ref via the parameters extensionref")
-	azureMissingFuncRefError              = eris.New("upstreams must have a function name specified in the backend ref via the parameters extensionref")
-	nonFunctionUpstreamWithParameterError = eris.New("parameters extensionref is only supported for aws and azure upstreams")
-)
+// TODO: Uncomment when the gateway_http_route_translator_test.go is uncommented.
+// var (
+// 	awsMissingFuncRefError                = eris.New("upstreams must have a logical name specified in the backend ref via the parameters extensionref")
+// 	azureMissingFuncRefError              = eris.New("upstreams must have a function name specified in the backend ref via the parameters extensionref")
+// 	nonFunctionUpstreamWithParameterError = eris.New("parameters extensionref is only supported for aws and azure upstreams")
+// )
 
 func TranslateGatewayHTTPRouteRules(
 	ctx context.Context,

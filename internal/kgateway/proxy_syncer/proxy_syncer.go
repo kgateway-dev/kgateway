@@ -42,8 +42,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 )
 
-const gatewayV1A2Version = "v1alpha2"
-
 // ProxySyncer is responsible for translating Kubernetes Gateway CRs into Gloo Proxies
 // and syncing the proxyClient with the newly translated proxies.
 type ProxySyncer struct {
@@ -156,13 +154,6 @@ func NewProxyTranslator(xdsCache envoycache.SnapshotCache) ProxyTranslator {
 	return ProxyTranslator{
 		xdsCache: xdsCache,
 	}
-}
-
-type glooProxy struct {
-	gateway *ir.GatewayIR
-	// the GWAPI reports generated for translation from a GW->Proxy
-	// this contains status for the Gateway and referenced Routes
-	reportMap reports.ReportMap
 }
 
 type report struct {

@@ -4,8 +4,6 @@ import (
 	"context"
 	"os"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
-
 	"github.com/go-logr/zapr"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
@@ -15,26 +13,7 @@ import (
 	zaputil "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/version"
-	"github.com/kgateway-dev/kgateway/v2/pkg/bootstrap/leaderelector"
-	kube2 "github.com/kgateway-dev/kgateway/v2/pkg/bootstrap/leaderelector/kube"
-	"github.com/kgateway-dev/kgateway/v2/pkg/bootstrap/leaderelector/singlereplica"
 )
-
-func startLeaderElection(ctx context.Context, settingsDir string, electionConfig *leaderelector.ElectionConfig) (leaderelector.Identity, error) {
-	if electionConfig == nil || settingsDir != "" || leaderelector.IsDisabled() {
-		// If a component does not contain election config, it does not support HA
-		// If the settingsDir is non-empty, it means that Settings are not defined in Kubernetes and therefore we can't use the
-		// leader election library which depends on Kubernetes
-		// If leader election is explicitly disabled, it means a user has decided not to opt-into HA
-		return singlereplica.NewElectionFactory().StartElection(ctx, electionConfig)
-	}
-
-	cfg, err := kubeutils.GetRestConfigWithKubeContext("")
-	if err != nil {
-		return nil, err
-	}
-	return kube2.NewElectionFactory(cfg).StartElection(ctx, electionConfig)
-}
 
 // SetupLogging sets up controller-runtime logging
 func SetupLogging(ctx context.Context, loggerName string) {

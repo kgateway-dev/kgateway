@@ -169,7 +169,6 @@ func (i *UpstreamIndex) GetUpstreamFromRef(kctx krt.HandlerContext, src ir.Objec
 
 type GatewayIndex struct {
 	policies *PolicyIndex
-	gwClass  krt.Collection[gwv1.GatewayClass]
 	Gateways krt.Collection[ir.Gateway]
 }
 
@@ -437,15 +436,6 @@ func (c RouteWrapper) Equals(in RouteWrapper) bool {
 		}
 	}
 	panic("unknown route type")
-}
-func versionEquals(a, b metav1.Object) bool {
-	var versionEquals bool
-	if a.GetGeneration() != 0 && b.GetGeneration() != 0 {
-		versionEquals = a.GetGeneration() == b.GetGeneration()
-	} else {
-		versionEquals = a.GetResourceVersion() == b.GetResourceVersion()
-	}
-	return versionEquals && a.GetUID() == b.GetUID()
 }
 
 type RoutesIndex struct {

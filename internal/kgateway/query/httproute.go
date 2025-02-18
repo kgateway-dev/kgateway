@@ -11,7 +11,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
@@ -406,28 +405,4 @@ type Namespaced interface {
 
 func namespacedName(o Namespaced) types.NamespacedName {
 	return types.NamespacedName{Name: o.GetName(), Namespace: o.GetNamespace()}
-}
-
-// getRouteItems extracts the list of route items from the provided client.ObjectList.
-// Supported route list types are:
-//
-//   - HTTPRouteList
-//   - TCPRouteList
-func getRouteItems(list client.ObjectList) ([]client.Object, error) {
-	switch routes := list.(type) {
-	case *gwv1.HTTPRouteList:
-		var objs []client.Object
-		for i := range routes.Items {
-			objs = append(objs, &routes.Items[i])
-		}
-		return objs, nil
-	case *gwv1a2.TCPRouteList:
-		var objs []client.Object
-		for i := range routes.Items {
-			objs = append(objs, &routes.Items[i])
-		}
-		return objs, nil
-	default:
-		return nil, fmt.Errorf("unsupported route type %T", list)
-	}
 }
