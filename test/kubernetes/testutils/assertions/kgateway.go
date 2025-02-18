@@ -1,0 +1,37 @@
+package assertions
+
+import (
+	"context"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+func (p *Provider) EventuallyKgatewayInstallSucceeded(
+	ctx context.Context,
+	installNamespace string,
+) {
+	p.expectInstallContextDefined()
+
+	p.EventuallyPodsRunning(ctx, installNamespace,
+		metav1.ListOptions{
+			LabelSelector: "app.kubernetes.io/name=kgateway",
+		})
+}
+
+func (p *Provider) EventuallyKgatewayUninstallSucceeded(
+	ctx context.Context,
+	installNamespace string,
+) {
+	p.expectInstallContextDefined()
+
+	p.EventuallyPodsNotExist(ctx, installNamespace,
+		metav1.ListOptions{
+			LabelSelector: "app.kubernetes.io/name=kgateway",
+		})
+}
+
+func (p *Provider) EventuallyKgatewayUpgradeSucceeded(ctx context.Context, version string) {
+	p.expectInstallContextDefined()
+
+	// TODO check other things here, e.g. expected pods are up
+}
