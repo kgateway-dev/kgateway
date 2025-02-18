@@ -6,25 +6,19 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (p *Provider) EventuallyKgatewayInstallSucceeded(
-	ctx context.Context,
-	installNamespace string,
-) {
+func (p *Provider) EventuallyKgatewayInstallSucceeded(ctx context.Context) {
 	p.expectInstallContextDefined()
 
-	p.EventuallyPodsRunning(ctx, installNamespace,
+	p.EventuallyPodsRunning(ctx, p.installContext.InstallNamespace,
 		metav1.ListOptions{
 			LabelSelector: "app.kubernetes.io/name=kgateway",
 		})
 }
 
-func (p *Provider) EventuallyKgatewayUninstallSucceeded(
-	ctx context.Context,
-	installNamespace string,
-) {
+func (p *Provider) EventuallyKgatewayUninstallSucceeded(ctx context.Context) {
 	p.expectInstallContextDefined()
 
-	p.EventuallyPodsNotExist(ctx, installNamespace,
+	p.EventuallyPodsNotExist(ctx, p.installContext.InstallNamespace,
 		metav1.ListOptions{
 			LabelSelector: "app.kubernetes.io/name=kgateway",
 		})

@@ -161,7 +161,7 @@ func (i *TestInstallation) InstallKgatewayFromLocalChart(ctx context.Context) {
 			ChartUri:        chartUri,
 		})
 	i.Assertions.Require.NoError(err)
-	i.Assertions.EventuallyKgatewayInstallSucceeded(ctx, i.Metadata.InstallNamespace)
+	i.Assertions.EventuallyKgatewayInstallSucceeded(ctx)
 }
 
 // TODO implement this when we add upgrade tests
@@ -183,7 +183,7 @@ func (i *TestInstallation) UninstallKgateway(ctx context.Context) {
 		},
 	)
 	i.Assertions.Require.NoError(err)
-	i.Assertions.EventuallyKgatewayUninstallSucceeded(ctx, i.Metadata.InstallNamespace)
+	i.Assertions.EventuallyKgatewayUninstallSucceeded(ctx)
 }
 
 // PreFailHandler is the function that is invoked if a test in the given TestInstallation fails
