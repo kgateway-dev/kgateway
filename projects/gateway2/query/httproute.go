@@ -138,7 +138,7 @@ func (r *gatewayQueries) allowedRoutes(gw *gwv1.Gateway, l *gwv1.Listener) (func
 	// Determine the allowed route kinds based on the listener's protocol
 	switch l.Protocol {
 	case gwv1.HTTPSProtocolType:
-		fallthrough // TLS ??
+		fallthrough
 	case gwv1.HTTPProtocolType:
 		allowedKinds = []metav1.GroupKind{{Kind: wellknown.HTTPRouteKind, Group: gwv1.GroupName}}
 	case gwv1.TLSProtocolType:
@@ -348,7 +348,7 @@ func (r *gatewayQueries) processRoute(
 			}
 			anyListenerMatched = true
 
-			// If the route is an HTTPRoute, check the hostname intersection
+			// If the route is an HTTP or TLS Route, check the hostname intersection
 			var hostnames []string
 			if routeKind == wellknown.HTTPRouteKind {
 				if hr, ok := route.(*ir.HttpRouteIR); ok {
