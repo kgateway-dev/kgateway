@@ -15,9 +15,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
-// TestK8sGatewayAws is the function which executes a series of tests against a given installation
+// TestKgatewayAws is the function which executes a series of tests against a given installation
 // with Kubernetes Gateway integration enabled and AWS lambda options configured
-func TestK8sGatewayAws(t *testing.T) {
+func TestKgatewayAws(t *testing.T) {
 	ctx := context.Background()
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "k8s-gw-aws-test")
 	testInstallation := e2e.CreateTestInstallation(

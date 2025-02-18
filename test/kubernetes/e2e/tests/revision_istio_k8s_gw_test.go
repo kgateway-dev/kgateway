@@ -15,9 +15,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
-// TestK8sGatewayIstioRevision is the function which executes a series of tests against a given installation with
+// TestKgatewayIstioRevision is the function which executes a series of tests against a given installation with
 // k8s gateway enabled and Istio installed with revisions
-func TestK8sGatewayIstioRevision(t *testing.T) {
+func TestKgatewayIstioRevision(t *testing.T) {
 	ctx := context.Background()
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "istio-rev-k8s-gw-test")
 	testInstallation := e2e.CreateTestInstallation(

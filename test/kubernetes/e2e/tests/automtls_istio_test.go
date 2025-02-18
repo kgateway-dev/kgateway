@@ -15,8 +15,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
-// TestK8sGatewayIstioAutoMtls is the function which executes a series of tests against a given installation
-func TestK8sGatewayIstioAutoMtls(t *testing.T) {
+// TestKgatewayIstioAutoMtls is the function which executes a series of tests against a given installation
+func TestKgatewayIstioAutoMtls(t *testing.T) {
 	ctx := context.Background()
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "automtls-istio-k8s-gw-test")
 	testInstallation := e2e.CreateTestInstallation(

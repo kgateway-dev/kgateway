@@ -15,9 +15,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
-// TestK8sGatewayMinimalDefaultGatewayParameters is the function which executes a series of tests against a given installation
+// TestKgatewayMinimalDefaultGatewayParameters is the function which executes a series of tests against a given installation
 // which is expected to have all user-facing options set to null in helm values
-func TestK8sGatewayMinimalDefaultGatewayParameters(t *testing.T) {
+func TestKgatewayMinimalDefaultGatewayParameters(t *testing.T) {
 	ctx := context.Background()
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "k8s-gateway-minimal-default-gatewayparameters-test")
 	testInstallation := e2e.CreateTestInstallation(

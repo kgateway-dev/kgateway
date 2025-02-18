@@ -28,22 +28,22 @@ jobs:
         # Feb 17, 2025: ? minutes
         - cluster-name: 'cluster-one'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestK8sGateway$$/^BasicRouting$$'
+          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$'
 
 #         # Dec 4, 2024: 23 minutes
 #         - cluster-name: 'cluster-two'
 #           go-test-args: '-v -timeout=25m'
-#           go-test-run-regex: '^TestK8sGateway$$/^RouteDelegation$$|^TestK8sGatewayIstioRevision$$|^TestRevisionIstioRegression$$|^TestK8sGateway$$/^Deployer$$|^TestK8sGateway$$/^RouteOptions$$|^TestK8sGateway$$/^VirtualHostOptions$$|^TestK8sGateway$$/^Upstreams$$|^TestK8sGateway$$/^HeadlessSvc$$|^TestK8sGateway$$/^PortRouting$$|^TestK8sGatewayMinimalDefaultGatewayParameters$$|^TestK8sGateway$$/^DirectResponse$$|^TestK8sGateway$$/^HttpListenerOptions$$|^TestK8sGateway$$/^ListenerOptions$$|^TestK8sGateway$$/^GlooAdminServer$$'
+#           go-test-run-regex: '^TestKgateway$$/^RouteDelegation$$|^TestKgatewayIstioRevision$$|^TestRevisionIstioRegression$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^RouteOptions$$|^TestKgateway$$/^VirtualHostOptions$$|^TestKgateway$$/^Upstreams$$|^TestKgateway$$/^HeadlessSvc$$|^TestKgateway$$/^PortRouting$$|^TestKgatewayMinimalDefaultGatewayParameters$$|^TestKgateway$$/^DirectResponse$$|^TestKgateway$$/^HttpListenerOptions$$|^TestKgateway$$/^ListenerOptions$$|^TestKgateway$$/^GlooAdminServer$$'
 
 #         # Dec 4, 2024: 24 minutes
 #         - cluster-name: 'cluster-three'
 #           go-test-args: '-v -timeout=30m'
-#           go-test-run-regex: '(^TestK8sGatewayIstioAutoMtls$$|^TestAutomtlsIstioEdgeApisGateway$$|^TestIstioEdgeApiGateway$$|^TestIstioRegression$$)'
+#           go-test-run-regex: '(^TestKgatewayIstioAutoMtls$$|^TestAutomtlsIstioEdgeApisGateway$$|^TestIstioEdgeApiGateway$$|^TestIstioRegression$$)'
 
 #         # Dec 4, 2024: 21 minutes
 #         - cluster-name: 'cluster-four'
 #           go-test-args: '-v -timeout=30m'
-#           go-test-run-regex: '(^TestK8sGatewayIstio$$|^TestGlooGatewayEdgeGateway$$|^TestGlooctlIstioInjectEdgeApiGateway$$)'
+#           go-test-run-regex: '(^TestKgatewayIstio$$|^TestGlooGatewayEdgeGateway$$|^TestGlooctlIstioInjectEdgeApiGateway$$)'
 
 #         # Dec 4, 2024: 24 minutes
 #         - cluster-name: 'cluster-five'
@@ -53,12 +53,12 @@ jobs:
 #         # Dec 4, 2024: 26 minutes
 #         - cluster-name: 'cluster-six'
 #           go-test-args: '-v -timeout=30m'
-#           go-test-run-regex: '^TestDiscoveryWatchlabels$$|^TestK8sGatewayNoValidation$$|^TestHelm$$|^TestHelmSettings$$|^TestK8sGatewayAws$$|^TestK8sGateway$$/^HTTPRouteServices$$|^TestK8sGateway$$/^TCPRouteServices$$|^TestZeroDowntimeRollout$$'
+#           go-test-run-regex: '^TestDiscoveryWatchlabels$$|^TestKgatewayNoValidation$$|^TestHelm$$|^TestHelmSettings$$|^TestKgatewayAws$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TCPRouteServices$$|^TestZeroDowntimeRollout$$'
 
 #         # Dec 4, 2024: 13 minutes
 #         - cluster-name: 'cluster-seven'
 #           go-test-args: '-v -timeout=25m'
-#           go-test-run-regex: '^TestK8sGateway$$/^CRDCategories$$|^TestK8sGateway$$/^Metrics$$|^TestGloomtlsGatewayEdgeGateway$$|^TestWatchNamespaceSelector$$'
+#           go-test-run-regex: '^TestKgateway$$/^CRDCategories$$|^TestKgateway$$/^Metrics$$|^TestGloomtlsGatewayEdgeGateway$$|^TestWatchNamespaceSelector$$'
 
         # In our PR tests, we run the suite of tests using the upper ends of versions that we claim to support
         # The versions should mirror: https://kgateway.dev/docs/reference/versions/

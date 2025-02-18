@@ -15,8 +15,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
-// TestK8sGatewayNoValidation executes tests against a K8s Gateway gloo install with validation disabled
-func TestK8sGatewayNoValidation(t *testing.T) {
+// TestKgatewayNoValidation executes tests against a K8s Gateway gloo install with validation disabled
+func TestKgatewayNoValidation(t *testing.T) {
 	ctx := context.Background()
 	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "k8s-gw-test-no-validation")
 	testInstallation := e2e.CreateTestInstallation(
