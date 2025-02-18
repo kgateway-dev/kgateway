@@ -42,7 +42,7 @@ SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 # universal header validation has been enabled and if so, we expect
 # failures in `test/e2e/header_validation_test.go`.
 export ENVOY_IMAGE ?= quay.io/solo-io/envoy-gloo:1.31.2-patch3
-export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/pkg/version.Version=$(VERSION)'
+export LDFLAGS := -X 'github.com/kgateway-dev/kgateway/v2/internal/version.Version=$(VERSION)'
 export GCFLAGS ?=
 
 UNAME_M := $(shell uname -m)
