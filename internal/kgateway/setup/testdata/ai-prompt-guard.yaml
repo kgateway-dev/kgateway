@@ -60,7 +60,7 @@ spec:
       filters:
         - type: ExtensionRef
           extensionRef:
-            group: gateway.kgateway.dev/v1alpha1
+            group: gateway.kgateway.dev
             kind: RoutePolicy
             name: route-test
 ---

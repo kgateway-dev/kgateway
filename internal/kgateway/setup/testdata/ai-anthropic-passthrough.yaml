@@ -13,7 +13,7 @@ spec:
         namespaces:
           from: All
 ---
-apiVersion: gloo.solo.io/v1
+apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Upstream
 metadata:
   labels:
@@ -22,9 +22,10 @@ metadata:
   namespace: gwtest
 spec:
   ai:
-    anthropic:
-      authToken:
-        kind: "Passthrough"
+    llm:
+      anthropic:
+        authToken:
+          kind: "Passthrough"
 ---
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
@@ -48,7 +49,7 @@ spec:
       filters:
         - type: ExtensionRef
           extensionRef:
-            group: gateway.kgateway.dev/v1alpha1
+            group: gateway.kgateway.dev
             kind: RoutePolicy
             name: route-test
 ---
