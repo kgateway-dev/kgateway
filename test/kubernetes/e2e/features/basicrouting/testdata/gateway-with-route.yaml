@@ -23,5 +23,5 @@ spec:
     - "example.com"
   rules:
     - backendRefs:
-        - name: nginx
+        - name: example-svc
           port: 8080

@@ -6,7 +6,6 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -88,12 +87,9 @@ func (s *testingSuite) TestGatewayWithRoute() {
 		s.ctx,
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
-			curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{
-				Name:      proxyObjectMeta.Name,
-				Namespace: proxyObjectMeta.Namespace,
-			})),
+			curl.WithHost(kubeutils.ServiceFQDN(proxyObjectMeta)),
 			curl.WithHostHeader("example.com"),
-			curl.WithPort(80),
+			curl.WithPort(8080),
 		},
 		&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
