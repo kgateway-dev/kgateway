@@ -106,6 +106,12 @@ type KubernetesProxyConfig struct {
 	// +kubebuilder:validation:Optional
 	AiExtension *AiExtension `json:"aiExtension,omitempty"`
 
+	// InferenceExtension defines the desired state of the Gateway API inference extension.
+	// For additional details, see: https://gateway-api-inference-extension.sigs.k8s.io/.
+	//
+	// +kubebuilder:validation:Optional
+	InferenceExtension *InferenceExtension `json:"inferenceExtension,omitempty"`
+
 	// Used to unset the `runAsUser` values in security contexts.
 	FloatingUserId *bool `json:"floatingUserId,omitempty"`
 }
@@ -731,4 +737,21 @@ func (in *CustomLabel) GetKeyDelimiter() *string {
 		return nil
 	}
 	return in.KeyDelimiter
+}
+
+// InferenceExtension defines the desired state of the Gateway API inference extension.
+// For additional details, see: https://gateway-api-inference-extension.sigs.k8s.io/.
+type InferenceExtension struct {
+	// EndpointPicker defines the EndpointPicker extension.
+	//
+	// +optional
+	EndpointPicker *EndpointPickerExtension `json:"endpointPicker,omitempty"`
+}
+
+// EndpointPickerExtension defines the desired state of an EndpointPicker extension.
+type EndpointPickerExtension struct {
+	// Whether to enable the extension.
+	//
+	// +kubebuilder:validation:Optional
+	Enabled *bool `json:"enabled,omitempty"`
 }

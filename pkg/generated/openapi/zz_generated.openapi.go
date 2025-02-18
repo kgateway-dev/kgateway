@@ -29,6 +29,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DirectResponseSpec":         schema_kgateway_v2_api_v1alpha1_DirectResponseSpec(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DirectResponseStatus":       schema_kgateway_v2_api_v1alpha1_DirectResponseStatus(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.DurationFilter":             schema_kgateway_v2_api_v1alpha1_DurationFilter(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EndpointPickerExtension":    schema_kgateway_v2_api_v1alpha1_EndpointPickerExtension(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EnvoyBootstrap":             schema_kgateway_v2_api_v1alpha1_EnvoyBootstrap(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EnvoyContainer":             schema_kgateway_v2_api_v1alpha1_EnvoyContainer(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FileSink":                   schema_kgateway_v2_api_v1alpha1_FileSink(ref),
@@ -46,6 +47,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderFilter":               schema_kgateway_v2_api_v1alpha1_HeaderFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host":                       schema_kgateway_v2_api_v1alpha1_Host(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Image":                      schema_kgateway_v2_api_v1alpha1_Image(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.InferenceExtension":         schema_kgateway_v2_api_v1alpha1_InferenceExtension(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.IstioContainer":             schema_kgateway_v2_api_v1alpha1_IstioContainer(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.IstioIntegration":           schema_kgateway_v2_api_v1alpha1_IstioIntegration(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.KubernetesProxyConfig":      schema_kgateway_v2_api_v1alpha1_KubernetesProxyConfig(ref),
@@ -923,6 +925,26 @@ func schema_kgateway_v2_api_v1alpha1_DurationFilter(ref common.ReferenceCallback
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_EndpointPickerExtension(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "EndpointPickerExtension defines the desired state of an EndpointPicker extension.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"enabled": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Whether to enable the extension.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_EnvoyBootstrap(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -1593,6 +1615,27 @@ func schema_kgateway_v2_api_v1alpha1_Image(ref common.ReferenceCallback) common.
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_InferenceExtension(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "InferenceExtension defines the desired state of the Gateway API inference extension. For additional details, see: https://gateway-api-inference-extension.sigs.k8s.io/.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"endpointPicker": {
+						SchemaProps: spec.SchemaProps{
+							Description: "EndpointPicker defines the EndpointPicker extension.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EndpointPickerExtension"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EndpointPickerExtension"},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_IstioContainer(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -1750,6 +1793,12 @@ func schema_kgateway_v2_api_v1alpha1_KubernetesProxyConfig(ref common.ReferenceC
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtension"),
 						},
 					},
+					"inferenceExtension": {
+						SchemaProps: spec.SchemaProps{
+							Description: "InferenceExtension defines the desired state of the Gateway API inference extension. For additional details, see: https://gateway-api-inference-extension.sigs.k8s.io/.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.InferenceExtension"),
+						},
+					},
 					"floatingUserId": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Used to unset the `runAsUser` values in security contexts.",
@@ -1761,7 +1810,7 @@ func schema_kgateway_v2_api_v1alpha1_KubernetesProxyConfig(ref common.ReferenceC
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtension", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EnvoyContainer", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.IstioIntegration", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Pod", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProxyDeployment", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SdsContainer", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Service", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ServiceAccount", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StatsConfig"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtension", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.EnvoyContainer", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.InferenceExtension", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.IstioIntegration", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Pod", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ProxyDeployment", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SdsContainer", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Service", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ServiceAccount", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StatsConfig"},
 	}
 }
 
