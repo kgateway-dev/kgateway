@@ -19,6 +19,7 @@ linters:
     - goimports
     - nakedret
     - predeclared
+    - unused
     - usestdlibvars
     - importas
 
