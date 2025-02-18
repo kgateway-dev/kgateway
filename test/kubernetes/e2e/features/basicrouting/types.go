@@ -17,14 +17,14 @@ var (
 	gatewayWithRouteManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway-with-route.yaml")
 
 	// objects
-	glooProxyObjectMeta = metav1.ObjectMeta{
+	proxyObjectMeta = metav1.ObjectMeta{
 		Name:      "gw",
 		Namespace: "default",
 	}
-	proxyDeployment     = &appsv1.Deployment{ObjectMeta: glooProxyObjectMeta}
-	proxyService        = &corev1.Service{ObjectMeta: glooProxyObjectMeta}
-	proxyServiceAccount = &corev1.ServiceAccount{ObjectMeta: glooProxyObjectMeta}
-	gw                  = &gwapiv1.Gateway{ObjectMeta: glooProxyObjectMeta}
+	proxyDeployment     = &appsv1.Deployment{ObjectMeta: proxyObjectMeta}
+	proxyService        = &corev1.Service{ObjectMeta: proxyObjectMeta}
+	proxyServiceAccount = &corev1.ServiceAccount{ObjectMeta: proxyObjectMeta}
+	gw                  = &gwapiv1.Gateway{ObjectMeta: proxyObjectMeta}
 
 	exampleSvc = &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{

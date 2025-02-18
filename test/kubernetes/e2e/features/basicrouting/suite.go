@@ -89,8 +89,8 @@ func (s *testingSuite) TestGatewayWithRoute() {
 		testdefaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(metav1.ObjectMeta{
-				Name:      glooProxyObjectMeta.Name,
-				Namespace: glooProxyObjectMeta.Namespace,
+				Name:      proxyObjectMeta.Name,
+				Namespace: proxyObjectMeta.Namespace,
 			})),
 			curl.WithHostHeader("example.com"),
 			curl.WithPort(80),
