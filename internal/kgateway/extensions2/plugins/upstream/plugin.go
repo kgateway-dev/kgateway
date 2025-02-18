@@ -40,19 +40,7 @@ import (
 )
 
 const (
-	ParameterGroup = "gloo.solo.io"
-	ParameterKind  = "Parameter"
-)
-const (
-	ExtensionName = "Upstream"
-	FilterName    = "io.solo.aws_lambda"
-)
-
-var (
-	ParameterGK = schema.GroupKind{
-		Group: ParameterGroup,
-		Kind:  ParameterKind,
-	}
+	FilterName = "io.solo.aws_lambda"
 )
 
 type upstreamDestination struct {
@@ -148,7 +136,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			},
 		},
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
-			ParameterGK: {
+			v1alpha1.UpstreamGVK.GroupKind(): {
 				Name:                      "upstream",
 				NewGatewayTranslationPass: newPlug,
 				//			AttachmentPoints: []ir.AttachmentPoints{ir.HttpBackendRefAttachmentPoint},
