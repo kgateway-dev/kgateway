@@ -38,12 +38,12 @@ jobs:
 #         # Dec 4, 2024: 24 minutes
 #         - cluster-name: 'cluster-three'
 #           go-test-args: '-v -timeout=30m'
-#           go-test-run-regex: '(^TestKgatewayIstioAutoMtls$$|^TestAutomtlsIstioEdgeApisGateway$$|^TestIstioEdgeApiGateway$$|^TestIstioRegression$$)'
+#           go-test-run-regex: '(^TestKgatewayIstioAutoMtls$$|^TestIstioRegression$$)'
 
 #         # Dec 4, 2024: 21 minutes
 #         - cluster-name: 'cluster-four'
 #           go-test-args: '-v -timeout=30m'
-#           go-test-run-regex: '(^TestKgatewayIstio$$|^TestGlooGatewayEdgeGateway$$|^TestGlooctlIstioInjectEdgeApiGateway$$)'
+#           go-test-run-regex: '(^TestKgatewayIstio$$)'
 
 #         # Dec 4, 2024: 24 minutes
 #         - cluster-name: 'cluster-five'
@@ -58,7 +58,7 @@ jobs:
 #         # Dec 4, 2024: 13 minutes
 #         - cluster-name: 'cluster-seven'
 #           go-test-args: '-v -timeout=25m'
-#           go-test-run-regex: '^TestKgateway$$/^CRDCategories$$|^TestKgateway$$/^Metrics$$|^TestGloomtlsGatewayEdgeGateway$$|^TestWatchNamespaceSelector$$'
+#           go-test-run-regex: '^TestKgateway$$/^CRDCategories$$|^TestKgateway$$/^Metrics$$|^TestWatchNamespaceSelector$$'
 
         # In our PR tests, we run the suite of tests using the upper ends of versions that we claim to support
         # The versions should mirror: https://kgateway.dev/docs/reference/versions/
