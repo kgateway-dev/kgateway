@@ -176,9 +176,7 @@ routes:
                   transformationTemplate:
                     headers:
                       :path:
-                        text: /{{host_metadata("api_version")}}/projects/{{host_metadata("project")}}/locations/{{host_metadata("location")}}/publishers/{{host_metadata("publisher")}}/models/{{host_metadata("model")}}:{%
-                          if host_metadata("route_type") == "CHAT_STREAMING" %}streamGenerateContent?alt=sse{%
-                          else %}generateContent{% endif %}
+                        text: /{{host_metadata("api_version")}}/projects/{{host_metadata("project")}}/locations/{{host_metadata("location")}}/publishers/{{host_metadata("publisher")}}/models/{{host_metadata("model")}}:%!s(*string=<nil>)
                       Authorization:
                         text: Bearer {% if host_metadata("auth_token") != "" %}{{host_metadata("auth_token")}}{%
                           else %}{{dynamic_metadata("auth_token","ai.kgateway.io")}}{%
