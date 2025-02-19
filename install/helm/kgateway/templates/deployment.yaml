@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "kgateway.fullname" . }}
+  name: kgateway
   labels:
     {{- include "kgateway.labels" . | nindent 4 }}
 spec:
