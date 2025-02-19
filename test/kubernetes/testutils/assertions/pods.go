@@ -14,7 +14,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 )
 
-// EventuallyPodsRunning asserts that the pod(s) are in the ready state
+// EventuallyPodsRunning asserts that the pod(s) are in the PodRunning state
 func (p *Provider) EventuallyPodsRunning(
 	ctx context.Context,
 	podNamespace string,

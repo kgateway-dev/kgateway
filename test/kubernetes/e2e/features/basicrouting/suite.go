@@ -26,12 +26,6 @@ type testingSuite struct {
 	// testInstallation contains all the metadata/utilities necessary to execute a series of tests
 	// against an installation of kgateway
 	testInstallation *e2e.TestInstallation
-
-	// manifests maps test name to a list of manifests to apply before the test
-	manifests map[string][]string
-
-	// manifestObjects maps a manifest file to a list of objects that are contained in that file
-	manifestObjects map[string][]client.Object
 }
 
 func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.TestingSuite {
@@ -41,45 +35,35 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 	}
 }
 
-func (s *testingSuite) SetupSuite() {
-	s.manifests = map[string][]string{
-		"TestGatewayWithRoute": {
-			testdefaults.CurlPodManifest,
-			exampleServiceManifest,
-			gatewayWithRouteManifest,
-		},
+func (s *testingSuite) TestGatewayWithRoute() {
+	manifests := []string{
+		testdefaults.CurlPodManifest,
+		exampleServiceManifest,
+		gatewayWithRouteManifest,
+	}
+	manifestObjects := []client.Object{
+		testdefaults.CurlPod, // curl
+		nginxPod, exampleSvc, // nginx
+		proxyService, proxyServiceAccount, proxyDeployment, // proxy
 	}
 
-	s.manifestObjects = map[string][]client.Object{
-		testdefaults.CurlPodManifest: {testdefaults.CurlPod},
-		exampleServiceManifest:       {nginxPod, exampleSvc},
-		gatewayWithRouteManifest:     {proxyService, proxyServiceAccount, proxyDeployment},
-	}
-}
+	s.T().Cleanup(func() {
+		for _, manifest := range manifests {
+			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
+			s.Require().NoError(err)
+		}
+		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, manifestObjects...)
+	})
 
-func (s *testingSuite) TearDownSuite() {
-	// nothing at the moment
-}
-
-func (s *testingSuite) BeforeTest(suiteName, testName string) {
-	manifests := s.manifests[testName]
 	for _, manifest := range manifests {
 		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
 		s.Require().NoError(err)
-		s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, s.manifestObjects[manifest]...)
 	}
-}
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, manifestObjects...)
 
-func (s *testingSuite) AfterTest(suiteName, testName string) {
-	manifests := s.manifests[testName]
-	for _, manifest := range manifests {
-		err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
-		s.Require().NoError(err)
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, s.manifestObjects[manifest]...)
-	}
-}
-
-func (s *testingSuite) TestGatewayWithRoute() {
+	// make sure pods are ready to receive traffic
+	s.testInstallation.Assertions.EventuallyReadyReplicas(s.ctx, testdefaults.CurlPod.ObjectMeta, gomega.Equal(1))
+	s.testInstallation.Assertions.EventuallyReadyReplicas(s.ctx, nginxPod.ObjectMeta, gomega.Equal(1))
 	s.testInstallation.Assertions.EventuallyReadyReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
 
 	// Should have a successful response
