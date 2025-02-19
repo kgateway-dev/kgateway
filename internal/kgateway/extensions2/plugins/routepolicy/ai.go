@@ -17,7 +17,7 @@ import (
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -283,7 +283,7 @@ func getAuthToken(in *v1alpha1.SingleAuthToken) (token string, err error) {
 // as we do not know which one to select.
 // In addition, this function will strip the "Bearer " prefix from the token as it will get conditionally
 // added later depending on the provider.
-func getTokenFromHeaderSecret(secretRef *v1.LocalObjectReference) (token string, err error) {
+func getTokenFromHeaderSecret(secretRef *corev1.LocalObjectReference) (token string, err error) {
 	// TODO: get seret from resolved secrets
 	return "", err
 }
