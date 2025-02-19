@@ -1098,7 +1098,7 @@ func schema_kgateway_v2_api_v1alpha1_GatewayParameters(ref common.ReferenceCallb
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "A GatewayParameters contains configuration that is used to dynamically provision Gloo Gateway's data plane (Envoy proxy instance), based on a Kubernetes Gateway.",
+				Description: "A GatewayParameters contains configuration that is used to dynamically provision kgateway's data plane (Envoy proxy instance), based on a Kubernetes Gateway.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {

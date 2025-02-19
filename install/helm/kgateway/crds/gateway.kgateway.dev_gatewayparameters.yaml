@@ -5,8 +5,8 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.16.5
   labels:
-    app: gloo-gateway
-    app.kubernetes.io/name: gloo-gateway
+    app: gateway
+    app.kubernetes.io/name: gateway
   name: gatewayparameters.gateway.kgateway.dev
 spec:
   group: gateway.kgateway.dev
