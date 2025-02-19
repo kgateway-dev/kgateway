@@ -1,13 +1,13 @@
 package kubeutils
 
 const (
-	GlooDeploymentName    = "kgateway"
-	GlooServiceName       = "kgateway"
-	KgatewayContainerName = "kgateway"
+	// control plane resource names
+	// TODO if we make the names configurable we should stop using these constants (https://github.com/kgateway-dev/kgateway/issues/10658)
+	KgatewayDeploymentName = "kgateway"
+	KgatewayServiceName    = "kgateway"
+	KgatewayContainerName  = "kgateway"
 
-	// GlooXdsPortName is the name of the port in the Gloo Gateway control plane Kubernetes Service that serves xDS config.
-	// See: install/helm/gloo/templates/2-gloo-service.yaml
-	GlooXdsPortName = "grpc-xds"
-
-	DiscoveryDeploymentName = "discovery"
+	// XdsPortName is the name of the port in the kgateway control plane Kubernetes Service that serves xDS config.
+	// See: install/helm/kgateway/templates/service.yaml
+	XdsPortName = "grpc-xds"
 )

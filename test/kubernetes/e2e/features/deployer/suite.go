@@ -316,7 +316,7 @@ func xdsClusterAssertion(testInstallation *e2e.TestInstallation) func(ctx contex
 			g.Expect(xdsSocketAddress).NotTo(gomega.BeNil())
 
 			g.Expect(xdsSocketAddress.GetAddress()).To(gomega.Equal(kubeutils.ServiceFQDN(metav1.ObjectMeta{
-				Name:      kubeutils.GlooServiceName,
+				Name:      kubeutils.KgatewayServiceName,
 				Namespace: testInstallation.Metadata.InstallNamespace,
 			})), "xds socket address points to gloo service, in installation namespace")
 
