@@ -304,13 +304,19 @@ func getUpstreamModel(llm *v1alpha1.LLMProviders, byType map[string]struct{}) st
 	llmModel := ""
 	if llm.OpenAI != nil {
 		byType["openai"] = struct{}{}
-		llmModel = llm.OpenAI.Model
+		if llm.OpenAI.Model != nil {
+			llmModel = *llm.OpenAI.Model
+		}
 	} else if llm.Mistral != nil {
 		byType["mistral"] = struct{}{}
-		llmModel = llm.Mistral.Model
+		if llm.Mistral.Model != nil {
+			llmModel = *llm.Mistral.Model
+		}
 	} else if llm.Anthropic != nil {
 		byType["anthropic"] = struct{}{}
-		llmModel = llm.Anthropic.Model
+		if llm.Anthropic.Model != nil {
+			llmModel = *llm.Anthropic.Model
+		}
 	} else if llm.AzureOpenAI != nil {
 		byType["azure_openai"] = struct{}{}
 		llmModel = llm.AzureOpenAI.DeploymentName

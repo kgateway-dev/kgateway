@@ -264,11 +264,15 @@ func buildMistralEndpoint(data *v1alpha1.MistralConfig, ir *UpstreamIr) (*envoy_
 	if err != nil {
 		return nil, nil, err
 	}
+	model := ""
+	if data.Model != nil {
+		model = *data.Model
+	}
 	ep, host := buildLocalityLbEndpoint(
 		"api.mistral.ai",
 		tlsPort,
 		data.CustomHost,
-		buildEndpointMeta(token, data.Model, nil),
+		buildEndpointMeta(token, model, nil),
 	)
 	return ep, host, nil
 }
@@ -277,11 +281,15 @@ func buildOpenAIEndpoint(data *v1alpha1.OpenAIConfig, ir *UpstreamIr) (*envoy_co
 	if err != nil {
 		return nil, nil, err
 	}
+	model := ""
+	if data.Model != nil {
+		model = *data.Model
+	}
 	ep, host := buildLocalityLbEndpoint(
 		"api.openai.com",
 		tlsPort,
 		data.CustomHost,
-		buildEndpointMeta(token, data.Model, nil),
+		buildEndpointMeta(token, model, nil),
 	)
 	return ep, host, nil
 }
@@ -290,11 +298,15 @@ func buildAnthropicEndpoint(data *v1alpha1.AnthropicConfig, ir *UpstreamIr) (*en
 	if err != nil {
 		return nil, nil, err
 	}
+	model := ""
+	if data.Model != nil {
+		model = *data.Model
+	}
 	ep, host := buildLocalityLbEndpoint(
 		"api.anthropic.com",
 		tlsPort,
 		data.CustomHost,
-		buildEndpointMeta(token, data.Model, nil),
+		buildEndpointMeta(token, model, nil),
 	)
 	return ep, host, nil
 }
@@ -393,10 +405,13 @@ func buildLocalityLbEndpoint(
 		},
 	}, tlsContext
 }
-func getAuthToken(in *v1alpha1.SingleAuthToken, ir *UpstreamIr) (token string, err error) {
+func getAuthToken(in v1alpha1.SingleAuthToken, ir *UpstreamIr) (token string, err error) {
 	switch in.Kind {
 	case v1alpha1.Inline:
-		token = in.Inline
+		if in.Inline == nil {
+			return "", errors.New("inline auth token must be set if kind is type Inline.")
+		}
+		token = *in.Inline
 	case v1alpha1.SecretRef:
 		secret, err := deriveHeaderSecret(ir.AISecret)
 		if err != nil {
@@ -511,7 +526,7 @@ func getTransformation(ctx context.Context, llm *v1alpha1.LLMProviders) (string,
 		prefix = "Bearer "
 		var modelPath string
 		modelCall := llm.VertexAI.ModelPath
-		if modelCall == "" {
+		if modelCall != nil {
 			switch llm.VertexAI.Publisher {
 			case v1alpha1.GOOGLE:
 				modelPath = getVertexAIGeminiModelPath()

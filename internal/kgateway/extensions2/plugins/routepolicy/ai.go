@@ -18,6 +18,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -52,7 +53,7 @@ func (p *routePolicyPluginGwPass) processAIRoutePolicy(
 		pCtx.AddTypedConfig(wellknown.ExtProcFilterName, disabledExtprocSettings)
 	} else {
 		// If the route options specify this as a chat streaming route, add a header to the ext-proc request
-		if aiConfig.RouteType == v1alpha1.CHAT_STREAMING {
+		if aiConfig.RouteType != nil && *aiConfig.RouteType == v1alpha1.CHAT_STREAMING {
 			// append streaming header if it's a streaming route
 			extprocSettings.GetOverrides().GrpcInitialMetadata = append(extprocSettings.GetOverrides().GetGrpcInitialMetadata(), &envoy_config_core_v3.HeaderValue{
 				Key:   "x-chat-streaming",
@@ -127,7 +128,7 @@ func applyDefaults(
 			return err
 		}
 		var tmpl string
-		if field.Override {
+		if field.Override != nil {
 			// Inja default function will use the default value if the field provided is falsey
 			tmpl = fmt.Sprintf("{{ default(%s, %s) }}", field.Value, string(marshalled))
 		} else {
@@ -152,11 +153,11 @@ func applyPromptEnrichment(
 	// JSON is insensitive to new lines, so we don't need to worry about them. We simply need to join the
 	// user added messages with the request messages
 	// For example:
-	// messages = [{"content": "welcopme ", "role": "user"}]
+	// messages = [{"content": "welcome ", "role": "user"}]
 	// prepend = [{"content": "hi", "role": "user"}]
 	// append = [{"content": "bye", "role": "user"}]
 	// Would result in:
-	// [{"content": "hi", "role": "user"}, {"content": "welcopme ", "role": "user"}, {"content": "bye", "role": "user"}]
+	// [{"content": "hi", "role": "user"}, {"content": "welcome ", "role": "user"}, {"content": "bye", "role": "user"}]
 	bodyChunk1 := `[`
 	bodyChunk2 := `{{ join(messages, ", ") }}`
 	bodyChunk3 := `]`
@@ -213,7 +214,7 @@ func applyPromptGuard(pg *v1alpha1.AIPromptGuard, extProcRouteSettings *envoy_ex
 					return err
 				}
 				mod.OpenAIModeration.AuthToken = &v1alpha1.SingleAuthToken{
-					Inline: token,
+					Inline: ptr.To(token),
 				}
 			} else {
 				// TODO: error, not supported
@@ -270,7 +271,7 @@ func applyPromptGuard(pg *v1alpha1.AIPromptGuard, extProcRouteSettings *envoy_ex
 func getAuthToken(in *v1alpha1.SingleAuthToken) (token string, err error) {
 	switch in.Kind {
 	case v1alpha1.Inline:
-		token = in.Inline
+		token = *in.Inline
 	case v1alpha1.SecretRef:
 		token, err = getTokenFromHeaderSecret(in.SecretRef)
 	}
