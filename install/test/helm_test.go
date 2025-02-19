@@ -5036,7 +5036,7 @@ metadata:
 						})
 
 						// make sure the resource requests and limits are set in the pod template
-						deploy := getStructuredDeployment(testManifest, kubeutils.GlooDeploymentName)
+						deploy := getStructuredDeployment(testManifest, kubeutils.KgatewayDeploymentName)
 						glooContainer := deploy.Spec.Template.Spec.Containers[0]
 						Expect(glooContainer.Resources).To(Equal(corev1.ResourceRequirements{
 							Limits: corev1.ResourceList{
@@ -5077,7 +5077,7 @@ metadata:
 						})
 
 						// make sure the resource requests are set in the pod template
-						deploy := getStructuredDeployment(testManifest, kubeutils.GlooDeploymentName)
+						deploy := getStructuredDeployment(testManifest, kubeutils.KgatewayDeploymentName)
 						glooContainer := deploy.Spec.Template.Spec.Containers[0]
 						Expect(glooContainer.Resources).To(Equal(corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{

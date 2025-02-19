@@ -686,7 +686,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			It("Returns proxies", func() {
 				portForwarder, err := kubeCli.StartPortForward(ctx,
-					portforward.WithDeployment(kubeutils.GlooDeploymentName, testHelper.InstallNamespace),
+					portforward.WithDeployment(kubeutils.KgatewayDeploymentName, testHelper.InstallNamespace),
 					portforward.WithRemotePort(defaults2.GlooProxyDebugPort),
 				)
 				Expect(err).NotTo(HaveOccurred())
