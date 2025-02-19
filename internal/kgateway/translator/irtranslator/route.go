@@ -330,9 +330,11 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 	}
 
 	// TODO: i think envoy nacks if all weights are 0, we should error on that.
-
-	action := &envoy_config_route_v3.RouteAction{
-		ClusterNotFoundResponseCode: envoy_config_route_v3.RouteAction_INTERNAL_SERVER_ERROR,
+	action := outRoute.GetRoute()
+	if action == nil {
+		action = &envoy_config_route_v3.RouteAction{
+			ClusterNotFoundResponseCode: envoy_config_route_v3.RouteAction_INTERNAL_SERVER_ERROR,
+		}
 	}
 	routeAction := &envoy_config_route_v3.Route_Route{
 		Route: action,

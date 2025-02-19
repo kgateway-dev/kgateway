@@ -26,7 +26,6 @@ type RouteBackendContext struct {
 	Upstream        *Upstream
 	// todo: make this not public
 	TypedFilterConfig *map[string]proto.Message
-	AutoHostRewrite   bool
 }
 
 func (r *RouteBackendContext) AddTypedConfig(key string, v proto.Message) {

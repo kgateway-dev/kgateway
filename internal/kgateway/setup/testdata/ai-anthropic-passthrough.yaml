@@ -41,7 +41,7 @@ spec:
     - matches:
         - path:
             type: Exact
-            value: /v1/chat/completions
+            value: /anthropic
     - backendRefs:
         - name: anthropic
           kind: Upstream
