@@ -196,8 +196,6 @@ func getAISecretRef(llm *v1alpha1.LLMProviders) *corev1.LocalObjectReference {
 	var secretRef *corev1.LocalObjectReference
 	if llm.OpenAI != nil {
 		secretRef = llm.OpenAI.AuthToken.SecretRef
-	} else if llm.Mistral != nil {
-		secretRef = llm.Mistral.AuthToken.SecretRef
 	} else if llm.Anthropic != nil {
 		secretRef = llm.Anthropic.AuthToken.SecretRef
 	} else if llm.AzureOpenAI != nil {
@@ -306,11 +304,6 @@ func getUpstreamModel(llm *v1alpha1.LLMProviders, byType map[string]struct{}) st
 		byType["openai"] = struct{}{}
 		if llm.OpenAI.Model != nil {
 			llmModel = *llm.OpenAI.Model
-		}
-	} else if llm.Mistral != nil {
-		byType["mistral"] = struct{}{}
-		if llm.Mistral.Model != nil {
-			llmModel = *llm.Mistral.Model
 		}
 	} else if llm.Anthropic != nil {
 		byType["anthropic"] = struct{}{}
