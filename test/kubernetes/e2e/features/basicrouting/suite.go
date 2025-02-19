@@ -6,6 +6,7 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
@@ -61,10 +62,16 @@ func (s *testingSuite) TestGatewayWithRoute() {
 	}
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, manifestObjects...)
 
-	// make sure pods are ready to receive traffic
-	s.testInstallation.Assertions.EventuallyReadyReplicas(s.ctx, testdefaults.CurlPod.ObjectMeta, gomega.Equal(1))
-	s.testInstallation.Assertions.EventuallyReadyReplicas(s.ctx, nginxPod.ObjectMeta, gomega.Equal(1))
-	s.testInstallation.Assertions.EventuallyReadyReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
+	// make sure pods are running
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, testdefaults.CurlPod.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=curl",
+	})
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxPod.ObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=nginx",
+	})
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjectMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=gw",
+	})
 
 	// Should have a successful response
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
