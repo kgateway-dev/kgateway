@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"hash"
 	"hash/fnv"
+	"os"
 	"reflect"
 	"strings"
 
@@ -14,8 +15,8 @@ import (
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	"github.com/mitchellh/hashstructure"
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
-	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -32,11 +33,12 @@ type transformationWithOutput struct {
 	perFilterConfig map[string]proto.Message
 }
 
-func processAIRoutePolicy(
+func (p *routePolicyPluginGwPass) processAIRoutePolicy(
 	ctx context.Context,
 	aiConfig *v1alpha1.AIRoutePolicy,
 	pCtx *ir.RouteBackendContext,
 	extprocSettings *envoy_ext_proc_v3.ExtProcPerRoute,
+	transformations *envoytransformation.RouteTransformations,
 ) error {
 
 	if extprocSettings == nil {
@@ -56,22 +58,36 @@ func processAIRoutePolicy(
 				Key:   "x-chat-streaming",
 				Value: "true",
 			})
+			p.setAIFilter = true
 		}
 
-		// TODO: calculate this in upstream, then apply here
-		transformations := []*transformationWithOutput{
-			{
-				// It's safe to use the first as they will all be of the same type at this point in the code
-				transformation:  getTransformationTemplateForUpstream(ctx, nil, aiConfig),
-				perFilterConfig: *pCtx.TypedFilterConfig,
-			},
+		// Setup initial transformation template. This may be modified by further
+		transformationTemplate := &envoytransformation.TransformationTemplate{
+			// We will add the auth token later
+			Headers: map[string]*envoytransformation.InjaTemplate{},
 		}
-		err := handleAIRoutePolicy(aiConfig, transformations, extprocSettings)
+		err := handleAIRoutePolicy(aiConfig, extprocSettings, transformationTemplate)
 		if err != nil {
 			return err
 		}
 
 		pCtx.AddTypedConfig(wellknown.ExtProcFilterName, extprocSettings)
+		transformation := &envoytransformation.RouteTransformations_RouteTransformation{
+			Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
+				RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
+					RequestTransformation: &envoytransformation.Transformation{
+						// Set this env var to true to log the request/response info for each transformation
+						LogRequestResponseInfo: wrapperspb.Bool(os.Getenv("AI_PLUGIN_DEBUG_TRANSFORMATIONS") == "true"),
+						TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+							TransformationTemplate: transformationTemplate,
+						},
+					},
+				},
+			},
+		}
+		// add the disjoint route transformations to the list
+		transformations.Transformations = append(transformations.GetTransformations(), transformation)
+		pCtx.AddTypedConfig(wellknown.TransformationFilterName, transformations)
 
 	}
 
@@ -80,14 +96,14 @@ func processAIRoutePolicy(
 
 func handleAIRoutePolicy(
 	aiConfig *v1alpha1.AIRoutePolicy,
-	transformations []*transformationWithOutput,
 	extProcRouteSettings *envoy_ext_proc_v3.ExtProcPerRoute,
+	transformation *envoytransformation.TransformationTemplate,
 ) error {
-	if err := applyDefaults(aiConfig.Defaults, transformations); err != nil {
+	if err := applyDefaults(aiConfig.Defaults, transformation); err != nil {
 		return err
 	}
 
-	if err := applyPromptEnrichment(aiConfig.PromptEnrichment, transformations); err != nil {
+	if err := applyPromptEnrichment(aiConfig.PromptEnrichment, transformation); err != nil {
 		return err
 	}
 
@@ -100,7 +116,7 @@ func handleAIRoutePolicy(
 
 func applyDefaults(
 	defaults []v1alpha1.FieldDefault,
-	transformations []*transformationWithOutput,
+	transformation *envoytransformation.TransformationTemplate,
 ) error {
 	if len(defaults) == 0 {
 		return nil
@@ -117,10 +133,8 @@ func applyDefaults(
 		} else {
 			tmpl = string(marshalled)
 		}
-		for _, val := range transformations {
-			val.transformation.GetMergeJsonKeys().GetJsonKeys()[field.Field] = &envoytransformation.MergeJsonKeys_OverridableTemplate{
-				Tmpl: &envoytransformation.InjaTemplate{Text: tmpl},
-			}
+		transformation.GetMergeJsonKeys().GetJsonKeys()[field.Field] = &envoytransformation.MergeJsonKeys_OverridableTemplate{
+			Tmpl: &envoytransformation.InjaTemplate{Text: tmpl},
 		}
 	}
 	return nil
@@ -128,7 +142,7 @@ func applyDefaults(
 
 func applyPromptEnrichment(
 	pe *v1alpha1.AIPromptEnrichment,
-	transformations []*transformationWithOutput,
+	transformation *envoytransformation.TransformationTemplate,
 ) error {
 	if pe == nil {
 		return nil
@@ -181,10 +195,8 @@ func applyPromptEnrichment(
 	builder.WriteString(bodyChunk3)
 	finalBody := builder.String()
 	// Overwrite the user messages body key with the templated version
-	for _, val := range transformations {
-		val.transformation.GetMergeJsonKeys().GetJsonKeys()["messages"] = &envoytransformation.MergeJsonKeys_OverridableTemplate{
-			Tmpl: &envoytransformation.InjaTemplate{Text: finalBody},
-		}
+	transformation.GetMergeJsonKeys().GetJsonKeys()["messages"] = &envoytransformation.MergeJsonKeys_OverridableTemplate{
+		Tmpl: &envoytransformation.InjaTemplate{Text: finalBody},
 	}
 	return nil
 }
@@ -330,111 +342,4 @@ func hashUnique(obj interface{}, hasher hash.Hash64) (uint64, error) {
 	}
 
 	return hasher.Sum64(), nil
-}
-
-func getTransformationTemplateForUpstream(ctx context.Context, us *v1alpha1.Upstream, routePolicy *v1alpha1.AIRoutePolicy) *envoytransformation.TransformationTemplate {
-	// Setup initial transformation template. This may be modified by further
-	transformationTemplate := &envoytransformation.TransformationTemplate{
-		// We will add the auth token later
-		Headers: map[string]*envoytransformation.InjaTemplate{},
-	}
-
-	var headerName, prefix, path string
-	var bodyTransformation *envoytransformation.TransformationTemplate_MergeJsonKeys
-	if us.Spec.AI.LLM != nil {
-		headerName, prefix, path, bodyTransformation = getTransformation(ctx, us.Spec.AI.LLM, routePolicy)
-	} else if us.Spec.AI.MultiPool != nil {
-		// We already know that all the backends are the same type so we can ust take the first one
-		llm := us.Spec.AI.MultiPool.Priorities[0].Pool[0]
-		headerName, prefix, path, bodyTransformation = getTransformation(ctx, &llm, routePolicy)
-	}
-	transformationTemplate.GetHeaders()[headerName] = &envoytransformation.InjaTemplate{
-		Text: prefix + `{% if host_metadata("auth_token") != "" %}{{host_metadata("auth_token")}}{% else %}{{dynamic_metadata("auth_token","ai.gloo.solo.io")}}{% endif %}`,
-	}
-	transformationTemplate.GetHeaders()[":path"] = &envoytransformation.InjaTemplate{
-		Text: path,
-	}
-	transformationTemplate.BodyTransformation = bodyTransformation
-	return transformationTemplate
-
-}
-
-func getTransformation(ctx context.Context, llm *v1alpha1.LLMProviders, routePolicy *v1alpha1.AIRoutePolicy) (string, string, string, *envoytransformation.TransformationTemplate_MergeJsonKeys) {
-	headerName := "Authorization"
-	var prefix, path string
-	var bodyTransformation *envoytransformation.TransformationTemplate_MergeJsonKeys
-	if llm.OpenAI != nil {
-		prefix = "Bearer "
-		path = "/v1/chat/completions"
-		bodyTransformation = defaultBodyTransformation()
-	} else if llm.Mistral != nil {
-		prefix = "Bearer "
-		path = "/v1/chat/completions"
-		bodyTransformation = defaultBodyTransformation()
-	} else if llm.Anthropic != nil {
-		headerName = "x-api-key"
-		path = "/v1/messages"
-		bodyTransformation = defaultBodyTransformation()
-	} else if llm.AzureOpenAI != nil {
-		headerName = "api-key"
-		path = `/openai/deployments/{{ host_metadata("model") }}/chat/completions?api-version={{ host_metadata("api_version" )}}`
-	} else if llm.Gemini != nil {
-		headerName = "key"
-		path = getGeminiPath(routePolicy)
-	} else if llm.VertexAI != nil {
-		prefix = "Bearer "
-		var modelPath string
-		modelCall := llm.VertexAI.ModelPath
-		if modelCall == "" {
-			switch llm.VertexAI.Publisher {
-			case v1alpha1.GOOGLE:
-				modelPath = getVertexAIGeminiModelPath(routePolicy)
-			default:
-				// TODO(npolshak): add support for other publishers
-				contextutils.LoggerFrom(ctx).Warnf("Unsupported Vertex AI publisher: %v. Defaulting to Google", llm.VertexAI.Publisher)
-				modelPath = getVertexAIGeminiModelPath(routePolicy)
-			}
-		} else {
-			// Use user provided model path
-			modelPath = fmt.Sprintf(`models/{{host_metadata("model")}}:%s`, modelCall)
-		}
-		// https://${LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/${PROJECT_ID}/locations/${LOCATION}/<model-path>
-		path = fmt.Sprintf(`/{{host_metadata("api_version")}}/projects/{{host_metadata("project")}}/locations/{{host_metadata("location")}}/publishers/{{host_metadata("publisher")}}/%s`, modelPath)
-	}
-	return headerName, prefix, path, bodyTransformation
-}
-
-func getGeminiPath(rtPolicy *v1alpha1.AIRoutePolicy) string {
-	generateContentPath := "generateContent"
-	streamParams := ""
-	if rtPolicy.RouteType == v1alpha1.CHAT_STREAMING {
-		generateContentPath = "streamGenerateContent"
-		streamParams = "&alt=sse"
-	}
-	return fmt.Sprintf(`/{{host_metadata("api_version")}}/models/{{host_metadata("model")}}:%s?key={{host_metadata("auth_token")}}%s`, generateContentPath, streamParams)
-}
-
-func getVertexAIGeminiModelPath(rtPolicy *v1alpha1.AIRoutePolicy) string {
-	generateContentPath := "generateContent"
-	streamParams := ""
-	if rtPolicy.RouteType == v1alpha1.CHAT_STREAMING {
-		generateContentPath = "streamGenerateContent"
-		streamParams = "?alt=sse"
-	}
-	return fmt.Sprintf(`models/{{host_metadata("model")}}:%s%s`, generateContentPath, streamParams)
-}
-
-func defaultBodyTransformation() *envoytransformation.TransformationTemplate_MergeJsonKeys {
-	return &envoytransformation.TransformationTemplate_MergeJsonKeys{
-		MergeJsonKeys: &envoytransformation.MergeJsonKeys{
-			JsonKeys: map[string]*envoytransformation.MergeJsonKeys_OverridableTemplate{
-				"model": {
-					Tmpl: &envoytransformation.InjaTemplate{
-						// Merge the model into the body
-						Text: `{% if host_metadata("model") != "" %}"{{host_metadata("model")}}"{% else %}"{{model}}"{% endif %}`,
-					},
-				},
-			},
-		},
-	}
 }

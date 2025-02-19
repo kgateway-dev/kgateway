@@ -27,7 +27,7 @@ spec:
     - matches:
         - path:
             type: Exact
-            value: /v1/chat/completions
+            value: /vertexai
     - backendRefs:
         - name: vertexai
           kind: Upstream
