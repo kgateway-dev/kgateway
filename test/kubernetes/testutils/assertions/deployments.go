@@ -11,7 +11,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
-// EventuallyReadyReplicas asserts that eventually the number of pods matching the replicaMatcher
+// EventuallyReadyReplicas asserts that given a Deployment, eventually the number of pods matching the replicaMatcher
 // are in the ready state and able to receive traffic.
 func (p *Provider) EventuallyReadyReplicas(ctx context.Context, deploymentMeta metav1.ObjectMeta, replicaMatcher types.GomegaMatcher) {
 	p.Gomega.Eventually(func(innerG Gomega) {
