@@ -75,8 +75,6 @@ func buildModelCluster(ctx context.Context, aiUs *v1alpha1.AIUpstream, ir *Upstr
 				epByType[fmt.Sprintf("%T", ep)] = struct{}{}
 				if ep.OpenAI != nil {
 					result, tlsContext, err = buildOpenAIEndpoint(ep.OpenAI, ir)
-				} else if ep.Mistral != nil {
-					result, tlsContext, err = buildMistralEndpoint(ep.Mistral, ir)
 				} else if ep.Anthropic != nil {
 					result, tlsContext, err = buildAnthropicEndpoint(ep.Anthropic, ir)
 				} else if ep.AzureOpenAI != nil {
@@ -148,21 +146,6 @@ func buildLLMEndpoint(ctx context.Context, aiUs *v1alpha1.AIUpstream, ir *Upstre
 	var prioritized []*envoy_config_endpoint_v3.LocalityLbEndpoints
 	if aiUs.LLM.OpenAI != nil {
 		host, tlsContext, err := buildOpenAIEndpoint(aiUs.LLM.OpenAI, ir)
-		if err != nil {
-			return nil, nil, err
-		}
-		prioritized = []*envoy_config_endpoint_v3.LocalityLbEndpoints{
-			{LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{host}},
-		}
-		if tlsContext != nil {
-			tsm, err := buildTsm(tlsContext)
-			if err != nil {
-				return nil, nil, err
-			}
-			tsms = append(tsms, tsm)
-		}
-	} else if aiUs.LLM.Mistral != nil {
-		host, tlsContext, err := buildMistralEndpoint(aiUs.LLM.Mistral, ir)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -259,23 +242,7 @@ func buildTsm(tlsContext *envoy_tls_v3.UpstreamTlsContext) (*envoy_config_cluste
 		},
 	}, nil
 }
-func buildMistralEndpoint(data *v1alpha1.MistralConfig, ir *UpstreamIr) (*envoy_config_endpoint_v3.LbEndpoint, *envoy_tls_v3.UpstreamTlsContext, error) {
-	token, err := getAuthToken(data.AuthToken, ir)
-	if err != nil {
-		return nil, nil, err
-	}
-	model := ""
-	if data.Model != nil {
-		model = *data.Model
-	}
-	ep, host := buildLocalityLbEndpoint(
-		"api.mistral.ai",
-		tlsPort,
-		data.CustomHost,
-		buildEndpointMeta(token, model, nil),
-	)
-	return ep, host, nil
-}
+
 func buildOpenAIEndpoint(data *v1alpha1.OpenAIConfig, ir *UpstreamIr) (*envoy_config_endpoint_v3.LbEndpoint, *envoy_tls_v3.UpstreamTlsContext, error) {
 	token, err := getAuthToken(data.AuthToken, ir)
 	if err != nil {
@@ -505,10 +472,6 @@ func getTransformation(ctx context.Context, llm *v1alpha1.LLMProviders) (string,
 	var prefix, path string
 	var bodyTransformation *envoytransformation.TransformationTemplate_MergeJsonKeys
 	if llm.OpenAI != nil {
-		prefix = "Bearer "
-		path = "/v1/chat/completions"
-		bodyTransformation = defaultBodyTransformation()
-	} else if llm.Mistral != nil {
 		prefix = "Bearer "
 		path = "/v1/chat/completions"
 		bodyTransformation = defaultBodyTransformation()
