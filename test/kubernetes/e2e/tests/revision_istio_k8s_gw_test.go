@@ -19,13 +19,13 @@ import (
 // k8s gateway enabled and Istio installed with revisions
 func TestKgatewayIstioRevision(t *testing.T) {
 	ctx := context.Background()
-	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "istio-rev-k8s-gw-test")
+	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "istio-rev-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&install.Context{
 			InstallNamespace:          installNs,
 			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
-			ValuesManifestFile:        e2e.ManifestPath("istio-revision-k8s-gateway-helm.yaml"),
+			ValuesManifestFile:        e2e.ManifestPath("istio-revision-helm.yaml"),
 		},
 	)
 

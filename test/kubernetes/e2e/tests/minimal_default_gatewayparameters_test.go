@@ -19,13 +19,13 @@ import (
 // which is expected to have all user-facing options set to null in helm values
 func TestKgatewayMinimalDefaultGatewayParameters(t *testing.T) {
 	ctx := context.Background()
-	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "k8s-gateway-minimal-default-gatewayparameters-test")
+	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "minimal-default-gatewayparameters-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&install.Context{
 			InstallNamespace:          installNs,
 			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
-			ValuesManifestFile:        e2e.ManifestPath("k8s-gateway-minimal-default-gatewayparameters-test-helm.yaml"),
+			ValuesManifestFile:        e2e.ManifestPath("minimal-default-gatewayparameters-test-helm.yaml"),
 		},
 	)
 

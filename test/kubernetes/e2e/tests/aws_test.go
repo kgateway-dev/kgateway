@@ -19,7 +19,7 @@ import (
 // with Kubernetes Gateway integration enabled and AWS lambda options configured
 func TestKgatewayAws(t *testing.T) {
 	ctx := context.Background()
-	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "k8s-gw-aws-test")
+	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "aws-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&install.Context{

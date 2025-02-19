@@ -18,7 +18,7 @@ import (
 // TestKgatewayIstioAutoMtls is the function which executes a series of tests against a given installation
 func TestKgatewayIstioAutoMtls(t *testing.T) {
 	ctx := context.Background()
-	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "automtls-istio-k8s-gw-test")
+	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "automtls-istio-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&install.Context{
