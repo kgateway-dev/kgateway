@@ -14,7 +14,7 @@ import (
 //
 // +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:metadata:labels={app=gateway,app.kubernetes.io/name=gateway}
+// +kubebuilder:metadata:labels={app=kgateway,app.kubernetes.io/name=kgateway}
 // +kubebuilder:resource:categories=kgateway,shortName=gwp
 // +kubebuilder:subresource:status
 type GatewayParameters struct {
