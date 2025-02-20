@@ -57,12 +57,12 @@ spec:
         - name: openai
           kind: Upstream
           group: gateway.kgateway.dev
-      filters:
-        - type: ExtensionRef
-          extensionRef:
-            group: gateway.kgateway.dev
-            kind: RoutePolicy
-            name: route-test
+          filters:
+            - type: ExtensionRef
+              extensionRef:
+                group: gateway.kgateway.dev
+                kind: RoutePolicy
+                name: route-test
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: RoutePolicy

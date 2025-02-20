@@ -1,4 +1,4 @@
-package upstream
+package ai
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
-func applyAIBackend(ctx context.Context, aiUpstream *v1alpha1.AIUpstream, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoy_config_route_v3.Route) error {
+func ApplyAIBackend(ctx context.Context, aiUpstream *v1alpha1.AIUpstream, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoy_config_route_v3.Route) error {
 	// Setup ext-proc route filter config, we will conditionally modify it based on certain route options.
 	// A heavily used part of this config is the `GrpcInitialMetadata`.
 	// This is used to add headers to the ext-proc request.
@@ -113,4 +113,29 @@ func applyAIBackend(ctx context.Context, aiUpstream *v1alpha1.AIUpstream, pCtx *
 
 	pCtx.AddTypedConfig(wellknown.AIExtProcFilterName, extProcRouteSettings)
 	return nil
+}
+
+func getUpstreamModel(llm *v1alpha1.LLMProviders, byType map[string]struct{}) string {
+	llmModel := ""
+	if llm.OpenAI != nil {
+		byType["openai"] = struct{}{}
+		if llm.OpenAI.Model != nil {
+			llmModel = *llm.OpenAI.Model
+		}
+	} else if llm.Anthropic != nil {
+		byType["anthropic"] = struct{}{}
+		if llm.Anthropic.Model != nil {
+			llmModel = *llm.Anthropic.Model
+		}
+	} else if llm.AzureOpenAI != nil {
+		byType["azure_openai"] = struct{}{}
+		llmModel = llm.AzureOpenAI.DeploymentName
+	} else if llm.Gemini != nil {
+		byType["gemini"] = struct{}{}
+		llmModel = llm.Gemini.Model
+	} else if llm.VertexAI != nil {
+		byType["vertex-ai"] = struct{}{}
+		llmModel = llm.VertexAI.Model
+	}
+	return llmModel
 }

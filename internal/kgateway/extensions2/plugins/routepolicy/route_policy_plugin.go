@@ -120,11 +120,7 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 		outputRoute.GetRoute().Timeout = durationpb.New(time.Second * time.Duration(policy.spec.Timeout))
 	}
 
-	if policy.spec.AI != nil {
-		// TODO: skip apply for route, only applyPerBackend?
-	}
-
-	// TODO: err/warn/ignore if targetRef is set with AI options
+	// TODO: err/warn/ignore if targetRef is set on non-AI Upstream
 
 	return nil
 }
@@ -160,12 +156,12 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend(
 	}
 	transformations, ok := transformationProto.(*envoytransformation.RouteTransformations)
 
-	routePolicy, ok := policy.(*routePolicy)
+	rtPolicy, ok := policy.(*routePolicy)
 	if !ok {
 		return nil
 	}
 
-	err := p.processAIRoutePolicy(ctx, routePolicy.spec.AI, pCtx, extprocSettings, transformations)
+	err := p.processAIRoutePolicy(ctx, rtPolicy.spec.AI, pCtx, extprocSettings, transformations)
 	if err != nil {
 		// TODO: report error on status
 		return err

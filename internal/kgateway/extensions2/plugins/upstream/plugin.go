@@ -5,30 +5,24 @@ import (
 	"context"
 	"fmt"
 	"maps"
-	"os"
-	"strconv"
-	"strings"
 	"time"
 
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/upstream/ai"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	awspb "github.com/solo-io/envoy-gloo/go/config/filter/http/aws_lambda/v2"
-	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
-	upstream_wait "github.com/solo-io/envoy-gloo/go/config/filter/http/upstream_wait/v2"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -41,8 +35,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 )
 
@@ -51,11 +43,6 @@ const (
 	ParameterKind  = "Parameter"
 
 	FilterName = "io.solo.aws_lambda"
-
-	// TODO: clean up
-	extProcUDSClusterName = "ai_ext_proc_uds_cluster"
-	extProcUDSSocketPath  = "@kgateway-ai-sock"
-	waitFilterName        = "io.kgateway.wait"
 )
 
 var (
@@ -270,7 +257,7 @@ func processUpstream(ctx context.Context, in ir.Upstream, out *envoy_config_clus
 	case spec.Aws != nil:
 		processAws(ctx, spec.Aws, ir, out)
 	case spec.AI != nil:
-		err := processAIUpstream(ctx, spec.AI, ir, out)
+		err := ai.ProcessAIUpstream(ctx, spec.AI, ir.AISecret, out)
 		if err != nil {
 			// TODO: report error on status
 			contextutils.LoggerFrom(ctx).Error(err)
@@ -329,7 +316,7 @@ func (p *upstreamPlugin) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContex
 func (p *upstreamPlugin) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoy_config_route_v3.Route) error {
 	upstream := pCtx.Upstream.Obj.(*v1alpha1.Upstream)
 	if upstream.Spec.AI != nil {
-		err := applyAIBackend(ctx, upstream.Spec.AI, pCtx, in, out)
+		err := ai.ApplyAIBackend(ctx, upstream.Spec.AI, pCtx, in, out)
 		if err != nil {
 			return err
 		}
@@ -338,34 +325,18 @@ func (p *upstreamPlugin) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBack
 			p.aiGatewayEnabled = make(map[string]bool)
 		}
 		p.aiGatewayEnabled[pCtx.FilterChainName] = true
+	} else {
+		// If it's not an AI route we want to disable our ext-proc filter just in case.
+		// This will have no effect if we don't add the listener filter
+		disabledExtprocSettings := &envoy_ext_proc_v3.ExtProcPerRoute{
+			Override: &envoy_ext_proc_v3.ExtProcPerRoute_Disabled{
+				Disabled: true,
+			},
+		}
+		pCtx.AddTypedConfig(wellknown.AIExtProcFilterName, disabledExtprocSettings)
 	}
 
 	return nil
-}
-
-func getUpstreamModel(llm *v1alpha1.LLMProviders, byType map[string]struct{}) string {
-	llmModel := ""
-	if llm.OpenAI != nil {
-		byType["openai"] = struct{}{}
-		if llm.OpenAI.Model != nil {
-			llmModel = *llm.OpenAI.Model
-		}
-	} else if llm.Anthropic != nil {
-		byType["anthropic"] = struct{}{}
-		if llm.Anthropic.Model != nil {
-			llmModel = *llm.Anthropic.Model
-		}
-	} else if llm.AzureOpenAI != nil {
-		byType["azure_openai"] = struct{}{}
-		llmModel = llm.AzureOpenAI.DeploymentName
-	} else if llm.Gemini != nil {
-		byType["gemini"] = struct{}{}
-		llmModel = llm.Gemini.Model
-	} else if llm.VertexAI != nil {
-		byType["vertex-ai"] = struct{}{}
-		llmModel = llm.VertexAI.Model
-	}
-	return llmModel
 }
 
 // Only called if policy attatched (extension ref)
@@ -394,51 +365,11 @@ func (p *upstreamPlugin) HttpFilters(ctx context.Context, fc ir.FilterChainCommo
 	result := []plugins.StagedHttpFilter{}
 
 	if p.aiGatewayEnabled[fc.FilterChainName] {
-		// TODO: add ratelimit and jwt_authn if AI Upstream is configured
-		extProcSettings := &envoy_ext_proc_v3.ExternalProcessor{
-			GrpcService: &envoy_config_core_v3.GrpcService{
-				Timeout: durationpb.New(5 * time.Second),
-				RetryPolicy: &envoy_config_core_v3.RetryPolicy{
-					NumRetries: wrapperspb.UInt32(3),
-				},
-				TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
-					EnvoyGrpc: &envoy_config_core_v3.GrpcService_EnvoyGrpc{
-						ClusterName: extProcUDSClusterName,
-					},
-				},
-			},
-			ProcessingMode: &envoy_ext_proc_v3.ProcessingMode{
-				RequestHeaderMode:   envoy_ext_proc_v3.ProcessingMode_SEND,
-				RequestBodyMode:     envoy_ext_proc_v3.ProcessingMode_STREAMED,
-				RequestTrailerMode:  envoy_ext_proc_v3.ProcessingMode_SKIP,
-				ResponseHeaderMode:  envoy_ext_proc_v3.ProcessingMode_SEND,
-				ResponseBodyMode:    envoy_ext_proc_v3.ProcessingMode_STREAMED,
-				ResponseTrailerMode: envoy_ext_proc_v3.ProcessingMode_SKIP,
-			},
-			MessageTimeout: durationpb.New(5 * time.Second),
-			MetadataOptions: &envoy_ext_proc_v3.MetadataOptions{
-				ForwardingNamespaces: &envoy_ext_proc_v3.MetadataOptions_MetadataNamespaces{
-					Untyped: []string{"io.solo.transformation", "envoy.filters.ai.solo.io", "envoy.filters.http.jwt_authn"},
-					Typed:   []string{"envoy.filters.ai.solo.io"},
-				},
-				ReceivingNamespaces: &envoy_ext_proc_v3.MetadataOptions_MetadataNamespaces{
-					Untyped: []string{"ai.kgateway.io"},
-				},
-			},
-		}
-		// Run before rate limiting
-		stagedFilter, err := plugins.NewStagedFilter(
-			wellknown.AIExtProcFilterName,
-			extProcSettings,
-			plugins.FilterStage[plugins.WellKnownFilterStage]{
-				RelativeTo: plugins.RateLimitStage,
-				Weight:     -2,
-			},
-		)
+		aiFilters, err := ai.AddExtprocHTTPFilter()
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, stagedFilter)
+		result = append(result, aiFilters...)
 	}
 	if p.needFilter[fc.FilterChainName] {
 
@@ -452,49 +383,13 @@ func (p *upstreamPlugin) HttpFilters(ctx context.Context, fc ir.FilterChainCommo
 }
 
 func (p *upstreamPlugin) UpstreamHttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedUpstreamHttpFilter, error) {
-	if !p.aiGatewayEnabled[fcc.FilterChainName] {
-		return nil, nil
-	}
-
-	transformationMsg, err := utils.MessageToAny(&envoytransformation.FilterTransformations{})
-	if err != nil {
-		return nil, err
-	}
-
-	upstreamWaitMsg, err := utils.MessageToAny(&upstream_wait.UpstreamWaitFilterConfig{})
-	if err != nil {
-		return nil, err
-	}
-
-	filters := []plugins.StagedUpstreamHttpFilter{
-		// The wait filter essentially blocks filter iteration until a host has been selected.
-		// This is important because running as an upstream filter allows access to host
-		// metadata iff the host has already been selected, and that's a
-		// major benefit of running the filter at this stage.
-		{
-			Filter: &envoy_hcm.HttpFilter{
-				Name: waitFilterName,
-				ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
-					TypedConfig: upstreamWaitMsg,
-				},
-			},
-			Stage: plugins.UpstreamHTTPFilterStage{
-				RelativeTo: plugins.TransformationStage,
-				Weight:     -1,
-			},
-		},
-		{
-			Filter: &envoy_hcm.HttpFilter{
-				Name: wellknown.TransformationFilterName,
-				ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
-					TypedConfig: transformationMsg,
-				},
-			},
-			Stage: plugins.UpstreamHTTPFilterStage{
-				RelativeTo: plugins.TransformationStage,
-				Weight:     0,
-			},
-		},
+	filters := []plugins.StagedUpstreamHttpFilter{}
+	if p.aiGatewayEnabled[fcc.FilterChainName] {
+		aiFilters, err := ai.AddUpstreamHttpFilters()
+		if err != nil {
+			return nil, err
+		}
+		filters = append(filters, aiFilters...)
 	}
 
 	return filters, nil
@@ -506,71 +401,15 @@ func (p *upstreamPlugin) NetworkFilters(ctx context.Context) ([]plugins.StagedNe
 
 // called 1 time (per envoy proxy). replaces GeneratedResources
 func (p *upstreamPlugin) ResourcesToAdd(ctx context.Context) ir.Resources {
-	// This env var can be used to test the ext-proc filter locally.
-	// On linux this should be set to `172.17.0.1` and on mac to `host.docker.internal`
-	// Note: Mac doesn't work yet because it needs to be a DNS cluster
-	// The port can be whatever you want.
-	// When running the ext-proc filter locally, you also need to set
-	// `LISTEN_ADDR` to `0.0.0.0:PORT`. Where port is the same port as above.
-	listenAddr := strings.Split(os.Getenv("AI_PLUGIN_LISTEN_ADDR"), ":")
+	var additionalClusters []*envoy_config_cluster_v3.Cluster
 
-	var ep *envoy_config_endpoint_v3.LbEndpoint
-	if len(listenAddr) == 2 {
-		port, _ := strconv.Atoi(listenAddr[1])
-		ep = &envoy_config_endpoint_v3.LbEndpoint{
-			HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
-				Endpoint: &envoy_config_endpoint_v3.Endpoint{
-					Address: &envoy_config_core_v3.Address{
-						Address: &envoy_config_core_v3.Address_SocketAddress{
-							SocketAddress: &envoy_config_core_v3.SocketAddress{
-								Address: listenAddr[0],
-								PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
-									PortValue: uint32(port),
-								},
-							},
-						},
-					},
-				},
-			},
-		}
-	} else {
-		ep = &envoy_config_endpoint_v3.LbEndpoint{
-			HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
-				Endpoint: &envoy_config_endpoint_v3.Endpoint{
-					Address: &envoy_config_core_v3.Address{
-						Address: &envoy_config_core_v3.Address_Pipe{
-							Pipe: &envoy_config_core_v3.Pipe{
-								Path: extProcUDSSocketPath,
-							},
-						},
-					},
-				},
-			},
-		}
+	if len(p.aiGatewayEnabled) > 0 {
+		aiClusters := ai.GetAIAdditionalResources()
+
+		additionalClusters = append(additionalClusters, aiClusters...)
 	}
-	// Add UDS cluster for the ext-proc filter
-	udsCluster := &envoy_config_cluster_v3.Cluster{
-		Name: extProcUDSClusterName,
-		ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_Type{
-			Type: envoy_config_cluster_v3.Cluster_STATIC,
-		},
-		Http2ProtocolOptions: &envoy_config_core_v3.Http2ProtocolOptions{},
-		LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
-			ClusterName: extProcUDSClusterName,
-			Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
-				{
-					LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
-						ep,
-					},
-				},
-			},
-		},
-	}
-
-	additionalCluster := []*envoy_config_cluster_v3.Cluster{udsCluster}
-
 	return ir.Resources{
-		Clusters: additionalCluster,
+		Clusters: additionalClusters,
 	}
 }
 

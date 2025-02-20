@@ -15,7 +15,6 @@ import (
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	"github.com/mitchellh/hashstructure"
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
@@ -29,11 +28,6 @@ const (
 	contextString = `{"content":"%s","role":"%s"}`
 )
 
-type transformationWithOutput struct {
-	transformation  *envoytransformation.TransformationTemplate
-	perFilterConfig map[string]proto.Message
-}
-
 func (p *routePolicyPluginGwPass) processAIRoutePolicy(
 	ctx context.Context,
 	aiConfig *v1alpha1.AIRoutePolicy,
@@ -41,56 +35,43 @@ func (p *routePolicyPluginGwPass) processAIRoutePolicy(
 	extprocSettings *envoy_ext_proc_v3.ExtProcPerRoute,
 	transformations *envoytransformation.RouteTransformations,
 ) error {
+	// If the route options specify this as a chat streaming route, add a header to the ext-proc request
+	if aiConfig.RouteType != nil && *aiConfig.RouteType == v1alpha1.CHAT_STREAMING {
+		// append streaming header if it's a streaming route
+		extprocSettings.GetOverrides().GrpcInitialMetadata = append(extprocSettings.GetOverrides().GetGrpcInitialMetadata(), &envoy_config_core_v3.HeaderValue{
+			Key:   "x-chat-streaming",
+			Value: "true",
+		})
+		p.setAIFilter = true
+	}
 
-	if extprocSettings == nil {
-		// If it's not an AI route we want to disable our ext-proc filter just in case.
-		// This will have no effect if we don't add the listener filter
-		disabledExtprocSettings := &envoy_ext_proc_v3.ExtProcPerRoute{
-			Override: &envoy_ext_proc_v3.ExtProcPerRoute_Disabled{
-				Disabled: true,
-			},
-		}
-		pCtx.AddTypedConfig(wellknown.AIExtProcFilterName, disabledExtprocSettings)
-	} else {
-		// If the route options specify this as a chat streaming route, add a header to the ext-proc request
-		if aiConfig.RouteType != nil && *aiConfig.RouteType == v1alpha1.CHAT_STREAMING {
-			// append streaming header if it's a streaming route
-			extprocSettings.GetOverrides().GrpcInitialMetadata = append(extprocSettings.GetOverrides().GetGrpcInitialMetadata(), &envoy_config_core_v3.HeaderValue{
-				Key:   "x-chat-streaming",
-				Value: "true",
-			})
-			p.setAIFilter = true
-		}
+	// Setup initial transformation template. This may be modified by further
+	transformationTemplate := &envoytransformation.TransformationTemplate{
+		// We will add the auth token later
+		Headers: map[string]*envoytransformation.InjaTemplate{},
+	}
+	err := handleAIRoutePolicy(aiConfig, extprocSettings, transformationTemplate)
+	if err != nil {
+		return err
+	}
 
-		// Setup initial transformation template. This may be modified by further
-		transformationTemplate := &envoytransformation.TransformationTemplate{
-			// We will add the auth token later
-			Headers: map[string]*envoytransformation.InjaTemplate{},
-		}
-		err := handleAIRoutePolicy(aiConfig, extprocSettings, transformationTemplate)
-		if err != nil {
-			return err
-		}
-
-		pCtx.AddTypedConfig(wellknown.AIExtProcFilterName, extprocSettings)
-		transformation := &envoytransformation.RouteTransformations_RouteTransformation{
-			Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
-				RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
-					RequestTransformation: &envoytransformation.Transformation{
-						// Set this env var to true to log the request/response info for each transformation
-						LogRequestResponseInfo: wrapperspb.Bool(os.Getenv("AI_PLUGIN_DEBUG_TRANSFORMATIONS") == "true"),
-						TransformationType: &envoytransformation.Transformation_TransformationTemplate{
-							TransformationTemplate: transformationTemplate,
-						},
+	pCtx.AddTypedConfig(wellknown.AIExtProcFilterName, extprocSettings)
+	transformation := &envoytransformation.RouteTransformations_RouteTransformation{
+		Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
+			RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
+				RequestTransformation: &envoytransformation.Transformation{
+					// Set this env var to true to log the request/response info for each transformation
+					LogRequestResponseInfo: wrapperspb.Bool(os.Getenv("AI_PLUGIN_DEBUG_TRANSFORMATIONS") == "true"),
+					TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+						TransformationTemplate: transformationTemplate,
 					},
 				},
 			},
-		}
-		// add the disjoint route transformations to the list
-		transformations.Transformations = append(transformations.GetTransformations(), transformation)
-		pCtx.AddTypedConfig(wellknown.TransformationFilterName, transformations)
-
+		},
 	}
+	// add the disjoint route transformations to the list
+	transformations.Transformations = append(transformations.GetTransformations(), transformation)
+	pCtx.AddTypedConfig(wellknown.TransformationFilterName, transformations)
 
 	return nil
 }
