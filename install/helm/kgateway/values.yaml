@@ -109,7 +109,7 @@ gateway:
     type: LoadBalancer
   sdsContainer:
     image:
-      registry: ghcr.io/kgateway-dev
+      registry: ""
       repository: sds
       pullPolicy: IfNotPresent
     logLevel: info
