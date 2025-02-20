@@ -126,9 +126,47 @@ listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         httpFilters:
+        - name: ai.extproc.kgateway.io
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
+            grpcService:
+              envoyGrpc:
+                clusterName: ai_ext_proc_uds_cluster
+              retryPolicy:
+                numRetries: 3
+              timeout: 5s
+            messageTimeout: 5s
+            metadataOptions:
+              forwardingNamespaces:
+                typed:
+                - envoy.filters.ai.solo.io
+                untyped:
+                - io.solo.transformation
+                - envoy.filters.ai.solo.io
+                - envoy.filters.http.jwt_authn
+              receivingNamespaces:
+                untyped:
+                - ai.kgateway.io
+            processingMode:
+              requestBodyMode: STREAMED
+              requestHeaderMode: SEND
+              requestTrailerMode: SKIP
+              responseBodyMode: STREAMED
+              responseHeaderMode: SEND
+              responseTrailerMode: SKIP
         - name: envoy.filters.http.router
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+            upstreamHttpFilters:
+            - name: io.kgateway.wait
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.http.upstream_wait.v2.UpstreamWaitFilterConfig
+            - name: ai.transformation.kgateway.io
+              typedConfig:
+                '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
+            - name: envoy.filters.http.upstream_codec
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
         mergeSlashes: true
         normalizePath: true
         rds:
