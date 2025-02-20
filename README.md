@@ -51,4 +51,4 @@ The [devel](devel) folder should be the starting point for understanding the cod
 Kgateway would not be possible without the valuable open-source work of projects in the community. We would like to extend a special thank-you to [Envoy](https://www.envoyproxy.io).
 
 ## Security
-*Reporting security issues* : We take kgateway's security very seriously. If you've found a security issue or a potential security issue in kgateway, please DO NOT file a public GitHub issue. Instead follow [the directions laid out in the kgateway/community respository](https://github.com/kgateway-dev/community/blob/main/CVE.md).
+*Reporting security issues* : We take kgateway's security very seriously. If you've found a security issue or a potential security issue in kgateway, please DO NOT file a public GitHub issue. Instead follow [the directions laid out in the kgateway/community repository](https://github.com/kgateway-dev/community/blob/main/CVE.md).
