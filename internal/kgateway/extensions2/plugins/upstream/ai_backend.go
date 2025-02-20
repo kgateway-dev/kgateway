@@ -81,7 +81,10 @@ func applyAIBackend(ctx context.Context, aiUpstream *v1alpha1.AIUpstream, pCtx *
 		},
 	}
 	// Sets the transformation for the Upstream. Will be updated in a route policy is attached.
-	pCtx.AddTypedConfig(wellknown.TransformationFilterName, routeTransformation)
+	transformations := &envoytransformation.RouteTransformations{
+		Transformations: []*envoytransformation.RouteTransformations_RouteTransformation{routeTransformation},
+	}
+	pCtx.AddTypedConfig(wellknown.TransformationFilterName, transformations)
 
 	extProcRouteSettings.GetOverrides().GrpcInitialMetadata = append(extProcRouteSettings.GetOverrides().GetGrpcInitialMetadata(),
 		&envoy_config_core_v3.HeaderValue{
