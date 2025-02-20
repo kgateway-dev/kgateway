@@ -144,7 +144,7 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend(
 	policy ir.PolicyIR,
 	pCtx *ir.RouteBackendContext,
 ) error {
-	extprocSettingsProto := pCtx.GetConfig(wellknown.ExtProcFilterName)
+	extprocSettingsProto := pCtx.GetConfig(wellknown.AIExtProcFilterName)
 	if extprocSettingsProto != nil {
 		return nil
 	}
@@ -170,7 +170,7 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend(
 		// TODO: report error on status
 		return err
 	}
-	pCtx.AddTypedConfig(wellknown.ExtProcFilterName, extprocSettings)
+	pCtx.AddTypedConfig(wellknown.AIExtProcFilterName, extprocSettings)
 
 	return nil
 }
@@ -218,7 +218,7 @@ func (p *routePolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filter
 	return filters, nil
 }
 
-func (p *routePolicyPluginGwPass) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {
+func (p *routePolicyPluginGwPass) UpstreamHttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedUpstreamHttpFilter, error) {
 	return nil, nil
 }
 

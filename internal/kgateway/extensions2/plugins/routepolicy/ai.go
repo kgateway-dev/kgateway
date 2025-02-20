@@ -50,7 +50,7 @@ func (p *routePolicyPluginGwPass) processAIRoutePolicy(
 				Disabled: true,
 			},
 		}
-		pCtx.AddTypedConfig(wellknown.ExtProcFilterName, disabledExtprocSettings)
+		pCtx.AddTypedConfig(wellknown.AIExtProcFilterName, disabledExtprocSettings)
 	} else {
 		// If the route options specify this as a chat streaming route, add a header to the ext-proc request
 		if aiConfig.RouteType != nil && *aiConfig.RouteType == v1alpha1.CHAT_STREAMING {
@@ -72,7 +72,7 @@ func (p *routePolicyPluginGwPass) processAIRoutePolicy(
 			return err
 		}
 
-		pCtx.AddTypedConfig(wellknown.ExtProcFilterName, extprocSettings)
+		pCtx.AddTypedConfig(wellknown.AIExtProcFilterName, extprocSettings)
 		transformation := &envoytransformation.RouteTransformations_RouteTransformation{
 			Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
 				RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{

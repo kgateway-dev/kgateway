@@ -92,7 +92,7 @@ type ProxyTranslationPass interface {
 	// if a plugin emits new filters, they must be with a plugin unique name.
 	// any filter returned from route config must be disabled, so it doesnt impact other routes.
 	HttpFilters(ctx context.Context, fc FilterChainCommon) ([]plugins.StagedHttpFilter, error)
-	UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error)
+	UpstreamHttpFilters(ctx context.Context, fc FilterChainCommon) ([]plugins.StagedUpstreamHttpFilter, error)
 
 	NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error)
 	// called 1 time (per envoy proxy). replaces GeneratedResources
@@ -100,7 +100,7 @@ type ProxyTranslationPass interface {
 }
 
 type Resources struct {
-	Clusters []envoy_config_cluster_v3.Cluster
+	Clusters []*envoy_config_cluster_v3.Cluster
 }
 
 type GwTranslationCtx struct {

@@ -141,7 +141,7 @@ func (p *listenerPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Fil
 	return nil, nil
 }
 
-func (p *listenerPolicyPluginGwPass) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {
+func (p *listenerPolicyPluginGwPass) UpstreamHttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedUpstreamHttpFilter, error) {
 	return nil, nil
 }
 

@@ -29,6 +29,6 @@ const (
 
 const (
 	TransformationFilterName = "ai.transformation.kgateway.io"
-	ExtProcFilterName        = "ai.extproc.kgateway.io"
+	AIExtProcFilterName      = "ai.extproc.kgateway.io"
 	SetMetadataFilterName    = "envoy.filters.http.set_filter_state"
 )

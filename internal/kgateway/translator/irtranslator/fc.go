@@ -339,7 +339,7 @@ func (h *hcmNetworkFilterTranslator) computeUpstreamHTTPFilters(ctx context.Cont
 	upstreamHttpFilters := plugins.StagedUpstreamHttpFilterList{}
 	log := contextutils.LoggerFrom(ctx).Desugar()
 	for _, plug := range h.PluginPass {
-		stagedFilters, err := plug.UpstreamHttpFilters(ctx)
+		stagedFilters, err := plug.UpstreamHttpFilters(ctx, l.FilterChainCommon)
 		if err != nil {
 			// what to do with errors here? ignore the listener??
 			h.reporter.SetCondition(reports.ListenerCondition{
