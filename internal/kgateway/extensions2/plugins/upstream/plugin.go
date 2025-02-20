@@ -14,7 +14,6 @@ import (
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	"github.com/rotisserie/eris"
-	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -23,14 +22,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	awspb "github.com/solo-io/envoy-gloo/go/config/filter/http/aws_lambda/v2"
+	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
+	upstream_wait "github.com/solo-io/envoy-gloo/go/config/filter/http/upstream_wait/v2"
 	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
@@ -43,10 +41,9 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
-
-	// Check
-	upstream_wait "github.com/solo-io/envoy-gloo/go/config/filter/http/upstream_wait/v2"
 )
 
 const (
@@ -284,7 +281,7 @@ func processUpstream(ctx context.Context, in ir.Upstream, out *envoy_config_clus
 func hostname(in *v1alpha1.Upstream) string {
 	if in.Spec.Static != nil {
 		if len(in.Spec.Static.Hosts) > 0 {
-			return string(in.Spec.Static.Hosts[0].Host)
+			return in.Spec.Static.Hosts[0].Host
 		}
 	}
 	return ""
@@ -336,6 +333,11 @@ func (p *upstreamPlugin) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBack
 		if err != nil {
 			return err
 		}
+
+		if p.aiGatewayEnabled == nil {
+			p.aiGatewayEnabled = make(map[string]bool)
+		}
+		p.aiGatewayEnabled[pCtx.FilterChainName] = true
 	}
 
 	return nil
@@ -379,18 +381,7 @@ func (p *upstreamPlugin) ApplyForRouteBackend(
 		// todo: should we return fmt.Errorf("internal error: policy is not a upstreamDestination")
 	}
 
-	// TODO: clean up
-	up, ok := pCtx.Upstream.Obj.(*v1alpha1.Upstream)
-	if !ok {
-		// log - should never happen
-		return fmt.Errorf("invalid upstream %s.%s", pCtx.Upstream.GetName(), pCtx.Upstream.GetNamespace())
-	}
-	if up.Spec.AI != nil {
-		if p.aiGatewayEnabled == nil {
-			p.aiGatewayEnabled = make(map[string]bool)
-		}
-		p.aiGatewayEnabled[pCtx.FilterChainName] = true
-	}
+	// TODO: AI config for ApplyToRouteBackend
 
 	return p.processBackendAws(ctx, pCtx, pol)
 
