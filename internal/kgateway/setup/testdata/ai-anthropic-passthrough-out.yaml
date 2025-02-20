@@ -138,7 +138,6 @@ listeners:
                 untyped:
                 - io.solo.transformation
                 - envoy.filters.ai.solo.io
-                - envoy.filters.http.jwt_authn
               receivingNamespaces:
                 untyped:
                 - ai.kgateway.io

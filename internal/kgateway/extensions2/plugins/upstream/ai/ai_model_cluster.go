@@ -1,4 +1,4 @@
-package upstream
+package ai
 
 import (
 	"context"
@@ -29,12 +29,12 @@ const (
 	tlsPort = 443
 )
 
-func processAIUpstream(ctx context.Context, in *v1alpha1.AIUpstream, ir *UpstreamIr, out *envoy_config_cluster_v3.Cluster) error {
+func ProcessAIUpstream(ctx context.Context, in *v1alpha1.AIUpstream, aiSecrets *ir.Secret, out *envoy_config_cluster_v3.Cluster) error {
 	if in == nil {
 		return nil
 	}
 
-	if err := buildModelCluster(ctx, in, ir, out); err != nil {
+	if err := buildModelCluster(ctx, in, aiSecrets, out); err != nil {
 		return err
 	}
 
@@ -45,7 +45,7 @@ func processAIUpstream(ctx context.Context, in *v1alpha1.AIUpstream, ir *Upstrea
 // This function is used by the `ProcessUpstream` function to build the cluster for the AI upstream.
 // It is ALSO used by `ProcessRoute` to create the cluster in the event of backup models being used
 // and fallbacks being required.
-func buildModelCluster(ctx context.Context, aiUs *v1alpha1.AIUpstream, ir *UpstreamIr, out *envoy_config_cluster_v3.Cluster) error {
+func buildModelCluster(ctx context.Context, aiUs *v1alpha1.AIUpstream, aiSecrets *ir.Secret, out *envoy_config_cluster_v3.Cluster) error {
 	// set the type to strict dns
 	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
 		Type: envoy_config_cluster_v3.Cluster_STRICT_DNS,
@@ -74,15 +74,15 @@ func buildModelCluster(ctx context.Context, aiUs *v1alpha1.AIUpstream, ir *Upstr
 				var err error
 				epByType[fmt.Sprintf("%T", ep)] = struct{}{}
 				if ep.OpenAI != nil {
-					result, tlsContext, err = buildOpenAIEndpoint(ep.OpenAI, ir)
+					result, tlsContext, err = buildOpenAIEndpoint(ep.OpenAI, aiSecrets)
 				} else if ep.Anthropic != nil {
-					result, tlsContext, err = buildAnthropicEndpoint(ep.Anthropic, ir)
+					result, tlsContext, err = buildAnthropicEndpoint(ep.Anthropic, aiSecrets)
 				} else if ep.AzureOpenAI != nil {
-					result, tlsContext, err = buildAzureOpenAIEndpoint(ep.AzureOpenAI, ir)
+					result, tlsContext, err = buildAzureOpenAIEndpoint(ep.AzureOpenAI, aiSecrets)
 				} else if ep.Gemini != nil {
-					result, tlsContext, err = buildGeminiEndpoint(ep.Gemini, ir)
+					result, tlsContext, err = buildGeminiEndpoint(ep.Gemini, aiSecrets)
 				} else if ep.VertexAI != nil {
-					result, tlsContext, err = buildVertexAIEndpoint(ctx, ep.VertexAI, ir)
+					result, tlsContext, err = buildVertexAIEndpoint(ctx, ep.VertexAI, aiSecrets)
 				}
 				if err != nil {
 					return err
@@ -114,7 +114,7 @@ func buildModelCluster(ctx context.Context, aiUs *v1alpha1.AIUpstream, ir *Upstr
 		})
 		out.TransportSocketMatches = append(out.GetTransportSocketMatches(), slice...)
 	} else if aiUs.LLM != nil {
-		matches, prioritized, err = buildLLMEndpoint(ctx, aiUs, ir)
+		matches, prioritized, err = buildLLMEndpoint(ctx, aiUs, aiSecrets)
 		if err != nil {
 			return err
 		}
@@ -141,11 +141,11 @@ func buildModelCluster(ctx context.Context, aiUs *v1alpha1.AIUpstream, ir *Upstr
 	return nil
 }
 
-func buildLLMEndpoint(ctx context.Context, aiUs *v1alpha1.AIUpstream, ir *UpstreamIr) ([]*envoy_config_cluster_v3.Cluster_TransportSocketMatch, []*envoy_config_endpoint_v3.LocalityLbEndpoints, error) {
+func buildLLMEndpoint(ctx context.Context, aiUs *v1alpha1.AIUpstream, aiSecrets *ir.Secret) ([]*envoy_config_cluster_v3.Cluster_TransportSocketMatch, []*envoy_config_endpoint_v3.LocalityLbEndpoints, error) {
 	var tsms []*envoy_config_cluster_v3.Cluster_TransportSocketMatch
 	var prioritized []*envoy_config_endpoint_v3.LocalityLbEndpoints
 	if aiUs.LLM.OpenAI != nil {
-		host, tlsContext, err := buildOpenAIEndpoint(aiUs.LLM.OpenAI, ir)
+		host, tlsContext, err := buildOpenAIEndpoint(aiUs.LLM.OpenAI, aiSecrets)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -160,7 +160,7 @@ func buildLLMEndpoint(ctx context.Context, aiUs *v1alpha1.AIUpstream, ir *Upstre
 			tsms = append(tsms, tsm)
 		}
 	} else if aiUs.LLM.Anthropic != nil {
-		host, tlsContext, err := buildAnthropicEndpoint(aiUs.LLM.Anthropic, ir)
+		host, tlsContext, err := buildAnthropicEndpoint(aiUs.LLM.Anthropic, aiSecrets)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -175,7 +175,7 @@ func buildLLMEndpoint(ctx context.Context, aiUs *v1alpha1.AIUpstream, ir *Upstre
 			tsms = append(tsms, tsm)
 		}
 	} else if aiUs.LLM.AzureOpenAI != nil {
-		host, tlsContext, err := buildAzureOpenAIEndpoint(aiUs.LLM.AzureOpenAI, ir)
+		host, tlsContext, err := buildAzureOpenAIEndpoint(aiUs.LLM.AzureOpenAI, aiSecrets)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -190,7 +190,7 @@ func buildLLMEndpoint(ctx context.Context, aiUs *v1alpha1.AIUpstream, ir *Upstre
 			tsms = append(tsms, tsm)
 		}
 	} else if aiUs.LLM.Gemini != nil {
-		host, tlsContext, err := buildGeminiEndpoint(aiUs.LLM.Gemini, ir)
+		host, tlsContext, err := buildGeminiEndpoint(aiUs.LLM.Gemini, aiSecrets)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -205,7 +205,7 @@ func buildLLMEndpoint(ctx context.Context, aiUs *v1alpha1.AIUpstream, ir *Upstre
 			tsms = append(tsms, tsm)
 		}
 	} else if aiUs.LLM.VertexAI != nil {
-		host, tlsContext, err := buildVertexAIEndpoint(ctx, aiUs.LLM.VertexAI, ir)
+		host, tlsContext, err := buildVertexAIEndpoint(ctx, aiUs.LLM.VertexAI, aiSecrets)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -243,8 +243,8 @@ func buildTsm(tlsContext *envoy_tls_v3.UpstreamTlsContext) (*envoy_config_cluste
 	}, nil
 }
 
-func buildOpenAIEndpoint(data *v1alpha1.OpenAIConfig, ir *UpstreamIr) (*envoy_config_endpoint_v3.LbEndpoint, *envoy_tls_v3.UpstreamTlsContext, error) {
-	token, err := getAuthToken(data.AuthToken, ir)
+func buildOpenAIEndpoint(data *v1alpha1.OpenAIConfig, aiSecrets *ir.Secret) (*envoy_config_endpoint_v3.LbEndpoint, *envoy_tls_v3.UpstreamTlsContext, error) {
+	token, err := getAuthToken(data.AuthToken, aiSecrets)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -260,8 +260,8 @@ func buildOpenAIEndpoint(data *v1alpha1.OpenAIConfig, ir *UpstreamIr) (*envoy_co
 	)
 	return ep, host, nil
 }
-func buildAnthropicEndpoint(data *v1alpha1.AnthropicConfig, ir *UpstreamIr) (*envoy_config_endpoint_v3.LbEndpoint, *envoy_tls_v3.UpstreamTlsContext, error) {
-	token, err := getAuthToken(data.AuthToken, ir)
+func buildAnthropicEndpoint(data *v1alpha1.AnthropicConfig, aiSecrets *ir.Secret) (*envoy_config_endpoint_v3.LbEndpoint, *envoy_tls_v3.UpstreamTlsContext, error) {
+	token, err := getAuthToken(data.AuthToken, aiSecrets)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -277,8 +277,8 @@ func buildAnthropicEndpoint(data *v1alpha1.AnthropicConfig, ir *UpstreamIr) (*en
 	)
 	return ep, host, nil
 }
-func buildAzureOpenAIEndpoint(data *v1alpha1.AzureOpenAIConfig, ir *UpstreamIr) (*envoy_config_endpoint_v3.LbEndpoint, *envoy_tls_v3.UpstreamTlsContext, error) {
-	token, err := getAuthToken(data.AuthToken, ir)
+func buildAzureOpenAIEndpoint(data *v1alpha1.AzureOpenAIConfig, aiSecrets *ir.Secret) (*envoy_config_endpoint_v3.LbEndpoint, *envoy_tls_v3.UpstreamTlsContext, error) {
+	token, err := getAuthToken(data.AuthToken, aiSecrets)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -290,8 +290,8 @@ func buildAzureOpenAIEndpoint(data *v1alpha1.AzureOpenAIConfig, ir *UpstreamIr) 
 	)
 	return ep, host, nil
 }
-func buildGeminiEndpoint(data *v1alpha1.GeminiConfig, ir *UpstreamIr) (*envoy_config_endpoint_v3.LbEndpoint, *envoy_tls_v3.UpstreamTlsContext, error) {
-	token, err := getAuthToken(data.AuthToken, ir)
+func buildGeminiEndpoint(data *v1alpha1.GeminiConfig, aiSecrets *ir.Secret) (*envoy_config_endpoint_v3.LbEndpoint, *envoy_tls_v3.UpstreamTlsContext, error) {
+	token, err := getAuthToken(data.AuthToken, aiSecrets)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -303,8 +303,8 @@ func buildGeminiEndpoint(data *v1alpha1.GeminiConfig, ir *UpstreamIr) (*envoy_co
 	)
 	return ep, host, nil
 }
-func buildVertexAIEndpoint(ctx context.Context, data *v1alpha1.VertexAIConfig, ir *UpstreamIr) (*envoy_config_endpoint_v3.LbEndpoint, *envoy_tls_v3.UpstreamTlsContext, error) {
-	token, err := getAuthToken(data.AuthToken, ir)
+func buildVertexAIEndpoint(ctx context.Context, data *v1alpha1.VertexAIConfig, aiSecrets *ir.Secret) (*envoy_config_endpoint_v3.LbEndpoint, *envoy_tls_v3.UpstreamTlsContext, error) {
+	token, err := getAuthToken(data.AuthToken, aiSecrets)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -372,7 +372,7 @@ func buildLocalityLbEndpoint(
 		},
 	}, tlsContext
 }
-func getAuthToken(in v1alpha1.SingleAuthToken, ir *UpstreamIr) (token string, err error) {
+func getAuthToken(in v1alpha1.SingleAuthToken, aiSecrets *ir.Secret) (token string, err error) {
 	switch in.Kind {
 	case v1alpha1.Inline:
 		if in.Inline == nil {
@@ -380,7 +380,7 @@ func getAuthToken(in v1alpha1.SingleAuthToken, ir *UpstreamIr) (token string, er
 		}
 		token = *in.Inline
 	case v1alpha1.SecretRef:
-		secret, err := deriveHeaderSecret(ir.AISecret)
+		secret, err := deriveHeaderSecret(aiSecrets)
 		if err != nil {
 			return "", err
 		}
@@ -489,7 +489,7 @@ func getTransformation(ctx context.Context, llm *v1alpha1.LLMProviders) (string,
 		prefix = "Bearer "
 		var modelPath string
 		modelCall := llm.VertexAI.ModelPath
-		if modelCall != nil {
+		if modelCall == nil {
 			switch llm.VertexAI.Publisher {
 			case v1alpha1.GOOGLE:
 				modelPath = getVertexAIGeminiModelPath()
@@ -500,7 +500,7 @@ func getTransformation(ctx context.Context, llm *v1alpha1.LLMProviders) (string,
 			}
 		} else {
 			// Use user provided model path
-			modelPath = fmt.Sprintf(`models/{{host_metadata("model")}}:%s`, modelCall)
+			modelPath = fmt.Sprintf(`models/{{host_metadata("model")}}:%s`, *modelCall)
 		}
 		// https://${LOCATION}-aiplatform.googleapis.com/{VERSION}/projects/${PROJECT_ID}/locations/${LOCATION}/<model-path>
 		path = fmt.Sprintf(`/{{host_metadata("api_version")}}/projects/{{host_metadata("project")}}/locations/{{host_metadata("location")}}/publishers/{{host_metadata("publisher")}}/%s`, modelPath)

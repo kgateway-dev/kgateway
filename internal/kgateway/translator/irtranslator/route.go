@@ -243,6 +243,8 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(ctx context.Contex
 			continue
 		}
 		for _, pol := range pols {
+
+			// Policy on extension ref
 			err := pass.ApplyForRouteBackend(ctx, pol.PolicyIr, pCtx)
 			if err != nil {
 				errs = append(errs, err)
@@ -256,7 +258,6 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(ctx context.Contex
 func (h *httpRouteConfigurationTranslator) runBackend(ctx context.Context, in ir.HttpBackend, pCtx *ir.RouteBackendContext, outRoute *envoy_config_route_v3.Route) error {
 	var errs []error
 	if in.Backend.Upstream != nil {
-		// TODO: support plugins on kube svc Upstreams?
 		if in.Backend.Upstream.GetGroupKind().Kind == v1alpha1.UpstreamGVK.Kind {
 			err := h.PluginPass[in.Backend.Upstream.GetGroupKind()].ApplyForBackend(ctx, pCtx, in, outRoute)
 			if err != nil {
