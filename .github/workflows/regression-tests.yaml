@@ -10,25 +10,9 @@ env:
   GITHUB_TOKEN: ${{ github.token }} # necessary to pass upgrade tests
 
 jobs:
-  prepare_env:
-    name: Prepare Environment
-    runs-on: ubuntu-22.04
-    timeout-minutes: 5
-    steps:
-    - name: Cancel Previous Actions
-      uses: styfle/cancel-workflow-action@0.12.1
-      with:
-        access_token: ${{ github.token }}
-    - id: checkout-code
-      uses: actions/checkout@v4
-      with:
-        # We require gathering the branch and tag history since we rely on a `git diff`
-        # which compares the state of two branches
-        fetch-depth: 0
 
   # regression_tests:
   #   name: k8s regression tests (${{matrix.kube-e2e-test-type}})
-  #   needs: prepare_env
   #   runs-on: ubuntu-22.04
   #   timeout-minutes: 60
   #   if: ${{ !github.event.pull_request.draft }}
@@ -54,7 +38,6 @@ jobs:
 
   kube_gateway_api_conformance_tests:
     name: kubernetes gateway api conformance tests (${{matrix.image-variant}})
-    needs: prepare_env
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     if: ${{ !github.event.pull_request.draft }}
