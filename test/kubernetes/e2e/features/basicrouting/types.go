@@ -6,7 +6,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	gwapiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 )
@@ -24,7 +23,6 @@ var (
 	proxyDeployment     = &appsv1.Deployment{ObjectMeta: proxyObjectMeta}
 	proxyService        = &corev1.Service{ObjectMeta: proxyObjectMeta}
 	proxyServiceAccount = &corev1.ServiceAccount{ObjectMeta: proxyObjectMeta}
-	gw                  = &gwapiv1.Gateway{ObjectMeta: proxyObjectMeta}
 
 	exampleSvc = &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
