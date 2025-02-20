@@ -608,6 +608,43 @@ var _ = Describe("Query", func() {
 		})
 
 	})
+
+	It("should match TLSRoutes for Listener", func() {
+		gw := gw()
+		gw.Spec.Listeners = []apiv1.Listener{
+			{
+				Name:     "foo-tls",
+				Protocol: apiv1.TLSProtocolType,
+			},
+		}
+
+		tlsRoute := &apiv1a2.TLSRoute{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       wellknown.TLSRouteKind,
+				APIVersion: apiv1a2.GroupVersion.String(),
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-tls-route",
+				Namespace: gw.Namespace,
+			},
+			Spec: apiv1a2.TLSRouteSpec{
+				CommonRouteSpec: apiv1.CommonRouteSpec{
+					ParentRefs: []apiv1.ParentReference{
+						{
+							Name: apiv1.ObjectName(gw.Name),
+						},
+					},
+				},
+			},
+		}
+
+		gq := newQueries(tlsRoute)
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routes.ListenerResults[string(gw.Spec.Listeners[0].Name)].Routes).To(HaveLen(1))
+		Expect(routes.ListenerResults[string(gw.Spec.Listeners[0].Name)].Error).NotTo(HaveOccurred())
+	})
 })
 
 func refGrantSecret() *apiv1beta1.ReferenceGrant {
@@ -762,7 +799,8 @@ func newQueries(initObjs ...client.Object) query.GatewayQueries {
 
 	httproutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
-	rtidx := krtcollections.NewRoutesIndex(krtutil.KrtOptions{}, httproutes, tcpproutes, policies, upstreams, refgrants)
+	tlsroutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
+	rtidx := krtcollections.NewRoutesIndex(krtutil.KrtOptions{}, httproutes, tcpproutes, tlsroutes, policies, upstreams, refgrants)
 	services.Synced().WaitUntilSynced(nil)
 
 	secretsCol := map[schema.GroupKind]krt.Collection[ir.Secret]{
