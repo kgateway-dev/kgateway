@@ -54,7 +54,7 @@ controller:
   replicaCount: 1
   logLevel: info
   image:
-    registry: ghcr.io/kgateway-dev
+    registry: ""
     repository: kgateway
     pullPolicy: IfNotPresent
     tag: ""
@@ -85,7 +85,7 @@ gateway:
   parametersAnnotationName: "gateway.kgateway.dev/gateway-parameters-name"
   envoyContainer:
     image:
-      registry: ghcr.io/kgateway-dev
+      registry: ""
       repository: envoy-wrapper
       pullPolicy: IfNotPresent
       tag: ""
@@ -109,7 +109,7 @@ gateway:
     type: LoadBalancer
   sdsContainer:
     image:
-      registry: ghcr.io/kgateway-dev
+      registry: ""
       repository: sds
       pullPolicy: IfNotPresent
     logLevel: info
@@ -136,3 +136,8 @@ gateway:
     routePrefixRewrite: "/stats/prometheus"
     enableStatsRoute: true
     statsRoutePrefixRewrite: "/stats"
+
+image:
+  registry: ghcr.io/kgateway-dev
+  tag: ""
+  pullPolicy: IfNotPresent

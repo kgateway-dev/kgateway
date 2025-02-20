@@ -162,6 +162,7 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		gvr.HTTPRoute_v1,
 		gvr.Service,
 		gvr.Pod,
+		gvr.TCPRoute,
 	} {
 		clienttest.MakeCRD(t, cli, crd)
 	}

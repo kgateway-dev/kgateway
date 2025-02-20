@@ -115,11 +115,11 @@ func (s *testingSuite) AfterTest(suiteName, testName string) {
 }
 
 func (s *testingSuite) TestProvisionDeploymentAndService() {
-	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
+	s.testInstallation.Assertions.EventuallyReadyReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
 }
 
 func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
-	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
+	s.testInstallation.Assertions.EventuallyReadyReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
 
 	// check that the labels and annotations got passed through from GatewayParameters to the ServiceAccount
 	sa := &corev1.ServiceAccount{}
@@ -152,7 +152,7 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 	})
 
 	// Assert that the expected custom configuration exists.
-	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(2))
+	s.testInstallation.Assertions.EventuallyReadyReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(2))
 
 	s.testInstallation.Assertions.AssertEnvoyAdminApi(
 		s.ctx,
@@ -163,7 +163,7 @@ func (s *testingSuite) TestConfigureProxiesFromGatewayParameters() {
 }
 
 func (s *testingSuite) TestConfigureAwsLambda() {
-	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
+	s.testInstallation.Assertions.EventuallyReadyReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
 
 	s.testInstallation.Assertions.AssertEnvoyAdminApi(
 		s.ctx,
@@ -173,7 +173,7 @@ func (s *testingSuite) TestConfigureAwsLambda() {
 }
 
 func (s *testingSuite) TestProvisionResourcesUpdatedWithValidParameters() {
-	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
+	s.testInstallation.Assertions.EventuallyReadyReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
 
 	// modify the number of replicas in the GatewayParameters
 	s.patchGatewayParameters(gwParamsDefault.ObjectMeta, func(parameters *v1alpha1.GatewayParameters) {
@@ -182,11 +182,11 @@ func (s *testingSuite) TestProvisionResourcesUpdatedWithValidParameters() {
 
 	// the GatewayParameters modification should cause the deployer to re-run and update the
 	// deployment to have 2 replicas
-	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(2))
+	s.testInstallation.Assertions.EventuallyReadyReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(2))
 }
 
 func (s *testingSuite) TestProvisionResourcesNotUpdatedWithInvalidParameters() {
-	s.testInstallation.Assertions.EventuallyRunningReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
+	s.testInstallation.Assertions.EventuallyReadyReplicas(s.ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
 
 	var (
 		// initially, allowPrivilegeEscalation should be true and privileged should not be set

@@ -34,20 +34,12 @@ var (
 	svcInvalidPortWithoutTargetportManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "svc", "invalid-port-without-targetport.yaml")
 
 	// K8s Resources
-	setupK8sManifest                        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "k8s-gw.yaml")
+	setupK8sManifest                        = filepath.Join(fsutils.MustGetThisDir(), "testdata", "gateway.yaml")
 	invalidPortAndValidTargetportManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "k8s", "invalid-port-and-valid-targetport.yaml")
 	invalidPortAndInvalidTargetportManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "k8s", "invalid-port-and-invalid-targetport.yaml")
 	matchPodPortWithoutTargetportManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "k8s", "match-pod-port-without-targetport.yaml")
 	matchPortandTargetportManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "k8s", "match-port-and-targetport.yaml")
 	invalidPortWithoutTargetportManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "k8s", "invalid-port-without-targetport.yaml")
-
-	// Gloo Edge Resources
-	setupEdgeManifest                               = filepath.Join(fsutils.MustGetThisDir(), "testdata", "edge-routing.yaml")
-	upstreamInvalidPortAndValidTargetportManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "edge", "invalid-port-and-valid-targetport.yaml")
-	upstreamInvalidPortAndInvalidTargetportManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "edge", "invalid-port-and-invalid-targetport.yaml")
-	upstreamMatchPodPortWithoutTargetportManifest   = filepath.Join(fsutils.MustGetThisDir(), "testdata", "edge", "match-pod-port-without-targetport.yaml")
-	upstreamMatchPortandTargetportManifest          = filepath.Join(fsutils.MustGetThisDir(), "testdata", "edge", "match-port-and-targetport.yaml")
-	upstreamInvalidPortWithoutTargetportManifest    = filepath.Join(fsutils.MustGetThisDir(), "testdata", "edge", "invalid-port-without-targetport.yaml")
 
 	// When we apply the setup.yaml file, we expect resources to be created with this metadata
 	glooProxyObjectMeta = metav1.ObjectMeta{

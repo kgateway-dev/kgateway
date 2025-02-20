@@ -1,0 +1,96 @@
+name: Kubernetes Tests
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+env:
+  VERSION: '1.0.0-ci1'
+  GITHUB_TOKEN: ${{ github.token }}
+
+jobs:
+  end_to_end_tests:
+    name: End-to-End (${{ matrix.test.cluster-name }})
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    if: ${{ !github.event.pull_request.draft }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # We intentionally set an upper threshold of 30 minutes for our End-to-End tests
+        # Our goal is to load balance tests in a way that allows quick iteration on PRs
+        # If tests are exceeding the 30-minute limit, please see:
+        # /test/kubernetes/e2e/load_balancing_tests.md
+        #
+        # Above each test below, we document the latest date/time for the GitHub action step to run
+        # NOTE: We use the GitHub action step time (as opposed to the `go test` time), because it is easier to capture
+
+        test:
+        # Feb 18, 2025: 4 minutes
+        - cluster-name: 'cluster-one'
+          go-test-args: '-v -timeout=25m'
+          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$'
+
+#         # Dec 4, 2024: 23 minutes
+#         - cluster-name: 'cluster-two'
+#           go-test-args: '-v -timeout=25m'
+#           go-test-run-regex: '^TestKgateway$$/^RouteDelegation$$|^TestKgatewayIstioRevision$$|^TestRevisionIstioRegression$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^RouteOptions$$|^TestKgateway$$/^VirtualHostOptions$$|^TestKgateway$$/^Upstreams$$|^TestKgateway$$/^HeadlessSvc$$|^TestKgateway$$/^PortRouting$$|^TestKgatewayMinimalDefaultGatewayParameters$$|^TestKgateway$$/^DirectResponse$$|^TestKgateway$$/^HttpListenerOptions$$|^TestKgateway$$/^ListenerOptions$$|^TestKgateway$$/^GlooAdminServer$$'
+
+#         # Dec 4, 2024: 24 minutes
+#         - cluster-name: 'cluster-three'
+#           go-test-args: '-v -timeout=30m'
+#           go-test-run-regex: '(^TestKgatewayIstioAutoMtls$$|^TestIstioRegression$$)'
+
+#         # Dec 4, 2024: 21 minutes
+#         - cluster-name: 'cluster-four'
+#           go-test-args: '-v -timeout=30m'
+#           go-test-run-regex: '(^TestKgatewayIstio$$)'
+
+#         # Dec 4, 2024: 24 minutes
+#         - cluster-name: 'cluster-five'
+#           go-test-args: '-v -timeout=30m'
+#           go-test-run-regex: '^TestFullEnvoyValidation$$|^TestValidationStrict$$|^TestValidationAlwaysAccept$$|^TestTransformationValidationDisabled$$'
+
+#         # Dec 4, 2024: 26 minutes
+#         - cluster-name: 'cluster-six'
+#           go-test-args: '-v -timeout=30m'
+#           go-test-run-regex: '^TestDiscoveryWatchlabels$$|^TestKgatewayNoValidation$$|^TestHelm$$|^TestHelmSettings$$|^TestKgatewayAws$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TCPRouteServices$$|^TestZeroDowntimeRollout$$'
+
+#         # Dec 4, 2024: 13 minutes
+#         - cluster-name: 'cluster-seven'
+#           go-test-args: '-v -timeout=25m'
+#           go-test-run-regex: '^TestKgateway$$/^CRDCategories$$|^TestKgateway$$/^Metrics$$|^TestWatchNamespaceSelector$$'
+
+        # In our PR tests, we run the suite of tests using the upper ends of versions that we claim to support
+        # The versions should mirror: https://kgateway.dev/docs/reference/versions/
+        version-files:
+          - file: './.github/workflows/.env/pr-tests/versions.env'
+    steps:
+    - uses: actions/checkout@v4
+    - name: Prep Go Runner
+      uses: ./.github/actions/prep-go-runner
+    # The dotenv action is used to load key-value pairs from files.
+    # In this case, the file is specified in the matrix and will contain the versions of the tools to use
+    - name: Dotenv Action
+      uses: falti/dotenv-action@v1.1.4
+      id: dotenv
+      with:
+        path: ${{ matrix.version-files.file }}
+        log-variables: true
+    - id: setup-kind-cluster
+      name: Setup KinD Cluster
+      uses: ./.github/actions/setup-kind-cluster
+      with:
+        cluster-name: ${{ matrix.test.cluster-name }}
+        kind-node-version: ${{ steps.dotenv.outputs.node_version }}
+        kind-version: ${{ steps.dotenv.outputs.kind_version }}
+        kubectl-version: ${{ steps.dotenv.outputs.kubectl_version }}
+        helm-version: ${{ steps.dotenv.outputs.helm_version }}
+        istio-version: ${{ steps.dotenv.outputs.istio_version }}
+    - id: run-tests
+      uses: ./.github/actions/kubernetes-e2e-tests
+      with:
+        cluster-name: ${{ matrix.test.cluster-name }}
+        test-args: ${{ matrix.test.go-test-args }}
+        run-regex: ${{ matrix.test.go-test-run-regex }}
+        istio-version: ${{ steps.dotenv.outputs.istio_version }}
+        matrix-label: "pr"

@@ -11,7 +11,7 @@ import (
 //
 // +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:metadata:labels={app=gloo-gateway,app.kubernetes.io/name=gloo-gateway}
+// +kubebuilder:metadata:labels={app=kgateway,app.kubernetes.io/name=kgateway}
 // +kubebuilder:resource:categories=kgateway,shortName=dr
 // +kubebuilder:subresource:status
 type DirectResponse struct {

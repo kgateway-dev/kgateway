@@ -25,9 +25,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-  - name: Install test tools
-    shell: bash
-    run: make install-test-tools
   - name: Execute tests
     env:
       GO_TEST_USER_ARGS: ${{ inputs.test-args }} -run "${{ inputs.run-regex }}"

@@ -42,7 +42,7 @@ runs:
     run: |
       if [[ -z "${{ matrix.version }}" ]]; then
         # If matrix.version is empty, use the local chart path specified in the Makefile.
-        helm upgrade -i -n kgateway-system kgateway ./_test/kgateway-${VERSION}.tgz \
+        helm upgrade -i -n kgateway-system kgateway ./install/helm/kgateway/ \
           --create-namespace \
           --set image.tag=${VERSION}
       else

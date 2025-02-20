@@ -40,7 +40,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 // TestKubeServiceSuccessStats sends a number of requests to a kube Service and checks that the cluster metrics
 // show the expected number of successful requests
 func (s *testingSuite) TestKubeServiceSuccessStats() {
-	s.TestInstallation.Assertions.EventuallyRunningReplicas(s.Ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
+	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
 
 	kubeSvcUpstream := kubernetes.ServiceToUpstream(s.Ctx, exampleSvc, exampleSvc.Spec.Ports[0])
 	s.sendAndAssertNumSuccessfulRequests(3, kubeSvcUpstream)
@@ -49,7 +49,7 @@ func (s *testingSuite) TestKubeServiceSuccessStats() {
 // TestKubeUpstreamSuccessStats sends a number of requests to a kube Upstream and checks that the cluster metrics
 // show the expected number of successful requests
 func (s *testingSuite) TestKubeUpstreamSuccessStats() {
-	s.TestInstallation.Assertions.EventuallyRunningReplicas(s.Ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
+	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, proxyDeployment.ObjectMeta, gomega.Equal(1))
 
 	s.sendAndAssertNumSuccessfulRequests(2, kubeUpstream)
 }

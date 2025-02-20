@@ -9,12 +9,12 @@ import (
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=gatewayparameters/status,verbs=get;update;patch
 
 // A GatewayParameters contains configuration that is used to dynamically
-// provision Gloo Gateway's data plane (Envoy proxy instance), based on a
+// provision kgateway's data plane (Envoy proxy instance), based on a
 // Kubernetes Gateway.
 //
 // +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:metadata:labels={app=gloo-gateway,app.kubernetes.io/name=gloo-gateway}
+// +kubebuilder:metadata:labels={app=kgateway,app.kubernetes.io/name=kgateway}
 // +kubebuilder:resource:categories=kgateway,shortName=gwp
 // +kubebuilder:subresource:status
 type GatewayParameters struct {

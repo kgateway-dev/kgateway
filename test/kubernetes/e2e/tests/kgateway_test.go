@@ -1,12 +1,9 @@
-//go:build ignore
-
 package tests_test
 
 import (
 	"context"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
@@ -15,20 +12,18 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
-// TestK8sGatewayNoValidation executes tests against a K8s Gateway gloo install with validation disabled
-func TestK8sGatewayNoValidation(t *testing.T) {
+// TestKgateway is the function which executes a series of tests against a given installation
+func TestKgateway(t *testing.T) {
 	ctx := context.Background()
-	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "k8s-gw-test-no-validation")
+	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "kgateway-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&install.Context{
 			InstallNamespace:          installNs,
 			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
-			ValuesManifestFile:        e2e.ManifestPath("k8s-gateway-no-webhook-validation-test-helm.yaml"),
+			ValuesManifestFile:        e2e.EmptyValuesManifestPath,
 		},
 	)
-
-	testHelper := e2e.MustTestHelper(ctx, testInstallation)
 
 	// Set the env to the install namespace if it is not already set
 	if !nsEnvPredefined {
@@ -36,7 +31,7 @@ func TestK8sGatewayNoValidation(t *testing.T) {
 	}
 
 	// We register the cleanup function _before_ we actually perform the installation.
-	// This allows us to uninstall Gloo Gateway, in case the original installation only completed partially
+	// This allows us to uninstall kgateway, in case the original installation only completed partially
 	t.Cleanup(func() {
 		if !nsEnvPredefined {
 			os.Unsetenv(testutils.InstallNamespace)
@@ -45,11 +40,11 @@ func TestK8sGatewayNoValidation(t *testing.T) {
 			testInstallation.PreFailHandler(ctx)
 		}
 
-		testInstallation.UninstallGlooGatewayWithTestHelper(ctx, testHelper)
+		testInstallation.UninstallKgateway(ctx)
 	})
 
-	// Install Gloo Gateway
-	testInstallation.InstallGlooGatewayWithTestHelper(ctx, testHelper, 5*time.Minute)
+	// Install kgateway
+	testInstallation.InstallKgatewayFromLocalChart(ctx)
 
-	KubeGatewayNoValidationSuiteRunner().Run(ctx, t, testInstallation)
+	KubeGatewaySuiteRunner().Run(ctx, t, testInstallation)
 }

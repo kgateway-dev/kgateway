@@ -90,16 +90,17 @@ func startControlPlane(ctx context.Context,
 	return NewControlPlane(ctx, &net.TCPAddr{IP: net.IPv4zero, Port: 9977}, callbacks)
 }
 
-func StartGGv2WithConfig(ctx context.Context, setupOpts *controller.SetupOpts,
+func StartGGv2WithConfig(
+	ctx context.Context,
+	setupOpts *controller.SetupOpts,
 	restConfig *rest.Config,
 	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
 	extraPlugins []extensionsplug.Plugin,
 	extraGwClasses []string, // TODO: we can remove this and replace with something that watches all GW classes with our controller name
 ) error {
 	ctx = contextutils.WithLogger(ctx, "k8s")
-
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Info("starting gloo gateway")
+	logger.Infof("starting %s", componentName)
 
 	kubeClient, err := createKubeClient(restConfig)
 	if err != nil {

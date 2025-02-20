@@ -6,6 +6,7 @@ import (
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/kube/kubetypes"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 
@@ -65,8 +66,9 @@ func InitCollections(
 	registerTypes()
 
 	httpRoutes := krt.WrapClient(kclient.New[*gwv1.HTTPRoute](istioClient), krtopts.ToOptions("HTTPRoute")...)
-	tcproutes := krt.WrapClient(kclient.New[*gwv1a2.TCPRoute](istioClient), krtopts.ToOptions("TCPRoute")...)
 	kubeRawGateways := krt.WrapClient(kclient.New[*gwv1.Gateway](istioClient), krtopts.ToOptions("KubeGateways")...)
+
+	tcproutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TCPRoute](istioClient, gvr.TCPRoute, kubetypes.StandardInformer, kclient.Filter{}), krtopts.ToOptions("TCPRoute")...)
 
 	return initCollectionsWithGateways(isOurGw, kubeRawGateways, httpRoutes, tcproutes, refgrants, extensions, krtopts)
 }

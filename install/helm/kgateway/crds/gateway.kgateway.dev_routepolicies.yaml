@@ -5,8 +5,8 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.16.5
   labels:
-    app: gateway
-    app.kubernetes.io/name: gateway
+    app: kgateway
+    app.kubernetes.io/name: kgateway
     gateway.networking.k8s.io/policy: Direct
   name: routepolicies.gateway.kgateway.dev
 spec:
