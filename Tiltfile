@@ -4,6 +4,8 @@ update_settings(k8s_upsert_timeout_secs = 600)
 load('ext://helm_resource', 'helm_resource')
 load("ext://uibutton", "cmd_button", "location")
 
+image_tag = "1.0.0-ci1"
+
 kubectl_cmd = "kubectl"
 helm_cmd = "helm"
 if str(local("command -v " + kubectl_cmd + " || true", quiet = True)) == "":
@@ -13,8 +15,8 @@ if str(local("command -v " + helm_cmd + " || true", quiet = True)) == "":
     fail("Required command '" + helm_cmd + "' not found in PATH")
 
 settings = {
-    "helm_installation_name": "gloo-oss",
-    "helm_installation_namespace": "gloo-system",
+    "helm_installation_name": "kgateway",
+    "helm_installation_namespace": "kgateway-system",
     "helm_values_files": ["./test/kubernetes/e2e/tests/manifests/common-recommendations.yaml"],
 }
 
@@ -24,9 +26,9 @@ settings.update((read_yaml(
     default = {},
 )))
 
-gloo_installed_cmd = "{0} -n {1} status {2} || true".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"))
-gloo_status = str(local(gloo_installed_cmd, quiet = True))
-gloo_installed = "STATUS: deployed" in gloo_status
+kgateway_installed_cmd = "{0} -n {1} status {2} || true".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"))
+kgateway_status = str(local(kgateway_installed_cmd, quiet = True))
+kgateway_installed = "STATUS: deployed" in kgateway_status
 
 tilt_helper_dockerfile = """
 # Tilt image
@@ -55,18 +57,20 @@ RUN chmod 777 ./$binary_name
 standard_entrypoint = "ENTRYPOINT /app/start.sh /app/$binary_name"
 debug_entrypoint = "ENTRYPOINT /app/start.sh /go/bin/dlv --listen=0.0.0.0:$debug_port --api-version=2 --headless=true --only-same-user=false --accept-multiclient --check-go-version=false exec --continue /app/$binary_name"
 
-get_resources_cmd = "{0} -n {1} template {2} --include-crds install/helm/gloo/ --set gloo.deployment.image.pullPolicy='IfNotPresent'".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"))
+get_resources_cmd = "{0} -n {1} template {2} --include-crds install/helm/kgateway/ --set image.pullPolicy='Never' --set image.tag='{3}'".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"), image_tag)
 for f in settings.get("helm_values_files") :
     get_resources_cmd = get_resources_cmd + " --values=" + f
-get_resources_cmd = get_resources_cmd + " --set=gloo.deployment.livenessProbeEnabled=false"
 
 arch = str(local("make print-GOARCH", quiet = True)).strip()
 
 def get_deployment(resources, name) :
+    names = []
     for resource in resources:
         if resource["kind"] == "Deployment":
+            names.append(resource["metadata"]["name"])
             if resource["metadata"]["name"] == name :
                 return resource
+    fail("Deployment not found for " + name + ". Found: " + ", ".join(names))
 
 def get_resources() :
     return decode_yaml_stream(str(local(get_resources_cmd, quiet = True)))
@@ -79,7 +83,7 @@ def build_go_binary(provider):
         # Build the go binary
         # Ref: https://docs.tilt.dev/api.html#api.local_resource
         # resource_deps = []
-        # if not gloo_installed :
+        # if not kgateway_installed :
         #     resource_deps = [settings.get("helm_installation_name")]
         local_resource(
             provider.get("label") + "_binary",
@@ -157,7 +161,10 @@ def enable_provider(provider):
         provider,
     )
 
-    deployment = get_deployment(resources, label)
+    deployment = get_deployment(resources, settings.get("helm_installation_name"))
+    # set the correct namespace
+    deployment["metadata"]["namespace"] = settings.get("helm_installation_namespace")
+
     if provider.get("live_reload_deps") :
         # Overwrite the deployment image name with our custom one
         deployment["spec"]["template"]["spec"]["containers"][0]["image"] = provider.get("image")
@@ -175,7 +182,7 @@ def enable_provider(provider):
     resource_deps = []
     if provider.get("live_reload_deps") :
         resource_deps = [label + "_binary"]
-    if not gloo_installed :
+    if not kgateway_installed :
         resource_deps = [settings.get("helm_installation_name")]
 
     # Create and manage the tweaked deployment
@@ -192,17 +199,16 @@ def enable_provider(provider):
 def enable_providers():
     for provider in settings["enabled_providers"] :
         enable_provider(settings["providers"][provider])
-
-def install_gloo():
-    if not gloo_installed :
+ 
+def install_kgateway():
+    if not kgateway_installed :
         install_helm_cmd = """
             kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null || {{ kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/standard-install.yaml; }} ;
-            {0} upgrade --install -n {1} --create-namespace {2} install/helm/gloo/ --set gloo.deployment.image.pullPolicy='IfNotPresent' --set license_key='$GLOO_LICENSE_KEY' --set gloo.deployment.glooContainerSecurityContext.readOnlyRootFilesystem=false""".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"))
+            {0} upgrade --install -n {1} --create-namespace {2} install/helm/kgateway/ --set controller.image.pullPolicy='Never' --set image.tag='{3}'""".format(helm_cmd, settings.get("helm_installation_namespace"), settings.get("helm_installation_name"), image_tag)
         for f in settings.get("helm_values_files") :
             install_helm_cmd = install_helm_cmd + " --values=" + f
-        install_helm_cmd = install_helm_cmd + " --set=gloo.deployment.livenessProbeEnabled=false"
         local_resource(
-            name = settings.get("helm_installation_name"),
+            name = settings.get("helm_installation_name") + "_helm",
             cmd = ["bash", "-c", install_helm_cmd],
             auto_init = True,
             trigger_mode = TRIGGER_MODE_MANUAL,
@@ -222,7 +228,7 @@ def install_gloo():
 def validate_registry() :
     usingLocalRegistry = str(local(kubectl_cmd + " get cm -n kube-public local-registry-hosting || true", quiet = True))
     if not usingLocalRegistry:
-        fail("default_registry is required when not using a local registry. Try running ./kind-install-for-gloo.sh")
+        fail("default_registry is required when not using a local registry. create cluster using ctlptl.")
 
 def install_metallb():
     if not settings["metal_lb"]:
@@ -230,7 +236,7 @@ def install_metallb():
     local("./hack/kind/setup-metalllb-on-kind.sh")
 
 validate_registry()
-install_gloo()
+install_kgateway()
 install_metallb()
-if gloo_installed :
+if kgateway_installed :
     enable_providers()
