@@ -13,7 +13,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
@@ -81,14 +80,8 @@ func applyAIBackend(ctx context.Context, aiUpstream *v1alpha1.AIUpstream, pCtx *
 			},
 		},
 	}
-	marshaled, err := utils.MessageToAny(&envoytransformation.RouteTransformations{
-		Transformations: []*envoytransformation.RouteTransformations_RouteTransformation{routeTransformation},
-	})
-	if err != nil {
-		return err
-	}
 	// Sets the transformation for the Upstream. Will be updated in a route policy is attached.
-	pCtx.AddTypedConfig(wellknown.TransformationFilterName, marshaled)
+	pCtx.AddTypedConfig(wellknown.TransformationFilterName, routeTransformation)
 
 	extProcRouteSettings.GetOverrides().GrpcInitialMetadata = append(extProcRouteSettings.GetOverrides().GetGrpcInitialMetadata(),
 		&envoy_config_core_v3.HeaderValue{
