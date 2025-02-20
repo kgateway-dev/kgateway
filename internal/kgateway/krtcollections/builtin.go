@@ -432,7 +432,7 @@ func (p *builtinPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChai
 	return nil, nil
 }
 
-func (p *builtinPluginGwPass) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {
+func (p *builtinPluginGwPass) UpstreamHttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedUpstreamHttpFilter, error) {
 	return nil, nil
 }
 

@@ -115,6 +115,6 @@ func applyAIBackend(ctx context.Context, aiUpstream *v1alpha1.AIUpstream, pCtx *
 		},
 	)
 
-	pCtx.AddTypedConfig(wellknown.ExtProcFilterName, extProcRouteSettings)
+	pCtx.AddTypedConfig(wellknown.AIExtProcFilterName, extProcRouteSettings)
 	return nil
 }
