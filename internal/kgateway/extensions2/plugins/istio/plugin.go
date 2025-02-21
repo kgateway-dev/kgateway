@@ -43,7 +43,7 @@ func (i IstioSettings) ResourceName() string {
 	return "istio-settings"
 }
 
-// in case multiple policies attached to the same resouce, we sort by policy creation time.
+// in case multiple policies attached to the same resource, we sort by policy creation time.
 func (i IstioSettings) CreationTime() time.Time {
 	// settings always created at the same time
 	return time.Time{}

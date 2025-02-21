@@ -118,13 +118,13 @@ func (x *callbacksCollection) del(sid int64) *ir.UniqlyConnectedClient {
 	c, ok := x.clients[sid]
 	delete(x.clients, sid)
 	if ok {
-		resouceName := c.uniqueClientName
-		current := x.uniqClientsCount[resouceName]
-		x.uniqClientsCount[resouceName] = current - 1
+		resourceName := c.uniqueClientName
+		current := x.uniqClientsCount[resourceName]
+		x.uniqClientsCount[resourceName] = current - 1
 		if current == 1 {
-			ucc := x.uniqClients[resouceName]
-			delete(x.uniqClientsCount, resouceName)
-			delete(x.uniqClients, resouceName)
+			ucc := x.uniqClients[resourceName]
+			delete(x.uniqClientsCount, resourceName)
+			delete(x.uniqClients, resourceName)
 			return &ucc
 		}
 	}

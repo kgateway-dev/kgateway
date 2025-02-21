@@ -29,7 +29,7 @@ var _ PortForwarder = &apiPortForwarder{}
 
 // NewApiPortForwarder returns an implementation of a PortForwarder that does not rely on the Kubernetes CLI
 // but instead queries the Kubernetes API directly
-// This implementation is preferred, but we have seen it fail occassionally with the following error:
+// This implementation is preferred, but we have seen it fail occasionally with the following error:
 //
 //	portforward.go:394] error copying from local connection to remote stream: EOF
 func NewApiPortForwarder(options ...Option) PortForwarder {

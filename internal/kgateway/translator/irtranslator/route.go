@@ -201,7 +201,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(ctx context.Context, 
 		in.AttachedPolicies,
 		in.ExtensionRefs,
 		policiesFromDelegateParent,
-		// TODO: add policies from the parent's parent recursivly
+		// TODO: add policies from the parent's parent recursively
 	}
 
 	var errs []error
