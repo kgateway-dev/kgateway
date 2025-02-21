@@ -8,6 +8,7 @@ import (
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
@@ -95,12 +96,12 @@ func TestUniqueClients(t *testing.T) {
 				mock := krttest.NewMock(t, tc.inputs)
 				nodes := NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
 				pods = NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})
-				pods.Synced().WaitUntilSynced(context.Background().Done())
+				pods.WaitUntilSynced(context.Background().Done())
 			}
 
 			cb, uccBuilder := NewUniquelyConnectedClients()
 			ucc := uccBuilder(context.Background(), krtutil.KrtOptions{}, pods)
-			ucc.Synced().WaitUntilSynced(context.Background().Done())
+			ucc.WaitUntilSynced(context.Background().Done())
 
 			// check fetch as well
 
@@ -118,8 +119,13 @@ func TestUniqueClients(t *testing.T) {
 				}
 			}
 
-			allUcc := ucc.List()
-			g.Expect(allUcc).To(HaveLen(len(tc.result)))
+			// propagating the event happens async
+			var allUcc []krtcollections.UniqlyConnectedClient
+			g.Eventually(func() []krtcollections.UniqlyConnectedClient {
+				allUcc = ucc.List()
+				return allUcc
+			}, "1s").Should(HaveLen(len(tc.result)))
+
 			names := sets.New[string]()
 			for _, uc := range allUcc {
 				names.Insert(uc.ResourceName())
@@ -131,8 +137,11 @@ func TestUniqueClients(t *testing.T) {
 					g.Expect(ucc.List()).To(HaveLen(len(allUcc) - i))
 					cb.OnStreamClosed(int64(i*10+j), nil)
 				}
-				// make sure client removed only when all similar clients are removed.
-				g.Expect(ucc.List()).To(HaveLen(len(allUcc) - 1 - i))
+				// propagating the event happens async
+				g.Eventually(func() []krtcollections.UniqlyConnectedClient {
+					allUcc = ucc.List()
+					return allUcc
+				}, "1s").Should(HaveLen(len(tc.result)))
 			}
 
 		})

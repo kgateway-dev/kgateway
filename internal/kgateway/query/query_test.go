@@ -702,7 +702,7 @@ func newQueries(initObjs ...client.Object) query.GatewayQueries {
 	httproutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
 	rtidx := krtcollections.NewRoutesIndex(krtutil.KrtOptions{}, httproutes, tcpproutes, policies, upstreams, refgrants)
-	services.Synced().WaitUntilSynced(nil)
+	services.WaitUntilSynced(nil)
 
 	secretsCol := map[schema.GroupKind]krt.Collection[ir.Secret]{
 		corev1.SchemeGroupVersion.WithKind("Secret").GroupKind(): krt.NewCollection(krttest.GetMockCollection[*corev1.Secret](mock), func(kctx krt.HandlerContext, i *corev1.Secret) *ir.Secret {

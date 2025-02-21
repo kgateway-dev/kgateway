@@ -3,15 +3,15 @@
 package v1alpha1
 
 import (
-	"context"
+	context "context"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	gentype "k8s.io/client-go/gentype"
 
-	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration/api/v1alpha1"
-	v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	applyconfigurationapiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration/api/v1alpha1"
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	scheme "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/scheme"
 )
 
@@ -23,36 +23,37 @@ type ListenerPoliciesGetter interface {
 
 // ListenerPolicyInterface has methods to work with ListenerPolicy resources.
 type ListenerPolicyInterface interface {
-	Create(ctx context.Context, listenerPolicy *v1alpha1.ListenerPolicy, opts v1.CreateOptions) (*v1alpha1.ListenerPolicy, error)
-	Update(ctx context.Context, listenerPolicy *v1alpha1.ListenerPolicy, opts v1.UpdateOptions) (*v1alpha1.ListenerPolicy, error)
+	Create(ctx context.Context, listenerPolicy *apiv1alpha1.ListenerPolicy, opts v1.CreateOptions) (*apiv1alpha1.ListenerPolicy, error)
+	Update(ctx context.Context, listenerPolicy *apiv1alpha1.ListenerPolicy, opts v1.UpdateOptions) (*apiv1alpha1.ListenerPolicy, error)
 	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-	UpdateStatus(ctx context.Context, listenerPolicy *v1alpha1.ListenerPolicy, opts v1.UpdateOptions) (*v1alpha1.ListenerPolicy, error)
+	UpdateStatus(ctx context.Context, listenerPolicy *apiv1alpha1.ListenerPolicy, opts v1.UpdateOptions) (*apiv1alpha1.ListenerPolicy, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.ListenerPolicy, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.ListenerPolicyList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*apiv1alpha1.ListenerPolicy, error)
+	List(ctx context.Context, opts v1.ListOptions) (*apiv1alpha1.ListenerPolicyList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.ListenerPolicy, err error)
-	Apply(ctx context.Context, listenerPolicy *apiv1alpha1.ListenerPolicyApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.ListenerPolicy, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *apiv1alpha1.ListenerPolicy, err error)
+	Apply(ctx context.Context, listenerPolicy *applyconfigurationapiv1alpha1.ListenerPolicyApplyConfiguration, opts v1.ApplyOptions) (result *apiv1alpha1.ListenerPolicy, err error)
 	// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
-	ApplyStatus(ctx context.Context, listenerPolicy *apiv1alpha1.ListenerPolicyApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.ListenerPolicy, err error)
+	ApplyStatus(ctx context.Context, listenerPolicy *applyconfigurationapiv1alpha1.ListenerPolicyApplyConfiguration, opts v1.ApplyOptions) (result *apiv1alpha1.ListenerPolicy, err error)
 	ListenerPolicyExpansion
 }
 
 // listenerPolicies implements ListenerPolicyInterface
 type listenerPolicies struct {
-	*gentype.ClientWithListAndApply[*v1alpha1.ListenerPolicy, *v1alpha1.ListenerPolicyList, *apiv1alpha1.ListenerPolicyApplyConfiguration]
+	*gentype.ClientWithListAndApply[*apiv1alpha1.ListenerPolicy, *apiv1alpha1.ListenerPolicyList, *applyconfigurationapiv1alpha1.ListenerPolicyApplyConfiguration]
 }
 
 // newListenerPolicies returns a ListenerPolicies
 func newListenerPolicies(c *GatewayV1alpha1Client, namespace string) *listenerPolicies {
 	return &listenerPolicies{
-		gentype.NewClientWithListAndApply[*v1alpha1.ListenerPolicy, *v1alpha1.ListenerPolicyList, *apiv1alpha1.ListenerPolicyApplyConfiguration](
+		gentype.NewClientWithListAndApply[*apiv1alpha1.ListenerPolicy, *apiv1alpha1.ListenerPolicyList, *applyconfigurationapiv1alpha1.ListenerPolicyApplyConfiguration](
 			"listenerpolicies",
 			c.RESTClient(),
 			scheme.ParameterCodec,
 			namespace,
-			func() *v1alpha1.ListenerPolicy { return &v1alpha1.ListenerPolicy{} },
-			func() *v1alpha1.ListenerPolicyList { return &v1alpha1.ListenerPolicyList{} }),
+			func() *apiv1alpha1.ListenerPolicy { return &apiv1alpha1.ListenerPolicy{} },
+			func() *apiv1alpha1.ListenerPolicyList { return &apiv1alpha1.ListenerPolicyList{} },
+		),
 	}
 }
