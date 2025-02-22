@@ -6,39 +6,39 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-// +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=upstreams,verbs=get;list;watch
-// +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=upstreams/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=backends,verbs=get;list;watch
+// +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=backends/status,verbs=get;update;patch
 
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:metadata:labels={app=kgateway,app.kubernetes.io/name=kgateway}
-// +kubebuilder:resource:categories=kgateway,shortName=up
+// +kubebuilder:resource:categories=kgateway,shortName=be
 // +kubebuilder:subresource:status
-type Upstream struct {
+type Backend struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   UpstreamSpec   `json:"spec,omitempty"`
-	Status UpstreamStatus `json:"status,omitempty"`
+	Spec   BackendSpec   `json:"spec,omitempty"`
+	Status BackendStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
-type UpstreamList struct {
+type BackendList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Upstream `json:"items"`
+	Items           []Backend `json:"items"`
 }
 
-// +kubebuilder:validation:XValidation:message="There must one and only one upstream type set",rule="1 == (self.aws != null?1:0) + (self.static != null?1:0)"
-type UpstreamSpec struct {
-	Aws    *AwsUpstream    `json:"aws,omitempty"`
-	Static *StaticUpstream `json:"static,omitempty"`
+// +kubebuilder:validation:XValidation:message="There must one and only one backend type set",rule="1 == (self.aws != null?1:0) + (self.static != null?1:0)"
+type BackendSpec struct {
+	Aws    *AwsBackend    `json:"aws,omitempty"`
+	Static *StaticBackend `json:"static,omitempty"`
 }
-type AwsUpstream struct {
+type AwsBackend struct {
 	Region    string                      `json:"region,omitempty"`
 	SecretRef corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
-type StaticUpstream struct {
+type StaticBackend struct {
 	Hosts []Host `json:"hosts,omitempty"`
 }
 
@@ -49,7 +49,7 @@ type Host struct {
 	Port gwv1.PortNumber `json:"port"`
 }
 
-type UpstreamStatus struct {
+type BackendStatus struct {
 	// +optional
 	// +listType=map
 	// +listMapKey=type

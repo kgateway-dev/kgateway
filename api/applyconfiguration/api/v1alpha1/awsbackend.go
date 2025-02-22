@@ -6,23 +6,23 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// AwsUpstreamApplyConfiguration represents a declarative configuration of the AwsUpstream type for use
+// AwsBackendApplyConfiguration represents a declarative configuration of the AwsBackend type for use
 // with apply.
-type AwsUpstreamApplyConfiguration struct {
+type AwsBackendApplyConfiguration struct {
 	Region    *string                  `json:"region,omitempty"`
 	SecretRef *v1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
-// AwsUpstreamApplyConfiguration constructs a declarative configuration of the AwsUpstream type for use with
+// AwsBackendApplyConfiguration constructs a declarative configuration of the AwsBackend type for use with
 // apply.
-func AwsUpstream() *AwsUpstreamApplyConfiguration {
-	return &AwsUpstreamApplyConfiguration{}
+func AwsBackend() *AwsBackendApplyConfiguration {
+	return &AwsBackendApplyConfiguration{}
 }
 
 // WithRegion sets the Region field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Region field is set to the value of the last call.
-func (b *AwsUpstreamApplyConfiguration) WithRegion(value string) *AwsUpstreamApplyConfiguration {
+func (b *AwsBackendApplyConfiguration) WithRegion(value string) *AwsBackendApplyConfiguration {
 	b.Region = &value
 	return b
 }
@@ -30,7 +30,7 @@ func (b *AwsUpstreamApplyConfiguration) WithRegion(value string) *AwsUpstreamApp
 // WithSecretRef sets the SecretRef field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the SecretRef field is set to the value of the last call.
-func (b *AwsUpstreamApplyConfiguration) WithSecretRef(value v1.LocalObjectReference) *AwsUpstreamApplyConfiguration {
+func (b *AwsBackendApplyConfiguration) WithSecretRef(value v1.LocalObjectReference) *AwsBackendApplyConfiguration {
 	b.SecretRef = &value
 	return b
 }

@@ -88,14 +88,14 @@ type upstreamPlugin struct {
 }
 
 func registerTypes(ourCli versioned.Interface) {
-	skubeclient.Register[*v1alpha1.Upstream](
+	skubeclient.Register[*v1alpha1.Backend](
 		v1alpha1.UpstreamGVK.GroupVersion().WithResource("upstreams"),
 		v1alpha1.UpstreamGVK,
 		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
-			return ourCli.GatewayV1alpha1().Upstreams(namespace).List(context.Background(), o)
+			return ourCli.GatewayV1alpha1().Backends(namespace).List(context.Background(), o)
 		},
 		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
-			return ourCli.GatewayV1alpha1().Upstreams(namespace).Watch(context.Background(), o)
+			return ourCli.GatewayV1alpha1().Backends(namespace).Watch(context.Background(), o)
 		},
 	)
 }
@@ -103,11 +103,11 @@ func registerTypes(ourCli versioned.Interface) {
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
 	registerTypes(commoncol.OurClient)
 
-	col := krt.WrapClient(kclient.New[*v1alpha1.Upstream](commoncol.Client), commoncol.KrtOpts.ToOptions("Upstreams")...)
+	col := krt.WrapClient(kclient.New[*v1alpha1.Backend](commoncol.Client), commoncol.KrtOpts.ToOptions("Upstreams")...)
 
 	gk := v1alpha1.UpstreamGVK.GroupKind()
 	translate := buildTranslateFunc(commoncol.Secrets)
-	ucol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Upstream) *ir.Upstream {
+	ucol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.Upstream {
 		// resolve secrets
 		return &ir.Upstream{
 			ObjectSource: ir.ObjectSource{
@@ -123,7 +123,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		}
 	})
 
-	endpoints := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Upstream) *ir.EndpointsForUpstream {
+	endpoints := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.EndpointsForUpstream {
 		return processEndpoints(i)
 	})
 	return extensionsplug.Plugin{
@@ -152,8 +152,8 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-func buildTranslateFunc(secrets *krtcollections.SecretIndex) func(krtctx krt.HandlerContext, i *v1alpha1.Upstream) *UpstreamIr {
-	return func(krtctx krt.HandlerContext, i *v1alpha1.Upstream) *UpstreamIr {
+func buildTranslateFunc(secrets *krtcollections.SecretIndex) func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *UpstreamIr {
+	return func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *UpstreamIr {
 		// resolve secrets
 		var ir UpstreamIr
 		if i.Spec.Aws != nil {
@@ -174,7 +174,7 @@ func buildTranslateFunc(secrets *krtcollections.SecretIndex) func(krtctx krt.Han
 }
 
 func processUpstream(ctx context.Context, in ir.Upstream, out *envoy_config_cluster_v3.Cluster) {
-	up, ok := in.Obj.(*v1alpha1.Upstream)
+	up, ok := in.Obj.(*v1alpha1.Backend)
 	if !ok {
 		// log - should never happen
 		return
@@ -196,7 +196,7 @@ func processUpstream(ctx context.Context, in ir.Upstream, out *envoy_config_clus
 	}
 }
 
-func hostname(in *v1alpha1.Upstream) string {
+func hostname(in *v1alpha1.Backend) string {
 	if in.Spec.Static != nil {
 		if len(in.Spec.Static.Hosts) > 0 {
 			return string(in.Spec.Static.Hosts[0].Host)
@@ -205,7 +205,7 @@ func hostname(in *v1alpha1.Upstream) string {
 	return ""
 }
 
-func processEndpoints(up *v1alpha1.Upstream) *ir.EndpointsForUpstream {
+func processEndpoints(up *v1alpha1.Backend) *ir.EndpointsForUpstream {
 	spec := up.Spec
 	switch {
 	case spec.Static != nil:

@@ -2,6 +2,8 @@
 
 package v1alpha1
 
+type BackendExpansion interface{}
+
 type DirectResponseExpansion interface{}
 
 type GatewayParametersExpansion interface{}
@@ -11,5 +13,3 @@ type HTTPListenerPolicyExpansion interface{}
 type ListenerPolicyExpansion interface{}
 
 type RoutePolicyExpansion interface{}
-
-type UpstreamExpansion interface{}

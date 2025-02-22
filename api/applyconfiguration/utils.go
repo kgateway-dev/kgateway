@@ -25,8 +25,14 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.AiExtensionApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AiExtensionStats"):
 		return &apiv1alpha1.AiExtensionStatsApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("AwsUpstream"):
-		return &apiv1alpha1.AwsUpstreamApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AwsBackend"):
+		return &apiv1alpha1.AwsBackendApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Backend"):
+		return &apiv1alpha1.BackendApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("BackendSpec"):
+		return &apiv1alpha1.BackendSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("BackendStatus"):
+		return &apiv1alpha1.BackendStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CELFilter"):
 		return &apiv1alpha1.CELFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CustomLabel"):
@@ -99,18 +105,12 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.ServiceApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ServiceAccount"):
 		return &apiv1alpha1.ServiceAccountApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("StaticUpstream"):
-		return &apiv1alpha1.StaticUpstreamApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("StaticBackend"):
+		return &apiv1alpha1.StaticBackendApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("StatsConfig"):
 		return &apiv1alpha1.StatsConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("StatusCodeFilter"):
 		return &apiv1alpha1.StatusCodeFilterApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("Upstream"):
-		return &apiv1alpha1.UpstreamApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("UpstreamSpec"):
-		return &apiv1alpha1.UpstreamSpecApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("UpstreamStatus"):
-		return &apiv1alpha1.UpstreamStatusApplyConfiguration{}
 
 	}
 	return nil

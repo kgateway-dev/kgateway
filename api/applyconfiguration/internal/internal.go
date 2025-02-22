@@ -113,7 +113,7 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CustomLabel
           elementRelationship: atomic
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsUpstream
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsBackend
   map:
     fields:
     - name: region
@@ -123,6 +123,47 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: io.k8s.api.core.v1.LocalObjectReference
       default: {}
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Backend
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: metadata
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+      default: {}
+    - name: spec
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendSpec
+      default: {}
+    - name: status
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendStatus
+      default: {}
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendSpec
+  map:
+    fields:
+    - name: aws
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsBackend
+    - name: static
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StaticBackend
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendStatus
+  map:
+    fields:
+    - name: conditions
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
+          elementRelationship: associative
+          keys:
+          - type
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CELFilter
   map:
     fields:
@@ -739,7 +780,7 @@ var schemaYAML = typed.YAMLObject(`types:
         map:
           elementType:
             scalar: string
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StaticUpstream
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StaticBackend
   map:
     fields:
     - name: hosts
@@ -772,47 +813,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: value
       type:
         scalar: numeric
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Upstream
-  map:
-    fields:
-    - name: apiVersion
-      type:
-        scalar: string
-    - name: kind
-      type:
-        scalar: string
-    - name: metadata
-      type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
-      default: {}
-    - name: spec
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.UpstreamSpec
-      default: {}
-    - name: status
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.UpstreamStatus
-      default: {}
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.UpstreamSpec
-  map:
-    fields:
-    - name: aws
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsUpstream
-    - name: static
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StaticUpstream
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.UpstreamStatus
-  map:
-    fields:
-    - name: conditions
-      type:
-        list:
-          elementType:
-            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
-          elementRelationship: associative
-          keys:
-          - type
 - name: io.k8s.api.core.v1.Affinity
   map:
     fields:
