@@ -30,6 +30,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/inferenceextension/endpointpicker"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -104,11 +105,6 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		return nil, err
 	}
 
-	// Extend the scheme if the InferencePool CRD exists.
-	if _, err := glooschemes.AddInferExtV1A1Scheme(cfg.RestConfig, scheme); err != nil {
-		return nil, err
-	}
-
 	mgrOpts := ctrl.Options{
 		BaseContext:      func() context.Context { return ctx },
 		Scheme:           scheme,
@@ -146,6 +142,16 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		cli,
 		setupLog,
 	)
+
+	// Extend the scheme and add the EPP plugin if the InferencePool CRD exists.
+	exists, err := glooschemes.AddInferExtV1A1Scheme(cfg.RestConfig, scheme)
+	switch {
+	case err != nil:
+		return nil, err
+	case exists:
+		cfg.ExtraPlugins = append(cfg.ExtraPlugins, endpointpicker.NewPlugin(ctx, commoncol))
+	}
+
 	gwClasses := sets.New(append(cfg.SetupOpts.ExtraGatewayClasses, wellknown.GatewayClassName)...)
 	isOurGw := func(gw *apiv1.Gateway) bool {
 		return gwClasses.Has(string(gw.Spec.GatewayClassName))

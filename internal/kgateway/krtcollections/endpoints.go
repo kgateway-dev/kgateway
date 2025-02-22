@@ -14,6 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	discoveryv1 "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/types"
+	infextv1a1 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -296,4 +297,114 @@ func findPortInEndpointSlice(endpointSlice *discoveryv1.EndpointSlice, singlePor
 		}
 	}
 	return port
+}
+
+type InfPoolEndpointsInputs struct {
+	Upstreams krt.Collection[ir.Upstream]
+	Pods      krt.Collection[LocalityPod]
+	KrtOpts   krtutil.KrtOptions
+}
+
+func NewInfPoolEndpointsInputs(
+	krtopts krtutil.KrtOptions,
+	infPoolUpstreams krt.Collection[ir.Upstream],
+	pods krt.Collection[LocalityPod],
+) InfPoolEndpointsInputs {
+	return InfPoolEndpointsInputs{
+		Upstreams: infPoolUpstreams,
+		Pods:      pods,
+		KrtOpts:   krtopts,
+	}
+}
+
+func NewInfPoolEndpoints(ctx context.Context, inputs InfPoolEndpointsInputs) krt.Collection[ir.EndpointsForUpstream] {
+	return krt.NewCollection(inputs.Upstreams, transformInfPoolEndpoints(ctx, inputs), inputs.KrtOpts.ToOptions("InfPoolEndpoints")...)
+}
+
+func transformInfPoolEndpoints(ctx context.Context, inputs InfPoolEndpointsInputs) func(kctx krt.HandlerContext, us ir.Upstream) *ir.EndpointsForUpstream {
+	logger := contextutils.LoggerFrom(ctx).Desugar()
+
+	return func(kctx krt.HandlerContext, us ir.Upstream) *ir.EndpointsForUpstream {
+		infPool, ok := us.Obj.(*infextv1a1.InferencePool)
+		if !ok {
+			logger.Debug("not an InferencePool upstream")
+			return nil
+		}
+
+		logger.Debug("building endpoints for inference pool", zap.String("pool", infPool.Name))
+
+		// Convert `spec.selector` from custom type to `map[string]string`
+		labelSelector := convertSelector(infPool.Spec.Selector)
+
+		// Use `FilterGeneric()` to match `LocalityPod` based on AugmentedLabels and Namespace
+		podMatches := krt.Fetch(kctx, inputs.Pods, krt.FilterGeneric(func(obj any) bool {
+			pod, ok := obj.(LocalityPod)
+			if !ok {
+				return false
+			}
+			// Ensure Pod is in the same namespace as the InferencePool
+			if pod.Namespace != infPool.Namespace {
+				return false
+			}
+			// Ensure the pod labels match the InferencePool selector
+			return labelsMatch(labelSelector, pod.AugmentedLabels)
+		}))
+
+		// Always return a valid EndpointsForUpstream instance, even if no matching pods
+		ret := ir.NewEndpointsForUpstream(us)
+
+		if len(podMatches) == 0 {
+			logger.Debug("no matching pods found for inference pool", zap.String("pool", infPool.Name))
+			return ret // Return an empty but valid EndpointsForUpstream
+		}
+
+		// Deduplicate Pod IPs
+		seenAddresses := make(map[string]struct{})
+
+		// Process matching Pods
+		for _, pod := range podMatches {
+			// Get the primary pod address
+			podIP := pod.IP()
+			if podIP == "" {
+				continue
+			}
+
+			// Deduplicate addresses
+			if _, exists := seenAddresses[podIP]; exists {
+				continue
+			}
+			seenAddresses[podIP] = struct{}{}
+
+			// Create Envoy LB Endpoint
+			ep := CreateLBEndpoint(podIP, uint32(infPool.Spec.TargetPortNumber), pod.AugmentedLabels, true)
+
+			// Add endpoint
+			ret.Add(pod.Locality, ir.EndpointWithMd{
+				LbEndpoint: ep,
+				EndpointMd: ir.EndpointMetadata{
+					Labels: pod.AugmentedLabels,
+				},
+			})
+		}
+
+		logger.Debug("created endpoints", zap.Int("numAddresses", len(ret.LbEps)))
+		return ret
+	}
+}
+
+func convertSelector(selector map[infextv1a1.LabelKey]infextv1a1.LabelValue) map[string]string {
+	result := make(map[string]string, len(selector))
+	for k, v := range selector {
+		result[string(k)] = string(v)
+	}
+	return result
+}
+
+func labelsMatch(selector map[string]string, podLabels map[string]string) bool {
+	for k, v := range selector {
+		if podLabels[k] != v {
+			return false
+		}
+	}
+	return true
 }

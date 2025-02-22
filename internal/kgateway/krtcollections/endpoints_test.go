@@ -19,6 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
+	infextv1a1 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
@@ -276,7 +277,7 @@ func TestEndpointsForUpstreamWithDifferentNameButSameEndpoints(t *testing.T) {
 	g.Expect(h1).NotTo(Equal(h2), "not expected %v, got %v", h1, h2)
 }
 
-func TestEndpoints(t *testing.T) {
+func TestEndpointsFromEndpointSlices(t *testing.T) {
 	logger := zaptest.Logger(t)
 	contextutils.SetFallbackLogger(logger.Sugar())
 
@@ -1118,6 +1119,396 @@ func TestEndpoints(t *testing.T) {
 
 			eps := builder(krt.TestingDummyContext{}, tc.upstream)
 			res := tc.result(tc.upstream)
+			g.Expect(eps.Equals(*res)).To(BeTrue(), "expected %v, got %v", res, eps)
+		})
+	}
+}
+
+func TestEndpointsFromInferencePool(t *testing.T) {
+	logger := zaptest.Logger(t)
+	contextutils.SetFallbackLogger(logger.Sugar())
+
+	testCases := []struct {
+		name     string
+		inputs   []any
+		upstream ir.Upstream
+		result   func(ir.Upstream) *ir.EndpointsForUpstream
+	}{
+		{
+			name: "one matching pod",
+			inputs: []any{
+				&infextv1a1.InferencePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "inf-pool",
+						Namespace: "ns",
+					},
+					Spec: infextv1a1.InferencePoolSpec{
+						TargetPortNumber: 8080,
+						Selector: map[infextv1a1.LabelKey]infextv1a1.LabelValue{
+							"app": "inference",
+						},
+					},
+				},
+				&corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod1",
+						Namespace: "ns",
+						Labels: map[string]string{
+							"app": "inference", // Matches inferencepool selector
+						},
+					},
+					Spec: corev1.PodSpec{
+						NodeName: "node1",
+					},
+					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
+						PodIP: "1.2.3.4",
+					},
+				},
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node1",
+						Labels: map[string]string{
+							corev1.LabelTopologyRegion: "region1",
+							corev1.LabelTopologyZone:   "zone1",
+						},
+					},
+				},
+			},
+			upstream: ir.Upstream{
+				ObjectSource: ir.ObjectSource{
+					Namespace: "ns",
+					Name:      "inf-pool",
+					Group:     infextv1a1.GroupVersion.Group,
+					Kind:      "InferencePool",
+				},
+				Port: 8080,
+				Obj: &infextv1a1.InferencePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "inf-pool",
+						Namespace: "ns",
+					},
+					Spec: infextv1a1.InferencePoolSpec{
+						TargetPortNumber: 8080,
+						Selector: map[infextv1a1.LabelKey]infextv1a1.LabelValue{
+							"app": "inference",
+						},
+					},
+				},
+			},
+			result: func(us ir.Upstream) *ir.EndpointsForUpstream {
+				emd := ir.EndpointWithMd{
+					LbEndpoint: &endpointv3.LbEndpoint{
+						LoadBalancingWeight: wrapperspb.UInt32(1),
+						HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
+							Endpoint: &endpointv3.Endpoint{
+								Address: &envoy_config_core_v3.Address{
+									Address: &envoy_config_core_v3.Address_SocketAddress{
+										SocketAddress: &envoy_config_core_v3.SocketAddress{
+											Address: "1.2.3.4",
+											PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
+												PortValue: 8080,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					EndpointMd: ir.EndpointMetadata{
+						Labels: map[string]string{
+							"app":                      "inference",
+							corev1.LabelTopologyRegion: "region1",
+							corev1.LabelTopologyZone:   "zone1",
+						},
+					},
+				}
+				result := ir.NewEndpointsForUpstream(us)
+				result.Add(ir.PodLocality{
+					Region: "region1",
+					Zone:   "zone1",
+				}, emd)
+				return result
+			},
+		},
+		{
+			name: "no matching pods",
+			inputs: []any{
+				&infextv1a1.InferencePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "inf-pool",
+						Namespace: "ns",
+					},
+					Spec: infextv1a1.InferencePoolSpec{
+						TargetPortNumber: 8080,
+						Selector: map[infextv1a1.LabelKey]infextv1a1.LabelValue{
+							"app": "non-existent",
+						},
+					},
+				},
+			},
+			upstream: ir.Upstream{
+				ObjectSource: ir.ObjectSource{
+					Namespace: "ns",
+					Name:      "inf-pool",
+					Group:     infextv1a1.GroupVersion.Group,
+					Kind:      "InferencePool",
+				},
+				Port: 8080,
+				Obj: &infextv1a1.InferencePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "inf-pool",
+						Namespace: "ns",
+					},
+					Spec: infextv1a1.InferencePoolSpec{
+						TargetPortNumber: 8080,
+						Selector: map[infextv1a1.LabelKey]infextv1a1.LabelValue{
+							"app": "non-existent",
+						},
+					},
+				},
+			},
+			result: func(us ir.Upstream) *ir.EndpointsForUpstream {
+				// No matching pods, so result should be empty.
+				return ir.NewEndpointsForUpstream(us)
+			},
+		},
+		{
+			name: "multiple matching pods",
+			inputs: []any{
+				&infextv1a1.InferencePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "inf-pool",
+						Namespace: "ns",
+					},
+					Spec: infextv1a1.InferencePoolSpec{
+						TargetPortNumber: 8080,
+						Selector: map[infextv1a1.LabelKey]infextv1a1.LabelValue{
+							"app": "inference",
+						},
+					},
+				},
+				&corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod1",
+						Namespace: "ns",
+						Labels: map[string]string{
+							"app": "inference",
+						},
+					},
+					Spec: corev1.PodSpec{
+						NodeName: "node1",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "1.2.3.4",
+					},
+				},
+				&corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod2",
+						Namespace: "ns",
+						Labels: map[string]string{
+							"app": "inference",
+						},
+					},
+					Spec: corev1.PodSpec{
+						NodeName: "node2",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "1.2.3.5",
+					},
+				},
+			},
+			upstream: ir.Upstream{
+				ObjectSource: ir.ObjectSource{
+					Namespace: "ns",
+					Name:      "inf-pool",
+					Group:     infextv1a1.GroupVersion.Group,
+					Kind:      "InferencePool",
+				},
+				Port: 8080,
+				Obj: &infextv1a1.InferencePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "inf-pool",
+						Namespace: "ns",
+					},
+					Spec: infextv1a1.InferencePoolSpec{
+						TargetPortNumber: 8080,
+						Selector: map[infextv1a1.LabelKey]infextv1a1.LabelValue{
+							"app": "inference",
+						},
+					},
+				},
+			},
+			result: func(us ir.Upstream) *ir.EndpointsForUpstream {
+				// Expect both pods to be included.
+				result := ir.NewEndpointsForUpstream(us)
+				result.Add(ir.PodLocality{}, ir.EndpointWithMd{
+					LbEndpoint: CreateLBEndpoint("1.2.3.4", 8080, map[string]string{"app": "inference"}, true),
+					EndpointMd: ir.EndpointMetadata{
+						Labels: map[string]string{"app": "inference"},
+					},
+				})
+				result.Add(ir.PodLocality{}, ir.EndpointWithMd{
+					LbEndpoint: CreateLBEndpoint("1.2.3.5", 8080, map[string]string{"app": "inference"}, true),
+					EndpointMd: ir.EndpointMetadata{
+						Labels: map[string]string{"app": "inference"},
+					},
+				})
+				return result
+			},
+		},
+		{
+			name: "pods in different namespaces",
+			inputs: []any{
+				&infextv1a1.InferencePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "inf-pool",
+						Namespace: "ns1",
+					},
+					Spec: infextv1a1.InferencePoolSpec{
+						TargetPortNumber: 8080,
+						Selector: map[infextv1a1.LabelKey]infextv1a1.LabelValue{
+							"app": "inference",
+						},
+					},
+				},
+				&corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod1",
+						Namespace: "ns2",
+						Labels: map[string]string{
+							"app": "inference",
+						},
+					},
+					Status: corev1.PodStatus{
+						PodIP: "1.2.3.4",
+					},
+				},
+			},
+			upstream: ir.Upstream{
+				ObjectSource: ir.ObjectSource{
+					Namespace: "ns1",
+					Name:      "inf-pool",
+					Group:     infextv1a1.GroupVersion.Group,
+					Kind:      "InferencePool",
+				},
+				Port: 8080,
+				Obj: &infextv1a1.InferencePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "inf-pool",
+						Namespace: "ns1",
+					},
+					Spec: infextv1a1.InferencePoolSpec{
+						TargetPortNumber: 8080,
+						Selector: map[infextv1a1.LabelKey]infextv1a1.LabelValue{
+							"app": "inference",
+						},
+					},
+				},
+			},
+			result: func(us ir.Upstream) *ir.EndpointsForUpstream {
+				// No pods should be selected since they are in a different namespace.
+				return ir.NewEndpointsForUpstream(us)
+			},
+		},
+		{
+			name: "pods with no IPs",
+			inputs: []any{
+				&infextv1a1.InferencePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "inf-pool",
+						Namespace: "ns",
+					},
+					Spec: infextv1a1.InferencePoolSpec{
+						TargetPortNumber: 8080,
+						Selector: map[infextv1a1.LabelKey]infextv1a1.LabelValue{
+							"app": "inference",
+						},
+					},
+				},
+				&corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod1",
+						Namespace: "ns",
+						Labels: map[string]string{
+							"app": "inference",
+						},
+					},
+					Status: corev1.PodStatus{
+						PodIP: "",
+					},
+				},
+			},
+			upstream: ir.Upstream{
+				ObjectSource: ir.ObjectSource{
+					Namespace: "ns",
+					Name:      "inf-pool",
+					Group:     infextv1a1.GroupVersion.Group,
+					Kind:      "InferencePool",
+				},
+				Port: 8080,
+				Obj: &infextv1a1.InferencePool{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "inf-pool",
+						Namespace: "ns",
+					},
+					Spec: infextv1a1.InferencePoolSpec{
+						TargetPortNumber: 8080,
+						Selector: map[infextv1a1.LabelKey]infextv1a1.LabelValue{
+							"app": "inference",
+						},
+					},
+				},
+			},
+			result: func(us ir.Upstream) *ir.EndpointsForUpstream {
+				// No endpoints should be created since the pod has no IP.
+				return ir.NewEndpointsForUpstream(us)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := gomega.NewWithT(t)
+			mock := krttest.NewMock(t, tc.inputs)
+
+			// Initialize collections
+			nodes := NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
+			pods := NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})
+			pods.WaitUntilSynced(context.Background().Done())
+
+			// Create InferencePool collection
+			infPools := krttest.GetMockCollection[*infextv1a1.InferencePool](mock)
+			infPoolUpstream := krt.NewCollection(infPools, func(kctx krt.HandlerContext, pool *infextv1a1.InferencePool) *ir.Upstream {
+				return &ir.Upstream{
+					ObjectSource: ir.ObjectSource{
+						Namespace: pool.Namespace,
+						Name:      pool.Name,
+						Group:     infextv1a1.GroupVersion.Group,
+						Kind:      "InferencePool",
+					},
+					Obj:  pool,
+					Port: pool.Spec.TargetPortNumber,
+				}
+			}, krtutil.KrtOptions{}.ToOptions("InfPoolUpstreams")...)
+
+			// Initialize InferencePool-based endpoint collection
+			infPoolInputs := NewInfPoolEndpointsInputs(krtutil.KrtOptions{}, infPoolUpstream, pods)
+
+			ctx := context.Background()
+			builder := transformInfPoolEndpoints(ctx, infPoolInputs)
+
+			// Run the test transformation
+			eps := builder(krt.TestingDummyContext{}, tc.upstream)
+			res := tc.result(tc.upstream)
+
+			if eps == nil && res == nil {
+				return // Both are nil, test passes
+			}
+
+			g.Expect(eps).ToNot(BeNil(), "Expected non-nil endpoints, but got nil")
+			g.Expect(res).ToNot(BeNil(), "Expected nil endpoints, but got non-nil")
 			g.Expect(eps.Equals(*res)).To(BeTrue(), "expected %v, got %v", res, eps)
 		})
 	}
