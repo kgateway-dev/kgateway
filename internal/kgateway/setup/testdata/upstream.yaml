@@ -26,11 +26,11 @@ spec:
   rules:
     - backendRefs:
         - name: static
-          kind: Upstream
+          kind: Backend
           group: gateway.kgateway.dev
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Upstream
+kind: Backend
 metadata:
   name: static
   namespace: gwtest

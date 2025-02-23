@@ -15,7 +15,7 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	awspb "github.com/solo-io/envoy-gloo/go/config/filter/http/aws_lambda/v2"
-	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
+	"istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -88,13 +88,13 @@ type upstreamPlugin struct {
 }
 
 func registerTypes(ourCli versioned.Interface) {
-	skubeclient.Register[*v1alpha1.Backend](
-		v1alpha1.UpstreamGVK.GroupVersion().WithResource("upstreams"),
+	kubeclient.Register[*v1alpha1.Backend](
+		v1alpha1.UpstreamGVK.GroupVersion().WithResource("backends"),
 		v1alpha1.UpstreamGVK,
-		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
 			return ourCli.GatewayV1alpha1().Backends(namespace).List(context.Background(), o)
 		},
-		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return ourCli.GatewayV1alpha1().Backends(namespace).Watch(context.Background(), o)
 		},
 	)
@@ -103,7 +103,7 @@ func registerTypes(ourCli versioned.Interface) {
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
 	registerTypes(commoncol.OurClient)
 
-	col := krt.WrapClient(kclient.New[*v1alpha1.Backend](commoncol.Client), commoncol.KrtOpts.ToOptions("Upstreams")...)
+	col := krt.WrapClient(kclient.New[*v1alpha1.Backend](commoncol.Client), commoncol.KrtOpts.ToOptions("Backends")...)
 
 	gk := v1alpha1.UpstreamGVK.GroupKind()
 	translate := buildTranslateFunc(commoncol.Secrets)

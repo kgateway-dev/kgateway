@@ -10,7 +10,7 @@ const (
 	GatewayParametersKind = "GatewayParameters"
 	// DirectResponseKind is the kind for the DirectResponse CRD.
 	DirectResponseKind     = "DirectResponse"
-	UpstreamKind           = "Upstream"
+	UpstreamKind           = "Backend"
 	RoutePolicyKind        = "RoutePolicy"
 	ListenerPolicyKind     = "ListenerPolicy"
 	HTTPListenerPolicyKind = "HTTPListenerPolicy"
