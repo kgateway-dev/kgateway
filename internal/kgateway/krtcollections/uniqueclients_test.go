@@ -8,7 +8,6 @@ import (
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gateway2/krtcollections"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
@@ -17,6 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	. "github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
@@ -120,8 +120,8 @@ func TestUniqueClients(t *testing.T) {
 			}
 
 			// propagating the event happens async
-			var allUcc []krtcollections.UniqlyConnectedClient
-			g.Eventually(func() []krtcollections.UniqlyConnectedClient {
+			var allUcc []ir.UniqlyConnectedClient
+			g.Eventually(func() []ir.UniqlyConnectedClient {
 				allUcc = ucc.List()
 				return allUcc
 			}, "1s").Should(HaveLen(len(tc.result)))
@@ -138,7 +138,7 @@ func TestUniqueClients(t *testing.T) {
 					cb.OnStreamClosed(int64(i*10+j), nil)
 				}
 				// propagating the event happens async
-				g.Eventually(func() []krtcollections.UniqlyConnectedClient {
+				g.Eventually(func() []ir.UniqlyConnectedClient {
 					allUcc = ucc.List()
 					return allUcc
 				}, "1s").Should(HaveLen(len(tc.result)))
