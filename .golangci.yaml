@@ -17,6 +17,7 @@ linters:
     - bodyclose
     - ginkgolinter
     - goimports
+    - misspell
     - nakedret
     - predeclared
     - unused
@@ -54,6 +55,9 @@ linters-settings:
     #     // This is allowed but really, really bad. DO NOT do this.
     #     return b, a
     max-func-lines: 0
+  misspell:
+    ignore-words:
+    - kgateway
 
 issues:
   # Maximum count of issues with the same text.

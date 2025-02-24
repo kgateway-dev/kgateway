@@ -32,7 +32,7 @@ type directResponse struct {
 	spec v1alpha1.DirectResponseSpec
 }
 
-// in case multiple policies attached to the same resouce, we sort by policy creation time.
+// in case multiple policies attached to the same resource, we sort by policy creation time.
 func (d *directResponse) CreationTime() time.Time {
 	return d.ct
 }
