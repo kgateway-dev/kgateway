@@ -21,15 +21,16 @@ const (
 )
 
 func RunAdminServer(ctx context.Context, setupOpts *controller.SetupOpts) error {
+	// serverHandlers defines the custom handlers that the Admin Server will support
+	serverHandlers := getServerHandlers(ctx, setupOpts.KrtDebugger, setupOpts.Cache)
+
 	// initialize the atomic log level
 	if envLogLevel := os.Getenv(contextutils.LogLevelEnvName); envLogLevel != "" {
 		contextutils.SetLogLevelFromString(envLogLevel)
 	}
-	// serverHandlers defines the custom handlers that the Admin Server will support
-	serverHandlers := getServerHandlers(ctx, setupOpts.KrtDebugger, setupOpts.Cache)
-	if err := startHandlers(ctx, serverHandlers); err != nil {
-		return err
-	}
+
+	startHandlers(ctx, serverHandlers)
+
 	return nil
 }
 
