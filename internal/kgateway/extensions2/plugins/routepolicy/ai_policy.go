@@ -16,8 +16,9 @@ import (
 	"github.com/mitchellh/hashstructure"
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
 	"google.golang.org/protobuf/types/known/wrapperspb"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
+
+	aiutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -34,6 +35,7 @@ func (p *routePolicyPluginGwPass) processAIRoutePolicy(
 	pCtx *ir.RouteBackendContext,
 	extprocSettings *envoy_ext_proc_v3.ExtProcPerRoute,
 	transformations *envoytransformation.RouteTransformations,
+	aiSecret *ir.Secret,
 ) error {
 	// If the route options specify this as a chat streaming route, add a header to the ext-proc request
 	if aiConfig.RouteType != nil && *aiConfig.RouteType == v1alpha1.CHAT_STREAMING {
@@ -50,7 +52,8 @@ func (p *routePolicyPluginGwPass) processAIRoutePolicy(
 		// We will add the auth token later
 		Headers: map[string]*envoytransformation.InjaTemplate{},
 	}
-	err := handleAIRoutePolicy(aiConfig, extprocSettings, transformationTemplate)
+
+	err := handleAIRoutePolicy(aiConfig, extprocSettings, transformationTemplate, aiSecret)
 	if err != nil {
 		return err
 	}
@@ -80,6 +83,7 @@ func handleAIRoutePolicy(
 	aiConfig *v1alpha1.AIRoutePolicy,
 	extProcRouteSettings *envoy_ext_proc_v3.ExtProcPerRoute,
 	transformation *envoytransformation.TransformationTemplate,
+	aiSecrets *ir.Secret,
 ) error {
 	if err := applyDefaults(aiConfig.Defaults, transformation); err != nil {
 		return err
@@ -89,7 +93,7 @@ func handleAIRoutePolicy(
 		return err
 	}
 
-	if err := applyPromptGuard(aiConfig.PromptGuard, extProcRouteSettings); err != nil {
+	if err := applyPromptGuard(aiConfig.PromptGuard, extProcRouteSettings, aiSecrets); err != nil {
 		return err
 	}
 
@@ -183,22 +187,22 @@ func applyPromptEnrichment(
 	return nil
 }
 
-func applyPromptGuard(pg *v1alpha1.AIPromptGuard, extProcRouteSettings *envoy_ext_proc_v3.ExtProcPerRoute) error {
+func applyPromptGuard(pg *v1alpha1.AIPromptGuard, extProcRouteSettings *envoy_ext_proc_v3.ExtProcPerRoute, secret *ir.Secret) error {
 	if pg == nil {
 		return nil
 	}
 	if req := pg.Request; req != nil {
 		if mod := req.Moderation; mod != nil {
 			if mod.OpenAIModeration != nil {
-				token, err := getAuthToken(mod.OpenAIModeration.AuthToken)
+				token, err := aiutils.GetAuthToken(mod.OpenAIModeration.AuthToken, secret)
 				if err != nil {
 					return err
 				}
-				mod.OpenAIModeration.AuthToken = &v1alpha1.SingleAuthToken{
+				mod.OpenAIModeration.AuthToken = v1alpha1.SingleAuthToken{
 					Inline: ptr.To(token),
 				}
 			} else {
-				// TODO: error, not supported
+				return fmt.Errorf("OpenAI moderation config must be set for moderation prompt guard")
 			}
 			pg.Request.Moderation = mod
 		}
@@ -247,26 +251,6 @@ func applyPromptGuard(pg *v1alpha1.AIPromptGuard, extProcRouteSettings *envoy_ex
 
 	}
 	return nil
-}
-
-func getAuthToken(in *v1alpha1.SingleAuthToken) (token string, err error) {
-	switch in.Kind {
-	case v1alpha1.Inline:
-		token = *in.Inline
-	case v1alpha1.SecretRef:
-		token, err = getTokenFromHeaderSecret(in.SecretRef)
-	}
-	return token, err
-}
-
-// `getTokenFromHeaderSecret` retrieves the auth token from the secret reference.
-// Currently, this function will return an error if there are more than one header in the secret
-// as we do not know which one to select.
-// In addition, this function will strip the "Bearer " prefix from the token as it will get conditionally
-// added later depending on the provider.
-func getTokenFromHeaderSecret(secretRef *corev1.LocalObjectReference) (token string, err error) {
-	// TODO: get seret from resolved secrets
-	return "", err
 }
 
 // hashUnique generates a hash of the struct that is unique to the object by
