@@ -42,7 +42,6 @@ type listenerPolicyPluginGwPass struct {
 }
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionplug.Plugin {
-
 	col := krtutil.SetupCollectionDynamic[v1alpha1.ListenerPolicy](
 		ctx,
 		commoncol.Client,

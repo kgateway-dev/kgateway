@@ -21,8 +21,8 @@ var (
 func ValidateTlsSecret(sslSecret *corev1.Secret) (cleanedCertChain string, err error) {
 	return ValidateTlsSecretData(sslSecret.Name, sslSecret.Namespace, sslSecret.Data)
 }
-func ValidateTlsSecretData(n, ns string, sslSecretData map[string][]byte) (cleanedCertChain string, err error) {
 
+func ValidateTlsSecretData(n, ns string, sslSecretData map[string][]byte) (cleanedCertChain string, err error) {
 	certChain := string(sslSecretData[corev1.TLSCertKey])
 	privateKey := string(sslSecretData[corev1.TLSPrivateKeyKey])
 	rootCa := string(sslSecretData[corev1.ServiceAccountRootCAKey])
@@ -35,7 +35,6 @@ func ValidateTlsSecretData(n, ns string, sslSecretData map[string][]byte) (clean
 }
 
 func cleanedSslKeyPair(certChain, privateKey, rootCa string) (cleanedChain string, err error) {
-
 	// in the case where we _only_ provide a rootCa, we do not want to validate tls.key+tls.cert
 	if (certChain == "") && (privateKey == "") && (rootCa != "") {
 		return certChain, nil

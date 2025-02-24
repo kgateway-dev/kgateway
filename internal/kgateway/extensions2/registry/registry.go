@@ -29,8 +29,8 @@ func mergedGw(funcs []extensionsplug.GwTranslatorFactory) extensionsplug.GwTrans
 		}
 		return nil
 	}
-
 }
+
 func mergeSynced(funcs []func() bool) func() bool {
 	return func() bool {
 		for _, f := range funcs {

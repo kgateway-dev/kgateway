@@ -232,7 +232,6 @@ func createDefaultIstioMatch() *envoy_config_cluster_v3.Cluster_TransportSocketM
 }
 
 func buildSni(upstream ir.Upstream) string {
-
 	switch us := upstream.Obj.(type) {
 	case *corev1.Service:
 		return buildDNSSrvSubsetKey(

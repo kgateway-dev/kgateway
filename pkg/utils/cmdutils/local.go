@@ -100,7 +100,6 @@ func (cmd *LocalCmd) Run() *RunError {
 // Start starts the command but doesn't block
 // If the returned error is non-nil, it should be of type *RunError
 func (cmd *LocalCmd) Start() *RunError {
-
 	cmd.Stdout = io.MultiWriter(cmd.Stdout, cmd.combinedOutput)
 	cmd.Stderr = io.MultiWriter(cmd.Stderr, cmd.combinedOutput)
 

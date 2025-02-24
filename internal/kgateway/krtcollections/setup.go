@@ -82,9 +82,7 @@ func initCollectionsWithGateways(
 	extensions extensionsplug.Plugin,
 	krtopts krtutil.KrtOptions,
 ) (*GatewayIndex, *RoutesIndex, *UpstreamIndex, krt.Collection[ir.EndpointsForUpstream]) {
-
 	policies := NewPolicyIndex(krtopts, extensions.ContributesPolicies)
-
 	var backendRefPlugins []extensionsplug.GetBackendForRefPlugin
 	for _, ext := range extensions.ContributesPolicies {
 		if ext.GetBackendForRef != nil {
@@ -106,7 +104,6 @@ func initUpstreams(
 	upstreamIndex *UpstreamIndex,
 	krtopts krtutil.KrtOptions,
 ) krt.Collection[ir.EndpointsForUpstream] {
-
 	allEndpoints := []krt.Collection[ir.EndpointsForUpstream]{}
 	for k, col := range extensions.ContributesUpstreams {
 		if col.Upstreams != nil {

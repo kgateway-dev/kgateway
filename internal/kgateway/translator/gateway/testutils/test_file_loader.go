@@ -34,7 +34,6 @@ var (
 )
 
 func LoadFromFiles(ctx context.Context, filename string) ([]client.Object, error) {
-
 	fileOrDir, err := os.Stat(filename)
 	if err != nil {
 		return nil, err
@@ -80,7 +79,6 @@ func LoadFromFiles(ctx context.Context, filename string) ([]client.Object, error
 			}
 			resources = append(resources, clientObj)
 		}
-
 	}
 
 	return resources, nil
@@ -107,7 +105,6 @@ func parseFile(ctx context.Context, filename string) ([]runtime.Object, error) {
 	// Create resources from YAML documents
 	var genericResources []runtime.Object
 	for _, objYaml := range resourceYamlStrings {
-
 		// Skip empty documents
 		if len(bytes.TrimSpace(objYaml)) == 0 {
 			continue

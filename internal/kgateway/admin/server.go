@@ -115,7 +115,6 @@ func startHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, 
 
 func index(profileDescriptions map[string]dynamicProfileDescription) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		type profile struct {
 			Name string
 			Href string
@@ -139,7 +138,6 @@ func index(profileDescriptions map[string]dynamicProfileDescription) func(w http
 		fmt.Fprintf(&buf, "<h1>Admin Server</h1>\n")
 		for _, p := range profiles {
 			fmt.Fprintf(&buf, "<h2><a href=\"%s\"}>%s</a></h2><p>%s</p>\n", p.Name, p.Name, p.Desc)
-
 		}
 		w.Write(buf.Bytes())
 	}
