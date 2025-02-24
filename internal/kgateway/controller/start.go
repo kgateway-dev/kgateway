@@ -3,26 +3,20 @@ package controller
 import (
 	"context"
 
-	"k8s.io/client-go/rest"
-	"k8s.io/utils/ptr"
-	"sigs.k8s.io/controller-runtime/pkg/config"
-
-	"github.com/solo-io/go-utils/contextutils"
-
-	glooschemes "github.com/kgateway-dev/kgateway/v2/pkg/schemes"
-
-	"k8s.io/apimachinery/pkg/util/sets"
-	ctrl "sigs.k8s.io/controller-runtime"
-
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	czap "sigs.k8s.io/controller-runtime/pkg/log/zap"
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"github.com/solo-io/go-utils/contextutils"
 	uzap "go.uber.org/zap"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	istiolog "istio.io/istio/pkg/log"
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/rest"
+	"k8s.io/utils/ptr"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/config"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	czap "sigs.k8s.io/controller-runtime/pkg/log/zap"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
@@ -37,6 +31,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
+	glooschemes "github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 )
 
 const (
@@ -52,7 +47,7 @@ type SetupOpts struct {
 	KrtDebugger *krt.DebugHandler
 
 	XdsHost string
-	XdsPort int32
+	XdsPort uint32
 }
 
 var setupLog = ctrl.Log.WithName("setup")
@@ -192,7 +187,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 		return ctx.Err()
 	}
 
-	logger.Info("got xds address for deployer", uzap.String("xds_host", xdsHost), uzap.Int32("xds_port", xdsPort))
+	logger.Info("got xds address for deployer", uzap.String("xds_host", xdsHost), uzap.Uint32("xds_port", xdsPort))
 
 	integrationEnabled := c.settings.EnableIstioIntegration
 
