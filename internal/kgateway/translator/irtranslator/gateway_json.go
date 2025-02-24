@@ -10,7 +10,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// json marshaling for TranslationResult; used in tests
+// json marshalling for TranslationResult; used in tests
 
 func (tr *TranslationResult) MarshalJSON() ([]byte, error) {
 	m := protojson.MarshalOptions{

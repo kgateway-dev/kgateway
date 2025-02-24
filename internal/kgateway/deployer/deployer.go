@@ -379,7 +379,7 @@ func (d *Deployer) Render(name, ns string, vals map[string]any) ([]client.Object
 	install.ReleaseName = name
 
 	// We rely on the Install object in `clientOnly` mode
-	// This means that there is no i/o (i.e. no reads/writes to k8s) that would need to be canceled.
+	// This means that there is no i/o (i.e. no reads/writes to k8s) that would need to be cancelled.
 	// This essentially guarantees that this function terminates quickly and doesn't block the rest of the controller.
 	install.ClientOnly = true
 	installCtx := context.Background()

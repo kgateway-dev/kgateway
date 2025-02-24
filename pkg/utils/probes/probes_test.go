@@ -67,7 +67,7 @@ var _ = Describe("Probes", func() {
 		}).WithTimeout(time.Second).WithPolling(time.Millisecond * 100).Should(Succeed())
 	})
 
-	It("doesn't respond after server canceled", func() {
+	It("doesn't respond after server cancelled", func() {
 		StartLivenessProbeServer(ctx)
 
 		Eventually(func(g Gomega) {

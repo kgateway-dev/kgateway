@@ -63,7 +63,7 @@ func StartServer(ctx context.Context, params ServerParams) {
 		}
 	}()
 
-	// Run a separate goroutine to handle the server shutdown when the context is canceled
+	// Run a separate goroutine to handle the server shutdown when the context is cancelled
 	go func() {
 		<-ctx.Done()
 		if server != nil {
