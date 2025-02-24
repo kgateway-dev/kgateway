@@ -215,3 +215,12 @@ routes:
                         tmpl:
                           text: '{% if host_metadata("model") != "" %}"{{host_metadata("model")}}"{%
                             else %}"{{model}}"{% endif %}'
+          - requestMatch:
+              requestTransformation:
+                logRequestResponseInfo: false
+                transformationTemplate:
+                  mergeJsonKeys:
+                    jsonKeys:
+                      temperature:
+                        tmpl:
+                          text: '{{ default(0.5, "0.5") }}'

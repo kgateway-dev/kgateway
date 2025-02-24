@@ -48,11 +48,7 @@ func (p *routePolicyPluginGwPass) processAIRoutePolicy(
 	}
 
 	// Setup initial transformation template. This may be modified by further
-	transformationTemplate := &envoytransformation.TransformationTemplate{
-		// We will add the auth token later
-		Headers: map[string]*envoytransformation.InjaTemplate{},
-	}
-
+	transformationTemplate := initTransformationTemplate()
 	err := handleAIRoutePolicy(aiConfig, extprocSettings, transformationTemplate, aiSecret)
 	if err != nil {
 		return err
@@ -77,6 +73,19 @@ func (p *routePolicyPluginGwPass) processAIRoutePolicy(
 	pCtx.AddTypedConfig(wellknown.TransformationFilterName, transformations)
 
 	return nil
+}
+
+func initTransformationTemplate() *envoytransformation.TransformationTemplate {
+	transformationTemplate := &envoytransformation.TransformationTemplate{
+		// We will add the auth token later
+		Headers: map[string]*envoytransformation.InjaTemplate{},
+	}
+	transformationTemplate.BodyTransformation = &envoytransformation.TransformationTemplate_MergeJsonKeys{
+		MergeJsonKeys: &envoytransformation.MergeJsonKeys{
+			JsonKeys: map[string]*envoytransformation.MergeJsonKeys_OverridableTemplate{},
+		},
+	}
+	return transformationTemplate
 }
 
 func handleAIRoutePolicy(
@@ -118,6 +127,9 @@ func applyDefaults(
 			tmpl = fmt.Sprintf("{{ default(%s, %s) }}", field.Value, string(marshalled))
 		} else {
 			tmpl = string(marshalled)
+		}
+		if transformation.GetMergeJsonKeys().GetJsonKeys() == nil {
+			transformation.GetMergeJsonKeys().JsonKeys = make(map[string]*envoytransformation.MergeJsonKeys_OverridableTemplate)
 		}
 		transformation.GetMergeJsonKeys().GetJsonKeys()[field.Field] = &envoytransformation.MergeJsonKeys_OverridableTemplate{
 			Tmpl: &envoytransformation.InjaTemplate{Text: tmpl},

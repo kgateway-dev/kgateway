@@ -16,7 +16,7 @@ spec:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: openai-secret
+  name: deepseek-secret
   namespace: gwtest
 type: Opaque
 data:
@@ -27,16 +27,19 @@ kind: Upstream
 metadata:
   labels:
     app: kgateway
-  name: openai
+  name: deepseek
   namespace: gwtest
 spec:
   ai:
     llm:
+      hostOverride:
+        host: ollama-deepseek-r1.ollama.svc.cluster.local
+        port: 11434
       openai:
         authToken:
           kind: "SecretRef"
           secretRef:
-            name: openai-secret
+            name: deepseek-secret
 ---
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
@@ -54,7 +57,7 @@ spec:
             type: Exact
             value: /v1/chat/completions
     - backendRefs:
-        - name: openai
+        - name: deepseek
           kind: Upstream
           group: gateway.kgateway.dev
           filters:
