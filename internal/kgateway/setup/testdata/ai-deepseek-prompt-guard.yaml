@@ -35,11 +35,12 @@ spec:
       hostOverride:
         host: ollama-deepseek-r1.ollama.svc.cluster.local
         port: 11434
-      openai:
-        authToken:
-          kind: "SecretRef"
-          secretRef:
-            name: deepseek-secret
+      provider:
+        openai:
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: deepseek-secret
 ---
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute

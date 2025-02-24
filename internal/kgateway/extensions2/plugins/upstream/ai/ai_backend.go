@@ -117,25 +117,26 @@ func ApplyAIBackend(ctx context.Context, aiUpstream *v1alpha1.AIUpstream, pCtx *
 
 func getUpstreamModel(llm *v1alpha1.LLMProviders, byType map[string]struct{}) string {
 	llmModel := ""
-	if llm.OpenAI != nil {
+	provider := llm.Provider
+	if provider.OpenAI != nil {
 		byType["openai"] = struct{}{}
-		if llm.OpenAI.Model != nil {
-			llmModel = *llm.OpenAI.Model
+		if provider.OpenAI.Model != nil {
+			llmModel = *provider.OpenAI.Model
 		}
-	} else if llm.Anthropic != nil {
+	} else if provider.Anthropic != nil {
 		byType["anthropic"] = struct{}{}
-		if llm.Anthropic.Model != nil {
-			llmModel = *llm.Anthropic.Model
+		if provider.Anthropic.Model != nil {
+			llmModel = *provider.Anthropic.Model
 		}
-	} else if llm.AzureOpenAI != nil {
+	} else if provider.AzureOpenAI != nil {
 		byType["azure_openai"] = struct{}{}
-		llmModel = llm.AzureOpenAI.DeploymentName
-	} else if llm.Gemini != nil {
+		llmModel = provider.AzureOpenAI.DeploymentName
+	} else if provider.Gemini != nil {
 		byType["gemini"] = struct{}{}
-		llmModel = llm.Gemini.Model
-	} else if llm.VertexAI != nil {
+		llmModel = provider.Gemini.Model
+	} else if provider.VertexAI != nil {
 		byType["vertex-ai"] = struct{}{}
-		llmModel = llm.VertexAI.Model
+		llmModel = provider.VertexAI.Model
 	}
 	return llmModel
 }

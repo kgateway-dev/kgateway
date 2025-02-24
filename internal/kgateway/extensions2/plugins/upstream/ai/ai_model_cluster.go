@@ -73,16 +73,16 @@ func buildModelCluster(ctx context.Context, aiUs *v1alpha1.AIUpstream, aiSecrets
 				var tlsContext *envoy_tls_v3.UpstreamTlsContext
 				var err error
 				epByType[fmt.Sprintf("%T", ep)] = struct{}{}
-				if ep.OpenAI != nil {
-					result, tlsContext, err = buildOpenAIEndpoint(ep.OpenAI, ep.HostOverride, aiSecrets)
-				} else if ep.Anthropic != nil {
-					result, tlsContext, err = buildAnthropicEndpoint(ep.Anthropic, ep.HostOverride, aiSecrets)
-				} else if ep.AzureOpenAI != nil {
-					result, tlsContext, err = buildAzureOpenAIEndpoint(ep.AzureOpenAI, ep.HostOverride, aiSecrets)
-				} else if ep.Gemini != nil {
-					result, tlsContext, err = buildGeminiEndpoint(ep.Gemini, ep.HostOverride, aiSecrets)
-				} else if ep.VertexAI != nil {
-					result, tlsContext, err = buildVertexAIEndpoint(ctx, ep.VertexAI, ep.HostOverride, aiSecrets)
+				if ep.Provider.OpenAI != nil {
+					result, tlsContext, err = buildOpenAIEndpoint(ep.Provider.OpenAI, ep.HostOverride, aiSecrets)
+				} else if ep.Provider.Anthropic != nil {
+					result, tlsContext, err = buildAnthropicEndpoint(ep.Provider.Anthropic, ep.HostOverride, aiSecrets)
+				} else if ep.Provider.AzureOpenAI != nil {
+					result, tlsContext, err = buildAzureOpenAIEndpoint(ep.Provider.AzureOpenAI, ep.HostOverride, aiSecrets)
+				} else if ep.Provider.Gemini != nil {
+					result, tlsContext, err = buildGeminiEndpoint(ep.Provider.Gemini, ep.HostOverride, aiSecrets)
+				} else if ep.Provider.VertexAI != nil {
+					result, tlsContext, err = buildVertexAIEndpoint(ctx, ep.Provider.VertexAI, ep.HostOverride, aiSecrets)
 				}
 				if err != nil {
 					return err
@@ -144,8 +144,9 @@ func buildModelCluster(ctx context.Context, aiUs *v1alpha1.AIUpstream, aiSecrets
 func buildLLMEndpoint(ctx context.Context, aiUs *v1alpha1.AIUpstream, aiSecrets *ir.Secret) ([]*envoy_config_cluster_v3.Cluster_TransportSocketMatch, []*envoy_config_endpoint_v3.LocalityLbEndpoints, error) {
 	var tsms []*envoy_config_cluster_v3.Cluster_TransportSocketMatch
 	var prioritized []*envoy_config_endpoint_v3.LocalityLbEndpoints
-	if aiUs.LLM.OpenAI != nil {
-		host, tlsContext, err := buildOpenAIEndpoint(aiUs.LLM.OpenAI, aiUs.LLM.HostOverride, aiSecrets)
+	provider := aiUs.LLM.Provider
+	if provider.OpenAI != nil {
+		host, tlsContext, err := buildOpenAIEndpoint(provider.OpenAI, aiUs.LLM.HostOverride, aiSecrets)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -159,8 +160,8 @@ func buildLLMEndpoint(ctx context.Context, aiUs *v1alpha1.AIUpstream, aiSecrets 
 			}
 			tsms = append(tsms, tsm)
 		}
-	} else if aiUs.LLM.Anthropic != nil {
-		host, tlsContext, err := buildAnthropicEndpoint(aiUs.LLM.Anthropic, aiUs.LLM.HostOverride, aiSecrets)
+	} else if provider.Anthropic != nil {
+		host, tlsContext, err := buildAnthropicEndpoint(provider.Anthropic, aiUs.LLM.HostOverride, aiSecrets)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -174,8 +175,8 @@ func buildLLMEndpoint(ctx context.Context, aiUs *v1alpha1.AIUpstream, aiSecrets 
 			}
 			tsms = append(tsms, tsm)
 		}
-	} else if aiUs.LLM.AzureOpenAI != nil {
-		host, tlsContext, err := buildAzureOpenAIEndpoint(aiUs.LLM.AzureOpenAI, aiUs.LLM.HostOverride, aiSecrets)
+	} else if provider.AzureOpenAI != nil {
+		host, tlsContext, err := buildAzureOpenAIEndpoint(provider.AzureOpenAI, aiUs.LLM.HostOverride, aiSecrets)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -189,8 +190,8 @@ func buildLLMEndpoint(ctx context.Context, aiUs *v1alpha1.AIUpstream, aiSecrets 
 			}
 			tsms = append(tsms, tsm)
 		}
-	} else if aiUs.LLM.Gemini != nil {
-		host, tlsContext, err := buildGeminiEndpoint(aiUs.LLM.Gemini, aiUs.LLM.HostOverride, aiSecrets)
+	} else if provider.Gemini != nil {
+		host, tlsContext, err := buildGeminiEndpoint(provider.Gemini, aiUs.LLM.HostOverride, aiSecrets)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -204,8 +205,8 @@ func buildLLMEndpoint(ctx context.Context, aiUs *v1alpha1.AIUpstream, aiSecrets 
 			}
 			tsms = append(tsms, tsm)
 		}
-	} else if aiUs.LLM.VertexAI != nil {
-		host, tlsContext, err := buildVertexAIEndpoint(ctx, aiUs.LLM.VertexAI, aiUs.LLM.HostOverride, aiSecrets)
+	} else if provider.VertexAI != nil {
+		host, tlsContext, err := buildVertexAIEndpoint(ctx, provider.VertexAI, aiUs.LLM.HostOverride, aiSecrets)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -424,31 +425,32 @@ func getTransformation(ctx context.Context, llm *v1alpha1.LLMProviders) (string,
 	headerName := "Authorization"
 	var prefix, path string
 	var bodyTransformation *envoytransformation.TransformationTemplate_MergeJsonKeys
-	if llm.OpenAI != nil {
+	provider := llm.Provider
+	if provider.OpenAI != nil {
 		prefix = "Bearer "
 		path = "/v1/chat/completions"
 		bodyTransformation = defaultBodyTransformation()
-	} else if llm.Anthropic != nil {
+	} else if provider.Anthropic != nil {
 		headerName = "x-api-key"
 		path = "/v1/messages"
 		bodyTransformation = defaultBodyTransformation()
-	} else if llm.AzureOpenAI != nil {
+	} else if provider.AzureOpenAI != nil {
 		headerName = "api-key"
 		path = `/openai/deployments/{{ host_metadata("model") }}/chat/completions?api-version={{ host_metadata("api_version" )}}`
-	} else if llm.Gemini != nil {
+	} else if provider.Gemini != nil {
 		headerName = "key"
 		path = getGeminiPath()
-	} else if llm.VertexAI != nil {
+	} else if provider.VertexAI != nil {
 		prefix = "Bearer "
 		var modelPath string
-		modelCall := llm.VertexAI.ModelPath
+		modelCall := provider.VertexAI.ModelPath
 		if modelCall == nil {
-			switch llm.VertexAI.Publisher {
+			switch provider.VertexAI.Publisher {
 			case v1alpha1.GOOGLE:
 				modelPath = getVertexAIGeminiModelPath()
 			default:
 				// TODO(npolshak): add support for other publishers
-				contextutils.LoggerFrom(ctx).Warnf("Unsupported Vertex AI publisher: %v. Defaulting to Google", llm.VertexAI.Publisher)
+				contextutils.LoggerFrom(ctx).Warnf("Unsupported Vertex AI publisher: %v. Defaulting to Google", provider.VertexAI.Publisher)
 				modelPath = getVertexAIGeminiModelPath()
 			}
 		} else {

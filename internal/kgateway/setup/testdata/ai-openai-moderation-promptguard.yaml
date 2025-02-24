@@ -32,11 +32,12 @@ metadata:
 spec:
   ai:
     llm:
-      openai:
-        authToken:
-          kind: "SecretRef"
-          secretRef:
-            name: openai-secret
+      provider:
+        openai:
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: openai-secret
 ---
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute

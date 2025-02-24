@@ -1,0 +1,215 @@
+clusters:
+- connectTimeout: 5s
+  edsClusterConfig:
+    edsConfig:
+      ads: {}
+      resourceApiVersion: V3
+  metadata: {}
+  name: kube_default_kubernetes_443
+  transportSocketMatches:
+  - match:
+      tlsMode: istio
+    name: tlsMode-istio
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - istio
+          tlsCertificateSdsSecretConfigs:
+          - name: istio_server_cert
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: gateway_proxy_sds
+                setNodeOnFirstMessageOnly: true
+                transportApiVersion: V3
+              resourceApiVersion: V3
+          tlsParams: {}
+          validationContextSdsSecretConfig:
+            name: istio_validation_context
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: gateway_proxy_sds
+                setNodeOnFirstMessageOnly: true
+                transportApiVersion: V3
+              resourceApiVersion: V3
+        sni: outbound_.443_._.kubernetes.default.svc.cluster.local
+  - match: {}
+    name: tlsMode-disabled
+    transportSocket:
+      name: envoy.transport_sockets.raw_buffer
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
+  type: EDS
+- connectTimeout: 5s
+  dnsLookupFamily: V4_ONLY
+  loadAssignment:
+    clusterName: upstream_gwtest_deepseek_0
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: ollama-deepseek-r1.ollama.svc.cluster.local
+              portValue: 11434
+          hostname: ollama-deepseek-r1.ollama.svc.cluster.local
+        metadata:
+          filterMetadata:
+            io.solo.transformation:
+              auth_token: mysecretkey
+  metadata: {}
+  name: upstream_gwtest_deepseek_0
+  transportSocketMatches:
+  - match:
+      tlsMode: istio
+    name: tlsMode-istio
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - istio
+          tlsCertificateSdsSecretConfigs:
+          - name: istio_server_cert
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: gateway_proxy_sds
+                setNodeOnFirstMessageOnly: true
+                transportApiVersion: V3
+              resourceApiVersion: V3
+          tlsParams: {}
+          validationContextSdsSecretConfig:
+            name: istio_validation_context
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: gateway_proxy_sds
+                setNodeOnFirstMessageOnly: true
+                transportApiVersion: V3
+              resourceApiVersion: V3
+  - match: {}
+    name: tlsMode-disabled
+    transportSocket:
+      name: envoy.transport_sockets.raw_buffer
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
+  type: STRICT_DNS
+listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 8080
+  filterChains:
+  - filters:
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: ai.extproc.kgateway.io
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
+            grpcService:
+              envoyGrpc:
+                clusterName: ai_ext_proc_uds_cluster
+              retryPolicy:
+                numRetries: 3
+              timeout: 5s
+            messageTimeout: 5s
+            metadataOptions:
+              forwardingNamespaces:
+                typed:
+                - envoy.filters.ai.solo.io
+                untyped:
+                - io.solo.transformation
+                - envoy.filters.ai.solo.io
+              receivingNamespaces:
+                untyped:
+                - ai.kgateway.io
+            processingMode:
+              requestBodyMode: STREAMED
+              requestHeaderMode: SEND
+              requestTrailerMode: SKIP
+              responseBodyMode: STREAMED
+              responseHeaderMode: SEND
+              responseTrailerMode: SKIP
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+            upstreamHttpFilters:
+            - name: io.kgateway.wait
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.http.upstream_wait.v2.UpstreamWaitFilterConfig
+            - name: ai.transformation.kgateway.io
+              typedConfig:
+                '@type': type.googleapis.com/envoy.api.v2.filter.http.FilterTransformations
+            - name: envoy.filters.http.upstream_codec
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: http
+        statPrefix: http
+        useRemoteAddress: true
+    name: http
+  name: http
+routes:
+- ignorePortInHostMatching: true
+  name: http
+  virtualHosts:
+  - domains:
+    - test
+    name: http~test
+    routes:
+    - match:
+        prefix: /
+      name: http~test-route-1-httproute-route-to-upstream-gwtest-1-0-matcher-0
+      route:
+        autoHostRewrite: true
+        cluster: upstream_gwtest_deepseek_0
+      typedPerFilterConfig:
+        ai.extproc.kgateway.io:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
+          overrides:
+            grpcInitialMetadata:
+            - key: x-llm-provider
+              value: openai
+            - key: x-request-id
+              value: '%REQ(X-REQUEST-ID)%'
+        ai.transformation.kgateway.io:
+          '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
+          transformations:
+          - requestMatch:
+              requestTransformation:
+                logRequestResponseInfo: false
+                transformationTemplate:
+                  headers:
+                    :path:
+                      text: /v1/chat/completions
+                    Authorization:
+                      text: Bearer {% if host_metadata("auth_token") != "" %}{{host_metadata("auth_token")}}{%
+                        else %}{{dynamic_metadata("auth_token","ai.kgateway.io")}}{%
+                        endif %}
+                  mergeJsonKeys:
+                    jsonKeys:
+                      model:
+                        tmpl:
+                          text: '{% if host_metadata("model") != "" %}"{{host_metadata("model")}}"{%
+                            else %}"{{model}}"{% endif %}'

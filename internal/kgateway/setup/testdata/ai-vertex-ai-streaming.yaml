@@ -58,13 +58,14 @@ metadata:
 spec:
   ai:
     llm:
-      vertexai:
-        model: gemini-1.5-flash-001
-        apiVersion: v1
-        location: us-central1
-        projectId: gloo-ee
-        publisher: GOOGLE
-        authToken:
-          kind: "Inline"
-          inline: mysecretkey
+      provider:
+        vertexai:
+          model: gemini-1.5-flash-001
+          apiVersion: v1
+          location: us-central1
+          projectId: gloo-ee
+          publisher: GOOGLE
+          authToken:
+            kind: "Inline"
+            inline: mysecretkey
 ---

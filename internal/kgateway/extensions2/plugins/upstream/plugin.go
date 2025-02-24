@@ -188,7 +188,7 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 		if i.Spec.AI != nil {
 			ns := i.GetNamespace()
 			if i.Spec.AI.LLM != nil {
-				secretRef := getAISecretRef(i.Spec.AI.LLM)
+				secretRef := getAISecretRef(i.Spec.AI.LLM.Provider)
 				// if secretRef is used, set the secret on the upstream ir
 				if secretRef != nil {
 					secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, ns)
@@ -201,7 +201,7 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 				upstreamIr.AIMultiSecret = map[string]*ir.Secret{}
 				for idx, priority := range i.Spec.AI.MultiPool.Priorities {
 					for jdx, pool := range priority.Pool {
-						secretRef := getAISecretRef(&pool)
+						secretRef := getAISecretRef(pool.Provider)
 						// if secretRef is used, set the secret on the upstream ir
 						if secretRef != nil {
 							secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, ns)
@@ -219,7 +219,7 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 	}
 }
 
-func getAISecretRef(llm *v1alpha1.LLMProviders) *corev1.LocalObjectReference {
+func getAISecretRef(llm v1alpha1.SupportedLLMProviders) *corev1.LocalObjectReference {
 	var secretRef *corev1.LocalObjectReference
 	if llm.OpenAI != nil {
 		secretRef = llm.OpenAI.AuthToken.SecretRef
