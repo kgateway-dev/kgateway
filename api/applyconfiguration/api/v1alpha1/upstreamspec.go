@@ -7,6 +7,7 @@ package v1alpha1
 type UpstreamSpecApplyConfiguration struct {
 	Aws    *AwsUpstreamApplyConfiguration    `json:"aws,omitempty"`
 	Static *StaticUpstreamApplyConfiguration `json:"static,omitempty"`
+	AI     *AIUpstreamApplyConfiguration     `json:"ai,omitempty"`
 }
 
 // UpstreamSpecApplyConfiguration constructs a declarative configuration of the UpstreamSpec type for use with
@@ -28,5 +29,13 @@ func (b *UpstreamSpecApplyConfiguration) WithAws(value *AwsUpstreamApplyConfigur
 // If called multiple times, the Static field is set to the value of the last call.
 func (b *UpstreamSpecApplyConfiguration) WithStatic(value *StaticUpstreamApplyConfiguration) *UpstreamSpecApplyConfiguration {
 	b.Static = value
+	return b
+}
+
+// WithAI sets the AI field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the AI field is set to the value of the last call.
+func (b *UpstreamSpecApplyConfiguration) WithAI(value *AIUpstreamApplyConfiguration) *UpstreamSpecApplyConfiguration {
+	b.AI = value
 	return b
 }

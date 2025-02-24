@@ -58,6 +58,11 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 type httpListenerPolicyPluginGwPass struct {
 }
 
+func (p *httpListenerPolicyPluginGwPass) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoy_config_route_v3.Route) error {
+	// no op
+	return nil
+}
+
 func (p *httpListenerPolicyPluginGwPass) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *envoy_config_listener_v3.Listener) {
 	// no op
 }
@@ -164,7 +169,7 @@ func (p *httpListenerPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir
 	return nil, nil
 }
 
-func (p *httpListenerPolicyPluginGwPass) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {
+func (p *httpListenerPolicyPluginGwPass) UpstreamHttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedUpstreamHttpFilter, error) {
 	return nil, nil
 }
 

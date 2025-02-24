@@ -3,12 +3,21 @@ package upstream
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"maps"
 	"time"
 
+	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
+	"github.com/solo-io/go-utils/contextutils"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/upstream/ai"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -19,7 +28,6 @@ import (
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -31,12 +39,10 @@ import (
 )
 
 const (
-	ParameterGroup = "gloo.solo.io"
+	ParameterGroup = "kgateway.io"
 	ParameterKind  = "Parameter"
-)
-const (
-	ExtensionName = "Upstream"
-	FilterName    = "io.solo.aws_lambda"
+
+	FilterName = "io.solo.aws_lambda"
 )
 
 var (
@@ -63,7 +69,9 @@ func (d *upstreamDestination) Equals(in any) bool {
 }
 
 type UpstreamIr struct {
-	AwsSecret *ir.Secret
+	AwsSecret     *ir.Secret
+	AISecret      *ir.Secret
+	AIMultiSecret map[string]*ir.Secret
 }
 
 func (u *UpstreamIr) data() map[string][]byte {
@@ -84,7 +92,8 @@ func (u *UpstreamIr) Equals(other any) bool {
 }
 
 type upstreamPlugin struct {
-	needFilter map[string]bool
+	needFilter       map[string]bool
+	aiGatewayEnabled map[string]bool
 }
 
 func registerTypes(ourCli versioned.Interface) {
@@ -106,7 +115,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	col := krt.WrapClient(kclient.New[*v1alpha1.Upstream](commoncol.Client), commoncol.KrtOpts.ToOptions("Upstreams")...)
 
 	gk := v1alpha1.UpstreamGVK.GroupKind()
-	translate := buildTranslateFunc(commoncol.Secrets)
+	translate := buildTranslateFunc(ctx, commoncol.Secrets)
 	ucol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Upstream) *ir.Upstream {
 		// resolve secrets
 		return &ir.Upstream{
@@ -137,7 +146,19 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			},
 		},
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
+			// TODO: remove Parameters?
 			ParameterGK: {
+				Name:                      "upstream",
+				NewGatewayTranslationPass: newPlug,
+				//			AttachmentPoints: []ir.AttachmentPoints{ir.HttpBackendRefAttachmentPoint},
+				PoliciesFetch: func(n, ns string) ir.PolicyIR {
+					// virtual policy - we don't have a real policy object
+					return &upstreamDestination{
+						FunctionName: n,
+					}
+				},
+			},
+			v1alpha1.UpstreamGVK.GroupKind(): {
 				Name:                      "upstream",
 				NewGatewayTranslationPass: newPlug,
 				//			AttachmentPoints: []ir.AttachmentPoints{ir.HttpBackendRefAttachmentPoint},
@@ -152,25 +173,67 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-func buildTranslateFunc(secrets *krtcollections.SecretIndex) func(krtctx krt.HandlerContext, i *v1alpha1.Upstream) *UpstreamIr {
+func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex) func(krtctx krt.HandlerContext, i *v1alpha1.Upstream) *UpstreamIr {
 	return func(krtctx krt.HandlerContext, i *v1alpha1.Upstream) *UpstreamIr {
 		// resolve secrets
-		var ir UpstreamIr
+		var upstreamIr UpstreamIr
 		if i.Spec.Aws != nil {
 			ns := i.GetNamespace()
-			secretRef := gwv1.SecretObjectReference{
-				Name: gwv1.ObjectName(i.Spec.Aws.SecretRef.Name),
+			secret, err := pluginutils.GetSecretIr(secrets, krtctx, i.Spec.Aws.SecretRef.Name, ns)
+			if err != nil {
+				contextutils.LoggerFrom(ctx).Error(err)
 			}
-			secret, _ := secrets.GetSecret(krtctx, krtcollections.From{GroupKind: v1alpha1.UpstreamGVK.GroupKind(), Namespace: ns}, secretRef)
-			if secret != nil {
-				ir.AwsSecret = secret
-			} else {
-				// TODO: handle error and write it to status
-				// return error
-			}
+			upstreamIr.AwsSecret = secret
 		}
-		return &ir
+		if i.Spec.AI != nil {
+			ns := i.GetNamespace()
+			if i.Spec.AI.LLM != nil {
+				secretRef := getAISecretRef(i.Spec.AI.LLM)
+				// if secretRef is used, set the secret on the upstream ir
+				if secretRef != nil {
+					secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, ns)
+					if err != nil {
+						contextutils.LoggerFrom(ctx).Error(err)
+					}
+					upstreamIr.AISecret = secret
+				}
+			} else if i.Spec.AI.MultiPool != nil {
+				upstreamIr.AIMultiSecret = map[string]*ir.Secret{}
+				for idx, priority := range i.Spec.AI.MultiPool.Priorities {
+					for jdx, pool := range priority.Pool {
+						secretRef := getAISecretRef(&pool)
+						// if secretRef is used, set the secret on the upstream ir
+						if secretRef != nil {
+							secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, ns)
+							if err != nil {
+								contextutils.LoggerFrom(ctx).Error(err)
+							}
+							upstreamIr.AIMultiSecret[getMultiPoolSecretKey(idx, jdx, secretRef.Name)] = secret
+						}
+					}
+				}
+			}
+
+		}
+		return &upstreamIr
 	}
+}
+
+func getAISecretRef(llm *v1alpha1.LLMProviders) *corev1.LocalObjectReference {
+	var secretRef *corev1.LocalObjectReference
+	if llm.OpenAI != nil {
+		secretRef = llm.OpenAI.AuthToken.SecretRef
+	} else if llm.Anthropic != nil {
+		secretRef = llm.Anthropic.AuthToken.SecretRef
+	} else if llm.AzureOpenAI != nil {
+		secretRef = llm.AzureOpenAI.AuthToken.SecretRef
+	} else if llm.Gemini != nil {
+		secretRef = llm.Gemini.AuthToken.SecretRef
+	} else if llm.VertexAI != nil {
+		secretRef = llm.VertexAI.AuthToken.SecretRef
+	}
+
+	return secretRef
 }
 
 func processUpstream(ctx context.Context, in ir.Upstream, out *envoy_config_cluster_v3.Cluster) {
@@ -193,13 +256,19 @@ func processUpstream(ctx context.Context, in ir.Upstream, out *envoy_config_clus
 		processStatic(ctx, spec.Static, out)
 	case spec.Aws != nil:
 		processAws(ctx, spec.Aws, ir, out)
+	case spec.AI != nil:
+		err := ai.ProcessAIUpstream(ctx, spec.AI, ir.AISecret, out)
+		if err != nil {
+			// TODO: report error on status
+			contextutils.LoggerFrom(ctx).Error(err)
+		}
 	}
 }
 
 func hostname(in *v1alpha1.Upstream) string {
 	if in.Spec.Static != nil {
 		if len(in.Spec.Static.Hosts) > 0 {
-			return string(in.Spec.Static.Hosts[0].Host)
+			return in.Spec.Static.Hosts[0].Host
 		}
 	}
 	return ""
@@ -242,6 +311,37 @@ func (p *upstreamPlugin) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContex
 	return nil
 }
 
+// Run on upstream, regardless of policy (based on upstream gvk)
+// share route proto message
+func (p *upstreamPlugin) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoy_config_route_v3.Route) error {
+	upstream := pCtx.Upstream.Obj.(*v1alpha1.Upstream)
+	if upstream.Spec.AI != nil {
+		err := ai.ApplyAIBackend(ctx, upstream.Spec.AI, pCtx, in, out)
+		if err != nil {
+			return err
+		}
+
+		if p.aiGatewayEnabled == nil {
+			p.aiGatewayEnabled = make(map[string]bool)
+		}
+		p.aiGatewayEnabled[pCtx.FilterChainName] = true
+	} else {
+		// If it's not an AI route we want to disable our ext-proc filter just in case.
+		// This will have no effect if we don't add the listener filter
+		disabledExtprocSettings := &envoy_ext_proc_v3.ExtProcPerRoute{
+			Override: &envoy_ext_proc_v3.ExtProcPerRoute_Disabled{
+				Disabled: true,
+			},
+		}
+		pCtx.AddTypedConfig(wellknown.AIExtProcFilterName, disabledExtprocSettings)
+	}
+
+	return nil
+}
+
+// Only called if policy attatched (extension ref)
+// Can implement in route policy for ai (prompt guard, etc.)
+// Alt. apply regardless if policy is present...?
 func (p *upstreamPlugin) ApplyForRouteBackend(
 	ctx context.Context, policy ir.PolicyIR,
 	pCtx *ir.RouteBackendContext,
@@ -251,27 +351,48 @@ func (p *upstreamPlugin) ApplyForRouteBackend(
 		return nil
 		// todo: should we return fmt.Errorf("internal error: policy is not a upstreamDestination")
 	}
+
+	// TODO: AI config for ApplyToRouteBackend
+
 	return p.processBackendAws(ctx, pCtx, pol)
+
 }
 
 // called 1 time per listener
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
 func (p *upstreamPlugin) HttpFilters(ctx context.Context, fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
-	if !p.needFilter[fc.FilterChainName] {
-		return nil, nil
-	}
-	filterConfig := &awspb.AWSLambdaConfig{}
-	pluginStage := plugins.DuringStage(plugins.OutAuthStage)
-	f, _ := plugins.NewStagedFilter(FilterName, filterConfig, pluginStage)
+	result := []plugins.StagedHttpFilter{}
 
-	return []plugins.StagedHttpFilter{
-		f,
-	}, nil
+	if p.aiGatewayEnabled[fc.FilterChainName] {
+		aiFilters, err := ai.AddExtprocHTTPFilter()
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, aiFilters...)
+	}
+	if p.needFilter[fc.FilterChainName] {
+
+		filterConfig := &awspb.AWSLambdaConfig{}
+		pluginStage := plugins.DuringStage(plugins.OutAuthStage)
+		f, _ := plugins.NewStagedFilter(FilterName, filterConfig, pluginStage)
+
+		result = append(result, f)
+	}
+	return result, nil
 }
 
-func (p *upstreamPlugin) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {
-	return nil, nil
+func (p *upstreamPlugin) UpstreamHttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedUpstreamHttpFilter, error) {
+	filters := []plugins.StagedUpstreamHttpFilter{}
+	if p.aiGatewayEnabled[fcc.FilterChainName] {
+		aiFilters, err := ai.AddUpstreamHttpFilters()
+		if err != nil {
+			return nil, err
+		}
+		filters = append(filters, aiFilters...)
+	}
+
+	return filters, nil
 }
 
 func (p *upstreamPlugin) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
@@ -280,5 +401,18 @@ func (p *upstreamPlugin) NetworkFilters(ctx context.Context) ([]plugins.StagedNe
 
 // called 1 time (per envoy proxy). replaces GeneratedResources
 func (p *upstreamPlugin) ResourcesToAdd(ctx context.Context) ir.Resources {
-	return ir.Resources{}
+	var additionalClusters []*envoy_config_cluster_v3.Cluster
+
+	if len(p.aiGatewayEnabled) > 0 {
+		aiClusters := ai.GetAIAdditionalResources()
+
+		additionalClusters = append(additionalClusters, aiClusters...)
+	}
+	return ir.Resources{
+		Clusters: additionalClusters,
+	}
+}
+
+func getMultiPoolSecretKey(priorityIdx, poolIdx int, secretName string) string {
+	return fmt.Sprintf("%d-%d-%s", priorityIdx, poolIdx, secretName)
 }

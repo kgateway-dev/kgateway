@@ -9,7 +9,7 @@ import (
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	anypb "google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/proto"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
@@ -25,14 +25,21 @@ type RouteBackendContext struct {
 	FilterChainName string
 	Upstream        *Upstream
 	// todo: make this not public
-	TypedFiledConfig *map[string]*anypb.Any
+	TypedFilterConfig *map[string]proto.Message
 }
 
-func (r *RouteBackendContext) AddTypedConfig(key string, v *anypb.Any) {
-	if *r.TypedFiledConfig == nil {
-		*r.TypedFiledConfig = make(map[string]*anypb.Any)
+func (r *RouteBackendContext) AddTypedConfig(key string, v proto.Message) {
+	if *r.TypedFilterConfig == nil {
+		*r.TypedFilterConfig = make(map[string]proto.Message)
 	}
-	(*r.TypedFiledConfig)[key] = v
+	(*r.TypedFilterConfig)[key] = v
+}
+
+func (r *RouteBackendContext) GetConfig(key string) proto.Message {
+	if *r.TypedFilterConfig == nil {
+		return nil
+	}
+	return (*r.TypedFilterConfig)[key]
 }
 
 type RouteContext struct {
@@ -67,16 +74,25 @@ type ProxyTranslationPass interface {
 		ctx context.Context,
 		pCtx *RouteContext,
 		out *envoy_config_route_v3.Route) error
+	// runs for policy applied
 	ApplyForRouteBackend(
 		ctx context.Context,
 		policy PolicyIR,
 		pCtx *RouteBackendContext,
 	) error
+	// no policy applied
+	ApplyForBackend(
+		ctx context.Context,
+		pCtx *RouteBackendContext,
+		in HttpBackend,
+		out *envoy_config_route_v3.Route,
+	) error
+
 	// called 1 time per listener
 	// if a plugin emits new filters, they must be with a plugin unique name.
 	// any filter returned from route config must be disabled, so it doesnt impact other routes.
 	HttpFilters(ctx context.Context, fc FilterChainCommon) ([]plugins.StagedHttpFilter, error)
-	UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error)
+	UpstreamHttpFilters(ctx context.Context, fc FilterChainCommon) ([]plugins.StagedUpstreamHttpFilter, error)
 
 	NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error)
 	// called 1 time (per envoy proxy). replaces GeneratedResources
@@ -84,7 +100,7 @@ type ProxyTranslationPass interface {
 }
 
 type Resources struct {
-	Clusters []envoy_config_cluster_v3.Cluster
+	Clusters []*envoy_config_cluster_v3.Cluster
 }
 
 type GwTranslationCtx struct {

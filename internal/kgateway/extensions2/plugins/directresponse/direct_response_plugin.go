@@ -53,6 +53,11 @@ func (p *directResponsePluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmC
 	return nil
 }
 
+func (p *directResponsePluginGwPass) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoy_config_route_v3.Route) error {
+	// no op
+	return nil
+}
+
 func registerTypes(ourCli versioned.Interface) {
 	skubeclient.Register[*v1alpha1.DirectResponse](
 		v1alpha1.DirectResponseGVK.GroupVersion().WithResource("directresponses"),
@@ -160,7 +165,7 @@ func (p *directResponsePluginGwPass) HttpFilters(ctx context.Context, fcc ir.Fil
 	return nil, nil
 }
 
-func (p *directResponsePluginGwPass) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {
+func (p *directResponsePluginGwPass) UpstreamHttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedUpstreamHttpFilter, error) {
 	return nil, nil
 }
 

@@ -41,6 +41,11 @@ func (d *listenerPolicy) Equals(in any) bool {
 type listenerPolicyPluginGwPass struct {
 }
 
+func (p *listenerPolicyPluginGwPass) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoy_config_route_v3.Route) error {
+	// no op
+	return nil
+}
+
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionplug.Plugin {
 	col := krtutil.SetupCollectionDynamic[v1alpha1.ListenerPolicy](
 		ctx,
@@ -136,7 +141,7 @@ func (p *listenerPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Fil
 	return nil, nil
 }
 
-func (p *listenerPolicyPluginGwPass) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {
+func (p *listenerPolicyPluginGwPass) UpstreamHttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedUpstreamHttpFilter, error) {
 	return nil, nil
 }
 

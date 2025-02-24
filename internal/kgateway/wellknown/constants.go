@@ -26,3 +26,9 @@ const (
 	SdsClusterName = "gateway_proxy_sds"
 	SdsTargetURI   = "127.0.0.1:8234"
 )
+
+const (
+	TransformationFilterName = "ai.transformation.kgateway.io"
+	AIExtProcFilterName      = "ai.extproc.kgateway.io"
+	SetMetadataFilterName    = "envoy.filters.http.set_filter_state"
+)
