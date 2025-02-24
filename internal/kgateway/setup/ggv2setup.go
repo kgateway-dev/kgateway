@@ -53,7 +53,8 @@ func createKubeClient(restConfig *rest.Config) (istiokube.Client, error) {
 	return client, nil
 }
 
-func StartGGv2(ctx context.Context,
+func StartGGv2(
+	ctx context.Context,
 	extraPlugins []extensionsplug.Plugin,
 	extraGwClasses []string, // TODO: we can remove this and replace with something that watches all GW classes with our controller name
 ) error {
@@ -84,9 +85,10 @@ func GetControlPlaneXdsHost() string {
 	})
 }
 
-func startControlPlane(ctx context.Context,
-	callbacks xdsserver.Callbacks) (envoycache.SnapshotCache, error) {
-
+func startControlPlane(
+	ctx context.Context,
+	callbacks xdsserver.Callbacks,
+) (envoycache.SnapshotCache, error) {
 	return NewControlPlane(ctx, &net.TCPAddr{IP: net.IPv4zero, Port: 9977}, callbacks)
 }
 

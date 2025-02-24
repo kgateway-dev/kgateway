@@ -154,7 +154,6 @@ func MustNewStagedFilter(name string, config proto.Message, stage FilterStage[We
 // Errors if the config is nil or we cannot determine the type of the config.
 // Config type determination may fail if the config is both  unknown and has no fields.
 func NewStagedFilter(name string, config proto.Message, stage FilterStage[WellKnownFilterStage]) (StagedHttpFilter, error) {
-
 	s := StagedHttpFilter{
 		Filter: &envoyhttp.HttpFilter{
 			Name: name,

@@ -54,5 +54,4 @@ func SetExtensionProtocolOptions(out *envoy_config_cluster_v3.Cluster, filterNam
 
 	out.GetTypedExtensionProtocolOptions()[filterName] = protoextAny
 	return nil
-
 }

@@ -514,7 +514,6 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 		virtualHosts     = []*ir.VirtualHost{}
 	)
 	for host, vhostRoutes := range routesByHost {
-
 		// find the parent this host belongs to, and use its policies
 		var attachedPolicies ir.AttachedPolicies
 		maxHostnameLen := -1
@@ -534,7 +533,6 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 		sort.Stable(vhostRoutes)
 		vhostName := makeVhostName(ctx, parentName, host)
 		if !virtualHostNames[vhostName] {
-
 			virtualHostNames[vhostName] = true
 			virtualHost := &ir.VirtualHost{
 				Name:             vhostName,

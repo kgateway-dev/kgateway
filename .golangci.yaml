@@ -23,6 +23,7 @@ linters:
     - unused
     - usestdlibvars
     - importas
+    - whitespace
 
 # Settings dedicated to specific linters.
 linters-settings:

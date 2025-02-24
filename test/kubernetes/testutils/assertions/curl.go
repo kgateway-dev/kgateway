@@ -189,7 +189,6 @@ func (p *Provider) AssertEventualCurlError(
 		} else {
 			fmt.Printf("wanted any curl error, got error: %s\n", err.Error())
 		}
-
 	}).
 		WithTimeout(pollTimeout).
 		WithPolling(pollInterval).

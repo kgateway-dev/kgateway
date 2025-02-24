@@ -565,5 +565,4 @@ func applyFloatingUserId(dstKube *v1alpha1.KubernetesProxyConfig) {
 			securityContext.RunAsUser = nil
 		}
 	}
-
 }

@@ -108,7 +108,6 @@ func TestUniqueClients(t *testing.T) {
 			fetchNames := sets.New[string]()
 
 			for i, r := range tc.requests {
-
 				fetchDR := proto.Clone(r).(*envoy_service_discovery_v3.DiscoveryRequest)
 				err := cb.OnFetchRequest(context.Background(), fetchDR)
 				g.Expect(err).NotTo(HaveOccurred())
@@ -143,8 +142,6 @@ func TestUniqueClients(t *testing.T) {
 					return allUcc
 				}, "1s").Should(HaveLen(len(tc.result)))
 			}
-
 		})
 	}
-
 }

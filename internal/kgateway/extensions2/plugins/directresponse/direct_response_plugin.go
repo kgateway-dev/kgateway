@@ -67,7 +67,6 @@ func registerTypes(ourCli versioned.Interface) {
 }
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionplug.Plugin {
-
 	registerTypes(commoncol.OurClient)
 
 	col := krt.WrapClient(kclient.New[*v1alpha1.DirectResponse](commoncol.Client), commoncol.KrtOpts.ToOptions("DirectResponse")...)
