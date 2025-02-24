@@ -57,9 +57,7 @@ linters-settings:
     max-func-lines: 0
   misspell:
     ignore-words:
-      # This is a placeholder for a word that is not spelled correctly.
-      # Add words to this list as needed.
-    - placeholder
+    - kgateway
 
 issues:
   # Maximum count of issues with the same text.
