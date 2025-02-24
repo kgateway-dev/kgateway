@@ -118,13 +118,13 @@ func (x *callbacksCollection) del(sid int64) *ir.UniqlyConnectedClient {
 	c, ok := x.clients[sid]
 	delete(x.clients, sid)
 	if ok {
-		resouceName := c.uniqueClientName
-		current := x.uniqClientsCount[resouceName]
-		x.uniqClientsCount[resouceName] = current - 1
+		resourceName := c.uniqueClientName
+		current := x.uniqClientsCount[resourceName]
+		x.uniqClientsCount[resourceName] = current - 1
 		if current == 1 {
-			ucc := x.uniqClients[resouceName]
-			delete(x.uniqClientsCount, resouceName)
-			delete(x.uniqClients, resouceName)
+			ucc := x.uniqClients[resourceName]
+			delete(x.uniqClientsCount, resourceName)
+			delete(x.uniqClients, resourceName)
 			return &ucc
 		}
 	}
@@ -136,7 +136,6 @@ func roleFromRequest(r *envoy_service_discovery_v3.DiscoveryRequest) string {
 }
 
 func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.DiscoveryRequest) (string, bool, error) {
-
 	var pod *LocalityPod
 	// see if user wants to use pod locality info
 	usePod := x.augmentedPods != nil
@@ -177,7 +176,6 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 		}
 	}
 	return c.uniqueClientName, addedNew, nil
-
 }
 
 // OnStreamRequest is called once a request is received on a stream.
@@ -236,7 +234,6 @@ func (x *callbacksCollection) getClients() []ir.UniqlyConnectedClient {
 // OnFetchRequest is called for each Fetch request. Returning an error will end processing of the
 // request and respond with an error.
 func (x *callbacks) OnFetchRequest(ctx context.Context, r *envoy_service_discovery_v3.DiscoveryRequest) error {
-
 	role := r.GetNode().GetMetadata().GetFields()[xds.RoleKey].GetStringValue()
 	// as gloo-edge and ggv2 share a control plane, check that this collection only handles ggv2 clients
 	if !xds.IsKubeGatewayCacheKey(role) {

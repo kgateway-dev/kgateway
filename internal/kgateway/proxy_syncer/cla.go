@@ -42,7 +42,7 @@ func NewPerClientEnvoyEndpoints(
 	glooEndpoints krt.Collection[ir.EndpointsForUpstream],
 	translateEndpoints func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, ep ir.EndpointsForUpstream) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64),
 ) PerClientEnvoyEndpoints {
-	clas := krt.NewManyCollection(glooEndpoints, func(kctx krt.HandlerContext, ep ir.EndpointsForUpstream) []UccWithEndpoints {
+	eps := krt.NewManyCollection(glooEndpoints, func(kctx krt.HandlerContext, ep ir.EndpointsForUpstream) []UccWithEndpoints {
 		uccs := krt.Fetch(kctx, uccs)
 		uccWithEndpointsRet := make([]UccWithEndpoints, 0, len(uccs))
 		for _, ucc := range uccs {
@@ -57,12 +57,12 @@ func NewPerClientEnvoyEndpoints(
 		}
 		return uccWithEndpointsRet
 	}, krtopts.ToOptions("PerClientEnvoyEndpoints")...)
-	idx := krt.NewIndex(clas, func(ucc UccWithEndpoints) []string {
+	idx := krt.NewIndex(eps, func(ucc UccWithEndpoints) []string {
 		return []string{ucc.Client.ResourceName()}
 	})
 
 	return PerClientEnvoyEndpoints{
-		endpoints: clas,
+		endpoints: eps,
 		index:     idx,
 	}
 }

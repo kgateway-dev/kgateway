@@ -91,7 +91,6 @@ func (r *HttpResponse) String() string {
 
 	return fmt.Sprintf("HttpResponse{StatusCode: %d, Body: %s, Headers: %v, Custom: %v}",
 		r.StatusCode, bodyString, r.Headers, r.Custom)
-
 }
 
 // HaveHttpResponse returns a GomegaMatcher which validates that an http.Response contains

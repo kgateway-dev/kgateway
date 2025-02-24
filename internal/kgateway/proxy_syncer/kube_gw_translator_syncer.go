@@ -34,5 +34,4 @@ func (s *ProxyTranslator) syncXds(
 	// a default initial fetch timeout
 	// snap.MakeConsistent()
 	s.xdsCache.SetSnapshot(ctx, proxyKey, snap)
-
 }

@@ -255,7 +255,6 @@ func (r *gatewayQueries) fetchChildRoutes(
 	kctx krt.HandlerContext,
 	backend ir.HttpBackendOrDelegate,
 ) ([]ir.HttpRouteIR, error) {
-
 	if backend.Delegate == nil {
 		return nil, nil
 	}

@@ -476,7 +476,6 @@ func (f *fakeSnapshot) GetResources(typ string) map[string]types.Resource {
 		return withoutTTL
 	}
 	panic("unknown resources type" + typ)
-
 }
 
 func (f *fakeSnapshot) GetResourcesAndTTL(typ string) map[string]types.ResourceWithTTL {
