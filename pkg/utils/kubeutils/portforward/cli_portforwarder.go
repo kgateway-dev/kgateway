@@ -71,7 +71,6 @@ func (c *cliPortForwarder) startOnce(ctx context.Context) error {
 	// with this cmd's stdout/err.
 	fwdOut, err := c.cmd.StdoutPipe()
 	if err != nil {
-
 		return err
 	}
 	fwdErr, err := c.cmd.StderrPipe()
