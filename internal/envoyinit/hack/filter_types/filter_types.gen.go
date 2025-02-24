@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//  GENERATED FILE -- DO NOT EDIT
+// PREVIOUSLY WAS A GENERATED FILE -- DO NOT EDIT
 
 package filter_types
 
