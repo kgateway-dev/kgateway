@@ -65,12 +65,16 @@ func StartGGv2(ctx context.Context,
 		return err
 	}
 
+	xdsPort, err := kubeutils.GetXdsServicePort()
+	if err != nil {
+		return err
+	}
 	setupOpts := &controller.SetupOpts{
 		Cache:               cache,
 		KrtDebugger:         new(krt.DebugHandler),
 		ExtraGatewayClasses: extraGwClasses,
 		XdsHost:             GetControlPlaneXdsHost(),
-		XdsPort:             9977,
+		XdsPort:             xdsPort,
 	}
 
 	return StartGGv2WithConfig(ctx, setupOpts, restConfig, uccBuilder, extraPlugins, nil)
@@ -79,7 +83,7 @@ func StartGGv2(ctx context.Context,
 // GetControlPlaneXdsHost gets the xDS address from the gloo Service.
 func GetControlPlaneXdsHost() string {
 	return kubeutils.ServiceFQDN(metav1.ObjectMeta{
-		Name:      kubeutils.GetKgatewayServiceName(),
+		Name:      kubeutils.GetXdsServiceName(),
 		Namespace: namespaces.GetPodNamespace(),
 	})
 }

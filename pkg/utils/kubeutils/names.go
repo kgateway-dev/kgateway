@@ -2,31 +2,34 @@ package kubeutils
 
 import (
 	"os"
+	"strconv"
 )
 
 const (
-	// default names for the control plane deployment and service; these can be overridden via helm values
-	defaultKgatewayDeploymentName = "kgateway"
-	defaultKgatewayServiceName    = "kgateway"
-
-	// container within the kgateway pod; its name is currently hardcoded
-	KgatewayContainerName = "kgateway"
-
-	// xdsPortName is the name of the port in the kgateway control plane Kubernetes Service that serves xDS config.
-	// See: install/helm/kgateway/templates/service.yaml
-	xdsPortName = "grpc-xds"
+	// The default name of the Kubernetes Service that serves xDS config. This corresponds to the Service name
+	// in install/helm/kgateway/templates/service.yaml
+	defaultXdsServiceName = "kgateway"
+	// The default port of the Kubernetes Service that serves xDS config. This corresponds to the number of the
+	// grpc-xds port in install/helm/kgateway/templates/service.yaml
+	defaultXdsServicePort = 9977
 )
 
-// GetKgatewayDeploymentName gets the control plane deployment name.
-// Note that this is currently the same as the Service name.
-func GetKgatewayDeploymentName() string {
-	return GetKgatewayServiceName()
-}
-
-// GetKgatewayServiceName gets the control plane service name.
-func GetKgatewayServiceName() string {
-	if name := os.Getenv("SERVICE_NAME"); name != "" {
+// GetXdsServiceName returns the name of the Kubernetes Service that serves xDS config.
+func GetXdsServiceName() string {
+	if name := os.Getenv("XDS_SERVICE_NAME"); name != "" {
 		return name
 	}
-	return defaultKgatewayServiceName
+	return defaultXdsServiceName
+}
+
+// GetXdsServicePort returns the port of the Kubernetes Service that serves xDS config.
+func GetXdsServicePort() (uint32, error) {
+	if portStr := os.Getenv("XDS_SERVICE_PORT"); portStr != "" {
+		port, err := strconv.Atoi(portStr)
+		if err != nil {
+			return 0, err
+		}
+		return uint32(port), nil
+	}
+	return defaultXdsServicePort, nil
 }
