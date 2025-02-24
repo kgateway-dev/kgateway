@@ -31,7 +31,6 @@ var _ runtime.Unstructured = &ObjList[corev1.Namespace, *corev1.Namespace]{}
 
 func (t *ObjList[T, PT]) GetObjectKind() schema.ObjectKind {
 	return t
-
 }
 func (t *ObjList[T, PT]) NewEmptyInstance() runtime.Unstructured {
 	return &ObjList[T, PT]{}

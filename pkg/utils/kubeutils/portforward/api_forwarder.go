@@ -203,7 +203,6 @@ func (f *apiPortForwarder) getPodName(ctx context.Context) (string, error) {
 // Fetch ClientConfig. If kubeConfigPath is not specified, retrieve the kubeconfig from environment in which this is invoked.
 // Override the API Server URL and current context if specified.
 func GetClientConfigWithContext(kubeConfigPath, kubeContext, apiServerUrl string) (clientcmd.ClientConfig, error) {
-
 	// default loading rules checks for KUBECONFIG env var
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	// also check recommended default kubeconfig file locations

@@ -107,7 +107,6 @@ func TestUniqueClients(t *testing.T) {
 			fetchNames := sets.New[string]()
 
 			for i, r := range tc.requests {
-
 				fetchDR := proto.Clone(r).(*envoy_service_discovery_v3.DiscoveryRequest)
 				err := cb.OnFetchRequest(context.Background(), fetchDR)
 				g.Expect(err).NotTo(HaveOccurred())
@@ -134,8 +133,6 @@ func TestUniqueClients(t *testing.T) {
 				// make sure client removed only when all similar clients are removed.
 				g.Expect(ucc.List()).To(HaveLen(len(allUcc) - 1 - i))
 			}
-
 		})
 	}
-
 }
