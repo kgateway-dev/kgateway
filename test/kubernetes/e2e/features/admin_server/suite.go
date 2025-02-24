@@ -44,7 +44,7 @@ func (s *testingSuite) TestGetInputSnapshotIncludesSettings() {
 	s.testInstallation.Assertions.AssertGlooAdminApi(
 		s.ctx,
 		metav1.ObjectMeta{
-			Name:      kubeutils.KgatewayDeploymentName,
+			Name:      kubeutils.GetKgatewayDeploymentName(),
 			Namespace: s.testInstallation.Metadata.InstallNamespace,
 		},
 		s.testInstallation.Assertions.InputSnapshotContainsElement(v1.SettingsGVK, metav1.ObjectMeta{
@@ -68,7 +68,7 @@ func (s *testingSuite) TestGetInputSnapshotIncludesEdgeApiResources() {
 	s.testInstallation.Assertions.AssertGlooAdminApi(
 		s.ctx,
 		metav1.ObjectMeta{
-			Name:      kubeutils.KgatewayDeploymentName,
+			Name:      kubeutils.GetKgatewayDeploymentName(),
 			Namespace: s.testInstallation.Metadata.InstallNamespace,
 		},
 		s.testInstallation.Assertions.InputSnapshotContainsElement(v1.UpstreamGVK, upstreamMeta),
@@ -89,7 +89,7 @@ func (s *testingSuite) TestGetInputSnapshotIncludesK8sGatewayApiResources() {
 	s.testInstallation.Assertions.AssertGlooAdminApi(
 		s.ctx,
 		metav1.ObjectMeta{
-			Name:      kubeutils.KgatewayDeploymentName,
+			Name:      kubeutils.GetKgatewayDeploymentName(),
 			Namespace: s.testInstallation.Metadata.InstallNamespace,
 		},
 		s.testInstallation.Assertions.InputSnapshotContainsElement(v1alpha1.GatewayParametersGVK, gatewayParametersMeta),

@@ -122,7 +122,7 @@ var _ = Describe("Setup Syncer", func() {
 
 		It("restarts validation grpc server when settings change", func() {
 			portForwarder, err := testHelper.StartPortForward(ctx,
-				portforward.WithDeployment(kubeutils.KgatewayDeploymentName, testHelper.InstallNamespace),
+				portforward.WithDeployment(kubeutils.GetKgatewayDeploymentName(), testHelper.InstallNamespace),
 				portforward.WithRemotePort(defaults.GlooValidationPort),
 			)
 			Expect(err).NotTo(HaveOccurred())

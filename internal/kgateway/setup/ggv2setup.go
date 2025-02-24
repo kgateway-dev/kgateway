@@ -79,7 +79,7 @@ func StartGGv2(ctx context.Context,
 // GetControlPlaneXdsHost gets the xDS address from the gloo Service.
 func GetControlPlaneXdsHost() string {
 	return kubeutils.ServiceFQDN(metav1.ObjectMeta{
-		Name:      kubeutils.KgatewayServiceName,
+		Name:      kubeutils.GetKgatewayServiceName(),
 		Namespace: namespaces.GetPodNamespace(),
 	})
 }

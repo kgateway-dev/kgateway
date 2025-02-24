@@ -58,6 +58,10 @@ spec:
                   resource: limits.cpu
             - name: LOG_LEVEL
               value: {{ .Values.controller.logLevel | quote }}
+            - name: SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
             # TODO: Remove this once the cleanup is done. Required as the gloo-system
             # namespace is the default namespace and conformance will fail as a result.
             - name: POD_NAMESPACE

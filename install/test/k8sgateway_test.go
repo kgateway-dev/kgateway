@@ -46,7 +46,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 			})
 
 			It("relevant resources are rendered", func() {
-				deployment := getDeployment(testManifest, namespace, kubeutils.KgatewayDeploymentName)
+				deployment := getDeployment(testManifest, namespace, kubeutils.GetKgatewayDeploymentName())
 				Expect(deployment.Spec.Template.Spec.Containers).To(HaveLen(1), "should have exactly 1 container")
 
 				// make sure the GatewayClass and RBAC resources exist (note, since they are all cluster-scoped, they do not have a namespace)
@@ -487,7 +487,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 			})
 
 			It("relevant resources are not rendered", func() {
-				deployment := getDeployment(testManifest, namespace, kubeutils.KgatewayDeploymentName)
+				deployment := getDeployment(testManifest, namespace, kubeutils.GetKgatewayDeploymentName())
 				Expect(deployment.Spec.Template.Spec.Containers).To(HaveLen(1), "should have exactly 1 container")
 
 				// the RBAC resources should not be rendered
