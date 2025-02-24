@@ -9,6 +9,8 @@ Expand the name of the chart.
 Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
+
+TODO: consider whether this name should be applied to the service / deployment / HPA (https://github.com/kgateway-dev/kgateway/issues/10658)
 */}}
 {{- define "kgateway.fullname" -}}
 {{- if .Values.fullnameOverride }}
