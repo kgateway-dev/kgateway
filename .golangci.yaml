@@ -56,7 +56,6 @@ linters-settings:
     #     return b, a
     max-func-lines: 0
   misspell:
-    locale: US
     ignore-words:
       # This is a placeholder for a word that is not spelled correctly.
       # Add words to this list as needed.
