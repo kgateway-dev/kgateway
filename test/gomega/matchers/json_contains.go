@@ -22,7 +22,7 @@ func JSONContains(expectedJSON any) gomega.OmegaMatcher {
 	var expected map[string]any
 	err := json.Unmarshal(expectedBytes, &expected)
 	if err != nil {
-		return gomega.BeFalseBecause(err.Error())
+		return gomega.BeFalseBecause("%s", err.Error())
 	}
 
 	matchers = append(matchers, ContainsDeepMapElements(expected))
