@@ -39,7 +39,6 @@ func lisToIr(l gwv1.Listener) ir.Listener {
 }
 
 func tcpToIr(tcpRoute *gwv1a2.TCPRoute) *ir.TcpRouteIR {
-
 	routeir := &ir.TcpRouteIR{
 		ObjectSource: ir.ObjectSource{
 			Namespace: tcpRoute.Namespace,

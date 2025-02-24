@@ -53,7 +53,6 @@ func FromEnvoyResources(resources *EnvoyResources) (string, error) {
 // per-filter config matching the arguments, marshals it to json, and returns
 // the stringified json or any error if it occurred.
 func FromFilter(filterName string, msg proto.Message) (string, error) {
-
 	typedFilter, err := anypb.New(msg)
 	if err != nil {
 		return "", err
@@ -119,7 +118,6 @@ func FromSnapshot(
 	ctx context.Context,
 	snap envoycache.ResourceSnapshot,
 ) (string, error) {
-
 	// Get the resources we're going to need as concrete types.
 	resources, err := resourcesFromSnapshot(snap)
 	if err != nil {

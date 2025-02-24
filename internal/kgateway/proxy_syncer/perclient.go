@@ -20,7 +20,6 @@ func snapshotPerClient(
 	endpoints PerClientEnvoyEndpoints,
 	clusters PerClientEnvoyClusters,
 ) krt.Collection[XdsSnapWrapper] {
-
 	xdsSnapshotsForUcc := krt.NewCollection(uccCol, func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient) *XdsSnapWrapper {
 		maybeMostlySnap := krt.FetchOne(kctx, mostXdsSnapshots, krt.FilterKey(ucc.Role))
 		if maybeMostlySnap == nil {

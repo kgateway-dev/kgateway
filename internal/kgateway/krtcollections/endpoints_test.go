@@ -277,7 +277,6 @@ func TestEndpointsForUpstreamWithDifferentNameButSameEndpoints(t *testing.T) {
 }
 
 func TestEndpoints(t *testing.T) {
-
 	logger := zaptest.Logger(t)
 	contextutils.SetFallbackLogger(logger.Sugar())
 

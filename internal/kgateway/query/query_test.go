@@ -725,7 +725,6 @@ func newQueries(initObjs ...client.Object) query.GatewayQueries {
 		time.Sleep(time.Second / 10)
 	}
 	return query.NewData(rtidx, secrets, nsCol)
-
 }
 
 func k8sUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir.Upstream] {

@@ -102,7 +102,6 @@ func sliceToResourcesHash[T proto.Message](slice []T) ([]envoycachetypes.Resourc
 func sliceToResources[T proto.Message](slice []T) envoycache.Resources {
 	r, h := sliceToResourcesHash(slice)
 	return envoycache.NewResourcesWithTTL(fmt.Sprintf("%d", h), r)
-
 }
 
 func toResources(gw ir.Gateway, xdsSnap irtranslator.TranslationResult, r reports.ReportMap) *GatewayXdsResources {

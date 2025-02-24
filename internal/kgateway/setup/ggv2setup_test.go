@@ -216,7 +216,6 @@ func TestScenarios(t *testing.T) {
 				// once we change it to only include the ones in the proxy, we can re-enable this
 				//				t.Parallel()
 				testScenario(t, ctx, setupOpts.KrtDebugger, client, xdsPort, fullpath)
-
 			})
 		}
 	}
@@ -374,7 +373,6 @@ func newXdsDumper(t *testing.T, ctx context.Context, xdsPort int, gwname string)
 }
 
 func (x xdsDumper) Dump(t *testing.T, ctx context.Context) xdsDump {
-
 	dr := proto.Clone(x.dr).(*discovery_v3.DiscoveryRequest)
 	dr.TypeUrl = "type.googleapis.com/envoy.config.cluster.v3.Cluster"
 	x.adsClient.Send(dr)
@@ -398,7 +396,6 @@ func (x xdsDumper) Dump(t *testing.T, ctx context.Context) xdsDump {
 			t.Logf("got response: %s len: %d", dresp.GetTypeUrl(), len(dresp.GetResources()))
 			if dresp.GetTypeUrl() == "type.googleapis.com/envoy.config.cluster.v3.Cluster" {
 				for _, anyCluster := range dresp.GetResources() {
-
 					var cluster envoycluster.Cluster
 					if err := anyCluster.UnmarshalTo(&cluster); err != nil {
 						t.Errorf("failed to unmarshal cluster: %v", err)
@@ -616,7 +613,6 @@ func (x *xdsDump) Compare(t *testing.T, other xdsDump) {
 		}
 		c.Endpoints = ce
 		otherc.Endpoints = ocd
-
 	}
 }
 

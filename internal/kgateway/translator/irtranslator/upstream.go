@@ -73,7 +73,6 @@ func (t *UpstreamTranslator) runPlugins(kctx krt.HandlerContext, ctx context.Con
 }
 
 func initializeCluster(u ir.Upstream) *envoy_config_cluster_v3.Cluster {
-
 	// circuitBreakers := t.settings.GetGloo().GetCircuitBreakers()
 	out := &envoy_config_cluster_v3.Cluster{
 		Name:     u.ClusterName(),
