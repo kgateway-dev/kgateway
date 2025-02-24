@@ -199,6 +199,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: value
       type:
         scalar: numeric
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.EndpointPickerExtension
+  map:
+    fields:
+    - name: enabled
+      type:
+        scalar: boolean
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.EnvoyBootstrap
   map:
     fields:
@@ -429,6 +435,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: tag
       type:
         scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.InferenceExtension
+  map:
+    fields:
+    - name: endpointPicker
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.EndpointPickerExtension
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.IstioContainer
   map:
     fields:
@@ -480,6 +492,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: floatingUserId
       type:
         scalar: boolean
+    - name: inferenceExtension
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.InferenceExtension
     - name: istio
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.IstioIntegration

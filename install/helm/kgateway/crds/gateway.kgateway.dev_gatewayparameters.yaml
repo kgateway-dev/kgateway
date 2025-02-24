@@ -406,6 +406,14 @@ spec:
                     type: object
                   floatingUserId:
                     type: boolean
+                  inferenceExtension:
+                    properties:
+                      endpointPicker:
+                        properties:
+                          enabled:
+                            type: boolean
+                        type: object
+                    type: object
                   istio:
                     properties:
                       customSidecars:
