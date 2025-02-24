@@ -192,7 +192,7 @@ func (c *TestContext) SetRunServices(services services.What) {
 }
 
 // Ctx returns the Context maintained by the TestContext
-// The Context is cancelled during the AfterEach portion of tests
+// The Context is canceled during the AfterEach portion of tests
 func (c *TestContext) Ctx() context.Context {
 	return c.ctx
 }
@@ -332,7 +332,7 @@ func (v *TestContextWithVault) VaultInstance() *services.VaultInstance {
 func (v *TestContextWithVault) RunVault() {
 	ginkgo.By("TestContextWithVault: Running Vault")
 
-	// The VaultInstance will be cleaned up when the provided context is cancelled
+	// The VaultInstance will be cleaned up when the provided context is canceled
 	// By running Vault with the TestContext.Ctxt, we can be sure that when the TestContext
 	// completes, Vault will be cleaned up
 	err := v.VaultInstance().Run(v.Ctx())
@@ -357,7 +357,7 @@ func (c *TestContextWithConsul) ConsulInstance() *services.ConsulInstance {
 func (c *TestContextWithConsul) RunConsul() {
 	ginkgo.By("TestContextWithConsul: Running Consul")
 
-	// The ConsulInstance will be cleaned up when the provided context is cancelled
+	// The ConsulInstance will be cleaned up when the provided context is canceled
 	// By running Consul with the TestContext.Ctxt, we can be sure that when the TestContext
 	// completes, Consul will be cleaned up
 	err := c.ConsulInstance().Run(c.Ctx())

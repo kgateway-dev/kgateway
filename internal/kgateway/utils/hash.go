@@ -26,7 +26,7 @@ func HashProtoWithHasher(hasher hash.Hash, resource proto.Message) {
 	out, err := mo.MarshalAppend(buf, resource)
 	if err != nil {
 		//if e.logger != nil {
-		//	e.logger.DPanic("marshalling envoy snapshot components", zap.Error(err))
+		//	e.logger.DPanic("marshaling envoy snapshot components", zap.Error(err))
 		//}
 	}
 	_, err = hasher.Write(out)

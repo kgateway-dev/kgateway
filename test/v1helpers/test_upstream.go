@@ -161,7 +161,7 @@ func NewTestGRPCUpstream(ctx context.Context, addr string, replicas int) *TestUp
 			for {
 				select {
 				case <-serveCtx.Done():
-					// context was cancelled, stop handling requests
+					// context was canceled, stop handling requests
 					return
 				case r := <-srv.C:
 					received <- &ReceivedRequest{GRPCRequest: r, Port: srv.Port}

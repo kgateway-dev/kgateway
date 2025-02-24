@@ -75,7 +75,7 @@ type StartConfig struct {
 
 // Start runs the controllers responsible for processing the K8s Gateway API objects
 // It is intended to be run in a goroutine as the function will block until the supplied
-// context is cancelled
+// context is canceled
 type ControllerBuilder struct {
 	proxySyncer *proxy_syncer.ProxySyncer
 	cfg         StartConfig
