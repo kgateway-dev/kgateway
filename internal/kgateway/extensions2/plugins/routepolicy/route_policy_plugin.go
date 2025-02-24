@@ -12,9 +12,13 @@ import (
 	http_set_filter_state_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/set_filter_state/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytransformation "github.com/solo-io/envoy-gloo/go/config/filter/http/transformation/v2"
+	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -27,8 +31,9 @@ import (
 )
 
 type routePolicy struct {
-	ct   time.Time
-	spec v1alpha1.RoutePolicySpec
+	ct       time.Time
+	spec     v1alpha1.RoutePolicySpec
+	AISecret *ir.Secret
 }
 
 func (d *routePolicy) CreationTime() time.Time {
@@ -60,6 +65,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		commoncol.KrtOpts.ToOptions("RoutePolicy")...,
 	)
 	gk := v1alpha1.RoutePolicyGVK.GroupKind()
+	translate := buildTranslateFunc(ctx, commoncol.Secrets)
 	// RoutePolicy IR will have TypedConfig -> implement backendroute method to add prompt guard, etc.
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy) *ir.PolicyWrapper {
 		var pol = &ir.PolicyWrapper{
@@ -70,7 +76,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				Name:      policyCR.Name,
 			},
 			Policy:     policyCR,
-			PolicyIR:   &routePolicy{ct: policyCR.CreationTimestamp.Time, spec: policyCR.Spec},
+			PolicyIR:   translate(krtctx, policyCR),
 			TargetRefs: convert(policyCR.Spec.TargetRef),
 		}
 		return pol
@@ -141,7 +147,7 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend(
 	pCtx *ir.RouteBackendContext,
 ) error {
 	extprocSettingsProto := pCtx.GetConfig(wellknown.AIExtProcFilterName)
-	if extprocSettingsProto != nil {
+	if extprocSettingsProto == nil {
 		return nil
 	}
 	extprocSettings, ok := extprocSettingsProto.(*envoy_ext_proc_v3.ExtProcPerRoute)
@@ -151,7 +157,7 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend(
 	}
 
 	transformationProto := pCtx.GetConfig(wellknown.TransformationFilterName)
-	if transformationProto != nil {
+	if transformationProto == nil {
 		return nil
 	}
 	transformations, ok := transformationProto.(*envoytransformation.RouteTransformations)
@@ -161,7 +167,7 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend(
 		return nil
 	}
 
-	err := p.processAIRoutePolicy(ctx, rtPolicy.spec.AI, pCtx, extprocSettings, transformations)
+	err := p.processAIRoutePolicy(ctx, rtPolicy.spec.AI, pCtx, extprocSettings, transformations, rtPolicy.AISecret)
 	if err != nil {
 		// TODO: report error on status
 		return err
@@ -225,4 +231,31 @@ func (p *routePolicyPluginGwPass) NetworkFilters(ctx context.Context) ([]plugins
 // called 1 time (per envoy proxy). replaces GeneratedResources
 func (p *routePolicyPluginGwPass) ResourcesToAdd(ctx context.Context) ir.Resources {
 	return ir.Resources{}
+}
+
+func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex) func(krtctx krt.HandlerContext, i *v1alpha1.RoutePolicy) *routePolicy {
+	return func(krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy) *routePolicy {
+		policyIr := routePolicy{ct: policyCR.CreationTimestamp.Time, spec: policyCR.Spec}
+
+		// Check for the presence of the OpenAI Moderation which may require a secret reference
+		if policyCR.Spec.AI == nil || policyCR.Spec.AI.PromptGuard == nil || policyCR.Spec.AI.PromptGuard.Request.Moderation == nil {
+			return &policyIr
+		}
+
+		secretRef := policyCR.Spec.AI.PromptGuard.Request.Moderation.OpenAIModeration.AuthToken.SecretRef
+		if secretRef == nil {
+			// no secret ref is set
+			return &policyIr
+		}
+
+		// Retrieve and assign the secret
+		secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, policyCR.GetNamespace())
+		if err != nil {
+			contextutils.LoggerFrom(ctx).Error(err)
+			return &policyIr
+		}
+
+		policyIr.AISecret = secret
+		return &policyIr
+	}
 }

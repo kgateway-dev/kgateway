@@ -2,12 +2,10 @@ package ai
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"maps"
 	"slices"
 	"strings"
-	"unicode/utf8"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -19,6 +17,8 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	aiutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
@@ -244,7 +244,7 @@ func buildTsm(tlsContext *envoy_tls_v3.UpstreamTlsContext) (*envoy_config_cluste
 }
 
 func buildOpenAIEndpoint(data *v1alpha1.OpenAIConfig, aiSecrets *ir.Secret) (*envoy_config_endpoint_v3.LbEndpoint, *envoy_tls_v3.UpstreamTlsContext, error) {
-	token, err := getAuthToken(data.AuthToken, aiSecrets)
+	token, err := aiutils.GetAuthToken(data.AuthToken, aiSecrets)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -261,7 +261,7 @@ func buildOpenAIEndpoint(data *v1alpha1.OpenAIConfig, aiSecrets *ir.Secret) (*en
 	return ep, host, nil
 }
 func buildAnthropicEndpoint(data *v1alpha1.AnthropicConfig, aiSecrets *ir.Secret) (*envoy_config_endpoint_v3.LbEndpoint, *envoy_tls_v3.UpstreamTlsContext, error) {
-	token, err := getAuthToken(data.AuthToken, aiSecrets)
+	token, err := aiutils.GetAuthToken(data.AuthToken, aiSecrets)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -278,7 +278,7 @@ func buildAnthropicEndpoint(data *v1alpha1.AnthropicConfig, aiSecrets *ir.Secret
 	return ep, host, nil
 }
 func buildAzureOpenAIEndpoint(data *v1alpha1.AzureOpenAIConfig, aiSecrets *ir.Secret) (*envoy_config_endpoint_v3.LbEndpoint, *envoy_tls_v3.UpstreamTlsContext, error) {
-	token, err := getAuthToken(data.AuthToken, aiSecrets)
+	token, err := aiutils.GetAuthToken(data.AuthToken, aiSecrets)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -291,7 +291,7 @@ func buildAzureOpenAIEndpoint(data *v1alpha1.AzureOpenAIConfig, aiSecrets *ir.Se
 	return ep, host, nil
 }
 func buildGeminiEndpoint(data *v1alpha1.GeminiConfig, aiSecrets *ir.Secret) (*envoy_config_endpoint_v3.LbEndpoint, *envoy_tls_v3.UpstreamTlsContext, error) {
-	token, err := getAuthToken(data.AuthToken, aiSecrets)
+	token, err := aiutils.GetAuthToken(data.AuthToken, aiSecrets)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -304,7 +304,7 @@ func buildGeminiEndpoint(data *v1alpha1.GeminiConfig, aiSecrets *ir.Secret) (*en
 	return ep, host, nil
 }
 func buildVertexAIEndpoint(ctx context.Context, data *v1alpha1.VertexAIConfig, aiSecrets *ir.Secret) (*envoy_config_endpoint_v3.LbEndpoint, *envoy_tls_v3.UpstreamTlsContext, error) {
-	token, err := getAuthToken(data.AuthToken, aiSecrets)
+	token, err := aiutils.GetAuthToken(data.AuthToken, aiSecrets)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -372,22 +372,6 @@ func buildLocalityLbEndpoint(
 		},
 	}, tlsContext
 }
-func getAuthToken(in v1alpha1.SingleAuthToken, aiSecrets *ir.Secret) (token string, err error) {
-	switch in.Kind {
-	case v1alpha1.Inline:
-		if in.Inline == nil {
-			return "", errors.New("inline auth token must be set if kind is type Inline.")
-		}
-		token = *in.Inline
-	case v1alpha1.SecretRef:
-		secret, err := deriveHeaderSecret(aiSecrets)
-		if err != nil {
-			return "", err
-		}
-		token = getTokenFromHeaderSecret(secret)
-	}
-	return token, err
-}
 
 // `buildEndpointMeta` builds the metadata for the endpoint.
 // This metadata is used by the post routing transformation filter to modify the request body.
@@ -408,37 +392,6 @@ func buildEndpointMeta(token, model string, additionalFields map[string]string) 
 			},
 		},
 	}
-}
-
-const (
-	AuthKey = "Authorization"
-)
-
-type headerSecretDerivation struct {
-	authorization string
-}
-
-// deriveHeaderSecret from ingest if we are using a kubernetes secretref
-// Named returns with the derived string contents or an error due to retrieval or format.
-func deriveHeaderSecret(aiSecrets *ir.Secret) (headerSecretDerivation, error) {
-	var errs []error
-	derived := headerSecretDerivation{
-		authorization: string(aiSecrets.Data[AuthKey]),
-	}
-	if derived.authorization == "" || !utf8.Valid([]byte(derived.authorization)) {
-		// err is nil here but this is still safe
-		errs = append(errs, errors.New("access_key is not a valid string"))
-	}
-	return derived, errors.Join(errs...)
-}
-
-// `getTokenFromHeaderSecret` retrieves the auth token from the secret reference.
-// Currently, this function will return an error if there are more than one header in the secret
-// as we do not know which one to select.
-// In addition, this function will strip the "Bearer " prefix from the token as it will get conditionally
-// added later depending on the provider.
-func getTokenFromHeaderSecret(secret headerSecretDerivation) string {
-	return strings.TrimPrefix(secret.authorization, "Bearer ")
 }
 
 func createTransformationTemplate(ctx context.Context, aiUpstream *v1alpha1.AIUpstream) *envoytransformation.TransformationTemplate {

@@ -294,22 +294,22 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 			TypedFilterConfig: &typedPerFilterConfig,
 		}
 
-		err := h.runBackendPolicies(
+		// non attached policy translation
+		err := h.runBackend(
 			ctx,
 			backend,
 			&pCtx,
+			outRoute,
 		)
 		if err != nil {
 			// TODO: error on status
 			contextutils.LoggerFrom(ctx).Error(err)
 		}
 
-		// non attached policy translation
-		err = h.runBackend(
+		err = h.runBackendPolicies(
 			ctx,
 			backend,
 			&pCtx,
-			outRoute,
 		)
 		if err != nil {
 			// TODO: error on status

@@ -8,12 +8,13 @@ import (
 	"time"
 
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
-	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/upstream/ai"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
@@ -27,7 +28,6 @@ import (
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -179,7 +179,7 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 		var upstreamIr UpstreamIr
 		if i.Spec.Aws != nil {
 			ns := i.GetNamespace()
-			secret, err := getSecretIr(secrets, krtctx, i.Spec.Aws.SecretRef.Name, ns)
+			secret, err := pluginutils.GetSecretIr(secrets, krtctx, i.Spec.Aws.SecretRef.Name, ns)
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Error(err)
 			}
@@ -191,7 +191,7 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 				secretRef := getAISecretRef(i.Spec.AI.LLM)
 				// if secretRef is used, set the secret on the upstream ir
 				if secretRef != nil {
-					secret, err := getSecretIr(secrets, krtctx, secretRef.Name, ns)
+					secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, ns)
 					if err != nil {
 						contextutils.LoggerFrom(ctx).Error(err)
 					}
@@ -204,7 +204,7 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 						secretRef := getAISecretRef(&pool)
 						// if secretRef is used, set the secret on the upstream ir
 						if secretRef != nil {
-							secret, err := getSecretIr(secrets, krtctx, secretRef.Name, ns)
+							secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, ns)
 							if err != nil {
 								contextutils.LoggerFrom(ctx).Error(err)
 							}
@@ -410,18 +410,6 @@ func (p *upstreamPlugin) ResourcesToAdd(ctx context.Context) ir.Resources {
 	}
 	return ir.Resources{
 		Clusters: additionalClusters,
-	}
-}
-
-func getSecretIr(secrets *krtcollections.SecretIndex, krtctx krt.HandlerContext, secretName, ns string) (*ir.Secret, error) {
-	secretRef := gwv1.SecretObjectReference{
-		Name: gwv1.ObjectName(secretName),
-	}
-	secret, err := secrets.GetSecret(krtctx, krtcollections.From{GroupKind: v1alpha1.UpstreamGVK.GroupKind(), Namespace: ns}, secretRef)
-	if secret != nil {
-		return secret, nil
-	} else {
-		return nil, eris.Wrapf(err, fmt.Sprintf("unable to find the secret %s", secretRef.Name))
 	}
 }
 
