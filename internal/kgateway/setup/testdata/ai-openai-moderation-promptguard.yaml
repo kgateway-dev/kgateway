@@ -22,23 +22,6 @@ type: Opaque
 data:
   Authorization: bXlzZWNyZXRrZXk=
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Upstream
-metadata:
-  labels:
-    app: kgateway
-  name: openai
-  namespace: gwtest
-spec:
-  ai:
-    llm:
-      provider:
-        openai:
-          authToken:
-            kind: "SecretRef"
-            secretRef:
-              name: openai-secret
----
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
@@ -84,3 +67,20 @@ spec:
               kind: "SecretRef"
               secretRef:
                 name: openai-secret
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Upstream
+metadata:
+  labels:
+    app: kgateway
+  name: openai
+  namespace: gwtest
+spec:
+  ai:
+    llm:
+      provider:
+        openai:
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: openai-secret

@@ -195,6 +195,10 @@ routes:
               value: openai
             - key: x-request-id
               value: '%REQ(X-REQUEST-ID)%'
+            - key: x-req-guardrails-config
+              value: '{"moderation":{"openAIModeration":{"authToken":{"kind":"","inline":"mysecretkey"}}}}'
+            - key: x-req-guardrails-config-hash
+              value: "7996329749952833575"
         ai.transformation.kgateway.io:
           '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
           transformations:
@@ -215,3 +219,13 @@ routes:
                         tmpl:
                           text: '{% if host_metadata("model") != "" %}"{{host_metadata("model")}}"{%
                             else %}"{{model}}"{% endif %}'
+          - requestMatch:
+              requestTransformation:
+                logRequestResponseInfo: false
+                transformationTemplate:
+                  mergeJsonKeys:
+                    jsonKeys:
+                      messages:
+                        tmpl:
+                          text: '[{{ join(messages, ", ") }},{"content":"Make sure
+                            the tone is friendly and professional.","role":"system"}]'

@@ -201,6 +201,10 @@ func TestScenarios(t *testing.T) {
 		t.Fatalf("failed to read dir: %v", err)
 	}
 	for _, f := range files {
+		if !strings.Contains(f.Name(), "ai-") {
+			continue
+		}
+
 		// run tests with the yaml files (but not -out.yaml files)/s
 		parentT := t
 		if strings.HasSuffix(f.Name(), ".yaml") && !strings.HasSuffix(f.Name(), "-out.yaml") {

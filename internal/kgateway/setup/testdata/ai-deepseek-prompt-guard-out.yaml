@@ -193,6 +193,16 @@ routes:
               value: openai
             - key: x-request-id
               value: '%REQ(X-REQUEST-ID)%'
+            - key: x-req-guardrails-config
+              value: '{"customResponse":{"message":"Rejected due to inappropriate
+                content","statusCode":400},"regex":{"matches":[{"pattern":"credit
+                card"}],"action":"MASK"}}'
+            - key: x-req-guardrails-config-hash
+              value: "10507036172039765021"
+            - key: x-resp-guardrails-config
+              value: '{"regex":{"builtins":["PHONE_NUMBER","EMAIL","SSN","CREDIT_CARD"],"action":"MASK"}}'
+            - key: x-resp-guardrails-config-hash
+              value: "15744476576820868899"
         ai.transformation.kgateway.io:
           '@type': type.googleapis.com/envoy.api.v2.filter.http.RouteTransformations
           transformations:
@@ -213,3 +223,14 @@ routes:
                         tmpl:
                           text: '{% if host_metadata("model") != "" %}"{{host_metadata("model")}}"{%
                             else %}"{{model}}"{% endif %}'
+          - requestMatch:
+              requestTransformation:
+                logRequestResponseInfo: false
+                transformationTemplate:
+                  mergeJsonKeys:
+                    jsonKeys:
+                      messages:
+                        tmpl:
+                          text: '[{"content":"respond to all questions in French","role":"system"},{"content":"Say
+                            hello before each response","role":"system"},{{ join(messages,
+                            ", ") }}]'

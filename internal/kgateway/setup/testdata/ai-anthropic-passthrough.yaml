@@ -13,21 +13,6 @@ spec:
         namespaces:
           from: All
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Upstream
-metadata:
-  labels:
-    app: kgateway
-  name: anthropic
-  namespace: gwtest
-spec:
-  ai:
-    llm:
-      provider:
-        anthropic:
-          authToken:
-            kind: "Passthrough"
----
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
@@ -64,3 +49,18 @@ spec:
     defaults:
     - field: "temperature"
       value: "0.5"
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Upstream
+metadata:
+  labels:
+    app: kgateway
+  name: anthropic
+  namespace: gwtest
+spec:
+  ai:
+    llm:
+      provider:
+        anthropic:
+          authToken:
+            kind: "Passthrough"
