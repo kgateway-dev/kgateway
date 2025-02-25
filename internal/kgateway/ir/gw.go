@@ -9,8 +9,8 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-type UpstreamInit struct {
-	InitUpstream func(ctx context.Context, in BackendObjectIR, out *envoy_config_cluster_v3.Cluster)
+type BackendInit struct {
+	InitBackend func(ctx context.Context, in BackendObjectIR, out *envoy_config_cluster_v3.Cluster)
 }
 
 type PolicyTargetRef struct {

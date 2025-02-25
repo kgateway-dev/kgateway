@@ -696,8 +696,8 @@ func newQueries(initObjs ...client.Object) query.GatewayQueries {
 	refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*apiv1beta1.ReferenceGrant](mock))
 
 	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, extensionsplug.ContributesPolicies{})
-	upstreams := krtcollections.NewUpstreamIndex(krtutil.KrtOptions{}, nil, policies, refgrants)
-	upstreams.AddUpstreams(SvcGk, k8sUpstreams(services))
+	upstreams := krtcollections.NewBackendIndex(krtutil.KrtOptions{}, nil, policies, refgrants)
+	upstreams.AddBackends(SvcGk, k8sUpstreams(services))
 
 	httproutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)

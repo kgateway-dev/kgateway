@@ -69,8 +69,8 @@ func NewPluginFromCollections(
 	return extensionsplug.Plugin{
 		ContributesBackends: map[schema.GroupKind]extensionsplug.BackendPlugin{
 			gk: {
-				UpstreamInit: ir.UpstreamInit{
-					InitUpstream: processUpstream,
+				BackendInit: ir.BackendInit{
+					InitBackend: processUpstream,
 				},
 				Endpoints: k8sServiceEndpoints,
 				Backends:  k8sServiceUpstreams,

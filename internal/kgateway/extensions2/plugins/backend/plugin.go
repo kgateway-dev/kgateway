@@ -123,14 +123,14 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		}
 	})
 
-	endpoints := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.EndpointsForUpstream {
+	endpoints := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.EndpointsForBackend {
 		return processEndpoints(i)
 	})
 	return extensionsplug.Plugin{
 		ContributesBackends: map[schema.GroupKind]extensionsplug.BackendPlugin{
 			gk: {
-				UpstreamInit: ir.UpstreamInit{
-					InitUpstream: processUpstream,
+				BackendInit: ir.BackendInit{
+					InitBackend: processUpstream,
 				},
 				Endpoints: endpoints,
 				Backends:  ucol,
@@ -205,7 +205,7 @@ func hostname(in *v1alpha1.Backend) string {
 	return ""
 }
 
-func processEndpoints(up *v1alpha1.Backend) *ir.EndpointsForUpstream {
+func processEndpoints(up *v1alpha1.Backend) *ir.EndpointsForBackend {
 	spec := up.Spec
 	switch {
 	case spec.Static != nil:

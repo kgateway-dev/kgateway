@@ -82,16 +82,16 @@ func NewGlooK8sEndpointInputs(
 	}
 }
 
-func NewGlooK8sEndpoints(ctx context.Context, inputs EndpointsInputs) krt.Collection[ir.EndpointsForUpstream] {
+func NewGlooK8sEndpoints(ctx context.Context, inputs EndpointsInputs) krt.Collection[ir.EndpointsForBackend] {
 	return krt.NewCollection(inputs.Upstreams, transformK8sEndpoints(ctx, inputs), inputs.KrtOpts.ToOptions("GlooK8sEndpoints")...)
 }
 
-func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kctx krt.HandlerContext, us ir.BackendObjectIR) *ir.EndpointsForUpstream {
+func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kctx krt.HandlerContext, us ir.BackendObjectIR) *ir.EndpointsForBackend {
 	augmentedPods := inputs.Pods
 
 	logger := contextutils.LoggerFrom(ctx).Desugar()
 
-	return func(kctx krt.HandlerContext, us ir.BackendObjectIR) *ir.EndpointsForUpstream {
+	return func(kctx krt.HandlerContext, us ir.BackendObjectIR) *ir.EndpointsForBackend {
 		var warnsToLog []string
 		defer func() {
 			for _, warn := range warnsToLog {

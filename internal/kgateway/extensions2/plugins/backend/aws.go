@@ -98,7 +98,7 @@ func getLambdaHostname(in *v1alpha1.AwsBackend) string {
 	return fmt.Sprintf("lambda.%s.amazonaws.com", in.Region)
 }
 
-func processEndpointsAws(in *v1alpha1.AwsBackend) *ir.EndpointsForUpstream {
+func processEndpointsAws(in *v1alpha1.AwsBackend) *ir.EndpointsForBackend {
 	return nil
 }
 

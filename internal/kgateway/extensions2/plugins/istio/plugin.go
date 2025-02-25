@@ -75,8 +75,8 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	return extensionsplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			VirtualIstioGK: {
-				Name:            "istio",
-				ProcessUpstream: p.processUpstream,
+				Name:           "istio",
+				ProcessBackend: p.processUpstream,
 				GlobalPolicies: func(_ krt.HandlerContext, _ extensionsplug.AttachmentPoints) ir.PolicyIR {
 					// return static settings which do not change post istioPlugin creation
 					return istioSettings

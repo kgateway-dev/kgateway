@@ -284,7 +284,7 @@ func TestEndpoints(t *testing.T) {
 		name     string
 		inputs   []any
 		upstream ir.BackendObjectIR
-		result   func(ir.BackendObjectIR) *ir.EndpointsForUpstream
+		result   func(ir.BackendObjectIR) *ir.EndpointsForBackend
 	}{
 		{
 			name: "basic",
@@ -367,7 +367,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			result: func(us ir.BackendObjectIR) *ir.EndpointsForUpstream {
+			result: func(us ir.BackendObjectIR) *ir.EndpointsForBackend {
 				// output
 				emd := ir.EndpointWithMd{
 					LbEndpoint: &endpointv3.LbEndpoint{
@@ -517,7 +517,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			result: func(us ir.BackendObjectIR) *ir.EndpointsForUpstream {
+			result: func(us ir.BackendObjectIR) *ir.EndpointsForBackend {
 				// output
 				result := ir.NewEndpointsForUpstream(us)
 				result.Add(ir.PodLocality{
@@ -665,7 +665,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			result: func(us ir.BackendObjectIR) *ir.EndpointsForUpstream {
+			result: func(us ir.BackendObjectIR) *ir.EndpointsForBackend {
 				// output
 				emd := ir.EndpointWithMd{
 					LbEndpoint: &endpointv3.LbEndpoint{
@@ -814,7 +814,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			result: func(us ir.BackendObjectIR) *ir.EndpointsForUpstream {
+			result: func(us ir.BackendObjectIR) *ir.EndpointsForBackend {
 				// Only one endpoint should be present after deduplication
 				emd := ir.EndpointWithMd{
 					LbEndpoint: &endpointv3.LbEndpoint{
@@ -933,7 +933,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			result: func(us ir.BackendObjectIR) *ir.EndpointsForUpstream {
+			result: func(us ir.BackendObjectIR) *ir.EndpointsForBackend {
 				// The result should be empty since no ready endpoints are available.
 				result := ir.NewEndpointsForUpstream(us)
 				return result
@@ -1043,7 +1043,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			result: func(us ir.BackendObjectIR) *ir.EndpointsForUpstream {
+			result: func(us ir.BackendObjectIR) *ir.EndpointsForBackend {
 				// output
 				emd := ir.EndpointWithMd{
 					LbEndpoint: &endpointv3.LbEndpoint{

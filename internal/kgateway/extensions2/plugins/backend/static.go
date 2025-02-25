@@ -83,6 +83,6 @@ func processStatic(ctx context.Context, in *v1alpha1.StaticBackend, out *envoy_c
 	}
 }
 
-func processEndpointsStatic(in *v1alpha1.StaticBackend) *ir.EndpointsForUpstream {
+func processEndpointsStatic(in *v1alpha1.StaticBackend) *ir.EndpointsForBackend {
 	return nil
 }

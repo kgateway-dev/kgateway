@@ -70,10 +70,10 @@ type BackendObjectIR struct {
 }
 
 func (c BackendObjectIR) ResourceName() string {
-	return UpstreamResourceName(c.ObjectSource, c.Port)
+	return BackendResourceName(c.ObjectSource, c.Port)
 }
 
-func UpstreamResourceName(objSource ObjectSource, port int32) string {
+func BackendResourceName(objSource ObjectSource, port int32) string {
 	return fmt.Sprintf("%s:%d", objSource.ResourceName(), port)
 }
 
