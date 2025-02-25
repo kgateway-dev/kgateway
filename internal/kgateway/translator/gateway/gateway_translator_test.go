@@ -13,9 +13,8 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
-
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 )
 
 type translatorTestCase struct {
@@ -348,6 +347,5 @@ var _ = DescribeTable("Route Delegation translator",
 	XEntry("RouteOptions multi level inheritance with child override", "route_options_multi_level_inheritance_override_ok.yaml", ""),
 	XEntry("RouteOptions filter override merge", "route_options_filter_override_merge.yaml", ""),
 	Entry("Child route matcher does not match parent", "bug-6621.yaml", ""),
-	// https://github.com/kgateway-dev/kgateway/issues/10379
 	Entry("Multi-level multiple parents delegation", "bug-10379.yaml", ""),
 )

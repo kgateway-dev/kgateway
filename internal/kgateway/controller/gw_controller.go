@@ -56,7 +56,7 @@ func (r *gatewayReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, nil
 	}
 
-	log.Info("reconciling gateway", "Gateway", gw.GetObjectMeta())
+	log.Info("reconciling gateway")
 	objs, err := r.deployer.GetObjsToDeploy(ctx, &gw)
 	if err != nil {
 		return ctrl.Result{}, err

@@ -128,6 +128,7 @@ func (n *filterChainTranslator) computeNetworkFiltersForHttp(ctx context.Context
 	networkFilters = append(networkFilters, networkFilter)
 	return networkFilters, nil
 }
+
 func (n *filterChainTranslator) computePreHCMFilters(ctx context.Context, l ir.HttpFilterChainIR, reporter reports.ListenerReporter) []plugins.StagedNetworkFilter {
 	var networkFilters []plugins.StagedNetworkFilter
 	// Process the network filters.
@@ -155,7 +156,6 @@ func (n *filterChainTranslator) computePreHCMFilters(ctx context.Context, l ir.H
 }
 
 func convertCustomNetworkFilters(customNetworkFilters []ir.CustomEnvoyFilter) []plugins.StagedNetworkFilter {
-
 	var out []plugins.StagedNetworkFilter
 	for _, customFilter := range customNetworkFilters {
 		out = append(out, plugins.StagedNetworkFilter{
@@ -170,6 +170,7 @@ func convertCustomNetworkFilters(customNetworkFilters []ir.CustomEnvoyFilter) []
 	}
 	return out
 }
+
 func sortNetworkFilters(filters plugins.StagedNetworkFilterList) []*envoy_config_listener_v3.Filter {
 	sort.Sort(filters)
 	var sortedFilters []*envoy_config_listener_v3.Filter
@@ -553,5 +554,4 @@ func bytesDataSource(s []byte) *envoy_config_core_v3.DataSource {
 			InlineBytes: s,
 		},
 	}
-
 }

@@ -91,7 +91,6 @@ func (p XdsSnapWrapper) MarshalJSON() (out []byte, err error) {
 }
 
 func addToSnap(snapJson map[string]map[string]any, k string, resources map[string]envoycachetypes.ResourceWithTTL) {
-
 	for rname, r := range resources {
 		rJson, _ := protojson.Marshal(r.Resource)
 		var rAny any
@@ -179,7 +178,6 @@ func visitMessage(msg protoreflect.Message, fd protoreflect.FieldDescriptor, v p
 	if anymsg, ok := m.(*anypb.Any); ok {
 		anyMsg, _ = anypb.UnmarshalNew(anymsg, proto.UnmarshalOptions{})
 		visitMsg = anyMsg.ProtoReflect()
-
 	}
 	visitFields(visitMsg, sensitive)
 	if anyMsg != nil {

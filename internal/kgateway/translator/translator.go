@@ -152,7 +152,6 @@ func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx conte
 	xdsSnap := s.irtranslator.Translate(*gwir, r)
 
 	return &xdsSnap, rm
-
 }
 
 func (s *CombinedTranslator) TranslateEndpoints(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, ep ir.EndpointsForUpstream) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64) {
@@ -160,7 +159,6 @@ func (s *CombinedTranslator) TranslateEndpoints(kctx krt.HandlerContext, ucc ir.
 	cla, additionalHash := proccessWithPlugins(s.endpointPlugins, kctx, context.TODO(), ucc, ep)
 	if cla != nil {
 		return cla, additionalHash
-
 	}
 	return endpoints.PrioritizeEndpoints(s.logger, nil, ep, ucc), 0
 }

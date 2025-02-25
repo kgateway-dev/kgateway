@@ -56,7 +56,7 @@ func (c *cliPortForwarder) startOnce(ctx context.Context) error {
 	}
 
 	cmdCtx, cmdCancel := context.WithCancel(ctx)
-
+	defer cmdCancel() // paranoia for vet
 	c.cmd = exec.CommandContext(
 		cmdCtx,
 		"kubectl",

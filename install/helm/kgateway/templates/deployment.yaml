@@ -31,8 +31,8 @@ spec:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.controller.image.registry }}/{{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag | default .Chart.Version }}"
-          imagePullPolicy: {{ .Values.controller.image.pullPolicy }}
+          image: "{{ .Values.controller.image.registry | default .Values.image.registry }}/{{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag | default .Values.image.tag | default .Chart.Version }}"
+          imagePullPolicy: {{ .Values.controller.image.pullPolicy | default .Values.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.controller.service.ports.grpc | default 9977 }}
               name: grpc-xds

@@ -203,7 +203,6 @@ func (c *controllerBuilder) watchGwClass(_ context.Context) error {
 type controllerReconciler struct {
 	cli    client.Client
 	scheme *runtime.Scheme
-	kick   func(ctx context.Context)
 }
 
 func (r *controllerReconciler) ReconcileGatewayClasses(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {

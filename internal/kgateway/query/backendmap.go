@@ -31,13 +31,6 @@ func backendToRefKey(ref ir.ObjectSource) backendRefKey {
 	)
 }
 
-func ptrOrDefault[T comparable](p *T, fallback T) T {
-	if p == nil {
-		return fallback
-	}
-	return *p
-}
-
 func (bm BackendMap[T]) Add(backendRef ir.ObjectSource, value T) {
 	key := backendToRefKey(backendRef)
 	bm.items[key] = value

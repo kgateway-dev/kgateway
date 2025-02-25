@@ -12,10 +12,10 @@ spec:
       replicas: {{ .Values.replicaCount }}
     envoyContainer:
       image:
-        registry: {{ .Values.gateway.envoyContainer.image.registry }}
+        registry: {{ .Values.gateway.envoyContainer.image.registry | default .Values.image.registry }}
         repository: {{ .Values.gateway.envoyContainer.image.repository }}
-        tag: {{ .Values.gateway.envoyContainer.image.tag | default .Chart.Version }}
-        pullPolicy: {{ .Values.gateway.envoyContainer.image.pullPolicy }}
+        tag: {{ .Values.gateway.envoyContainer.image.tag | default .Values.image.tag | default .Chart.Version }}
+        pullPolicy: {{ .Values.gateway.envoyContainer.image.pullPolicy | default .Values.image.pullPolicy }}
       {{- with .Values.gateway.envoyContainer.securityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}

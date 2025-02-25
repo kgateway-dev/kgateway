@@ -87,15 +87,15 @@ func (p PolicyPlugin) AttachmentPoints() AttachmentPoints {
 
 func (p Plugin) HasSynced() bool {
 	for _, up := range p.ContributesUpstreams {
-		if up.Upstreams != nil && !up.Upstreams.Synced().HasSynced() {
+		if up.Upstreams != nil && !up.Upstreams.HasSynced() {
 			return false
 		}
-		if up.Endpoints != nil && !up.Endpoints.Synced().HasSynced() {
+		if up.Endpoints != nil && !up.Endpoints.HasSynced() {
 			return false
 		}
 	}
 	for _, pol := range p.ContributesPolicies {
-		if pol.Policies != nil && !pol.Policies.Synced().HasSynced() {
+		if pol.Policies != nil && !pol.Policies.HasSynced() {
 			return false
 		}
 	}

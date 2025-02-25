@@ -6,6 +6,7 @@ import (
 	"istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/kube/kubetypes"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 
@@ -65,11 +66,12 @@ func InitCollections(
 	registerTypes()
 
 	httpRoutes := krt.WrapClient(kclient.New[*gwv1.HTTPRoute](istioClient), krtopts.ToOptions("HTTPRoute")...)
-	tcproutes := krt.WrapClient(kclient.New[*gwv1a2.TCPRoute](istioClient), krtopts.ToOptions("TCPRoute")...)
-	tlsRoutes := krt.WrapClient(kclient.New[*gwv1a2.TLSRoute](istioClient), krtopts.ToOptions("TLSRoute")...)
 	kubeRawGateways := krt.WrapClient(kclient.New[*gwv1.Gateway](istioClient), krtopts.ToOptions("KubeGateways")...)
 
-	return initCollectionsWithGateways(isOurGw, kubeRawGateways, httpRoutes, tcproutes, tlsRoutes, refgrants, extensions, krtopts)
+	tcpRoutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TCPRoute](istioClient, gvr.TCPRoute, kubetypes.StandardInformer, kclient.Filter{}), krtopts.ToOptions("TCPRoute")...)
+	tlsRoutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TLSRoute](istioClient, gvr.TLSRoute, kubetypes.StandardInformer, kclient.Filter{}), krtopts.ToOptions("TLSRoute")...)
+
+	return initCollectionsWithGateways(isOurGw, kubeRawGateways, httpRoutes, tcpRoutes, tlsRoutes, refgrants, extensions, krtopts)
 }
 
 func initCollectionsWithGateways(
@@ -82,9 +84,7 @@ func initCollectionsWithGateways(
 	extensions extensionsplug.Plugin,
 	krtopts krtutil.KrtOptions,
 ) (*GatewayIndex, *RoutesIndex, *UpstreamIndex, krt.Collection[ir.EndpointsForUpstream]) {
-
 	policies := NewPolicyIndex(krtopts, extensions.ContributesPolicies)
-
 	var backendRefPlugins []extensionsplug.GetBackendForRefPlugin
 	for _, ext := range extensions.ContributesPolicies {
 		if ext.GetBackendForRef != nil {
@@ -106,7 +106,6 @@ func initUpstreams(
 	upstreamIndex *UpstreamIndex,
 	krtopts krtutil.KrtOptions,
 ) krt.Collection[ir.EndpointsForUpstream] {
-
 	allEndpoints := []krt.Collection[ir.EndpointsForUpstream]{}
 	for k, col := range extensions.ContributesUpstreams {
 		if col.Upstreams != nil {

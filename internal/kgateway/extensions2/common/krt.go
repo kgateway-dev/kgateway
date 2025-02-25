@@ -36,7 +36,7 @@ type CommonCollections struct {
 }
 
 func (c *CommonCollections) HasSynced() bool {
-	return c.Secrets.HasSynced() && c.Pods.Synced().HasSynced() && c.RefGrants.HasSynced()
+	return c.Secrets.HasSynced() && c.Pods.HasSynced() && c.RefGrants.HasSynced()
 }
 
 func NewCommonCollections(

@@ -30,7 +30,7 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 func (s *testingSuite) TestZeroDowntimeRollout() {
 	// Ensure the gloo gateway pod is up and running
-	s.TestInstallation.Assertions.EventuallyRunningReplicas(s.Ctx, glooProxyObjectMeta, Equal(1))
+	s.TestInstallation.Assertions.EventuallyReadyReplicas(s.Ctx, glooProxyObjectMeta, Equal(1))
 	s.TestInstallation.Assertions.AssertEventualCurlResponse(
 		s.Ctx,
 		defaults.CurlPodExecOpt,

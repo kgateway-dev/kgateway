@@ -3,7 +3,6 @@ package proxy_syncer
 import (
 	"fmt"
 
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"go.uber.org/zap"
 	"istio.io/istio/pkg/kube/krt"
@@ -11,39 +10,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 )
-
-func prioritize(ep ir.EndpointsForUpstream) *envoy_config_endpoint_v3.ClusterLoadAssignment {
-	cla := &envoy_config_endpoint_v3.ClusterLoadAssignment{
-		ClusterName: ep.ClusterName,
-	}
-	for loc, eps := range ep.LbEps {
-		var l *envoy_config_core_v3.Locality
-		if loc != (ir.PodLocality{}) {
-			l = &envoy_config_core_v3.Locality{
-				Region:  loc.Region,
-				Zone:    loc.Zone,
-				SubZone: loc.Subzone,
-			}
-		}
-
-		lbeps := make([]*envoy_config_endpoint_v3.LbEndpoint, 0, len(eps))
-		for _, ep := range eps {
-			lbeps = append(lbeps, ep.LbEndpoint)
-		}
-
-		endpoint := &envoy_config_endpoint_v3.LocalityLbEndpoints{
-			LbEndpoints: lbeps,
-			Locality:    l,
-		}
-
-		cla.Endpoints = append(cla.GetEndpoints(), endpoint)
-	}
-
-	// In theory we want to run endpoint plugins here.
-	// we only have one endpoint plugin - and it also does failover... so might be simpler to not support it in ggv2 and
-	// deprecating the functionality. it's not easy to do as with krt we no longer have gloo 'Endpoint' objects
-	return cla
-}
 
 type UccWithEndpoints struct {
 	Client        ir.UniqlyConnectedClient
@@ -76,7 +42,7 @@ func NewPerClientEnvoyEndpoints(
 	glooEndpoints krt.Collection[ir.EndpointsForUpstream],
 	translateEndpoints func(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, ep ir.EndpointsForUpstream) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64),
 ) PerClientEnvoyEndpoints {
-	clas := krt.NewManyCollection(glooEndpoints, func(kctx krt.HandlerContext, ep ir.EndpointsForUpstream) []UccWithEndpoints {
+	eps := krt.NewManyCollection(glooEndpoints, func(kctx krt.HandlerContext, ep ir.EndpointsForUpstream) []UccWithEndpoints {
 		uccs := krt.Fetch(kctx, uccs)
 		uccWithEndpointsRet := make([]UccWithEndpoints, 0, len(uccs))
 		for _, ucc := range uccs {
@@ -91,12 +57,12 @@ func NewPerClientEnvoyEndpoints(
 		}
 		return uccWithEndpointsRet
 	}, krtopts.ToOptions("PerClientEnvoyEndpoints")...)
-	idx := krt.NewIndex(clas, func(ucc UccWithEndpoints) []string {
+	idx := krt.NewIndex(eps, func(ucc UccWithEndpoints) []string {
 		return []string{ucc.Client.ResourceName()}
 	})
 
 	return PerClientEnvoyEndpoints{
-		endpoints: clas,
+		endpoints: eps,
 		index:     idx,
 	}
 }

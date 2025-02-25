@@ -29,7 +29,7 @@ var _ PortForwarder = &apiPortForwarder{}
 
 // NewApiPortForwarder returns an implementation of a PortForwarder that does not rely on the Kubernetes CLI
 // but instead queries the Kubernetes API directly
-// This implementation is preferred, but we have seen it fail occassionally with the following error:
+// This implementation is preferred, but we have seen it fail occasionally with the following error:
 //
 //	portforward.go:394] error copying from local connection to remote stream: EOF
 func NewApiPortForwarder(options ...Option) PortForwarder {
@@ -203,7 +203,6 @@ func (f *apiPortForwarder) getPodName(ctx context.Context) (string, error) {
 // Fetch ClientConfig. If kubeConfigPath is not specified, retrieve the kubeconfig from environment in which this is invoked.
 // Override the API Server URL and current context if specified.
 func GetClientConfigWithContext(kubeConfigPath, kubeContext, apiServerUrl string) (clientcmd.ClientConfig, error) {
-
 	// default loading rules checks for KUBECONFIG env var
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	// also check recommended default kubeconfig file locations

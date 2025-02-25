@@ -38,7 +38,6 @@ func (a *asyncQueue[T]) Dequeue(ctx context.Context) (T, error) {
 }
 
 func (a *asyncQueue[T]) Enqueue(t T) {
-
 	select {
 	case <-a.queue: // If an item is already in the queue, drop it
 	default: // If not continue

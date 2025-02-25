@@ -10,7 +10,6 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"istio.io/istio/pkg/kube/krt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -317,14 +316,6 @@ func (ml *MergedListeners) AppendTlsListener(
 	})
 }
 
-func getWeight(backendRef gwv1.BackendRef) *wrapperspb.UInt32Value {
-	if backendRef.Weight != nil {
-		return &wrapperspb.UInt32Value{Value: uint32(*backendRef.Weight)}
-	}
-	// Default weight is 1
-	return &wrapperspb.UInt32Value{Value: 1}
-}
-
 func (ml *MergedListeners) translateListeners(
 	kctx krt.HandlerContext,
 	ctx context.Context,
@@ -463,7 +454,7 @@ type tcpFilterChainParent struct {
 	routesWithHosts     []*query.RouteInfo
 }
 
-func (tc *tcpFilterChain) translateTcpFilterChain(listener ir.Listener, reporter reports.Reporter) *ir.TcpIR {
+func (tc *tcpFilterChain) translateTcpFilterChain(_ ir.Listener, reporter reports.Reporter) *ir.TcpIR {
 	parent := tc.parents
 	if len(parent.routesWithHosts) == 0 {
 		return nil
@@ -663,7 +654,6 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 		virtualHosts     = []*ir.VirtualHost{}
 	)
 	for host, vhostRoutes := range routesByHost {
-
 		// find the parent this host belongs to, and use its policies
 		var attachedPolicies ir.AttachedPolicies
 		maxHostnameLen := -1
@@ -683,7 +673,6 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 		sort.Stable(vhostRoutes)
 		vhostName := makeVhostName(ctx, parentName, host)
 		if !virtualHostNames[vhostName] {
-
 			virtualHostNames[vhostName] = true
 			virtualHost := &ir.VirtualHost{
 				Name:             vhostName,

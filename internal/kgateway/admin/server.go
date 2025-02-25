@@ -40,27 +40,8 @@ type dynamicProfileDescription func() string
 
 // getServerHandlers returns the custom handlers for the Admin Server, which will be bound to the http.ServeMux
 // These endpoints serve as the basis for an Admin Interface for the Control Plane (https://github.com/kgateway-dev/kgateway/issues/6494)
-func getServerHandlers(ctx context.Context, dbg *krt.DebugHandler, cache envoycache.SnapshotCache) func(mux *http.ServeMux, profiles map[string]dynamicProfileDescription) {
+func getServerHandlers(_ context.Context, dbg *krt.DebugHandler, cache envoycache.SnapshotCache) func(mux *http.ServeMux, profiles map[string]dynamicProfileDescription) {
 	return func(m *http.ServeMux, profiles map[string]dynamicProfileDescription) {
-
-		/*
-			// The Input Snapshot is intended to return a list of resources that are persisted in the Kubernetes DB, etcD
-			m.HandleFunc("/snapshots/input", func(w http.ResponseWriter, request *http.Request) {
-				response := history.GetInputSnapshot(ctx)
-				respondJson(w, response)
-			})
-			profiles["/snapshots/input"] = "Input Snapshot"
-
-			// The Proxy Snapshot is intended to return a representation of the Proxies within the ApiSnapshot object.
-			// Proxies may either be persisted in etcD or in-memory, so this Api provides a single mechansim to access
-			// these resources.
-			m.HandleFunc("/snapshots/proxies", func(w http.ResponseWriter, r *http.Request) {
-				response := history.GetProxySnapshot(ctx)
-				respondJson(w, response)
-			})
-			profiles["/snapshots/proxies"] = "Proxy Snapshot"
-		*/
-
 		addXdsSnapshotHandler("/snapshots/xds", m, profiles, cache)
 
 		addKrtSnapshotHandler("/snapshots/krt", m, profiles, dbg)
@@ -68,23 +49,6 @@ func getServerHandlers(ctx context.Context, dbg *krt.DebugHandler, cache envoyca
 		addLoggingHandler("/logging", m, profiles)
 
 		addPprofHandler("/debug/pprof/", m, profiles)
-	}
-}
-
-func respondJson(w http.ResponseWriter, response SnapshotResponseData) {
-	w.Header().Set("Content-Type", getContentType("json"))
-
-	_, _ = fmt.Fprintf(w, "%+v", response.MarshalJSONString())
-}
-
-func getContentType(format string) string {
-	switch format {
-	case "", "json", "json_compact":
-		return "application/json"
-	case "yaml":
-		return "text/x-yaml"
-	default:
-		return "application/json"
 	}
 }
 
@@ -151,7 +115,6 @@ func startHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, 
 
 func index(profileDescriptions map[string]dynamicProfileDescription) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		type profile struct {
 			Name string
 			Href string
@@ -175,7 +138,6 @@ func index(profileDescriptions map[string]dynamicProfileDescription) func(w http
 		fmt.Fprintf(&buf, "<h1>Admin Server</h1>\n")
 		for _, p := range profiles {
 			fmt.Fprintf(&buf, "<h2><a href=\"%s\"}>%s</a></h2><p>%s</p>\n", p.Name, p.Name, p.Desc)
-
 		}
 		w.Write(buf.Bytes())
 	}

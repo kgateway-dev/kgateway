@@ -71,7 +71,6 @@ func NewBuiltInIr(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema
 }
 
 func NewBuiltinPlugin(ctx context.Context) extensionplug.Plugin {
-
 	return extensionplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			VirtualBuiltInGK: {
@@ -171,7 +170,6 @@ func convertURLRewrite(kctx krt.HandlerContext, config *gwv1.HTTPURLRewriteFilte
 		}
 		return nil
 	}
-
 }
 
 func convertRequestRedirect(kctx krt.HandlerContext, config *gwv1.HTTPRequestRedirectFilter) func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
@@ -347,7 +345,6 @@ func convertMirror(kctx krt.HandlerContext, f *gwv1.HTTPRequestMirrorFilter, fro
 		RuntimeFraction: fraction,
 	}
 	return func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
-
 		route := outputRoute.GetRoute()
 		if route == nil {
 			// TODO: report error
@@ -405,7 +402,6 @@ func (p *builtinPluginGwPass) ApplyVhostPlugin(ctx context.Context, pCtx *ir.Vir
 
 // called 0 or more times
 func (p *builtinPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoy_config_route_v3.Route) error {
-
 	policy, ok := pCtx.Policy.(*builtinPlugin)
 	if !ok {
 		return nil

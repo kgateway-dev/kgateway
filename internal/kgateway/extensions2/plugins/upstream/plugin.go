@@ -101,7 +101,6 @@ func registerTypes(ourCli versioned.Interface) {
 }
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
-
 	registerTypes(commoncol.OurClient)
 
 	col := krt.WrapClient(kclient.New[*v1alpha1.Upstream](commoncol.Client), commoncol.KrtOpts.ToOptions("Upstreams")...)
@@ -109,9 +108,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	gk := v1alpha1.UpstreamGVK.GroupKind()
 	translate := buildTranslateFunc(commoncol.Secrets)
 	ucol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Upstream) *ir.Upstream {
-
 		// resolve secrets
-
 		return &ir.Upstream{
 			ObjectSource: ir.ObjectSource{
 				Kind:      gk.Kind,
@@ -209,9 +206,7 @@ func hostname(in *v1alpha1.Upstream) string {
 }
 
 func processEndpoints(up *v1alpha1.Upstream) *ir.EndpointsForUpstream {
-
 	spec := up.Spec
-
 	switch {
 	case spec.Static != nil:
 		return processEndpointsStatic(spec.Static)
@@ -244,7 +239,6 @@ func (p *upstreamPlugin) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualH
 
 // called 0 or more times
 func (p *upstreamPlugin) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoy_config_route_v3.Route) error {
-
 	return nil
 }
 

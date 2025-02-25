@@ -52,10 +52,8 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context
 }
 
 func (h *httpRouteConfigurationTranslator) computeVirtualHosts(ctx context.Context, virtualHosts []*ir.VirtualHost) []*envoy_config_route_v3.VirtualHost {
-
 	var envoyVirtualHosts []*envoy_config_route_v3.VirtualHost
 	for _, virtualHost := range virtualHosts {
-
 		envoyVirtualHosts = append(envoyVirtualHosts, h.computeVirtualHost(ctx, virtualHost))
 	}
 	return envoyVirtualHosts
@@ -119,19 +117,16 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 	in ir.HttpRouteRuleMatchIR,
 	generatedName string,
 ) *envoy_config_route_v3.Route {
-
 	out := h.initRoutes(in, generatedName)
-
 	if len(in.Backends) > 0 {
 		out.Action = h.translateRouteAction(in, out)
 	}
+
 	// run plugins here that may set actoin
 	err := h.runRoutePlugins(ctx, routeReport, in, out)
-
 	if err == nil {
 		err = validateEnvoyRoute(out)
 	}
-
 	if err == nil && out.GetAction() == nil {
 		if in.HasChildren {
 			return nil
@@ -139,7 +134,6 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 			err = errors.New("no action specified")
 		}
 	}
-
 	if err != nil {
 		contextutils.LoggerFrom(ctx).Desugar().Debug("invalid route", zap.Error(err))
 		// TODO: we may want to aggregate all these errors per http route object and report one message?
@@ -159,7 +153,6 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 		// 	},
 		// }
 		out = nil
-
 	}
 
 	return out
@@ -189,7 +182,6 @@ func (h *httpRouteConfigurationTranslator) runVhostPlugins(ctx context.Context, 
 }
 
 func (h *httpRouteConfigurationTranslator) runRoutePlugins(ctx context.Context, routeReport reports.ParentRefReporter, in ir.HttpRouteRuleMatchIR, out *envoy_config_route_v3.Route) error {
-
 	// all policies up to listener have been applied as vhost polices; we need to apply the httproute policies and below
 	var policiesFromDelegateParent ir.AttachedPolicies
 	if in.DelegateParent != nil {
@@ -201,7 +193,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(ctx context.Context, 
 		in.AttachedPolicies,
 		in.ExtensionRefs,
 		policiesFromDelegateParent,
-		// TODO: add policies from the parent's parent recursivly
+		// TODO: add policies from the parent's parent recursively
 	}
 
 	var errs []error
@@ -248,7 +240,6 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(ctx context.Contex
 			continue
 		}
 		for _, pol := range pols {
-
 			err := pass.ApplyForRouteBackend(ctx, pol.PolicyIr, pCtx)
 			if err != nil {
 				errs = append(errs, err)
@@ -345,7 +336,6 @@ func (h *httpRouteConfigurationTranslator) initRoutes(
 	in ir.HttpRouteRuleMatchIR,
 	generatedName string,
 ) *envoy_config_route_v3.Route {
-
 	//	if len(in.Matches) == 0 {
 	//		return []*envoy_config_route_v3.Route{
 	//			{
@@ -422,7 +412,6 @@ func setEnvoyPathMatcher(match gwv1.HTTPRouteMatch, out *envoy_config_route_v3.R
 func envoyHeaderMatcher(in []gwv1.HTTPHeaderMatch) []*envoy_config_route_v3.HeaderMatcher {
 	var out []*envoy_config_route_v3.HeaderMatcher
 	for _, matcher := range in {
-
 		envoyMatch := &envoy_config_route_v3.HeaderMatcher{
 			Name: string(matcher.Name),
 		}

@@ -277,7 +277,6 @@ func TestEndpointsForUpstreamWithDifferentNameButSameEndpoints(t *testing.T) {
 }
 
 func TestEndpoints(t *testing.T) {
-
 	logger := zaptest.Logger(t)
 	contextutils.SetFallbackLogger(logger.Sugar())
 
@@ -1087,7 +1086,7 @@ func TestEndpoints(t *testing.T) {
 			mock := krttest.NewMock(t, tc.inputs)
 			nodes := NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
 			pods := NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})
-			pods.Synced().WaitUntilSynced(context.Background().Done())
+			pods.WaitUntilSynced(context.Background().Done())
 			endpointSettings := EndpointsSettings{
 				EnableAutoMtls: false,
 			}

@@ -1,12 +1,8 @@
 package admin
 
 import (
-	"cmp"
 	"encoding/json"
 	"fmt"
-	"slices"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // SnapshotResponseData is the data that is returned by Getter methods on the History object
@@ -80,28 +76,9 @@ func formatOutput(format OutputFormat, genericOutput interface{}) ([]byte, error
 	}
 }
 
-// sortResources sorts resources by gvk, namespace, and name
-func sortResources(resources []client.Object) {
-	slices.SortStableFunc(resources, func(a, b client.Object) int {
-		return cmp.Or(
-			cmp.Compare(a.GetObjectKind().GroupVersionKind().Version, b.GetObjectKind().GroupVersionKind().Version),
-			cmp.Compare(a.GetObjectKind().GroupVersionKind().Kind, b.GetObjectKind().GroupVersionKind().Kind),
-			cmp.Compare(a.GetNamespace(), b.GetNamespace()),
-			cmp.Compare(a.GetName(), b.GetName()),
-		)
-	})
-}
-
 func completeSnapshotResponse(data interface{}) SnapshotResponseData {
 	return SnapshotResponseData{
 		Data:  data,
 		Error: nil,
-	}
-}
-
-func errorSnapshotResponse(err error) SnapshotResponseData {
-	return SnapshotResponseData{
-		Data:  nil,
-		Error: err,
 	}
 }

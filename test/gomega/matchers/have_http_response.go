@@ -1,5 +1,3 @@
-//go:build ignore
-
 package matchers
 
 import (
@@ -10,7 +8,6 @@ import (
 
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
-
 	"github.com/onsi/gomega/matchers"
 	"github.com/onsi/gomega/types"
 )
@@ -94,7 +91,6 @@ func (r *HttpResponse) String() string {
 
 	return fmt.Sprintf("HttpResponse{StatusCode: %d, Body: %s, Headers: %v, Custom: %v}",
 		r.StatusCode, bodyString, r.Headers, r.Custom)
-
 }
 
 // HaveHttpResponse returns a GomegaMatcher which validates that an http.Response contains

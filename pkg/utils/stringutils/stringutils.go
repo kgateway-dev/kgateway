@@ -11,7 +11,6 @@ func DeleteOneByValue(slice []string, value string) []string {
 		return slice
 	}
 	return slices.Delete(slice, index, index+1)
-
 }
 
 // AppendIfMissing returns a slice, with the provided value included

@@ -2,6 +2,7 @@ package tests
 
 import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/basicrouting"
 	// "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/admin_server"
 	// "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/crd_categories"
 	// "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/deployer"
@@ -21,6 +22,8 @@ import (
 
 func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner := e2e.NewSuiteRunner(false)
+
+	kubeGatewaySuiteRunner.Register("BasicRouting", basicrouting.NewTestingSuite)
 
 	// kubeGatewaySuiteRunner.Register("Deployer", deployer.NewTestingSuite)
 	// kubeGatewaySuiteRunner.Register("HttpListenerOptions", http_listener_options.NewTestingSuite)

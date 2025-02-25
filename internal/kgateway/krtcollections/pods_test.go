@@ -166,7 +166,7 @@ func TestPods(t *testing.T) {
 			mock := krttest.NewMock(t, tc.inputs)
 			nodes := krtcollections.NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
 			pods := krtcollections.NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})
-			pods.Synced().WaitUntilSynced(context.Background().Done())
+			pods.WaitUntilSynced(context.Background().Done())
 			lp := pods.List()[0]
 
 			g.Expect(tc.result.Equals(lp)).To(BeTrue(), "expected %#v, got %#v", lp, tc.result)

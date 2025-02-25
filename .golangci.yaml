@@ -17,10 +17,13 @@ linters:
     - bodyclose
     - ginkgolinter
     - goimports
+    - misspell
     - nakedret
     - predeclared
+    - unused
     - usestdlibvars
     - importas
+    - whitespace
 
 # Settings dedicated to specific linters.
 linters-settings:
@@ -53,11 +56,17 @@ linters-settings:
     #     // This is allowed but really, really bad. DO NOT do this.
     #     return b, a
     max-func-lines: 0
+  misspell:
+    ignore-words:
+    - kgateway
 
 issues:
   # Maximum count of issues with the same text.
   # Set to 0 to disable.
   max-same-issues: 0
+
+  # Make issues output unique by line.
+  uniq-by-line: true
 
   exclude-dirs:
     # don't lint ruleguard files
@@ -93,9 +102,6 @@ output:
 
   # Print linter name in the end of issue text.
   print-linter-name: true
-
-  # Make issues output unique by line.
-  uniq-by-line: true
 
   # Sort results by: filepath, line and column.
   sort-results: true

@@ -15,22 +15,16 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
-// TestK8sGatewayAws is the function which executes a series of tests against a given installation
-// with Kubernetes Gateway integration enabled and AWS lambda options configured
-func TestK8sGatewayAws(t *testing.T) {
+// TestKgatewayNoValidation executes tests against a K8s Gateway gloo install with validation disabled
+func TestKgatewayNoValidation(t *testing.T) {
 	ctx := context.Background()
-	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "k8s-gw-aws-test")
+	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "test-no-validation")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&install.Context{
 			InstallNamespace:          installNs,
 			ProfileValuesManifestFile: e2e.CommonRecommendationManifest,
-			ValuesManifestFile:        e2e.ManifestPath("aws-lambda-helm.yaml"),
-			// these should correspond to the `settings.aws.*` values in the aws-lambda-helm.yaml manifest
-			AwsOptions: &kgateway.AwsOptions{
-				EnableServiceAccountCredentials: true,
-				StsCredentialsRegion:            "us-west-2",
-			},
+			ValuesManifestFile:        e2e.ManifestPath("no-webhook-validation-test-helm.yaml"),
 		},
 	)
 
@@ -57,5 +51,5 @@ func TestK8sGatewayAws(t *testing.T) {
 	// Install Gloo Gateway
 	testInstallation.InstallGlooGatewayWithTestHelper(ctx, testHelper, 5*time.Minute)
 
-	KubeGatewayAwsSuiteRunner().Run(ctx, t, testInstallation)
+	KubeGatewayNoValidationSuiteRunner().Run(ctx, t, testInstallation)
 }

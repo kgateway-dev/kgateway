@@ -13,8 +13,8 @@ spec:
     group: {{ .group }}
     kind: {{ .kind }}
     name: {{ .name }}
-    namespace: {{ .namespace }}
     {{- end }}
+    namespace: {{ .Release.Namespace }}
   {{- end }}
   description: {{ .Values.gatewayClass.description | quote }}
 {{- end }}

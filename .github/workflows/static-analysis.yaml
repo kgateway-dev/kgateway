@@ -38,7 +38,7 @@ jobs:
       # `make analyze` runs the linter with similar arguments to what we use here.
       # If this action fails, try running `make analyze` locally.
       with:
-        version: v1.57.2
+        version: v1.64.5
         args: --verbose --modules-download-mode=readonly --allow-parallel-runners
         skip-cache: true
         skip-save-cache: true

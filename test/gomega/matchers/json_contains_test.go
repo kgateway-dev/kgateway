@@ -1,5 +1,3 @@
-//go:build ignore
-
 package matchers_test
 
 import (

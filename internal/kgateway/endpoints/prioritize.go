@@ -24,13 +24,6 @@ func PrioritizeEndpoints(logger *zap.Logger, priorityInfo *PriorityInfo, ep ir.E
 	return prioritizeWithLbInfo(logger, ep, lbInfo)
 }
 
-func getPriorityInfoFromDestrule(localityLb *v1alpha3.LocalityLoadBalancerSetting) *PriorityInfo {
-	return &PriorityInfo{
-		FailoverPriority: NewPriorities(localityLb.GetFailoverPriority()),
-		Failover:         localityLb.GetFailover(),
-	}
-}
-
 type LoadBalancingInfo struct {
 	// pod info:
 

@@ -1,5 +1,3 @@
-//go:build ignore
-
 package assertions
 
 import (
@@ -16,7 +14,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 )
 
-// EventuallyPodsRunning asserts that the pod(s) are in the ready state
+// EventuallyPodsRunning asserts that eventually all pods matching the given ListOptions are in the PodRunning state
 func (p *Provider) EventuallyPodsRunning(
 	ctx context.Context,
 	podNamespace string,
@@ -47,4 +45,24 @@ func (p *Provider) EventuallyPodsMatches(
 		WithTimeout(currentTimeout).
 		WithPolling(pollingInterval).
 		Should(gomega.Succeed(), fmt.Sprintf("Failed to match pod in namespace %s", podNamespace))
+}
+
+// EventuallyPodsNotExist asserts that eventually no pods matching the given selector exist on the cluster.
+func (p *Provider) EventuallyPodsNotExist(
+	ctx context.Context,
+	podNamespace string,
+	listOpt metav1.ListOptions,
+	timeout ...time.Duration,
+) {
+	currentTimeout, pollingInterval := helpers.GetTimeouts(timeout...)
+
+	p.Gomega.Eventually(func(g gomega.Gomega) {
+		pods, err := p.clusterContext.Clientset.CoreV1().Pods(podNamespace).List(ctx, listOpt)
+		g.Expect(err).NotTo(gomega.HaveOccurred(), "Failed to list pods")
+		g.Expect(pods.Items).To(gomega.BeEmpty(), "No pods should be found")
+	}).
+		WithTimeout(currentTimeout).
+		WithPolling(pollingInterval).
+		Should(gomega.Succeed(), fmt.Sprintf("pods matching %v in namespace %s should not be found in cluster",
+			listOpt, podNamespace))
 }

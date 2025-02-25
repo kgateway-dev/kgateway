@@ -24,10 +24,10 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/version"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
-	"github.com/kgateway-dev/kgateway/v2/pkg/version"
 )
 
 const (
@@ -53,7 +53,8 @@ func createKubeClient(restConfig *rest.Config) (istiokube.Client, error) {
 	return client, nil
 }
 
-func StartGGv2(ctx context.Context,
+func StartGGv2(
+	ctx context.Context,
 	extraPlugins []extensionsplug.Plugin,
 	extraGwClasses []string, // TODO: we can remove this and replace with something that watches all GW classes with our controller name
 ) error {
@@ -84,22 +85,24 @@ func GetControlPlaneXdsHost() string {
 	})
 }
 
-func startControlPlane(ctx context.Context,
-	callbacks xdsserver.Callbacks) (envoycache.SnapshotCache, error) {
-
+func startControlPlane(
+	ctx context.Context,
+	callbacks xdsserver.Callbacks,
+) (envoycache.SnapshotCache, error) {
 	return NewControlPlane(ctx, &net.TCPAddr{IP: net.IPv4zero, Port: 9977}, callbacks)
 }
 
-func StartGGv2WithConfig(ctx context.Context, setupOpts *controller.SetupOpts,
+func StartGGv2WithConfig(
+	ctx context.Context,
+	setupOpts *controller.SetupOpts,
 	restConfig *rest.Config,
 	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
 	extraPlugins []extensionsplug.Plugin,
 	extraGwClasses []string, // TODO: we can remove this and replace with something that watches all GW classes with our controller name
 ) error {
 	ctx = contextutils.WithLogger(ctx, "k8s")
-
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Info("starting gloo gateway")
+	logger.Infof("starting %s", componentName)
 
 	kubeClient, err := createKubeClient(restConfig)
 	if err != nil {

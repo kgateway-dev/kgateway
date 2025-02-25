@@ -3,14 +3,14 @@
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
 // DurationFilterApplyConfiguration represents a declarative configuration of the DurationFilter type for use
 // with apply.
 type DurationFilterApplyConfiguration struct {
-	Op    *v1alpha1.Op `json:"op,omitempty"`
-	Value *uint32      `json:"value,omitempty"`
+	Op    *apiv1alpha1.Op `json:"op,omitempty"`
+	Value *uint32         `json:"value,omitempty"`
 }
 
 // DurationFilterApplyConfiguration constructs a declarative configuration of the DurationFilter type for use with
@@ -22,7 +22,7 @@ func DurationFilter() *DurationFilterApplyConfiguration {
 // WithOp sets the Op field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Op field is set to the value of the last call.
-func (b *DurationFilterApplyConfiguration) WithOp(value v1alpha1.Op) *DurationFilterApplyConfiguration {
+func (b *DurationFilterApplyConfiguration) WithOp(value apiv1alpha1.Op) *DurationFilterApplyConfiguration {
 	b.Op = &value
 	return b
 }

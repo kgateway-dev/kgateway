@@ -64,7 +64,7 @@ func (s *UpstreamIndex) HasSynced() bool {
 		return false
 	}
 	for _, col := range s.availableUpstreams {
-		if !col.Synced().HasSynced() {
+		if !col.HasSynced() {
 			return false
 		}
 	}
@@ -169,7 +169,6 @@ func (i *UpstreamIndex) GetUpstreamFromRef(kctx krt.HandlerContext, src ir.Objec
 
 type GatewayIndex struct {
 	policies *PolicyIndex
-	gwClass  krt.Collection[gwv1.GatewayClass]
 	Gateways krt.Collection[ir.Gateway]
 }
 
@@ -241,7 +240,7 @@ func (h *PolicyIndex) HasSynced() bool {
 			return false
 		}
 	}
-	return h.policies.Synced().HasSynced()
+	return h.policies.HasSynced()
 }
 
 func NewPolicyIndex(krtopts krtutil.KrtOptions, contributesPolicies extensionsplug.ContributesPolicies) *PolicyIndex {
@@ -251,7 +250,7 @@ func NewPolicyIndex(krtopts krtutil.KrtOptions, contributesPolicies extensionspl
 	for gk, plugin := range contributesPolicies {
 		if plugin.Policies != nil {
 			policycols = append(policycols, plugin.Policies)
-			h.hasSyncedFuncs = append(h.hasSyncedFuncs, plugin.Policies.Synced().HasSynced)
+			h.hasSyncedFuncs = append(h.hasSyncedFuncs, plugin.Policies.HasSynced)
 		}
 		if plugin.PoliciesFetch != nil {
 			h.policiesFetch[gk] = plugin.PoliciesFetch
@@ -359,7 +358,7 @@ type RefGrantIndex struct {
 }
 
 func (h *RefGrantIndex) HasSynced() bool {
-	return h.refgrants.Synced().HasSynced()
+	return h.refgrants.HasSynced()
 }
 
 func NewRefGrantIndex(refgrants krt.Collection[*gwv1beta1.ReferenceGrant]) *RefGrantIndex {
@@ -367,7 +366,6 @@ func NewRefGrantIndex(refgrants krt.Collection[*gwv1beta1.ReferenceGrant]) *RefG
 		ret := make([]refGrantIndexKey, 0, len(p.Spec.To)*len(p.Spec.From))
 		for _, from := range p.Spec.From {
 			for _, to := range p.Spec.To {
-
 				ret = append(ret, refGrantIndexKey{
 					RefGrantNs: p.Namespace,
 					ToGK:       schema.GroupKind{Group: emptyIfCore(string(to.Group)), Kind: string(to.Kind)},
@@ -444,15 +442,6 @@ func (c RouteWrapper) Equals(in RouteWrapper) bool {
 	}
 	panic("unknown route type")
 }
-func versionEquals(a, b metav1.Object) bool {
-	var versionEquals bool
-	if a.GetGeneration() != 0 && b.GetGeneration() != 0 {
-		versionEquals = a.GetGeneration() == b.GetGeneration()
-	} else {
-		versionEquals = a.GetResourceVersion() == b.GetResourceVersion()
-	}
-	return versionEquals && a.GetUID() == b.GetUID()
-}
 
 type RoutesIndex struct {
 	routes          krt.Collection[RouteWrapper]
@@ -473,7 +462,7 @@ func (h *RoutesIndex) HasSynced() bool {
 			return false
 		}
 	}
-	return h.httpRoutes.Synced().HasSynced() && h.routes.Synced().HasSynced() && h.policies.HasSynced() && h.upstreams.HasSynced() && h.refgrants.HasSynced()
+	return h.httpRoutes.HasSynced() && h.routes.HasSynced() && h.policies.HasSynced() && h.upstreams.HasSynced() && h.refgrants.HasSynced()
 }
 
 func NewRoutesIndex(
@@ -485,9 +474,8 @@ func NewRoutesIndex(
 	upstreams *UpstreamIndex,
 	refgrants *RefGrantIndex,
 ) *RoutesIndex {
-
 	h := &RoutesIndex{policies: policies, refgrants: refgrants, upstreams: upstreams}
-	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.Synced().HasSynced, tcproutes.Synced().HasSynced, tlsroutes.Synced().HasSynced)
+	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
 	h.httpRoutes = krt.NewCollection(httproutes, h.transformHttpRoute, krtopts.ToOptions("http-routes-with-policy")...)
 	httpRouteCollection := krt.NewCollection(h.httpRoutes, func(kctx krt.HandlerContext, i ir.HttpRouteIR) *RouteWrapper {
 		return &RouteWrapper{Route: &i}
@@ -617,7 +605,6 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 func (h *RoutesIndex) transformRules(kctx krt.HandlerContext, src ir.ObjectSource, i []gwv1.HTTPRouteRule) []ir.HttpRouteRuleIR {
 	rules := make([]ir.HttpRouteRuleIR, 0, len(i))
 	for _, r := range i {
-
 		extensionRefs := h.getExtensionRefs(kctx, src.Namespace, r.Filters)
 		var policies ir.AttachedPolicies
 		if r.Name != nil {
@@ -633,7 +620,6 @@ func (h *RoutesIndex) transformRules(kctx krt.HandlerContext, src ir.ObjectSourc
 		})
 	}
 	return rules
-
 }
 
 func (h *RoutesIndex) getExtensionRefs(kctx krt.HandlerContext, ns string, r []gwv1.HTTPRouteFilter) ir.AttachedPolicies {
@@ -646,7 +632,6 @@ func (h *RoutesIndex) getExtensionRefs(kctx krt.HandlerContext, ns string, r []g
 		if policy != nil {
 			ret.Policies[gk] = append(ret.Policies[gk], ir.PolicyAtt{PolicyIr: policy /*direct attachment - no target ref*/})
 		}
-
 	}
 	return ret
 }

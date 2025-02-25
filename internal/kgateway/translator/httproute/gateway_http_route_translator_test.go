@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 )
 
-const funcName = "my-function"
+// const funcName = "my-function"
 
 var _ = Describe("GatewayHttpRouteTranslator", func() {
 	/* TODO: move to upstream unit tests

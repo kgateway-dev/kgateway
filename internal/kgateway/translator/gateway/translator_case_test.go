@@ -64,15 +64,12 @@ func CompareProxy(expectedFile string, actualProxy *irtranslator.TranslationResu
 }
 
 func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) error {
-
 	for nns, routeReport := range reportsMap.HTTPRoutes {
 		for ref, parentRefReport := range routeReport.Parents {
-
 			for _, c := range parentRefReport.Conditions {
 				// most route conditions true is good, except RouteConditionPartiallyInvalid
 				if c.Type == string(gwv1.RouteConditionPartiallyInvalid) && c.Status != metav1.ConditionFalse {
 					return fmt.Errorf("condition error for httproute: %v ref: %v condition: %v", nns, ref, c)
-
 				} else if c.Status != metav1.ConditionTrue {
 					return fmt.Errorf("condition error for httproute: %v ref: %v condition: %v", nns, ref, c)
 				}
@@ -81,12 +78,10 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 	}
 	for nns, routeReport := range reportsMap.TCPRoutes {
 		for ref, parentRefReport := range routeReport.Parents {
-
 			for _, c := range parentRefReport.Conditions {
 				// most route conditions true is good, except RouteConditionPartiallyInvalid
 				if c.Type == string(gwv1.RouteConditionPartiallyInvalid) && c.Status != metav1.ConditionFalse {
 					return fmt.Errorf("condition error for tcproute: %v ref: %v condition: %v", nns, ref, c)
-
 				} else if c.Status != metav1.ConditionTrue {
 					return fmt.Errorf("condition error for tcproute: %v ref: %v condition: %v", nns, ref, c)
 				}
@@ -113,7 +108,6 @@ type testBackendPlugin struct{}
 
 // GetBackendForRef implements query.BackendRefResolver.
 func (tp testBackendPlugin) GetBackendForRefPlugin(kctx krt.HandlerContext, key ir.ObjectSource, port int32) *ir.Upstream {
-
 	if key.Kind != "test-backend-plugin" {
 		return nil
 	}
@@ -162,6 +156,7 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		gvr.HTTPRoute_v1,
 		gvr.Service,
 		gvr.Pod,
+		gvr.TCPRoute,
 	} {
 		clienttest.MakeCRD(t, cli, crd)
 	}
@@ -201,13 +196,13 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 	translator.Init(ctx, ri)
 
 	cli.RunAndWait(ctx.Done())
-	gi.Gateways.Synced().WaitUntilSynced(ctx.Done())
+	gi.Gateways.WaitUntilSynced(ctx.Done())
 	kubeclient.WaitForCacheSync("routes", ctx.Done(), ri.HasSynced)
 	kubeclient.WaitForCacheSync("extensions", ctx.Done(), extensions.HasSynced)
 	kubeclient.WaitForCacheSync("commoncol", ctx.Done(), commoncol.HasSynced)
 	kubeclient.WaitForCacheSync("translator", ctx.Done(), translator.HasSynced)
 	kubeclient.WaitForCacheSync("upstreams", ctx.Done(), ui.HasSynced)
-	kubeclient.WaitForCacheSync("endpoints", ctx.Done(), ei.Synced().HasSynced)
+	kubeclient.WaitForCacheSync("endpoints", ctx.Done(), ei.HasSynced)
 
 	results := make(map[types.NamespacedName]ActualTestResult)
 

@@ -9,7 +9,7 @@ import (
 
 // +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:metadata:labels={app=gateway,app.kubernetes.io/name=gateway}
+// +kubebuilder:metadata:labels={app=kgateway,app.kubernetes.io/name=kgateway}
 // +kubebuilder:resource:categories=kgateway,shortName=rp
 // +kubebuilder:subresource:status
 // +kubebuilder:metadata:labels="gateway.networking.k8s.io/policy=Direct"

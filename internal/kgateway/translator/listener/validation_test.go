@@ -8,10 +8,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
@@ -776,47 +773,6 @@ func TestTCPHostnameConflict(t *testing.T) {
 		},
 	}
 	assertExpectedListenerStatuses(t, g, gateway, listeners, report, expectedStatuses)
-}
-
-func svc(ns string) *corev1.Service {
-	return &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: ns,
-			Name:      "foo",
-		},
-	}
-}
-
-func getNN(obj client.Object) types.NamespacedName {
-	return types.NamespacedName{
-		Namespace: obj.GetNamespace(),
-		Name:      obj.GetName(),
-	}
-}
-
-func httpRoute(routeNs, backendNs string) gwv1.HTTPRoute {
-	return gwv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: routeNs,
-			Name:      "test",
-		},
-		Spec: gwv1.HTTPRouteSpec{
-			Rules: []gwv1.HTTPRouteRule{
-				{
-					BackendRefs: []gwv1.HTTPBackendRef{
-						{
-							BackendRef: gwv1.BackendRef{
-								BackendObjectReference: gwv1.BackendObjectReference{
-									Name:      "foo",
-									Namespace: (*gwv1.Namespace)(&backendNs),
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
 }
 
 func simpleGwTCPRoute() *gwv1.Gateway {

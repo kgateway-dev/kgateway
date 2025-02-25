@@ -42,8 +42,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 )
 
-const gatewayV1A2Version = "v1alpha2"
-
 // ProxySyncer is responsible for translating Kubernetes Gateway CRs into Gloo Proxies
 // and syncing the proxyClient with the newly translated proxies.
 type ProxySyncer struct {
@@ -104,7 +102,6 @@ func sliceToResourcesHash[T proto.Message](slice []T) ([]envoycachetypes.Resourc
 func sliceToResources[T proto.Message](slice []T) envoycache.Resources {
 	r, h := sliceToResourcesHash(slice)
 	return envoycache.NewResourcesWithTTL(fmt.Sprintf("%d", h), r)
-
 }
 
 func toResources(gw ir.Gateway, xdsSnap irtranslator.TranslationResult, r reports.ReportMap) *GatewayXdsResources {
@@ -156,13 +153,6 @@ func NewProxyTranslator(xdsCache envoycache.SnapshotCache) ProxyTranslator {
 	return ProxyTranslator{
 		xdsCache: xdsCache,
 	}
-}
-
-type glooProxy struct {
-	gateway *ir.GatewayIR
-	// the GWAPI reports generated for translation from a GW->Proxy
-	// this contains status for the Gateway and referenced Routes
-	reportMap reports.ReportMap
 }
 
 type report struct {
@@ -294,13 +284,13 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 	})
 
 	s.waitForSync = []cache.InformerSynced{
-		endpointIRs.Synced().HasSynced,
-		endpointIRs.Synced().HasSynced,
+		endpointIRs.HasSynced,
+		endpointIRs.HasSynced,
 		upstreamIndex.HasSynced,
-		finalUpstreams.Synced().HasSynced,
-		kubeGateways.Gateways.Synced().HasSynced,
-		s.perclientSnapCollection.Synced().HasSynced,
-		s.mostXdsSnapshots.Synced().HasSynced,
+		finalUpstreams.HasSynced,
+		kubeGateways.Gateways.HasSynced,
+		s.perclientSnapCollection.HasSynced,
+		s.mostXdsSnapshots.HasSynced,
 		s.extensions.HasSynced,
 		routes.HasSynced,
 		s.translatorSyncer.HasSynced,

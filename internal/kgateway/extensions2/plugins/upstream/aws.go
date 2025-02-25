@@ -26,7 +26,6 @@ const (
 )
 
 func processAws(ctx context.Context, in *v1alpha1.AwsUpstream, ir *UpstreamIr, out *envoy_config_cluster_v3.Cluster) {
-
 	lambdaHostname := getLambdaHostname(in)
 
 	// configure Envoy cluster routing info
@@ -108,7 +107,6 @@ func (p *upstreamPlugin) processBackendAws(
 	pCtx *ir.RouteBackendContext,
 	dest *upstreamDestination,
 ) error {
-
 	functionName := dest.FunctionName
 	if p.needFilter == nil {
 		p.needFilter = make(map[string]bool)
