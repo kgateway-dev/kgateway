@@ -84,7 +84,7 @@ type ProxyTranslationPass interface {
 }
 
 type Resources struct {
-	Clusters []envoy_config_cluster_v3.Cluster
+	Clusters []*envoy_config_cluster_v3.Cluster
 }
 
 type GwTranslationCtx struct {
