@@ -1,7 +1,7 @@
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "gloo-gateway.chart" -}}
+{{- define "kgateway.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -13,7 +13,7 @@ Data-plane related macros:
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "gloo-gateway.gateway.name" -}}
+{{- define "kgateway.gateway.name" -}}
 {{- if .Values.gateway.name }}
 {{- .Values.gateway.name | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -26,7 +26,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "gloo-gateway.gateway.fullname" -}}
+{{- define "kgateway.gateway.fullname" -}}
 {{- if .Values.gateway.fullnameOverride }}
 {{- .Values.gateway.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -39,7 +39,7 @@ If release name contains chart name it will be used as a full name.
 Constant labels - labels that are stable across releases
 We want this label to remain constant as it is used in glooctl version.
 */}}
-{{- define "gloo-gateway.gateway.constLabels" -}}
+{{- define "kgateway.gateway.constLabels" -}}
 gloo: kube-gateway
 {{- end }}
 
@@ -47,9 +47,9 @@ gloo: kube-gateway
 {{/*
 Common labels
 */}}
-{{- define "gloo-gateway.gateway.labels" -}}
-helm.sh/chart: {{ include "gloo-gateway.chart" . }}
-{{ include "gloo-gateway.gateway.selectorLabels" . }}
+{{- define "kgateway.gateway.labels" -}}
+helm.sh/chart: {{ include "kgateway.chart" . }}
+{{ include "kgateway.gateway.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -59,8 +59,8 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "gloo-gateway.gateway.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "gloo-gateway.gateway.name" . }}
+{{- define "kgateway.gateway.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "kgateway.gateway.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 gateway.networking.k8s.io/gateway-name: {{ .Release.Name }}
 {{- end }}
@@ -68,10 +68,10 @@ gateway.networking.k8s.io/gateway-name: {{ .Release.Name }}
 {{/*
 Return a container image value as a string
 */}}
-{{- define "gloo-gateway.gateway.image" -}}
+{{- define "kgateway.gateway.image" -}}
 {{- $image := printf "%s/%s:%s" .registry .repository .tag -}}
 {{- if .digest -}}
 {{- $image = printf "%s@%s" $image .digest -}}
 {{- end -}}{{- /* if .digest */ -}}
 {{ $image }}
-{{- end -}}{{- /* define "gloo-gateway.gateway.image" */ -}}
+{{- end -}}{{- /* define "kgateway.gateway.image" */ -}}

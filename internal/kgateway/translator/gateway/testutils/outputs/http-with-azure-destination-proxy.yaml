@@ -28,7 +28,7 @@ listeners:
   name: http
 metadata:
   labels:
-    created_by: gloo-kube-gateway-api
+    created_by: kgateway-kube-gateway-api
     gateway_namespace: default
   name: default-gw
   namespace: gloo-system

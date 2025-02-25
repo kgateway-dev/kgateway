@@ -48,7 +48,7 @@ type nodeRoleHasher struct{}
 // ID returns the string value of the xDS cache key
 // This value must match role metadata format: <owner>~<proxy_namespace>~<proxy_name>
 // which is equal to role defined on proxy-deployment ConfigMap:
-// gloo-kube-gateway-api~{{ $gateway.gatewayNamespace }}-{{ $gateway.gatewayName | default (include "gloo-gateway.gateway.fullname" .) }}
+// kgateway-kube-gateway-api~{{ $gateway.gatewayNamespace }}-{{ $gateway.gatewayName | default (include "kgateway.gateway.fullname" .) }}
 func (h *nodeRoleHasher) ID(node *envoy_config_core_v3.Node) string {
 	if node.GetMetadata() != nil {
 		roleValue := node.GetMetadata().GetFields()[RoleKey]

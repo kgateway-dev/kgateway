@@ -1073,10 +1073,10 @@ var _ = Describe("Deployer", func() {
 				case "istio-proxy":
 					istioProxyContainer = container
 					foundIstioProxy = true
-				case "gloo-gateway":
+				case "kgateway":
 					gwContainer = container
 					foundGw = true
-				case "gloo-ai-extension":
+				case "kgateway-ai-extension":
 					aiContainer = container
 					foundAIExtension = true
 				default:
