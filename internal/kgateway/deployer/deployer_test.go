@@ -1067,16 +1067,16 @@ var _ = Describe("Deployer", func() {
 			var sdsContainer, istioProxyContainer, aiContainer, gwContainer corev1.Container
 			for _, container := range containers {
 				switch container.Name {
-				case "sds":
+				case deployer.SdsContainerName:
 					sdsContainer = container
 					foundSds = true
-				case "istio-proxy":
+				case deployer.IstioContainerName:
 					istioProxyContainer = container
 					foundIstioProxy = true
-				case "kgateway":
+				case deployer.KgatewayContainerName:
 					gwContainer = container
 					foundGw = true
-				case "kgateway-ai-extension":
+				case deployer.KgatewayAIContainerName:
 					aiContainer = container
 					foundAIExtension = true
 				default:

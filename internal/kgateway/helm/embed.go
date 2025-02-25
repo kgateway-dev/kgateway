@@ -5,4 +5,4 @@ import (
 )
 
 //go:embed all:kgateway
-var KGatewayHelmChart embed.FS
+var KgatewayHelmChart embed.FS

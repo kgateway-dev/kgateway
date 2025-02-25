@@ -77,7 +77,7 @@ func NewDeployer(cli client.Client, inputs *Inputs) (*Deployer, error) {
 		return nil, NilDeployerInputsErr
 	}
 
-	helmChart, err := loadFs(helm.KGatewayHelmChart)
+	helmChart, err := loadFs(helm.KgatewayHelmChart)
 	if err != nil {
 		return nil, err
 	}
