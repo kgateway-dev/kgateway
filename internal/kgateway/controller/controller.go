@@ -17,6 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	infextv1a1 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha1"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -29,6 +30,7 @@ const (
 	GatewayParamsField = "gateway-params"
 )
 
+// TODO [danehans]: Refactor so controller config is organized into shared and Gateway/InferencePool-specific controllers.
 type GatewayConfig struct {
 	Mgr manager.Manager
 
@@ -45,7 +47,7 @@ type GatewayConfig struct {
 
 func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 	log := log.FromContext(ctx)
-	log.V(5).Info("starting controller", "controllerName", cfg.ControllerName)
+	log.V(5).Info("starting gateway controller", "controllerName", cfg.ControllerName)
 
 	controllerBuilder := &controllerBuilder{
 		cfg: cfg,
@@ -62,6 +64,58 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 	)
 }
 
+type InferencePoolConfig struct {
+	Mgr            manager.Manager
+	ControllerName string
+	InferenceExt   *deployer.InferenceExtInfo
+	// OurPool determines whether a given InferencePool is managed by this controller.
+	OurPool func(pool *infextv1a1.InferencePool) bool
+}
+
+func NewBaseInferencePoolController(ctx context.Context, poolCfg *InferencePoolConfig, gwCfg *GatewayConfig) error {
+	log := log.FromContext(ctx)
+	log.V(5).Info("starting inferencepool controller", "controllerName", poolCfg.ControllerName)
+
+	// Set default OurPool if not provided.
+	if poolCfg.OurPool == nil {
+		poolCfg.OurPool = func(pool *infextv1a1.InferencePool) bool {
+			// List HTTPRoutes in the same namespace.
+			var routes apiv1.HTTPRouteList
+			if err := poolCfg.Mgr.GetClient().List(ctx, &routes, client.InNamespace(pool.Namespace)); err != nil {
+				log.Error(err, "failed to list HTTPRoutes", "namespace", pool.Namespace)
+				return false
+			}
+			// Iterate over each HTTPRoute to see if any rule references this pool and has a matching controllerName.
+			for _, route := range routes.Items {
+				for _, rule := range route.Spec.Rules {
+					for _, ref := range rule.BackendRefs {
+						if ref.Kind != nil && *ref.Kind == wellknown.InferencePoolKind && string(ref.Name) == pool.Name {
+							for _, p := range route.Status.Parents {
+								if p.ControllerName == apiv1.GatewayController(poolCfg.ControllerName) {
+									return true
+								}
+							}
+						}
+					}
+				}
+			}
+			return false
+		}
+	}
+
+	// TODO [danehans]: Make GatewayConfig optional since Gateway and InferencePool are independent controllers.
+	controllerBuilder := &controllerBuilder{
+		cfg:     *gwCfg,
+		poolCfg: poolCfg,
+		reconciler: &controllerReconciler{
+			cli:    poolCfg.Mgr.GetClient(),
+			scheme: poolCfg.Mgr.GetScheme(),
+		},
+	}
+
+	return run(ctx, controllerBuilder.watchInferencePool)
+}
+
 func run(ctx context.Context, funcs ...func(ctx context.Context) error) error {
 	for _, f := range funcs {
 		if err := f(ctx); err != nil {
@@ -72,8 +126,8 @@ func run(ctx context.Context, funcs ...func(ctx context.Context) error) error {
 }
 
 type controllerBuilder struct {
-	cfg GatewayConfig
-
+	cfg        GatewayConfig
+	poolCfg    *InferencePoolConfig
 	reconciler *controllerReconciler
 }
 
@@ -98,7 +152,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	// setup a deployer
 	log := log.FromContext(ctx)
 
-	log.Info("creating deployer", "ctrlname", c.cfg.ControllerName, "server", c.cfg.ControlPlane.XdsHost, "port", c.cfg.ControlPlane.XdsPort)
+	log.Info("creating gateway deployer", "ctrlname", c.cfg.ControllerName, "server", c.cfg.ControlPlane.XdsHost, "port", c.cfg.ControlPlane.XdsPort)
 	d, err := deployer.NewDeployer(c.cfg.Mgr.GetClient(), &deployer.Inputs{
 		ControllerName:          c.cfg.ControllerName,
 		Dev:                     c.cfg.Dev,
@@ -178,6 +232,91 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+// watchInferencePool adds a watch on InferencePool objects (filtered by OurPool)
+// as well as on HTTPRoute objects to trigger reconciliation for referenced pools.
+func (c *controllerBuilder) watchInferencePool(ctx context.Context) error {
+	log := log.FromContext(ctx)
+	log.Info("creating inference extension deployer", "controller", c.cfg.ControllerName)
+
+	d, err := deployer.NewDeployer(c.cfg.Mgr.GetClient(), &deployer.Inputs{
+		ControllerName:     c.cfg.ControllerName,
+		InferenceExtension: c.poolCfg.InferenceExt,
+	})
+	if err != nil {
+		return err
+	}
+
+	buildr := ctrl.NewControllerManagedBy(c.cfg.Mgr).
+		// For InferencePool objects that satisfy our OurPool predicate.
+		For(&infextv1a1.InferencePool{}, builder.WithPredicates(
+			predicate.NewPredicateFuncs(func(object client.Object) bool {
+				if pool, ok := object.(*infextv1a1.InferencePool); ok {
+					return c.poolCfg.OurPool(pool)
+				}
+				return false
+			}),
+			predicate.Or(
+				predicate.AnnotationChangedPredicate{},
+				predicate.GenerationChangedPredicate{},
+			),
+		)).
+		// Watch HTTPRoute objects so that changes there trigger a reconcile for referenced pools.
+		Watches(&apiv1.HTTPRoute{}, handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
+			var reqs []reconcile.Request
+			route, ok := obj.(*apiv1.HTTPRoute)
+			if !ok {
+				return nil
+			}
+			// For every backend ref in every rule of the route...
+			for _, rule := range route.Spec.Rules {
+				for _, ref := range rule.BackendRefs {
+					if ref.Kind != nil && *ref.Kind == wellknown.InferencePoolKind {
+						reqs = append(reqs, reconcile.Request{
+							NamespacedName: client.ObjectKey{
+								Namespace: route.Namespace,
+								Name:      string(ref.Name),
+							},
+						})
+					}
+				}
+			}
+			return reqs
+		}))
+
+	// Watch child objects, e.g. Deployments, created by the inference pool deployer.
+	gvks, err := d.GetGvksToWatch(ctx)
+	if err != nil {
+		return err
+	}
+	for _, gvk := range gvks {
+		obj, err := c.cfg.Mgr.GetScheme().New(gvk)
+		if err != nil {
+			return err
+		}
+		clientObj, ok := obj.(client.Object)
+		if !ok {
+			return fmt.Errorf("object %T is not a client.Object", obj)
+		}
+		log.Info("watching gvk as inferencepool child", "gvk", gvk)
+		var opts []builder.OwnsOption
+		if shouldIgnoreStatusChild(gvk) {
+			opts = append(opts, builder.WithPredicates(predicate.GenerationChangedPredicate{}))
+		}
+		buildr.Owns(clientObj, opts...)
+	}
+
+	r := &inferencePoolReconciler{
+		cli:      c.cfg.Mgr.GetClient(),
+		scheme:   c.cfg.Mgr.GetScheme(),
+		deployer: d,
+	}
+	if err := buildr.Complete(r); err != nil {
+		return err
+	}
+
 	return nil
 }
 

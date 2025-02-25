@@ -32,6 +32,9 @@ const (
 	// Kind string for ReferenceGrant resource
 	ReferenceGrantKind = "ReferenceGrant"
 
+	// Kind string for InferencePool resource
+	InferencePoolKind = "InferencePool"
+
 	// Kind strings for Gateway API list types
 	HTTPRouteListKind      = "HTTPRouteList"
 	GatewayListKind        = "GatewayList"
