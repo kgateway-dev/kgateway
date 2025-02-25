@@ -727,12 +727,12 @@ func newQueries(initObjs ...client.Object) query.GatewayQueries {
 	return query.NewData(rtidx, secrets, nsCol)
 }
 
-func k8sUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir.Upstream] {
-	return krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.Upstream {
-		uss := []ir.Upstream{}
+func k8sUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir.BackendObjectIR] {
+	return krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.BackendObjectIR {
+		uss := []ir.BackendObjectIR{}
 
 		for _, port := range svc.Spec.Ports {
-			uss = append(uss, ir.Upstream{
+			uss = append(uss, ir.BackendObjectIR{
 				ObjectSource: ir.ObjectSource{
 					Kind:      SvcGk.Kind,
 					Group:     SvcGk.Group,

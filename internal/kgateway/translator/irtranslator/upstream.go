@@ -28,7 +28,7 @@ type UpstreamTranslator struct {
 func (t *UpstreamTranslator) TranslateUpstream(
 	kctx krt.HandlerContext,
 	ucc ir.UniqlyConnectedClient,
-	u ir.Upstream,
+	u ir.BackendObjectIR,
 ) (*envoy_config_cluster_v3.Cluster, error) {
 	gk := schema.GroupKind{
 		Group: u.Group,
@@ -52,7 +52,7 @@ func (t *UpstreamTranslator) TranslateUpstream(
 	return out, nil
 }
 
-func (t *UpstreamTranslator) runPlugins(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, u ir.Upstream, out *envoy_config_cluster_v3.Cluster) {
+func (t *UpstreamTranslator) runPlugins(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, u ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) {
 	for gk, polImpl := range t.ContributedPolicies {
 		// TODO: in theory it would be nice to do `ProcessUpstream` once, and only do
 		// the the per-client processing for each client.
@@ -72,7 +72,7 @@ func (t *UpstreamTranslator) runPlugins(kctx krt.HandlerContext, ctx context.Con
 	}
 }
 
-func initializeCluster(u ir.Upstream) *envoy_config_cluster_v3.Cluster {
+func initializeCluster(u ir.BackendObjectIR) *envoy_config_cluster_v3.Cluster {
 	// circuitBreakers := t.settings.GetGloo().GetCircuitBreakers()
 	out := &envoy_config_cluster_v3.Cluster{
 		Name:     u.ClusterName(),

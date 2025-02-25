@@ -436,10 +436,10 @@ func (tc *tcpFilterChain) translateTcpFilterChain(_ ir.Listener, reporter report
 
 	// Ensure unique names by appending the rule index to the TCPRoute name
 	tcpHostName := fmt.Sprintf("%s.%s-rule-%d", tRoute.Namespace, tRoute.Name, 0)
-	var backends []ir.Backend
+	var backends []ir.BackendRefIR
 	for _, backend := range tRoute.Backends {
 		// validate that we don't have an error:
-		if backend.Err != nil || backend.Upstream == nil {
+		if backend.Err != nil || backend.BackendObject == nil {
 			err := backend.Err
 			if err == nil {
 				err = errors.New("not found")

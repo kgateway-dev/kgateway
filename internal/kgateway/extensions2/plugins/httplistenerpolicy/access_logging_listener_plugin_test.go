@@ -633,7 +633,7 @@ func TestConvertJsonFormat_EdgeCases(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				result, err := translateAccessLogs(logger, tc.config,
 					// Example grpcBackends map for upstreams
-					map[string]*ir.Upstream{
+					map[string]*ir.BackendObjectIR{
 						"grpc-log-0": {
 							ObjectSource: ir.ObjectSource{
 								Name:      "test-service",

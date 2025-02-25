@@ -71,26 +71,16 @@ func extractBackend(backend *apiv1alpha1.Backend, fieldManager string, subresour
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Kind field is set to the value of the last call.
-<<<<<<< HEAD:api/applyconfiguration/api/v1alpha1/upstream.go
-func (b *UpstreamApplyConfiguration) WithKind(value string) *UpstreamApplyConfiguration {
-	b.TypeMetaApplyConfiguration.Kind = &value
-=======
 func (b *BackendApplyConfiguration) WithKind(value string) *BackendApplyConfiguration {
-	b.Kind = &value
->>>>>>> d26e18f285 (rename upstream type to backend):api/applyconfiguration/api/v1alpha1/backend.go
+	b.TypeMetaApplyConfiguration.Kind = &value
 	return b
 }
 
 // WithAPIVersion sets the APIVersion field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the APIVersion field is set to the value of the last call.
-<<<<<<< HEAD:api/applyconfiguration/api/v1alpha1/upstream.go
-func (b *UpstreamApplyConfiguration) WithAPIVersion(value string) *UpstreamApplyConfiguration {
-	b.TypeMetaApplyConfiguration.APIVersion = &value
-=======
 func (b *BackendApplyConfiguration) WithAPIVersion(value string) *BackendApplyConfiguration {
-	b.APIVersion = &value
->>>>>>> d26e18f285 (rename upstream type to backend):api/applyconfiguration/api/v1alpha1/backend.go
+	b.TypeMetaApplyConfiguration.APIVersion = &value
 	return b
 }
 

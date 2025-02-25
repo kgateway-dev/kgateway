@@ -14,7 +14,7 @@ import (
 
 func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 	g := gomega.NewWithT(t)
-	us := ir.Upstream{
+	us := ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
 			Namespace: "ns",
 			Name:      "name",
@@ -80,7 +80,7 @@ func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 // similar to TestTranslatesDestrulesFailoverPriority but implicit
 func TestTranslatesDestrulesFailover(t *testing.T) {
 	g := gomega.NewWithT(t)
-	us := ir.Upstream{
+	us := ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
 			Namespace: "ns",
 			Name:      "name",

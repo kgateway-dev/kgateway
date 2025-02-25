@@ -34,7 +34,7 @@ func (n *NotFoundError) Error() string {
 }
 
 type UpstreamIndex struct {
-	availableUpstreams  map[schema.GroupKind]krt.Collection[ir.Upstream]
+	availableUpstreams  map[schema.GroupKind]krt.Collection[ir.BackendObjectIR]
 	backendRefExtension []extensionsplug.GetBackendForRefPlugin
 	policies            *PolicyIndex
 	refgrants           *RefGrantIndex
@@ -50,7 +50,7 @@ func NewUpstreamIndex(
 	return &UpstreamIndex{
 		policies:            policies,
 		refgrants:           refgrants,
-		availableUpstreams:  map[schema.GroupKind]krt.Collection[ir.Upstream]{},
+		availableUpstreams:  map[schema.GroupKind]krt.Collection[ir.BackendObjectIR]{},
 		krtopts:             krtopts,
 		backendRefExtension: backendRefExtension,
 	}
@@ -71,16 +71,16 @@ func (s *UpstreamIndex) HasSynced() bool {
 	return true
 }
 
-func (ui *UpstreamIndex) Upstreams() []krt.Collection[ir.Upstream] {
-	ret := make([]krt.Collection[ir.Upstream], 0, len(ui.availableUpstreams))
+func (ui *UpstreamIndex) Upstreams() []krt.Collection[ir.BackendObjectIR] {
+	ret := make([]krt.Collection[ir.BackendObjectIR], 0, len(ui.availableUpstreams))
 	for _, u := range ui.availableUpstreams {
 		ret = append(ret, u)
 	}
 	return ret
 }
 
-func (ui *UpstreamIndex) AddUpstreams(gk schema.GroupKind, col krt.Collection[ir.Upstream]) {
-	ucol := krt.NewCollection(col, func(kctx krt.HandlerContext, u ir.Upstream) *ir.Upstream {
+func (ui *UpstreamIndex) AddUpstreams(gk schema.GroupKind, col krt.Collection[ir.BackendObjectIR]) {
+	ucol := krt.NewCollection(col, func(kctx krt.HandlerContext, u ir.BackendObjectIR) *ir.BackendObjectIR {
 		policies := ui.policies.getTargetingPolicies(kctx, extensionsplug.UpstreamAttachmentPoint, u.ObjectSource, "")
 		u.AttachedPolicies = toAttachedPolicies(policies)
 		return &u
@@ -88,8 +88,8 @@ func (ui *UpstreamIndex) AddUpstreams(gk schema.GroupKind, col krt.Collection[ir
 	ui.availableUpstreams[gk] = ucol
 }
 
-func AddUpstreamMany[T metav1.Object](ui *UpstreamIndex, gk schema.GroupKind, col krt.Collection[T], build func(kctx krt.HandlerContext, svc T) []ir.Upstream) krt.Collection[ir.Upstream] {
-	ucol := krt.NewManyCollection(col, func(kctx krt.HandlerContext, svc T) []ir.Upstream {
+func AddUpstreamMany[T metav1.Object](ui *UpstreamIndex, gk schema.GroupKind, col krt.Collection[T], build func(kctx krt.HandlerContext, svc T) []ir.BackendObjectIR) krt.Collection[ir.BackendObjectIR] {
+	ucol := krt.NewManyCollection(col, func(kctx krt.HandlerContext, svc T) []ir.BackendObjectIR {
 		upstreams := build(kctx, svc)
 		for i := range upstreams {
 			u := &upstreams[i]
@@ -101,21 +101,21 @@ func AddUpstreamMany[T metav1.Object](ui *UpstreamIndex, gk schema.GroupKind, co
 	return ucol
 }
 
-func AddUpstream[T metav1.Object](ui *UpstreamIndex, gk schema.GroupKind, col krt.Collection[T], build func(kctx krt.HandlerContext, svc T) *ir.Upstream) {
-	ucol := krt.NewCollection(col, func(kctx krt.HandlerContext, svc T) *ir.Upstream {
-		upstream := build(kctx, svc)
-		if upstream == nil {
-			return nil
-		}
-		upstream.AttachedPolicies = toAttachedPolicies(ui.policies.getTargetingPolicies(kctx, extensionsplug.UpstreamAttachmentPoint, upstream.ObjectSource, ""))
+// func AddUpstream[T metav1.Object](ui *UpstreamIndex, gk schema.GroupKind, col krt.Collection[T], build func(kctx krt.HandlerContext, svc T) *ir.Upstream) {
+// 	ucol := krt.NewCollection(col, func(kctx krt.HandlerContext, svc T) *ir.Upstream {
+// 		upstream := build(kctx, svc)
+// 		if upstream == nil {
+// 			return nil
+// 		}
+// 		upstream.AttachedPolicies = toAttachedPolicies(ui.policies.getTargetingPolicies(kctx, extensionsplug.UpstreamAttachmentPoint, upstream.ObjectSource, ""))
 
-		return upstream
-	}, ui.krtopts.ToOptions("")...)
-	ui.availableUpstreams[gk] = ucol
-}
+// 		return upstream
+// 	}, ui.krtopts.ToOptions("")...)
+// 	ui.availableUpstreams[gk] = ucol
+// }
 
 // if we want to make this function public, make it do ref grants
-func (i *UpstreamIndex) getUpstream(kctx krt.HandlerContext, gk schema.GroupKind, n types.NamespacedName, gwport *gwv1.PortNumber) (*ir.Upstream, error) {
+func (i *UpstreamIndex) getUpstream(kctx krt.HandlerContext, gk schema.GroupKind, n types.NamespacedName, gwport *gwv1.PortNumber) (*ir.BackendObjectIR, error) {
 	key := ir.ObjectSource{
 		Group:     emptyIfCore(gk.Group),
 		Kind:      gk.Kind,
@@ -146,12 +146,12 @@ func (i *UpstreamIndex) getUpstream(kctx krt.HandlerContext, gk schema.GroupKind
 	return up, nil
 }
 
-func (i *UpstreamIndex) getUpstreamFromRef(kctx krt.HandlerContext, localns string, ref gwv1.BackendObjectReference) (*ir.Upstream, error) {
+func (i *UpstreamIndex) getUpstreamFromRef(kctx krt.HandlerContext, localns string, ref gwv1.BackendObjectReference) (*ir.BackendObjectIR, error) {
 	resolved := toFromBackendRef(localns, ref)
 	return i.getUpstream(kctx, resolved.GetGroupKind(), types.NamespacedName{Namespace: resolved.Namespace, Name: resolved.Name}, ref.Port)
 }
 
-func (i *UpstreamIndex) GetUpstreamFromRef(kctx krt.HandlerContext, src ir.ObjectSource, ref gwv1.BackendObjectReference) (*ir.Upstream, error) {
+func (i *UpstreamIndex) GetUpstreamFromRef(kctx krt.HandlerContext, src ir.ObjectSource, ref gwv1.BackendObjectReference) (*ir.BackendObjectIR, error) {
 	fromns := src.Namespace
 
 	fromgk := schema.GroupKind{
@@ -473,10 +473,12 @@ func NewRoutesIndex(
 	hr := krt.NewCollection(h.httpRoutes, func(kctx krt.HandlerContext, i ir.HttpRouteIR) *RouteWrapper {
 		return &RouteWrapper{Route: &i}
 	}, krtopts.ToOptions("routes-http-routes-with-policy")...)
+
 	tr := krt.NewCollection(tcproutes, func(kctx krt.HandlerContext, i *gwv1a2.TCPRoute) *RouteWrapper {
 		t := h.transformTcpRoute(kctx, i)
 		return &RouteWrapper{Route: t}
 	}, krtopts.ToOptions("routes-tcp-routes-with-policy")...)
+
 	h.routes = krt.JoinCollection([]krt.Collection[RouteWrapper]{hr, tr}, krtopts.ToOptions("all-routes-with-policy")...)
 
 	httpByNamespace := krt.NewIndex(h.httpRoutes, func(i ir.HttpRouteIR) []string {
@@ -647,9 +649,9 @@ func toFromBackendRef(fromns string, ref gwv1.BackendObjectReference) ir.ObjectS
 	}
 }
 
-func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, i []gwv1.HTTPBackendRef) []ir.HttpBackendOrDelegate {
-	backends := make([]ir.HttpBackendOrDelegate, 0, len(i))
-	for _, ref := range i {
+func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, backendRefs []gwv1.HTTPBackendRef) []ir.HttpBackendOrDelegate {
+	backends := make([]ir.HttpBackendOrDelegate, 0, len(backendRefs))
+	for _, ref := range backendRefs {
 		extensionRefs := h.getExtensionRefs(kctx, src.Namespace, ref.Filters)
 		fromns := src.Namespace
 
@@ -675,11 +677,11 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 			err = &NotFoundError{NotFoundObj: to}
 		}
 		backends = append(backends, ir.HttpBackendOrDelegate{
-			Backend: &ir.Backend{
-				Upstream:    upstream,
-				ClusterName: clusterName,
-				Weight:      weight(ref.Weight),
-				Err:         err,
+			Backend: &ir.BackendRefIR{
+				BackendObject: upstream,
+				ClusterName:   clusterName,
+				Weight:        weight(ref.Weight),
+				Err:           err,
 			},
 			AttachedPolicies: extensionRefs,
 		})
@@ -687,8 +689,8 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 	return backends
 }
 
-func (h *RoutesIndex) getTcpBackends(kctx krt.HandlerContext, src ir.ObjectSource, i []gwv1.BackendRef) []ir.Backend {
-	backends := make([]ir.Backend, 0, len(i))
+func (h *RoutesIndex) getTcpBackends(kctx krt.HandlerContext, src ir.ObjectSource, i []gwv1.BackendRef) []ir.BackendRefIR {
+	backends := make([]ir.BackendRefIR, 0, len(i))
 	for _, ref := range i {
 		upstream, err := h.upstreams.GetUpstreamFromRef(kctx, src, ref.BackendObjectReference)
 		clusterName := "blackhole-cluster"
@@ -697,11 +699,11 @@ func (h *RoutesIndex) getTcpBackends(kctx krt.HandlerContext, src ir.ObjectSourc
 		} else if err == nil {
 			err = &NotFoundError{NotFoundObj: toFromBackendRef(src.Namespace, ref.BackendObjectReference)}
 		}
-		backends = append(backends, ir.Backend{
-			Upstream:    upstream,
-			ClusterName: clusterName,
-			Weight:      weight(ref.Weight),
-			Err:         err,
+		backends = append(backends, ir.BackendRefIR{
+			BackendObject: upstream,
+			ClusterName:   clusterName,
+			Weight:        weight(ref.Weight),
+			Err:           err,
 		})
 	}
 	return backends

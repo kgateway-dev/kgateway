@@ -79,7 +79,7 @@ func (s *CombinedTranslator) Init(ctx context.Context, routes *krtcollections.Ro
 		ContributedUpstreams: make(map[schema.GroupKind]ir.UpstreamInit),
 		ContributedPolicies:  s.extensions.ContributesPolicies,
 	}
-	for k, up := range s.extensions.ContributesUpstreams {
+	for k, up := range s.extensions.ContributesBackends {
 		s.upstreamTranslator.ContributedUpstreams[k] = up.UpstreamInit
 	}
 

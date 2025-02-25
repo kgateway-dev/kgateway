@@ -1,4 +1,4 @@
-package upstream
+package backend
 
 import (
 	"bytes"
@@ -46,35 +46,35 @@ var (
 	}
 )
 
-type upstreamDestination struct {
+type backendDestination struct {
 	FunctionName string
 }
 
-func (d *upstreamDestination) CreationTime() time.Time {
+func (d *backendDestination) CreationTime() time.Time {
 	return time.Time{}
 }
 
-func (d *upstreamDestination) Equals(in any) bool {
-	d2, ok := in.(*upstreamDestination)
+func (d *backendDestination) Equals(in any) bool {
+	d2, ok := in.(*backendDestination)
 	if !ok {
 		return false
 	}
 	return d.FunctionName == d2.FunctionName
 }
 
-type UpstreamIr struct {
+type BackendIr struct {
 	AwsSecret *ir.Secret
 }
 
-func (u *UpstreamIr) data() map[string][]byte {
+func (u *BackendIr) data() map[string][]byte {
 	if u.AwsSecret == nil {
 		return nil
 	}
 	return u.AwsSecret.Data
 }
 
-func (u *UpstreamIr) Equals(other any) bool {
-	otherUpstream, ok := other.(*UpstreamIr)
+func (u *BackendIr) Equals(other any) bool {
+	otherUpstream, ok := other.(*BackendIr)
 	if !ok {
 		return false
 	}
@@ -83,14 +83,14 @@ func (u *UpstreamIr) Equals(other any) bool {
 	})
 }
 
-type upstreamPlugin struct {
+type backendPlugin struct {
 	needFilter map[string]bool
 }
 
 func registerTypes(ourCli versioned.Interface) {
 	kubeclient.Register[*v1alpha1.Backend](
-		v1alpha1.UpstreamGVK.GroupVersion().WithResource("backends"),
-		v1alpha1.UpstreamGVK,
+		v1alpha1.BackendGVK.GroupVersion().WithResource("backends"),
+		v1alpha1.BackendGVK,
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
 			return ourCli.GatewayV1alpha1().Backends(namespace).List(context.Background(), o)
 		},
@@ -105,11 +105,11 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 	col := krt.WrapClient(kclient.New[*v1alpha1.Backend](commoncol.Client), commoncol.KrtOpts.ToOptions("Backends")...)
 
-	gk := v1alpha1.UpstreamGVK.GroupKind()
+	gk := v1alpha1.BackendGVK.GroupKind()
 	translate := buildTranslateFunc(commoncol.Secrets)
-	ucol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.Upstream {
+	ucol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.BackendObjectIR {
 		// resolve secrets
-		return &ir.Upstream{
+		return &ir.BackendObjectIR{
 			ObjectSource: ir.ObjectSource{
 				Kind:      gk.Kind,
 				Group:     gk.Group,
@@ -127,13 +127,13 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		return processEndpoints(i)
 	})
 	return extensionsplug.Plugin{
-		ContributesUpstreams: map[schema.GroupKind]extensionsplug.UpstreamPlugin{
+		ContributesBackends: map[schema.GroupKind]extensionsplug.BackendPlugin{
 			gk: {
 				UpstreamInit: ir.UpstreamInit{
 					InitUpstream: processUpstream,
 				},
 				Endpoints: endpoints,
-				Upstreams: ucol,
+				Backends:  ucol,
 			},
 		},
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
@@ -143,7 +143,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				//			AttachmentPoints: []ir.AttachmentPoints{ir.HttpBackendRefAttachmentPoint},
 				PoliciesFetch: func(n, ns string) ir.PolicyIR {
 					// virtual policy - we don't have a real policy object
-					return &upstreamDestination{
+					return &backendDestination{
 						FunctionName: n,
 					}
 				},
@@ -152,16 +152,16 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-func buildTranslateFunc(secrets *krtcollections.SecretIndex) func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *UpstreamIr {
-	return func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *UpstreamIr {
+func buildTranslateFunc(secrets *krtcollections.SecretIndex) func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *BackendIr {
+	return func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *BackendIr {
 		// resolve secrets
-		var ir UpstreamIr
+		var ir BackendIr
 		if i.Spec.Aws != nil {
 			ns := i.GetNamespace()
 			secretRef := gwv1.SecretObjectReference{
 				Name: gwv1.ObjectName(i.Spec.Aws.SecretRef.Name),
 			}
-			secret, _ := secrets.GetSecret(krtctx, krtcollections.From{GroupKind: v1alpha1.UpstreamGVK.GroupKind(), Namespace: ns}, secretRef)
+			secret, _ := secrets.GetSecret(krtctx, krtcollections.From{GroupKind: v1alpha1.BackendGVK.GroupKind(), Namespace: ns}, secretRef)
 			if secret != nil {
 				ir.AwsSecret = secret
 			} else {
@@ -173,14 +173,14 @@ func buildTranslateFunc(secrets *krtcollections.SecretIndex) func(krtctx krt.Han
 	}
 }
 
-func processUpstream(ctx context.Context, in ir.Upstream, out *envoy_config_cluster_v3.Cluster) {
+func processUpstream(ctx context.Context, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) {
 	up, ok := in.Obj.(*v1alpha1.Backend)
 	if !ok {
 		// log - should never happen
 		return
 	}
 
-	ir, ok := in.ObjIr.(*UpstreamIr)
+	ir, ok := in.ObjIr.(*BackendIr)
 	if !ok {
 		// log - should never happen
 		return
@@ -217,36 +217,36 @@ func processEndpoints(up *v1alpha1.Backend) *ir.EndpointsForUpstream {
 }
 
 func newPlug(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {
-	return &upstreamPlugin{}
+	return &backendPlugin{}
 }
 
-func (p *upstreamPlugin) Name() string {
+func (p *backendPlugin) Name() string {
 	return "upstream"
 }
 
 // called 1 time for each listener
-func (p *upstreamPlugin) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *envoy_config_listener_v3.Listener) {
+func (p *backendPlugin) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *envoy_config_listener_v3.Listener) {
 }
 
-func (p *upstreamPlugin) ApplyHCM(ctx context.Context,
+func (p *backendPlugin) ApplyHCM(ctx context.Context,
 	pCtx *ir.HcmContext,
 	out *envoy_hcm.HttpConnectionManager) error { //no-op
 	return nil
 }
 
-func (p *upstreamPlugin) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostContext, out *envoy_config_route_v3.VirtualHost) {
+func (p *backendPlugin) ApplyVhostPlugin(ctx context.Context, pCtx *ir.VirtualHostContext, out *envoy_config_route_v3.VirtualHost) {
 }
 
 // called 0 or more times
-func (p *upstreamPlugin) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoy_config_route_v3.Route) error {
+func (p *backendPlugin) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, outputRoute *envoy_config_route_v3.Route) error {
 	return nil
 }
 
-func (p *upstreamPlugin) ApplyForRouteBackend(
+func (p *backendPlugin) ApplyForRouteBackend(
 	ctx context.Context, policy ir.PolicyIR,
 	pCtx *ir.RouteBackendContext,
 ) error {
-	pol, ok := policy.(*upstreamDestination)
+	pol, ok := policy.(*backendDestination)
 	if !ok {
 		return nil
 		// todo: should we return fmt.Errorf("internal error: policy is not a upstreamDestination")
@@ -257,7 +257,7 @@ func (p *upstreamPlugin) ApplyForRouteBackend(
 // called 1 time per listener
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
-func (p *upstreamPlugin) HttpFilters(ctx context.Context, fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
+func (p *backendPlugin) HttpFilters(ctx context.Context, fc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
 	if !p.needFilter[fc.FilterChainName] {
 		return nil, nil
 	}
@@ -270,15 +270,15 @@ func (p *upstreamPlugin) HttpFilters(ctx context.Context, fc ir.FilterChainCommo
 	}, nil
 }
 
-func (p *upstreamPlugin) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {
+func (p *backendPlugin) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {
 	return nil, nil
 }
 
-func (p *upstreamPlugin) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
+func (p *backendPlugin) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
 	return nil, nil
 }
 
 // called 1 time (per envoy proxy). replaces GeneratedResources
-func (p *upstreamPlugin) ResourcesToAdd(ctx context.Context) ir.Resources {
+func (p *backendPlugin) ResourcesToAdd(ctx context.Context) ir.Resources {
 	return ir.Resources{}
 }

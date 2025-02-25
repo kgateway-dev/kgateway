@@ -105,9 +105,9 @@ func initUpstreams(
 	krtopts krtutil.KrtOptions,
 ) krt.Collection[ir.EndpointsForUpstream] {
 	allEndpoints := []krt.Collection[ir.EndpointsForUpstream]{}
-	for k, col := range extensions.ContributesUpstreams {
-		if col.Upstreams != nil {
-			upstreamIndex.AddUpstreams(k, col.Upstreams)
+	for k, col := range extensions.ContributesBackends {
+		if col.Backends != nil {
+			upstreamIndex.AddUpstreams(k, col.Backends)
 		}
 		if col.Endpoints != nil {
 			allEndpoints = append(allEndpoints, col.Endpoints)

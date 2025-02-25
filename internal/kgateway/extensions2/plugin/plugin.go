@@ -28,19 +28,19 @@ func (a AttachmentPoints) Has(p AttachmentPoints) bool {
 }
 
 type EndpointPlugin func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.EndpointsForUpstream) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64)
-type GetBackendForRefPlugin func(kctx krt.HandlerContext, key ir.ObjectSource, port int32) *ir.Upstream
+type GetBackendForRefPlugin func(kctx krt.HandlerContext, key ir.ObjectSource, port int32) *ir.BackendObjectIR
 
 type PolicyPlugin struct {
 	Name                      string
 	NewGatewayTranslationPass func(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass
 
 	GetBackendForRef GetBackendForRefPlugin
-	ProcessUpstream  func(ctx context.Context, pol ir.PolicyIR, in ir.Upstream, out *envoy_config_cluster_v3.Cluster)
+	ProcessUpstream  func(ctx context.Context, pol ir.PolicyIR, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster)
 	// TODO: consider changing PerClientProcessUpstream too look like this:
 	// PerClientProcessUpstream  func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.Upstream)
 	// so that it only attaches the policy to the upstream, and doesn't modify the upstream (except for attached policies) or the cluster itself.
 	// leaving as is for now as this requires better understanding of how krt would handle this.
-	PerClientProcessUpstream  func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.Upstream, out *envoy_config_cluster_v3.Cluster)
+	PerClientProcessUpstream  func(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster)
 	PerClientProcessEndpoints EndpointPlugin
 
 	Policies       krt.Collection[ir.PolicyWrapper]
@@ -48,9 +48,9 @@ type PolicyPlugin struct {
 	PoliciesFetch  func(n, ns string) ir.PolicyIR
 }
 
-type UpstreamPlugin struct {
+type BackendPlugin struct {
 	ir.UpstreamInit
-	Upstreams krt.Collection[ir.Upstream]
+	Backends  krt.Collection[ir.BackendObjectIR]
 	Endpoints krt.Collection[ir.EndpointsForUpstream]
 }
 
@@ -68,7 +68,7 @@ type ContributesPolicies map[schema.GroupKind]PolicyPlugin
 
 type Plugin struct {
 	ContributesPolicies
-	ContributesUpstreams    map[schema.GroupKind]UpstreamPlugin
+	ContributesBackends     map[schema.GroupKind]BackendPlugin
 	ContributesGwTranslator GwTranslatorFactory
 	// extra has sync beyong primary resources in the collections above
 	ExtraHasSynced func() bool
@@ -86,8 +86,8 @@ func (p PolicyPlugin) AttachmentPoints() AttachmentPoints {
 }
 
 func (p Plugin) HasSynced() bool {
-	for _, up := range p.ContributesUpstreams {
-		if up.Upstreams != nil && !up.Upstreams.HasSynced() {
+	for _, up := range p.ContributesBackends {
+		if up.Backends != nil && !up.Backends.HasSynced() {
 			return false
 		}
 		if up.Endpoints != nil && !up.Endpoints.HasSynced() {

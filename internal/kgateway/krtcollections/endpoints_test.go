@@ -27,7 +27,7 @@ import (
 func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 	g := gomega.NewWithT(t)
 
-	us := ir.Upstream{
+	us := ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
 			Namespace: "ns",
 			Name:      "svc",
@@ -150,7 +150,7 @@ func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 func TestEndpointsForUpstreamWithDifferentNameButSameEndpoints(t *testing.T) {
 	g := gomega.NewWithT(t)
 
-	us := ir.Upstream{
+	us := ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
 			Namespace: "ns",
 			Name:      "svc",
@@ -173,7 +173,7 @@ func TestEndpointsForUpstreamWithDifferentNameButSameEndpoints(t *testing.T) {
 			},
 		},
 	}
-	usd := ir.Upstream{
+	usd := ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
 			Namespace: "ns",
 			Name:      "discovered-name",
@@ -283,8 +283,8 @@ func TestEndpoints(t *testing.T) {
 	testCases := []struct {
 		name     string
 		inputs   []any
-		upstream ir.Upstream
-		result   func(ir.Upstream) *ir.EndpointsForUpstream
+		upstream ir.BackendObjectIR
+		result   func(ir.BackendObjectIR) *ir.EndpointsForUpstream
 	}{
 		{
 			name: "basic",
@@ -344,7 +344,7 @@ func TestEndpoints(t *testing.T) {
 				},
 			},
 
-			upstream: ir.Upstream{
+			upstream: ir.BackendObjectIR{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -367,7 +367,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			result: func(us ir.Upstream) *ir.EndpointsForUpstream {
+			result: func(us ir.BackendObjectIR) *ir.EndpointsForUpstream {
 				// output
 				emd := ir.EndpointWithMd{
 					LbEndpoint: &endpointv3.LbEndpoint{
@@ -494,7 +494,7 @@ func TestEndpoints(t *testing.T) {
 				},
 			},
 
-			upstream: ir.Upstream{
+			upstream: ir.BackendObjectIR{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -517,7 +517,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			result: func(us ir.Upstream) *ir.EndpointsForUpstream {
+			result: func(us ir.BackendObjectIR) *ir.EndpointsForUpstream {
 				// output
 				result := ir.NewEndpointsForUpstream(us)
 				result.Add(ir.PodLocality{
@@ -642,7 +642,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			upstream: ir.Upstream{
+			upstream: ir.BackendObjectIR{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -665,7 +665,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			result: func(us ir.Upstream) *ir.EndpointsForUpstream {
+			result: func(us ir.BackendObjectIR) *ir.EndpointsForUpstream {
 				// output
 				emd := ir.EndpointWithMd{
 					LbEndpoint: &endpointv3.LbEndpoint{
@@ -791,7 +791,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			upstream: ir.Upstream{
+			upstream: ir.BackendObjectIR{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -814,7 +814,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			result: func(us ir.Upstream) *ir.EndpointsForUpstream {
+			result: func(us ir.BackendObjectIR) *ir.EndpointsForUpstream {
 				// Only one endpoint should be present after deduplication
 				emd := ir.EndpointWithMd{
 					LbEndpoint: &endpointv3.LbEndpoint{
@@ -910,7 +910,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			upstream: ir.Upstream{
+			upstream: ir.BackendObjectIR{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -933,7 +933,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			result: func(us ir.Upstream) *ir.EndpointsForUpstream {
+			result: func(us ir.BackendObjectIR) *ir.EndpointsForUpstream {
 				// The result should be empty since no ready endpoints are available.
 				result := ir.NewEndpointsForUpstream(us)
 				return result
@@ -1006,7 +1006,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			upstream: ir.Upstream{
+			upstream: ir.BackendObjectIR{
 				ObjectSource: ir.ObjectSource{
 					Namespace: "ns",
 					Name:      "svc",
@@ -1043,7 +1043,7 @@ func TestEndpoints(t *testing.T) {
 					},
 				},
 			},
-			result: func(us ir.Upstream) *ir.EndpointsForUpstream {
+			result: func(us ir.BackendObjectIR) *ir.EndpointsForUpstream {
 				// output
 				emd := ir.EndpointWithMd{
 					LbEndpoint: &endpointv3.LbEndpoint{
@@ -1107,7 +1107,7 @@ func TestEndpoints(t *testing.T) {
 			})
 
 			ei := EndpointsInputs{
-				Upstreams:               krttest.GetMockCollection[ir.Upstream](mock),
+				Upstreams:               krttest.GetMockCollection[ir.BackendObjectIR](mock),
 				EndpointSlices:          endpointSlices,
 				EndpointSlicesByService: endpointSlicesByService,
 				Pods:                    pods,

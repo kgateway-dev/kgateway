@@ -107,12 +107,12 @@ var (
 type testBackendPlugin struct{}
 
 // GetBackendForRef implements query.BackendRefResolver.
-func (tp testBackendPlugin) GetBackendForRefPlugin(kctx krt.HandlerContext, key ir.ObjectSource, port int32) *ir.Upstream {
+func (tp testBackendPlugin) GetBackendForRefPlugin(kctx krt.HandlerContext, key ir.ObjectSource, port int32) *ir.BackendObjectIR {
 	if key.Kind != "test-backend-plugin" {
 		return nil
 	}
 	// doesn't matter as long as its not nil
-	return &ir.Upstream{
+	return &ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
 			Group:     "test",
 			Kind:      "test-backend-plugin",

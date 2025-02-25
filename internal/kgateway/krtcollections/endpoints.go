@@ -40,7 +40,7 @@ func (p EndpointsSettings) ResourceName() string {
 
 type EndpointsInputs struct {
 	// this is svc collection, other types will be ignored
-	Upstreams               krt.Collection[ir.Upstream]
+	Upstreams               krt.Collection[ir.BackendObjectIR]
 	EndpointSlices          krt.Collection[*discoveryv1.EndpointSlice]
 	EndpointSlicesByService krt.Index[types.NamespacedName, *discoveryv1.EndpointSlice]
 	Pods                    krt.Collection[LocalityPod]
@@ -54,7 +54,7 @@ func NewGlooK8sEndpointInputs(
 	krtopts krtutil.KrtOptions,
 	endpointSlices krt.Collection[*discoveryv1.EndpointSlice],
 	pods krt.Collection[LocalityPod],
-	k8supstreams krt.Collection[ir.Upstream],
+	k8supstreams krt.Collection[ir.BackendObjectIR],
 ) EndpointsInputs {
 	endpointSettings := EndpointsSettings{
 		EnableAutoMtls: stngs.EnableAutoMTLS,
@@ -86,12 +86,12 @@ func NewGlooK8sEndpoints(ctx context.Context, inputs EndpointsInputs) krt.Collec
 	return krt.NewCollection(inputs.Upstreams, transformK8sEndpoints(ctx, inputs), inputs.KrtOpts.ToOptions("GlooK8sEndpoints")...)
 }
 
-func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kctx krt.HandlerContext, us ir.Upstream) *ir.EndpointsForUpstream {
+func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kctx krt.HandlerContext, us ir.BackendObjectIR) *ir.EndpointsForUpstream {
 	augmentedPods := inputs.Pods
 
 	logger := contextutils.LoggerFrom(ctx).Desugar()
 
-	return func(kctx krt.HandlerContext, us ir.Upstream) *ir.EndpointsForUpstream {
+	return func(kctx krt.HandlerContext, us ir.BackendObjectIR) *ir.EndpointsForUpstream {
 		var warnsToLog []string
 		defer func() {
 			for _, warn := range warnsToLog {

@@ -14,7 +14,7 @@ import (
 // Another advantage - because this doesn't appear in any snapshot, we don't need to redact secrets.
 
 type HttpBackend struct {
-	Backend Backend
+	Backend BackendRefIR
 	AttachedPolicies
 }
 
@@ -88,7 +88,7 @@ type HttpFilterChainIR struct {
 
 type TcpIR struct {
 	FilterChainCommon
-	BackendRefs []Backend
+	BackendRefs []BackendRefIR
 }
 
 // this is 1:1 with envoy deployments

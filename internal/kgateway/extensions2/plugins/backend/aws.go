@@ -1,4 +1,4 @@
-package upstream
+package backend
 
 import (
 	"context"
@@ -25,7 +25,7 @@ const (
 	SecretKey    = "secretKey"
 )
 
-func processAws(ctx context.Context, in *v1alpha1.AwsBackend, ir *UpstreamIr, out *envoy_config_cluster_v3.Cluster) {
+func processAws(ctx context.Context, in *v1alpha1.AwsBackend, ir *BackendIr, out *envoy_config_cluster_v3.Cluster) {
 	lambdaHostname := getLambdaHostname(in)
 
 	// configure Envoy cluster routing info
@@ -102,10 +102,10 @@ func processEndpointsAws(in *v1alpha1.AwsBackend) *ir.EndpointsForUpstream {
 	return nil
 }
 
-func (p *upstreamPlugin) processBackendAws(
+func (p *backendPlugin) processBackendAws(
 	ctx context.Context,
 	pCtx *ir.RouteBackendContext,
-	dest *upstreamDestination,
+	dest *backendDestination,
 ) error {
 	functionName := dest.FunctionName
 	if p.needFilter == nil {

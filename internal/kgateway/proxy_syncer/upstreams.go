@@ -44,13 +44,13 @@ func NewPerClientEnvoyClusters(
 	ctx context.Context,
 	krtopts krtutil.KrtOptions,
 	translator *irtranslator.UpstreamTranslator,
-	upstreams krt.Collection[ir.Upstream],
+	upstreams krt.Collection[ir.BackendObjectIR],
 	uccs krt.Collection[ir.UniqlyConnectedClient],
 ) PerClientEnvoyClusters {
 	ctx = contextutils.WithLogger(ctx, "upstream-translator")
 	logger := contextutils.LoggerFrom(ctx).Desugar()
 
-	clusters := krt.NewManyCollection(upstreams, func(kctx krt.HandlerContext, up ir.Upstream) []uccWithCluster {
+	clusters := krt.NewManyCollection(upstreams, func(kctx krt.HandlerContext, up ir.BackendObjectIR) []uccWithCluster {
 		logger := logger.With(zap.Stringer("upstream", up))
 		uccs := krt.Fetch(kctx, uccs)
 		uccWithClusterRet := make([]uccWithCluster, 0, len(uccs))

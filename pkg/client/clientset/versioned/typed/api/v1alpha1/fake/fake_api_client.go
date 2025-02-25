@@ -14,7 +14,7 @@ type FakeGatewayV1alpha1 struct {
 }
 
 func (c *FakeGatewayV1alpha1) Backends(namespace string) v1alpha1.BackendInterface {
-	return &FakeBackends{c, namespace}
+	return newFakeBackends(c, namespace)
 }
 
 func (c *FakeGatewayV1alpha1) DirectResponses(namespace string) v1alpha1.DirectResponseInterface {
@@ -37,13 +37,6 @@ func (c *FakeGatewayV1alpha1) RoutePolicies(namespace string) v1alpha1.RoutePoli
 	return newFakeRoutePolicies(c, namespace)
 }
 
-<<<<<<< HEAD
-func (c *FakeGatewayV1alpha1) Upstreams(namespace string) v1alpha1.UpstreamInterface {
-	return newFakeUpstreams(c, namespace)
-}
-
-=======
->>>>>>> d26e18f285 (rename upstream type to backend)
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeGatewayV1alpha1) RESTClient() rest.Interface {
