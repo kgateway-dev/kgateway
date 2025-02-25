@@ -260,7 +260,7 @@ func (ml *MergedListeners) AppendTlsListener(
 	var validRouteInfos []*query.RouteInfo
 
 	for _, routeInfo := range routeInfos {
-		tRoute, ok := routeInfo.Object.(*ir.TlsRouteIR) // Check TCP ??
+		tRoute, ok := routeInfo.Object.(*ir.TlsRouteIR)
 		if !ok {
 			continue
 		}
@@ -538,26 +538,9 @@ func (tc *tcpFilterChain) translateTcpFilterChain(listener ir.Listener, reporter
 			return nil
 		}
 
-		// need this? tcp with tls with terminate would need this !
-		// if tc.tls != nil {
-
-		var matcher ir.FilterChainMatch
-		if tc.sniDomain != nil {
-			// does the sniDomain come from listener or from the TLS route
-			matcher.SniDomains = []string{string(*tc.sniDomain)}
-		}
-
-		// should still translate SSL config ?
-		// this in Gloo : TCPListener -> TCPHosts -> ssl config + destination
-		// in gloo : TCPHosts, what is the equivalent of here?
-		// tcpHostName == gloo Name
-		// backendRefs == tcpHost.destination
 		return &ir.TcpIR{
 			FilterChainCommon: ir.FilterChainCommon{
 				FilterChainName: tcpHostName,
-				// we need this only for terminate
-				TLS:     nil, // TODO and make sure nil doesn't mean something
-				Matcher: matcher,
 			},
 			BackendRefs: backends,
 		}
@@ -615,26 +598,15 @@ func (tc *tcpFilterChain) translateTcpFilterChain(listener ir.Listener, reporter
 			return nil
 		}
 
-		// need this? tcp with tls with terminate would need this !
-		// if tc.tls != nil {
-
 		var matcher ir.FilterChainMatch
 		if tc.sniDomain != nil {
-			// does the sniDomain come from listener or from the TLS route
 			matcher.SniDomains = []string{string(*tc.sniDomain)}
 		}
 
-		// should still translate SSL config ?
-		// this in Gloo : TCPListener -> TCPHosts -> ssl config + destination
-		// in gloo : TCPHosts, what is the equivalent of here?
-		// tcpHostName == gloo Name
-		// backendRefs == tcpHost.destination
 		return &ir.TcpIR{
 			FilterChainCommon: ir.FilterChainCommon{
 				FilterChainName: tcpHostName,
-				// we need this only for terminate
-				TLS:     nil, // TODO and make sure nil doesn't mean something
-				Matcher: matcher,
+				Matcher:         matcher,
 			},
 			BackendRefs: backends,
 		}
@@ -871,7 +843,6 @@ func translateSslConfig(
 		return nil, nil
 	}
 
-	// TODO support passthrough mode
 	if tls.Mode == nil ||
 		*tls.Mode != gwv1.TLSModeTerminate {
 		return nil, nil
