@@ -196,7 +196,7 @@ func (ml *MergedListeners) AppendTcpListener(
 ) {
 	var validRouteInfos []*query.RouteInfo
 
-	for _, routeInfo := range routeInfos { // WHY are we doing this check
+	for _, routeInfo := range routeInfos {
 		tRoute, ok := routeInfo.Object.(*ir.TcpRouteIR)
 		if !ok {
 			continue
