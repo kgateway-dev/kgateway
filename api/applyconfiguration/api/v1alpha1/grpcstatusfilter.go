@@ -3,14 +3,14 @@
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
 // GrpcStatusFilterApplyConfiguration represents a declarative configuration of the GrpcStatusFilter type for use
 // with apply.
 type GrpcStatusFilterApplyConfiguration struct {
-	Statuses []v1alpha1.GrpcStatus `json:"statuses,omitempty"`
-	Exclude  *bool                 `json:"exclude,omitempty"`
+	Statuses []apiv1alpha1.GrpcStatus `json:"statuses,omitempty"`
+	Exclude  *bool                    `json:"exclude,omitempty"`
 }
 
 // GrpcStatusFilterApplyConfiguration constructs a declarative configuration of the GrpcStatusFilter type for use with
@@ -22,7 +22,7 @@ func GrpcStatusFilter() *GrpcStatusFilterApplyConfiguration {
 // WithStatuses adds the given value to the Statuses field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Statuses field.
-func (b *GrpcStatusFilterApplyConfiguration) WithStatuses(values ...v1alpha1.GrpcStatus) *GrpcStatusFilterApplyConfiguration {
+func (b *GrpcStatusFilterApplyConfiguration) WithStatuses(values ...apiv1alpha1.GrpcStatus) *GrpcStatusFilterApplyConfiguration {
 	for i := range values {
 		b.Statuses = append(b.Statuses, values[i])
 	}

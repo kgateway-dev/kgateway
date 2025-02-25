@@ -122,14 +122,12 @@ func (p *directResponsePluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir
 		// the output route already has an action, which is incompatible with the DirectResponse,
 		// so we'll return an error. note: the direct response plugin runs after other route plugins
 		// that modify the output route (e.g. the redirect plugin), so this should be a rare case.
-		errMsg := fmt.Sprintf("DirectResponse cannot be applied to route with existing action: %T", outputRoute.GetAction())
-
 		outputRoute.Action = &envoy_config_route_v3.Route_DirectResponse{
 			DirectResponse: &envoy_config_route_v3.DirectResponseAction{
 				Status: http.StatusInternalServerError,
 			},
 		}
-		return fmt.Errorf(errMsg)
+		return fmt.Errorf("DirectResponse cannot be applied to route with existing action: %T", outputRoute.GetAction())
 	}
 
 	outputRoute.Action = &envoy_config_route_v3.Route_DirectResponse{

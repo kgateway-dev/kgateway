@@ -14,27 +14,27 @@ type FakeGatewayV1alpha1 struct {
 }
 
 func (c *FakeGatewayV1alpha1) DirectResponses(namespace string) v1alpha1.DirectResponseInterface {
-	return &FakeDirectResponses{c, namespace}
+	return newFakeDirectResponses(c, namespace)
 }
 
 func (c *FakeGatewayV1alpha1) GatewayParameterses(namespace string) v1alpha1.GatewayParametersInterface {
-	return &FakeGatewayParameterses{c, namespace}
+	return newFakeGatewayParameterses(c, namespace)
 }
 
 func (c *FakeGatewayV1alpha1) HTTPListenerPolicies(namespace string) v1alpha1.HTTPListenerPolicyInterface {
-	return &FakeHTTPListenerPolicies{c, namespace}
+	return newFakeHTTPListenerPolicies(c, namespace)
 }
 
 func (c *FakeGatewayV1alpha1) ListenerPolicies(namespace string) v1alpha1.ListenerPolicyInterface {
-	return &FakeListenerPolicies{c, namespace}
+	return newFakeListenerPolicies(c, namespace)
 }
 
 func (c *FakeGatewayV1alpha1) RoutePolicies(namespace string) v1alpha1.RoutePolicyInterface {
-	return &FakeRoutePolicies{c, namespace}
+	return newFakeRoutePolicies(c, namespace)
 }
 
 func (c *FakeGatewayV1alpha1) Upstreams(namespace string) v1alpha1.UpstreamInterface {
-	return &FakeUpstreams{c, namespace}
+	return newFakeUpstreams(c, namespace)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

@@ -28,6 +28,25 @@ func snapshotPerClient(
 		}
 		clustersForUcc := clusters.FetchClustersForClient(kctx, ucc)
 
+		l.Debug("found perclient clusters", zap.String("client", ucc.ResourceName()), zap.Int("clusters", len(clustersForUcc)))
+
+		// HACK
+		// https://github.com/solo-io/gloo/pull/10611/files#diff-060acb7cdd3a287a3aef1dd864aae3e0193da17b6230c382b649ce9dc0eca80b
+		// Without this, we will send a "blip" where the DestinationRule
+		// or other per-client config is not applied to the clusters
+		// by sending the genericSnap clusters on the first pass, then
+		// the correct ones.
+		// This happens because the event for the new connected client
+		// triggers the per-client cluster transformation in parallel
+		// with this snapshotPerClient transformation. This Fetch is racing
+		// with that computation and will almost always lose.
+		// While we're looking for a way to make this ordering predictable
+		// to avoid hacks like this, it will do for now.
+		if len(clustersForUcc) == 0 {
+			l.Info("no perclient clusters; defer building snapshot", zap.String("client", ucc.ResourceName()))
+			return nil
+		}
+
 		clustersProto := make([]envoycachetypes.ResourceWithTTL, 0, len(clustersForUcc)+len(maybeMostlySnap.Clusters))
 		var clustersHash uint64
 		var erroredClusters []string

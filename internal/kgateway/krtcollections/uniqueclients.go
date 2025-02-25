@@ -141,7 +141,7 @@ func (x *callbacksCollection) add(sid int64, r *envoy_service_discovery_v3.Disco
 	usePod := x.augmentedPods != nil
 	if usePod && r.GetNode() != nil {
 		podRef := getRef(r.GetNode())
-		k := krt.Key[LocalityPod](krt.Named{Name: podRef.Name, Namespace: podRef.Namespace}.ResourceName())
+		k := krt.Named{Name: podRef.Name, Namespace: podRef.Namespace}.ResourceName()
 		pod = x.augmentedPods.GetKey(k)
 	}
 	addedNew := false
@@ -254,7 +254,7 @@ func (x *callbacksCollection) fetchRequest(_ context.Context, r *envoy_service_d
 
 	var pod *LocalityPod
 	podRef := getRef(r.GetNode())
-	k := krt.Key[LocalityPod](krt.Named{Name: podRef.Name, Namespace: podRef.Namespace}.ResourceName())
+	k := krt.Named{Name: podRef.Name, Namespace: podRef.Namespace}.ResourceName()
 	pod = x.augmentedPods.GetKey(k)
 	ucc := ir.NewUniqlyConnectedClient(roleFromRequest(r), pod.Namespace, pod.AugmentedLabels, pod.Locality)
 

@@ -3,15 +3,15 @@
 package v1alpha1
 
 import (
-	"context"
+	context "context"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	gentype "k8s.io/client-go/gentype"
 
-	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration/api/v1alpha1"
-	v1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	applyconfigurationapiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration/api/v1alpha1"
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	scheme "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/scheme"
 )
 
@@ -23,36 +23,37 @@ type RoutePoliciesGetter interface {
 
 // RoutePolicyInterface has methods to work with RoutePolicy resources.
 type RoutePolicyInterface interface {
-	Create(ctx context.Context, routePolicy *v1alpha1.RoutePolicy, opts v1.CreateOptions) (*v1alpha1.RoutePolicy, error)
-	Update(ctx context.Context, routePolicy *v1alpha1.RoutePolicy, opts v1.UpdateOptions) (*v1alpha1.RoutePolicy, error)
+	Create(ctx context.Context, routePolicy *apiv1alpha1.RoutePolicy, opts v1.CreateOptions) (*apiv1alpha1.RoutePolicy, error)
+	Update(ctx context.Context, routePolicy *apiv1alpha1.RoutePolicy, opts v1.UpdateOptions) (*apiv1alpha1.RoutePolicy, error)
 	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-	UpdateStatus(ctx context.Context, routePolicy *v1alpha1.RoutePolicy, opts v1.UpdateOptions) (*v1alpha1.RoutePolicy, error)
+	UpdateStatus(ctx context.Context, routePolicy *apiv1alpha1.RoutePolicy, opts v1.UpdateOptions) (*apiv1alpha1.RoutePolicy, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.RoutePolicy, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.RoutePolicyList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*apiv1alpha1.RoutePolicy, error)
+	List(ctx context.Context, opts v1.ListOptions) (*apiv1alpha1.RoutePolicyList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.RoutePolicy, err error)
-	Apply(ctx context.Context, routePolicy *apiv1alpha1.RoutePolicyApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.RoutePolicy, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *apiv1alpha1.RoutePolicy, err error)
+	Apply(ctx context.Context, routePolicy *applyconfigurationapiv1alpha1.RoutePolicyApplyConfiguration, opts v1.ApplyOptions) (result *apiv1alpha1.RoutePolicy, err error)
 	// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
-	ApplyStatus(ctx context.Context, routePolicy *apiv1alpha1.RoutePolicyApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.RoutePolicy, err error)
+	ApplyStatus(ctx context.Context, routePolicy *applyconfigurationapiv1alpha1.RoutePolicyApplyConfiguration, opts v1.ApplyOptions) (result *apiv1alpha1.RoutePolicy, err error)
 	RoutePolicyExpansion
 }
 
 // routePolicies implements RoutePolicyInterface
 type routePolicies struct {
-	*gentype.ClientWithListAndApply[*v1alpha1.RoutePolicy, *v1alpha1.RoutePolicyList, *apiv1alpha1.RoutePolicyApplyConfiguration]
+	*gentype.ClientWithListAndApply[*apiv1alpha1.RoutePolicy, *apiv1alpha1.RoutePolicyList, *applyconfigurationapiv1alpha1.RoutePolicyApplyConfiguration]
 }
 
 // newRoutePolicies returns a RoutePolicies
 func newRoutePolicies(c *GatewayV1alpha1Client, namespace string) *routePolicies {
 	return &routePolicies{
-		gentype.NewClientWithListAndApply[*v1alpha1.RoutePolicy, *v1alpha1.RoutePolicyList, *apiv1alpha1.RoutePolicyApplyConfiguration](
+		gentype.NewClientWithListAndApply[*apiv1alpha1.RoutePolicy, *apiv1alpha1.RoutePolicyList, *applyconfigurationapiv1alpha1.RoutePolicyApplyConfiguration](
 			"routepolicies",
 			c.RESTClient(),
 			scheme.ParameterCodec,
 			namespace,
-			func() *v1alpha1.RoutePolicy { return &v1alpha1.RoutePolicy{} },
-			func() *v1alpha1.RoutePolicyList { return &v1alpha1.RoutePolicyList{} }),
+			func() *apiv1alpha1.RoutePolicy { return &apiv1alpha1.RoutePolicy{} },
+			func() *apiv1alpha1.RoutePolicyList { return &apiv1alpha1.RoutePolicyList{} },
+		),
 	}
 }

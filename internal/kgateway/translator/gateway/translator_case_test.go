@@ -196,13 +196,13 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 	translator.Init(ctx, ri)
 
 	cli.RunAndWait(ctx.Done())
-	gi.Gateways.Synced().WaitUntilSynced(ctx.Done())
+	gi.Gateways.WaitUntilSynced(ctx.Done())
 	kubeclient.WaitForCacheSync("routes", ctx.Done(), ri.HasSynced)
 	kubeclient.WaitForCacheSync("extensions", ctx.Done(), extensions.HasSynced)
 	kubeclient.WaitForCacheSync("commoncol", ctx.Done(), commoncol.HasSynced)
 	kubeclient.WaitForCacheSync("translator", ctx.Done(), translator.HasSynced)
 	kubeclient.WaitForCacheSync("upstreams", ctx.Done(), ui.HasSynced)
-	kubeclient.WaitForCacheSync("endpoints", ctx.Done(), ei.Synced().HasSynced)
+	kubeclient.WaitForCacheSync("endpoints", ctx.Done(), ei.HasSynced)
 
 	results := make(map[types.NamespacedName]ActualTestResult)
 

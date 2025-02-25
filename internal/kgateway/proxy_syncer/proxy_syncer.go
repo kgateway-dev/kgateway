@@ -272,13 +272,13 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 	})
 
 	s.waitForSync = []cache.InformerSynced{
-		endpointIRs.Synced().HasSynced,
-		endpointIRs.Synced().HasSynced,
+		endpointIRs.HasSynced,
+		endpointIRs.HasSynced,
 		upstreamIndex.HasSynced,
-		finalUpstreams.Synced().HasSynced,
-		kubeGateways.Gateways.Synced().HasSynced,
-		s.perclientSnapCollection.Synced().HasSynced,
-		s.mostXdsSnapshots.Synced().HasSynced,
+		finalUpstreams.HasSynced,
+		kubeGateways.Gateways.HasSynced,
+		s.perclientSnapCollection.HasSynced,
+		s.mostXdsSnapshots.HasSynced,
 		s.extensions.HasSynced,
 		routes.HasSynced,
 		s.translatorSyncer.HasSynced,

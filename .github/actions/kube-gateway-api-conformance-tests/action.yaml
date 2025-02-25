@@ -1,5 +1,9 @@
 name: Conformance Tests
 description: run kubernetes gateway api conformance tests
+inputs:
+  api-version: 
+    description: "Override of the sig Gateway API to test against."
+    required: false
 runs:
   using: "composite"
   steps:
@@ -30,12 +34,21 @@ runs:
         echo "VERSION=${{ matrix.version }}" >> $GITHUB_ENV
         echo "SKIP_DOCKER=true" >> $GITHUB_ENV
       fi
+      if [[ -z "${{ inputs.API_VERSION }}" ]]; then
+        echo "CONFORMANCE_VERSION=$(cat go.mod | grep gateway-api | cut -d" " -f2 | sed 's/^v0\.\([[:digit:]]\{1,\}\)\.[[:digit:]]\{1,\}$$/1.\1.x/')" >> $GITHUB_ENV
+      else
+        echo "CONFORMANCE_VERSION=${{ inputs.API_VERSION }}" >> $GITHUB_ENV
+      fi
+      
+
   - name: Setup test env
     shell: bash
     env:
       CLUSTER_NODE_VERSION: ${{ matrix.kube-version.node }}
       IMAGE_VARIANT: ${{ matrix.image-variant }}
       CONFORMANCE: "true"
+      CONFORMANCE_VERSION: ${{ env.CONFORMANCE_VERSION }}
+      
     run: ./hack/kind/setup-kind.sh
   - name: Install kgateway via helm
     shell: bash

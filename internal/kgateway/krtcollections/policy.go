@@ -64,7 +64,7 @@ func (s *UpstreamIndex) HasSynced() bool {
 		return false
 	}
 	for _, col := range s.availableUpstreams {
-		if !col.Synced().HasSynced() {
+		if !col.HasSynced() {
 			return false
 		}
 	}
@@ -240,7 +240,7 @@ func (h *PolicyIndex) HasSynced() bool {
 			return false
 		}
 	}
-	return h.policies.Synced().HasSynced()
+	return h.policies.HasSynced()
 }
 
 func NewPolicyIndex(krtopts krtutil.KrtOptions, contributesPolicies extensionsplug.ContributesPolicies) *PolicyIndex {
@@ -250,7 +250,7 @@ func NewPolicyIndex(krtopts krtutil.KrtOptions, contributesPolicies extensionspl
 	for gk, plugin := range contributesPolicies {
 		if plugin.Policies != nil {
 			policycols = append(policycols, plugin.Policies)
-			h.hasSyncedFuncs = append(h.hasSyncedFuncs, plugin.Policies.Synced().HasSynced)
+			h.hasSyncedFuncs = append(h.hasSyncedFuncs, plugin.Policies.HasSynced)
 		}
 		if plugin.PoliciesFetch != nil {
 			h.policiesFetch[gk] = plugin.PoliciesFetch
@@ -358,7 +358,7 @@ type RefGrantIndex struct {
 }
 
 func (h *RefGrantIndex) HasSynced() bool {
-	return h.refgrants.Synced().HasSynced()
+	return h.refgrants.HasSynced()
 }
 
 func NewRefGrantIndex(refgrants krt.Collection[*gwv1beta1.ReferenceGrant]) *RefGrantIndex {
@@ -456,7 +456,7 @@ func (h *RoutesIndex) HasSynced() bool {
 			return false
 		}
 	}
-	return h.httpRoutes.Synced().HasSynced() && h.routes.Synced().HasSynced() && h.policies.HasSynced() && h.upstreams.HasSynced() && h.refgrants.HasSynced()
+	return h.httpRoutes.HasSynced() && h.routes.HasSynced() && h.policies.HasSynced() && h.upstreams.HasSynced() && h.refgrants.HasSynced()
 }
 
 func NewRoutesIndex(
@@ -468,7 +468,7 @@ func NewRoutesIndex(
 	refgrants *RefGrantIndex,
 ) *RoutesIndex {
 	h := &RoutesIndex{policies: policies, refgrants: refgrants, upstreams: upstreams}
-	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.Synced().HasSynced, tcproutes.Synced().HasSynced)
+	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, tcproutes.HasSynced)
 	h.httpRoutes = krt.NewCollection(httproutes, h.transformHttpRoute, krtopts.ToOptions("http-routes-with-policy")...)
 	hr := krt.NewCollection(h.httpRoutes, func(kctx krt.HandlerContext, i ir.HttpRouteIR) *RouteWrapper {
 		return &RouteWrapper{Route: &i}
