@@ -129,6 +129,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			},
 			Entry("regular httproute", httpRoute()),
 			Entry("regular tcproute", tcpRoute()),
+			Entry("regular tlsroute", tlsRoute()),
 			Entry("delegatee route", delegateeRoute()),
 		)
 
@@ -153,6 +154,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			},
 			Entry("regular httproute", httpRoute(), parentRef()),
 			Entry("regular tcproute", tcpRoute(), parentRef()),
+			Entry("regular tlsroute", tlsRoute(), parentRef()),
 			Entry("delegatee route", delegateeRoute(), parentRouteRef()),
 		)
 
@@ -182,6 +184,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			},
 			Entry("regular httproute", httpRoute(), parentRef()),
 			Entry("regular tcproute", tcpRoute(), parentRef()),
+			Entry("regular tlsroute", tlsRoute(), parentRef()),
 			Entry("delegatee route", delegateeRoute(), parentRouteRef()),
 		)
 
@@ -208,6 +211,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 					route.Status.RouteStatus = *status
 				case *gwv1a2.TCPRoute:
 					route.Status.RouteStatus = *status
+				case *gwv1a2.TLSRoute:
+					route.Status.RouteStatus = *status
 				default:
 					Fail(fmt.Sprintf("unsupported route type: %T", obj))
 				}
@@ -225,6 +230,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			Entry("regular httproute", httpRoute()),
 			Entry("delegatee route", delegateeRoute()),
 			Entry("regular tcproute", tcpRoute()),
+			Entry("regular tlsroute", tlsRoute()),
 		)
 
 		DescribeTable("should correctly handle multiple ParentRefs on a route",
@@ -236,6 +242,10 @@ var _ = Describe("Reporting Infrastructure", func() {
 						Name: "additional-gateway",
 					})
 				case *gwv1a2.TCPRoute:
+					route.Spec.ParentRefs = append(route.Spec.ParentRefs, gwv1.ParentReference{
+						Name: "additional-gateway",
+					})
+				case *gwv1a2.TLSRoute:
 					route.Spec.ParentRefs = append(route.Spec.ParentRefs, gwv1.ParentReference{
 						Name: "additional-gateway",
 					})
@@ -261,6 +271,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			},
 			Entry("regular HTTPRoute", httpRoute()),
 			Entry("regular TCPRoute", tcpRoute()),
+			Entry("regular tlsroute", tlsRoute()),
 		)
 
 		DescribeTable("should correctly associate multiple routes with shared and separate listeners",
@@ -274,6 +285,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 					r1.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener1.Name))
 				case *gwv1a2.TCPRoute:
 					r1.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener1.Name))
+				case *gwv1a2.TLSRoute:
+					r1.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener1.Name))
 				}
 
 				// Assign the second listener to the second route's parent ref
@@ -281,6 +294,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 				case *gwv1.HTTPRoute:
 					r2.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener2.Name))
 				case *gwv1a2.TCPRoute:
+					r2.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener2.Name))
+				case *gwv1a2.TLSRoute:
 					r2.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener2.Name))
 				}
 
@@ -310,6 +325,11 @@ var _ = Describe("Reporting Infrastructure", func() {
 				gwv1.Listener{Name: "foo-tcp", Protocol: gwv1.TCPProtocolType},
 				gwv1.Listener{Name: "bar-tcp", Protocol: gwv1.TCPProtocolType},
 			),
+			Entry("TLSRoutes with shared and separate listeners",
+				tlsRoute(), tlsRoute(),
+				gwv1.Listener{Name: "foo-tls", Protocol: gwv1.TLSProtocolType},
+				gwv1.Listener{Name: "bar-tls", Protocol: gwv1.TLSProtocolType},
+			),
 		)
 	})
 
@@ -320,6 +340,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 			case *gwv1.HTTPRoute:
 				r.Spec.ParentRefs = nil
 			case *gwv1a2.TCPRoute:
+				r.Spec.ParentRefs = nil
+			case *gwv1a2.TLSRoute:
 				r.Spec.ParentRefs = nil
 			}
 
@@ -335,6 +357,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 		},
 		Entry("HTTPRoute with missing parent reference", httpRoute()),
 		Entry("TCPRoute with missing parent reference", tcpRoute()),
+		Entry("TLSRoute with missing parent reference", tlsRoute()),
 	)
 })
 
@@ -351,6 +374,17 @@ func httpRoute() client.Object {
 
 func tcpRoute() client.Object {
 	route := &gwv1a2.TCPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "route",
+			Namespace: "default",
+		},
+	}
+	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRef())
+	return route
+}
+
+func tlsRoute() client.Object {
+	route := &gwv1a2.TLSRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "route",
 			Namespace: "default",
