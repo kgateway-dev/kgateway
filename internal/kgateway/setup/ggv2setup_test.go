@@ -113,8 +113,8 @@ func TestScenarios(t *testing.T) {
 
 	os.Setenv("POD_NAMESPACE", "gwtest") // TODO: is this still needed?
 	// set global settings env vars; current ggv2setup_tests all assume these are set to true
-	os.Setenv("KGW_ENABLEISTIOINTEGRATION", "true")
-	os.Setenv("KGW_ENABLEAUTOMTLS", "true")
+	os.Setenv("KGW_ENABLE_ISTIO_INTEGRATION", "true")
+	os.Setenv("KGW_ENABLE_AUTO_MTLS", "true")
 
 	testEnv := &envtest.Environment{
 		CRDDirectoryPaths: []string{
