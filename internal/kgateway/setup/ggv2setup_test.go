@@ -115,6 +115,11 @@ func TestScenarios(t *testing.T) {
 	// set global settings env vars; current ggv2setup_tests all assume these are set to true
 	os.Setenv("KGW_ENABLE_ISTIO_INTEGRATION", "true")
 	os.Setenv("KGW_ENABLE_AUTO_MTLS", "true")
+	t.Cleanup(func() {
+		os.Unsetenv("POD_NAMESPACE")
+		os.Unsetenv("KGW_ENABLE_ISTIO_INTEGRATION")
+		os.Unsetenv("KGW_ENABLE_AUTO_MTLS")
+	})
 
 	testEnv := &envtest.Environment{
 		CRDDirectoryPaths: []string{
