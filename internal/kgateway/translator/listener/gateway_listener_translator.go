@@ -473,7 +473,6 @@ func (tc *tcpFilterChain) translateTcpFilterChain(_ ir.Listener, reporter report
 		return a.Object.GetSourceObject().GetCreationTimestamp().Compare(b.Object.GetSourceObject().GetCreationTimestamp().Time)
 	})
 
-	// TODO dedupe
 	switch r.Object.(type) {
 	case *ir.TcpRouteIR:
 		tRoute := r.Object.(*ir.TcpRouteIR)
@@ -565,7 +564,7 @@ func (tc *tcpFilterChain) translateTcpFilterChain(_ ir.Listener, reporter report
 			return nil
 		}
 
-		// Ensure unique names by appending the rule index to the TCPRoute name
+		// Ensure unique names by appending the rule index to the TLSRoute name
 		tcpHostName := fmt.Sprintf("%s.%s-rule-%d", tRoute.Namespace, tRoute.Name, 0)
 		var backends []ir.Backend
 		for _, backend := range tRoute.Backends {
@@ -699,8 +698,8 @@ func (httpFilterChain *httpFilterChain) translateHttpFilterChain(
 
 type httpsFilterChain struct {
 	gatewayListenerName string
-	sniDomain           *gwv1.Hostname         // do we need this on tls listener?
-	tls                 *gwv1.GatewayTLSConfig // do we need this on tls?
+	sniDomain           *gwv1.Hostname
+	tls                 *gwv1.GatewayTLSConfig
 	routesWithHosts     []*query.RouteInfo
 	attachedPolicies    ir.AttachedPolicies
 }
