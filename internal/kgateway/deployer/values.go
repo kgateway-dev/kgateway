@@ -8,7 +8,8 @@ import (
 
 // The top-level helm values used by the deployer.
 type helmConfig struct {
-	Gateway *helmGateway `json:"gateway,omitempty"`
+	Gateway            *helmGateway            `json:"gateway,omitempty"`
+	InferenceExtension *helmInferenceExtension `json:"inferenceExtension,omitempty"`
 }
 
 type helmGateway struct {
@@ -160,4 +161,13 @@ type helmAws struct {
 	EnableServiceAccountCredentials *bool   `json:"enableServiceAccountCredentials,omitempty"`
 	StsClusterName                  *string `json:"stsClusterName,omitempty"`
 	StsUri                          *string `json:"stsUri,omitempty"`
+}
+
+type helmInferenceExtension struct {
+	EndpointPicker *helmEndpointPickerExtension `json:"endpointPicker,omitempty"`
+}
+
+type helmEndpointPickerExtension struct {
+	PoolName      string `json:"poolName"`
+	PoolNamespace string `json:"poolNamespace"`
 }

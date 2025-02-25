@@ -23,6 +23,7 @@ import (
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	istiolog "istio.io/istio/pkg/log"
+	infextv1a1 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha1"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
@@ -100,6 +101,11 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 
 	// Extend the scheme if the TCPRoute CRD exists.
 	if err := glooschemes.AddGatewayV1A2Scheme(cfg.RestConfig, scheme); err != nil {
+		return nil, err
+	}
+
+	// Extend the scheme if the InferencePool CRD exists.
+	if _, err := glooschemes.AddInferExtV1A1Scheme(cfg.RestConfig, scheme); err != nil {
 		return nil, err
 	}
 
@@ -227,8 +233,21 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 	}
 
 	if err := NewBaseGatewayController(ctx, gwCfg); err != nil {
-		setupLog.Error(err, "unable to create controller")
+		setupLog.Error(err, "unable to create gateway controller")
 		return err
+	}
+
+	// Create the InferencePool controller if the inference extension API group is registered.
+	if c.mgr.GetScheme().IsGroupRegistered(infextv1a1.GroupVersion.Group) {
+		poolCfg := &InferencePoolConfig{
+			Mgr:            c.mgr,
+			ControllerName: wellknown.GatewayControllerName,
+			InferenceExt:   new(deployer.InferenceExtInfo),
+		}
+		if err := NewBaseInferencePoolController(ctx, poolCfg, &gwCfg); err != nil {
+			setupLog.Error(err, "unable to create inferencepool controller")
+			return err
+		}
 	}
 
 	return c.mgr.Start(ctx)
