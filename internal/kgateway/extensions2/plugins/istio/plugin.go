@@ -35,7 +35,7 @@ var (
 
 type IstioSettings struct {
 	EnableIstioIntegration      bool
-	EnableAutoMTLS              bool
+	EnableAutoMtls              bool
 	EnableIstioSidecarOnGateway bool
 }
 
@@ -67,7 +67,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	// when translating upstreams. if we want we can add the gateway to the context of PerClientProcessUpstream
 	sidecarEnabled := envutils.IsEnvTruthy(ourwellknown.IstioInjectionEnabled)
 	istioSettings := IstioSettings{
-		EnableAutoMTLS:              commoncol.Settings.EnableAutoMTLS,
+		EnableAutoMtls:              commoncol.Settings.EnableAutoMtls,
 		EnableIstioIntegration:      commoncol.Settings.EnableIstioIntegration,
 		EnableIstioSidecarOnGateway: sidecarEnabled,
 	}
@@ -114,7 +114,7 @@ func (p istioPlugin) processUpstream(ctx context.Context, ir ir.PolicyIR, in ir.
 	// 1) automtls is enabled on the settings
 	// 2) the upstream has not disabled auto mtls
 	// 3) the upstream has no sslConfig
-	if st.EnableAutoMTLS && !isDisabledForUpstream(in) && !doesClusterHaveSslConfigPresent(out) {
+	if st.EnableAutoMtls && !isDisabledForUpstream(in) && !doesClusterHaveSslConfigPresent(out) {
 		// Istio automtls config is not applied if istio integration is disabled on the helm chart.
 		// When istio integration is disabled via istioSds.enabled=false, there is no sds or istio-proxy sidecar present
 		if !st.EnableIstioIntegration {
