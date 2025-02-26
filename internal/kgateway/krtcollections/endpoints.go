@@ -57,7 +57,7 @@ func NewGlooK8sEndpointInputs(
 	k8sBackends krt.Collection[ir.BackendObjectIR],
 ) EndpointsInputs {
 	endpointSettings := EndpointsSettings{
-		EnableAutoMtls: stngs.EnableAutoMTLS,
+		EnableAutoMtls: stngs.EnableAutoMtls,
 	}
 
 	// Create index on EndpointSlices by service name and endpointslice namespace

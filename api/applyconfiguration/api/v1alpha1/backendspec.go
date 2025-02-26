@@ -7,6 +7,7 @@ package v1alpha1
 type BackendSpecApplyConfiguration struct {
 	Aws    *AwsBackendApplyConfiguration    `json:"aws,omitempty"`
 	Static *StaticBackendApplyConfiguration `json:"static,omitempty"`
+	AI     *AIBackendApplyConfiguration     `json:"ai,omitempty"`
 }
 
 // BackendSpecApplyConfiguration constructs a declarative configuration of the BackendSpec type for use with
@@ -28,5 +29,13 @@ func (b *BackendSpecApplyConfiguration) WithAws(value *AwsBackendApplyConfigurat
 // If called multiple times, the Static field is set to the value of the last call.
 func (b *BackendSpecApplyConfiguration) WithStatic(value *StaticBackendApplyConfiguration) *BackendSpecApplyConfiguration {
 	b.Static = value
+	return b
+}
+
+// WithAI sets the AI field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the AI field is set to the value of the last call.
+func (b *BackendSpecApplyConfiguration) WithAI(value *AIBackendApplyConfiguration) *BackendSpecApplyConfiguration {
+	b.AI = value
 	return b
 }
