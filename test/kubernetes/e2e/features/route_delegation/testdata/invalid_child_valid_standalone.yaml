@@ -23,7 +23,7 @@ metadata:
   name: http-gateway-test
   namespace: infra
 spec:
-  gatewayClassName: gloo-gateway
+  gatewayClassName: kgateway
   listeners:
   - protocol: HTTP
     port: 8090

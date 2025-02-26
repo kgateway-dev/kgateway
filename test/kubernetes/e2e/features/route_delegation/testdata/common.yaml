@@ -156,7 +156,7 @@ metadata:
   name: http-gateway
   namespace: infra
 spec:
-  gatewayClassName: gloo-gateway
+  gatewayClassName: kgateway
   listeners:
   - protocol: HTTP
     port: 8080
