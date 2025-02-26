@@ -29,7 +29,7 @@ type BackendList struct {
 	Items           []Backend `json:"items"`
 }
 
-// +kubebuilder:validation:XValidation:message="There must one and only one upstream type set",rule="(has(self.aws) && !has(self.static) && !has(self.ai)) || (!has(self.aws) && has(self.static) && !has(self.ai)) || (!has(self.aws) && !has(self.static) && has(self.ai))"
+// +kubebuilder:validation:XValidation:message="There must one and only one backend type set",rule="(has(self.aws) && !has(self.static) && !has(self.ai)) || (!has(self.aws) && has(self.static) && !has(self.ai)) || (!has(self.aws) && !has(self.static) && has(self.ai))"
 // +kubebuilder:validation:MaxProperties=1
 // +kubebuilder:validation:MinProperties=1
 type BackendSpec struct {

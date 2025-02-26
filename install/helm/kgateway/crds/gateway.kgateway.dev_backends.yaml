@@ -488,7 +488,7 @@ spec:
                 type: object
             type: object
             x-kubernetes-validations:
-            - message: There must one and only one upstream type set
+            - message: There must one and only one backend type set
               rule: (has(self.aws) && !has(self.static) && !has(self.ai)) || (!has(self.aws)
                 && has(self.static) && !has(self.ai)) || (!has(self.aws) && !has(self.static)
                 && has(self.ai))

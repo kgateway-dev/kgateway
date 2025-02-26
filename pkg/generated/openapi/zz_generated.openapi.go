@@ -462,7 +462,7 @@ func schema_kgateway_v2_api_v1alpha1_AIBackend(ref common.ReferenceCallback) com
 					},
 					"multipool": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The MultiPool configures the backends for multiple hosts or models from the same provider in one Upstream resource.",
+							Description: "The MultiPool configures the backends for multiple hosts or models from the same provider in one Backend resource.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MultiPoolConfig"),
 						},
 					},
@@ -2293,7 +2293,7 @@ func schema_kgateway_v2_api_v1alpha1_LLMProvider(ref common.ReferenceCallback) c
 					},
 					"hostOverride": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Send requests to a custom host and port, such as to proxy the request, or to use a different backend that is API-compliant with the upstream version.",
+							Description: "Send requests to a custom host and port, such as to proxy the request, or to use a different backend that is API-compliant with the Backend version.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host"),
 						},
 					},
@@ -2519,7 +2519,7 @@ func schema_kgateway_v2_api_v1alpha1_MultiPoolConfig(ref common.ReferenceCallbac
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "MultiPoolConfig configures the backends for multiple hosts or models from the same provider in one Upstream resource. This method can be useful for creating one logical endpoint that is backed by multiple hosts or models.\n\nIn the `priorities` section, the order of `pool` entries defines the priority of the backend endpoints. The `pool` entries can either define a list of backends or a single backend. Note: Only two levels of nesting are permitted. Any nested entries after the second level are ignored.\n\n```yaml multi:\n\n\tpriorities:\n\t- pool:\n\t  - azureOpenai:\n\t      deploymentName: gpt-4o-mini\n\t      apiVersion: 2024-02-15-preview\n\t      endpoint: ai-gateway.openai.azure.com\n\t      authToken:\n\t        secretRef:\n\t          name: azure-secret\n\t          namespace: kgateway-system\n\t- pool:\n\t  - azureOpenai:\n\t      deploymentName: gpt-4o-mini-2\n\t      apiVersion: 2024-02-15-preview\n\t      endpoint: ai-gateway-2.openai.azure.com\n\t      authToken:\n\t        secretRef:\n\t          name: azure-secret-2\n\t          namespace: kgateway-system\n\n```",
+				Description: "MultiPoolConfig configures the backends for multiple hosts or models from the same provider in one Backend resource. This method can be useful for creating one logical endpoint that is backed by multiple hosts or models.\n\nIn the `priorities` section, the order of `pool` entries defines the priority of the backend endpoints. The `pool` entries can either define a list of backends or a single backend. Note: Only two levels of nesting are permitted. Any nested entries after the second level are ignored.\n\n```yaml multi:\n\n\tpriorities:\n\t- pool:\n\t  - azureOpenai:\n\t      deploymentName: gpt-4o-mini\n\t      apiVersion: 2024-02-15-preview\n\t      endpoint: ai-gateway.openai.azure.com\n\t      authToken:\n\t        secretRef:\n\t          name: azure-secret\n\t          namespace: kgateway-system\n\t- pool:\n\t  - azureOpenai:\n\t      deploymentName: gpt-4o-mini-2\n\t      apiVersion: 2024-02-15-preview\n\t      endpoint: ai-gateway-2.openai.azure.com\n\t      authToken:\n\t        secretRef:\n\t          name: azure-secret-2\n\t          namespace: kgateway-system\n\n```",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"priorities": {
@@ -3339,14 +3339,14 @@ func schema_kgateway_v2_api_v1alpha1_SingleAuthToken(ref common.ReferenceCallbac
 					},
 					"inline": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Provide the token directly in the configuration for the Upstream. This option is the least secure. Only use this option for quick tests such as trying out AI Gateway.",
+							Description: "Provide the token directly in the configuration for the Backend. This option is the least secure. Only use this option for quick tests such as trying out AI Gateway.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"secretRef": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Store the API key in a Kubernetes secret in the same namespace as the Upstream. Then, refer to the secret in the Upstream configuration. This option is more secure than an inline token, because the API key is encoded and you can restrict access to secrets through RBAC rules. You might use this option in proofs of concept, controlled development and staging environments, or well-controlled prod environments that use secrets.",
+							Description: "Store the API key in a Kubernetes secret in the same namespace as the Backend. Then, refer to the secret in the Backend configuration. This option is more secure than an inline token, because the API key is encoded and you can restrict access to secrets through RBAC rules. You might use this option in proofs of concept, controlled development and staging environments, or well-controlled prod environments that use secrets.",
 							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
 						},
 					},
