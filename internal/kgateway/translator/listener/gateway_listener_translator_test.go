@@ -691,6 +691,126 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				By("Validating that no TLS listeners are created")
 				Expect(ml.Listeners).To(BeEmpty(), "Expected no listeners due to missing ParentRefs")
 			})
+
+			It("should skip routes with invalid parent references and process valid ones", func() {
+				By("Creating a TLSRoute with a backend reference")
+				validRoute := tlsRoute("valid-tls-route", "default")
+				validRoute.Spec = gwv1a2.TLSRouteSpec{
+					CommonRouteSpec: gwv1.CommonRouteSpec{
+						ParentRefs: []gwv1.ParentReference{
+							{
+								Name:      gwv1.ObjectName("test-gateway"),
+								Namespace: ptr.To(gwv1.Namespace("default")),
+								Kind:      ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+							},
+						},
+					},
+					Rules: []gwv1a2.TLSRouteRule{
+						{
+							BackendRefs: []gwv1.BackendRef{
+								{
+									BackendObjectReference: gwv1.BackendObjectReference{
+										Name:      "backend-svc1",
+										Namespace: ptr.To(gwv1.Namespace("default")),
+										Port:      ptr.To(gwv1.PortNumber(8081)),
+									},
+								},
+							},
+						},
+					},
+				}
+
+				By("Creating an invalid TLSRoute with no parent references")
+				invalidRoute := tlsRoute("invalid-tls-route", "default")
+				invalidRoute.Spec = gwv1a2.TLSRouteSpec{
+					CommonRouteSpec: gwv1.CommonRouteSpec{
+						ParentRefs: []gwv1.ParentReference{}, // No parent reference provided
+					},
+				}
+
+				By("Creating the RouteInfo with valid and invalid TCPRoutes")
+				routes := []*query.RouteInfo{
+					{
+						Object: tlsToIr(validRoute),
+					},
+					{
+						Object: tlsToIr(invalidRoute),
+					},
+				}
+
+				By("Appending the TLS listener")
+				ml.AppendTlsListener(lisToIr(gwListener), routes, listenerReporter)
+
+				By("Validating that one single destination TLS listener is created")
+				Expect(ml.Listeners).To(HaveLen(1)) // One valid listener
+
+				translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, reporter)
+				Expect(translatedListener).NotTo(BeNil())
+				Expect(translatedListener.TcpFilterChain).To(HaveLen(1))
+
+				tlsListener := translatedListener.TcpFilterChain[0]
+				Expect(tlsListener).NotTo(BeNil())
+				Expect(tlsListener.BackendRefs[0]).NotTo(BeNil())
+				Expect(tlsListener.BackendRefs[0].ClusterName).To(Equal("backend-svc1"))
+				Expect(tlsListener.FilterChainCommon.Matcher.SniDomains).To(ContainElement("example.com"))
+			})
+
+			It("should create a TLS listener with a single weighted backend reference", func() {
+				By("Creating a weighted TLSRoute with a single backend reference")
+				tlsRoute := tlsRoute("test-tls-route", "default")
+				tlsRoute.Spec = gwv1a2.TLSRouteSpec{
+					CommonRouteSpec: gwv1.CommonRouteSpec{
+						ParentRefs: []gwv1.ParentReference{
+							{
+								Name:      gwv1.ObjectName("test-gateway"),
+								Namespace: ptr.To(gwv1.Namespace("default")),
+								Kind:      ptr.To(gwv1.Kind(wellknown.GatewayKind)),
+							},
+						},
+					},
+					Rules: []gwv1a2.TLSRouteRule{
+						{
+							BackendRefs: []gwv1.BackendRef{
+								{
+									BackendObjectReference: gwv1.BackendObjectReference{
+										Name:      "backend-svc1",
+										Namespace: ptr.To(gwv1.Namespace("default")),
+										Port:      ptr.To(gwv1.PortNumber(8081)),
+									},
+									Weight: ptr.To(int32(100)),
+								},
+							},
+						},
+					},
+				}
+
+				By("Creating the RouteInfo")
+				routes := []*query.RouteInfo{
+					{
+						Object: tlsToIr(tlsRoute),
+					},
+				}
+
+				By("Appending the TLS listener")
+				ml.AppendTlsListener(lisToIr(gwListener), routes, listenerReporter)
+
+				By("Validating that one TLS listener is created with a single destination")
+				Expect(ml.Listeners).To(HaveLen(1))
+
+				translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, reporter)
+				Expect(translatedListener).NotTo(BeNil())
+				Expect(translatedListener.TcpFilterChain).To(HaveLen(1))
+
+				tlsListener := translatedListener.TcpFilterChain[0]
+				Expect(tlsListener).NotTo(BeNil())
+
+				// Access the destination field properly
+				Expect(tlsListener.BackendRefs).To(HaveLen(1))
+				singleDestination := tlsListener.BackendRefs[0]
+				Expect(singleDestination).NotTo(BeNil(), "Expected a single-destination")
+				Expect(tlsListener.BackendRefs[0].ClusterName).To(Equal("backend-svc1"))
+				Expect(tlsListener.FilterChainCommon.Matcher.SniDomains).To(ContainElement("example.com"))
+			})
 		})
 	})
 })
