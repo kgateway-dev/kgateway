@@ -326,6 +326,41 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				Expect(resolvedRefs.Message).To(Equal("Service \"example-tls-svc\" not found"))
 			},
 		}),
+	Entry(
+		"tlsroute with invalid backend reports correctly",
+		translatorTestCase{
+			inputFile:  "tls-routing/invalid-backend.yaml",
+			outputFile: "tls-routing/invalid-backend.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				route := &gwv1a2.TLSRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-tls-route",
+						Namespace: "default",
+					},
+				}
+				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, "")
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
+				Expect(resolvedRefs).NotTo(BeNil())
+				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionFalse))
+				Expect(resolvedRefs.Message).To(Equal("unknown backend kind"))
+			},
+		}),
+	Entry(
+		"tls gateway with multiple backend services",
+		translatorTestCase{
+			inputFile:  "tls-routing/multi-backend.yaml",
+			outputFile: "tls-routing/multi-backend-proxy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}),
 	Entry("Plugin Backend", translatorTestCase{
 		inputFile:  "backend-plugin/gateway.yaml",
 		outputFile: "backend-plugin-proxy.yaml",
