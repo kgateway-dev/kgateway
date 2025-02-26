@@ -4,5 +4,5 @@ import (
 	"embed"
 )
 
-//go:embed all:gloo-gateway
-var GlooGatewayHelmChart embed.FS
+//go:embed all:kgateway
+var KgatewayHelmChart embed.FS

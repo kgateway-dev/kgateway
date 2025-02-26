@@ -2,15 +2,15 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ include "gloo-gateway.gateway.fullname" . }}
+  name: {{ include "kgateway.gateway.fullname" . }}
   labels:
-    {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
-    {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
+    {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
+    {{- include "kgateway.gateway.labels" . | nindent 4 }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ include "gloo-gateway.gateway.fullname" . }}
+    name: {{ include "kgateway.gateway.fullname" . }}
   minReplicas: {{ .Values.gateway.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.gateway.autoscaling.maxReplicas }}
   metrics:

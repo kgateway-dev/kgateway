@@ -3,17 +3,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "gloo-gateway.gateway.fullname" . }}
+  name: {{ include "kgateway.gateway.fullname" . }}
   labels:
-    {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
-    {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
+    {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
+    {{- include "kgateway.gateway.labels" . | nindent 4 }}
 spec:
   {{- if not $gateway.autoscaling.enabled }}
   replicas: {{ $gateway.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "gloo-gateway.gateway.selectorLabels" . | nindent 6 }}
+      {{- include "kgateway.gateway.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       annotations:
@@ -31,7 +31,7 @@ spec:
       {{- end }}
       {{- end}}
       labels:
-        {{- include "gloo-gateway.gateway.selectorLabels" . | nindent 8 }}
+        {{- include "kgateway.gateway.selectorLabels" . | nindent 8 }}
         {{- with $gateway.extraPodLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -40,7 +40,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "gloo-gateway.gateway.fullname" . }}
+      serviceAccountName: {{ include "kgateway.gateway.fullname" . }}
       {{- if $gateway.podSecurityContext }}
       securityContext:
         {{- toYaml $gateway.podSecurityContext | nindent 8 }}
@@ -63,7 +63,7 @@ spec:
         - "--component-log-level"
         - "{{ . }}"
         {{- end }}{{/* with $gateway.componentLogLevel */}}
-        image: "{{ template "gloo-gateway.gateway.image" $gateway.image }}"
+        image: "{{ template "kgateway.gateway.image" $gateway.image }}"
         imagePullPolicy: {{ $gateway.image.pullPolicy }}
         volumeMounts:
         - mountPath: /etc/envoy
@@ -112,7 +112,7 @@ spec:
 {{- end }} {{/* if $gateway.resources */}}
 {{- if $gateway.istio.enabled }}
       - name: sds
-        image: "{{ template "gloo-gateway.gateway.image" $gateway.sdsContainer.image }}"
+        image: "{{ template "kgateway.gateway.image" $gateway.sdsContainer.image }}"
         {{- if $gateway.sdsContainer.image.pullPolicy }}
         imagePullPolicy: {{ $gateway.sdsContainer.image.pullPolicy }}
         {{- end }}
@@ -161,7 +161,7 @@ spec:
           - mountPath: /etc/istio-certs/
             name: istio-certs
       - name: istio-proxy
-        image: "{{ template "gloo-gateway.gateway.image" $gateway.istioContainer.image }}"
+        image: "{{ template "kgateway.gateway.image" $gateway.istioContainer.image }}"
         {{- if $gateway.istioContainer.image.pullPolicy }}
         imagePullPolicy: {{ $gateway.istioContainer.image.pullPolicy }}
         {{- end }}
@@ -260,8 +260,8 @@ spec:
             name: workload-certs
 {{- end }} {{/* if $gateway.istio.enabled */}}
 {{- if (($gateway.aiExtension).enabled) }}
-      - name: gloo-ai-extension
-        image: "{{ template "gloo-gateway.gateway.image" $gateway.aiExtension.image }}"
+      - name: kgateway-ai-extension
+        image: "{{ template "kgateway.gateway.image" $gateway.aiExtension.image }}"
         {{- if $gateway.aiExtension.image.pullPolicy }}
         imagePullPolicy: {{ $gateway.aiExtension.image.pullPolicy }}
         {{- end }}
@@ -314,11 +314,11 @@ spec:
       {{- end }}
       volumes:
       - configMap:
-          name: {{ include "gloo-gateway.gateway.fullname" . }}
+          name: {{ include "kgateway.gateway.fullname" . }}
         name: envoy-config
 {{- if (($gateway.aiExtension).enabled) }}
       - configMap:
-          name: {{ include "gloo-gateway.gateway.fullname" . }}-ai-stats-config
+          name: {{ include "kgateway.gateway.fullname" . }}-ai-stats-config
         name: ai-stats-config
 {{- end }} {{/* if (($gateway.aiExtension).enabled) */}}
 {{- if $gateway.istio.enabled }}
@@ -351,14 +351,14 @@ spec:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: {{ include "gloo-gateway.gateway.fullname" . }}
+  name: {{ include "kgateway.gateway.fullname" . }}
   {{- with (($gateway.serviceAccount).extraAnnotations) }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
   labels:
-    {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
-    {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
+    {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
+    {{- include "kgateway.gateway.labels" . | nindent 4 }}
     {{- with (($gateway.serviceAccount).extraLabels) }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
@@ -367,14 +367,14 @@ automountServiceAccountToken: false
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "gloo-gateway.gateway.fullname" . }}
+  name: {{ include "kgateway.gateway.fullname" . }}
   {{- with $gateway.service.extraAnnotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
   labels:
-    {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
-    {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
+    {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
+    {{- include "kgateway.gateway.labels" . | nindent 4 }}
     {{- with $gateway.service.extraLabels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
@@ -391,16 +391,16 @@ spec:
     port: {{ $p.port }}
   {{- end }}
   selector:
-    {{- include "gloo-gateway.gateway.selectorLabels" . | nindent 4 }}
+    {{- include "kgateway.gateway.selectorLabels" . | nindent 4 }}
 ---
 {{- if (($gateway.aiExtension).enabled) }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "gloo-gateway.gateway.fullname" . }}-ai-stats-config
+  name: {{ include "kgateway.gateway.fullname" . }}-ai-stats-config
   labels:
-    {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
-    {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
+    {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
+    {{- include "kgateway.gateway.labels" . | nindent 4 }}
 {{- if $gateway.aiExtension.stats }}
 data:
   stats.json: {{ $gateway.aiExtension.stats }}
@@ -410,10 +410,10 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "gloo-gateway.gateway.fullname" . }}
+  name: {{ include "kgateway.gateway.fullname" . }}
   labels:
-    {{- include "gloo-gateway.gateway.constLabels" . | nindent 4 }}
-    {{- include "gloo-gateway.gateway.labels" . | nindent 4 }}
+    {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
+    {{- include "kgateway.gateway.labels" . | nindent 4 }}
 data:
   envoy.yaml: |
     admin:
@@ -427,9 +427,9 @@ data:
       - name: admin_layer
         admin_layer: {}
     node:
-      cluster: {{ include "gloo-gateway.gateway.fullname" . }}.{{ .Release.Namespace }}
+      cluster: {{ include "kgateway.gateway.fullname" . }}.{{ .Release.Namespace }}
       metadata:
-        role: gloo-kube-gateway-api~{{ $gateway.gatewayNamespace }}~{{ $gateway.gatewayName | default (include "gloo-gateway.gateway.fullname" .) }}
+        role: kgateway-kube-gateway-api~{{ $gateway.gatewayNamespace }}~{{ $gateway.gatewayName | default (include "kgateway.gateway.fullname" .) }}
     static_resources:
       listeners:
       - name: readiness_listener

@@ -77,7 +77,7 @@ func NewDeployer(cli client.Client, inputs *Inputs) (*Deployer, error) {
 		return nil, NilDeployerInputsErr
 	}
 
-	helmChart, err := loadFs(helm.GlooGatewayHelmChart)
+	helmChart, err := loadFs(helm.KgatewayHelmChart)
 	if err != nil {
 		return nil, err
 	}
@@ -400,7 +400,7 @@ func (d *Deployer) Render(name, ns string, vals map[string]any) ([]client.Object
 //
 // * performs GatewayParameters lookup/merging etc to get a final set of helm values
 //
-// * use those helm values to render the internal `gloo-gateway` helm chart into k8s objects
+// * use those helm values to render the internal `kgateway` helm chart into k8s objects
 //
 // * sets ownerRefs on all generated objects
 //

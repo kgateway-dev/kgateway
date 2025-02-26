@@ -67,7 +67,7 @@ func TestUniqueClients(t *testing.T) {
 					},
 				},
 			},
-			result: sets.New(fmt.Sprintf("gloo-kube-gateway-api~best-proxy-role~%d~ns", utils.HashLabels(map[string]string{corev1.LabelTopologyRegion: "region", corev1.LabelTopologyZone: "zone", "a": "b"}))),
+			result: sets.New(fmt.Sprintf("kgateway-kube-gateway-api~best-proxy-role~%d~ns", utils.HashLabels(map[string]string{corev1.LabelTopologyRegion: "region", corev1.LabelTopologyZone: "zone", "a": "b"}))),
 		},
 		{
 			name:   "no-pods",

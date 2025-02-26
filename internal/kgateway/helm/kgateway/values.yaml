@@ -5,8 +5,8 @@
 # * The `Gateway` resource driving the proxy provisioning
 # * A (possibly merged) GatewayParameters object translated to helm values
 # The actual defaults for these values should come from the "default GatewayParameters" object
-# See: (/gloo/install/helm/gloo/templates/43-gatewayparameters.yaml)
-# TODO: This file/workflow can be shored up via https://github.com/solo-io/solo-projects/issues/6417
+# See: (/install/helm/kgateway/templates/gatewayparameters.yaml)
+# TODO: This file/workflow can be shored up via https://github.com/kgateway-dev/kgateway/issues/10696
 
 gateway:
   # xds values actually come from the control plane
@@ -35,7 +35,7 @@ gateway:
     name: http
 
   # leftover autoscaling config; not actually wired up for public use yet
-  # see: https://github.com/solo-io/solo-projects/issues/5948
+  # see: https://github.com/kgateway-dev/kgateway/issues/10697
   autoscaling:
     enabled: false
     minReplicas: 1

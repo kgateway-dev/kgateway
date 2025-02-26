@@ -19,7 +19,6 @@ import (
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
 	"github.com/solo-io/k8s-utils/installutils/kuberesource"
-	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
@@ -32,6 +31,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/pointer"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 
 	values "github.com/kgateway-dev/kgateway/v2/install/helm/gloo/generate"
 	"github.com/kgateway-dev/kgateway/v2/install/test/securitycontext"
@@ -1017,7 +1018,7 @@ spec:
 
 					haveIstioSidecar = func(containers []corev1.Container) bool {
 						for _, c := range containers {
-							if c.Name == "istio-proxy" {
+							if c.Name == deployer.IstioContainerName {
 								return true
 							}
 						}
@@ -1035,7 +1036,7 @@ spec:
 
 					haveSdsSidecar = func(containers []corev1.Container) bool {
 						for _, c := range containers {
-							if c.Name == "sds" {
+							if c.Name == deployer.SdsContainerName {
 								return true
 							}
 						}
@@ -1044,7 +1045,7 @@ spec:
 
 					sdsIsIstioMode = func(containers []corev1.Container) bool {
 						for _, c := range containers {
-							if c.Name == "sds" {
+							if c.Name == deployer.SdsContainerName {
 								for _, e := range c.Env {
 									if e.Name == "ISTIO_MTLS_SDS_ENABLED" && e.Value == "true" {
 										return true
@@ -1082,7 +1083,7 @@ spec:
 							Ω(sdsIsIstioMode(structuredDeployment.Spec.Template.Spec.Containers)).To(BeTrue(), "sds sidecar should have istio mode enabled")
 							Expect(structuredDeployment.Spec.Template.Spec.Volumes).To(ContainElement(istioCertsVolume), "should have istio-certs volume mounted")
 							for _, c := range structuredDeployment.Spec.Template.Spec.Containers {
-								if c.Name == "sds" {
+								if c.Name == deployer.SdsContainerName {
 									Expect(c.Env).Should(ContainElement(GetLogLevelEnvVar("error")))
 								} else if c.Name == "istio-proxy" {
 									Expect(c.Args).Should(ContainElement("--proxyLogLevel=warning"))
@@ -3075,9 +3076,9 @@ spec:
 
 						// Containers we expect to have
 						expectedContainers := map[string]struct{}{
-							"gateway-proxy": {},
-							"istio-proxy":   {},
-							"sds":           {},
+							"gateway-proxy":             {},
+							deployer.IstioContainerName: {},
+							deployer.SdsContainerName:   {},
 						}
 
 						testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -3515,12 +3516,12 @@ spec:
 						Expect(gwpDepl.Spec.Template.Spec.Containers).To(HaveLen(3))
 
 						sdsContainer := gwpDepl.Spec.Template.Spec.Containers[1]
-						Expect(sdsContainer.Name).To(Equal("sds"))
+						Expect(sdsContainer.Name).To(Equal(deployer.SdsContainerName))
 						Expect(sdsContainer.Image).To(Equal("my-sds-reg/my-sds-repo:my-sds-tag"))
 						Expect(sdsContainer.ImagePullPolicy).To(Equal(corev1.PullIfNotPresent))
 
 						istioProxyContainer := gwpDepl.Spec.Template.Spec.Containers[2]
-						Expect(istioProxyContainer.Name).To(Equal("istio-proxy"))
+						Expect(istioProxyContainer.Name).To(Equal(deployer.IstioContainerName))
 						Expect(istioProxyContainer.Image).To(Equal("my-istio-reg/my-istio-repo:my-istio-tag"))
 						Expect(istioProxyContainer.ImagePullPolicy).To(Equal(corev1.PullAlways))
 
@@ -3552,12 +3553,12 @@ spec:
 						Expect(gwpDepl.Spec.Template.Spec.Containers).To(HaveLen(3))
 
 						sdsContainer := gwpDepl.Spec.Template.Spec.Containers[1]
-						Expect(sdsContainer.Name).To(Equal("sds"))
+						Expect(sdsContainer.Name).To(Equal(deployer.SdsContainerName))
 						Expect(sdsContainer.Image).To(Equal("my-sds-reg/my-sds-repo:my-sds-tag"))
 						Expect(sdsContainer.ImagePullPolicy).To(Equal(corev1.PullIfNotPresent))
 
 						istioProxyContainer := gwpDepl.Spec.Template.Spec.Containers[2]
-						Expect(istioProxyContainer.Name).To(Equal("istio-proxy"))
+						Expect(istioProxyContainer.Name).To(Equal(deployer.IstioContainerName))
 						Expect(istioProxyContainer.Image).To(Equal("my-istio-reg/my-istio-repo:my-istio-tag"))
 						Expect(istioProxyContainer.ImagePullPolicy).To(Equal(corev1.PullAlways))
 
@@ -3602,7 +3603,7 @@ spec:
 						Expect(gwpDepl.Spec.Template.Spec.Containers).To(HaveLen(3))
 
 						istioProxyContainer := gwpDepl.Spec.Template.Spec.Containers[2]
-						Expect(istioProxyContainer.Name).To(Equal("istio-proxy"))
+						Expect(istioProxyContainer.Name).To(Equal(deployer.IstioContainerName))
 						Expect(istioProxyContainer.Image).To(Equal(expectedImage))
 					},
 						// there is no fips or distroless version of the istioProxy image so we don't add the -fips or -distroless suffixes for any variants
@@ -3643,7 +3644,7 @@ spec:
 						Expect(gwpDepl.Spec.Template.Spec.Containers).To(HaveLen(2))
 
 						sdsContainer := gwpDepl.Spec.Template.Spec.Containers[1]
-						Expect(sdsContainer.Name).To(Equal("sds"))
+						Expect(sdsContainer.Name).To(Equal(deployer.SdsContainerName))
 						Expect(sdsContainer.Image).To(Equal(expectedImage))
 						Expect(sdsContainer.ImagePullPolicy).To(Equal(corev1.PullIfNotPresent))
 					},
