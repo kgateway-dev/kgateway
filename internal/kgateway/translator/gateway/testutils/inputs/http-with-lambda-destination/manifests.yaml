@@ -23,7 +23,7 @@ spec:
     - "example.com"
   rules:
     - backendRefs:
-        - name: aws-upstream
+        - name: aws-backend
           kind: Backend
           group: gateway.kgateway.dev
           filters:
@@ -36,7 +36,7 @@ spec:
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
 metadata:
-  name: aws-upstream
+  name: aws-backend
 spec:
   aws:
     region: us-east-1
