@@ -10,11 +10,9 @@ import (
 	"istio.io/istio/pkg/kube/krt/krttest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	apiv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -27,27 +25,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 )
 
 //go:generate go run github.com/golang/mock/mockgen -destination mocks/mock_queries.go -package mocks github.com/kgateway-dev/kgateway/internal/kgateway/query GatewayQueries
 
 var _ = Describe("Query", func() {
-	var (
-		scheme  *runtime.Scheme
-		builder *fake.ClientBuilder
-	)
-
-	BeforeEach(func() {
-		scheme = schemes.GatewayScheme()
-		builder = fake.NewClientBuilder().WithScheme(scheme)
-		err := query.IterateIndices(func(o client.Object, f string, fun client.IndexerFunc) error {
-			builder.WithIndex(o, f, fun)
-			return nil
-		})
-		Expect(err).NotTo(HaveOccurred())
-	})
-
 	Describe("GetSecretRef", func() {
 		It("should get secret from different ns if we have a ref grant", func() {
 			rg := refGrantSecret()
