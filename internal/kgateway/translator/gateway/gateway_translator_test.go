@@ -276,6 +276,31 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				Name:      "example-tcp-gateway",
 			},
 		}),
+	Entry(
+		"tls gateway with basic routing",
+		translatorTestCase{
+			inputFile:  "tls-routing/basic.yaml",
+			outputFile: "tls-routing/basic-proxy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+			assertReports: func(gwNN types.NamespacedName, reportsMap reports.ReportMap) {
+				route := &gwv1a2.TLSRoute{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "example-tls-route",
+						Namespace: "default",
+					},
+				}
+				routeStatus := reportsMap.BuildRouteStatus(context.TODO(), route, "")
+				Expect(routeStatus).NotTo(BeNil())
+				Expect(routeStatus.Parents).To(HaveLen(1))
+				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
+				Expect(resolvedRefs).NotTo(BeNil())
+				Expect(resolvedRefs.Status).To(Equal(metav1.ConditionTrue))
+				Expect(resolvedRefs.Reason).To(Equal(string(gwv1.RouteReasonResolvedRefs)))
+			},
+		}),
 	Entry("Plugin Backend", translatorTestCase{
 		inputFile:  "backend-plugin/gateway.yaml",
 		outputFile: "backend-plugin-proxy.yaml",
