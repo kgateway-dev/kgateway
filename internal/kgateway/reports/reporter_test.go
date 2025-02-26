@@ -177,6 +177,11 @@ var _ = Describe("Reporting Infrastructure", func() {
 					Type: "gloo.solo.io/SomeCondition",
 				},
 			)),
+			Entry("regular tlsroute", tlsRoute(
+				metav1.Condition{
+					Type: "gloo.solo.io/SomeCondition",
+				},
+			)),
 			Entry("delegatee route", delegateeRoute(
 				metav1.Condition{
 					Type: "gloo.solo.io/SomeCondition",
@@ -446,7 +451,7 @@ func tcpRoute(conditions ...metav1.Condition) client.Object {
 	return route
 }
 
-func tlsRoute() client.Object {
+func tlsRoute(conditions ...metav1.Condition) client.Object {
 	route := &gwv1a2.TLSRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "route",
@@ -454,6 +459,12 @@ func tlsRoute() client.Object {
 		},
 	}
 	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRef())
+	if len(conditions) > 0 {
+		route.Status.Parents = append(route.Status.Parents, gwv1.RouteParentStatus{
+			ParentRef:  *parentRef(),
+			Conditions: conditions,
+		})
+	}
 	return route
 }
 
