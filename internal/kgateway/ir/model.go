@@ -101,7 +101,7 @@ type EndpointsForBackend struct {
 	epsEqualityHash   uint64
 }
 
-func NewEndpointsForUpstream(us BackendObjectIR) *EndpointsForBackend {
+func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 	// start with a hash of the cluster name. technically we dont need it for krt, as we can compare the upstream name. but it helps later
 	// to compute the hash we present envoy with.
 	// note: we no longer need to add the upstream body hash to the clustername, as we applied `use_eds_cache_for_ads`

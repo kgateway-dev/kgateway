@@ -20,7 +20,7 @@ func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 			Name:      "name",
 		},
 	}
-	efu := ir.NewEndpointsForUpstream(us)
+	efu := ir.NewEndpointsForBackend(us)
 	efu.Add(ir.PodLocality{Region: "R1"}, ir.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
 			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
@@ -86,7 +86,7 @@ func TestTranslatesDestrulesFailover(t *testing.T) {
 			Name:      "name",
 		},
 	}
-	efu := ir.NewEndpointsForUpstream(us)
+	efu := ir.NewEndpointsForBackend(us)
 	efu.Add(ir.PodLocality{Region: "R1"}, ir.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
 			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{

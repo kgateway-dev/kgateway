@@ -99,7 +99,7 @@ func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 			},
 		},
 	}
-	result1 := ir.NewEndpointsForUpstream(us)
+	result1 := ir.NewEndpointsForBackend(us)
 	result1.Add(ir.PodLocality{
 		Region: "region",
 		Zone:   "zone",
@@ -109,7 +109,7 @@ func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 		Zone:   "zone2",
 	}, emd2)
 
-	result2 := ir.NewEndpointsForUpstream(us)
+	result2 := ir.NewEndpointsForBackend(us)
 	result2.Add(ir.PodLocality{
 		Region: "region2",
 		Zone:   "zone2",
@@ -121,7 +121,7 @@ func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 	g.Expect(result1.Equals(*result2)).To(BeTrue(), "expected %v, got %v", result1, result2)
 
 	// test with non matching locality
-	result3 := ir.NewEndpointsForUpstream(us)
+	result3 := ir.NewEndpointsForBackend(us)
 	result3.Add(ir.PodLocality{
 		Region: "region",
 		Zone:   "zone",
@@ -133,7 +133,7 @@ func TestEndpointsForUpstreamOrderDoesntMatter(t *testing.T) {
 	g.Expect(result1.Equals(*result3)).To(BeFalse(), "not expected %v, got %v", result1, result2)
 
 	// test with non matching labels
-	result4 := ir.NewEndpointsForUpstream(us)
+	result4 := ir.NewEndpointsForBackend(us)
 	result4.Add(ir.PodLocality{
 		Region: "region",
 		Zone:   "zone",
@@ -246,25 +246,25 @@ func TestEndpointsForUpstreamWithDifferentNameButSameEndpoints(t *testing.T) {
 		},
 	}
 
-	result1 := ir.NewEndpointsForUpstream(us)
+	result1 := ir.NewEndpointsForBackend(us)
 	result1.Add(ir.PodLocality{
 		Region: "region",
 		Zone:   "zone",
 	}, emd1)
 
-	result2 := ir.NewEndpointsForUpstream(usd)
+	result2 := ir.NewEndpointsForBackend(usd)
 	result2.Add(ir.PodLocality{
 		Region: "region",
 		Zone:   "zone",
 	}, emd1)
 
-	result3 := ir.NewEndpointsForUpstream(us)
+	result3 := ir.NewEndpointsForBackend(us)
 	result3.Add(ir.PodLocality{
 		Region: "region",
 		Zone:   "zone",
 	}, emd2)
 
-	result4 := ir.NewEndpointsForUpstream(usd)
+	result4 := ir.NewEndpointsForBackend(usd)
 	result4.Add(ir.PodLocality{
 		Region: "region",
 		Zone:   "zone",
@@ -394,7 +394,7 @@ func TestEndpoints(t *testing.T) {
 						},
 					},
 				}
-				result := ir.NewEndpointsForUpstream(us)
+				result := ir.NewEndpointsForBackend(us)
 				result.Add(ir.PodLocality{
 					Region: "region",
 					Zone:   "zone",
@@ -519,7 +519,7 @@ func TestEndpoints(t *testing.T) {
 			},
 			result: func(us ir.BackendObjectIR) *ir.EndpointsForBackend {
 				// output
-				result := ir.NewEndpointsForUpstream(us)
+				result := ir.NewEndpointsForBackend(us)
 				result.Add(ir.PodLocality{
 					Region: "region",
 					Zone:   "zone",
@@ -693,7 +693,7 @@ func TestEndpoints(t *testing.T) {
 						},
 					},
 				}
-				result := ir.NewEndpointsForUpstream(us)
+				result := ir.NewEndpointsForBackend(us)
 				result.Add(ir.PodLocality{
 					Region: "region",
 					Zone:   "zone",
@@ -842,7 +842,7 @@ func TestEndpoints(t *testing.T) {
 						},
 					},
 				}
-				result := ir.NewEndpointsForUpstream(us)
+				result := ir.NewEndpointsForBackend(us)
 				result.Add(ir.PodLocality{
 					Region: "region1",
 					Zone:   "zone1",
@@ -935,7 +935,7 @@ func TestEndpoints(t *testing.T) {
 			},
 			result: func(us ir.BackendObjectIR) *ir.EndpointsForBackend {
 				// The result should be empty since no ready endpoints are available.
-				result := ir.NewEndpointsForUpstream(us)
+				result := ir.NewEndpointsForBackend(us)
 				return result
 			},
 		},
@@ -1070,7 +1070,7 @@ func TestEndpoints(t *testing.T) {
 						},
 					},
 				}
-				result := ir.NewEndpointsForUpstream(us)
+				result := ir.NewEndpointsForBackend(us)
 				result.Add(ir.PodLocality{
 					Region: "region1",
 					Zone:   "zone1",
@@ -1107,7 +1107,7 @@ func TestEndpoints(t *testing.T) {
 			})
 
 			ei := EndpointsInputs{
-				Upstreams:               krttest.GetMockCollection[ir.BackendObjectIR](mock),
+				Backends:                krttest.GetMockCollection[ir.BackendObjectIR](mock),
 				EndpointSlices:          endpointSlices,
 				EndpointSlicesByService: endpointSlicesByService,
 				Pods:                    pods,
