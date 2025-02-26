@@ -116,7 +116,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				Namespace: i.GetNamespace(),
 				Name:      i.GetName(),
 			},
-			GvPrefix:          "upstream",
+			GvPrefix:          "backend",
 			CanonicalHostname: hostname(i),
 			Obj:               i,
 			ObjIr:             translate(krtctx, i),
