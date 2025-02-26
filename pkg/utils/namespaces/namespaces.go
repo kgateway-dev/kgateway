@@ -4,6 +4,10 @@ import (
 	"os"
 )
 
+const (
+	DefaultNamespace = "kgateway-system"
+)
+
 // AllNamespaces returns true if the list of namespaces watched is empty or contains only a blank string
 // This implies that all namespaces are to be watched
 func AllNamespaces(watchNamespaces []string) bool {
@@ -36,10 +40,10 @@ func ProcessWatchNamespaces(watchNamespaces []string, writeNamespace string) []s
 	return watchNamespaces
 }
 
-// GetPodNamespace returns the value of the env var `POD_NAMESPACE` and defaults to `gloo-system` if unset
+// GetPodNamespace returns the value of the env var `POD_NAMESPACE` and defaults to `kgateway-system` if unset
 func GetPodNamespace() string {
 	if podNamespace := os.Getenv("POD_NAMESPACE"); podNamespace != "" {
 		return podNamespace
 	}
-	return "gloo-system"
+	return DefaultNamespace
 }

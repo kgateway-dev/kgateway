@@ -53,7 +53,7 @@ type Deployer struct {
 
 type ControlPlaneInfo struct {
 	XdsHost string
-	XdsPort int32
+	XdsPort uint32
 }
 
 type AwsInfo struct {

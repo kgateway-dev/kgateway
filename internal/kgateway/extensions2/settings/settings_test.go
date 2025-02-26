@@ -25,13 +25,15 @@ func TestSettings(t *testing.T) {
 		expectedErrorStr string
 	}{
 		{
-			name:    "defaults to empty values",
+			name:    "defaults to empty or default values",
 			envVars: map[string]string{},
 			expectedSettings: &settings.Settings{
 				EnableIstioIntegration: false,
 				EnableAutoMtls:         false,
 				StsClusterName:         "",
 				StsUri:                 "",
+				XdsServiceName:         "kgateway",
+				XdsServicePort:         9977,
 			},
 		},
 		{
@@ -41,18 +43,29 @@ func TestSettings(t *testing.T) {
 				"KGW_ENABLE_AUTO_MTLS":         "true",
 				"KGW_STS_CLUSTER_NAME":         "my-cluster",
 				"KGW_STS_URI":                  "my.sts.uri",
+				"KGW_XDS_SERVICE_NAME":         "custom-svc",
+				"KGW_XDS_SERVICE_PORT":         "1234",
 			},
 			expectedSettings: &settings.Settings{
 				EnableIstioIntegration: true,
 				EnableAutoMtls:         true,
 				StsClusterName:         "my-cluster",
 				StsUri:                 "my.sts.uri",
+				XdsServiceName:         "custom-svc",
+				XdsServicePort:         1234,
 			},
 		},
 		{
 			name: "errors on invalid bool",
 			envVars: map[string]string{
 				"KGW_ENABLE_ISTIO_INTEGRATION": "true123",
+			},
+			expectedErrorStr: "invalid syntax",
+		},
+		{
+			name: "errors on invalid port",
+			envVars: map[string]string{
+				"KGW_XDS_SERVICE_PORT": "a123",
 			},
 			expectedErrorStr: "invalid syntax",
 		},
@@ -65,6 +78,8 @@ func TestSettings(t *testing.T) {
 			},
 			expectedSettings: &settings.Settings{
 				EnableAutoMtls: true,
+				XdsServiceName: "kgateway",
+				XdsServicePort: 9977,
 			},
 		},
 	}

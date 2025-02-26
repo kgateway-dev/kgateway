@@ -101,7 +101,7 @@ type helmServiceAccount struct {
 // to receive xds config updates
 type helmXds struct {
 	Host *string `json:"host,omitempty"`
-	Port *int32  `json:"port,omitempty"`
+	Port *uint32 `json:"port,omitempty"`
 }
 
 type helmAutoscaling struct {

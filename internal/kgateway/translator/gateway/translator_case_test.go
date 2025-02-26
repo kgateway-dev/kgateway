@@ -14,6 +14,8 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	"istio.io/istio/pkg/config/schema/gvr"
 	kubeclient "istio.io/istio/pkg/kube"
+	"istio.io/istio/pkg/kube/kclient/clienttest"
+	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/test"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -21,13 +23,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"istio.io/istio/pkg/kube/kclient/clienttest"
-	"istio.io/istio/pkg/kube/krt"
-
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
@@ -167,11 +167,16 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		Stop: ctx.Done(),
 	}
 
+	st, err := settings.BuildSettings()
+	if err != nil {
+		return nil, err
+	}
 	commoncol := common.NewCommonCollections(
 		krtOpts,
 		cli,
 		ourCli,
 		logr.Discard(),
+		*st,
 	)
 
 	plugins := registry.Plugins(ctx, commoncol)

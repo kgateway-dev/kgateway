@@ -34,7 +34,7 @@ spec:
           image: "{{ .Values.controller.image.registry | default .Values.image.registry }}/{{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag | default .Values.image.tag | default .Chart.Version }}"
           imagePullPolicy: {{ .Values.controller.image.pullPolicy | default .Values.image.pullPolicy }}
           ports:
-            - containerPort: {{ .Values.controller.service.ports.grpc | default 9977 }}
+            - containerPort: {{ .Values.controller.service.ports.grpc }}
               name: grpc-xds
               protocol: TCP
           readinessProbe:
@@ -43,7 +43,7 @@ spec:
             periodSeconds: 10
             successThreshold: 1
             tcpSocket:
-              port: 9977
+              port: {{ .Values.controller.service.ports.grpc }}
             timeoutSeconds: 1
           env:
             - name: GOMEMLIMIT
@@ -58,6 +58,10 @@ spec:
                   resource: limits.cpu
             - name: LOG_LEVEL
               value: {{ .Values.controller.logLevel | quote }}
+            - name: KGW_XDS_SERVICE_NAME
+              value: {{ include "kgateway.fullname" . }}
+            - name: KGW_XDS_SERVICE_PORT
+              value: {{ .Values.controller.service.ports.grpc | quote }}
             # TODO: Remove this once the cleanup is done. Required as the gloo-system
             # namespace is the default namespace and conformance will fail as a result.
             - name: POD_NAMESPACE

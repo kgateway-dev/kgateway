@@ -20,7 +20,6 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
-	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/syncer/setup"
 	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envoyutils/admincli"
@@ -316,13 +315,11 @@ func xdsClusterAssertion(testInstallation *e2e.TestInstallation) func(ctx contex
 			g.Expect(xdsSocketAddress).NotTo(gomega.BeNil())
 
 			g.Expect(xdsSocketAddress.GetAddress()).To(gomega.Equal(kubeutils.ServiceFQDN(metav1.ObjectMeta{
-				Name:      kubeutils.GlooServiceName,
+				Name:      "kgateway",
 				Namespace: testInstallation.Metadata.InstallNamespace,
 			})), "xds socket address points to gloo service, in installation namespace")
 
-			xdsPort, err := setup.GetNamespacedControlPlaneXdsPort(ctx, testInstallation.Metadata.InstallNamespace, testInstallation.ResourceClients.ServiceClient())
-			g.Expect(err).NotTo(gomega.HaveOccurred())
-			g.Expect(xdsSocketAddress.GetPortValue()).To(gomega.Equal(uint32(xdsPort)), "xds socket port points to gloo service, in installation namespace")
+			g.Expect(xdsSocketAddress.GetPortValue()).To(gomega.Equal(9977), "xds socket port points to gloo service, in installation namespace")
 		}).
 			WithContext(ctx).
 			WithTimeout(time.Second * 10).

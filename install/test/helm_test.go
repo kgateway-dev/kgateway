@@ -39,6 +39,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/gateway/pkg/defaults"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	glootestutils "github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
@@ -5037,7 +5038,7 @@ metadata:
 						})
 
 						// make sure the resource requests and limits are set in the pod template
-						deploy := getStructuredDeployment(testManifest, kubeutils.GlooDeploymentName)
+						deploy := getStructuredDeployment(testManifest, helpers.DefaultKgatewayDeploymentName)
 						glooContainer := deploy.Spec.Template.Spec.Containers[0]
 						Expect(glooContainer.Resources).To(Equal(corev1.ResourceRequirements{
 							Limits: corev1.ResourceList{
@@ -5078,7 +5079,7 @@ metadata:
 						})
 
 						// make sure the resource requests are set in the pod template
-						deploy := getStructuredDeployment(testManifest, kubeutils.GlooDeploymentName)
+						deploy := getStructuredDeployment(testManifest, helpers.DefaultKgatewayDeploymentName)
 						glooContainer := deploy.Spec.Template.Spec.Containers[0]
 						Expect(glooContainer.Resources).To(Equal(corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
