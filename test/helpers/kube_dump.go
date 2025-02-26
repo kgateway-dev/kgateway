@@ -18,7 +18,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/admin"
 	kgatewayAdminCli "github.com/kgateway-dev/kgateway/v2/pkg/utils/controllerutils/admincli"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envoyutils/admincli"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
@@ -479,7 +478,7 @@ func writeControllerLog(ctx context.Context, outDir string, ns string, podName s
 	// Get the kgateway controller logs
 	controllerLogsFile := fileAtPath(filepath.Join(outDir, fmt.Sprintf("%s.controller.log", podName)))
 	controllerLogsCmd := kubectlCli.WithReceiver(controllerLogsFile).Command(ctx,
-		"-n", ns, "logs", podName, "-c", kubeutils.KgatewayContainerName, "--tail=1000")
+		"-n", ns, "logs", podName, "-c", KgatewayContainerName, "--tail=1000")
 	err := controllerLogsCmd.Run().Cause()
 	if err != nil {
 		fmt.Printf("error running controller logs for %s in %s command: %v\n", podName, ns, err)

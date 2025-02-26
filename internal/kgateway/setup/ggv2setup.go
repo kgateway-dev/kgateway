@@ -2,6 +2,7 @@ package setup
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"os"
 
@@ -13,7 +14,6 @@ import (
 	"go.uber.org/zap/zapcore"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -22,12 +22,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/admin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/version"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/namespaces"
 )
 
 const (
@@ -58,10 +57,17 @@ func StartGGv2(
 	extraPlugins []extensionsplug.Plugin,
 	extraGwClasses []string, // TODO: we can remove this and replace with something that watches all GW classes with our controller name
 ) error {
-	restConfig := ctrl.GetConfigOrDie()
+	logger := contextutils.LoggerFrom(ctx)
+
+	// load global settings
+	st, err := settings.BuildSettings()
+	if err != nil {
+		logger.Error(err, "got err while parsing Settings from env")
+	}
+	logger.Info(fmt.Sprintf("got settings from env: %+v", *st))
 
 	uniqueClientCallbacks, uccBuilder := krtcollections.NewUniquelyConnectedClients()
-	cache, err := startControlPlane(ctx, uniqueClientCallbacks)
+	cache, err := startControlPlane(ctx, st.XdsServicePort, uniqueClientCallbacks)
 	if err != nil {
 		return err
 	}
@@ -70,26 +76,19 @@ func StartGGv2(
 		Cache:               cache,
 		KrtDebugger:         new(krt.DebugHandler),
 		ExtraGatewayClasses: extraGwClasses,
-		XdsHost:             GetControlPlaneXdsHost(),
-		XdsPort:             9977,
+		GlobalSettings:      st,
 	}
 
+	restConfig := ctrl.GetConfigOrDie()
 	return StartGGv2WithConfig(ctx, setupOpts, restConfig, uccBuilder, extraPlugins, nil)
-}
-
-// GetControlPlaneXdsHost gets the xDS address from the gloo Service.
-func GetControlPlaneXdsHost() string {
-	return kubeutils.ServiceFQDN(metav1.ObjectMeta{
-		Name:      kubeutils.GlooServiceName,
-		Namespace: namespaces.GetPodNamespace(),
-	})
 }
 
 func startControlPlane(
 	ctx context.Context,
+	port uint32,
 	callbacks xdsserver.Callbacks,
 ) (envoycache.SnapshotCache, error) {
-	return NewControlPlane(ctx, &net.TCPAddr{IP: net.IPv4zero, Port: 9977}, callbacks)
+	return NewControlPlane(ctx, &net.TCPAddr{IP: net.IPv4zero, Port: int(port)}, callbacks)
 }
 
 func StartGGv2WithConfig(

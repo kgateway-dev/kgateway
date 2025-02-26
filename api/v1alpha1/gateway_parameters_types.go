@@ -589,7 +589,7 @@ type AiExtension struct {
 	// +kubebuilder:validation:Optional
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
-	// The extensions's container ports.
+	// The extension's container ports.
 	//
 	// +kubebuilder:validation:Optional
 	Ports []corev1.ContainerPort `json:"ports,omitempty"`

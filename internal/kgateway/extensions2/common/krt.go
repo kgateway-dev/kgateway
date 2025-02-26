@@ -1,8 +1,6 @@
 package common
 
 import (
-	"fmt"
-
 	"github.com/go-logr/logr"
 	"istio.io/istio/pkg/kube"
 	istiokube "istio.io/istio/pkg/kube"
@@ -24,7 +22,7 @@ type CommonCollections struct {
 	Client    kube.Client
 	KrtOpts   krtutil.KrtOptions
 	Secrets   *krtcollections.SecretIndex
-	Upstreams *krtcollections.UpstreamIndex
+	Backends  *krtcollections.BackendIndex
 
 	Pods      krt.Collection[krtcollections.LocalityPod]
 	RefGrants *krtcollections.RefGrantIndex
@@ -44,6 +42,7 @@ func NewCommonCollections(
 	client istiokube.Client,
 	ourClient versioned.Interface,
 	logger logr.Logger,
+	settings settings.Settings,
 ) *CommonCollections {
 	secretClient := kclient.New[*corev1.Secret](client)
 	k8sSecretsRaw := krt.WrapClient(secretClient, krt.WithStop(krtOptions.Stop), krt.WithName("Secrets") /* no debug here - we don't want raw secrets printed*/)
@@ -67,11 +66,6 @@ func NewCommonCollections(
 	refgrantsCol := krt.WrapClient(kclient.New[*gwv1beta1.ReferenceGrant](client), krtOptions.ToOptions("RefGrants")...)
 	refgrants := krtcollections.NewRefGrantIndex(refgrantsCol)
 
-	st, err := settings.BuildSettings()
-	if err != nil {
-		logger.Error(err, "got err while parsing Settings from env")
-	}
-	logger.Info(fmt.Sprintf("got settings from env: %+v", *st))
 	return &CommonCollections{
 		OurClient: ourClient,
 		Client:    client,
@@ -79,6 +73,6 @@ func NewCommonCollections(
 		Secrets:   krtcollections.NewSecretIndex(secrets, refgrants),
 		Pods:      krtcollections.NewPodsCollection(client, krtOptions),
 		RefGrants: refgrants,
-		Settings:  *st,
+		Settings:  settings,
 	}
 }

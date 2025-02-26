@@ -21,13 +21,6 @@ import (
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	jsonpb "google.golang.org/protobuf/encoding/protojson"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-
 	discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/go-logr/zapr"
 	"github.com/solo-io/go-utils/contextutils"
@@ -36,16 +29,23 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/grpclog"
+	jsonpb "google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 	istiokube "istio.io/istio/pkg/kube"
 	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/slices"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	ggv2setup "github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
@@ -113,8 +113,13 @@ func TestScenarios(t *testing.T) {
 
 	os.Setenv("POD_NAMESPACE", "gwtest") // TODO: is this still needed?
 	// set global settings env vars; current ggv2setup_tests all assume these are set to true
-	os.Setenv("KGW_ENABLEISTIOINTEGRATION", "true")
-	os.Setenv("KGW_ENABLEAUTOMTLS", "true")
+	os.Setenv("KGW_ENABLE_ISTIO_INTEGRATION", "true")
+	os.Setenv("KGW_ENABLE_AUTO_MTLS", "true")
+	t.Cleanup(func() {
+		os.Unsetenv("POD_NAMESPACE")
+		os.Unsetenv("KGW_ENABLE_ISTIO_INTEGRATION")
+		os.Unsetenv("KGW_ENABLE_AUTO_MTLS")
+	})
 
 	testEnv := &envtest.Environment{
 		CRDDirectoryPaths: []string{
@@ -170,19 +175,22 @@ func TestScenarios(t *testing.T) {
 
 	lis, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		t.Fatalf("cant listen %v", err)
+		t.Fatalf("can't listen %v", err)
 	}
 	xdsPort := lis.Addr().(*net.TCPAddr).Port
 	snapCache, err := ggv2setup.NewControlPlaneWithListener(ctx, lis, uniqueClientCallbacks)
 	if err != nil {
-		t.Fatalf("cant listen %v", err)
+		t.Fatalf("can't listen %v", err)
 	}
 
+	st, err := settings.BuildSettings()
+	if err != nil {
+		t.Fatalf("can't get settings %v", err)
+	}
 	setupOpts := &controller.SetupOpts{
-		Cache:       snapCache,
-		KrtDebugger: new(krt.DebugHandler),
-		XdsHost:     "localhost",
-		XdsPort:     9977,
+		Cache:          snapCache,
+		KrtDebugger:    new(krt.DebugHandler),
+		GlobalSettings: st,
 	}
 
 	// start ggv2
@@ -356,7 +364,7 @@ func newXdsDumper(t *testing.T, ctx context.Context, xdsPort int, gwname string)
 		dr: &discovery_v3.DiscoveryRequest{Node: &envoycore.Node{
 			Id: "gateway.gwtest",
 			Metadata: &structpb.Struct{
-				Fields: map[string]*structpb.Value{"role": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("gloo-kube-gateway-api~%s~%s", "gwtest", gwname)}}}},
+				Fields: map[string]*structpb.Value{"role": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("kgateway-kube-gateway-api~%s~%s", "gwtest", gwname)}}}},
 		}},
 	}
 

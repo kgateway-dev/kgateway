@@ -110,6 +110,19 @@ jobs:
           go-version-file: "go.mod"
           cache: true
 
+      # We publish a rolling main release for every commit to main. Deleting the release
+      # ensures that the tagged commit is not stale. Goreleaser will create a new tag
+      # and release for the tagged commit.
+      - name: Delete v2.0.0-main release if it exists
+        if: ${{ github.ref == 'refs/heads/main' }}
+        continue-on-error: true
+        run: |
+          set -x
+          echo "Deleting the v2.0.0-main release"
+          gh release delete v2.0.0-main --repo ${{ github.repository }} --yes --cleanup-tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Log into ghcr.io
         if: ${{ github.event_name != 'pull_request' }}
         uses: docker/login-action@v3

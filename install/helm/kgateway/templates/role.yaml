@@ -71,12 +71,12 @@ rules:
 - apiGroups:
   - gateway.kgateway.dev
   resources:
+  - backends
   - directresponses
   - gatewayparameters
   - httplistenerpolicies
   - listenerpolicies
   - routepolicies
-  - upstreams
   verbs:
   - get
   - list
@@ -84,12 +84,12 @@ rules:
 - apiGroups:
   - gateway.kgateway.dev
   resources:
+  - backends/status
   - directresponses/status
   - gatewayparameters/status
   - httplistenerpolicies/status
   - listenerpolicies/status
   - routepolicies/status
-  - upstreams/status
   verbs:
   - get
   - patch

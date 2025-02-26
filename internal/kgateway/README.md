@@ -38,7 +38,7 @@ kind: Gateway
 metadata:
   name: http
 spec:
-  gatewayClassName: gloo-gateway
+  gatewayClassName: kgateway
   listeners:
   - allowedRoutes:
       namespaces:

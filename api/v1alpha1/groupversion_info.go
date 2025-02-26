@@ -10,7 +10,7 @@ const (
 	GatewayParametersKind = "GatewayParameters"
 	// DirectResponseKind is the kind for the DirectResponse CRD.
 	DirectResponseKind     = "DirectResponse"
-	UpstreamKind           = "Upstream"
+	BackendKind            = "Backend"
 	RoutePolicyKind        = "RoutePolicy"
 	ListenerPolicyKind     = "ListenerPolicy"
 	HTTPListenerPolicyKind = "HTTPListenerPolicy"
@@ -28,10 +28,10 @@ var (
 		Version: GroupVersion.Version,
 		Kind:    DirectResponseKind,
 	}
-	UpstreamGVK = schema.GroupVersionKind{
+	BackendGVK = schema.GroupVersionKind{
 		Group:   GroupName,
 		Version: GroupVersion.Version,
-		Kind:    UpstreamKind,
+		Kind:    BackendKind,
 	}
 	RoutePolicyGVK = schema.GroupVersionKind{
 		Group:   GroupName,

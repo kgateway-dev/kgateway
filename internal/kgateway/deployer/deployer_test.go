@@ -37,7 +37,7 @@ import (
 	//
 	// There is some import within this package that this suite relies on. Chasing that down is
 	// *hard* tho due to the import tree, and best done in a followup.
-	// _ "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/translator"
+	// _ "github.com/kgateway-dev/kgateway/internal/kgateway/translator/translator.go"
 	//
 	// The above TODO is a result of proto types being registered for free somewhere through
 	// the translator import. What we really need is to register all proto types, which is
@@ -176,7 +176,7 @@ var _ = Describe("Deployer", func() {
 			}
 		}
 
-		// Note that this is NOT meant to reflect the actual defaults defined in install/helm/gloo/templates/43-gatewayparameters.yaml
+		// Note that this is NOT meant to reflect the actual defaults defined in install/helm/kgateway/templates/gatewayparameters.yaml
 		defaultGatewayParams = func() *gw2_v1alpha1.GatewayParameters {
 			return &gw2_v1alpha1.GatewayParameters{
 				TypeMeta: metav1.TypeMeta{
@@ -1067,16 +1067,16 @@ var _ = Describe("Deployer", func() {
 			var sdsContainer, istioProxyContainer, aiContainer, gwContainer corev1.Container
 			for _, container := range containers {
 				switch container.Name {
-				case "sds":
+				case deployer.SdsContainerName:
 					sdsContainer = container
 					foundSds = true
-				case "istio-proxy":
+				case deployer.IstioContainerName:
 					istioProxyContainer = container
 					foundIstioProxy = true
-				case "gloo-gateway":
+				case deployer.KgatewayContainerName:
 					gwContainer = container
 					foundGw = true
-				case "gloo-ai-extension":
+				case deployer.KgatewayAIContainerName:
 					aiContainer = container
 					foundAIExtension = true
 				default:

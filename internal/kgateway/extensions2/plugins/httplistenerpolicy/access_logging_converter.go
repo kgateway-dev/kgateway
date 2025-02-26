@@ -45,10 +45,10 @@ func convertAccessLogConfig(
 		return nil, nil
 	}
 
-	grpcBackends := make(map[string]*ir.Upstream, len(policy.Spec.AccessLog))
+	grpcBackends := make(map[string]*ir.BackendObjectIR, len(policy.Spec.AccessLog))
 	for idx, log := range configs {
 		if log.GrpcService != nil && log.GrpcService.BackendRef != nil {
-			upstream, err := commoncol.Upstreams.GetUpstreamFromRef(krtctx, parentSrc, log.GrpcService.BackendRef.BackendObjectReference)
+			upstream, err := commoncol.Backends.GetBackendFromRef(krtctx, parentSrc, log.GrpcService.BackendRef.BackendObjectReference)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get upstream from ref: %s", err.Error())
 			}
@@ -64,7 +64,7 @@ func getLogId(logName string, idx int) string {
 	return fmt.Sprintf("%s-%d", logName, idx)
 }
 
-func translateAccessLogs(logger *zap.Logger, configs []v1alpha1.AccessLog, grpcBackends map[string]*ir.Upstream) ([]*envoyaccesslog.AccessLog, error) {
+func translateAccessLogs(logger *zap.Logger, configs []v1alpha1.AccessLog, grpcBackends map[string]*ir.BackendObjectIR) ([]*envoyaccesslog.AccessLog, error) {
 	var results []*envoyaccesslog.AccessLog
 
 	for idx, logConfig := range configs {
@@ -79,7 +79,7 @@ func translateAccessLogs(logger *zap.Logger, configs []v1alpha1.AccessLog, grpcB
 }
 
 // translateAccessLog creates an Envoy AccessLog configuration for a single log config
-func translateAccessLog(logger *zap.Logger, logConfig v1alpha1.AccessLog, grpcBackends map[string]*ir.Upstream, accessLogId int) (*envoyaccesslog.AccessLog, error) {
+func translateAccessLog(logger *zap.Logger, logConfig v1alpha1.AccessLog, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoyaccesslog.AccessLog, error) {
 	// Validate mutual exclusivity of sink types
 	if logConfig.FileSink != nil && logConfig.GrpcService != nil {
 		return nil, errors.New("access log config cannot have both file sink and grpc service")
@@ -156,7 +156,7 @@ func createFileAccessLog(logger *zap.Logger, fileSink *v1alpha1.FileSink) (*envo
 }
 
 // createGrpcAccessLog generates a gRPC-based access log configuration
-func createGrpcAccessLog(logger *zap.Logger, grpcService *v1alpha1.GrpcService, grpcBackends map[string]*ir.Upstream, accessLogId int) (*envoyaccesslog.AccessLog, error) {
+func createGrpcAccessLog(logger *zap.Logger, grpcService *v1alpha1.GrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) (*envoyaccesslog.AccessLog, error) {
 	var cfg envoygrpc.HttpGrpcAccessLogConfig
 	if err := copyGrpcSettings(&cfg, grpcService, grpcBackends, accessLogId); err != nil {
 		wrappedErr := fmt.Errorf("error converting grpc access log config: %s", err.Error())
@@ -384,7 +384,7 @@ func convertJsonFormat(jsonFormat *runtime.RawExtension) *structpb.Struct {
 	return structVal
 }
 
-func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, grpcService *v1alpha1.GrpcService, grpcBackends map[string]*ir.Upstream, accessLogId int) error {
+func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, grpcService *v1alpha1.GrpcService, grpcBackends map[string]*ir.BackendObjectIR, accessLogId int) error {
 	if grpcService == nil {
 		return errors.New("grpc service object cannot be nil")
 	}

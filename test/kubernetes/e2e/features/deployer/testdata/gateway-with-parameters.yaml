@@ -5,7 +5,7 @@ metadata:
   annotations:
     gateway.kgateway.dev/gateway-parameters-name: "gw-params"
 spec:
-  gatewayClassName: gloo-gateway
+  gatewayClassName: kgateway
   listeners:
     - protocol: HTTP
       port: 8080

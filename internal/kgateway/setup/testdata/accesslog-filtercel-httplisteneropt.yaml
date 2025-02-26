@@ -76,7 +76,7 @@ spec:
           port: 8080
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Upstream
+kind: Backend
 metadata:
   name: log
   namespace: gwtest
@@ -97,12 +97,12 @@ spec:
     kind: Gateway
     name: http-gw-for-test
   accessLog:
-      - grpcService:
-          logName: "test-accesslog-service"
-          backendRef:
-            name: log
-            kind: Upstream
-            group: gateway.kgateway.dev
-        filter:
-          celFilter:
-            match: "request.headers['test'].contains('cool-beans')"
+    - grpcService:
+        logName: "test-accesslog-service"
+        backendRef:
+          name: log
+          kind: Backend
+          group: gateway.kgateway.dev
+      filter:
+        celFilter:
+          match: "request.headers['test'].contains('cool-beans')"

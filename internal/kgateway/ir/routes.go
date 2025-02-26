@@ -93,7 +93,7 @@ type TcpRouteIR struct {
 	SourceObject     *gwv1alpha2.TCPRoute
 	ParentRefs       []gwv1.ParentReference
 	AttachedPolicies AttachedPolicies
-	Backends         []Backend
+	Backends         []BackendRefIR
 }
 
 func (c *TcpRouteIR) GetParentRefs() []gwv1.ParentReference {

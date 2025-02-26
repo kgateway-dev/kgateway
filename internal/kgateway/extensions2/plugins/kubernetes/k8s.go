@@ -44,10 +44,10 @@ func NewPluginFromCollections(
 	}
 
 	clusterDomain := network.GetClusterDomainName()
-	k8sServiceUpstreams := krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.Upstream {
-		uss := []ir.Upstream{}
+	k8sServiceUpstreams := krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.BackendObjectIR {
+		uss := []ir.BackendObjectIR{}
 		for _, port := range svc.Spec.Ports {
-			uss = append(uss, ir.Upstream{
+			uss = append(uss, ir.BackendObjectIR{
 				ObjectSource: ir.ObjectSource{
 					Kind:      gk.Kind,
 					Group:     gk.Group,
@@ -67,19 +67,19 @@ func NewPluginFromCollections(
 	k8sServiceEndpoints := krtcollections.NewGlooK8sEndpoints(ctx, inputs)
 
 	return extensionsplug.Plugin{
-		ContributesUpstreams: map[schema.GroupKind]extensionsplug.UpstreamPlugin{
+		ContributesBackends: map[schema.GroupKind]extensionsplug.BackendPlugin{
 			gk: {
-				UpstreamInit: ir.UpstreamInit{
-					InitUpstream: processUpstream,
+				BackendInit: ir.BackendInit{
+					InitBackend: processUpstream,
 				},
 				Endpoints: k8sServiceEndpoints,
-				Upstreams: k8sServiceUpstreams,
+				Backends:  k8sServiceUpstreams,
 			},
 		},
 	}
 }
 
-func processUpstream(ctx context.Context, in ir.Upstream, out *envoy_config_cluster_v3.Cluster) {
+func processUpstream(ctx context.Context, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) {
 	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
 		Type: envoy_config_cluster_v3.Cluster_EDS,
 	}

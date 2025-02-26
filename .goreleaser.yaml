@@ -170,28 +170,4 @@ release:
 
     ## Quickstart
 
-    First, create a [kind cluster](https://kind.sigs.k8s.io/docs/user/quick-start/#installation).
-
-    ```bash
-    kind create cluster
-    ```
-
-    Then, deploy the Kubernetes Gateway API CRDs.
-
-    ```bash
-    kubectl apply --kustomize "https://github.com/kubernetes-sigs/gateway-api/config/crd/experimental?ref=v1.2.1"
-    ```
-
-    Install the `kgateway` controller.
-
-    ```bash
-    helm install --create-namespace --namespace kgateway-system --version {{ .Env.VERSION }} kgateway oci://{{ .Env.IMAGE_REGISTRY }}/charts/kgateway
-    ```
-
-    Verify the release was successful.
-
-    ```bash
-    kubectl get pods -n kgateway-system
-    ```
-
-    If the release was successful, you should see a `kgateway` pod running.
+    For detailed installation instructions and next steps, please visit our [quickstart guide](https://kgateway.dev/docs/quickstart/).
