@@ -119,7 +119,7 @@ type TlsRouteIR struct {
 
 	Hostnames        []string
 	AttachedPolicies AttachedPolicies
-	Backends         []Backend
+	Backends         []BackendRefIR
 }
 
 func (c *TlsRouteIR) GetParentRefs() []gwv1.ParentReference {
@@ -132,7 +132,7 @@ func (c TlsRouteIR) ResourceName() string {
 	return c.ObjectSource.ResourceName()
 }
 
-func (c TlsRouteIR) Equals(in TlsRouteIR) bool { // TODO
+func (c TlsRouteIR) Equals(in TlsRouteIR) bool {
 	return c.ObjectSource == in.ObjectSource && versionEquals(c.SourceObject, in.SourceObject) && c.AttachedPolicies.Equals(in.AttachedPolicies)
 }
 
