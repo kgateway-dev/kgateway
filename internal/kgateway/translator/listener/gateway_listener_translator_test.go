@@ -663,6 +663,33 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 				By("Validating that the TLS listener is properly created with multiple backend references")
 				Expect(ml.Listeners).To(HaveLen(1))
 				Expect(ml.Listeners[0].TcpFilterChains).To(HaveLen(1))
+
+				translatedListener := ml.Listeners[0].TranslateListener(krt.TestingDummyContext{}, ctx, nil, reporter)
+				Expect(translatedListener).NotTo(BeNil())
+				Expect(translatedListener.TcpFilterChain).To(HaveLen(1))
+
+				tlsListener := translatedListener.TcpFilterChain[0]
+				Expect(tlsListener.BackendRefs).To(HaveLen(2))
+				Expect(tlsListener.FilterChainCommon.Matcher.SniDomains).To(ContainElement("example.com"))
+			})
+
+			It("should log an error for TLSRoute with missing parent reference", func() {
+				By("Creating a TLSRoute with no parent references")
+				tlsRoute := tlsRoute("test-tls-route", "default")
+				tlsRoute.Spec = gwv1a2.TLSRouteSpec{
+					CommonRouteSpec: gwv1.CommonRouteSpec{
+						ParentRefs: []gwv1.ParentReference{}, // Empty ParentRefs to trigger the error
+					},
+				}
+
+				By("Creating the RouteInfo")
+				routes := []*query.RouteInfo{{Object: tlsToIr(tlsRoute)}}
+
+				By("Appending the TLS listener")
+				ml.AppendTlsListener(lisToIr(gwListener), routes, listenerReporter)
+
+				By("Validating that no TLS listeners are created")
+				Expect(ml.Listeners).To(BeEmpty(), "Expected no listeners due to missing ParentRefs")
 			})
 		})
 	})
