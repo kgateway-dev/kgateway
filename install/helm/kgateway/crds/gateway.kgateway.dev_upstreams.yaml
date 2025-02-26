@@ -32,7 +32,428 @@ spec:
           metadata:
             type: object
           spec:
+            maxProperties: 1
+            minProperties: 1
             properties:
+              ai:
+                maxProperties: 1
+                minProperties: 1
+                properties:
+                  llm:
+                    properties:
+                      hostOverride:
+                        properties:
+                          host:
+                            maxLength: 253
+                            minLength: 1
+                            type: string
+                          port:
+                            format: int32
+                            maximum: 65535
+                            minimum: 1
+                            type: integer
+                        required:
+                        - host
+                        - port
+                        type: object
+                      provider:
+                        maxProperties: 1
+                        minProperties: 1
+                        properties:
+                          anthropic:
+                            properties:
+                              apiVersion:
+                                type: string
+                              authToken:
+                                properties:
+                                  inline:
+                                    type: string
+                                  kind:
+                                    enum:
+                                    - Inline
+                                    - SecretRef
+                                    - Passthrough
+                                    type: string
+                                  secretRef:
+                                    properties:
+                                      name:
+                                        default: ""
+                                        type: string
+                                    type: object
+                                    x-kubernetes-map-type: atomic
+                                required:
+                                - kind
+                                type: object
+                              model:
+                                type: string
+                            required:
+                            - authToken
+                            type: object
+                          azureopenai:
+                            properties:
+                              apiVersion:
+                                minLength: 1
+                                type: string
+                              authToken:
+                                properties:
+                                  inline:
+                                    type: string
+                                  kind:
+                                    enum:
+                                    - Inline
+                                    - SecretRef
+                                    - Passthrough
+                                    type: string
+                                  secretRef:
+                                    properties:
+                                      name:
+                                        default: ""
+                                        type: string
+                                    type: object
+                                    x-kubernetes-map-type: atomic
+                                required:
+                                - kind
+                                type: object
+                              deploymentName:
+                                minLength: 1
+                                type: string
+                              endpoint:
+                                minLength: 1
+                                type: string
+                            required:
+                            - apiVersion
+                            - authToken
+                            - deploymentName
+                            - endpoint
+                            type: object
+                          gemini:
+                            properties:
+                              apiVersion:
+                                type: string
+                              authToken:
+                                properties:
+                                  inline:
+                                    type: string
+                                  kind:
+                                    enum:
+                                    - Inline
+                                    - SecretRef
+                                    - Passthrough
+                                    type: string
+                                  secretRef:
+                                    properties:
+                                      name:
+                                        default: ""
+                                        type: string
+                                    type: object
+                                    x-kubernetes-map-type: atomic
+                                required:
+                                - kind
+                                type: object
+                              model:
+                                type: string
+                            required:
+                            - apiVersion
+                            - authToken
+                            - model
+                            type: object
+                          openai:
+                            properties:
+                              authToken:
+                                properties:
+                                  inline:
+                                    type: string
+                                  kind:
+                                    enum:
+                                    - Inline
+                                    - SecretRef
+                                    - Passthrough
+                                    type: string
+                                  secretRef:
+                                    properties:
+                                      name:
+                                        default: ""
+                                        type: string
+                                    type: object
+                                    x-kubernetes-map-type: atomic
+                                required:
+                                - kind
+                                type: object
+                              model:
+                                type: string
+                            required:
+                            - authToken
+                            type: object
+                          vertexai:
+                            properties:
+                              apiVersion:
+                                minLength: 1
+                                type: string
+                              authToken:
+                                properties:
+                                  inline:
+                                    type: string
+                                  kind:
+                                    enum:
+                                    - Inline
+                                    - SecretRef
+                                    - Passthrough
+                                    type: string
+                                  secretRef:
+                                    properties:
+                                      name:
+                                        default: ""
+                                        type: string
+                                    type: object
+                                    x-kubernetes-map-type: atomic
+                                required:
+                                - kind
+                                type: object
+                              location:
+                                minLength: 1
+                                type: string
+                              model:
+                                minLength: 1
+                                type: string
+                              modelPath:
+                                type: string
+                              projectId:
+                                minLength: 1
+                                type: string
+                              publisher:
+                                enum:
+                                - GOOGLE
+                                type: string
+                            required:
+                            - apiVersion
+                            - authToken
+                            - location
+                            - model
+                            - projectId
+                            - publisher
+                            type: object
+                        type: object
+                    required:
+                    - provider
+                    type: object
+                  multipool:
+                    properties:
+                      priorities:
+                        items:
+                          properties:
+                            pool:
+                              items:
+                                properties:
+                                  hostOverride:
+                                    properties:
+                                      host:
+                                        maxLength: 253
+                                        minLength: 1
+                                        type: string
+                                      port:
+                                        format: int32
+                                        maximum: 65535
+                                        minimum: 1
+                                        type: integer
+                                    required:
+                                    - host
+                                    - port
+                                    type: object
+                                  provider:
+                                    maxProperties: 1
+                                    minProperties: 1
+                                    properties:
+                                      anthropic:
+                                        properties:
+                                          apiVersion:
+                                            type: string
+                                          authToken:
+                                            properties:
+                                              inline:
+                                                type: string
+                                              kind:
+                                                enum:
+                                                - Inline
+                                                - SecretRef
+                                                - Passthrough
+                                                type: string
+                                              secretRef:
+                                                properties:
+                                                  name:
+                                                    default: ""
+                                                    type: string
+                                                type: object
+                                                x-kubernetes-map-type: atomic
+                                            required:
+                                            - kind
+                                            type: object
+                                          model:
+                                            type: string
+                                        required:
+                                        - authToken
+                                        type: object
+                                      azureopenai:
+                                        properties:
+                                          apiVersion:
+                                            minLength: 1
+                                            type: string
+                                          authToken:
+                                            properties:
+                                              inline:
+                                                type: string
+                                              kind:
+                                                enum:
+                                                - Inline
+                                                - SecretRef
+                                                - Passthrough
+                                                type: string
+                                              secretRef:
+                                                properties:
+                                                  name:
+                                                    default: ""
+                                                    type: string
+                                                type: object
+                                                x-kubernetes-map-type: atomic
+                                            required:
+                                            - kind
+                                            type: object
+                                          deploymentName:
+                                            minLength: 1
+                                            type: string
+                                          endpoint:
+                                            minLength: 1
+                                            type: string
+                                        required:
+                                        - apiVersion
+                                        - authToken
+                                        - deploymentName
+                                        - endpoint
+                                        type: object
+                                      gemini:
+                                        properties:
+                                          apiVersion:
+                                            type: string
+                                          authToken:
+                                            properties:
+                                              inline:
+                                                type: string
+                                              kind:
+                                                enum:
+                                                - Inline
+                                                - SecretRef
+                                                - Passthrough
+                                                type: string
+                                              secretRef:
+                                                properties:
+                                                  name:
+                                                    default: ""
+                                                    type: string
+                                                type: object
+                                                x-kubernetes-map-type: atomic
+                                            required:
+                                            - kind
+                                            type: object
+                                          model:
+                                            type: string
+                                        required:
+                                        - apiVersion
+                                        - authToken
+                                        - model
+                                        type: object
+                                      openai:
+                                        properties:
+                                          authToken:
+                                            properties:
+                                              inline:
+                                                type: string
+                                              kind:
+                                                enum:
+                                                - Inline
+                                                - SecretRef
+                                                - Passthrough
+                                                type: string
+                                              secretRef:
+                                                properties:
+                                                  name:
+                                                    default: ""
+                                                    type: string
+                                                type: object
+                                                x-kubernetes-map-type: atomic
+                                            required:
+                                            - kind
+                                            type: object
+                                          model:
+                                            type: string
+                                        required:
+                                        - authToken
+                                        type: object
+                                      vertexai:
+                                        properties:
+                                          apiVersion:
+                                            minLength: 1
+                                            type: string
+                                          authToken:
+                                            properties:
+                                              inline:
+                                                type: string
+                                              kind:
+                                                enum:
+                                                - Inline
+                                                - SecretRef
+                                                - Passthrough
+                                                type: string
+                                              secretRef:
+                                                properties:
+                                                  name:
+                                                    default: ""
+                                                    type: string
+                                                type: object
+                                                x-kubernetes-map-type: atomic
+                                            required:
+                                            - kind
+                                            type: object
+                                          location:
+                                            minLength: 1
+                                            type: string
+                                          model:
+                                            minLength: 1
+                                            type: string
+                                          modelPath:
+                                            type: string
+                                          projectId:
+                                            minLength: 1
+                                            type: string
+                                          publisher:
+                                            enum:
+                                            - GOOGLE
+                                            type: string
+                                        required:
+                                        - apiVersion
+                                        - authToken
+                                        - location
+                                        - model
+                                        - projectId
+                                        - publisher
+                                        type: object
+                                    type: object
+                                required:
+                                - provider
+                                type: object
+                              maxItems: 20
+                              minItems: 1
+                              type: array
+                          type: object
+                        maxItems: 20
+                        minItems: 1
+                        type: array
+                    required:
+                    - priorities
+                    type: object
+                type: object
+                x-kubernetes-validations:
+                - message: There must one and only one LLM or MultiPool can be set
+                  rule: (has(self.llm) && !has(self.multipool)) || (!has(self.llm)
+                    && has(self.multipool))
               aws:
                 properties:
                   region:
@@ -68,7 +489,9 @@ spec:
             type: object
             x-kubernetes-validations:
             - message: There must one and only one upstream type set
-              rule: 1 == (self.aws != null?1:0) + (self.static != null?1:0)
+              rule: (has(self.aws) && !has(self.static) && !has(self.ai)) || (!has(self.aws)
+                && has(self.static) && !has(self.ai)) || (!has(self.aws) && !has(self.static)
+                && has(self.ai))
           status:
             properties:
               conditions:

@@ -34,6 +34,244 @@ spec:
             type: object
           spec:
             properties:
+              ai:
+                properties:
+                  defaults:
+                    items:
+                      properties:
+                        field:
+                          minLength: 1
+                          type: string
+                        override:
+                          default: false
+                          type: boolean
+                        value:
+                          minLength: 1
+                          type: string
+                      required:
+                      - field
+                      - value
+                      type: object
+                    type: array
+                  promptEnrichment:
+                    properties:
+                      append:
+                        items:
+                          properties:
+                            content:
+                              type: string
+                            role:
+                              type: string
+                          required:
+                          - content
+                          - role
+                          type: object
+                        type: array
+                      prepend:
+                        items:
+                          properties:
+                            content:
+                              type: string
+                            role:
+                              type: string
+                          required:
+                          - content
+                          - role
+                          type: object
+                        type: array
+                    type: object
+                  promptGuard:
+                    properties:
+                      request:
+                        properties:
+                          customResponse:
+                            properties:
+                              message:
+                                default: The request was rejected due to inappropriate
+                                  content
+                                type: string
+                              statusCode:
+                                default: 403
+                                format: int32
+                                maximum: 599
+                                minimum: 200
+                                type: integer
+                            type: object
+                          moderation:
+                            properties:
+                              openAIModeration:
+                                properties:
+                                  authToken:
+                                    properties:
+                                      inline:
+                                        type: string
+                                      kind:
+                                        enum:
+                                        - Inline
+                                        - SecretRef
+                                        - Passthrough
+                                        type: string
+                                      secretRef:
+                                        properties:
+                                          name:
+                                            default: ""
+                                            type: string
+                                        type: object
+                                        x-kubernetes-map-type: atomic
+                                    required:
+                                    - kind
+                                    type: object
+                                  model:
+                                    type: string
+                                required:
+                                - authToken
+                                type: object
+                            type: object
+                          regex:
+                            properties:
+                              action:
+                                default: MASK
+                                type: string
+                              builtins:
+                                items:
+                                  enum:
+                                  - SSN
+                                  - CREDIT_CARD
+                                  - PHONE_NUMBER
+                                  - EMAIL
+                                  type: string
+                                type: array
+                              matches:
+                                items:
+                                  properties:
+                                    name:
+                                      type: string
+                                    pattern:
+                                      type: string
+                                  type: object
+                                type: array
+                            type: object
+                          webhook:
+                            properties:
+                              forwardHeaders:
+                                items:
+                                  properties:
+                                    name:
+                                      maxLength: 256
+                                      minLength: 1
+                                      pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                      type: string
+                                    type:
+                                      default: Exact
+                                      enum:
+                                      - Exact
+                                      - RegularExpression
+                                      type: string
+                                    value:
+                                      maxLength: 4096
+                                      minLength: 1
+                                      type: string
+                                  required:
+                                  - name
+                                  - value
+                                  type: object
+                                type: array
+                              host:
+                                properties:
+                                  host:
+                                    maxLength: 253
+                                    minLength: 1
+                                    type: string
+                                  port:
+                                    format: int32
+                                    maximum: 65535
+                                    minimum: 1
+                                    type: integer
+                                required:
+                                - host
+                                - port
+                                type: object
+                            required:
+                            - host
+                            type: object
+                        type: object
+                      response:
+                        properties:
+                          regex:
+                            properties:
+                              action:
+                                default: MASK
+                                type: string
+                              builtins:
+                                items:
+                                  enum:
+                                  - SSN
+                                  - CREDIT_CARD
+                                  - PHONE_NUMBER
+                                  - EMAIL
+                                  type: string
+                                type: array
+                              matches:
+                                items:
+                                  properties:
+                                    name:
+                                      type: string
+                                    pattern:
+                                      type: string
+                                  type: object
+                                type: array
+                            type: object
+                          webhook:
+                            properties:
+                              forwardHeaders:
+                                items:
+                                  properties:
+                                    name:
+                                      maxLength: 256
+                                      minLength: 1
+                                      pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                      type: string
+                                    type:
+                                      default: Exact
+                                      enum:
+                                      - Exact
+                                      - RegularExpression
+                                      type: string
+                                    value:
+                                      maxLength: 4096
+                                      minLength: 1
+                                      type: string
+                                  required:
+                                  - name
+                                  - value
+                                  type: object
+                                type: array
+                              host:
+                                properties:
+                                  host:
+                                    maxLength: 253
+                                    minLength: 1
+                                    type: string
+                                  port:
+                                    format: int32
+                                    maximum: 65535
+                                    minimum: 1
+                                    type: integer
+                                required:
+                                - host
+                                - port
+                                type: object
+                            required:
+                            - host
+                            type: object
+                        type: object
+                    type: object
+                  routeType:
+                    enum:
+                    - CHAT
+                    - CHAT_STREAMING
+                    type: string
+                type: object
               targetRef:
                 properties:
                   group:

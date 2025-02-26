@@ -25,12 +25,26 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.AiExtensionApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AiExtensionStats"):
 		return &apiv1alpha1.AiExtensionStatsApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AIPromptEnrichment"):
+		return &apiv1alpha1.AIPromptEnrichmentApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AIPromptGuard"):
+		return &apiv1alpha1.AIPromptGuardApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AIRoutePolicy"):
+		return &apiv1alpha1.AIRoutePolicyApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AIUpstream"):
+		return &apiv1alpha1.AIUpstreamApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AnthropicConfig"):
+		return &apiv1alpha1.AnthropicConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AwsUpstream"):
 		return &apiv1alpha1.AwsUpstreamApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AzureOpenAIConfig"):
+		return &apiv1alpha1.AzureOpenAIConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CELFilter"):
 		return &apiv1alpha1.CELFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("CustomLabel"):
 		return &apiv1alpha1.CustomLabelApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("CustomResponse"):
+		return &apiv1alpha1.CustomResponseApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("DirectResponse"):
 		return &apiv1alpha1.DirectResponseApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("DirectResponseSpec"):
@@ -41,6 +55,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.EnvoyBootstrapApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("EnvoyContainer"):
 		return &apiv1alpha1.EnvoyContainerApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("FieldDefault"):
+		return &apiv1alpha1.FieldDefaultApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("FileSink"):
 		return &apiv1alpha1.FileSinkApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("FilterType"):
@@ -49,6 +65,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.GatewayParametersApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("GatewayParametersSpec"):
 		return &apiv1alpha1.GatewayParametersSpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("GeminiConfig"):
+		return &apiv1alpha1.GeminiConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("GracefulShutdownSpec"):
 		return &apiv1alpha1.GracefulShutdownSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("GrpcService"):
@@ -75,16 +93,36 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.ListenerPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ListenerPolicySpec"):
 		return &apiv1alpha1.ListenerPolicySpecApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("LLMProvider"):
+		return &apiv1alpha1.LLMProviderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LocalPolicyTargetReference"):
 		return &apiv1alpha1.LocalPolicyTargetReferenceApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Message"):
+		return &apiv1alpha1.MessageApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Moderation"):
+		return &apiv1alpha1.ModerationApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("MultiPoolConfig"):
+		return &apiv1alpha1.MultiPoolConfigApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("OpenAIConfig"):
+		return &apiv1alpha1.OpenAIConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Pod"):
 		return &apiv1alpha1.PodApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("PolicyAncestorStatus"):
 		return &apiv1alpha1.PolicyAncestorStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("PolicyStatus"):
 		return &apiv1alpha1.PolicyStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Priority"):
+		return &apiv1alpha1.PriorityApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("PromptguardRequest"):
+		return &apiv1alpha1.PromptguardRequestApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("PromptguardResponse"):
+		return &apiv1alpha1.PromptguardResponseApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ProxyDeployment"):
 		return &apiv1alpha1.ProxyDeploymentApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Regex"):
+		return &apiv1alpha1.RegexApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("RegexMatch"):
+		return &apiv1alpha1.RegexMatchApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ResponseFlagFilter"):
 		return &apiv1alpha1.ResponseFlagFilterApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("RoutePolicy"):
@@ -99,18 +137,26 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.ServiceApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ServiceAccount"):
 		return &apiv1alpha1.ServiceAccountApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SingleAuthToken"):
+		return &apiv1alpha1.SingleAuthTokenApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("StaticUpstream"):
 		return &apiv1alpha1.StaticUpstreamApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("StatsConfig"):
 		return &apiv1alpha1.StatsConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("StatusCodeFilter"):
 		return &apiv1alpha1.StatusCodeFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("SupportedLLMProvider"):
+		return &apiv1alpha1.SupportedLLMProviderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Upstream"):
 		return &apiv1alpha1.UpstreamApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("UpstreamSpec"):
 		return &apiv1alpha1.UpstreamSpecApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("UpstreamStatus"):
 		return &apiv1alpha1.UpstreamStatusApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("VertexAIConfig"):
+		return &apiv1alpha1.VertexAIConfigApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Webhook"):
+		return &apiv1alpha1.WebhookApplyConfiguration{}
 
 	}
 	return nil
