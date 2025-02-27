@@ -28,7 +28,7 @@ jobs:
         # Feb 27, 2025: 13 minutes
         - cluster-name: 'cluster-one'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$''
+          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$'
 
 #         # Dec 4, 2024: 23 minutes
 #         - cluster-name: 'cluster-two'
