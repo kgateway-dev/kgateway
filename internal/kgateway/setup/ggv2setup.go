@@ -73,10 +73,13 @@ func StartGGv2(
 	}
 
 	setupOpts := &controller.SetupOpts{
-		Cache:               cache,
-		KrtDebugger:         new(krt.DebugHandler),
-		ExtraGatewayClasses: extraGwClasses,
-		GlobalSettings:      st,
+		Cache:                  cache,
+		KrtDebugger:            new(krt.DebugHandler),
+		ExtraGatewayClasses:    extraGwClasses,
+		GlobalSettings:         st,
+		PprofBindAddress:       "127.0.0.1:9099",
+		HealthProbeBindAddress: ":9093",
+		MetricsBindAddress:     ":9092",
 	}
 
 	restConfig := ctrl.GetConfigOrDie()
