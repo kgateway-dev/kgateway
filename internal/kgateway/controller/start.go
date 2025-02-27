@@ -51,6 +51,10 @@ type SetupOpts struct {
 
 	// static set of global Settings
 	GlobalSettings *settings.Settings
+
+	// If running from env tests, set to true. so we won't bind to any ports
+	// and tests can run in parallel.
+	Test bool
 }
 
 var setupLog = ctrl.Log.WithName("setup")
@@ -100,14 +104,24 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		return nil, err
 	}
 
+	pprofBindAddress := "127.0.0.1:9099"
+	healthProbeBindAddress := ":9093"
+	metricsBindAddress := ":9092"
+
+	if cfg.SetupOpts.Test {
+		pprofBindAddress = ""
+		healthProbeBindAddress = ""
+		metricsBindAddress = ""
+	}
+
 	mgrOpts := ctrl.Options{
 		BaseContext:      func() context.Context { return ctx },
 		Scheme:           scheme,
-		PprofBindAddress: "127.0.0.1:9099",
+		PprofBindAddress: pprofBindAddress,
 		// if you change the port here, also change the port "health" in the helmchart.
-		HealthProbeBindAddress: ":9093",
+		HealthProbeBindAddress: healthProbeBindAddress,
 		Metrics: metricsserver.Options{
-			BindAddress: ":9092",
+			BindAddress: metricsBindAddress,
 		},
 		Controller: config.Controller{
 			// see https://github.com/kubernetes-sigs/controller-runtime/issues/2937
