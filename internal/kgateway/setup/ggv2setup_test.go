@@ -189,7 +189,6 @@ func TestScenarios(t *testing.T) {
 		Cache:          snapCache,
 		KrtDebugger:    new(krt.DebugHandler),
 		GlobalSettings: st,
-		Test:           true,
 	}
 
 	// start ggv2
