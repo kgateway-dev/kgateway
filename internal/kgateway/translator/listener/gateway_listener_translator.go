@@ -95,9 +95,6 @@ func (ml *MergedListeners) AppendListener(
 	case gwv1.TCPProtocolType:
 		ml.AppendTcpListener(listener, routes, reporter)
 	case gwv1.TLSProtocolType:
-		// TODO
-		// this could be tcp or tls route, both supported
-		// If you need to forward traffic to a single target for a TLS listener, you could choose to use a TCPRoute with a TLS listener.
 		ml.AppendTlsListener(listener, routes, reporter)
 	default:
 		return eris.Errorf("unsupported protocol: %v", listener.Protocol)
