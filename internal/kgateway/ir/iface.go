@@ -131,7 +131,7 @@ func (c PolicyWrapper) Equals(in PolicyWrapper) bool {
 		return false
 	}
 
-	return versionEquals(c.Policy, in.Policy)
+	return versionEquals(c.Policy, in.Policy) && c.PolicyIR.Equals(in.PolicyIR)
 }
 
 var (
