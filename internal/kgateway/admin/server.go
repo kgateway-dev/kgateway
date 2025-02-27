@@ -14,10 +14,7 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
-)
-
-const (
-	AdminPort = 9097
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 func RunAdminServer(ctx context.Context, setupOpts *controller.SetupOpts) error {
@@ -89,7 +86,7 @@ func startHandlers(ctx context.Context, addHandlers ...func(mux *http.ServeMux, 
 	mux.HandleFunc("/", idx)
 	mux.HandleFunc("/snapshots/", idx)
 	server := &http.Server{
-		Addr:    fmt.Sprintf("localhost:%d", AdminPort),
+		Addr:    fmt.Sprintf("localhost:%d", wellknown.KgatewayAdminPort),
 		Handler: mux,
 	}
 	contextutils.LoggerFrom(ctx).Infof("Admin server starting at %s", server.Addr)

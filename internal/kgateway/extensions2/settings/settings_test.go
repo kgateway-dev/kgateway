@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 func TestSettings(t *testing.T) {
@@ -32,8 +33,8 @@ func TestSettings(t *testing.T) {
 				EnableAutoMtls:         false,
 				StsClusterName:         "",
 				StsUri:                 "",
-				XdsServiceName:         "kgateway",
-				XdsServicePort:         9977,
+				XdsServiceName:         wellknown.DefaultXdsService,
+				XdsServicePort:         wellknown.DefaultXdsPort,
 			},
 		},
 		{
@@ -78,8 +79,8 @@ func TestSettings(t *testing.T) {
 			},
 			expectedSettings: &settings.Settings{
 				EnableAutoMtls: true,
-				XdsServiceName: "kgateway",
-				XdsServicePort: 9977,
+				XdsServiceName: wellknown.DefaultXdsService,
+				XdsServicePort: wellknown.DefaultXdsPort,
 			},
 		},
 	}

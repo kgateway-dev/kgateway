@@ -8,7 +8,7 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/threadsafe"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/admin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmdutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 )
@@ -36,7 +36,7 @@ func NewClient() *Client {
 		curlOptions: []curl.Option{
 			curl.WithScheme("http"),
 			curl.WithHost("127.0.0.1"),
-			curl.WithPort(admin.AdminPort),
+			curl.WithPort(int(wellknown.KgatewayAdminPort)),
 			// 3 retries, exponential back-off, 10 second max
 			curl.WithRetries(3, 0, 10),
 		},
