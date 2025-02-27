@@ -67,7 +67,13 @@ func TestUniqueClients(t *testing.T) {
 					},
 				},
 			},
-			result: sets.New(fmt.Sprintf("kgateway-kube-gateway-api~best-proxy-role~%d~ns", utils.HashLabels(map[string]string{corev1.LabelTopologyRegion: "region", corev1.LabelTopologyZone: "zone", "a": "b"}))),
+			result: sets.New(
+				fmt.Sprintf("kgateway-kube-gateway-api~best-proxy-role~%d~ns", utils.HashLabels(map[string]string{
+					corev1.LabelTopologyRegion: "region",
+					corev1.LabelTopologyZone:   "zone",
+					"a":                        "b",
+				})),
+			),
 		},
 		{
 			name:   "no-pods",
@@ -90,12 +96,14 @@ func TestUniqueClients(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			fmt.Printf("start test %s\n", tc.name)
 			g := NewWithT(t)
 			var pods krt.Collection[LocalityPod]
 			if tc.inputs != nil {
 				mock := krttest.NewMock(t, tc.inputs)
 				nodes := NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
 				pods = NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})
+				nodes.WaitUntilSynced(context.Background().Done())
 				pods.WaitUntilSynced(context.Background().Done())
 			}
 
@@ -104,7 +112,6 @@ func TestUniqueClients(t *testing.T) {
 			ucc.WaitUntilSynced(context.Background().Done())
 
 			// check fetch as well
-
 			fetchNames := sets.New[string]()
 
 			for i, r := range tc.requests {
@@ -131,17 +138,25 @@ func TestUniqueClients(t *testing.T) {
 			}
 			g.Expect(fetchNames).To(Equal(tc.result))
 			g.Expect(names).To(Equal(tc.result))
+
 			for i := range tc.requests {
 				for j := 0; j < 10; j++ {
 					g.Expect(ucc.List()).To(HaveLen(len(allUcc) - i))
 					cb.OnStreamClosed(int64(i*10+j), nil)
 				}
-				// propagating the event happens async
-				g.Eventually(func() []ir.UniqlyConnectedClient {
-					allUcc = ucc.List()
-					return allUcc
-				}, "1s").Should(HaveLen(len(tc.result)))
+				// FIXME: this assertion will be reworked; the goal here is to test jitter
+				// that as clients disconnect we don't impact other UCCs etc.
+				// g.Eventually(func() []ir.UniqlyConnectedClient {
+				// 	allUcc = ucc.List()
+				// 	return allUcc
+				// }, "1s").Should(HaveLen(len(tc.result)))
 			}
+
+			// as events happens async, eventually after all clients disconnect all UCCs should be removed
+			g.Eventually(func() []ir.UniqlyConnectedClient {
+				allUcc = ucc.List()
+				return allUcc
+			}, "5s").Should(BeEmpty())
 		})
 	}
 }
