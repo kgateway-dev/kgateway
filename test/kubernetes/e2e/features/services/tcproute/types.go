@@ -1,5 +1,3 @@
-//go:build ignore
-
 package tcproute
 
 import (
@@ -95,12 +93,12 @@ var (
 		},
 	}
 
-	singleGlooProxy = metav1.ObjectMeta{
+	singleProxy = metav1.ObjectMeta{
 		Name:      "single-tcp-gateway",
 		Namespace: singleSvcNsName,
 	}
-	singleSvcProxyDeployment = &appsv1.Deployment{ObjectMeta: singleGlooProxy}
-	singleSvcProxyService    = &corev1.Service{ObjectMeta: singleGlooProxy}
+	singleSvcProxyDeployment = &appsv1.Deployment{ObjectMeta: singleProxy}
+	singleSvcProxyService    = &corev1.Service{ObjectMeta: singleProxy}
 
 	multiSvcNS = &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -108,12 +106,12 @@ var (
 		},
 	}
 
-	multiGlooProxy = metav1.ObjectMeta{
+	multiProxy = metav1.ObjectMeta{
 		Name:      "multi-tcp-gateway",
 		Namespace: multiSvcNsName,
 	}
-	multiProxyDeployment = &appsv1.Deployment{ObjectMeta: multiGlooProxy}
-	multiProxyService    = &corev1.Service{ObjectMeta: multiGlooProxy}
+	multiProxyDeployment = &appsv1.Deployment{ObjectMeta: multiProxy}
+	multiProxyService    = &corev1.Service{ObjectMeta: multiProxy}
 
 	// Expected curl responses from tests
 	expectedSingleSvcResp = &testmatchers.HttpResponse{
@@ -124,19 +122,19 @@ var (
 		),
 	}
 
-	crossNsGlooProxy = metav1.ObjectMeta{
+	crossNsProxy = metav1.ObjectMeta{
 		Name:      "gateway",
 		Namespace: crossNsClientName,
 	}
-	crossNsProxyDeployment = &appsv1.Deployment{ObjectMeta: crossNsGlooProxy}
-	crossNsProxyService    = &corev1.Service{ObjectMeta: crossNsGlooProxy}
+	crossNsProxyDeployment = &appsv1.Deployment{ObjectMeta: crossNsProxy}
+	crossNsProxyService    = &corev1.Service{ObjectMeta: crossNsProxy}
 
-	crossNsNoRefGrantGlooProxy = metav1.ObjectMeta{
+	crossNsNoRefGrantProxy = metav1.ObjectMeta{
 		Name:      "gateway",
 		Namespace: crossNsNoRefGrantClientNsName,
 	}
-	crossNsNoRefGrantProxyDeployment = &appsv1.Deployment{ObjectMeta: crossNsNoRefGrantGlooProxy}
-	crossNsNoRefGrantProxyService    = &corev1.Service{ObjectMeta: crossNsNoRefGrantGlooProxy}
+	crossNsNoRefGrantProxyDeployment = &appsv1.Deployment{ObjectMeta: crossNsNoRefGrantProxy}
+	crossNsNoRefGrantProxyService    = &corev1.Service{ObjectMeta: crossNsNoRefGrantProxy}
 
 	expectedMultiSvc1Resp = &testmatchers.HttpResponse{
 		StatusCode: http.StatusOK,
