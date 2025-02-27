@@ -50,7 +50,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 				Expect(deployment.Spec.Template.Spec.Containers).To(HaveLen(1), "should have exactly 1 container")
 
 				// make sure the GatewayClass and RBAC resources exist (note, since they are all cluster-scoped, they do not have a namespace)
-				testManifest.ExpectUnstructured("GatewayClass", "", "gloo-gateway").NotTo(BeNil())
+				testManifest.ExpectUnstructured("GatewayClass", "", wellknown.GatewayClassName).NotTo(BeNil())
 
 				testManifest.ExpectUnstructured("GatewayParameters", namespace, wellknown.DefaultGatewayParametersName).NotTo(BeNil())
 
@@ -491,7 +491,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 				Expect(deployment.Spec.Template.Spec.Containers).To(HaveLen(1), "should have exactly 1 container")
 
 				// the RBAC resources should not be rendered
-				testManifest.ExpectUnstructured("GatewayClass", "", "gloo-gateway").To(BeNil())
+				testManifest.ExpectUnstructured("GatewayClass", "", wellknown.GatewayClassName).To(BeNil())
 
 				testManifest.ExpectUnstructured("GatewayParameters", namespace, wellknown.DefaultGatewayParametersName).To(BeNil())
 

@@ -7,18 +7,18 @@ metadata:
   labels:
     app: kgateway
     app.kubernetes.io/name: kgateway
-  name: upstreams.gateway.kgateway.dev
+  name: backends.gateway.kgateway.dev
 spec:
   group: gateway.kgateway.dev
   names:
     categories:
     - kgateway
-    kind: Upstream
-    listKind: UpstreamList
-    plural: upstreams
+    kind: Backend
+    listKind: BackendList
+    plural: backends
     shortNames:
-    - up
-    singular: upstream
+    - be
+    singular: backend
   scope: Namespaced
   versions:
   - name: v1alpha1
@@ -488,7 +488,7 @@ spec:
                 type: object
             type: object
             x-kubernetes-validations:
-            - message: There must one and only one upstream type set
+            - message: There must one and only one backend type set
               rule: (has(self.aws) && !has(self.static) && !has(self.ai)) || (!has(self.aws)
                 && has(self.static) && !has(self.ai)) || (!has(self.aws) && !has(self.static)
                 && has(self.ai))

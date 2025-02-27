@@ -5,10 +5,10 @@ import corev1 "k8s.io/api/core/v1"
 // +kubebuilder:validation:XValidation:message="There must one and only one LLM or MultiPool can be set",rule="(has(self.llm) && !has(self.multipool)) || (!has(self.llm) && has(self.multipool))"
 // +kubebuilder:validation:MaxProperties=1
 // +kubebuilder:validation:MinProperties=1
-type AIUpstream struct {
+type AIBackend struct {
 	// The LLM configures the AI gateway to use a single LLM provider backend.
 	LLM *LLMProvider `json:"llm,omitempty"`
-	// The MultiPool configures the backends for multiple hosts or models from the same provider in one Upstream resource.
+	// The MultiPool configures the backends for multiple hosts or models from the same provider in one Backend resource.
 	MultiPool *MultiPoolConfig `json:"multipool,omitempty"`
 }
 
@@ -17,7 +17,7 @@ type LLMProvider struct {
 	Provider SupportedLLMProvider `json:"provider"`
 
 	// Send requests to a custom host and port, such as to proxy the request,
-	// or to use a different backend that is API-compliant with the upstream version.
+	// or to use a different backend that is API-compliant with the Backend version.
 	HostOverride *Host `json:"hostOverride,omitempty"`
 }
 
@@ -35,10 +35,10 @@ type SupportedLLMProvider struct {
 type SingleAuthTokenKind string
 
 const (
-	// Inline provides the token directly in the configuration for the Upstream.
+	// Inline provides the token directly in the configuration for the Backend.
 	Inline SingleAuthTokenKind = "Inline"
 
-	// SecretRef provides the token directly in the configuration for the Upstream.
+	// SecretRef provides the token directly in the configuration for the Backend.
 	SecretRef SingleAuthTokenKind = "SecretRef"
 
 	// Passthrough the existing token. This token can either
@@ -58,12 +58,12 @@ type SingleAuthToken struct {
 	// +kubebuilder:validation:Enum=Inline;SecretRef;Passthrough
 	Kind SingleAuthTokenKind `json:"kind"`
 
-	// Provide the token directly in the configuration for the Upstream.
+	// Provide the token directly in the configuration for the Backend.
 	// This option is the least secure. Only use this option for quick tests such as trying out AI Gateway.
 	Inline *string `json:"inline,omitempty"`
 
-	// Store the API key in a Kubernetes secret in the same namespace as the Upstream.
-	// Then, refer to the secret in the Upstream configuration. This option is more secure than an inline token,
+	// Store the API key in a Kubernetes secret in the same namespace as the Backend.
+	// Then, refer to the secret in the Backend configuration. This option is more secure than an inline token,
 	// because the API key is encoded and you can restrict access to secrets through RBAC rules.
 	// You might use this option in proofs of concept, controlled development and staging environments,
 	// or well-controlled prod environments that use secrets.
@@ -194,7 +194,7 @@ type Priority struct {
 	Pool []LLMProvider `json:"pool,omitempty"`
 }
 
-// MultiPoolConfig configures the backends for multiple hosts or models from the same provider in one Upstream resource.
+// MultiPoolConfig configures the backends for multiple hosts or models from the same provider in one Backend resource.
 // This method can be useful for creating one logical endpoint that is backed
 // by multiple hosts or models.
 //

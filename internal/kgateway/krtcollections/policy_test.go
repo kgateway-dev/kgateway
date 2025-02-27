@@ -53,10 +53,10 @@ func TestGetBackendSameNamespace(t *testing.T) {
 			if backends[0].Err != nil {
 				t.Fatalf("backend has error %v", backends[0].Err)
 			}
-			if backends[0].Upstream.Name != "foo" {
+			if backends[0].BackendObject.Name != "foo" {
 				t.Fatalf("backend incorrect name")
 			}
-			if backends[0].Upstream.Namespace != "default" {
+			if backends[0].BackendObject.Namespace != "default" {
 				t.Fatalf("backend incorrect ns")
 			}
 		})
@@ -83,10 +83,10 @@ func TestGetBackendDifNsWithRefGrant(t *testing.T) {
 			if backends[0].Err != nil {
 				t.Fatalf("backend has error %v", backends[0].Err)
 			}
-			if backends[0].Upstream.Name != "foo" {
+			if backends[0].BackendObject.Name != "foo" {
 				t.Fatalf("backend incorrect name")
 			}
-			if backends[0].Upstream.Namespace != "default2" {
+			if backends[0].BackendObject.Namespace != "default2" {
 				t.Fatalf("backend incorrect ns")
 			}
 		})
@@ -249,12 +249,12 @@ func refGrant() *gwv1beta1.ReferenceGrant {
 	}
 }
 
-func k8sUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir.Upstream] {
-	return krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.Upstream {
-		uss := []ir.Upstream{}
+func k8sUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir.BackendObjectIR] {
+	return krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.BackendObjectIR {
+		uss := []ir.BackendObjectIR{}
 
 		for _, port := range svc.Spec.Ports {
-			uss = append(uss, ir.Upstream{
+			uss = append(uss, ir.BackendObjectIR{
 				ObjectSource: ir.ObjectSource{
 					Kind:      SvcGk.Kind,
 					Group:     SvcGk.Group,
@@ -336,8 +336,8 @@ func preRouteIndex(t *testing.T, inputs []any) *RoutesIndex {
 
 	policies := NewPolicyIndex(krtutil.KrtOptions{}, extensionsplug.ContributesPolicies{})
 	refgrants := NewRefGrantIndex(krttest.GetMockCollection[*gwv1beta1.ReferenceGrant](mock))
-	upstreams := NewUpstreamIndex(krtutil.KrtOptions{}, nil, policies, refgrants)
-	upstreams.AddUpstreams(SvcGk, k8sUpstreams(services))
+	upstreams := NewBackendIndex(krtutil.KrtOptions{}, nil, policies, refgrants)
+	upstreams.AddBackends(SvcGk, k8sUpstreams(services))
 
 	httproutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
@@ -349,13 +349,13 @@ func preRouteIndex(t *testing.T, inputs []any) *RoutesIndex {
 	return rtidx
 }
 
-func getBackends(r ir.Route) []ir.Backend {
+func getBackends(r ir.Route) []ir.BackendRefIR {
 	if r == nil {
 		return nil
 	}
 	switch r := r.(type) {
 	case *ir.HttpRouteIR:
-		var ret []ir.Backend
+		var ret []ir.BackendRefIR
 		for _, r := range r.Rules[0].Backends {
 			ret = append(ret, *r.Backend)
 		}

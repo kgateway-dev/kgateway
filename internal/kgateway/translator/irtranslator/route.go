@@ -267,7 +267,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 		}
 		pCtx := ir.RouteBackendContext{
 			FilterChainName:  h.fc.FilterChainName,
-			Upstream:         backend.Backend.Upstream,
+			Upstream:         backend.Backend.BackendObject,
 			TypedFiledConfig: &cw.TypedPerFilterConfig,
 		}
 

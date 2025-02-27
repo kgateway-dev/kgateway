@@ -43,22 +43,22 @@ func (iu *PerClientEnvoyClusters) FetchClustersForClient(kctx krt.HandlerContext
 func NewPerClientEnvoyClusters(
 	ctx context.Context,
 	krtopts krtutil.KrtOptions,
-	translator *irtranslator.UpstreamTranslator,
-	upstreams krt.Collection[ir.Upstream],
+	translator *irtranslator.BackendTranslator,
+	backendObjs krt.Collection[ir.BackendObjectIR],
 	uccs krt.Collection[ir.UniqlyConnectedClient],
 ) PerClientEnvoyClusters {
-	ctx = contextutils.WithLogger(ctx, "upstream-translator")
+	ctx = contextutils.WithLogger(ctx, "backend-translator")
 	logger := contextutils.LoggerFrom(ctx).Desugar()
 
-	clusters := krt.NewManyCollection(upstreams, func(kctx krt.HandlerContext, up ir.Upstream) []uccWithCluster {
-		logger := logger.With(zap.Stringer("upstream", up))
+	clusters := krt.NewManyCollection(backendObjs, func(kctx krt.HandlerContext, backendObj ir.BackendObjectIR) []uccWithCluster {
+		logger := logger.With(zap.Stringer("backend", backendObj))
 		uccs := krt.Fetch(kctx, uccs)
 		uccWithClusterRet := make([]uccWithCluster, 0, len(uccs))
 
 		for _, ucc := range uccs {
-			logger.Debug("applying destination rules for upstream", zap.String("ucc", ucc.ResourceName()))
+			logger.Debug("applying destination rules for backend", zap.String("ucc", ucc.ResourceName()))
 
-			c, err := translator.TranslateUpstream(kctx, ucc, up)
+			c, err := translator.TranslateBackend(kctx, ucc, backendObj)
 			if c == nil {
 				continue
 			}

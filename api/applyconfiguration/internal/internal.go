@@ -23,6 +23,15 @@ func Parser() *typed.Parser {
 var parserOnce sync.Once
 var parser *typed.Parser
 var schemaYAML = typed.YAMLObject(`types:
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIBackend
+  map:
+    fields:
+    - name: llm
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LLMProvider
+    - name: multipool
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.MultiPoolConfig
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIPromptEnrichment
   map:
     fields:
@@ -65,15 +74,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: routeType
       type:
         scalar: string
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIUpstream
-  map:
-    fields:
-    - name: llm
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LLMProvider
-    - name: multipool
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.MultiPoolConfig
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AccessLog
   map:
     fields:
@@ -177,7 +177,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: model
       type:
         scalar: string
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsUpstream
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsBackend
   map:
     fields:
     - name: region
@@ -206,6 +206,50 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Backend
+  map:
+    fields:
+    - name: apiVersion
+      type:
+        scalar: string
+    - name: kind
+      type:
+        scalar: string
+    - name: metadata
+      type:
+        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
+      default: {}
+    - name: spec
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendSpec
+      default: {}
+    - name: status
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendStatus
+      default: {}
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendSpec
+  map:
+    fields:
+    - name: ai
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIBackend
+    - name: aws
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsBackend
+    - name: static
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StaticBackend
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BackendStatus
+  map:
+    fields:
+    - name: conditions
+      type:
+        list:
+          elementType:
+            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
+          elementRelationship: associative
+          keys:
+          - type
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CELFilter
   map:
     fields:
@@ -982,7 +1026,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: secretRef
       type:
         namedType: io.k8s.api.core.v1.LocalObjectReference
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StaticUpstream
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StaticBackend
   map:
     fields:
     - name: hosts
@@ -1033,50 +1077,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: vertexai
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.VertexAIConfig
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Upstream
-  map:
-    fields:
-    - name: apiVersion
-      type:
-        scalar: string
-    - name: kind
-      type:
-        scalar: string
-    - name: metadata
-      type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
-      default: {}
-    - name: spec
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.UpstreamSpec
-      default: {}
-    - name: status
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.UpstreamStatus
-      default: {}
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.UpstreamSpec
-  map:
-    fields:
-    - name: ai
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AIUpstream
-    - name: aws
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsUpstream
-    - name: static
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StaticUpstream
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.UpstreamStatus
-  map:
-    fields:
-    - name: conditions
-      type:
-        list:
-          elementType:
-            namedType: io.k8s.apimachinery.pkg.apis.meta.v1.Condition
-          elementRelationship: associative
-          keys:
-          - type
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.VertexAIConfig
   map:
     fields:

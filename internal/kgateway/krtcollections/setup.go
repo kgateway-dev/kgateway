@@ -62,7 +62,7 @@ func InitCollections(
 	isOurGw func(gw *gwv1.Gateway) bool,
 	refgrants *RefGrantIndex,
 	krtopts krtutil.KrtOptions,
-) (*GatewayIndex, *RoutesIndex, *UpstreamIndex, krt.Collection[ir.EndpointsForUpstream]) {
+) (*GatewayIndex, *RoutesIndex, *BackendIndex, krt.Collection[ir.EndpointsForBackend]) {
 	registerTypes()
 
 	httpRoutes := krt.WrapClient(kclient.New[*gwv1.HTTPRoute](istioClient), krtopts.ToOptions("HTTPRoute")...)
@@ -81,7 +81,7 @@ func initCollectionsWithGateways(
 	refgrants *RefGrantIndex,
 	extensions extensionsplug.Plugin,
 	krtopts krtutil.KrtOptions,
-) (*GatewayIndex, *RoutesIndex, *UpstreamIndex, krt.Collection[ir.EndpointsForUpstream]) {
+) (*GatewayIndex, *RoutesIndex, *BackendIndex, krt.Collection[ir.EndpointsForBackend]) {
 	policies := NewPolicyIndex(krtopts, extensions.ContributesPolicies)
 	var backendRefPlugins []extensionsplug.GetBackendForRefPlugin
 	for _, ext := range extensions.ContributesPolicies {
@@ -90,27 +90,27 @@ func initCollectionsWithGateways(
 		}
 	}
 
-	upstreamIndex := NewUpstreamIndex(krtopts, backendRefPlugins, policies, refgrants)
-	endpointIRs := initUpstreams(extensions, upstreamIndex, krtopts)
+	backendIndex := NewBackendIndex(krtopts, backendRefPlugins, policies, refgrants)
+	endpointIRs := initBackends(extensions, backendIndex, krtopts)
 
 	kubeGateways := NewGatewayIndex(krtopts, isOurGw, policies, kubeRawGateways)
 
-	routes := NewRoutesIndex(krtopts, httpRoutes, tcproutes, policies, upstreamIndex, refgrants)
-	return kubeGateways, routes, upstreamIndex, endpointIRs
+	routes := NewRoutesIndex(krtopts, httpRoutes, tcproutes, policies, backendIndex, refgrants)
+	return kubeGateways, routes, backendIndex, endpointIRs
 }
 
-func initUpstreams(
-	extensions extensionsplug.Plugin,
-	upstreamIndex *UpstreamIndex,
+func initBackends(
+	plugins extensionsplug.Plugin,
+	upstreamIndex *BackendIndex,
 	krtopts krtutil.KrtOptions,
-) krt.Collection[ir.EndpointsForUpstream] {
-	allEndpoints := []krt.Collection[ir.EndpointsForUpstream]{}
-	for k, col := range extensions.ContributesUpstreams {
-		if col.Upstreams != nil {
-			upstreamIndex.AddUpstreams(k, col.Upstreams)
+) krt.Collection[ir.EndpointsForBackend] {
+	allEndpoints := []krt.Collection[ir.EndpointsForBackend]{}
+	for gk, plugin := range plugins.ContributesBackends {
+		if plugin.Backends != nil {
+			upstreamIndex.AddBackends(gk, plugin.Backends)
 		}
-		if col.Endpoints != nil {
-			allEndpoints = append(allEndpoints, col.Endpoints)
+		if plugin.Endpoints != nil {
+			allEndpoints = append(allEndpoints, plugin.Endpoints)
 		}
 	}
 

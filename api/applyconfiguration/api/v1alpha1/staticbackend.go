@@ -2,22 +2,22 @@
 
 package v1alpha1
 
-// StaticUpstreamApplyConfiguration represents a declarative configuration of the StaticUpstream type for use
+// StaticBackendApplyConfiguration represents a declarative configuration of the StaticBackend type for use
 // with apply.
-type StaticUpstreamApplyConfiguration struct {
+type StaticBackendApplyConfiguration struct {
 	Hosts []HostApplyConfiguration `json:"hosts,omitempty"`
 }
 
-// StaticUpstreamApplyConfiguration constructs a declarative configuration of the StaticUpstream type for use with
+// StaticBackendApplyConfiguration constructs a declarative configuration of the StaticBackend type for use with
 // apply.
-func StaticUpstream() *StaticUpstreamApplyConfiguration {
-	return &StaticUpstreamApplyConfiguration{}
+func StaticBackend() *StaticBackendApplyConfiguration {
+	return &StaticBackendApplyConfiguration{}
 }
 
 // WithHosts adds the given value to the Hosts field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Hosts field.
-func (b *StaticUpstreamApplyConfiguration) WithHosts(values ...*HostApplyConfiguration) *StaticUpstreamApplyConfiguration {
+func (b *StaticBackendApplyConfiguration) WithHosts(values ...*HostApplyConfiguration) *StaticBackendApplyConfiguration {
 	for i := range values {
 		if values[i] == nil {
 			panic("nil value passed to WithHosts")

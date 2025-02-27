@@ -66,8 +66,6 @@ func labeledRole(role string, labels map[string]string) string {
 	return fmt.Sprintf("%s%s%d", role, KeyDelimiter, utils.HashLabels(labels))
 }
 
-///////////////////////////////////////////////////////////
-
 type EndpointMetadata struct {
 	Labels map[string]string
 }
@@ -89,7 +87,7 @@ func (l LocalityLbMap) MarshalJSON() ([]byte, error) {
 
 var _ json.Marshaler = LocalityLbMap{}
 
-type EndpointsForUpstream struct {
+type EndpointsForBackend struct {
 	LbEps LocalityLbMap
 	// Note - in theory, cluster name should be a function of the UpstreamResourceName.
 	// But due to an upstream envoy bug, the cluster name also includes the upstream hash.
@@ -103,7 +101,7 @@ type EndpointsForUpstream struct {
 	epsEqualityHash   uint64
 }
 
-func NewEndpointsForUpstream(us Upstream) *EndpointsForUpstream {
+func NewEndpointsForBackend(us BackendObjectIR) *EndpointsForBackend {
 	// start with a hash of the cluster name. technically we dont need it for krt, as we can compare the upstream name. but it helps later
 	// to compute the hash we present envoy with.
 	// note: we no longer need to add the upstream body hash to the clustername, as we applied `use_eds_cache_for_ads`
@@ -119,7 +117,7 @@ func NewEndpointsForUpstream(us Upstream) *EndpointsForUpstream {
 	h.Write([]byte(us.Namespace))
 	upstreamHash := h.Sum64()
 
-	return &EndpointsForUpstream{
+	return &EndpointsForBackend{
 		LbEps:                make(map[PodLocality][]EndpointWithMd),
 		ClusterName:          us.ClusterName(),
 		UpstreamResourceName: us.ResourceName(),
@@ -150,7 +148,7 @@ func hash(a, b uint64) uint64 {
 	return hasher.Sum64()
 }
 
-func (e *EndpointsForUpstream) Add(l PodLocality, emd EndpointWithMd) {
+func (e *EndpointsForBackend) Add(l PodLocality, emd EndpointWithMd) {
 	// xor it as we dont care about order - if we have the same endpoints in the same locality
 	// we are good.
 	e.epsEqualityHash ^= hashEndpoints(l, emd)
@@ -161,10 +159,10 @@ func (e *EndpointsForUpstream) Add(l PodLocality, emd EndpointWithMd) {
 	e.LbEps[l] = append(e.LbEps[l], emd)
 }
 
-func (c EndpointsForUpstream) ResourceName() string {
+func (c EndpointsForBackend) ResourceName() string {
 	return c.UpstreamResourceName
 }
 
-func (c EndpointsForUpstream) Equals(in EndpointsForUpstream) bool {
+func (c EndpointsForBackend) Equals(in EndpointsForBackend) bool {
 	return c.UpstreamResourceName == in.UpstreamResourceName && c.ClusterName == in.ClusterName && c.Port == in.Port && c.LbEpsEqualityHash == in.LbEpsEqualityHash && c.Hostname == in.Hostname
 }

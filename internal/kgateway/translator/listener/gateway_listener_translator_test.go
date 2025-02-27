@@ -53,10 +53,10 @@ func tcpToIr(tcpRoute *gwv1a2.TCPRoute) *ir.TcpRouteIR {
 		return routeir
 	}
 	for _, b := range tcpRoute.Spec.Rules[0].BackendRefs {
-		routeir.Backends = append(routeir.Backends, ir.Backend{
-			ClusterName: string(b.Name),
-			Upstream:    &ir.Upstream{},
-			Weight:      uint32(ptr.Deref(b.Weight, 1)),
+		routeir.Backends = append(routeir.Backends, ir.BackendRefIR{
+			ClusterName:   string(b.Name),
+			BackendObject: &ir.BackendObjectIR{},
+			Weight:        uint32(ptr.Deref(b.Weight, 1)),
 		})
 	}
 
@@ -453,7 +453,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 		By("Setting up the mock to return an error when ReferenceGrant is missing")
 		tcpIr := tcpToIr(tcpRoute)
 		// simulate missing reference grant
-		tcpIr.Backends[0].Upstream = nil
+		tcpIr.Backends[0].BackendObject = nil
 		tcpIr.Backends[0].Err = errors.New("missing reference grant")
 
 		By("Creating the RouteInfo")
@@ -478,7 +478,7 @@ var _ = Describe("Translator TCPRoute Listener", func() {
 		Expect(tcpListener.BackendRefs).To(HaveLen(1))
 
 		tcpHost := tcpListener.BackendRefs[0]
-		Expect(tcpHost.Upstream).To(BeNil())
+		Expect(tcpHost.BackendObject).To(BeNil())
 	})
 
 	/* i think this is not needed, as refgrants are resolved a this point

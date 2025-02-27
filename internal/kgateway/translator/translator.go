@@ -32,10 +32,10 @@ type CombinedTranslator struct {
 
 	waitForSync []cache.InformerSynced
 
-	gwtranslator       extensionsplug.KGwTranslator
-	irtranslator       *irtranslator.Translator
-	upstreamTranslator *irtranslator.UpstreamTranslator
-	endpointPlugins    []extensionsplug.EndpointPlugin
+	gwtranslator      extensionsplug.KGwTranslator
+	irtranslator      *irtranslator.Translator
+	backendTranslator *irtranslator.BackendTranslator
+	endpointPlugins   []extensionsplug.EndpointPlugin
 
 	logger *zap.Logger
 }
@@ -75,12 +75,12 @@ func (s *CombinedTranslator) Init(ctx context.Context, routes *krtcollections.Ro
 	s.irtranslator = &irtranslator.Translator{
 		ContributedPolicies: s.extensions.ContributesPolicies,
 	}
-	s.upstreamTranslator = &irtranslator.UpstreamTranslator{
-		ContributedUpstreams: make(map[schema.GroupKind]ir.UpstreamInit),
-		ContributedPolicies:  s.extensions.ContributesPolicies,
+	s.backendTranslator = &irtranslator.BackendTranslator{
+		ContributedBackends: make(map[schema.GroupKind]ir.BackendInit),
+		ContributedPolicies: s.extensions.ContributesPolicies,
 	}
-	for k, up := range s.extensions.ContributesUpstreams {
-		s.upstreamTranslator.ContributedUpstreams[k] = up.UpstreamInit
+	for k, up := range s.extensions.ContributesBackends {
+		s.backendTranslator.ContributedBackends[k] = up.BackendInit
 	}
 
 	s.waitForSync = append(s.waitForSync,
@@ -131,8 +131,8 @@ func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Con
 	return proxy
 }
 
-func (s *CombinedTranslator) GetUpstreamTranslator() *irtranslator.UpstreamTranslator {
-	return s.upstreamTranslator
+func (s *CombinedTranslator) GetUpstreamTranslator() *irtranslator.BackendTranslator {
+	return s.backendTranslator
 }
 
 // ctx needed for logging; remove once we refactor logging.
@@ -154,7 +154,7 @@ func (s *CombinedTranslator) TranslateGateway(kctx krt.HandlerContext, ctx conte
 	return &xdsSnap, rm
 }
 
-func (s *CombinedTranslator) TranslateEndpoints(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, ep ir.EndpointsForUpstream) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64) {
+func (s *CombinedTranslator) TranslateEndpoints(kctx krt.HandlerContext, ucc ir.UniqlyConnectedClient, ep ir.EndpointsForBackend) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64) {
 	// check if we have a plugin to do it
 	cla, additionalHash := proccessWithPlugins(s.endpointPlugins, kctx, context.TODO(), ucc, ep)
 	if cla != nil {
@@ -163,7 +163,7 @@ func (s *CombinedTranslator) TranslateEndpoints(kctx krt.HandlerContext, ucc ir.
 	return endpoints.PrioritizeEndpoints(s.logger, nil, ep, ucc), 0
 }
 
-func proccessWithPlugins(plugins []extensionsplug.EndpointPlugin, kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.EndpointsForUpstream) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64) {
+func proccessWithPlugins(plugins []extensionsplug.EndpointPlugin, kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.EndpointsForBackend) (*envoy_config_endpoint_v3.ClusterLoadAssignment, uint64) {
 	for _, processEnddpoints := range plugins {
 		cla, additionalHash := processEnddpoints(kctx, context.TODO(), ucc, in)
 		if cla != nil {

@@ -20,59 +20,67 @@ var (
 	ClusterConnectionTimeout = time.Second * 5
 )
 
-type UpstreamTranslator struct {
-	ContributedUpstreams map[schema.GroupKind]ir.UpstreamInit
-	ContributedPolicies  map[schema.GroupKind]extensionsplug.PolicyPlugin
+type BackendTranslator struct {
+	ContributedBackends map[schema.GroupKind]ir.BackendInit
+	ContributedPolicies map[schema.GroupKind]extensionsplug.PolicyPlugin
 }
 
-func (t *UpstreamTranslator) TranslateUpstream(
+func (t *BackendTranslator) TranslateBackend(
 	kctx krt.HandlerContext,
 	ucc ir.UniqlyConnectedClient,
-	u ir.Upstream,
+	backend ir.BackendObjectIR,
 ) (*envoy_config_cluster_v3.Cluster, error) {
 	gk := schema.GroupKind{
-		Group: u.Group,
-		Kind:  u.Kind,
+		Group: backend.Group,
+		Kind:  backend.Kind,
 	}
-	process, ok := t.ContributedUpstreams[gk]
+	process, ok := t.ContributedBackends[gk]
 	if !ok {
-		return nil, errors.New("no upstream translator found for " + gk.String())
+		return nil, errors.New("no backend translator found for " + gk.String())
 	}
 
-	if process.InitUpstream == nil {
-		return nil, errors.New("no upstream plugin found for " + gk.String())
+	if process.InitBackend == nil {
+		return nil, errors.New("no backend plugin found for " + gk.String())
 	}
 
-	out := initializeCluster(u)
+	out := initializeCluster(backend)
 
-	process.InitUpstream(context.TODO(), u, out)
+	process.InitBackend(context.TODO(), backend, out)
 
-	// now process upstream policies:
-	t.runPlugins(kctx, context.TODO(), ucc, u, out)
+	// now process backend policies
+	t.runPlugins(kctx, context.TODO(), ucc, backend, out)
 	return out, nil
 }
 
-func (t *UpstreamTranslator) runPlugins(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, u ir.Upstream, out *envoy_config_cluster_v3.Cluster) {
+func (t *BackendTranslator) runPlugins(
+	kctx krt.HandlerContext,
+	ctx context.Context,
+	ucc ir.UniqlyConnectedClient,
+	backend ir.BackendObjectIR,
+	out *envoy_config_cluster_v3.Cluster,
+) {
 	for gk, polImpl := range t.ContributedPolicies {
-		// TODO: in theory it would be nice to do `ProcessUpstream` once, and only do
+		// TODO: in theory it would be nice to do `ProcessBackend` once, and only do
 		// the the per-client processing for each client.
 		// that would require refactoring and thinking about the proper IR, so we'll punt on that for
-		// now, until we have more upstream plugin examples to properly understand what it should look
+		// now, until we have more backend plugin examples to properly understand what it should look
 		// like.
-		if polImpl.PerClientProcessUpstream != nil {
-			polImpl.PerClientProcessUpstream(kctx, ctx, ucc, u, out)
+		if polImpl.PerClientProcessBackend != nil {
+			polImpl.PerClientProcessBackend(kctx, ctx, ucc, backend, out)
 		}
 
-		if polImpl.ProcessUpstream == nil {
+		if polImpl.ProcessBackend == nil {
 			continue
 		}
-		for _, pol := range u.AttachedPolicies.Policies[gk] {
-			polImpl.ProcessUpstream(ctx, pol.PolicyIr, u, out)
+		for _, pol := range backend.AttachedPolicies.Policies[gk] {
+			polImpl.ProcessBackend(ctx, pol.PolicyIr, backend, out)
 		}
 	}
 }
 
-func initializeCluster(u ir.Upstream) *envoy_config_cluster_v3.Cluster {
+// initializeCluster creates a default envoy cluster with minimal configuration,
+// that will then be augmented by various backend plugins
+func initializeCluster(u ir.BackendObjectIR) *envoy_config_cluster_v3.Cluster {
 	// circuitBreakers := t.settings.GetGloo().GetCircuitBreakers()
 	out := &envoy_config_cluster_v3.Cluster{
 		Name:     u.ClusterName(),

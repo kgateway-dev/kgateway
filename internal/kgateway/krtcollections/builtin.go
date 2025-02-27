@@ -63,7 +63,7 @@ func (p *builtinPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext,
 	return nil
 }
 
-func NewBuiltInIr(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *UpstreamIndex) ir.PolicyIR {
+func NewBuiltInIr(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *BackendIndex) ir.PolicyIR {
 	return &builtinPlugin{
 		spec:     f,
 		mutation: convert(kctx, f, fromgk, fromns, refgrants, ups),
@@ -81,7 +81,7 @@ func NewBuiltinPlugin(ctx context.Context) extensionplug.Plugin {
 	}
 }
 
-func convert(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *UpstreamIndex) func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
+func convert(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *BackendIndex) func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
 	switch f.Type {
 	case gwv1.HTTPRouteFilterRequestMirror:
 		return convertMirror(kctx, f.RequestMirror, fromgk, fromns, refgrants, ups)
@@ -325,7 +325,7 @@ func convertResponseHeaderModifier(kctx krt.HandlerContext, f *gwv1.HTTPHeaderFi
 	}
 }
 
-func convertMirror(kctx krt.HandlerContext, f *gwv1.HTTPRequestMirrorFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *UpstreamIndex) func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
+func convertMirror(kctx krt.HandlerContext, f *gwv1.HTTPRequestMirrorFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *BackendIndex) func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
 	if f == nil {
 		return nil
 	}
@@ -334,7 +334,7 @@ func convertMirror(kctx krt.HandlerContext, f *gwv1.HTTPRequestMirrorFilter, fro
 		// TODO: report error
 		return nil
 	}
-	up, err := ups.getUpstreamFromRef(kctx, fromns, f.BackendRef)
+	up, err := ups.getBackendFromRef(kctx, fromns, f.BackendRef)
 	if err != nil {
 		// TODO: report error
 		return nil

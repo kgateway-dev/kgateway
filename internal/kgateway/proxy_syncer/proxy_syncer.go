@@ -42,15 +42,17 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 )
 
-// ProxySyncer is responsible for translating Kubernetes Gateway CRs into Gloo Proxies
-// and syncing the proxyClient with the newly translated proxies.
+// ProxySyncer orchestrates the translation of K8s Gateway CRs to xDS
+// and setting the output xDS snapshot in the envoy snapshot cache,
+// resulting in each connected proxy getting the correct configuration.
+// ProxySyncer also syncs status resulting from translation to K8s apiserver.
 type ProxySyncer struct {
 	controllerName string
 
-	mgr              manager.Manager
-	commonCols       *common.CommonCollections
-	translatorSyncer *translator.CombinedTranslator
-	extensions       extensionsplug.Plugin
+	mgr        manager.Manager
+	commonCols *common.CommonCollections
+	translator *translator.CombinedTranslator
+	extensions extensionsplug.Plugin
 
 	istioClient     kube.Client
 	proxyTranslator ProxyTranslator
@@ -134,14 +136,14 @@ func NewProxySyncer(
 	extensions := extensionsFactory(ctx, commonCols)
 
 	return &ProxySyncer{
-		controllerName:   controllerName,
-		commonCols:       commonCols,
-		mgr:              mgr,
-		istioClient:      client,
-		proxyTranslator:  NewProxyTranslator(xdsCache),
-		uniqueClients:    uniqueClients,
-		translatorSyncer: translator.NewCombinedTranslator(ctx, extensions, commonCols),
-		extensions:       extensions,
+		controllerName:  controllerName,
+		commonCols:      commonCols,
+		mgr:             mgr,
+		istioClient:     client,
+		proxyTranslator: NewProxyTranslator(xdsCache),
+		uniqueClients:   uniqueClients,
+		translator:      translator.NewCombinedTranslator(ctx, extensions, commonCols),
+		extensions:      extensions,
 	}
 }
 
@@ -183,7 +185,7 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
 	logger := contextutils.LoggerFrom(ctx)
 
-	kubeGateways, routes, upstreamIndex, endpointIRs := krtcollections.InitCollections(
+	kubeGateways, routes, backendIndex, endpointIRs := krtcollections.InitCollections(
 		ctx,
 		s.extensions,
 		s.istioClient,
@@ -192,17 +194,17 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 		krtopts,
 	)
 
-	finalUpstreams := krt.JoinCollection(upstreamIndex.Upstreams(), krtopts.ToOptions("FinalUpstreams")...)
+	finalBackends := krt.JoinCollection(backendIndex.Backends(), krtopts.ToOptions("FinalUpstreams")...)
 
 	// add the upstreams to the common collections, so they are available for policies.
-	s.commonCols.Upstreams = upstreamIndex
+	s.commonCols.Backends = backendIndex
 
-	s.translatorSyncer.Init(ctx, routes)
+	s.translator.Init(ctx, routes)
 
 	s.mostXdsSnapshots = krt.NewCollection(kubeGateways.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
 		logger.Debugf("building proxy for kube gw %s version %s", client.ObjectKeyFromObject(gw.Obj), gw.Obj.GetResourceVersion())
 
-		xdsSnap, rm := s.translatorSyncer.TranslateGateway(kctx, ctx, gw)
+		xdsSnap, rm := s.translator.TranslateGateway(kctx, ctx, gw)
 		if xdsSnap == nil {
 			return nil
 		}
@@ -215,13 +217,13 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 		krtopts,
 		s.uniqueClients,
 		endpointIRs,
-		s.translatorSyncer.TranslateEndpoints,
+		s.translator.TranslateEndpoints,
 	)
 	clustersPerClient := NewPerClientEnvoyClusters(
 		ctx,
 		krtopts,
-		s.translatorSyncer.GetUpstreamTranslator(),
-		finalUpstreams,
+		s.translator.GetUpstreamTranslator(),
+		finalBackends,
 		s.uniqueClients,
 	)
 	s.perclientSnapCollection = snapshotPerClient(
@@ -274,14 +276,14 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 	s.waitForSync = []cache.InformerSynced{
 		endpointIRs.HasSynced,
 		endpointIRs.HasSynced,
-		upstreamIndex.HasSynced,
-		finalUpstreams.HasSynced,
+		backendIndex.HasSynced,
+		finalBackends.HasSynced,
 		kubeGateways.Gateways.HasSynced,
 		s.perclientSnapCollection.HasSynced,
 		s.mostXdsSnapshots.HasSynced,
 		s.extensions.HasSynced,
 		routes.HasSynced,
-		s.translatorSyncer.HasSynced,
+		s.translator.HasSynced,
 	}
 	return nil
 }

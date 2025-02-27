@@ -18,7 +18,7 @@ import (
 var _ e2e.NewSuiteFunc = NewMinimalDefaultGatewayParametersTestingSuite
 
 // minimalDefaultGatewayParametersDeployerSuite tests the "deployer" feature in situations where users have applied `null` values
-// to as many of the helm values controlling the default GatewayParameters for the gloo-gateway GatewayClass as possible.
+// to as many of the helm values controlling the default GatewayParameters for the kgateway GatewayClass as possible.
 // The "deployer" code can be found here: /internal/kgateway/deployer
 type minimalDefaultGatewayParametersDeployerSuite struct {
 	suite.Suite

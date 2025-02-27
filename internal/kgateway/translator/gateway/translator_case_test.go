@@ -107,12 +107,12 @@ var (
 type testBackendPlugin struct{}
 
 // GetBackendForRef implements query.BackendRefResolver.
-func (tp testBackendPlugin) GetBackendForRefPlugin(kctx krt.HandlerContext, key ir.ObjectSource, port int32) *ir.Upstream {
+func (tp testBackendPlugin) GetBackendForRefPlugin(kctx krt.HandlerContext, key ir.ObjectSource, port int32) *ir.BackendObjectIR {
 	if key.Kind != "test-backend-plugin" {
 		return nil
 	}
 	// doesn't matter as long as its not nil
-	return &ir.Upstream{
+	return &ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
 			Group:     "test",
 			Kind:      "test-backend-plugin",
@@ -206,7 +206,7 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 	kubeclient.WaitForCacheSync("extensions", ctx.Done(), extensions.HasSynced)
 	kubeclient.WaitForCacheSync("commoncol", ctx.Done(), commoncol.HasSynced)
 	kubeclient.WaitForCacheSync("translator", ctx.Done(), translator.HasSynced)
-	kubeclient.WaitForCacheSync("upstreams", ctx.Done(), ui.HasSynced)
+	kubeclient.WaitForCacheSync("backends", ctx.Done(), ui.HasSynced)
 	kubeclient.WaitForCacheSync("endpoints", ctx.Done(), ei.HasSynced)
 
 	results := make(map[types.NamespacedName]ActualTestResult)

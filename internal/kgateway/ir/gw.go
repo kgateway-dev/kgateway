@@ -9,8 +9,8 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-type UpstreamInit struct {
-	InitUpstream func(ctx context.Context, in Upstream, out *envoy_config_cluster_v3.Cluster)
+type BackendInit struct {
+	InitBackend func(ctx context.Context, in BackendObjectIR, out *envoy_config_cluster_v3.Cluster)
 }
 
 type PolicyTargetRef struct {
@@ -83,19 +83,19 @@ func (l AttachedPolicies) MarshalJSON() ([]byte, error) {
 	return json.Marshal(m)
 }
 
-type Backend struct {
+type BackendRefIR struct {
 	// TODO: remove cluster name from here, it's redundant.
 	ClusterName string
 	Weight      uint32
 
 	// upstream could be nil if not found or no ref grant
-	Upstream *Upstream
+	BackendObject *BackendObjectIR
 	// if nil, error might say why
 	Err error
 }
 
 type HttpBackendOrDelegate struct {
-	Backend          *Backend
+	Backend          *BackendRefIR
 	Delegate         *ObjectSource
 	AttachedPolicies AttachedPolicies
 }

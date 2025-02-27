@@ -47,7 +47,7 @@ func (c ObjectSource) Equals(in ObjectSource) bool {
 	return c.Namespace == in.Namespace && c.Name == in.Name && c.Group == in.Group && c.Kind == in.Kind
 }
 
-type Upstream struct {
+type BackendObjectIR struct {
 	// Ref to source object. sometimes the group and kind are not populated from api-server, so
 	// set them explicitly here, and pass this around as the reference.
 	ObjectSource `json:",inline"`
@@ -69,19 +69,19 @@ type Upstream struct {
 	AttachedPolicies AttachedPolicies
 }
 
-func (c Upstream) ResourceName() string {
-	return UpstreamResourceName(c.ObjectSource, c.Port)
+func (c BackendObjectIR) ResourceName() string {
+	return BackendResourceName(c.ObjectSource, c.Port)
 }
 
-func UpstreamResourceName(objSource ObjectSource, port int32) string {
+func BackendResourceName(objSource ObjectSource, port int32) string {
 	return fmt.Sprintf("%s:%d", objSource.ResourceName(), port)
 }
 
-func (c Upstream) Equals(in Upstream) bool {
+func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
 	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj) && c.AttachedPolicies.Equals(in.AttachedPolicies)
 }
 
-func (c Upstream) ClusterName() string {
+func (c BackendObjectIR) ClusterName() string {
 	// TODO: fix this to somthing that's friendly to stats
 	gvPrefix := c.GvPrefix
 	if c.GvPrefix == "" {

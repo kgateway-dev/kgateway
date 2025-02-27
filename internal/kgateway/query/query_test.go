@@ -696,8 +696,8 @@ func newQueries(initObjs ...client.Object) query.GatewayQueries {
 	refgrants := krtcollections.NewRefGrantIndex(krttest.GetMockCollection[*apiv1beta1.ReferenceGrant](mock))
 
 	policies := krtcollections.NewPolicyIndex(krtutil.KrtOptions{}, extensionsplug.ContributesPolicies{})
-	upstreams := krtcollections.NewUpstreamIndex(krtutil.KrtOptions{}, nil, policies, refgrants)
-	upstreams.AddUpstreams(SvcGk, k8sUpstreams(services))
+	upstreams := krtcollections.NewBackendIndex(krtutil.KrtOptions{}, nil, policies, refgrants)
+	upstreams.AddBackends(SvcGk, k8sUpstreams(services))
 
 	httproutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
@@ -727,12 +727,12 @@ func newQueries(initObjs ...client.Object) query.GatewayQueries {
 	return query.NewData(rtidx, secrets, nsCol)
 }
 
-func k8sUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir.Upstream] {
-	return krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.Upstream {
-		uss := []ir.Upstream{}
+func k8sUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir.BackendObjectIR] {
+	return krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.BackendObjectIR {
+		uss := []ir.BackendObjectIR{}
 
 		for _, port := range svc.Spec.Ports {
-			uss = append(uss, ir.Upstream{
+			uss = append(uss, ir.BackendObjectIR{
 				ObjectSource: ir.ObjectSource{
 					Kind:      SvcGk.Kind,
 					Group:     SvcGk.Group,

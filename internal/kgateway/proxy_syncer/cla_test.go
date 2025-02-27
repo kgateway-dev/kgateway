@@ -14,13 +14,13 @@ import (
 
 func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 	g := gomega.NewWithT(t)
-	us := ir.Upstream{
+	us := ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
 			Namespace: "ns",
 			Name:      "name",
 		},
 	}
-	efu := ir.NewEndpointsForUpstream(us)
+	efu := ir.NewEndpointsForBackend(us)
 	efu.Add(ir.PodLocality{Region: "R1"}, ir.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
 			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{
@@ -80,13 +80,13 @@ func TestTranslatesDestrulesFailoverPriority(t *testing.T) {
 // similar to TestTranslatesDestrulesFailoverPriority but implicit
 func TestTranslatesDestrulesFailover(t *testing.T) {
 	g := gomega.NewWithT(t)
-	us := ir.Upstream{
+	us := ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
 			Namespace: "ns",
 			Name:      "name",
 		},
 	}
-	efu := ir.NewEndpointsForUpstream(us)
+	efu := ir.NewEndpointsForBackend(us)
 	efu.Add(ir.PodLocality{Region: "R1"}, ir.EndpointWithMd{
 		LbEndpoint: &endpointv3.LbEndpoint{
 			HostIdentifier: &endpointv3.LbEndpoint_Endpoint{

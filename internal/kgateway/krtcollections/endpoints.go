@@ -40,7 +40,7 @@ func (p EndpointsSettings) ResourceName() string {
 
 type EndpointsInputs struct {
 	// this is svc collection, other types will be ignored
-	Upstreams               krt.Collection[ir.Upstream]
+	Backends                krt.Collection[ir.BackendObjectIR]
 	EndpointSlices          krt.Collection[*discoveryv1.EndpointSlice]
 	EndpointSlicesByService krt.Index[types.NamespacedName, *discoveryv1.EndpointSlice]
 	Pods                    krt.Collection[LocalityPod]
@@ -54,7 +54,7 @@ func NewGlooK8sEndpointInputs(
 	krtopts krtutil.KrtOptions,
 	endpointSlices krt.Collection[*discoveryv1.EndpointSlice],
 	pods krt.Collection[LocalityPod],
-	k8supstreams krt.Collection[ir.Upstream],
+	k8sBackends krt.Collection[ir.BackendObjectIR],
 ) EndpointsInputs {
 	endpointSettings := EndpointsSettings{
 		EnableAutoMtls: stngs.EnableAutoMtls,
@@ -73,7 +73,7 @@ func NewGlooK8sEndpointInputs(
 	})
 
 	return EndpointsInputs{
-		Upstreams:               k8supstreams,
+		Backends:                k8sBackends,
 		EndpointSlices:          endpointSlices,
 		EndpointSlicesByService: endpointSlicesByService,
 		Pods:                    pods,
@@ -82,16 +82,15 @@ func NewGlooK8sEndpointInputs(
 	}
 }
 
-func NewGlooK8sEndpoints(ctx context.Context, inputs EndpointsInputs) krt.Collection[ir.EndpointsForUpstream] {
-	return krt.NewCollection(inputs.Upstreams, transformK8sEndpoints(ctx, inputs), inputs.KrtOpts.ToOptions("GlooK8sEndpoints")...)
+func NewGlooK8sEndpoints(ctx context.Context, inputs EndpointsInputs) krt.Collection[ir.EndpointsForBackend] {
+	return krt.NewCollection(inputs.Backends, transformK8sEndpoints(ctx, inputs), inputs.KrtOpts.ToOptions("GlooK8sEndpoints")...)
 }
 
-func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kctx krt.HandlerContext, us ir.Upstream) *ir.EndpointsForUpstream {
+func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kctx krt.HandlerContext, backend ir.BackendObjectIR) *ir.EndpointsForBackend {
+	logger := contextutils.LoggerFrom(ctx).Desugar()
 	augmentedPods := inputs.Pods
 
-	logger := contextutils.LoggerFrom(ctx).Desugar()
-
-	return func(kctx krt.HandlerContext, us ir.Upstream) *ir.EndpointsForUpstream {
+	return func(kctx krt.HandlerContext, backend ir.BackendObjectIR) *ir.EndpointsForBackend {
 		var warnsToLog []string
 		defer func() {
 			for _, warn := range warnsToLog {
@@ -99,35 +98,34 @@ func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kct
 			}
 		}()
 		key := types.NamespacedName{
-			Namespace: us.Namespace,
-			Name:      us.Name,
+			Namespace: backend.Namespace,
+			Name:      backend.Name,
 		}
 		logger := logger.With(zap.Stringer("kubesvc", key))
 
-		kubeUpstream, ok := us.Obj.(*corev1.Service)
-		// only care about kube upstreams
+		kubeBackend, ok := backend.Obj.(*corev1.Service)
+		// only care about kube backend
 		if !ok {
-			logger.Debug("not kube upstream")
+			logger.Debug("not kube backend")
 			return nil
 		}
 
 		logger.Debug("building endpoints")
 
-		kubeSvcPort, singlePortSvc := findPortForService(kubeUpstream, uint32(us.Port))
+		kubeSvcPort, singlePortSvc := findPortForService(kubeBackend, uint32(backend.Port))
 		if kubeSvcPort == nil {
-			logger.Debug("port not found for service", zap.Uint32("port", uint32(us.Port)))
+			logger.Debug("port not found for service", zap.Uint32("port", uint32(backend.Port)))
 			return nil
 		}
 
-		// Fetch all EndpointSlices for the upstream service
-
+		// Fetch all EndpointSlices for the backend service
 		endpointSlices := krt.Fetch(kctx, inputs.EndpointSlices, krt.FilterIndex(inputs.EndpointSlicesByService, key))
 		if len(endpointSlices) == 0 {
 			logger.Debug("no endpointslices found for service", zap.String("name", key.Name), zap.String("namespace", key.Namespace))
 			return nil
 		}
 
-		// Handle potential eventually consistency of EndpointSlices for the upstream service
+		// Handle potential eventually consistency of EndpointSlices for the backend service
 		found := false
 		for _, endpointSlice := range endpointSlices {
 			if port := findPortInEndpointSlice(endpointSlice, singlePortSvc, kubeSvcPort); port != 0 {
@@ -140,14 +138,14 @@ func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kct
 			return nil
 		}
 
-		// Initialize the returned EndpointsForUpstream
+		// Initialize the returned EndpointsForBackend
 		enableAutoMtls := inputs.EndpointsSettings.EnableAutoMtls
-		ret := ir.NewEndpointsForUpstream(us)
+		ret := ir.NewEndpointsForBackend(backend)
 
 		// Handle deduplication of endpoint addresses
 		seenAddresses := make(map[string]struct{})
 
-		// Add an endpoint to the returned EndpointsForUpstream for each EndpointSlice
+		// Add an endpoint to the returned EndpointsForBackend for each EndpointSlice
 		for _, endpointSlice := range endpointSlices {
 			port := findPortInEndpointSlice(endpointSlice, singlePortSvc, kubeSvcPort)
 			if port == 0 {
@@ -211,7 +209,7 @@ func transformK8sEndpoints(ctx context.Context, inputs EndpointsInputs) func(kct
 }
 
 func CreateLBEndpoint(address string, port uint32, podLabels map[string]string, enableAutoMtls bool) *envoy_config_endpoint_v3.LbEndpoint {
-	// Don't get the metadata labels and filter metadata for the envoy load balancer based on the upstream, as this is not used
+	// Don't get the metadata labels and filter metadata for the envoy load balancer based on the backend, as this is not used
 	// metadata := getLbMetadata(upstream, labels, "")
 	// Get the metadata labels for the transport socket match if Istio auto mtls is enabled
 	metadata := &envoy_config_core_v3.Metadata{

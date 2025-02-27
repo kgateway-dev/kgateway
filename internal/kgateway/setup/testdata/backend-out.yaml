@@ -50,7 +50,7 @@ clusters:
   type: EDS
 - connectTimeout: 5s
   loadAssignment:
-    clusterName: upstream_gwtest_static_0
+    clusterName: backend_gwtest_static_0
     endpoints:
     - lbEndpoints:
       - endpoint:
@@ -62,7 +62,7 @@ clusters:
             hostname: 1.2.3.4
           hostname: 1.2.3.4
   metadata: {}
-  name: upstream_gwtest_static_0
+  name: backend_gwtest_static_0
   transportSocketMatches:
   - match:
       tlsMode: istio
@@ -142,5 +142,5 @@ routes:
         prefix: /
       name: http~www_example_com-route-0-httproute-route-to-upstream-gwtest-0-0-matcher-0
       route:
-        cluster: upstream_gwtest_static_0
+        cluster: backend_gwtest_static_0
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR

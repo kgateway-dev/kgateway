@@ -40,7 +40,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 		var (
 			route             *gwv1.HTTPRoute
 			routeir           *ir.HttpRouteIR
-			up                *ir.Upstream
+			up                *ir.BackendObjectIR
 			routeInfo         *query.RouteInfo
 			parentRef         *gwv1.ParentReference
 			baseReporter      reports.Reporter
@@ -106,7 +106,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 					}},
 				},
 			}
-			up = &ir.Upstream{
+			up = &ir.BackendObjectIR{
 				ObjectSource: ir.ObjectSource{
 					Namespace: backingSvc.Namespace,
 					Name:      backingSvc.Name,
@@ -131,7 +131,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 						Matches: route.Spec.Rules[0].Matches,
 						Backends: []ir.HttpBackendOrDelegate{
 							{
-								Backend: &ir.Backend{},
+								Backend: &ir.BackendRefIR{},
 							},
 						},
 					},
@@ -157,7 +157,7 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 						}},
 					},
 				}
-				routeir.Rules[0].Backends[0].Backend.Upstream = up
+				routeir.Rules[0].Backends[0].Backend.BackendObject = up
 				routeir.Rules[0].Backends[0].Backend.ClusterName = up.ClusterName()
 
 				// Add backing service to backend map

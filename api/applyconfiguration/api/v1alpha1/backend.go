@@ -12,58 +12,58 @@ import (
 	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
-// UpstreamApplyConfiguration represents a declarative configuration of the Upstream type for use
+// BackendApplyConfiguration represents a declarative configuration of the Backend type for use
 // with apply.
-type UpstreamApplyConfiguration struct {
+type BackendApplyConfiguration struct {
 	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	Spec                             *UpstreamSpecApplyConfiguration   `json:"spec,omitempty"`
-	Status                           *UpstreamStatusApplyConfiguration `json:"status,omitempty"`
+	Spec                             *BackendSpecApplyConfiguration   `json:"spec,omitempty"`
+	Status                           *BackendStatusApplyConfiguration `json:"status,omitempty"`
 }
 
-// Upstream constructs a declarative configuration of the Upstream type for use with
+// Backend constructs a declarative configuration of the Backend type for use with
 // apply.
-func Upstream(name, namespace string) *UpstreamApplyConfiguration {
-	b := &UpstreamApplyConfiguration{}
+func Backend(name, namespace string) *BackendApplyConfiguration {
+	b := &BackendApplyConfiguration{}
 	b.WithName(name)
 	b.WithNamespace(namespace)
-	b.WithKind("Upstream")
+	b.WithKind("Backend")
 	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b
 }
 
-// ExtractUpstream extracts the applied configuration owned by fieldManager from
-// upstream. If no managedFields are found in upstream for fieldManager, a
-// UpstreamApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// ExtractBackend extracts the applied configuration owned by fieldManager from
+// backend. If no managedFields are found in backend for fieldManager, a
+// BackendApplyConfiguration is returned with only the Name, Namespace (if applicable),
 // APIVersion and Kind populated. It is possible that no managed fields were found for because other
 // field managers have taken ownership of all the fields previously owned by fieldManager, or because
 // the fieldManager never owned fields any fields.
-// upstream must be a unmodified Upstream API object that was retrieved from the Kubernetes API.
-// ExtractUpstream provides a way to perform a extract/modify-in-place/apply workflow.
+// backend must be a unmodified Backend API object that was retrieved from the Kubernetes API.
+// ExtractBackend provides a way to perform a extract/modify-in-place/apply workflow.
 // Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
 // applied if another fieldManager has updated or force applied any of the previously applied fields.
 // Experimental!
-func ExtractUpstream(upstream *apiv1alpha1.Upstream, fieldManager string) (*UpstreamApplyConfiguration, error) {
-	return extractUpstream(upstream, fieldManager, "")
+func ExtractBackend(backend *apiv1alpha1.Backend, fieldManager string) (*BackendApplyConfiguration, error) {
+	return extractBackend(backend, fieldManager, "")
 }
 
-// ExtractUpstreamStatus is the same as ExtractUpstream except
+// ExtractBackendStatus is the same as ExtractBackend except
 // that it extracts the status subresource applied configuration.
 // Experimental!
-func ExtractUpstreamStatus(upstream *apiv1alpha1.Upstream, fieldManager string) (*UpstreamApplyConfiguration, error) {
-	return extractUpstream(upstream, fieldManager, "status")
+func ExtractBackendStatus(backend *apiv1alpha1.Backend, fieldManager string) (*BackendApplyConfiguration, error) {
+	return extractBackend(backend, fieldManager, "status")
 }
 
-func extractUpstream(upstream *apiv1alpha1.Upstream, fieldManager string, subresource string) (*UpstreamApplyConfiguration, error) {
-	b := &UpstreamApplyConfiguration{}
-	err := managedfields.ExtractInto(upstream, internal.Parser().Type("com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Upstream"), fieldManager, b, subresource)
+func extractBackend(backend *apiv1alpha1.Backend, fieldManager string, subresource string) (*BackendApplyConfiguration, error) {
+	b := &BackendApplyConfiguration{}
+	err := managedfields.ExtractInto(backend, internal.Parser().Type("com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Backend"), fieldManager, b, subresource)
 	if err != nil {
 		return nil, err
 	}
-	b.WithName(upstream.Name)
-	b.WithNamespace(upstream.Namespace)
+	b.WithName(backend.Name)
+	b.WithNamespace(backend.Namespace)
 
-	b.WithKind("Upstream")
+	b.WithKind("Backend")
 	b.WithAPIVersion("gateway.kgateway.dev/v1alpha1")
 	return b, nil
 }
@@ -71,7 +71,7 @@ func extractUpstream(upstream *apiv1alpha1.Upstream, fieldManager string, subres
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Kind field is set to the value of the last call.
-func (b *UpstreamApplyConfiguration) WithKind(value string) *UpstreamApplyConfiguration {
+func (b *BackendApplyConfiguration) WithKind(value string) *BackendApplyConfiguration {
 	b.TypeMetaApplyConfiguration.Kind = &value
 	return b
 }
@@ -79,7 +79,7 @@ func (b *UpstreamApplyConfiguration) WithKind(value string) *UpstreamApplyConfig
 // WithAPIVersion sets the APIVersion field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the APIVersion field is set to the value of the last call.
-func (b *UpstreamApplyConfiguration) WithAPIVersion(value string) *UpstreamApplyConfiguration {
+func (b *BackendApplyConfiguration) WithAPIVersion(value string) *BackendApplyConfiguration {
 	b.TypeMetaApplyConfiguration.APIVersion = &value
 	return b
 }
@@ -87,7 +87,7 @@ func (b *UpstreamApplyConfiguration) WithAPIVersion(value string) *UpstreamApply
 // WithName sets the Name field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Name field is set to the value of the last call.
-func (b *UpstreamApplyConfiguration) WithName(value string) *UpstreamApplyConfiguration {
+func (b *BackendApplyConfiguration) WithName(value string) *BackendApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.Name = &value
 	return b
@@ -96,7 +96,7 @@ func (b *UpstreamApplyConfiguration) WithName(value string) *UpstreamApplyConfig
 // WithGenerateName sets the GenerateName field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the GenerateName field is set to the value of the last call.
-func (b *UpstreamApplyConfiguration) WithGenerateName(value string) *UpstreamApplyConfiguration {
+func (b *BackendApplyConfiguration) WithGenerateName(value string) *BackendApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.GenerateName = &value
 	return b
@@ -105,7 +105,7 @@ func (b *UpstreamApplyConfiguration) WithGenerateName(value string) *UpstreamApp
 // WithNamespace sets the Namespace field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Namespace field is set to the value of the last call.
-func (b *UpstreamApplyConfiguration) WithNamespace(value string) *UpstreamApplyConfiguration {
+func (b *BackendApplyConfiguration) WithNamespace(value string) *BackendApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.Namespace = &value
 	return b
@@ -114,7 +114,7 @@ func (b *UpstreamApplyConfiguration) WithNamespace(value string) *UpstreamApplyC
 // WithUID sets the UID field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the UID field is set to the value of the last call.
-func (b *UpstreamApplyConfiguration) WithUID(value types.UID) *UpstreamApplyConfiguration {
+func (b *BackendApplyConfiguration) WithUID(value types.UID) *BackendApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.UID = &value
 	return b
@@ -123,7 +123,7 @@ func (b *UpstreamApplyConfiguration) WithUID(value types.UID) *UpstreamApplyConf
 // WithResourceVersion sets the ResourceVersion field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ResourceVersion field is set to the value of the last call.
-func (b *UpstreamApplyConfiguration) WithResourceVersion(value string) *UpstreamApplyConfiguration {
+func (b *BackendApplyConfiguration) WithResourceVersion(value string) *BackendApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.ResourceVersion = &value
 	return b
@@ -132,7 +132,7 @@ func (b *UpstreamApplyConfiguration) WithResourceVersion(value string) *Upstream
 // WithGeneration sets the Generation field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Generation field is set to the value of the last call.
-func (b *UpstreamApplyConfiguration) WithGeneration(value int64) *UpstreamApplyConfiguration {
+func (b *BackendApplyConfiguration) WithGeneration(value int64) *BackendApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.Generation = &value
 	return b
@@ -141,7 +141,7 @@ func (b *UpstreamApplyConfiguration) WithGeneration(value int64) *UpstreamApplyC
 // WithCreationTimestamp sets the CreationTimestamp field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the CreationTimestamp field is set to the value of the last call.
-func (b *UpstreamApplyConfiguration) WithCreationTimestamp(value metav1.Time) *UpstreamApplyConfiguration {
+func (b *BackendApplyConfiguration) WithCreationTimestamp(value metav1.Time) *BackendApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.CreationTimestamp = &value
 	return b
@@ -150,7 +150,7 @@ func (b *UpstreamApplyConfiguration) WithCreationTimestamp(value metav1.Time) *U
 // WithDeletionTimestamp sets the DeletionTimestamp field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the DeletionTimestamp field is set to the value of the last call.
-func (b *UpstreamApplyConfiguration) WithDeletionTimestamp(value metav1.Time) *UpstreamApplyConfiguration {
+func (b *BackendApplyConfiguration) WithDeletionTimestamp(value metav1.Time) *BackendApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.DeletionTimestamp = &value
 	return b
@@ -159,7 +159,7 @@ func (b *UpstreamApplyConfiguration) WithDeletionTimestamp(value metav1.Time) *U
 // WithDeletionGracePeriodSeconds sets the DeletionGracePeriodSeconds field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the DeletionGracePeriodSeconds field is set to the value of the last call.
-func (b *UpstreamApplyConfiguration) WithDeletionGracePeriodSeconds(value int64) *UpstreamApplyConfiguration {
+func (b *BackendApplyConfiguration) WithDeletionGracePeriodSeconds(value int64) *BackendApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	b.ObjectMetaApplyConfiguration.DeletionGracePeriodSeconds = &value
 	return b
@@ -169,7 +169,7 @@ func (b *UpstreamApplyConfiguration) WithDeletionGracePeriodSeconds(value int64)
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, the entries provided by each call will be put on the Labels field,
 // overwriting an existing map entries in Labels field with the same key.
-func (b *UpstreamApplyConfiguration) WithLabels(entries map[string]string) *UpstreamApplyConfiguration {
+func (b *BackendApplyConfiguration) WithLabels(entries map[string]string) *BackendApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	if b.ObjectMetaApplyConfiguration.Labels == nil && len(entries) > 0 {
 		b.ObjectMetaApplyConfiguration.Labels = make(map[string]string, len(entries))
@@ -184,7 +184,7 @@ func (b *UpstreamApplyConfiguration) WithLabels(entries map[string]string) *Upst
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, the entries provided by each call will be put on the Annotations field,
 // overwriting an existing map entries in Annotations field with the same key.
-func (b *UpstreamApplyConfiguration) WithAnnotations(entries map[string]string) *UpstreamApplyConfiguration {
+func (b *BackendApplyConfiguration) WithAnnotations(entries map[string]string) *BackendApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	if b.ObjectMetaApplyConfiguration.Annotations == nil && len(entries) > 0 {
 		b.ObjectMetaApplyConfiguration.Annotations = make(map[string]string, len(entries))
@@ -198,7 +198,7 @@ func (b *UpstreamApplyConfiguration) WithAnnotations(entries map[string]string) 
 // WithOwnerReferences adds the given value to the OwnerReferences field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the OwnerReferences field.
-func (b *UpstreamApplyConfiguration) WithOwnerReferences(values ...*v1.OwnerReferenceApplyConfiguration) *UpstreamApplyConfiguration {
+func (b *BackendApplyConfiguration) WithOwnerReferences(values ...*v1.OwnerReferenceApplyConfiguration) *BackendApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	for i := range values {
 		if values[i] == nil {
@@ -212,7 +212,7 @@ func (b *UpstreamApplyConfiguration) WithOwnerReferences(values ...*v1.OwnerRefe
 // WithFinalizers adds the given value to the Finalizers field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Finalizers field.
-func (b *UpstreamApplyConfiguration) WithFinalizers(values ...string) *UpstreamApplyConfiguration {
+func (b *BackendApplyConfiguration) WithFinalizers(values ...string) *BackendApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	for i := range values {
 		b.ObjectMetaApplyConfiguration.Finalizers = append(b.ObjectMetaApplyConfiguration.Finalizers, values[i])
@@ -220,7 +220,7 @@ func (b *UpstreamApplyConfiguration) WithFinalizers(values ...string) *UpstreamA
 	return b
 }
 
-func (b *UpstreamApplyConfiguration) ensureObjectMetaApplyConfigurationExists() {
+func (b *BackendApplyConfiguration) ensureObjectMetaApplyConfigurationExists() {
 	if b.ObjectMetaApplyConfiguration == nil {
 		b.ObjectMetaApplyConfiguration = &v1.ObjectMetaApplyConfiguration{}
 	}
@@ -229,7 +229,7 @@ func (b *UpstreamApplyConfiguration) ensureObjectMetaApplyConfigurationExists() 
 // WithSpec sets the Spec field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Spec field is set to the value of the last call.
-func (b *UpstreamApplyConfiguration) WithSpec(value *UpstreamSpecApplyConfiguration) *UpstreamApplyConfiguration {
+func (b *BackendApplyConfiguration) WithSpec(value *BackendSpecApplyConfiguration) *BackendApplyConfiguration {
 	b.Spec = value
 	return b
 }
@@ -237,13 +237,13 @@ func (b *UpstreamApplyConfiguration) WithSpec(value *UpstreamSpecApplyConfigurat
 // WithStatus sets the Status field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Status field is set to the value of the last call.
-func (b *UpstreamApplyConfiguration) WithStatus(value *UpstreamStatusApplyConfiguration) *UpstreamApplyConfiguration {
+func (b *BackendApplyConfiguration) WithStatus(value *BackendStatusApplyConfiguration) *BackendApplyConfiguration {
 	b.Status = value
 	return b
 }
 
 // GetName retrieves the value of the Name field in the declarative configuration.
-func (b *UpstreamApplyConfiguration) GetName() *string {
+func (b *BackendApplyConfiguration) GetName() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
 	return b.ObjectMetaApplyConfiguration.Name
 }

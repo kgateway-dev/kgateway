@@ -2,24 +2,24 @@
 
 package v1alpha1
 
-// UpstreamSpecApplyConfiguration represents a declarative configuration of the UpstreamSpec type for use
+// BackendSpecApplyConfiguration represents a declarative configuration of the BackendSpec type for use
 // with apply.
-type UpstreamSpecApplyConfiguration struct {
-	Aws    *AwsUpstreamApplyConfiguration    `json:"aws,omitempty"`
-	Static *StaticUpstreamApplyConfiguration `json:"static,omitempty"`
-	AI     *AIUpstreamApplyConfiguration     `json:"ai,omitempty"`
+type BackendSpecApplyConfiguration struct {
+	Aws    *AwsBackendApplyConfiguration    `json:"aws,omitempty"`
+	Static *StaticBackendApplyConfiguration `json:"static,omitempty"`
+	AI     *AIBackendApplyConfiguration     `json:"ai,omitempty"`
 }
 
-// UpstreamSpecApplyConfiguration constructs a declarative configuration of the UpstreamSpec type for use with
+// BackendSpecApplyConfiguration constructs a declarative configuration of the BackendSpec type for use with
 // apply.
-func UpstreamSpec() *UpstreamSpecApplyConfiguration {
-	return &UpstreamSpecApplyConfiguration{}
+func BackendSpec() *BackendSpecApplyConfiguration {
+	return &BackendSpecApplyConfiguration{}
 }
 
 // WithAws sets the Aws field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Aws field is set to the value of the last call.
-func (b *UpstreamSpecApplyConfiguration) WithAws(value *AwsUpstreamApplyConfiguration) *UpstreamSpecApplyConfiguration {
+func (b *BackendSpecApplyConfiguration) WithAws(value *AwsBackendApplyConfiguration) *BackendSpecApplyConfiguration {
 	b.Aws = value
 	return b
 }
@@ -27,7 +27,7 @@ func (b *UpstreamSpecApplyConfiguration) WithAws(value *AwsUpstreamApplyConfigur
 // WithStatic sets the Static field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Static field is set to the value of the last call.
-func (b *UpstreamSpecApplyConfiguration) WithStatic(value *StaticUpstreamApplyConfiguration) *UpstreamSpecApplyConfiguration {
+func (b *BackendSpecApplyConfiguration) WithStatic(value *StaticBackendApplyConfiguration) *BackendSpecApplyConfiguration {
 	b.Static = value
 	return b
 }
@@ -35,7 +35,7 @@ func (b *UpstreamSpecApplyConfiguration) WithStatic(value *StaticUpstreamApplyCo
 // WithAI sets the AI field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the AI field is set to the value of the last call.
-func (b *UpstreamSpecApplyConfiguration) WithAI(value *AIUpstreamApplyConfiguration) *UpstreamSpecApplyConfiguration {
+func (b *BackendSpecApplyConfiguration) WithAI(value *AIBackendApplyConfiguration) *BackendSpecApplyConfiguration {
 	b.AI = value
 	return b
 }

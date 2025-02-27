@@ -2,23 +2,23 @@
 
 package v1alpha1
 
-// AIUpstreamApplyConfiguration represents a declarative configuration of the AIUpstream type for use
+// AIBackendApplyConfiguration represents a declarative configuration of the AIBackend type for use
 // with apply.
-type AIUpstreamApplyConfiguration struct {
+type AIBackendApplyConfiguration struct {
 	LLM       *LLMProviderApplyConfiguration     `json:"llm,omitempty"`
 	MultiPool *MultiPoolConfigApplyConfiguration `json:"multipool,omitempty"`
 }
 
-// AIUpstreamApplyConfiguration constructs a declarative configuration of the AIUpstream type for use with
+// AIBackendApplyConfiguration constructs a declarative configuration of the AIBackend type for use with
 // apply.
-func AIUpstream() *AIUpstreamApplyConfiguration {
-	return &AIUpstreamApplyConfiguration{}
+func AIBackend() *AIBackendApplyConfiguration {
+	return &AIBackendApplyConfiguration{}
 }
 
 // WithLLM sets the LLM field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the LLM field is set to the value of the last call.
-func (b *AIUpstreamApplyConfiguration) WithLLM(value *LLMProviderApplyConfiguration) *AIUpstreamApplyConfiguration {
+func (b *AIBackendApplyConfiguration) WithLLM(value *LLMProviderApplyConfiguration) *AIBackendApplyConfiguration {
 	b.LLM = value
 	return b
 }
@@ -26,7 +26,7 @@ func (b *AIUpstreamApplyConfiguration) WithLLM(value *LLMProviderApplyConfigurat
 // WithMultiPool sets the MultiPool field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the MultiPool field is set to the value of the last call.
-func (b *AIUpstreamApplyConfiguration) WithMultiPool(value *MultiPoolConfigApplyConfiguration) *AIUpstreamApplyConfiguration {
+func (b *AIBackendApplyConfiguration) WithMultiPool(value *MultiPoolConfigApplyConfiguration) *AIBackendApplyConfiguration {
 	b.MultiPool = value
 	return b
 }
