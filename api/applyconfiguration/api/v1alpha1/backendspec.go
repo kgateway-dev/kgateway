@@ -2,18 +2,39 @@
 
 package v1alpha1
 
+import (
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+)
+
 // BackendSpecApplyConfiguration represents a declarative configuration of the BackendSpec type for use
 // with apply.
 type BackendSpecApplyConfiguration struct {
+	Type   *apiv1alpha1.BackendType         `json:"type,omitempty"`
+	AI     *AIBackendApplyConfiguration     `json:"ai,omitempty"`
 	Aws    *AwsBackendApplyConfiguration    `json:"aws,omitempty"`
 	Static *StaticBackendApplyConfiguration `json:"static,omitempty"`
-	AI     *AIBackendApplyConfiguration     `json:"ai,omitempty"`
 }
 
 // BackendSpecApplyConfiguration constructs a declarative configuration of the BackendSpec type for use with
 // apply.
 func BackendSpec() *BackendSpecApplyConfiguration {
 	return &BackendSpecApplyConfiguration{}
+}
+
+// WithType sets the Type field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Type field is set to the value of the last call.
+func (b *BackendSpecApplyConfiguration) WithType(value apiv1alpha1.BackendType) *BackendSpecApplyConfiguration {
+	b.Type = &value
+	return b
+}
+
+// WithAI sets the AI field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the AI field is set to the value of the last call.
+func (b *BackendSpecApplyConfiguration) WithAI(value *AIBackendApplyConfiguration) *BackendSpecApplyConfiguration {
+	b.AI = value
+	return b
 }
 
 // WithAws sets the Aws field in the declarative configuration to the given value
@@ -29,13 +50,5 @@ func (b *BackendSpecApplyConfiguration) WithAws(value *AwsBackendApplyConfigurat
 // If called multiple times, the Static field is set to the value of the last call.
 func (b *BackendSpecApplyConfiguration) WithStatic(value *StaticBackendApplyConfiguration) *BackendSpecApplyConfiguration {
 	b.Static = value
-	return b
-}
-
-// WithAI sets the AI field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the AI field is set to the value of the last call.
-func (b *BackendSpecApplyConfiguration) WithAI(value *AIBackendApplyConfiguration) *BackendSpecApplyConfiguration {
-	b.AI = value
 	return b
 }

@@ -38,6 +38,7 @@ kind: Backend
 metadata:
   name: aws-backend
 spec:
+  type: aws
   aws:
     region: us-east-1
     # TODO: add these back

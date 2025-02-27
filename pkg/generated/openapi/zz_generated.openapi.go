@@ -854,18 +854,21 @@ func schema_kgateway_v2_api_v1alpha1_AwsBackend(ref common.ReferenceCallback) co
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "AwsBackend is the AWS backend configuration.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"region": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "Region is the AWS region.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"secretRef": {
 						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/api/core/v1.LocalObjectReference"),
+							Description: "SecretRef is the secret reference for the AWS credentials.",
+							Default:     map[string]interface{}{},
+							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
 						},
 					},
 				},
@@ -1021,21 +1024,48 @@ func schema_kgateway_v2_api_v1alpha1_BackendSpec(ref common.ReferenceCallback) c
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "BackendSpec defines the desired state of Backend.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"aws": {
+					"type": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsBackend"),
-						},
-					},
-					"static": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StaticBackend"),
+							Description: "Type indicates the type of the backend to be used.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"ai": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIBackend"),
+							Description: "AI is the AI backend configuration.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIBackend"),
+						},
+					},
+					"aws": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Aws is the AWS backend configuration.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsBackend"),
+						},
+					},
+					"static": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Static is the static backend configuration.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StaticBackend"),
+						},
+					},
+				},
+				Required: []string{"type"},
+			},
+			VendorExtensible: spec.VendorExtensible{
+				Extensions: spec.Extensions{
+					"x-kubernetes-unions": []interface{}{
+						map[string]interface{}{
+							"discriminator": "type",
+							"fields-to-discriminateBy": map[string]interface{}{
+								"ai":     "AI",
+								"aws":    "Aws",
+								"static": "Static",
+							},
 						},
 					},
 				},
@@ -1050,7 +1080,8 @@ func schema_kgateway_v2_api_v1alpha1_BackendStatus(ref common.ReferenceCallback)
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "BackendStatus defines the observed state of Backend.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"conditions": {
 						VendorExtensible: spec.VendorExtensible{
@@ -1062,7 +1093,8 @@ func schema_kgateway_v2_api_v1alpha1_BackendStatus(ref common.ReferenceCallback)
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
+							Description: "Conditions is the list of conditions for the backend.",
+							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
@@ -2034,20 +2066,23 @@ func schema_kgateway_v2_api_v1alpha1_Host(ref common.ReferenceCallback) common.O
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "Host is a host and port pair.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"host": {
 						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
+							Description: "Host is the host name.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"port": {
 						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int32",
+							Description: "Port is the port number.",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 				},
@@ -3363,11 +3398,13 @@ func schema_kgateway_v2_api_v1alpha1_StaticBackend(ref common.ReferenceCallback)
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "StaticBackend is the static backend configuration.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"hosts": {
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
+							Description: "Hosts is the list of hosts.",
+							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{

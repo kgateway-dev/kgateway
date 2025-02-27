@@ -32,8 +32,6 @@ spec:
           metadata:
             type: object
           spec:
-            maxProperties: 1
-            minProperties: 1
             properties:
               ai:
                 maxProperties: 1
@@ -484,14 +482,31 @@ spec:
                       - host
                       - port
                       type: object
+                    minItems: 1
                     type: array
                 type: object
+              type:
+                enum:
+                - ai
+                - aws
+                - static
+                type: string
+            required:
+            - type
             type: object
             x-kubernetes-validations:
-            - message: There must one and only one backend type set
-              rule: (has(self.aws) && !has(self.static) && !has(self.ai)) || (!has(self.aws)
-                && has(self.static) && !has(self.ai)) || (!has(self.aws) && !has(self.static)
-                && has(self.ai))
+            - message: ai backend must be nil if the type is not 'ai'
+              rule: '!(has(self.ai) && self.type != ''ai'')'
+            - message: ai backend must be specified when type is 'ai'
+              rule: '!(!has(self.ai) && self.type == ''ai'')'
+            - message: aws backend must be nil if the type is not 'aws'
+              rule: '!(has(self.aws) && self.type != ''aws'')'
+            - message: aws backend must be specified when type is 'aws'
+              rule: '!(!has(self.aws) && self.type == ''aws'')'
+            - message: static backend must be nil if the type is not 'static'
+              rule: '!(has(self.static) && self.type != ''static'')'
+            - message: static backend must be specified when type is 'static'
+              rule: '!(!has(self.static) && self.type == ''static'')'
           status:
             properties:
               conditions:

@@ -35,7 +35,7 @@ const (
 	ParameterKind  = "Parameter"
 )
 const (
-	ExtensionName = "Upstream"
+	ExtensionName = "Backend"
 	FilterName    = "io.solo.aws_lambda"
 )
 
@@ -138,7 +138,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		},
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			ParameterGK: {
-				Name:                      "upstream",
+				Name:                      "backend",
 				NewGatewayTranslationPass: newPlug,
 				//			AttachmentPoints: []ir.AttachmentPoints{ir.HttpBackendRefAttachmentPoint},
 				PoliciesFetch: func(n, ns string) ir.PolicyIR {
@@ -187,16 +187,18 @@ func processUpstream(ctx context.Context, in ir.BackendObjectIR, out *envoy_conf
 	}
 
 	spec := up.Spec
-
 	switch {
-	case spec.Static != nil:
+	case spec.Type == v1alpha1.BackendTypeStatic:
 		processStatic(ctx, spec.Static, out)
-	case spec.Aws != nil:
+	case spec.Type == v1alpha1.BackendTypeAWS:
 		processAws(ctx, spec.Aws, ir, out)
 	}
 }
 
 func hostname(in *v1alpha1.Backend) string {
+	if in.Spec.Type != v1alpha1.BackendTypeStatic {
+		return ""
+	}
 	if in.Spec.Static != nil {
 		if len(in.Spec.Static.Hosts) > 0 {
 			return string(in.Spec.Static.Hosts[0].Host)
@@ -208,9 +210,9 @@ func hostname(in *v1alpha1.Backend) string {
 func processEndpoints(up *v1alpha1.Backend) *ir.EndpointsForBackend {
 	spec := up.Spec
 	switch {
-	case spec.Static != nil:
+	case spec.Type == v1alpha1.BackendTypeStatic:
 		return processEndpointsStatic(spec.Static)
-	case spec.Aws != nil:
+	case spec.Type == v1alpha1.BackendTypeAWS:
 		return processEndpointsAws(spec.Aws)
 	}
 	return nil
@@ -221,7 +223,7 @@ func newPlug(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationP
 }
 
 func (p *backendPlugin) Name() string {
-	return "upstream"
+	return ExtensionName
 }
 
 // called 1 time for each listener
