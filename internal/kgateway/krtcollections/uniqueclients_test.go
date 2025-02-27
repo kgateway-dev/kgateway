@@ -229,7 +229,6 @@ func TestUniqueClients(t *testing.T) {
 				j := 9
 				g.Eventually(ucc.List).Should(HaveLen(len(allUcc) - i))
 				cb.OnStreamClosed(int64(i*10+j), nil)
-
 			}
 
 			// as events happens async, eventually after all clients disconnect all UCCs should be removed
