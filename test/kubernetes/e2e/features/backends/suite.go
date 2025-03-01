@@ -42,11 +42,11 @@ var (
 
 	expectedResponse = &matchers.HttpResponse{
 		StatusCode: http.StatusOK,
-		Body:       gomega.ContainSubstring("sunt aut facere repellat provident occaecati excepturi optio reprehenderit"),
+		Body:       gomega.ContainSubstring("Welcome to nginx!"),
 	}
 
 	backendMeta = metav1.ObjectMeta{
-		Name:      "json-upstream",
+		Name:      "nginx-static",
 		Namespace: "default",
 	}
 	be = v1alpha1.Backend{
@@ -90,7 +90,7 @@ func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 			curl.WithHostHeader("example.com"),
-			curl.WithPath("/posts/1"),
+			curl.WithPath("/"),
 		},
 		expectedResponse,
 	)
