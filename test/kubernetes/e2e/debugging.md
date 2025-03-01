@@ -16,16 +16,17 @@ There is no setup required for this option, as the test suite will download the 
 
 ### Using a locally built version
 For these tests to run, we require the following conditions:
-- Gloo Gateway Helm chart archive is present in the `_test` folder,
-- `glooctl` is built in the `_output` folder
-- A KinD cluster is set up and loaded with the images to be installed by the helm chart
+- kgateway helm chart archive present in the `_test` folder
+- running kind cluster loaded with the images (with correct tags) referenced in the helm chart
 
 [hack/kind/setup-kind.sh](/hack/kind/setup-kind.sh) gets run in CI to setup the test environment for the above requirements.
-It accepts a number of environment variables, to control the creation of a kind cluster and deployment of Gloo resources to that kind cluster. Please refer to the script itself to see what variables are available.
+The default settings should be sufficient for a working local environment.
+However, the setup script accepts a number of environment variables to control the creation of a kind cluster and deployment of kgateway resources.
+Please refer to the script itself to see what variables are available if you need customization.
 
-Example:
+Basic Example:
 ```bash
-CLUSTER_NAME=solo-test-cluster CLUSTER_NODE_VERSION=v1.30.0 VERSION=v1.0.0-solo-test hack/kind/setup-kind.sh
+./hack/kind/setup-kind.sh
 ```
 
 ## Step 2: Running Tests
@@ -41,7 +42,7 @@ _should run `kind-<CLUSTER_NAME>`_
 
 Since each feature suite is a subtest of the top level suite, you can run a single feature suite by running the top level suite with the `-run` flag.
 
-For example, to run the `Deployer` feature suite in `TestKgateway`, you can run:
+For example, to run the `Deployer` feature suite in the `TestKgateway` test, you can run:
 ```bash
 go test -v -timeout 600s ./test/kubernetes/e2e/tests -run ^TestKgateway$/^Deployer$
 ```
