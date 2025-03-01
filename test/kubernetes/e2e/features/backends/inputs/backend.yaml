@@ -1,0 +1,11 @@
+# this is a separate manifest so it can be applied after the Route is created
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  name: json-backend
+spec:
+  type: static
+  static:
+    hosts:
+      - host: jsonplaceholder.typicode.com
+        port: 80

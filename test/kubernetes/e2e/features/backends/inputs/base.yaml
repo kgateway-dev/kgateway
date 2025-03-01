@@ -23,10 +23,11 @@ spec:
     - "example.com"
   rules:
     - backendRefs:
-        - name: json-upstream
-          port: 80
-          kind: Upstream
-          group: gloo.solo.io
+        - name: json-backend
+          # when this is set, everything breaks. we need to add a message to ResolvedRefs to say port not found or something
+          # port: 80
+          kind: Backend
+          group: gateway.kgateway.dev
       filters:
         - type: URLRewrite
           urlRewrite:
@@ -54,8 +55,3 @@ spec:
         - "tail"
         - "-f"
         - "/dev/null"
-      resources:
-        requests:
-          cpu: "100m"
-        limits:
-          cpu: "200m"
