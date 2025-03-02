@@ -29,7 +29,7 @@ type VirtualHostContext struct {
 }
 type RouteBackendContext struct {
 	FilterChainName string
-	Upstream        *BackendObjectIR
+	Backend         *BackendObjectIR
 	// todo: make this not public
 	TypedFiledConfig *map[string]*anypb.Any
 }
@@ -181,5 +181,5 @@ var (
 
 type PolicyRun interface {
 	NewGatewayTranslationPass(ctx context.Context, tctx GwTranslationCtx) ProxyTranslationPass
-	ProcessUpstream(ctx context.Context, in BackendObjectIR, out *envoy_config_cluster_v3.Cluster) error
+	ProcessBackend(ctx context.Context, in BackendObjectIR, out *envoy_config_cluster_v3.Cluster) error
 }
