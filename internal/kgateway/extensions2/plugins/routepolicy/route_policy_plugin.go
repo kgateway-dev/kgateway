@@ -132,10 +132,6 @@ func (p *routePolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filter
 	return nil, nil
 }
 
-func (p *routePolicyPluginGwPass) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {
-	return nil, nil
-}
-
 func (p *routePolicyPluginGwPass) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
 	return nil, nil
 }
