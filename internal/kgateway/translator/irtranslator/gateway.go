@@ -39,13 +39,7 @@ func (t *Translator) Translate(gw ir.GatewayIR, reporter reports.Reporter) Trans
 	return res
 }
 
-func (t *Translator) ComputeListener(
-	ctx context.Context,
-	pass TranslationPassPlugins,
-	gw ir.GatewayIR,
-	l ir.ListenerIR,
-	reporter reports.Reporter,
-) (*envoy_config_listener_v3.Listener, []*envoy_config_route_v3.RouteConfiguration) {
+func (t *Translator) ComputeListener(ctx context.Context, pass TranslationPassPlugins, gw ir.GatewayIR, l ir.ListenerIR, reporter reports.Reporter) (*envoy_config_listener_v3.Listener, []*envoy_config_route_v3.RouteConfiguration) {
 	hasTls := false
 	gwreporter := reporter.Gateway(gw.SourceObject)
 	var routes []*envoy_config_route_v3.RouteConfiguration

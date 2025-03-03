@@ -149,16 +149,18 @@ func (i *TestInstallation) InstallKgatewayFromLocalChart(ctx context.Context) {
 	}
 
 	chartUri, err := helper.GetLocalChartPath(helmutils.ChartName)
-	i.Assertions.Require.NoError(err, "failed to get local chart path")
+	i.Assertions.Require.NoError(err)
 
-	err = i.Actions.Helm().WithReceiver(os.Stdout).Install(ctx, helmutils.InstallOpts{
-		Namespace:       i.Metadata.InstallNamespace,
-		CreateNamespace: true,
-		ValuesFiles:     []string{i.Metadata.ProfileValuesManifestFile, i.Metadata.ValuesManifestFile},
-		ReleaseName:     helmutils.ChartName,
-		ChartUri:        chartUri,
-	})
-	i.Assertions.Require.NoError(err, "failed to install kgateway")
+	err = i.Actions.Helm().Install(
+		ctx,
+		helmutils.InstallOpts{
+			Namespace:       i.Metadata.InstallNamespace,
+			CreateNamespace: true,
+			ValuesFiles:     []string{i.Metadata.ProfileValuesManifestFile, i.Metadata.ValuesManifestFile},
+			ReleaseName:     helmutils.ChartName,
+			ChartUri:        chartUri,
+		})
+	i.Assertions.Require.NoError(err)
 	i.Assertions.EventuallyKgatewayInstallSucceeded(ctx)
 }
 
@@ -170,8 +172,7 @@ func (i *TestInstallation) InstallKgatewayFromLocalChart(ctx context.Context) {
 // }
 
 func (i *TestInstallation) UninstallKgateway(ctx context.Context) {
-	if testutils.ShouldTearDown() {
-		fmt.Println("TEAR_DOWN is set, skipping uninstall")
+	if testutils.ShouldSkipInstall() {
 		return
 	}
 	err := i.Actions.Helm().Uninstall(

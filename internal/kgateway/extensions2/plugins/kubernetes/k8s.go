@@ -64,7 +64,7 @@ func NewPluginFromCollections(
 	}, krtOpts.ToOptions("KubernetesServiceUpstreams")...)
 
 	inputs := krtcollections.NewGlooK8sEndpointInputs(stngs, krtOpts, endpointSlices, pods, k8sServiceUpstreams)
-	k8sServiceEndpoints := krtcollections.NewK8sEndpoints(ctx, inputs)
+	k8sServiceEndpoints := krtcollections.NewGlooK8sEndpoints(ctx, inputs)
 
 	return extensionsplug.Plugin{
 		ContributesBackends: map[schema.GroupKind]extensionsplug.BackendPlugin{
