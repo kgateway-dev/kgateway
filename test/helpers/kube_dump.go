@@ -3,6 +3,7 @@ package helpers
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -11,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/solo-io/go-utils/threadsafe"
 
@@ -184,7 +184,7 @@ func recordPods(podDir, namespace string) error {
 		return err
 	}
 
-	outErr := &multierror.Error{}
+	var errs []error
 
 	for _, pod := range pods {
 		if err := os.MkdirAll(podDir, os.ModePerm); err != nil {
@@ -196,7 +196,7 @@ func recordPods(podDir, namespace string) error {
 		// the error represents the cause of the failure, and should be bubbled up
 		// we will still try to get logs for other pods even if this one returns an error
 		if err != nil {
-			outErr = multierror.Append(outErr, err)
+			errs = append(errs, err)
 		}
 		// write any log output to the standard file
 		if logs != "" {
@@ -213,7 +213,7 @@ func recordPods(podDir, namespace string) error {
 		}
 	}
 
-	return outErr.ErrorOrNil()
+	return errors.Join(errs...)
 }
 
 // recordCRs records all unique CRs floating about to <output-dir>/$namespace/$crd/$cr.yaml

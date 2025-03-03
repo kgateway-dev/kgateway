@@ -53,6 +53,11 @@ func (u *BackendIr) Equals(other any) bool {
 	})
 }
 
+type backendPlugin struct {
+	ir.UnimplementedProxyTranslationPass
+	needFilter map[string]bool
+}
+
 func registerTypes(ourCli versioned.Interface) {
 	kubeclient.Register[*v1alpha1.Backend](
 		v1alpha1.BackendGVK.GroupVersion().WithResource("backends"),

@@ -36,10 +36,17 @@ type httpRouteConfigurationTranslator struct {
 func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context.Context, vhosts []*ir.VirtualHost) *envoy_config_route_v3.RouteConfiguration {
 	ctx = contextutils.WithLogger(ctx, "compute_route_config."+h.routeConfigName)
 	cfg := &envoy_config_route_v3.RouteConfiguration{
-		Name:         h.routeConfigName,
-		VirtualHosts: h.computeVirtualHosts(ctx, vhosts),
+		Name: h.routeConfigName,
 		//		MaxDirectResponseBodySizeBytes: h.parentListener.GetRouteOptions().GetMaxDirectResponseBodySizeBytes(),
 	}
+	for _, pass := range h.PluginPass {
+		if pass == nil {
+			continue
+		}
+		pass.ApplyRouteConfigPlugin(ctx, &ir.RouteConfigContext{}, cfg)
+	}
+	cfg.VirtualHosts = h.computeVirtualHosts(ctx, vhosts)
+
 	// Gateway API spec requires that port values in HTTP Host headers be ignored when performing a match
 	// See https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io/v1.HTTPRouteSpec - hostnames field
 	cfg.IgnorePortInHostMatching = true
@@ -94,20 +101,6 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 
 	// run the http plugins that are attached to the listener or gateway on the virtual host
 	h.runVhostPlugins(ctx, out)
-	for gvk, pols := range h.listener.AttachedPolicies.Policies {
-		pass := h.PluginPass[gvk]
-		if pass == nil {
-			// TODO: should never happen, log error and report condition
-			continue
-		}
-		for _, pol := range pols {
-			pctx := &ir.VirtualHostContext{
-				Policy: pol.PolicyIr,
-			}
-			pass.ApplyVhostPlugin(ctx, pctx, out)
-			// TODO: check return value, if error returned, log error and report condition
-		}
-	}
 
 	return out
 }
