@@ -454,15 +454,54 @@ spec:
                     && has(self.multipool))
               aws:
                 properties:
+                  accountId:
+                    type: string
+                  auth:
+                    properties:
+                      irsa:
+                        properties:
+                          roleARN:
+                            type: string
+                        required:
+                        - roleARN
+                        type: object
+                      secret:
+                        properties:
+                          name:
+                            default: ""
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
+                    type: object
+                    x-kubernetes-validations:
+                    - message: only one auth method can be specified
+                      rule: '!(has(self.irsa) && has(self.secret))'
+                  lambda:
+                    properties:
+                      endpointURL:
+                        maxLength: 2048
+                        minLength: 1
+                        type: string
+                      functionName:
+                        maxLength: 140
+                        minLength: 1
+                        type: string
+                      invocationMode:
+                        enum:
+                        - Sync
+                        - Async
+                        type: string
+                      qualifier:
+                        maxLength: 128
+                        minLength: 1
+                        type: string
+                    required:
+                    - functionName
+                    type: object
                   region:
                     type: string
-                  secretRef:
-                    properties:
-                      name:
-                        default: ""
-                        type: string
-                    type: object
-                    x-kubernetes-map-type: atomic
+                required:
+                - accountId
                 type: object
               static:
                 properties:
@@ -484,6 +523,9 @@ spec:
                       type: object
                     minItems: 1
                     type: array
+                    x-kubernetes-list-map-keys:
+                    - host
+                    x-kubernetes-list-type: map
                 type: object
               type:
                 enum:

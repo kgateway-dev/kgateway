@@ -74,6 +74,12 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: routeType
       type:
         scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AWSAuthIRSA
+  map:
+    fields:
+    - name: roleARN
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AccessLog
   map:
     fields:
@@ -177,16 +183,47 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: model
       type:
         scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsAuth
+  map:
+    fields:
+    - name: irsa
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AWSAuthIRSA
+    - name: secret
+      type:
+        namedType: io.k8s.api.core.v1.LocalObjectReference
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsBackend
   map:
     fields:
+    - name: accountId
+      type:
+        scalar: string
+      default: ""
+    - name: auth
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsAuth
+    - name: lambda
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsLambda
     - name: region
       type:
         scalar: string
-    - name: secretRef
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsLambda
+  map:
+    fields:
+    - name: endpointURL
       type:
-        namedType: io.k8s.api.core.v1.LocalObjectReference
-      default: {}
+        scalar: string
+    - name: functionName
+      type:
+        scalar: string
+      default: ""
+    - name: invocationMode
+      type:
+        scalar: string
+    - name: qualifier
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AzureOpenAIConfig
   map:
     fields:
@@ -1047,7 +1084,9 @@ var schemaYAML = typed.YAMLObject(`types:
         list:
           elementType:
             namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Host
-          elementRelationship: atomic
+          elementRelationship: associative
+          keys:
+          - host
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.StatsConfig
   map:
     fields:

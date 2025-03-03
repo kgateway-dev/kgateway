@@ -61,29 +61,102 @@ type BackendSpec struct {
 
 // AwsBackend is the AWS backend configuration.
 type AwsBackend struct {
-	// Region is the AWS region.
+	// AccountId is the AWS account ID to use for the upstream.
+	// +kubebuilder:validation:Required
+	AccountId string `json:"accountId"`
+	// Auth specifies the authentication method to use for the upstream.
 	// +optional
-	Region string `json:"region,omitempty"`
-	// SecretRef is the secret reference for the AWS credentials.
+	Auth *AwsAuth `json:"auth,omitempty"`
+	// Lambda configures the AWS lambda service.
 	// +optional
-	SecretRef corev1.LocalObjectReference `json:"secretRef,omitempty"`
+	Lambda *AwsLambda `json:"lambda,omitempty"`
+	// Region is the AWS region to use for the upstream.
+	// Defaults to us-east-1 if not specified.
+	// +optional
+	Region *string `json:"region,omitempty"`
 }
 
-// StaticBackend is the static backend configuration.
-type StaticBackend struct {
-	// Hosts is the list of hosts.
+// AwsAuthType is the type of authentication to use for the upstream.
+type AwsAuthType string
+
+const (
+	// AwsAuthTypeInstanceMetadata is the instance metadata authentication type.
+	AwsAuthTypeInstanceMetadata AwsAuthType = "default"
+	// AwsAuthTypeIRSA is the IRSA authentication type.
+	AwsAuthTypeIRSA AwsAuthType = "irsa"
+	// AwsAuthTypeSecret is the secret authentication type.
+	AwsAuthTypeSecret AwsAuthType = "secret"
+)
+
+// AwsAuth defines the authentication method to use for the backend.
+// +kubebuilder:validation:XValidation:message="only one auth method can be specified",rule="!(has(self.irsa) && has(self.secret))"
+type AwsAuth struct {
+	// IRSA is the IRSA authentication configuration.
 	// +optional
+	IRSA *AWSAuthIRSA `json:"irsa,omitempty"`
+	// Secret is a reference to a secret containing AWS credentials.
+	// +optional
+	Secret *corev1.LocalObjectReference `json:"secret,omitempty"`
+}
+
+// AWSAuthIRSA defines the IRSA configuration for the upstream.
+type AWSAuthIRSA struct {
+	// RoleARN is the AWS IAM role to assume when using IRSA.
+	// Used for IAM-based authentication.
+	// +kubebuilder:validation:Required
+	RoleARN string `json:"roleARN,omitempty"`
+}
+
+const (
+	// AwsLambdaInvocationModeSynchronous is the synchronous invocation mode for the lambda function.
+	AwsLambdaInvocationModeSynchronous = "Sync"
+	// AwsLambdaInvocationModeAsynchronous is the asynchronous invocation mode for the lambda function.
+	AwsLambdaInvocationModeAsynchronous = "Async"
+)
+
+// AwsLambda configures the AWS lambda service.
+type AwsLambda struct {
+	// EndpointURL is the URL to use for the upstream host.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=2048
+	EndpointURL string `json:"endpointURL,omitempty"`
+	// FunctionName is the name of the lambda function to invoke.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=140
+	FunctionName string `json:"functionName"`
+	// InvocationMode defines how to invoke the lambda function.
+	// Defaults to SYNCHRONOUS if not specified.
+	// +optional
+	// +kubebuilder:validation:Enum=Sync;Async
+	InvocationMode string `json:"invocationMode,omitempty"`
+	// Qualifier is the qualifier of the lambda function to invoke.
+	// When unspecified, the $LATEST version of the function is used.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=128
+	Qualifier string `json:"qualifier,omitempty"`
+}
+
+// StaticBackend is an upstream that references a static list of hosts.
+type StaticBackend struct {
+	// Hosts is a list of hosts to use for the upstream.
+	// +kubebuilder:validation:required
 	// +kubebuilder:validation:MinItems=1
+	// +listType=map
+	// +listMapKey=host
 	Hosts []Host `json:"hosts,omitempty"`
 }
 
-// Host is a host and port pair.
+// Host defines a static upstream host.
 type Host struct {
-	// Host is the host name.
+	// Host is the host to use for the upstream.
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=253
 	Host string `json:"host"`
-	// Port is the port number.
+	// Port is the port to use for the upstream.
+	// +kubebuilder:validation:Required
 	Port gwv1.PortNumber `json:"port"`
 }
 
