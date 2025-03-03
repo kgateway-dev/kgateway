@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"unicode/utf8"
 
-	"github.com/aws/aws-sdk-go/aws/arn"
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -27,6 +26,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	translatorutils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/arnutils"
 )
 
 const (
@@ -147,7 +147,7 @@ func buildLambdaARN(in *v1alpha1.AwsBackend, region string) (string, error) {
 	}
 	// TODO(tim): url.QueryEscape(...)?
 	arnStr := fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s:%s", region, in.AccountId, in.Lambda.FunctionName, qualifier)
-	parsedARN, err := arn.Parse(arnStr)
+	parsedARN, err := arnutils.Parse(arnStr)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse lambda arn: %v", err)
 	}

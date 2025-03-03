@@ -4,7 +4,6 @@ Name|Version|License
 [ahmetb/gen-crd-api-reference-docs](https://github.com/ahmetb/gen-crd-api-reference-docs)|v0.3.1-0.20240214155107-6cf1ede4da61|Apache License 2.0
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
 [retry-go/v4](https://github.com/avast/retry-go)|v4.3.3|MIT License
-[aws/aws-sdk-go](https://github.com/aws/aws-sdk-go)|v1.55.6|Apache License 2.0
 [xds/go](https://github.com/cncf/xds)|v0.0.0-20250121191232-2f005788dc42|Apache License 2.0
 [envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.13.5-0.20250123154839-2a6715911fec|Apache License 2.0
 [go-control-plane/contrib](https://github.com/envoyproxy/go-control-plane)|v1.32.5-0.20250207140015-90270e3c85fd|Apache License 2.0
