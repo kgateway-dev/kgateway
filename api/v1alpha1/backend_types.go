@@ -88,6 +88,7 @@ const (
 )
 
 // AwsAuth defines the authentication method to use for the backend.
+// +kubebuilder:validation:XValidation:message="only one auth method can be specified",rule="!(has(self.irsa) && has(self.secret))"
 type AwsAuth struct {
 	// IRSA is the IRSA authentication configuration.
 	// +optional

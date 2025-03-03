@@ -170,9 +170,9 @@ func recordKubeDump(outDir string, namespaces ...string) {
 			fmt.Printf("error recording pod logs: %f, \n", err)
 		}
 
-		// ...and a subdirectory for each solo.io CRD with non-zero resources
+		// ...and a subdirectory for each CRD with non-zero resources
 		if err := recordCRs(filepath.Join(outDir, ns), ns); err != nil {
-			fmt.Printf("error recording pod logs: %f, \n", err)
+			fmt.Printf("error recording CRs: %f, \n", err)
 		}
 	}
 }

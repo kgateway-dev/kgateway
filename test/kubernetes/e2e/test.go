@@ -151,16 +151,14 @@ func (i *TestInstallation) InstallKgatewayFromLocalChart(ctx context.Context) {
 	chartUri, err := helper.GetLocalChartPath(helmutils.ChartName)
 	i.Assertions.Require.NoError(err, "failed to get local chart path")
 
-	err = i.Actions.Helm().Install(
-		ctx,
-		helmutils.InstallOpts{
-			Namespace:       i.Metadata.InstallNamespace,
-			CreateNamespace: true,
-			ValuesFiles:     []string{i.Metadata.ProfileValuesManifestFile, i.Metadata.ValuesManifestFile},
-			ReleaseName:     helmutils.ChartName,
-			ChartUri:        chartUri,
-		})
-	i.Assertions.Require.NoError(err)
+	err = i.Actions.Helm().WithReceiver(os.Stdout).Install(ctx, helmutils.InstallOpts{
+		Namespace:       i.Metadata.InstallNamespace,
+		CreateNamespace: true,
+		ValuesFiles:     []string{i.Metadata.ProfileValuesManifestFile, i.Metadata.ValuesManifestFile},
+		ReleaseName:     helmutils.ChartName,
+		ChartUri:        chartUri,
+	})
+	i.Assertions.Require.NoError(err, "failed to install kgateway")
 	i.Assertions.EventuallyKgatewayInstallSucceeded(ctx)
 }
 

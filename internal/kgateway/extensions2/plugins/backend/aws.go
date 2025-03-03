@@ -48,10 +48,6 @@ const (
 	defaultAWSRegion = "us-east-1"
 )
 
-// TODO(tim): Manually test this with real AWS credentials.
-// TODO(tim): Need implement / test qualifier logic as well.
-// TODO(tim): Validate that in.Lambda.EndpointURL is a valid URL?
-
 // processAws processes an AWS backend and returns an envoy cluster.
 func processAws(ctx context.Context, in *v1alpha1.AwsBackend, ir *BackendIr, out *envoy_config_cluster_v3.Cluster) error {
 	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
@@ -76,7 +72,7 @@ func processAws(ctx context.Context, in *v1alpha1.AwsBackend, ir *BackendIr, out
 	return nil
 }
 
-// endpointConfig holds the configuration for the Lambda endpoint
+// endpointConfig is a helper struct to store the endpoint configuration for the Lambda backend.
 type endpointConfig struct {
 	hostname string
 	port     uint32
@@ -90,20 +86,25 @@ func configureEndpoint(in *v1alpha1.AwsBackend) (*endpointConfig, error) {
 		port:     443,
 		useTLS:   true,
 	}
-	if in.Lambda.EndpointURL != "" {
-		parsedURL, err := url.Parse(in.Lambda.EndpointURL)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse endpoint URL: %v", err)
-		}
-		config.useTLS = parsedURL.Scheme == "https"
-		if !config.useTLS {
-			config.port = 80
-		}
-		config.hostname = parsedURL.Hostname()
-		if parsedURL.Port() != "" {
-			if p, err := strconv.ParseUint(parsedURL.Port(), 10, 32); err == nil {
-				config.port = uint32(p)
-			}
+	if in.Lambda.EndpointURL == "" {
+		// no custom endpoint specified, use the default lambda hostname.
+		return config, nil
+	}
+
+	// TODO(tim): Bubble up error to Backend status once https://github.com/kgateway-dev/kgateway/issues/10555
+	// is resolved and add test cases for invalid endpoint URLs.
+	parsedURL, err := url.Parse(in.Lambda.EndpointURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse endpoint URL: %v", err)
+	}
+	config.useTLS = parsedURL.Scheme == "https"
+	if !config.useTLS {
+		config.port = 80
+	}
+	config.hostname = parsedURL.Hostname()
+	if parsedURL.Port() != "" {
+		if p, err := strconv.ParseUint(parsedURL.Port(), 10, 32); err == nil {
+			config.port = uint32(p)
 		}
 	}
 
@@ -136,10 +137,16 @@ func getLambdaInvocationMode(in *v1alpha1.AwsBackend) envoy_lambda_v3.Config_Inv
 	return invokeMode
 }
 
-// buildLambdaARN attempts to build a lambda arn from the given backend. If an invalid
-// arn is specified, an error is returned.
+// buildLambdaARN attempts to build a fully qualified lambda arn from the given backend configuration.
+// If the qualifier is not specified, the $LATEST qualifier is used. An error is returned if the arn
+// is not a valid lambda arn.
 func buildLambdaARN(in *v1alpha1.AwsBackend, region string) (string, error) {
-	arnStr := fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s", region, in.AccountId, in.Lambda.FunctionName)
+	qualifier := "$LATEST"
+	if in.Lambda.Qualifier != "" {
+		qualifier = in.Lambda.Qualifier
+	}
+	// TODO(tim): url.QueryEscape(...)?
+	arnStr := fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s:%s", region, in.AccountId, in.Lambda.FunctionName, qualifier)
 	parsedARN, err := arn.Parse(arnStr)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse lambda arn: %v", err)

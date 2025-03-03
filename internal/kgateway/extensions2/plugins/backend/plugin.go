@@ -77,7 +77,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	bcol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.BackendObjectIR {
 		objIR, err := translateFn(krtctx, i)
 		if err != nil {
-			contextutils.LoggerFrom(ctx).Error("failed to translate backend", "error", err)
+			contextutils.LoggerFrom(ctx).Errorf("failed to translate backend %s/%s: %v", i.GetNamespace(), i.GetName(), err)
 			return nil
 		}
 
@@ -116,19 +116,17 @@ func buildTranslateFunc(secrets *krtcollections.SecretIndex) func(krtctx krt.Han
 			// we only need to build an IR for AWS backends.
 			return nil, nil
 		}
-		var ir BackendIr
 		if i.Spec.Aws.Auth == nil {
 			// if auth is not specified, we use instance metadata.
 			return nil, nil
 		}
+		var ir BackendIr
 		if i.Spec.Aws.Auth.Secret != nil {
+			ns := i.GetNamespace()
 			secretRef := gwv1.SecretObjectReference{
 				Name: gwv1.ObjectName(i.Spec.Aws.Auth.Secret.Name),
 			}
-			secret, err := secrets.GetSecret(krtctx, krtcollections.From{
-				GroupKind: v1alpha1.BackendGVK.GroupKind(),
-				Namespace: i.GetNamespace(),
-			}, secretRef)
+			secret, err := secrets.GetSecret(krtctx, krtcollections.From{GroupKind: v1alpha1.BackendGVK.GroupKind(), Namespace: ns}, secretRef)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get secret: %v", err)
 			}

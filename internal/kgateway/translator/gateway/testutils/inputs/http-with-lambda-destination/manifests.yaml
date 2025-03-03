@@ -37,7 +37,6 @@ spec:
     region: us-east-1
     accountId: 123456789012
     auth:
-      type: irsa
       irsa:
         roleArn: arn:aws:iam::123456789012:role/lambda-role
     lambda:

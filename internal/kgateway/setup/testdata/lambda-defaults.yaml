@@ -35,16 +35,6 @@ spec:
           kind: Backend
           group: gateway.kgateway.dev
 ---
-apiVersion: v1
-kind: Secret
-metadata:
-  name: aws-creds
-  namespace: gwtest
-type: Opaque
-data:
-  accessKey: QUtJQUlPU0ZPRE5ON0VYQU1QTEU= # Base64 encoded "AKIAIOSFODNN7EXAMPLE"
-  secretKey: d0phbHJYVXRuRkVNSS9LN01ERU5HL2JQeFJmaUNZRVhBTVBMRUtFWQ== # Base64 encoded "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
----
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
 metadata:
@@ -54,9 +44,5 @@ spec:
   type: aws
   aws:
     accountId: "000000000000"
-    auth:
-      type: secret
-      secret:
-        name: aws-creds
     lambda:
       functionName: my-lambda-function

@@ -473,6 +473,9 @@ spec:
                         - name
                         type: object
                     type: object
+                    x-kubernetes-validations:
+                    - message: only one auth method can be specified
+                      rule: '!(has(self.irsa) && has(self.secret))'
                   lambda:
                     properties:
                       endpointURL:

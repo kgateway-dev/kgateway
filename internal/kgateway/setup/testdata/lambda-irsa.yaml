@@ -45,7 +45,6 @@ spec:
   aws:
     accountId: "000000000000"
     auth:
-      type: irsa
       irsa:
         roleARN: arn:aws:iam::000000000000:role/my-lambda-role
     lambda:
