@@ -91,7 +91,6 @@ func TestParseARN(t *testing.T) {
 }
 
 func TestIsARN(t *testing.T) {
-
 	cases := map[string]struct {
 		In     string
 		Expect bool
