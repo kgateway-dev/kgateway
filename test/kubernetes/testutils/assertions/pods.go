@@ -14,7 +14,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 )
 
-// container is ready
+// EventuallyPodReady asserts that all containers in the pod are reporting a ready status.
 func (p *Provider) EventuallyPodReady(
 	ctx context.Context,
 	podNamespace string,
