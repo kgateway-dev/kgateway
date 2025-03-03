@@ -88,7 +88,6 @@ type ProxyTranslationPass interface {
 	// if a plugin emits new filters, they must be with a plugin unique name.
 	// any filter returned from route config must be disabled, so it doesnt impact other routes.
 	HttpFilters(ctx context.Context, fc FilterChainCommon) ([]plugins.StagedHttpFilter, error)
-	UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error)
 
 	NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error)
 	// called 1 time (per envoy proxy). replaces GeneratedResources
@@ -116,9 +115,6 @@ func (s UnimplementedProxyTranslationPass) ApplyForRouteBackend(ctx context.Cont
 	return nil
 }
 func (s UnimplementedProxyTranslationPass) HttpFilters(ctx context.Context, fc FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
-	return nil, nil
-}
-func (s UnimplementedProxyTranslationPass) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {
 	return nil, nil
 }
 func (s UnimplementedProxyTranslationPass) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {

@@ -8,7 +8,6 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	routerv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
-	codecv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/upstream_codec/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -305,8 +304,6 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(ctx context.Context, l i
 	// as the terminal filter in kgateway.
 	routerV3 := routerv3.Router{}
 
-	h.computeUpstreamHTTPFilters(ctx, l, &routerV3)
-
 	//	// TODO it would be ideal of SuppressEnvoyHeaders and DynamicStats could be moved out of here set
 	//	// in a separate router plugin
 	//	if h.listener.GetOptions().GetRouter().GetSuppressEnvoyHeaders().GetValue() {
@@ -333,62 +330,6 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(ctx context.Context, l i
 	envoyHttpFilters = append(envoyHttpFilters, newStagedFilter.Filter)
 
 	return envoyHttpFilters
-}
-
-func (h *hcmNetworkFilterTranslator) computeUpstreamHTTPFilters(ctx context.Context, l ir.HttpFilterChainIR, routerV3 *routerv3.Router) {
-	upstreamHttpFilters := plugins.StagedUpstreamHttpFilterList{}
-	log := contextutils.LoggerFrom(ctx).Desugar()
-	for _, plug := range h.PluginPass {
-		stagedFilters, err := plug.UpstreamHttpFilters(ctx)
-		if err != nil {
-			// what to do with errors here? ignore the listener??
-			h.reporter.SetCondition(reports.ListenerCondition{
-				Type:    gwv1.ListenerConditionProgrammed,
-				Reason:  gwv1.ListenerReasonInvalid,
-				Status:  metav1.ConditionFalse,
-				Message: "Error processing upstream http plugin: " + err.Error(),
-			})
-			// TODO: return false?
-		}
-		for _, httpFilter := range stagedFilters {
-			if httpFilter.Filter == nil {
-				log.Warn("HttpFilters() returned nil", zap.String("name", plug.Name))
-				continue
-			}
-			upstreamHttpFilters = append(upstreamHttpFilters, httpFilter)
-		}
-	}
-
-	if len(upstreamHttpFilters) == 0 {
-		return
-	}
-
-	sort.Sort(upstreamHttpFilters)
-
-	sortedFilters := make([]*envoyhttp.HttpFilter, len(upstreamHttpFilters))
-	for i, filter := range upstreamHttpFilters {
-		sortedFilters[i] = filter.Filter
-	}
-
-	msg, err := anypb.New(&codecv3.UpstreamCodec{})
-	if err != nil {
-		// what to do with errors here? ignore the listener??
-		h.reporter.SetCondition(reports.ListenerCondition{
-			Type:    gwv1.ListenerConditionProgrammed,
-			Reason:  gwv1.ListenerReasonInvalid,
-			Status:  metav1.ConditionFalse,
-			Message: "failed to convert proto message to any: " + err.Error(),
-		})
-		return
-	}
-
-	routerV3.UpstreamHttpFilters = sortedFilters
-	routerV3.UpstreamHttpFilters = append(routerV3.GetUpstreamHttpFilters(), &envoyhttp.HttpFilter{
-		Name: UpstreamCodeFilterName,
-		ConfigType: &envoyhttp.HttpFilter_TypedConfig{
-			TypedConfig: msg,
-		},
-	})
 }
 
 func sortHttpFilters(filters plugins.StagedHttpFilterList) []*envoyhttp.HttpFilter {
