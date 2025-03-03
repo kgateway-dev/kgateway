@@ -45,17 +45,10 @@ func (d *builtinPlugin) Equals(in any) bool {
 	// we don't really need equality check here, because this policy is embedded in the httproute,
 	// and we have generation based equality checks for that already.
 	return true
-	// d2, ok := in.(*builtinPlugin)
-	//
-	//	if !ok {
-	//		return false
-	//	}
-	//
-	// // TODO: implement equality check
-	// return d.spec == d2.spec
 }
 
 type builtinPluginGwPass struct {
+	ir.UnimplementedProxyTranslationPass
 }
 
 func (p *builtinPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {

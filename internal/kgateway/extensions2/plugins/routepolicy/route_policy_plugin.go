@@ -39,6 +39,7 @@ func (d *routePolicy) Equals(in any) bool {
 }
 
 type routePolicyPluginGwPass struct {
+	ir.UnimplementedProxyTranslationPass
 }
 
 func (p *routePolicyPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {
