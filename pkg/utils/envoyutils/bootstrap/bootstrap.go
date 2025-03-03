@@ -53,7 +53,7 @@ func FromEnvoyResources(resources *EnvoyResources) (string, error) {
 // per-filter config matching the arguments, marshals it to json, and returns
 // the stringified json or any error if it occurred.
 func FromFilter(filterName string, msg proto.Message) (string, error) {
-	typedFilter, err := anypb.New(msg)
+	typedFilter, err := utils.MessageToAny(msg)
 	if err != nil {
 		return "", err
 	}
@@ -83,7 +83,7 @@ func FromFilter(filterName string, msg proto.Message) (string, error) {
 		},
 	}
 
-	hcmAny, err := anypb.New(hcm)
+	hcmAny, err := utils.MessageToAny(hcm)
 	if err != nil {
 		return "", err
 	}
@@ -324,7 +324,7 @@ func setStaticRouteConfig(
 		RouteConfig: r,
 	}
 
-	hcmAny, err := anypb.New(hcm)
+	hcmAny, err := utils.MessageToAny(hcm)
 	if err != nil {
 		return err
 	}

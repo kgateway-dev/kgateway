@@ -12,11 +12,11 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	awspb "github.com/solo-io/envoy-gloo/go/config/filter/http/aws_lambda/v2"
-	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
 const (
@@ -54,7 +54,7 @@ func processAws(ctx context.Context, in *v1alpha1.AwsBackend, ir *BackendIr, out
 		// TODO(yuval-k): Add verification context
 		Sni: lambdaHostname,
 	}
-	typedConfig, err := anypb.New(tlsContext)
+	typedConfig, err := utils.MessageToAny(tlsContext)
 	if err != nil {
 		// return err
 		return
@@ -127,7 +127,7 @@ func (p *backendPlugin) processBackendAws(
 		//UnwrapAsAlb:       destination.GetUnwrapAsAlb(),
 		//TransformerConfig: transformerConfig,
 	}
-	lambdaRouteFuncAny, err := anypb.New(lambdaRouteFunc)
+	lambdaRouteFuncAny, err := utils.MessageToAny(lambdaRouteFunc)
 	if err != nil {
 		return err
 	}
