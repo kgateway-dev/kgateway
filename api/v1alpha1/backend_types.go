@@ -65,6 +65,7 @@ type AwsBackend struct {
 	// +kubebuilder:validation:Required
 	AccountId string `json:"accountId"`
 	// Auth specifies the authentication method to use for the upstream.
+	// When unspecified, the default authentication method will be used.
 	// +optional
 	Auth *AwsAuth `json:"auth,omitempty"`
 	// Lambda configures the AWS lambda service.
@@ -75,18 +76,6 @@ type AwsBackend struct {
 	// +optional
 	Region *string `json:"region,omitempty"`
 }
-
-// AwsAuthType is the type of authentication to use for the upstream.
-type AwsAuthType string
-
-const (
-	// AwsAuthTypeInstanceMetadata is the instance metadata authentication type.
-	AwsAuthTypeInstanceMetadata AwsAuthType = "default"
-	// AwsAuthTypeIRSA is the IRSA authentication type.
-	AwsAuthTypeIRSA AwsAuthType = "irsa"
-	// AwsAuthTypeSecret is the secret authentication type.
-	AwsAuthTypeSecret AwsAuthType = "secret"
-)
 
 // AwsAuth defines the authentication method to use for the backend.
 // +kubebuilder:validation:XValidation:message="only one auth method can be specified",rule="!(has(self.irsa) && has(self.secret))"

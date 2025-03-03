@@ -917,7 +917,7 @@ func schema_kgateway_v2_api_v1alpha1_AwsBackend(ref common.ReferenceCallback) co
 					},
 					"auth": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Auth specifies the authentication method to use for the upstream.",
+							Description: "Auth specifies the authentication method to use for the upstream. When unspecified, the default authentication method will be used.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsAuth"),
 						},
 					},
