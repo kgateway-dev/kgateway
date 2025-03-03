@@ -39,6 +39,7 @@ func (d *listenerPolicy) Equals(in any) bool {
 }
 
 type listenerPolicyPluginGwPass struct {
+	ir.UnimplementedProxyTranslationPass
 }
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionplug.Plugin {

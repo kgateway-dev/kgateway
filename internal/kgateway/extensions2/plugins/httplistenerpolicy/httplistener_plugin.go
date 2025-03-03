@@ -56,6 +56,7 @@ func (d *httpListenerPolicy) Equals(in any) bool {
 }
 
 type httpListenerPolicyPluginGwPass struct {
+	ir.UnimplementedProxyTranslationPass
 }
 
 func (p *httpListenerPolicyPluginGwPass) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *envoy_config_listener_v3.Listener) {

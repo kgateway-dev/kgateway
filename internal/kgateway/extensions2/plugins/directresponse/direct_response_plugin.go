@@ -46,6 +46,7 @@ func (d *directResponse) Equals(in any) bool {
 }
 
 type directResponsePluginGwPass struct {
+	ir.UnimplementedProxyTranslationPass
 }
 
 func (p *directResponsePluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {

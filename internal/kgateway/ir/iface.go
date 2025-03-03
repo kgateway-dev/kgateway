@@ -18,6 +18,12 @@ import (
 type ListenerContext struct {
 	Policy PolicyIR
 }
+
+type RouteConfigContext struct {
+	// No policy here, as you can't attach policies to route configs.
+	// we will call every policy with this to set defaults.
+}
+
 type VirtualHostContext struct {
 	Policy PolicyIR
 }
@@ -57,6 +63,12 @@ type ProxyTranslationPass interface {
 		pCtx *HcmContext,
 		out *envoy_hcm.HttpConnectionManager) error
 
+	// called 1 time for all the routes in a filter chain.
+	ApplyRouteConfigPlugin(
+		ctx context.Context,
+		pCtx *RouteConfigContext,
+		out *envoy_config_route_v3.RouteConfiguration,
+	)
 	ApplyVhostPlugin(
 		ctx context.Context,
 		pCtx *VirtualHostContext,
@@ -81,6 +93,39 @@ type ProxyTranslationPass interface {
 	NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error)
 	// called 1 time (per envoy proxy). replaces GeneratedResources
 	ResourcesToAdd(ctx context.Context) Resources
+}
+
+type UnimplementedProxyTranslationPass struct{}
+
+var _ ProxyTranslationPass = UnimplementedProxyTranslationPass{}
+
+func (s UnimplementedProxyTranslationPass) ApplyListenerPlugin(ctx context.Context, pCtx *ListenerContext, out *envoy_config_listener_v3.Listener) {
+}
+func (s UnimplementedProxyTranslationPass) ApplyHCM(ctx context.Context, pCtx *HcmContext, out *envoy_hcm.HttpConnectionManager) error {
+	return nil
+}
+func (s UnimplementedProxyTranslationPass) ApplyRouteConfigPlugin(ctx context.Context, pCtx *RouteConfigContext, out *envoy_config_route_v3.RouteConfiguration) {
+}
+
+func (s UnimplementedProxyTranslationPass) ApplyVhostPlugin(ctx context.Context, pCtx *VirtualHostContext, out *envoy_config_route_v3.VirtualHost) {
+}
+func (s UnimplementedProxyTranslationPass) ApplyForRoute(ctx context.Context, pCtx *RouteContext, out *envoy_config_route_v3.Route) error {
+	return nil
+}
+func (s UnimplementedProxyTranslationPass) ApplyForRouteBackend(ctx context.Context, policy PolicyIR, pCtx *RouteBackendContext) error {
+	return nil
+}
+func (s UnimplementedProxyTranslationPass) HttpFilters(ctx context.Context, fc FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
+	return nil, nil
+}
+func (s UnimplementedProxyTranslationPass) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {
+	return nil, nil
+}
+func (s UnimplementedProxyTranslationPass) NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error) {
+	return nil, nil
+}
+func (s UnimplementedProxyTranslationPass) ResourcesToAdd(ctx context.Context) Resources {
+	return Resources{}
 }
 
 type Resources struct {
