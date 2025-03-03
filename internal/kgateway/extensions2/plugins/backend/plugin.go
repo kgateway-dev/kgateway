@@ -155,12 +155,15 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 func buildTranslateFunc(secrets *krtcollections.SecretIndex) func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *BackendIr {
 	return func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *BackendIr {
-		// resolve secrets
 		var ir BackendIr
-		if i.Spec.Aws != nil {
+		if i.Spec.Type != v1alpha1.BackendTypeAWS {
+			// no IR needed for non-AWS backends.
+			return &ir
+		}
+		if i.Spec.Aws.Auth != nil && i.Spec.Aws.Auth.Secret != nil {
 			ns := i.GetNamespace()
 			secretRef := gwv1.SecretObjectReference{
-				Name: gwv1.ObjectName(i.Spec.Aws.SecretRef.Name),
+				Name: gwv1.ObjectName(i.Spec.Aws.Auth.Secret.Name),
 			}
 			secret, _ := secrets.GetSecret(krtctx, krtcollections.From{GroupKind: v1alpha1.BackendGVK.GroupKind(), Namespace: ns}, secretRef)
 			if secret != nil {

@@ -20,9 +20,10 @@ import (
 )
 
 const (
-	AccessKey    = "accessKey"
-	SessionToken = "sessionToken"
-	SecretKey    = "secretKey"
+	AccessKey        = "accessKey"
+	SessionToken     = "sessionToken"
+	SecretKey        = "secretKey"
+	defaultAWSRegion = "us-east-1"
 )
 
 func processAws(ctx context.Context, in *v1alpha1.AwsBackend, ir *BackendIr, out *envoy_config_cluster_v3.Cluster) {
@@ -78,9 +79,14 @@ func processAws(ctx context.Context, in *v1alpha1.AwsBackend, ir *BackendIr, out
 		}
 	}
 
+	region := defaultAWSRegion
+	if in.Region != nil {
+		region = *in.Region
+	}
+
 	lpe := &awspb.AWSLambdaProtocolExtension{
 		Host:         lambdaHostname,
-		Region:       in.Region,
+		Region:       region,
 		AccessKey:    derivedSecret.access,
 		SecretKey:    derivedSecret.secret,
 		SessionToken: derivedSecret.session,
