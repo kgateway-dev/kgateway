@@ -97,6 +97,11 @@ clusters:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
   type: EDS
+  typedExtensionProtocolOptions:
+    envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+      '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+      explicitHttpConfig:
+        http2ProtocolOptions: {}
 - connectTimeout: 5s
   edsClusterConfig:
     edsConfig:

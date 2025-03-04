@@ -7,6 +7,9 @@ import (
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"istio.io/istio/pkg/kube/krt"
 
@@ -14,6 +17,7 @@ import (
 
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
 
 var (
@@ -78,6 +82,36 @@ func (t *BackendTranslator) runPlugins(
 	}
 }
 
+var (
+	h2Options = func() *anypb.Any {
+		http2ProtocolOptions := &envoy_upstreams_v3.HttpProtocolOptions{
+			UpstreamProtocolOptions: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+				ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
+					ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
+						Http2ProtocolOptions: &envoy_config_core_v3.Http2ProtocolOptions{},
+					},
+				},
+			},
+		}
+
+		a, err := utils.MessageToAny(http2ProtocolOptions)
+		if err != nil {
+			// should never happen - all values are known ahead of time.
+			panic(err)
+		}
+		return a
+	}()
+)
+
+func translateAppProtocol(appProtocol ir.AppProtocol) map[string]*anypb.Any {
+	typedExtensionProtocolOptions := map[string]*anypb.Any{}
+	switch appProtocol {
+	case ir.HTTP2AppProtocol:
+		typedExtensionProtocolOptions["envoy.extensions.upstreams.http.v3.HttpProtocolOptions"] = proto.Clone(h2Options).(*anypb.Any)
+	}
+	return typedExtensionProtocolOptions
+}
+
 // initializeCluster creates a default envoy cluster with minimal configuration,
 // that will then be augmented by various backend plugins
 func initializeCluster(u ir.BackendObjectIR) *envoy_config_cluster_v3.Cluster {
@@ -92,7 +126,9 @@ func initializeCluster(u ir.BackendObjectIR) *envoy_config_cluster_v3.Cluster {
 		// defaults to Cluster_USE_CONFIGURED_PROTOCOL
 		// ProtocolSelection: envoy_config_cluster_v3.Cluster_ClusterProtocolSelection(upstream.GetProtocolSelection()),
 		// this field can be overridden by plugins
-		ConnectTimeout: durationpb.New(ClusterConnectionTimeout),
+		ConnectTimeout:                durationpb.New(ClusterConnectionTimeout),
+		TypedExtensionProtocolOptions: translateAppProtocol(u.AppProtocol),
+
 		// Http2ProtocolOptions:      getHttp2options(upstream),
 		// IgnoreHealthOnHostRemoval: upstream.GetIgnoreHealthOnHostRemoval().GetValue(),
 		//	RespectDnsTtl:             upstream.GetRespectDnsTtl().GetValue(),

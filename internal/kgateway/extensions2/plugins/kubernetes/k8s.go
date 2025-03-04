@@ -57,6 +57,7 @@ func NewPluginFromCollections(
 				},
 				Obj:               svc,
 				Port:              port.Port,
+				AppProtocol:       translateAppProtocol(port.AppProtocol),
 				GvPrefix:          "kube",
 				CanonicalHostname: fmt.Sprintf("%s.%s.svc.%s", svc.Name, svc.Namespace, clusterDomain),
 			})
@@ -77,6 +78,18 @@ func NewPluginFromCollections(
 				Backends:  k8sServiceBackends,
 			},
 		},
+	}
+}
+
+func translateAppProtocol(appProtocol *string) ir.AppProtocol {
+	if appProtocol == nil {
+		return ir.DefaultAppProtocol
+	}
+	switch *appProtocol {
+	case "kubernetes.io/h2c":
+		return ir.HTTP2AppProtocol
+	default:
+		return ir.DefaultAppProtocol
 	}
 }
 
