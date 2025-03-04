@@ -65,6 +65,7 @@ type AwsBackend struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=12
+	// +kubebuilder:validation:Pattern="^[0-9]{12}$"
 	AccountId string `json:"accountId"`
 	// Auth specifies the authentication method to use for the backend.
 	// When unspecified, the default authentication method will be used.
@@ -83,6 +84,7 @@ type AwsBackend struct {
 	// +kubebuilder:default=us-east-1
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=63
+	// +kubebuilder:validation:Pattern="^[a-z0-9-]+$"
 	Region *string `json:"region,omitempty"`
 }
 
@@ -138,30 +140,29 @@ const (
 
 // AwsLambda configures the AWS lambda service.
 type AwsLambda struct {
-	// EndpointURL is the URL to use for the upstream host.
+	// EndpointURL is the URL or domain for the Lambda service. This is primarily
+	// useful for testing and development purposes. When omitted, the default
+	// lambda hostname will be used.
 	// +optional
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Pattern="^https?://[-a-zA-Z0-9@:%.+~#?&/=]+$"
 	// +kubebuilder:validation:MaxLength=2048
 	EndpointURL string `json:"endpointURL,omitempty"`
-	// FunctionName is the name of the lambda function to invoke.
+	// FunctionName is the name of the Lambda function to invoke.
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength=140
+	// +kubebuilder:validation:Pattern="^[A-Za-z0-9-_]{1,140}$"
 	FunctionName string `json:"functionName"`
-	// InvocationMode defines how to invoke the lambda function.
-	// Defaults to Sync if not specified.
+	// InvocationMode defines how to invoke the Lambda function.
+	// Defaults to Sync.
 	// +optional
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Enum=Sync;Async
 	// +kubebuilder:default=Sync
 	InvocationMode string `json:"invocationMode,omitempty"`
-	// Qualifier is the qualifier of the lambda function to invoke.
-	// When unspecified, the $LATEST version of the function is used.
+	// Qualifier is the alias or version for the Lambda function.
 	// +optional
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength=128
+	// +kubebuilder:validation:Pattern="^[A-Za-z0-9-_]{1,128}$"
 	Qualifier string `json:"qualifier,omitempty"`
 }
 

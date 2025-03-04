@@ -972,14 +972,14 @@ func schema_kgateway_v2_api_v1alpha1_AwsLambda(ref common.ReferenceCallback) com
 				Properties: map[string]spec.Schema{
 					"endpointURL": {
 						SchemaProps: spec.SchemaProps{
-							Description: "EndpointURL is the URL to use for the upstream host.",
+							Description: "EndpointURL is the URL or domain for the Lambda service. This is primarily useful for testing and development purposes. When omitted, the default lambda hostname will be used.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"functionName": {
 						SchemaProps: spec.SchemaProps{
-							Description: "FunctionName is the name of the lambda function to invoke.",
+							Description: "FunctionName is the name of the Lambda function to invoke.",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -987,14 +987,14 @@ func schema_kgateway_v2_api_v1alpha1_AwsLambda(ref common.ReferenceCallback) com
 					},
 					"invocationMode": {
 						SchemaProps: spec.SchemaProps{
-							Description: "InvocationMode defines how to invoke the lambda function. Defaults to Sync if not specified.",
+							Description: "InvocationMode defines how to invoke the Lambda function. Defaults to Sync.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"qualifier": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Qualifier is the qualifier of the lambda function to invoke. When unspecified, the $LATEST version of the function is used.",
+							Description: "Qualifier is the alias or version for the Lambda function.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
