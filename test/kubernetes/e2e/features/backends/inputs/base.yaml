@@ -27,29 +27,6 @@ spec:
           kind: Backend
           group: gateway.kgateway.dev
 ---
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: curl
----
-apiVersion: v1
-kind: Pod
-metadata:
-  name: curl
-  namespace: curl
-  labels:
-    app: curl
-    version: v1
-spec:
-  containers:
-    - name: curl
-      image: curlimages/curl:7.83.1
-      imagePullPolicy: IfNotPresent
-      command:
-        - "tail"
-        - "-f"
-        - "/dev/null"
----
 # create nginx Pod and Service, we will create a static Backend to refer to the nginx Service directly
 apiVersion: v1
 kind: Service

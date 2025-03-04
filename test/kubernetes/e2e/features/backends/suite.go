@@ -23,9 +23,12 @@ import (
 var _ e2e.NewSuiteFunc = NewTestingSuite
 
 var (
-	baseManifest = filepath.Join(fsutils.MustGetThisDir(), "inputs/base.yaml")
-	// separate manifest to allow creation independently of routing config
-	backendManifest = filepath.Join(fsutils.MustGetThisDir(), "inputs/backend.yaml")
+	manifests = []string{
+		filepath.Join(fsutils.MustGetThisDir(), "inputs/base.yaml"),
+		// backend in separate manifest to allow creation independently of routing config
+		filepath.Join(fsutils.MustGetThisDir(), "inputs/backend.yaml"),
+		defaults.CurlPodManifest,
+	}
 
 	proxyObjMeta = metav1.ObjectMeta{
 		Name:      "gw",
@@ -38,7 +41,7 @@ var (
 		Name:      "nginx-static",
 		Namespace: "default",
 	}
-	be = v1alpha1.Backend{
+	be = &v1alpha1.Backend{
 		ObjectMeta: backendMeta,
 	}
 
@@ -63,22 +66,22 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 
 func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
 	s.T().Cleanup(func() {
-		err := s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, baseManifest)
-		s.NoError(err, "can delete manifest")
-		err = s.testInstallation.Actions.Kubectl().DeleteFile(s.ctx, backendManifest)
-		s.NoError(err, "can delete manifest")
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment)
+		for _, manifest := range manifests {
+			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
+			s.Require().NoError(err)
+		}
+		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment, be)
 	})
 
-	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, baseManifest)
-	s.Require().NoError(err, "can apply base manifest")
-
-	// apply the backend manifest separately, after httproute, to assert it can be applied after the route
-	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, backendManifest)
-	s.Require().NoError(err, "can apply Backend manifest")
+	for _, manifest := range manifests {
+		err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, manifest)
+		s.Require().NoError(err)
+	}
 
 	// assert the expected resources are created and running before attempting to send traffic
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment, be)
+	// TODO: make this a specific assertion to remove the need for c/p the label selector
+	// e.g. EventuallyCurlPodRunning(...) etc.
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, defaults.CurlPod.GetNamespace(), metav1.ListOptions{
 		LabelSelector: "app.kubernetes.io/name=curl",
 	})
@@ -101,6 +104,4 @@ func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
 			StatusCode: http.StatusOK,
 			Body:       gomega.ContainSubstring(defaults.NginxResponse),
 		})
-
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, &be)
 }
