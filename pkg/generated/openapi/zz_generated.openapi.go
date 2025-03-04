@@ -21,6 +21,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPromptGuard":              schema_kgateway_v2_api_v1alpha1_AIPromptGuard(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIRoutePolicy":              schema_kgateway_v2_api_v1alpha1_AIRoutePolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AWSAuthIRSA":                schema_kgateway_v2_api_v1alpha1_AWSAuthIRSA(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AWSAuthStatic":              schema_kgateway_v2_api_v1alpha1_AWSAuthStatic(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLog":                  schema_kgateway_v2_api_v1alpha1_AccessLog(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLogFilter":            schema_kgateway_v2_api_v1alpha1_AccessLogFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtension":                schema_kgateway_v2_api_v1alpha1_AiExtension(ref),
@@ -599,19 +600,44 @@ func schema_kgateway_v2_api_v1alpha1_AWSAuthIRSA(ref common.ReferenceCallback) c
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "AWSAuthIRSA defines the IRSA configuration for the upstream.",
+				Description: "AwsIRSAProvider specifies the configuration for using IRSA.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"roleARN": {
 						SchemaProps: spec.SchemaProps{
-							Description: "RoleARN is the AWS IAM role to assume when using IRSA. Used for IAM-based authentication.",
+							Description: "RoleARN is the AWS IAM Role ARN used for pod identity.",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 				},
+				Required: []string{"roleARN"},
 			},
 		},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_AWSAuthStatic(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "AwsStaticCredentialProvider specifies a Secret reference for static AWS credentials.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"secret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Secret references a Kubernetes Secret containing the AWS credentials. The Secret must have keys \"accessKey\", \"secretKey\", and optionally \"sessionToken\".",
+							Default:     map[string]interface{}{},
+							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
+						},
+					},
+				},
+				Required: []string{"secret"},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/api/core/v1.LocalObjectReference"},
 	}
 }
 
@@ -877,29 +903,31 @@ func schema_kgateway_v2_api_v1alpha1_AwsAuth(ref common.ReferenceCallback) commo
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "AwsAuth defines the authentication method to use for the backend.",
+				Description: "AwsAuth specifies the authentication method to use for the backend.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"type": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Type is the type of authentication to use for the backend.",
+							Description: "Type specifies the authentication method to use for the backend.",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
+					"secret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Secret is a reference a secret containing AWS credentials.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AWSAuthStatic"),
+						},
+					},
 					"irsa": {
 						SchemaProps: spec.SchemaProps{
-							Description: "IRSA is the IRSA authentication configuration.",
+							Description: "IRSA specifies the IRSA configuration to use for the backend.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AWSAuthIRSA"),
 						},
 					},
-					"secret": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Secret is a reference to a secret containing AWS credentials.",
-							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
-						},
-					},
 				},
+				Required: []string{"type"},
 			},
 			VendorExtensible: spec.VendorExtensible{
 				Extensions: spec.Extensions{
@@ -916,7 +944,7 @@ func schema_kgateway_v2_api_v1alpha1_AwsAuth(ref common.ReferenceCallback) commo
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AWSAuthIRSA", "k8s.io/api/core/v1.LocalObjectReference"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AWSAuthIRSA", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AWSAuthStatic"},
 	}
 }
 
@@ -937,7 +965,7 @@ func schema_kgateway_v2_api_v1alpha1_AwsBackend(ref common.ReferenceCallback) co
 					},
 					"auth": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Auth specifies the authentication method to use for the backend. If this field is unspecified, the authentication method defaults to `default`, which attempts to source ephemeral credentials from the running environment (e.g. instance metadata, EKS Pod Identity, environment variables, etc.)\n\nSee the Envoy docs for more info: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_request_signing_filter#credentials",
+							Description: "Auth specifies the authentication method to use for the backend. If this field is unspecified, the authentication method defaults to `default`, which attempts to source ephemeral credentials from the running environment (e.g. instance metadata, EKS Pod Identity, environment variables, etc.) This may not work in all environments, so it is recommended to specify an authentication method.\n\nSee the Envoy docs for more info: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_request_signing_filter#credentials",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsAuth"),
 						},
 					},

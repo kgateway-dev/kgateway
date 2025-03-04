@@ -71,14 +71,14 @@ type AwsBackend struct {
 	// If this field is unspecified, the authentication method
 	// defaults to `default`, which attempts to source ephemeral credentials
 	// from the running environment (e.g. instance metadata, EKS Pod Identity,
-	// environment variables, etc.)
+	// environment variables, etc.) This may not work in all environments,
+	// so it is recommended to specify an authentication method.
 	//
 	// See the Envoy docs for more info:
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_request_signing_filter#credentials
 	//
 	// +optional
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:default={type: default}
 	Auth *AwsAuth `json:"auth,omitempty"`
 	// Lambda configures the AWS lambda service.
 	// +optional
@@ -95,47 +95,53 @@ type AwsBackend struct {
 	Region *string `json:"region,omitempty"`
 }
 
-// AwsAuthType is the type of authentication to use for the backend.
+// AwsAuthType specifies the authentication method to use for the backend.
 type AwsAuthType string
 
 const (
-	// AwsAuthTypeDefault is the default authentication method.
-	AwsAuthTypeDefault AwsAuthType = "default"
-	// AwsAuthTypeIRSA is the IRSA authentication method.
-	AwsAuthTypeIRSA AwsAuthType = "irsa"
-	// AwsAuthTypeSecret is the secret authentication method.
+	// AwsAuthTypeSecret uses credentials stored in a Kubernetes Secret.
 	AwsAuthTypeSecret AwsAuthType = "secret"
+	// AwsAuthTypeIRSA uses pod identity (IRSA) to obtain credentials.
+	AwsAuthTypeIRSA AwsAuthType = "irsa"
 )
 
-// AwsAuth defines the authentication method to use for the backend.
+// AwsAuth specifies the authentication method to use for the backend.
 // +union
-// +kubebuilder:validation:XValidation:message="irsa auth must be nil if the type is not 'irsa'",rule="!(has(self.irsa) && self.type != 'irsa')"
-// +kubebuilder:validation:XValidation:message="irsa auth must be specified when type is 'irsa'",rule="!(!has(self.irsa) && self.type == 'irsa')"
-// +kubebuilder:validation:XValidation:message="secret auth must be nil if the type is not 'secret'",rule="!(has(self.secret) && self.type != 'secret')"
-// +kubebuilder:validation:XValidation:message="secret auth must be specified when type is 'secret'",rule="!(!has(self.secret) && self.type == 'secret')"
+// +kubebuilder:validation:XValidation:message="secret must be nil if the type is not 'secret'",rule="!(has(self.secret) && self.type != 'secret')"
+// +kubebuilder:validation:XValidation:message="secret must be specified when type is 'secret'",rule="!(!has(self.secret) && self.type == 'secret')"
+// +kubebuilder:validation:XValidation:message="irsa must be nil if the type is not 'irsa'",rule="!(has(self.irsa) && self.type != 'irsa')"
+// +kubebuilder:validation:XValidation:message="irsa must be specified when type is 'irsa'",rule="!(!has(self.irsa) && self.type == 'irsa')"
 type AwsAuth struct {
-	// Type is the type of authentication to use for the backend.
+	// Type specifies the authentication method to use for the backend.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Enum=secret;irsa
+	Type AwsAuthType `json:"type"`
+	// Secret is a reference a secret containing AWS credentials.
 	// +optional
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Enum=default;irsa;secret
-	// +kubebuilder:default=default
-	Type AwsAuthType `json:"type,omitempty"`
-	// IRSA is the IRSA authentication configuration.
+	Secret *AWSAuthStatic `json:"secret,omitempty"`
+	// IRSA specifies the IRSA configuration to use for the backend.
 	// +optional
 	// +kubebuilder:validation:Optional
 	IRSA *AWSAuthIRSA `json:"irsa,omitempty"`
-	// Secret is a reference to a secret containing AWS credentials.
-	// +optional
-	// +kubebuilder:validation:Optional
-	Secret *corev1.LocalObjectReference `json:"secret,omitempty"`
 }
 
-// AWSAuthIRSA defines the IRSA configuration for the upstream.
-type AWSAuthIRSA struct {
-	// RoleARN is the AWS IAM role to assume when using IRSA.
-	// Used for IAM-based authentication.
+// AwsStaticCredentialProvider specifies a Secret reference for static AWS credentials.
+type AWSAuthStatic struct {
+	// Secret references a Kubernetes Secret containing the AWS credentials.
+	// The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
 	// +kubebuilder:validation:Required
-	RoleARN string `json:"roleARN,omitempty"`
+	Secret corev1.LocalObjectReference `json:"secret"`
+}
+
+// AwsIRSAProvider specifies the configuration for using IRSA.
+type AWSAuthIRSA struct {
+	// RoleARN is the AWS IAM Role ARN used for pod identity.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=2048
+	// +kubebuilder:validation:Pattern="^arn:aws-.*:iam::[0-9]{12}:role/.*"
+	RoleARN string `json:"roleARN"`
 }
 
 const (

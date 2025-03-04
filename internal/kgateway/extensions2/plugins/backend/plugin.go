@@ -194,12 +194,15 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 		var backendIr BackendIr
 		switch i.Spec.Type {
 		case v1alpha1.BackendTypeAWS:
+			if i.Spec.Aws == nil {
+				return &backendIr
+			}
 			// we only need to build an IR for secret-based auth.
 			if i.Spec.Aws.Auth.Type != v1alpha1.AwsAuthTypeSecret {
 				return &backendIr
 			}
 			ns := i.GetNamespace()
-			secret, err := pluginutils.GetSecretIr(secrets, krtctx, i.Spec.Aws.Auth.Secret.Name, ns)
+			secret, err := pluginutils.GetSecretIr(secrets, krtctx, i.Spec.Aws.Auth.Secret.Secret.Name, ns)
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Error(err)
 			}

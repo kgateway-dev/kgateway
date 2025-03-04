@@ -458,40 +458,46 @@ spec:
                     pattern: ^[0-9]{12}$
                     type: string
                   auth:
-                    default:
-                      type: default
                     properties:
                       irsa:
                         properties:
                           roleARN:
+                            maxLength: 2048
+                            minLength: 1
+                            pattern: ^arn:aws-.*:iam::[0-9]{12}:role/.*
                             type: string
                         required:
                         - roleARN
                         type: object
                       secret:
                         properties:
-                          name:
-                            default: ""
-                            type: string
-                        type: object
-                        x-kubernetes-map-type: atomic
-                      type:
-                        default: default
-                        enum:
-                        - default
-                        - irsa
+                          secret:
+                            properties:
+                              name:
+                                default: ""
+                                type: string
+                            type: object
+                            x-kubernetes-map-type: atomic
+                        required:
                         - secret
+                        type: object
+                      type:
+                        enum:
+                        - secret
+                        - irsa
                         type: string
+                    required:
+                    - type
                     type: object
                     x-kubernetes-validations:
-                    - message: irsa auth must be nil if the type is not 'irsa'
-                      rule: '!(has(self.irsa) && self.type != ''irsa'')'
-                    - message: irsa auth must be specified when type is 'irsa'
-                      rule: '!(!has(self.irsa) && self.type == ''irsa'')'
-                    - message: secret auth must be nil if the type is not 'secret'
+                    - message: secret must be nil if the type is not 'secret'
                       rule: '!(has(self.secret) && self.type != ''secret'')'
-                    - message: secret auth must be specified when type is 'secret'
+                    - message: secret must be specified when type is 'secret'
                       rule: '!(!has(self.secret) && self.type == ''secret'')'
+                    - message: irsa must be nil if the type is not 'irsa'
+                      rule: '!(has(self.irsa) && self.type != ''irsa'')'
+                    - message: irsa must be specified when type is 'irsa'
+                      rule: '!(!has(self.irsa) && self.type == ''irsa'')'
                   lambda:
                     properties:
                       endpointURL:
