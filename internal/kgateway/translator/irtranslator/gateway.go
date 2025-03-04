@@ -36,6 +36,13 @@ func (t *Translator) Translate(gw ir.GatewayIR, reporter reports.Reporter) Trans
 		res.Routes = append(res.Routes, routes...)
 	}
 
+	for _, c := range pass {
+		if c != nil {
+			r := c.ResourcesToAdd(context.TODO())
+			res.ExtraClusters = append(res.ExtraClusters, r.Clusters...)
+		}
+	}
+
 	return res
 }
 
