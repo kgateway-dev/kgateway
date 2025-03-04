@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -60,49 +61,64 @@ type BackendSpec struct {
 
 // AwsBackend is the AWS backend configuration.
 type AwsBackend struct {
-	// AccountId is the AWS account ID to use for the upstream.
+	// AccountId is the AWS account ID to use for the backend.
 	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=12
 	AccountId string `json:"accountId"`
-	// Auth specifies the authentication method to use for the upstream.
+	// Auth specifies the authentication method to use for the backend.
+	// When unspecified, the default authentication method will be used.
 	// +optional
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default={type: default}
 	Auth *AwsAuth `json:"auth,omitempty"`
 	// Lambda configures the AWS lambda service.
 	// +optional
+	// +kubebuilder:validation:Optional
 	Lambda *AwsLambda `json:"lambda,omitempty"`
-	// Region is the AWS region to use for the upstream.
+	// Region is the AWS region to use for the backend.
 	// Defaults to us-east-1 if not specified.
 	// +optional
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=us-east-1
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
 	Region *string `json:"region,omitempty"`
 }
 
-// AwsAuthType is the type of authentication to use for the upstream.
+// AwsAuthType is the type of authentication to use for the backend.
 type AwsAuthType string
 
 const (
-	// AwsAuthTypeInstanceMetadata is the instance metadata authentication type.
-	AwsAuthTypeInstanceMetadata AwsAuthType = "default"
-	// AwsAuthTypeIRSA is the IRSA authentication type.
+	// AwsAuthTypeDefault is the default authentication method.
+	AwsAuthTypeDefault AwsAuthType = "default"
+	// AwsAuthTypeIRSA is the IRSA authentication method.
 	AwsAuthTypeIRSA AwsAuthType = "irsa"
-	// AwsAuthTypeSecret is the secret authentication type.
+	// AwsAuthTypeSecret is the secret authentication method.
 	AwsAuthTypeSecret AwsAuthType = "secret"
 )
 
 // AwsAuth defines the authentication method to use for the backend.
-// +kubebuilder:validation:XValidation:message="only one auth method can be specified",rule="!(has(self.irsa) && has(self.secret))"
+// +union
+// +kubebuilder:validation:XValidation:message="irsa auth must be nil if the type is not 'irsa'",rule="!(has(self.irsa) && self.type != 'irsa')"
+// +kubebuilder:validation:XValidation:message="irsa auth must be specified when type is 'irsa'",rule="!(!has(self.irsa) && self.type == 'irsa')"
+// +kubebuilder:validation:XValidation:message="secret auth must be nil if the type is not 'secret'",rule="!(has(self.secret) && self.type != 'secret')"
+// +kubebuilder:validation:XValidation:message="secret auth must be specified when type is 'secret'",rule="!(!has(self.secret) && self.type == 'secret')"
 type AwsAuth struct {
+	// Type is the type of authentication to use for the backend.
+	// +optional
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=default;irsa;secret
+	// +kubebuilder:default=default
+	Type AwsAuthType `json:"type,omitempty"`
 	// IRSA is the IRSA authentication configuration.
 	// +optional
+	// +kubebuilder:validation:Optional
 	IRSA *AWSAuthIRSA `json:"irsa,omitempty"`
 	// Secret is a reference to a secret containing AWS credentials.
 	// +optional
-	Secret *AWSAuthSecretReference `json:"secret,omitempty"`
-}
-
-// SecretReference is a reference to a secret containing AWS credentials.
-type AWSAuthSecretReference struct {
-	// Name is the name of the secret.
-	// +kubebuilder:validation:Required
-	Name string `json:"name,omitempty"`
+	// +kubebuilder:validation:Optional
+	Secret *corev1.LocalObjectReference `json:"secret,omitempty"`
 }
 
 // AWSAuthIRSA defines the IRSA configuration for the upstream.
@@ -124,6 +140,7 @@ const (
 type AwsLambda struct {
 	// EndpointURL is the URL to use for the upstream host.
 	// +optional
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=2048
 	EndpointURL string `json:"endpointURL,omitempty"`
@@ -133,35 +150,35 @@ type AwsLambda struct {
 	// +kubebuilder:validation:MaxLength=140
 	FunctionName string `json:"functionName"`
 	// InvocationMode defines how to invoke the lambda function.
-	// Defaults to SYNCHRONOUS if not specified.
+	// Defaults to Sync if not specified.
 	// +optional
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Enum=Sync;Async
+	// +kubebuilder:default=Sync
 	InvocationMode string `json:"invocationMode,omitempty"`
 	// Qualifier is the qualifier of the lambda function to invoke.
 	// When unspecified, the $LATEST version of the function is used.
 	// +optional
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=128
 	Qualifier string `json:"qualifier,omitempty"`
 }
 
-// StaticBackend is an upstream that references a static list of hosts.
+// StaticBackend references a static list of hosts.
 type StaticBackend struct {
-	// Hosts is a list of hosts to use for the upstream.
+	// Hosts is a list of hosts to use for the backend.
 	// +kubebuilder:validation:required
 	// +kubebuilder:validation:MinItems=1
-	// +listType=map
-	// +listMapKey=host
 	Hosts []Host `json:"hosts,omitempty"`
 }
 
 // Host defines a static upstream host.
 type Host struct {
-	// Host is the host to use for the upstream.
+	// Host is the host to use for the backend.
 	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength=253
 	Host string `json:"host"`
-	// Port is the port to use for the upstream.
+	// Port is the port to use for the backend.
 	// +kubebuilder:validation:Required
 	Port gwv1.PortNumber `json:"port"`
 }

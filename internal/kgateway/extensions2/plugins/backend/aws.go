@@ -157,14 +157,15 @@ func buildLambdaARN(in *v1alpha1.AwsBackend, region string) (string, error) {
 // configureAWSAuth configures AWS authentication for the given backend.
 func configureAWSAuth(in *v1alpha1.AwsBackend, ir *BackendIr, region string) (*envoy_request_signing_v3.AwsRequestSigning, error) {
 	var awsRequestSigning *envoy_request_signing_v3.AwsRequestSigning
-	switch {
-	case in.Auth == nil:
-		// when no auth has been specified, we use instance metadata.
+	switch in.Auth.Type {
+	case v1alpha1.AwsAuthTypeDefault:
+		// use the default aws auth provider documented by the lambda filter:
+		// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_lambda_filter#credentials.
 		awsRequestSigning = &envoy_request_signing_v3.AwsRequestSigning{
 			ServiceName: lambdaServiceName,
 			Region:      region,
 		}
-	case in.Auth.IRSA != nil:
+	case v1alpha1.AwsAuthTypeIRSA:
 		awsRequestSigning = &envoy_request_signing_v3.AwsRequestSigning{
 			ServiceName: lambdaServiceName,
 			Region:      region,
@@ -180,7 +181,7 @@ func configureAWSAuth(in *v1alpha1.AwsBackend, ir *BackendIr, region string) (*e
 				},
 			},
 		}
-	case in.Auth.Secret != nil:
+	case v1alpha1.AwsAuthTypeSecret:
 		derived, err := deriveStaticSecret(ir.AwsSecret)
 		if err != nil {
 			return nil, fmt.Errorf("failed to derive static secret: %v", err)

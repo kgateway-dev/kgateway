@@ -55,6 +55,7 @@ spec:
   aws:
     accountId: "000000000000"
     auth:
+      type: secret
       secret:
         name: localstack-creds
     lambda:

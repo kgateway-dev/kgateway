@@ -101,7 +101,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		ContributesBackends: map[schema.GroupKind]extensionsplug.BackendPlugin{
 			gk: {
 				BackendInit: ir.BackendInit{
-					InitBackend: processUpstream,
+					InitBackend: processBackend,
 				},
 				Endpoints: endpoints,
 				Backends:  bcol,
@@ -116,29 +116,27 @@ func buildTranslateFunc(secrets *krtcollections.SecretIndex) func(krtctx krt.Han
 			// we only need to build an IR for AWS backends.
 			return nil, nil
 		}
-		if i.Spec.Aws.Auth == nil {
-			// if auth is not specified, we use instance metadata.
+		var ir BackendIr
+		if i.Spec.Aws.Auth.Type != v1alpha1.AwsAuthTypeSecret {
+			// we only need to build an IR for AWS backends with secret auth.
 			return nil, nil
 		}
-		var ir BackendIr
-		if i.Spec.Aws.Auth.Secret != nil {
-			ns := i.GetNamespace()
-			secretRef := gwv1.SecretObjectReference{
-				Name: gwv1.ObjectName(i.Spec.Aws.Auth.Secret.Name),
-			}
-			secret, err := secrets.GetSecret(krtctx, krtcollections.From{GroupKind: v1alpha1.BackendGVK.GroupKind(), Namespace: ns}, secretRef)
-			if err != nil {
-				return nil, fmt.Errorf("failed to get secret: %v", err)
-			}
-			if secret != nil {
-				ir.AwsSecret = secret
-			}
+		ns := i.GetNamespace()
+		secretRef := gwv1.SecretObjectReference{
+			Name: gwv1.ObjectName(i.Spec.Aws.Auth.Secret.Name),
+		}
+		secret, err := secrets.GetSecret(krtctx, krtcollections.From{GroupKind: v1alpha1.BackendGVK.GroupKind(), Namespace: ns}, secretRef)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get secret: %v", err)
+		}
+		if secret != nil {
+			ir.AwsSecret = secret
 		}
 		return &ir, nil
 	}
 }
 
-func processUpstream(ctx context.Context, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) {
+func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) {
 	log := contextutils.LoggerFrom(ctx)
 
 	up, ok := in.Obj.(*v1alpha1.Backend)

@@ -79,6 +79,7 @@ spec:
     accountId: "000000000000"
     region: us-west-2
     auth:
+      type: secret
       secret:
         name: aws-creds-multi
     lambda:
@@ -97,6 +98,7 @@ spec:
     accountId: "00000000000"
     region: us-east-1
     auth:
+      type: secret
       secret:
         name: aws-creds-multi
     lambda:
@@ -115,6 +117,7 @@ spec:
     accountId: "000000000000"
     region: us-east-1
     auth:
+      type: irsa
       irsa:
         roleARN: arn:aws:iam::000000000000:role/products-lambda-role
     lambda:
@@ -133,6 +136,7 @@ spec:
     accountId: "000000000000"
     region: us-west-2
     auth:
+      type: secret
       secret:
         name: aws-creds-multi
     lambda:

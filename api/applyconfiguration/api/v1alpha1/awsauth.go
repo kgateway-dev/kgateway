@@ -2,17 +2,32 @@
 
 package v1alpha1
 
+import (
+	v1 "k8s.io/api/core/v1"
+
+	apiv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+)
+
 // AwsAuthApplyConfiguration represents a declarative configuration of the AwsAuth type for use
 // with apply.
 type AwsAuthApplyConfiguration struct {
-	IRSA   *AWSAuthIRSAApplyConfiguration            `json:"irsa,omitempty"`
-	Secret *AWSAuthSecretReferenceApplyConfiguration `json:"secret,omitempty"`
+	Type   *apiv1alpha1.AwsAuthType       `json:"type,omitempty"`
+	IRSA   *AWSAuthIRSAApplyConfiguration `json:"irsa,omitempty"`
+	Secret *v1.LocalObjectReference       `json:"secret,omitempty"`
 }
 
 // AwsAuthApplyConfiguration constructs a declarative configuration of the AwsAuth type for use with
 // apply.
 func AwsAuth() *AwsAuthApplyConfiguration {
 	return &AwsAuthApplyConfiguration{}
+}
+
+// WithType sets the Type field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Type field is set to the value of the last call.
+func (b *AwsAuthApplyConfiguration) WithType(value apiv1alpha1.AwsAuthType) *AwsAuthApplyConfiguration {
+	b.Type = &value
+	return b
 }
 
 // WithIRSA sets the IRSA field in the declarative configuration to the given value
@@ -26,7 +41,7 @@ func (b *AwsAuthApplyConfiguration) WithIRSA(value *AWSAuthIRSAApplyConfiguratio
 // WithSecret sets the Secret field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Secret field is set to the value of the last call.
-func (b *AwsAuthApplyConfiguration) WithSecret(value *AWSAuthSecretReferenceApplyConfiguration) *AwsAuthApplyConfiguration {
-	b.Secret = value
+func (b *AwsAuthApplyConfiguration) WithSecret(value v1.LocalObjectReference) *AwsAuthApplyConfiguration {
+	b.Secret = &value
 	return b
 }
