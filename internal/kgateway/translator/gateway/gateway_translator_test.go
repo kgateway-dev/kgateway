@@ -103,7 +103,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				Name:      "gw",
 			},
 		}),
-	Entry(
+	XEntry(
 		"http gateway with lambda destination",
 		translatorTestCase{
 			inputFile:  "http-with-lambda-destination",

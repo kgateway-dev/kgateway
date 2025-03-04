@@ -42,7 +42,6 @@ spec:
                       hostOverride:
                         properties:
                           host:
-                            maxLength: 253
                             minLength: 1
                             type: string
                           port:
@@ -245,7 +244,6 @@ spec:
                                   hostOverride:
                                     properties:
                                       host:
-                                        maxLength: 253
                                         minLength: 1
                                         type: string
                                       port:
@@ -455,8 +453,12 @@ spec:
               aws:
                 properties:
                   accountId:
+                    maxLength: 12
+                    minLength: 1
                     type: string
                   auth:
+                    default:
+                      type: default
                     properties:
                       irsa:
                         properties:
@@ -472,10 +474,23 @@ spec:
                             type: string
                         type: object
                         x-kubernetes-map-type: atomic
+                      type:
+                        default: default
+                        enum:
+                        - default
+                        - irsa
+                        - secret
+                        type: string
                     type: object
                     x-kubernetes-validations:
-                    - message: only one auth method can be specified
-                      rule: '!(has(self.irsa) && has(self.secret))'
+                    - message: irsa auth must be nil if the type is not 'irsa'
+                      rule: '!(has(self.irsa) && self.type != ''irsa'')'
+                    - message: irsa auth must be specified when type is 'irsa'
+                      rule: '!(!has(self.irsa) && self.type == ''irsa'')'
+                    - message: secret auth must be nil if the type is not 'secret'
+                      rule: '!(has(self.secret) && self.type != ''secret'')'
+                    - message: secret auth must be specified when type is 'secret'
+                      rule: '!(!has(self.secret) && self.type == ''secret'')'
                   lambda:
                     properties:
                       endpointURL:
@@ -487,6 +502,7 @@ spec:
                         minLength: 1
                         type: string
                       invocationMode:
+                        default: Sync
                         enum:
                         - Sync
                         - Async
@@ -499,6 +515,9 @@ spec:
                     - functionName
                     type: object
                   region:
+                    default: us-east-1
+                    maxLength: 63
+                    minLength: 1
                     type: string
                 required:
                 - accountId
@@ -509,7 +528,6 @@ spec:
                     items:
                       properties:
                         host:
-                          maxLength: 253
                           minLength: 1
                           type: string
                         port:
@@ -523,9 +541,6 @@ spec:
                       type: object
                     minItems: 1
                     type: array
-                    x-kubernetes-list-map-keys:
-                    - host
-                    x-kubernetes-list-type: map
                 type: object
               type:
                 enum:

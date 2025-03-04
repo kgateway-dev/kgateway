@@ -160,18 +160,20 @@ func buildTranslateFunc(secrets *krtcollections.SecretIndex) func(krtctx krt.Han
 			// no IR needed for non-AWS backends.
 			return &ir
 		}
-		if i.Spec.Aws.Auth != nil && i.Spec.Aws.Auth.Secret != nil {
-			ns := i.GetNamespace()
-			secretRef := gwv1.SecretObjectReference{
-				Name: gwv1.ObjectName(i.Spec.Aws.Auth.Secret.Name),
-			}
-			secret, _ := secrets.GetSecret(krtctx, krtcollections.From{GroupKind: v1alpha1.BackendGVK.GroupKind(), Namespace: ns}, secretRef)
-			if secret != nil {
-				ir.AwsSecret = secret
-			} else {
-				// TODO: handle error and write it to status
-				// return error
-			}
+		if i.Spec.Aws.Auth.Type != v1alpha1.AwsAuthTypeSecret {
+			// no IR needed for non-secret authentication.
+			return &ir
+		}
+		ns := i.GetNamespace()
+		secretRef := gwv1.SecretObjectReference{
+			Name: gwv1.ObjectName(i.Spec.Aws.Auth.Secret.Name),
+		}
+		secret, _ := secrets.GetSecret(krtctx, krtcollections.From{GroupKind: v1alpha1.BackendGVK.GroupKind(), Namespace: ns}, secretRef)
+		if secret != nil {
+			ir.AwsSecret = secret
+		} else {
+			// TODO: handle error and write it to status
+			// return error
 		}
 		return &ir
 	}

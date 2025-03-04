@@ -880,6 +880,13 @@ func schema_kgateway_v2_api_v1alpha1_AwsAuth(ref common.ReferenceCallback) commo
 				Description: "AwsAuth defines the authentication method to use for the backend.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
+					"type": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Type is the type of authentication to use for the backend.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"irsa": {
 						SchemaProps: spec.SchemaProps{
 							Description: "IRSA is the IRSA authentication configuration.",
@@ -890,6 +897,19 @@ func schema_kgateway_v2_api_v1alpha1_AwsAuth(ref common.ReferenceCallback) commo
 						SchemaProps: spec.SchemaProps{
 							Description: "Secret is a reference to a secret containing AWS credentials.",
 							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
+						},
+					},
+				},
+			},
+			VendorExtensible: spec.VendorExtensible{
+				Extensions: spec.Extensions{
+					"x-kubernetes-unions": []interface{}{
+						map[string]interface{}{
+							"fields-to-discriminateBy": map[string]interface{}{
+								"irsa":   "IRSA",
+								"secret": "Secret",
+								"type":   "Type",
+							},
 						},
 					},
 				},
@@ -909,7 +929,7 @@ func schema_kgateway_v2_api_v1alpha1_AwsBackend(ref common.ReferenceCallback) co
 				Properties: map[string]spec.Schema{
 					"accountId": {
 						SchemaProps: spec.SchemaProps{
-							Description: "AccountId is the AWS account ID to use for the upstream.",
+							Description: "AccountId is the AWS account ID to use for the backend.",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -917,7 +937,7 @@ func schema_kgateway_v2_api_v1alpha1_AwsBackend(ref common.ReferenceCallback) co
 					},
 					"auth": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Auth specifies the authentication method to use for the upstream. When unspecified, the default authentication method will be used.",
+							Description: "Auth specifies the authentication method to use for the backend. When unspecified, the default authentication method will be used.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsAuth"),
 						},
 					},
@@ -929,7 +949,7 @@ func schema_kgateway_v2_api_v1alpha1_AwsBackend(ref common.ReferenceCallback) co
 					},
 					"region": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Region is the AWS region to use for the upstream. Defaults to us-east-1 if not specified.",
+							Description: "Region is the AWS region to use for the backend. Defaults to us-east-1 if not specified.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -967,7 +987,7 @@ func schema_kgateway_v2_api_v1alpha1_AwsLambda(ref common.ReferenceCallback) com
 					},
 					"invocationMode": {
 						SchemaProps: spec.SchemaProps{
-							Description: "InvocationMode defines how to invoke the lambda function. Defaults to SYNCHRONOUS if not specified.",
+							Description: "InvocationMode defines how to invoke the lambda function. Defaults to Sync if not specified.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2178,7 +2198,7 @@ func schema_kgateway_v2_api_v1alpha1_Host(ref common.ReferenceCallback) common.O
 				Properties: map[string]spec.Schema{
 					"host": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Host is the host to use for the upstream.",
+							Description: "Host is the host to use for the backend.",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -2186,7 +2206,7 @@ func schema_kgateway_v2_api_v1alpha1_Host(ref common.ReferenceCallback) common.O
 					},
 					"port": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Port is the port to use for the upstream.",
+							Description: "Port is the port to use for the backend.",
 							Default:     0,
 							Type:        []string{"integer"},
 							Format:      "int32",
@@ -3505,20 +3525,12 @@ func schema_kgateway_v2_api_v1alpha1_StaticBackend(ref common.ReferenceCallback)
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "StaticBackend is an upstream that references a static list of hosts.",
+				Description: "StaticBackend references a static list of hosts.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"hosts": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-map-keys": []interface{}{
-									"host",
-								},
-								"x-kubernetes-list-type": "map",
-							},
-						},
 						SchemaProps: spec.SchemaProps{
-							Description: "Hosts is a list of hosts to use for the upstream.",
+							Description: "Hosts is a list of hosts to use for the backend.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
