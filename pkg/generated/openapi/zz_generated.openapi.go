@@ -937,7 +937,7 @@ func schema_kgateway_v2_api_v1alpha1_AwsBackend(ref common.ReferenceCallback) co
 					},
 					"auth": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Auth specifies the authentication method for the AWS backend. Defaults to \"default\", which reads credentials from the instance or ECS task metadata service. Credentials are cached for up to 1 hour or until expiration. For IRSA (IAM Roles for Service Accounts) or static credentials, set `type` accordingly.",
+							Description: "Auth specifies the authentication method to use for the backend. If this field is unspecified, the authentication method defaults to `default`, which attempts to source ephemeral credentials from the running environment (e.g. instance metadata, EKS Pod Identity, environment variables, etc.)\n\nSee the Envoy docs for more info: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_request_signing_filter#credentials",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsAuth"),
 						},
 					},
