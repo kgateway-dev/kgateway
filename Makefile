@@ -146,14 +146,14 @@ check-spelling:
 #----------------------------------------------------------------------------
 # Analyze
 #----------------------------------------------------------------------------
+
 LINTER_VERSION := $(shell cat .github/workflows/static-analysis.yaml | yq '.jobs.static-analysis.steps.[] | select( .uses == "*golangci/golangci-lint-action*") | .with.version ')
 
-# The analyze target runs a suite of static analysis tools against the codebase.
-# The options are defined in .golangci.yaml, and can be overridden by setting the ANALYZE_ARGS variable.
-.PHONY: analyze
+GOLANGCI_LINT ?= go run github.com/golangci/golangci-lint/cmd/golangci-lint@$(LINTER_VERSION)
 ANALYZE_ARGS ?= --fast --verbose
-analyze:
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint@$(LINTER_VERSION) run $(ANALYZE_ARGS) ./...
+.PHONY: analyze
+analyze:  ## Run golangci-lint. Override options with ANALYZE_ARGS.
+	$(GOLANGCI_LINT) run $(ANALYZE_ARGS) ./...
 
 #----------------------------------------------------------------------------------
 # Ginkgo Tests

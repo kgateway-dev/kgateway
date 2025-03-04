@@ -29,7 +29,7 @@ spec:
           filters:
             - type: ExtensionRef
               extensionRef:
-                group: gloo.solo.io
+                group: kgateway.io
                 kind: Parameter
                 name: uppercase
 ---

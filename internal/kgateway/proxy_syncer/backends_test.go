@@ -29,7 +29,7 @@ func TestApplyDestRulesForUpstream(t *testing.T) {
 			},
 		},
 	}
-	u := &gloov1.Upstream{}
+	u := &gloov1.Backend{}
 	u, name := ApplyDestRulesForUpstream(&DestinationRuleWrapper{destRule}, u)
 	if name == "" {
 		t.Errorf("expected name to be set")
