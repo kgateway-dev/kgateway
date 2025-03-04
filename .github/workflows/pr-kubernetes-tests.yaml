@@ -28,12 +28,12 @@ jobs:
         # Feb 27, 2025: 13 minutes
         - cluster-name: 'cluster-one'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$'
+          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$|^TestKgateway$$/^Backends$$'
 
 #         # Dec 4, 2024: 23 minutes
 #         - cluster-name: 'cluster-two'
 #           go-test-args: '-v -timeout=25m'
-#           go-test-run-regex: '^TestKgateway$$/^RouteDelegation$$|^TestKgatewayIstioRevision$$|^TestRevisionIstioRegression$$|^TestKgateway$$/^RouteOptions$$|^TestKgateway$$/^VirtualHostOptions$$|^TestKgateway$$/^Upstreams$$|^TestKgateway$$/^HeadlessSvc$$|^TestKgateway$$/^PortRouting$$|^TestKgatewayMinimalDefaultGatewayParameters$$|^TestKgateway$$/^DirectResponse$$|^TestKgateway$$/^HttpListenerOptions$$|^TestKgateway$$/^ListenerOptions$$|^TestKgateway$$/^GlooAdminServer$$'
+#           go-test-run-regex: '^TestKgateway$$/^RouteDelegation$$|^TestKgatewayIstioRevision$$|^TestRevisionIstioRegression$$|^TestKgateway$$/^RouteOptions$$|^TestKgateway$$/^VirtualHostOptions$$|^TestKgateway$$/^HeadlessSvc$$|^TestKgateway$$/^PortRouting$$|^TestKgatewayMinimalDefaultGatewayParameters$$|^TestKgateway$$/^DirectResponse$$|^TestKgateway$$/^HttpListenerOptions$$|^TestKgateway$$/^ListenerOptions$$|^TestKgateway$$/^GlooAdminServer$$'
 
 #         # Dec 4, 2024: 24 minutes
 #         - cluster-name: 'cluster-three'
