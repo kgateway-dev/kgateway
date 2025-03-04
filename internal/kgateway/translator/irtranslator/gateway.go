@@ -46,19 +46,25 @@ func (t *Translator) Translate(gw ir.GatewayIR, reporter reports.Reporter) Trans
 	return res
 }
 
-func (t *Translator) ComputeListener(ctx context.Context, pass TranslationPassPlugins, gw ir.GatewayIR, l ir.ListenerIR, reporter reports.Reporter) (*envoy_config_listener_v3.Listener, []*envoy_config_route_v3.RouteConfiguration) {
+func (t *Translator) ComputeListener(
+	ctx context.Context,
+	pass TranslationPassPlugins,
+	gw ir.GatewayIR,
+	lis ir.ListenerIR,
+	reporter reports.Reporter,
+) (*envoy_config_listener_v3.Listener, []*envoy_config_route_v3.RouteConfiguration) {
 	hasTls := false
 	gwreporter := reporter.Gateway(gw.SourceObject)
 	var routes []*envoy_config_route_v3.RouteConfiguration
 	ret := &envoy_config_listener_v3.Listener{
-		Name:    l.Name,
-		Address: computeListenerAddress(l.BindAddress, l.BindPort, gwreporter),
+		Name:    lis.Name,
+		Address: computeListenerAddress(lis.BindAddress, lis.BindPort, gwreporter),
 	}
-	t.runListenerPlugins(ctx, pass, gw, l, ret)
+	t.runListenerPlugins(ctx, pass, gw, lis, ret)
 
-	for _, hfc := range l.HttpFilterChain {
+	for _, hfc := range lis.HttpFilterChain {
 		fct := filterChainTranslator{
-			listener:        l,
+			listener:        lis,
 			gateway:         gw,
 			routeConfigName: hfc.FilterChainName,
 			PluginPass:      pass,
@@ -67,7 +73,7 @@ func (t *Translator) ComputeListener(ctx context.Context, pass TranslationPassPl
 		// compute routes
 		hr := httpRouteConfigurationTranslator{
 			gw:                       gw,
-			listener:                 l,
+			listener:                 lis,
 			routeConfigName:          hfc.FilterChainName,
 			fc:                       hfc.FilterChainCommon,
 			reporter:                 reporter,
@@ -93,12 +99,12 @@ func (t *Translator) ComputeListener(ctx context.Context, pass TranslationPassPl
 	}
 
 	fct := filterChainTranslator{
-		listener:   l,
+		listener:   lis,
 		gateway:    gw,
 		PluginPass: pass,
 	}
 
-	for _, tfc := range l.TcpFilterChain {
+	for _, tfc := range lis.TcpFilterChain {
 		rl := gwreporter.ListenerName(tfc.FilterChainName)
 		fc := fct.initFilterChain(ctx, tfc.FilterChainCommon, rl)
 		fc.Filters = fct.computeTcpFilters(ctx, tfc, rl)

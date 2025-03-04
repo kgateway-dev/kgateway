@@ -115,8 +115,8 @@ type backendPlugin struct {
 
 func registerTypes(ourCli versioned.Interface) {
 	kubeclient.Register[*v1alpha1.Backend](
-		v1alpha1.BackendGVK.GroupVersion().WithResource("backends"),
-		v1alpha1.BackendGVK,
+		wellknown.BackendGVK.GroupVersion().WithResource("backends"),
+		wellknown.BackendGVK,
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
 			return ourCli.GatewayV1alpha1().Backends(namespace).List(context.Background(), o)
 		},
@@ -131,7 +131,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 	col := krt.WrapClient(kclient.New[*v1alpha1.Backend](commoncol.Client), commoncol.KrtOpts.ToOptions("Backends")...)
 
-	gk := v1alpha1.BackendGVK.GroupKind()
+	gk := wellknown.BackendGVK.GroupKind()
 	translate := buildTranslateFunc(ctx, commoncol.Secrets)
 	ucol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.BackendObjectIR {
 		// resolve secrets
@@ -174,7 +174,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 					}
 				},
 			},
-			v1alpha1.BackendGVK.GroupKind(): {
+			wellknown.BackendGVK.GroupKind(): {
 				Name:                      "backend",
 				NewGatewayTranslationPass: newPlug,
 				//			AttachmentPoints: []ir.AttachmentPoints{ir.HttpBackendRefAttachmentPoint},

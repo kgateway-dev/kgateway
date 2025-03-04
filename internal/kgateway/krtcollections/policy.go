@@ -217,19 +217,19 @@ func (h *PolicyIndex) HasSynced() bool {
 }
 
 func NewPolicyIndex(krtopts krtutil.KrtOptions, contributesPolicies extensionsplug.ContributesPolicies) *PolicyIndex {
-	h := &PolicyIndex{policiesFetch: policyFetcherMap{}}
+	index := &PolicyIndex{policiesFetch: policyFetcherMap{}}
 
 	var policycols []krt.Collection[ir.PolicyWrapper]
 	for gk, plugin := range contributesPolicies {
 		if plugin.Policies != nil {
 			policycols = append(policycols, plugin.Policies)
-			h.hasSyncedFuncs = append(h.hasSyncedFuncs, plugin.Policies.HasSynced)
+			index.hasSyncedFuncs = append(index.hasSyncedFuncs, plugin.Policies.HasSynced)
 		}
 		if plugin.PoliciesFetch != nil {
-			h.policiesFetch[gk] = plugin.PoliciesFetch
+			index.policiesFetch[gk] = plugin.PoliciesFetch
 		}
 		if plugin.GlobalPolicies != nil {
-			h.globalPolicies = append(h.globalPolicies, globalPolicy{
+			index.globalPolicies = append(index.globalPolicies, globalPolicy{
 				GroupKind: gk,
 				ir:        plugin.GlobalPolicies,
 				points:    plugin.AttachmentPoints(),
@@ -237,9 +237,9 @@ func NewPolicyIndex(krtopts krtutil.KrtOptions, contributesPolicies extensionspl
 		}
 	}
 
-	h.policies = krt.JoinCollection(policycols, krtopts.ToOptions("policies")...)
+	index.policies = krt.JoinCollection(policycols, krtopts.ToOptions("policies")...)
 
-	h.targetRefIndex = krt.NewIndex(h.policies, func(p ir.PolicyWrapper) []targetRefIndexKey {
+	index.targetRefIndex = krt.NewIndex(index.policies, func(p ir.PolicyWrapper) []targetRefIndexKey {
 		ret := make([]targetRefIndexKey, len(p.TargetRefs))
 		for i, tr := range p.TargetRefs {
 			ret[i] = targetRefIndexKey{
@@ -249,7 +249,7 @@ func NewPolicyIndex(krtopts krtutil.KrtOptions, contributesPolicies extensionspl
 		}
 		return ret
 	})
-	return h
+	return index
 }
 
 // Attachment happens during collection creation (i.e. this file), and not translation. so these methods don't need to be public!

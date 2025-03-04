@@ -19,6 +19,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 type listenerPolicy struct {
@@ -54,7 +55,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		v1alpha1.SchemeGroupVersion.WithResource("listenerpolicies"),
 		commoncol.KrtOpts.ToOptions("ListenerPolicy")...,
 	)
-	gk := v1alpha1.ListenerPolicyGVK.GroupKind()
+	gk := wellknown.ListenerPolicyGVK.GroupKind()
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.ListenerPolicy) *ir.PolicyWrapper {
 		var pol = &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
@@ -72,7 +73,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 	return extensionplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
-			v1alpha1.ListenerPolicyGVK.GroupKind(): {
+			wellknown.ListenerPolicyGVK.GroupKind(): {
 				//AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,
