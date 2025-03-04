@@ -41,8 +41,6 @@ spec:
   type: aws
   aws:
     region: us-east-1
-    # TODO: add these back
-    # roleArn: arn:aws:iam::123456789012:role/lambda-role
-    # lambdaFunctions:
-    #   - lambdaFunctionName: uppercase
-    #     logicalName: uppercase
+    auth:
+      type: irsa
+      roleArn: arn:aws:iam::123456789012:role/lambda-role
