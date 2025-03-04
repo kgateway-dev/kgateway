@@ -59,7 +59,8 @@ type BackendObjectIR struct {
 	// set them explicitly here, and pass this around as the reference.
 	ObjectSource `json:",inline"`
 	// optional port for if ObjectSource is a service that can have multiple ports.
-	Port        int32
+	Port int32
+	// optional application protocol for the backend. Can be used to enable http2.
 	AppProtocol AppProtocol
 
 	// prefix the cluster name with this string to distringuish it from other GVKs.
