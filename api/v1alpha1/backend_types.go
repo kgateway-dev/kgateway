@@ -67,12 +67,10 @@ type AwsBackend struct {
 	// +kubebuilder:validation:MaxLength=12
 	// +kubebuilder:validation:Pattern="^[0-9]{12}$"
 	AccountId string `json:"accountId"`
-	// Auth specifies the authentication method to use for the backend.
-	// If this field is unspecified, the authentication method
-	// defaults to `default`, which attempts to source ephemeral credentials
-	// from the running environment (e.g. instance metadata, EKS Pod Identity,
-	// environment variables, etc.) This may not work in all environments,
-	// so it is recommended to specify an authentication method.
+	// Auth specifies an explicit AWS authentication method for the backend.
+	// When omitted, the authentication method will be inferred from the
+	// environment (e.g. instance metadata, EKS Pod Identity, environment variables, etc.)
+	// This may not work in all environments, so it is recommended to specify an authentication method.
 	//
 	// See the Envoy docs for more info:
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_request_signing_filter#credentials
