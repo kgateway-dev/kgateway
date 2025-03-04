@@ -127,11 +127,7 @@ func (p *backendPlugin) processBackendAws(
 		//UnwrapAsAlb:       destination.GetUnwrapAsAlb(),
 		//TransformerConfig: transformerConfig,
 	}
-	lambdaRouteFuncAny, err := utils.MessageToAny(lambdaRouteFunc)
-	if err != nil {
-		return err
-	}
-	pCtx.AddTypedConfig(FilterName, lambdaRouteFuncAny)
+	pCtx.AddTypedConfig(FilterName, lambdaRouteFunc)
 	return nil
 }
 

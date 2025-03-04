@@ -54,7 +54,7 @@ type BackendObjectIR struct {
 	// optional port for if ObjectSource is a service that can have multiple ports.
 	Port int32
 
-	// prefix the cluster name with this string to distringuish it from other GVKs.
+	// prefix the cluster name with this string to distinguish it from other GVKs.
 	// here explicitly as it shows up in stats. each (group, kind) pair should have a unique prefix.
 	GvPrefix string
 	// for things that integrate with destination rule, we need to know what hostname to use.
@@ -78,7 +78,7 @@ func BackendResourceName(objSource ObjectSource, port int32) string {
 }
 
 func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
-	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj) && c.AttachedPolicies.Equals(in.AttachedPolicies)
+	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj) && c.ObjIr.Equals(in.ObjIr) && c.AttachedPolicies.Equals(in.AttachedPolicies)
 }
 
 func (c BackendObjectIR) ClusterName() string {
