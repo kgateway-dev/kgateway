@@ -1,0 +1,54 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: RoutePolicy
+metadata:
+  name: azure-openai-policy
+  namespace: ai-test
+spec:
+  ai:
+    promptGuard:
+      request:
+        webhook:
+          forwardHeaders:
+            - key: x
+              matchType: PREFIX
+          host: 172.17.0.1
+          port: 7891
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: RoutePolicy
+metadata:
+  name: openai-policy
+  namespace: ai-test
+spec:
+  ai:
+    promptGuard:
+      response:
+        webhook:
+          host: 172.17.0.1
+          port: 7891
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: RoutePolicy
+metadata:
+  name: gemini-policy
+  namespace: ai-test
+spec:
+  ai:
+    promptGuard:
+      response:
+        webhook:
+          host: 172.17.0.1
+          port: 7891
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: RoutePolicy
+metadata:
+  name: vertex-ai-policy
+  namespace: ai-test
+spec:
+  ai:
+    promptGuard:
+      response:
+        webhook:
+          host: 172.17.0.1
+          port: 7891

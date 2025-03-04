@@ -51,4 +51,29 @@ spec:
     stats:
       {{- toYaml . | nindent 6 }}
     {{- end }}
+    {{- if .Values.gateway.aiExtension.enabled }}
+    aiExtension:
+        enabled: {{ .Values.gateway.aiExtension.enabled }}
+        image:
+          registry: {{ .Values.gateway.aiExtension.image.registry | default .Values.image.registry }}
+          repository: {{ .Values.gateway.aiExtension.image.repository }}
+          tag: {{ .Values.gateway.aiExtension.image.tag | default .Values.image.tag | default .Chart.Version }}
+          pullPolicy: {{ .Values.gateway.aiExtension.image.pullPolicy | default .Values.image.pullPolicy }}
+    {{- if .Values.gateway.aiExtension.securityContext }}
+        securityContext:
+            {{- toYaml .Values.gateway.aiExtension.securityContext | nindent 8 }}
+    {{- end }}{{/* if .Values.gateway.aiExtension.securityContext */}}
+    {{- if .Values.gateway.aiExtension.resources }}
+        resources:
+            {{- toYaml .Values.gateway.aiExtension.resources | nindent 8 }}
+    {{- end }}{{/* if .Values.gateway.aiExtension.resources */}}
+    {{- if .Values.gateway.aiExtension.env }}
+        env:
+    {{ toYaml .Values.gateway.aiExtension.env | indent 6 }}
+    {{- end }} {{/* if .Values.gateway.aiExtension.env */}}
+    {{- if .Values.gateway.aiExtension.ports }}
+        ports:
+    {{ toYaml .Values.gateway.aiExtension.ports | indent 6 }}
+    {{- end }} {{/* if .Values.gateway.aiExtension.ports */}}
+    {{- end }}{{/* if .Values.gateway.aiExtension.enabled */}}
 {{- end }}

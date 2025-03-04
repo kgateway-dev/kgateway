@@ -1,0 +1,121 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  labels:
+    app: kgateway
+  name: mistralai
+  namespace: ai-test
+spec:
+  type: ai
+  ai:
+    llm:
+      hostOverride:
+        host: api.mistral.ai
+        port: 443
+      provider:
+        openai:
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: mistralai-secret
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  labels:
+    app: kgateway
+  name: openai
+  namespace: ai-test
+spec:
+  type: ai
+  ai:
+    llm:
+      provider:
+        openai:
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: openai-secret
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  labels:
+    app: kgateway
+  name: anthropic
+  namespace: ai-test
+spec:
+  type: ai
+  ai:
+    llm:
+      provider:
+        anthropic:
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: anthropic-secret
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  labels:
+    app: kgateway
+  name: azure-openai
+  namespace: ai-test
+spec:
+  type: ai
+  ai:
+    llm:
+      provider:
+        azureopenai:
+          endpoint: ai-gateway.openai.azure.com
+          deploymentName: gpt-4o-mini
+          apiVersion: 2024-02-15-preview
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: azure-secret
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  labels:
+    app: kgateway
+  name: gemini
+  namespace: ai-test
+spec:
+  type: ai
+  ai:
+    llm:
+      provider:
+        gemini:
+          model: gemini-1.5-flash-001
+          apiVersion: v1beta
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: gemini-secret
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  labels:
+    app: kgateway
+  name: vertex-ai
+  namespace: ai-test
+spec:
+  type: ai
+  ai:
+    llm:
+      provider:
+        vertexai:
+          model: gemini-1.5-flash-001
+          apiVersion: v1
+          location: us-central1
+          projectId: gloo-ee
+          publisher: GOOGLE
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: vertex-ai-secret
+---

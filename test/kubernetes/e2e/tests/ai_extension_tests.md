@@ -1,0 +1,88 @@
+# AI Extension E2E Test
+
+The AI extension e2e test is different from the other tests in the sense that it uses a combination of Golang and Python to fully implement the tests. Moreover, it requires access to external LLM providers using their API keys, which implies there are prerequisites to running the tests. This document describes the steps to set up the environment and run the tests.
+
+## Prerequisites
+
+- python3 virtualenv
+
+- system that supports MetalLB to expose k8s services to the host
+
+- environment variables:
+    - `OPENAI_API_KEY`: OpenAI API key
+    - `ANTHROPIC_API_KEY`: Anthropic API key
+    - `MISTRAL_API_KEY`: Mistral API key
+    - `GEMINI_API_KEY`: Gemini API key
+    - `PYTHON`: path to the python3 executable, e.g. `/src/code/kgateway/.venv/bin/python`
+
+## Set-up Python virtualenv
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+
+python3 -m ensurepip --upgrade
+python3 -m pip install -r test/kubernetes/e2e/features/aiextension/tests/requirements.txt
+
+# set the PYTHON environment variable, required by the tests
+export PYTHON=$(which python)
+```
+
+## Run the test
+
+Spin up the cluster
+```bash
+CONFORMANCE=true ./hack/kind/setup-kind.sh
+```
+
+```bash
+OPENAI_API_KEY=<api key> ANTHROPIC_API_KEY=<api key> MISTRAL_API_KEY=<api key> AZURE_OPENAI_API_KEY=<api key> GEMINI_API_KEY=<api key> go test ./test/kubernetes/e2e/tests/ -run AIExtension
+```
+
+You can set the `TEST_PYTHON_STRING_MATCH` to run a specific subset of tests. For example `TEST_PYTHON_STRING_MATCH=vertex_ai` would only run the `vertex_ai` tests:
+
+```bash
+TEST_PYTHON_STRING_MATCH=vertex_ai go test ./test/kubernetes/e2e/tests/ -run AIExtension
+```
+
+## Run the python test
+
+Set up python virtualenv and the required routing files from `test/kubernetes/e2e/features/aiextension/testdata/`, then run the python test directly:
+
+```bash
+LOG_LEVEL=debug python3 -m pytest -vvv --log-cli-level=DEBUG /test/kubernetes/e2e/features/aiextension/tests/routing.py -k=vertex_ai
+```
+
+Where `-k` should match the `TEST_PYTHON_STRING_MATCH` to run a specific set of tests.
+
+## VSCode Debugging
+
+The following vscode launch config can be used to debug tests using the IDE:
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "e2e-ai",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceFolder}/test/kubernetes/e2e/tests/ai_extension_test.go",
+      "args": [
+        "-test.run",
+        "TestAIExtension",
+        "-test.v",
+      ],
+      "env": {
+        "GOLANG_PROTOBUF_REGISTRATION_CONFLICT": "warn",
+        "ANTHROPIC_API_KEY": "FIXME",
+        "OPENAI_API_KEY": "FIXME",
+        "MISTRAL_API_KEY": "FIXME",
+        "AZURE_OPENAI_API_KEY": "FIXME",
+        "GEMINI_API_KEY": "FIXME",
+        "PYTHON": "FIXME - path to python inside the virtualenv",
+      },
+    },
+  ]
+}
+```

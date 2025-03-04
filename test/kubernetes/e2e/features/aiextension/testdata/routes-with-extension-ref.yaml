@@ -1,0 +1,149 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: openai
+  namespace: ai-test
+spec:
+  parentRefs:
+    - name: ai-gateway
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /openai
+      backendRefs:
+        - name: openai
+          group: gateway.kgateway.dev
+          kind: Backend
+          filters:
+            - type: ExtensionRef
+              extensionRef:
+                group: gateway.kgateway.dev
+                kind: RoutePolicy
+                name: openai-policy
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: mistralai
+  namespace: ai-test
+spec:
+  parentRefs:
+    - name: ai-gateway
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /mistralai
+      backendRefs:
+        - name: mistralai
+          group: gateway.kgateway.dev
+          kind: Backend
+          filters:
+            - type: ExtensionRef
+              extensionRef:
+                group: gateway.kgateway.dev
+                kind: RoutePolicy
+                name: mistralai-policy
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: azure-openai
+  namespace: ai-test
+spec:
+  parentRefs:
+    - name: ai-gateway
+      namespace: ai-test
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /azure
+      backendRefs:
+        - name: azure-openai
+          namespace: ai-test
+          group: gateway.kgateway.dev
+          kind: Backend
+          filters:
+            - type: ExtensionRef
+              extensionRef:
+                group: gateway.kgateway.dev
+                kind: RoutePolicy
+                name: openai-azure-policy
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: anthropic
+  namespace: ai-test
+spec:
+  parentRefs:
+    - name: ai-gateway
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /anthropic
+      backendRefs:
+        - name: anthropic
+          group: gateway.kgateway.dev
+          kind: Backend
+          filters:
+            - type: ExtensionRef
+              extensionRef:
+                group: gateway.kgateway.dev
+                kind: RoutePolicy
+                name: anthropic-policy
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: gemini
+  namespace: ai-test
+spec:
+  parentRefs:
+    - name: ai-gateway
+      namespace: ai-test
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /gemini
+      backendRefs:
+        - name: gemini
+          namespace: ai-test
+          group: gateway.kgateway.dev
+          kind: Backend
+          filters:
+            - type: ExtensionRef
+              extensionRef:
+                group: gateway.kgateway.dev
+                kind: RoutePolicy
+                name: gemini-policy
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: vertex-ai
+  namespace: ai-test
+spec:
+  parentRefs:
+    - name: ai-gateway
+      namespace: ai-test
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /vertex-ai
+      backendRefs:
+        - name: vertex-ai
+          namespace: ai-test
+          group: gateway.kgateway.dev
+          kind: Backend
+          filters:
+            - type: ExtensionRef
+              extensionRef:
+                group: gateway.kgateway.dev
+                kind: RoutePolicy
+                name: vertex-ai-policy

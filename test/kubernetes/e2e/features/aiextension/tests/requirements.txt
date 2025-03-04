@@ -1,0 +1,16 @@
+openai
+mistralai
+anthropic
+google.generativeai
+vertexai
+pytest
+langchain-openai
+langchain-community
+langchainhub
+langchain_postgres
+fastapi[standard]
+uvicorn[standard]
+presidio_analyzer[transformers]
+presidio_anonymizer
+transformers
+shapely>=2
