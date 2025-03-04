@@ -41,7 +41,7 @@ var (
 		Name:      "nginx-static",
 		Namespace: "default",
 	}
-	be = &v1alpha1.Backend{
+	backend = &v1alpha1.Backend{
 		ObjectMeta: backendMeta,
 	}
 
@@ -70,7 +70,7 @@ func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
 			err := s.testInstallation.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 			s.Require().NoError(err)
 		}
-		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment, be)
+		s.testInstallation.Assertions.EventuallyObjectsNotExist(s.ctx, proxyService, proxyDeployment, backend)
 	})
 
 	for _, manifest := range manifests {
@@ -79,7 +79,7 @@ func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
 	}
 
 	// assert the expected resources are created and running before attempting to send traffic
-	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment, be)
+	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment, backend)
 	// TODO: make this a specific assertion to remove the need for c/p the label selector
 	// e.g. EventuallyCurlPodRunning(...) etc.
 	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, defaults.CurlPod.GetNamespace(), metav1.ListOptions{
