@@ -179,9 +179,9 @@ type StaticBackend struct {
 	Hosts []Host `json:"hosts,omitempty"`
 }
 
-// Host defines a static upstream host.
+// Host defines a static backend host.
 type Host struct {
-	// Host is the host to use for the backend.
+	// Host is the host name to use for the backend.
 	// +kubebuilder:validation:MinLength=1
 	Host string `json:"host"`
 	// Port is the port to use for the backend.

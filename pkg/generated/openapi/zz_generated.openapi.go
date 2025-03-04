@@ -2193,12 +2193,12 @@ func schema_kgateway_v2_api_v1alpha1_Host(ref common.ReferenceCallback) common.O
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Host defines a static upstream host.",
+				Description: "Host defines a static backend host.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"host": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Host is the host to use for the backend.",
+							Description: "Host is the host name to use for the backend.",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
