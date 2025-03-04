@@ -29,6 +29,7 @@ spec:
   aws:
     accountId: "000000000000"
     auth:
+      type: secret
       secret:
         name: aws-creds
     lambda:
