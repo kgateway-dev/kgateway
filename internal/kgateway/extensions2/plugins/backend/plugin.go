@@ -27,6 +27,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 )
 
@@ -90,8 +91,8 @@ type backendPlugin struct {
 
 func registerTypes(ourCli versioned.Interface) {
 	kubeclient.Register[*v1alpha1.Backend](
-		v1alpha1.BackendGVK.GroupVersion().WithResource("backends"),
-		v1alpha1.BackendGVK,
+		wellknown.BackendGVK.GroupVersion().WithResource("backends"),
+		wellknown.BackendGVK,
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
 			return ourCli.GatewayV1alpha1().Backends(namespace).List(context.Background(), o)
 		},
@@ -106,7 +107,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 	col := krt.WrapClient(kclient.New[*v1alpha1.Backend](commoncol.Client), commoncol.KrtOpts.ToOptions("Backends")...)
 
-	gk := v1alpha1.BackendGVK.GroupKind()
+	gk := wellknown.BackendGVK.GroupKind()
 	translate := buildTranslateFunc(commoncol.Secrets)
 	ucol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.BackendObjectIR {
 		// resolve secrets
@@ -162,7 +163,7 @@ func buildTranslateFunc(secrets *krtcollections.SecretIndex) func(krtctx krt.Han
 			secretRef := gwv1.SecretObjectReference{
 				Name: gwv1.ObjectName(i.Spec.Aws.SecretRef.Name),
 			}
-			secret, _ := secrets.GetSecret(krtctx, krtcollections.From{GroupKind: v1alpha1.BackendGVK.GroupKind(), Namespace: ns}, secretRef)
+			secret, _ := secrets.GetSecret(krtctx, krtcollections.From{GroupKind: wellknown.BackendGVK.GroupKind(), Namespace: ns}, secretRef)
 			if secret != nil {
 				ir.AwsSecret = secret
 			} else {

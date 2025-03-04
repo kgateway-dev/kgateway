@@ -19,6 +19,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 type routePolicy struct {
@@ -54,7 +55,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		v1alpha1.SchemeGroupVersion.WithResource("routepolicies"),
 		commoncol.KrtOpts.ToOptions("RoutePolicy")...,
 	)
-	gk := v1alpha1.RoutePolicyGVK.GroupKind()
+	gk := wellknown.RoutePolicyGVK.GroupKind()
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy) *ir.PolicyWrapper {
 		var pol = &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
@@ -72,7 +73,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 	return extensionplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
-			v1alpha1.RoutePolicyGVK.GroupKind(): {
+			wellknown.RoutePolicyGVK.GroupKind(): {
 				//AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,
