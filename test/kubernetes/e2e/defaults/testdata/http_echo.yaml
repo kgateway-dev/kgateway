@@ -25,6 +25,7 @@ metadata:
   labels:
     app.kubernetes.io/name: http-echo
 spec:
+  terminationGracePeriodSeconds: 0
   containers:
   - name: http-echo
     # we avoid using checksums so that we automatically select amd64 or arm64
