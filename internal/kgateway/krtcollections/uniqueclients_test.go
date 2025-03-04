@@ -76,6 +76,84 @@ func TestUniqueClients(t *testing.T) {
 			),
 		},
 		{
+			name: "two UCCs",
+			inputs: []any{
+				&corev1.Pod{
+					TypeMeta: metav1.TypeMeta{},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "podname",
+						Namespace: "ns",
+						Labels:    map[string]string{"a": "b"},
+					},
+					Spec: corev1.PodSpec{
+						NodeName: "node",
+					},
+				},
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node",
+						Labels: map[string]string{
+							corev1.LabelTopologyRegion: "region",
+							corev1.LabelTopologyZone:   "zone",
+						},
+					},
+				},
+				&corev1.Pod{
+					TypeMeta: metav1.TypeMeta{},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "podname2",
+						Namespace: "ns",
+						Labels:    map[string]string{"a": "b"},
+					},
+					Spec: corev1.PodSpec{
+						NodeName: "node2",
+					},
+				},
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node2",
+						Labels: map[string]string{
+							corev1.LabelTopologyRegion: "region2",
+							corev1.LabelTopologyZone:   "zone2",
+						},
+					},
+				},
+			},
+			requests: []*envoy_service_discovery_v3.DiscoveryRequest{
+				{
+					Node: &corev3.Node{
+						Id: "podname.ns",
+						Metadata: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								xds.RoleKey: structpb.NewStringValue(wellknown.GatewayApiProxyValue + "~best-proxy-role"),
+							},
+						},
+					},
+				},
+				{
+					Node: &corev3.Node{
+						Id: "podname2.ns",
+						Metadata: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								xds.RoleKey: structpb.NewStringValue(wellknown.GatewayApiProxyValue + "~best-proxy-role"),
+							},
+						},
+					},
+				},
+			},
+			result: sets.New(
+				fmt.Sprintf("kgateway-kube-gateway-api~best-proxy-role~%d~ns", utils.HashLabels(map[string]string{
+					corev1.LabelTopologyRegion: "region",
+					corev1.LabelTopologyZone:   "zone",
+					"a":                        "b",
+				})), fmt.Sprintf("kgateway-kube-gateway-api~best-proxy-role~%d~ns", utils.HashLabels(map[string]string{
+					corev1.LabelTopologyRegion: "region2",
+					corev1.LabelTopologyZone:   "zone2",
+					"a":                        "b",
+				})),
+			),
+		},
+		{
 			name:   "no-pods",
 			inputs: nil,
 			requests: []*envoy_service_discovery_v3.DiscoveryRequest{
@@ -140,16 +218,17 @@ func TestUniqueClients(t *testing.T) {
 			g.Expect(names).To(Equal(tc.result))
 
 			for i := range tc.requests {
-				for j := 0; j < 10; j++ {
-					g.Expect(ucc.List()).To(HaveLen(len(allUcc) - i))
+				for j := 0; j < 9; j++ {
 					cb.OnStreamClosed(int64(i*10+j), nil)
 				}
-				// FIXME: this assertion will be reworked; the goal here is to test jitter
-				// that as clients disconnect we don't impact other UCCs etc.
-				// g.Eventually(func() []ir.UniqlyConnectedClient {
-				// 	allUcc = ucc.List()
-				// 	return allUcc
-				// }, "1s").Should(HaveLen(len(tc.result)))
+			}
+
+			g.Expect(ucc.List()).Should(HaveLen(len(tc.result)))
+
+			for i := range tc.requests {
+				j := 9
+				g.Eventually(ucc.List).Should(HaveLen(len(allUcc) - i))
+				cb.OnStreamClosed(int64(i*10+j), nil)
 			}
 
 			// as events happens async, eventually after all clients disconnect all UCCs should be removed

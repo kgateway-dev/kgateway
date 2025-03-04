@@ -42,6 +42,14 @@ func (c HttpRouteIR) ResourceName() string {
 	return c.ObjectSource.ResourceName()
 }
 
+// get hostnames
+func (c *HttpRouteIR) GetHostnames() []string {
+	if c == nil {
+		return nil
+	}
+	return c.Hostnames
+}
+
 var _ krt.ResourceNamer = &HttpRouteIR{}
 var _ krt.ResourceNamer = HttpRouteIR{}
 
@@ -103,3 +111,36 @@ func (c TcpRouteIR) Equals(in TcpRouteIR) bool {
 }
 
 var _ Route = &TcpRouteIR{}
+
+type TlsRouteIR struct {
+	ObjectSource `json:",inline"`
+	SourceObject *gwv1alpha2.TLSRoute
+	ParentRefs   []gwv1.ParentReference
+
+	Hostnames        []string
+	AttachedPolicies AttachedPolicies
+	Backends         []BackendRefIR
+}
+
+func (c *TlsRouteIR) GetParentRefs() []gwv1.ParentReference {
+	return c.ParentRefs
+}
+func (c *TlsRouteIR) GetSourceObject() metav1.Object {
+	return c.SourceObject
+}
+func (c TlsRouteIR) ResourceName() string {
+	return c.ObjectSource.ResourceName()
+}
+
+func (c TlsRouteIR) Equals(in TlsRouteIR) bool {
+	return c.ObjectSource == in.ObjectSource && versionEquals(c.SourceObject, in.SourceObject) && c.AttachedPolicies.Equals(in.AttachedPolicies)
+}
+
+func (c *TlsRouteIR) GetHostnames() []string {
+	if c == nil {
+		return nil
+	}
+	return c.Hostnames
+}
+
+var _ Route = &TlsRouteIR{}

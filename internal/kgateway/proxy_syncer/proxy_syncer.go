@@ -269,6 +269,18 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 				// obsGen will stay as-is...
 				maps.Copy(p.reports.TCPRoutes[rnn].Parents, rr.Parents)
 			}
+
+			for rnn, rr := range p.reports.TLSRoutes {
+				// if we haven't encountered this route, just copy it over completely
+				old := merged.TLSRoutes[rnn]
+				if old == nil {
+					merged.TLSRoutes[rnn] = rr
+					continue
+				}
+				// else, let's merge our parentRefs into the existing map
+				// obsGen will stay as-is...
+				maps.Copy(p.reports.TLSRoutes[rnn].Parents, rr.Parents)
+			}
 		}
 		return &report{merged}
 	})
@@ -425,6 +437,12 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 				return nil
 			}
 			r.Status.RouteStatus = *status
+		case *gwv1a2.TLSRoute:
+			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
+			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
+				return nil
+			}
+			r.Status.RouteStatus = *status
 		default:
 			logger.Warnw(fmt.Sprintf("unsupported route type for %s", routeType), "route", route)
 			return nil
@@ -451,6 +469,16 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 		})
 		if err != nil {
 			logger.Errorw("all attempts failed at updating TCPRoute status", "error", err, "route", rnn)
+		}
+	}
+
+	// Sync TLSRoute statuses
+	for rnn := range rm.TLSRoutes {
+		err := syncStatusWithRetry(wellknown.TLSRouteKind, rnn, func() client.Object { return new(gwv1a2.TLSRoute) }, func(route client.Object) error {
+			return buildAndUpdateStatus(route, wellknown.TLSRouteKind)
+		})
+		if err != nil {
+			logger.Errorw("all attempts failed at updating TLSRoute status", "error", err, "route", rnn)
 		}
 	}
 }

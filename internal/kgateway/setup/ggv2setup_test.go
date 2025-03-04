@@ -178,10 +178,8 @@ func TestScenarios(t *testing.T) {
 		t.Fatalf("can't listen %v", err)
 	}
 	xdsPort := lis.Addr().(*net.TCPAddr).Port
-	snapCache, err := ggv2setup.NewControlPlaneWithListener(ctx, lis, uniqueClientCallbacks)
-	if err != nil {
-		t.Fatalf("can't listen %v", err)
-	}
+	snapCache, grpcServer := ggv2setup.NewControlPlaneWithListener(ctx, lis, uniqueClientCallbacks)
+	t.Cleanup(func() { grpcServer.Stop() })
 
 	st, err := settings.BuildSettings()
 	if err != nil {

@@ -39,6 +39,7 @@ func (d *routePolicy) Equals(in any) bool {
 }
 
 type routePolicyPluginGwPass struct {
+	ir.UnimplementedProxyTranslationPass
 }
 
 func (p *routePolicyPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {
@@ -128,10 +129,6 @@ func (p *routePolicyPluginGwPass) ApplyForRouteBackend(
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
 func (p *routePolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
-	return nil, nil
-}
-
-func (p *routePolicyPluginGwPass) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {
 	return nil, nil
 }
 

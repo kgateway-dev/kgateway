@@ -146,14 +146,14 @@ check-spelling:
 #----------------------------------------------------------------------------
 # Analyze
 #----------------------------------------------------------------------------
+
 LINTER_VERSION := $(shell cat .github/workflows/static-analysis.yaml | yq '.jobs.static-analysis.steps.[] | select( .uses == "*golangci/golangci-lint-action*") | .with.version ')
 
-# The analyze target runs a suite of static analysis tools against the codebase.
-# The options are defined in .golangci.yaml, and can be overridden by setting the ANALYZE_ARGS variable.
-.PHONY: analyze
+GOLANGCI_LINT ?= go run github.com/golangci/golangci-lint/cmd/golangci-lint@$(LINTER_VERSION)
 ANALYZE_ARGS ?= --fast --verbose
-analyze:
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint@$(LINTER_VERSION) run $(ANALYZE_ARGS) ./...
+.PHONY: analyze
+analyze:  ## Run golangci-lint. Override options with ANALYZE_ARGS.
+	$(GOLANGCI_LINT) run $(ANALYZE_ARGS) ./...
 
 #----------------------------------------------------------------------------------
 # Ginkgo Tests
@@ -691,7 +691,7 @@ $(TEST_ASSET_DIR)/conformance/conformance_test.go:
 	cat $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/conformance_test.go >> $@
 	go fmt $@
 
-CONFORMANCE_SUPPORTED_FEATURES ?= -supported-features=Gateway,ReferenceGrant,HTTPRoute,HTTPRouteQueryParamMatching,HTTPRouteMethodMatching,HTTPRouteResponseHeaderModification,HTTPRoutePortRedirect,HTTPRouteHostRewrite,HTTPRouteSchemeRedirect,HTTPRoutePathRedirect,HTTPRouteHostRewrite,HTTPRoutePathRewrite,HTTPRouteRequestMirror
+CONFORMANCE_SUPPORTED_FEATURES ?= -supported-features=Gateway,ReferenceGrant,HTTPRoute,HTTPRouteQueryParamMatching,HTTPRouteMethodMatching,HTTPRouteResponseHeaderModification,HTTPRoutePortRedirect,HTTPRouteHostRewrite,HTTPRouteSchemeRedirect,HTTPRoutePathRedirect,HTTPRouteHostRewrite,HTTPRoutePathRewrite,HTTPRouteRequestMirror,TLSRoute
 CONFORMANCE_SUPPORTED_PROFILES ?= -conformance-profiles=GATEWAY-HTTP
 CONFORMANCE_GATEWAY_CLASS ?= kgateway
 CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose

@@ -16,18 +16,6 @@ type Context struct {
 
 	// ValuesManifestFile points to the file that contains the set of Helm values that are unique to this test
 	ValuesManifestFile string
-
-	// is populated if the installation has any AWS options configured (via `settings.aws.*` Helm values)
-	AwsOptions *AwsOptions
-}
-
-// AWS options that the installation was configured with
-type AwsOptions struct {
-	// corresponds to the `settings.aws.enableServiceAccountCredentials` helm value
-	EnableServiceAccountCredentials bool
-
-	// corresponds to the `settings.aws.stsCredentialsRegion` helm value
-	StsCredentialsRegion string
 }
 
 // ValidateInstallContext returns an error if the provided Context is invalid

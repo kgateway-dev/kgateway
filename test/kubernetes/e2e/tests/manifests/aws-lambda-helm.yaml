@@ -1,4 +1,0 @@
-settings:
-  aws:
-    enableServiceAccountCredentials: true
-    stsCredentialsRegion: us-west-2

@@ -68,9 +68,10 @@ func InitCollections(
 	httpRoutes := krt.WrapClient(kclient.New[*gwv1.HTTPRoute](istioClient), krtopts.ToOptions("HTTPRoute")...)
 	kubeRawGateways := krt.WrapClient(kclient.New[*gwv1.Gateway](istioClient), krtopts.ToOptions("KubeGateways")...)
 
-	tcproutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TCPRoute](istioClient, gvr.TCPRoute, kubetypes.StandardInformer, kclient.Filter{}), krtopts.ToOptions("TCPRoute")...)
+	tcpRoutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TCPRoute](istioClient, gvr.TCPRoute, kubetypes.StandardInformer, kclient.Filter{}), krtopts.ToOptions("TCPRoute")...)
+	tlsRoutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TLSRoute](istioClient, gvr.TLSRoute, kubetypes.StandardInformer, kclient.Filter{}), krtopts.ToOptions("TLSRoute")...)
 
-	return initCollectionsWithGateways(isOurGw, kubeRawGateways, httpRoutes, tcproutes, refgrants, extensions, krtopts)
+	return initCollectionsWithGateways(isOurGw, kubeRawGateways, httpRoutes, tcpRoutes, tlsRoutes, refgrants, extensions, krtopts)
 }
 
 func initCollectionsWithGateways(
@@ -78,6 +79,7 @@ func initCollectionsWithGateways(
 	kubeRawGateways krt.Collection[*gwv1.Gateway],
 	httpRoutes krt.Collection[*gwv1.HTTPRoute],
 	tcproutes krt.Collection[*gwv1a2.TCPRoute],
+	tlsRoutes krt.Collection[*gwv1a2.TLSRoute],
 	refgrants *RefGrantIndex,
 	extensions extensionsplug.Plugin,
 	krtopts krtutil.KrtOptions,
@@ -95,7 +97,7 @@ func initCollectionsWithGateways(
 
 	kubeGateways := NewGatewayIndex(krtopts, isOurGw, policies, kubeRawGateways)
 
-	routes := NewRoutesIndex(krtopts, httpRoutes, tcproutes, policies, backendIndex, refgrants)
+	routes := NewRoutesIndex(krtopts, httpRoutes, tcproutes, tlsRoutes, policies, backendIndex, refgrants)
 	return kubeGateways, routes, backendIndex, endpointIRs
 }
 

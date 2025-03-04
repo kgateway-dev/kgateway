@@ -39,6 +39,7 @@ func (d *listenerPolicy) Equals(in any) bool {
 }
 
 type listenerPolicyPluginGwPass struct {
+	ir.UnimplementedProxyTranslationPass
 }
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionplug.Plugin {
@@ -133,10 +134,6 @@ func (p *listenerPolicyPluginGwPass) ApplyForRouteBackend(
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from listener config must be disabled, so it doesnt impact other listeners.
 func (p *listenerPolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
-	return nil, nil
-}
-
-func (p *listenerPolicyPluginGwPass) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {
 	return nil, nil
 }
 

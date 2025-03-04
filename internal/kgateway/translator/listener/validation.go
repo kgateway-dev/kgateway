@@ -25,8 +25,8 @@ type protocol = string
 type groupName = string
 type routeKind = string
 
+// getSupportedProtocolsRoutes returns a map of listener protocols to the supported route kinds for that protocol
 func getSupportedProtocolsRoutes() map[protocol]map[groupName][]routeKind {
-	// we currently only support HTTPRoute on HTTP and HTTPS protocols
 	supportedProtocolToKinds := map[protocol]map[groupName][]routeKind{
 		string(gwv1.HTTPProtocolType): {
 			gwv1.GroupName: []string{
@@ -41,6 +41,11 @@ func getSupportedProtocolsRoutes() map[protocol]map[groupName][]routeKind {
 		string(gwv1.TCPProtocolType): {
 			gwv1.GroupName: []string{
 				wellknown.TCPRouteKind,
+			},
+		},
+		string(gwv1.TLSProtocolType): {
+			gwv1.GroupName: []string{
+				wellknown.TLSRouteKind,
 			},
 		},
 	}

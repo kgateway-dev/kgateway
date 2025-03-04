@@ -102,6 +102,7 @@ rules:
   - httproutes
   - referencegrants
   - tcproutes
+  - tlsroutes
   verbs:
   - get
   - list
@@ -113,6 +114,7 @@ rules:
   - gateways/status
   - httproutes/status
   - tcproutes/status
+  - tlsroutes/status
   verbs:
   - patch
   - update

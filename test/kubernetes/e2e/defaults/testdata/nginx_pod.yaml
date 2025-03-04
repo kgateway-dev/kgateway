@@ -108,6 +108,7 @@ metadata:
   labels:
     app.kubernetes.io/name: nginx
 spec:
+  terminationGracePeriodSeconds: 0
   containers:
   - name: nginx
     image: nginx:stable

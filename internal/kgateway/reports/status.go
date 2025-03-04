@@ -109,6 +109,12 @@ func (r *ReportMap) BuildRouteStatus(ctx context.Context, obj client.Object, cNa
 		if len(parentRefs) == 0 {
 			parentRefs = append(parentRefs, routeReport.parentRefs()...)
 		}
+	case *gwv1a2.TLSRoute:
+		existingStatus = route.Status.RouteStatus
+		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
+		if len(parentRefs) == 0 {
+			parentRefs = append(parentRefs, routeReport.parentRefs()...)
+		}
 	default:
 		contextutils.LoggerFrom(ctx).Error(fmt.Errorf("unsupported route type %T", obj), "failed to build route status")
 		return nil

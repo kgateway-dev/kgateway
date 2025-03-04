@@ -218,9 +218,9 @@ func (c *Cli) StartPortForward(ctx context.Context, options ...portforward.Optio
 	err := portForwarder.Start(
 		ctx,
 		retry.LastErrorOnly(true),
-		retry.Delay(100*time.Millisecond),
-		retry.DelayType(retry.BackOffDelay),
-		retry.Attempts(5),
+		retry.Delay(250*time.Millisecond),
+		retry.DelayType(retry.FixedDelay),
+		retry.Attempts(60),
 	)
 	return portForwarder, err
 }

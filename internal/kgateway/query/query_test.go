@@ -10,11 +10,9 @@ import (
 	"istio.io/istio/pkg/kube/krt/krttest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	apiv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -27,27 +25,11 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
 )
 
 //go:generate go run github.com/golang/mock/mockgen -destination mocks/mock_queries.go -package mocks github.com/kgateway-dev/kgateway/internal/kgateway/query GatewayQueries
 
 var _ = Describe("Query", func() {
-	var (
-		scheme  *runtime.Scheme
-		builder *fake.ClientBuilder
-	)
-
-	BeforeEach(func() {
-		scheme = schemes.GatewayScheme()
-		builder = fake.NewClientBuilder().WithScheme(scheme)
-		err := query.IterateIndices(func(o client.Object, f string, fun client.IndexerFunc) error {
-			builder.WithIndex(o, f, fun)
-			return nil
-		})
-		Expect(err).NotTo(HaveOccurred())
-	})
-
 	Describe("GetSecretRef", func() {
 		It("should get secret from different ns if we have a ref grant", func() {
 			rg := refGrantSecret()
@@ -604,6 +586,185 @@ var _ = Describe("Query", func() {
 		})
 
 	})
+
+	It("should match TLSRoutes for Listener", func() {
+		gw := gw()
+		gw.Spec.Listeners = []apiv1.Listener{
+			{
+				Name:     "foo-tls",
+				Protocol: apiv1.TLSProtocolType,
+			},
+		}
+
+		tlsRoute := &apiv1a2.TLSRoute{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       wellknown.TLSRouteKind,
+				APIVersion: apiv1a2.GroupVersion.String(),
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-tls-route",
+				Namespace: gw.Namespace,
+			},
+			Spec: apiv1a2.TLSRouteSpec{
+				CommonRouteSpec: apiv1.CommonRouteSpec{
+					ParentRefs: []apiv1.ParentReference{
+						{
+							Name: apiv1.ObjectName(gw.Name),
+						},
+					},
+				},
+			},
+		}
+
+		gq := newQueries(tlsRoute)
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routes.ListenerResults[string(gw.Spec.Listeners[0].Name)].Routes).To(HaveLen(1))
+		Expect(routes.ListenerResults[string(gw.Spec.Listeners[0].Name)].Error).NotTo(HaveOccurred())
+	})
+
+	It("should get TLSRoutes in other namespace for listener", func() {
+		gw := gw()
+		gw.Spec.Listeners = []apiv1.Listener{
+			{
+				Name:     "foo-tls",
+				Protocol: apiv1.TLSProtocolType,
+				AllowedRoutes: &apiv1.AllowedRoutes{
+					Namespaces: &apiv1.RouteNamespaces{
+						From: ptr.To(apiv1.NamespacesFromAll),
+					},
+				},
+			},
+		}
+
+		tlsRoute := tlsRoute("test-tls-route", "other-ns")
+		tlsRoute.Spec = apiv1a2.TLSRouteSpec{
+			CommonRouteSpec: apiv1.CommonRouteSpec{
+				ParentRefs: []apiv1.ParentReference{
+					{
+						Name:      apiv1.ObjectName(gw.Name),
+						Namespace: ptr.To(apiv1.Namespace(gw.Namespace)),
+					},
+				},
+			},
+		}
+
+		gq := newQueries(tlsRoute)
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routes.ListenerResults["foo-tls"].Error).NotTo(HaveOccurred())
+		Expect(routes.ListenerResults["foo-tls"].Routes).To(HaveLen(1))
+	})
+
+	It("should error when listeners don't match TLSRoute", func() {
+		gw := gw()
+		gw.Spec.Listeners = []apiv1.Listener{
+			{
+				Name:     "foo-tls",
+				Protocol: apiv1.TLSProtocolType,
+				Port:     8080,
+			},
+			{
+				Name:     "bar-tls",
+				Protocol: apiv1.TLSProtocolType,
+				Port:     8081,
+			},
+		}
+
+		tlsRoute := tlsRoute("test-tls-route", gw.Namespace)
+		var badPort apiv1.PortNumber = 9999
+		tlsRoute.Spec = apiv1a2.TLSRouteSpec{
+			CommonRouteSpec: apiv1.CommonRouteSpec{
+				ParentRefs: []apiv1.ParentReference{
+					{
+						Name: apiv1.ObjectName(gw.Name),
+						Port: &badPort,
+					},
+				},
+			},
+		}
+
+		gq := newQueries(tlsRoute)
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routes.RouteErrors).To(HaveLen(1))
+		Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNoMatchingParent))
+		Expect(routes.RouteErrors[0].Error.Reason).To(Equal(apiv1.RouteReasonNoMatchingParent))
+		Expect(routes.RouteErrors[0].ParentRef).To(Equal(tlsRoute.Spec.ParentRefs[0]))
+	})
+
+	It("should error when listener does not allow TLSRoute kind", func() {
+		gw := gw()
+		gw.Spec.Listeners = []apiv1.Listener{
+			{
+				Name:     "foo-tls",
+				Protocol: apiv1.TLSProtocolType,
+				AllowedRoutes: &apiv1.AllowedRoutes{
+					Kinds: []apiv1.RouteGroupKind{{Kind: "FakeKind"}},
+				},
+			},
+		}
+
+		tlsRoute := tlsRoute("test-tls-route", gw.Namespace)
+		tlsRoute.Spec = apiv1a2.TLSRouteSpec{
+			CommonRouteSpec: apiv1.CommonRouteSpec{
+				ParentRefs: []apiv1.ParentReference{
+					{
+						Name: apiv1.ObjectName(gw.Name),
+					},
+				},
+			},
+		}
+
+		gq := newQueries(tlsRoute)
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routes.RouteErrors).To(HaveLen(1))
+		Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNotAllowedByListeners))
+	})
+
+	It("should allow TLSRoute for one listener", func() {
+		gw := gw()
+		gw.Spec.Listeners = []apiv1.Listener{
+			{
+				Name:     "foo-tls",
+				Protocol: apiv1.TLSProtocolType,
+				AllowedRoutes: &apiv1.AllowedRoutes{
+					Kinds: []apiv1.RouteGroupKind{{Kind: wellknown.TLSRouteKind}},
+				},
+			},
+			{
+				Name:     "bar",
+				Protocol: apiv1.TLSProtocolType,
+				AllowedRoutes: &apiv1.AllowedRoutes{
+					Kinds: []apiv1.RouteGroupKind{{Kind: "FakeKind"}},
+				},
+			},
+		}
+
+		tlsRoute := tlsRoute("test-tls-route", gw.Namespace)
+		tlsRoute.Spec = apiv1a2.TLSRouteSpec{
+			CommonRouteSpec: apiv1.CommonRouteSpec{
+				ParentRefs: []apiv1.ParentReference{
+					{
+						Name: apiv1.ObjectName(gw.Name),
+					},
+				},
+			},
+		}
+
+		gq := newQueries(tlsRoute)
+		routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gw)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routes.RouteErrors).To(BeEmpty())
+		Expect(routes.ListenerResults["foo-tls"].Routes).To(HaveLen(1))
+		Expect(routes.ListenerResults["bar"].Routes).To(BeEmpty())
+	})
 })
 
 func refGrantSecret() *apiv1beta1.ReferenceGrant {
@@ -674,6 +835,19 @@ func tcpRoute(name, ns string) *apiv1a2.TCPRoute {
 	}
 }
 
+func tlsRoute(name, ns string) *apiv1a2.TLSRoute {
+	return &apiv1a2.TLSRoute{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       wellknown.TLSRouteKind,
+			APIVersion: apiv1a2.GroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+		},
+	}
+}
+
 func nsptr(s string) *apiv1.Namespace {
 	var ns apiv1.Namespace = apiv1.Namespace(s)
 	return &ns
@@ -701,7 +875,8 @@ func newQueries(initObjs ...client.Object) query.GatewayQueries {
 
 	httproutes := krttest.GetMockCollection[*gwv1.HTTPRoute](mock)
 	tcpproutes := krttest.GetMockCollection[*gwv1a2.TCPRoute](mock)
-	rtidx := krtcollections.NewRoutesIndex(krtutil.KrtOptions{}, httproutes, tcpproutes, policies, upstreams, refgrants)
+	tlsroutes := krttest.GetMockCollection[*gwv1a2.TLSRoute](mock)
+	rtidx := krtcollections.NewRoutesIndex(krtutil.KrtOptions{}, httproutes, tcpproutes, tlsroutes, policies, upstreams, refgrants)
 	services.WaitUntilSynced(nil)
 
 	secretsCol := map[schema.GroupKind]krt.Collection[ir.Secret]{

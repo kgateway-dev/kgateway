@@ -406,6 +406,12 @@ func (c RouteWrapper) Equals(in RouteWrapper) bool {
 		} else {
 			return a.Equals(*bhttp)
 		}
+	case *ir.TlsRouteIR:
+		if bhttp, ok := in.Route.(*ir.TlsRouteIR); !ok {
+			return false
+		} else {
+			return a.Equals(*bhttp)
+		}
 	}
 	panic("unknown route type")
 }
@@ -436,23 +442,27 @@ func NewRoutesIndex(
 	krtopts krtutil.KrtOptions,
 	httproutes krt.Collection[*gwv1.HTTPRoute],
 	tcproutes krt.Collection[*gwv1a2.TCPRoute],
+	tlsroutes krt.Collection[*gwv1a2.TLSRoute],
 	policies *PolicyIndex,
 	backends *BackendIndex,
 	refgrants *RefGrantIndex,
 ) *RoutesIndex {
 	h := &RoutesIndex{policies: policies, refgrants: refgrants, backends: backends}
-	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, tcproutes.HasSynced)
+	h.hasSyncedFuncs = append(h.hasSyncedFuncs, httproutes.HasSynced, tcproutes.HasSynced, tlsroutes.HasSynced)
 	h.httpRoutes = krt.NewCollection(httproutes, h.transformHttpRoute, krtopts.ToOptions("http-routes-with-policy")...)
-	hr := krt.NewCollection(h.httpRoutes, func(kctx krt.HandlerContext, i ir.HttpRouteIR) *RouteWrapper {
+	httpRouteCollection := krt.NewCollection(h.httpRoutes, func(kctx krt.HandlerContext, i ir.HttpRouteIR) *RouteWrapper {
 		return &RouteWrapper{Route: &i}
 	}, krtopts.ToOptions("routes-http-routes-with-policy")...)
-
-	tr := krt.NewCollection(tcproutes, func(kctx krt.HandlerContext, i *gwv1a2.TCPRoute) *RouteWrapper {
+	tcpRoutesCollection := krt.NewCollection(tcproutes, func(kctx krt.HandlerContext, i *gwv1a2.TCPRoute) *RouteWrapper {
 		t := h.transformTcpRoute(kctx, i)
 		return &RouteWrapper{Route: t}
 	}, krtopts.ToOptions("routes-tcp-routes-with-policy")...)
+	tlsRoutesCollection := krt.NewCollection(tlsroutes, func(kctx krt.HandlerContext, i *gwv1a2.TLSRoute) *RouteWrapper {
+		t := h.transformTlsRoute(kctx, i)
+		return &RouteWrapper{Route: t}
+	}, krtopts.ToOptions("routes-tls-routes-with-policy")...)
 
-	h.routes = krt.JoinCollection([]krt.Collection[RouteWrapper]{hr, tr}, krtopts.ToOptions("all-routes-with-policy")...)
+	h.routes = krt.JoinCollection([]krt.Collection[RouteWrapper]{httpRouteCollection, tcpRoutesCollection, tlsRoutesCollection}, krtopts.ToOptions("all-routes-with-policy")...)
 
 	httpByNamespace := krt.NewIndex(h.httpRoutes, func(i ir.HttpRouteIR) []string {
 		return []string{i.GetNamespace()}
@@ -527,6 +537,27 @@ func (h *RoutesIndex) transformTcpRoute(kctx krt.HandlerContext, i *gwv1a2.TCPRo
 		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "")),
 	}
 }
+
+func (h *RoutesIndex) transformTlsRoute(kctx krt.HandlerContext, i *gwv1a2.TLSRoute) *ir.TlsRouteIR {
+	src := ir.ObjectSource{
+		Group:     gwv1a2.SchemeGroupVersion.Group,
+		Kind:      "TLSRoute",
+		Namespace: i.Namespace,
+		Name:      i.Name,
+	}
+	var backends []gwv1.BackendRef
+	if len(i.Spec.Rules) > 0 {
+		backends = i.Spec.Rules[0].BackendRefs
+	}
+	return &ir.TlsRouteIR{
+		ObjectSource:     src,
+		SourceObject:     i,
+		ParentRefs:       i.Spec.ParentRefs,
+		Backends:         h.getTcpBackends(kctx, src, backends),
+		Hostnames:        tostr(i.Spec.Hostnames),
+		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "")),
+	}
+}
 func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRoute) *ir.HttpRouteIR {
 	src := ir.ObjectSource{
 		Group:     gwv1.SchemeGroupVersion.Group,
@@ -544,6 +575,7 @@ func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRo
 		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "")),
 	}
 }
+
 func (h *RoutesIndex) transformRules(kctx krt.HandlerContext, src ir.ObjectSource, i []gwv1.HTTPRouteRule) []ir.HttpRouteRuleIR {
 	rules := make([]ir.HttpRouteRuleIR, 0, len(i))
 	for _, r := range i {

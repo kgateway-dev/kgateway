@@ -8,6 +8,7 @@ import (
 	envoycachetypes "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 
@@ -181,7 +182,7 @@ func visitMessage(msg protoreflect.Message, fd protoreflect.FieldDescriptor, v p
 	}
 	visitFields(visitMsg, sensitive)
 	if anyMsg != nil {
-		anymsg, _ := anypb.New(anyMsg)
+		anymsg, _ := utils.MessageToAny(anyMsg)
 		msg.Set(fd, protoreflect.ValueOf(anymsg.ProtoReflect()))
 	}
 }

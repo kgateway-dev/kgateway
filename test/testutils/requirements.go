@@ -3,6 +3,7 @@
 package testutils
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"runtime"
@@ -44,8 +45,8 @@ func ValidateRequirementsAndNotifyGinkgo(requirements ...Requirement) {
 func ValidateRequirements(requirements []Requirement) error {
 	// default
 	requiredConfiguration := &RequiredConfiguration{
-		supportedOS:   sets.NewString(),
-		supportedArch: sets.NewString(),
+		supportedOS:   sets.New[string](),
+		supportedArch: sets.New[string](),
 		reasons:       map[string]string{},
 	}
 
@@ -59,8 +60,8 @@ func ValidateRequirements(requirements []Requirement) error {
 }
 
 type RequiredConfiguration struct {
-	supportedOS   sets.String
-	supportedArch sets.String
+	supportedOS   sets.Set[string]
+	supportedArch sets.Set[string]
 
 	// Set of env variables which must be defined
 	definedEnvVar []string
@@ -75,28 +76,26 @@ type RequiredConfiguration struct {
 
 // Validate returns an error is the RequiredConfiguration is not met
 func (r RequiredConfiguration) Validate() error {
-	var errs *multierror.Error
 
-	errs = multierror.Append(
-		errs,
+	err := errors.Join(
 		r.validateOS(),
 		r.validateArch(),
 		r.validateDefinedEnv(),
 		r.validateTruthyEnv())
 
 	// If there are no errors, return
-	if errs.ErrorOrNil() == nil {
+	if err == nil {
 		return nil
 	}
 
 	// If there are reasons defined, include them in the error message
 	if len(r.reasons) > 0 {
-		errs = multierror.Append(
-			errs,
+		err = multierror.Append(
+			err,
 			fmt.Errorf("user defined reasons: %+v", r.reasons))
 	}
 
-	return errs.ErrorOrNil()
+	return err
 }
 
 func (r RequiredConfiguration) validateOS() error {
@@ -147,7 +146,7 @@ type Requirement func(configuration *RequiredConfiguration)
 // LinuxOnly returns a Requirement that expects tests to only run on Linux
 func LinuxOnly(reason string) Requirement {
 	return func(configuration *RequiredConfiguration) {
-		configuration.supportedOS = sets.NewString("linux")
+		configuration.supportedOS = sets.New[string]("linux")
 		configuration.reasons["linux"] = reason
 	}
 }
