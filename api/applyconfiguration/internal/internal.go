@@ -195,6 +195,14 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: type
       type:
         scalar: string
+    unions:
+    - fields:
+      - fieldName: irsa
+        discriminatorValue: IRSA
+      - fieldName: secret
+        discriminatorValue: Secret
+      - fieldName: type
+        discriminatorValue: Type
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsBackend
   map:
     fields:

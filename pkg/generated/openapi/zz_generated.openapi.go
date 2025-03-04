@@ -901,6 +901,19 @@ func schema_kgateway_v2_api_v1alpha1_AwsAuth(ref common.ReferenceCallback) commo
 					},
 				},
 			},
+			VendorExtensible: spec.VendorExtensible{
+				Extensions: spec.Extensions{
+					"x-kubernetes-unions": []interface{}{
+						map[string]interface{}{
+							"fields-to-discriminateBy": map[string]interface{}{
+								"irsa":   "IRSA",
+								"secret": "Secret",
+								"type":   "Type",
+							},
+						},
+					},
+				},
+			},
 		},
 		Dependencies: []string{
 			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AWSAuthIRSA", "k8s.io/api/core/v1.LocalObjectReference"},
