@@ -148,12 +148,14 @@ check-spelling:
 #----------------------------------------------------------------------------
 
 LINTER_VERSION := $(shell cat .github/workflows/static-analysis.yaml | yq '.jobs.static-analysis.steps.[] | select( .uses == "*golangci/golangci-lint-action*") | .with.version ')
+GO_VERSION := $(shell cat go.mod | grep -E '^go' | awk '{print $$2}')
+GOTOOLCHAIN ?= go$(GO_VERSION)
 
 GOLANGCI_LINT ?= go run github.com/golangci/golangci-lint/cmd/golangci-lint@$(LINTER_VERSION)
 ANALYZE_ARGS ?= --fast --verbose
 .PHONY: analyze
 analyze:  ## Run golangci-lint. Override options with ANALYZE_ARGS.
-	$(GOLANGCI_LINT) run $(ANALYZE_ARGS) ./...
+	GOTOOLCHAIN=$(GOTOOLCHAIN) $(GOLANGCI_LINT) run $(ANALYZE_ARGS) ./...
 
 #----------------------------------------------------------------------------------
 # Ginkgo Tests
