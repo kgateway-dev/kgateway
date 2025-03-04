@@ -144,3 +144,47 @@ func (c *TlsRouteIR) GetHostnames() []string {
 }
 
 var _ Route = &TlsRouteIR{}
+
+type GRPCRouteIR struct {
+	ObjectSource `json:",inline"`
+	SourceObject *gwv1.GRPCRoute
+	ParentRefs   []gwv1.ParentReference
+
+	Hostnames        []string
+	AttachedPolicies AttachedPolicies
+	Rules            []GRPCRouteRuleIR
+}
+
+// Use HTTPRouteIR for GRPCRoute?
+type GRPCRouteRuleIR struct {
+	// ExtensionRefs    AttachedPolicies
+	// AttachedPolicies AttachedPolicies
+	Backends []BackendRefIR
+	Matches  []gwv1.GRPCRouteMatch
+	Name     string
+}
+
+func (c *GRPCRouteIR) GetParentRefs() []gwv1.ParentReference {
+	return c.ParentRefs
+}
+func (c *GRPCRouteIR) GetSourceObject() metav1.Object {
+	return c.SourceObject
+}
+
+func (c GRPCRouteIR) ResourceName() string {
+	return c.ObjectSource.ResourceName()
+}
+
+// get hostnames
+func (c *GRPCRouteIR) GetHostnames() []string {
+	if c == nil {
+		return nil
+	}
+	return c.Hostnames
+}
+
+func (c GRPCRouteIR) Equals(in GRPCRouteIR) bool {
+	return c.ObjectSource == in.ObjectSource && versionEquals(c.SourceObject, in.SourceObject) && c.AttachedPolicies.Equals(in.AttachedPolicies)
+}
+
+var _ Route = &GRPCRouteIR{}

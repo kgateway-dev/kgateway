@@ -118,6 +118,7 @@ func (r *gatewayQueries) GetRouteChain(
 	case *ir.TcpRouteIR:
 		// TODO (danehans): Should TCPRoute delegation support be added in the future?
 	case *ir.TlsRouteIR:
+	case *ir.GRPCRouteIR:
 	default:
 		return nil
 	}
@@ -139,7 +140,10 @@ func (r *gatewayQueries) allowedRoutes(gw *gwv1.Gateway, l *gwv1.Listener) (func
 	case gwv1.HTTPSProtocolType:
 		fallthrough
 	case gwv1.HTTPProtocolType:
-		allowedKinds = []metav1.GroupKind{{Kind: wellknown.HTTPRouteKind, Group: gwv1.GroupName}}
+		allowedKinds = []metav1.GroupKind{
+			{Kind: wellknown.HTTPRouteKind, Group: gwv1.GroupName},
+			{Kind: wellknown.GRPCRouteKind, Group: gwv1.GroupName},
+		}
 	case gwv1.TLSProtocolType:
 		allowedKinds = []metav1.GroupKind{{Kind: wellknown.TLSRouteKind, Group: gwv1.GroupName}}
 	case gwv1.TCPProtocolType:

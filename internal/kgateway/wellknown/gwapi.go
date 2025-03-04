@@ -26,6 +26,9 @@ const (
 	// Kind string for TLSRoute resource
 	TLSRouteKind = "TLSRoute"
 
+	// Kind string for GRPCRoute resource
+	GRPCRouteKind = "GRPCRoute"
+
 	// Kind string for Gateway resource
 	GatewayKind = "Gateway"
 

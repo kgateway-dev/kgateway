@@ -400,6 +400,12 @@ func (c RouteWrapper) Equals(in RouteWrapper) bool {
 		} else {
 			return a.Equals(*bhttp)
 		}
+	case *ir.GRPCRouteIR:
+		if bhttp, ok := in.Route.(*ir.GRPCRouteIR); !ok {
+			return false
+		} else {
+			return a.Equals(*bhttp)
+		}
 	case *ir.TcpRouteIR:
 		if bhttp, ok := in.Route.(*ir.TcpRouteIR); !ok {
 			return false
@@ -441,6 +447,7 @@ func (h *RoutesIndex) HasSynced() bool {
 func NewRoutesIndex(
 	krtopts krtutil.KrtOptions,
 	httproutes krt.Collection[*gwv1.HTTPRoute],
+	grpcroutes krt.Collection[*gwv1.GRPCRoute],
 	tcproutes krt.Collection[*gwv1a2.TCPRoute],
 	tlsroutes krt.Collection[*gwv1a2.TLSRoute],
 	policies *PolicyIndex,
@@ -461,8 +468,11 @@ func NewRoutesIndex(
 		t := h.transformTlsRoute(kctx, i)
 		return &RouteWrapper{Route: t}
 	}, krtopts.ToOptions("routes-tls-routes-with-policy")...)
-
-	h.routes = krt.JoinCollection([]krt.Collection[RouteWrapper]{httpRouteCollection, tcpRoutesCollection, tlsRoutesCollection}, krtopts.ToOptions("all-routes-with-policy")...)
+	grpcRoutesCollection := krt.NewCollection(grpcroutes, func(kctx krt.HandlerContext, i *gwv1.GRPCRoute) *RouteWrapper {
+		t := h.transformGRPCRoute(kctx, i)
+		return &RouteWrapper{Route: t}
+	}, krtopts.ToOptions("routes-grpc-routes-with-policy")...)
+	h.routes = krt.JoinCollection([]krt.Collection[RouteWrapper]{httpRouteCollection, grpcRoutesCollection, tcpRoutesCollection, tlsRoutesCollection}, krtopts.ToOptions("all-routes-with-policy")...)
 
 	httpByNamespace := krt.NewIndex(h.httpRoutes, func(i ir.HttpRouteIR) []string {
 		return []string{i.GetNamespace()}
@@ -558,6 +568,37 @@ func (h *RoutesIndex) transformTlsRoute(kctx krt.HandlerContext, i *gwv1a2.TLSRo
 		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "")),
 	}
 }
+
+func (h *RoutesIndex) transformGRPCRoute(kctx krt.HandlerContext, i *gwv1.GRPCRoute) *ir.GRPCRouteIR {
+	src := ir.ObjectSource{
+		Group:     gwv1.SchemeGroupVersion.Group,
+		Kind:      "GRPCRoute",
+		Namespace: i.Namespace,
+		Name:      i.Name,
+	}
+
+	return &ir.GRPCRouteIR{
+		ObjectSource:     src,
+		SourceObject:     i,
+		ParentRefs:       i.Spec.ParentRefs,
+		Hostnames:        tostr(i.Spec.Hostnames),
+		Rules:            h.transformGRPCRules(kctx, src, i.Spec.Rules),
+		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "")),
+	}
+}
+
+func (h *RoutesIndex) transformGRPCRules(kctx krt.HandlerContext, src ir.ObjectSource, i []gwv1.GRPCRouteRule) []ir.GRPCRouteRuleIR {
+	rules := make([]ir.GRPCRouteRuleIR, 0, len(i))
+	for _, r := range i {
+		rules = append(rules, ir.GRPCRouteRuleIR{
+			Backends: h.getGRPCBackends(kctx, src, r.BackendRefs),
+			Matches:  r.Matches,
+			Name:     emptyIfNil(r.Name),
+		})
+	}
+	return rules
+}
+
 func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRoute) *ir.HttpRouteIR {
 	src := ir.ObjectSource{
 		Group:     gwv1.SchemeGroupVersion.Group,
@@ -689,6 +730,26 @@ func (h *RoutesIndex) getBackends(kctx krt.HandlerContext, src ir.ObjectSource, 
 				Err:           err,
 			},
 			AttachedPolicies: extensionRefs,
+		})
+	}
+	return backends
+}
+
+func (h *RoutesIndex) getGRPCBackends(kctx krt.HandlerContext, src ir.ObjectSource, i []gwv1.GRPCBackendRef) []ir.BackendRefIR {
+	backends := make([]ir.BackendRefIR, 0, len(i))
+	for _, ref := range i {
+		backend, err := h.backends.GetBackendFromRef(kctx, src, ref.BackendObjectReference)
+		clusterName := "blackhole-cluster"
+		if backend != nil {
+			clusterName = backend.ClusterName()
+		} else if err == nil {
+			err = &NotFoundError{NotFoundObj: toFromBackendRef(src.Namespace, ref.BackendObjectReference)}
+		}
+		backends = append(backends, ir.BackendRefIR{
+			BackendObject: backend,
+			ClusterName:   clusterName,
+			Weight:        weight(ref.Weight),
+			Err:           err,
 		})
 	}
 	return backends
