@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -22,6 +21,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	ourwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 )
@@ -203,7 +203,7 @@ func createIstioMatch(sni string) *envoy_config_cluster_v3.Cluster_TransportSock
 		},
 	}
 
-	typedConfig, _ := anypb.New(sslSds)
+	typedConfig, _ := utils.MessageToAny(sslSds)
 	transportSocket := &envoy_config_core_v3.TransportSocket{
 		Name:       wellknown.TransportSocketTls,
 		ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
@@ -218,7 +218,7 @@ func createIstioMatch(sni string) *envoy_config_cluster_v3.Cluster_TransportSock
 
 func createDefaultIstioMatch() *envoy_config_cluster_v3.Cluster_TransportSocketMatch {
 	// Based on Istio's default match https://github.com/istio/istio/blob/fa321ebd2a1186325788b0f461aa9f36a1a8d90e/pilot/pkg/xds/filters/filters.go#L78
-	typedConfig, _ := anypb.New(&sockets_raw_buffer.RawBuffer{})
+	typedConfig, _ := utils.MessageToAny(&sockets_raw_buffer.RawBuffer{})
 	rawBufferTransportSocket := &envoy_config_core_v3.TransportSocket{
 		Name:       wellknown.TransportSocketRawBuffer,
 		ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
