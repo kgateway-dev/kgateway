@@ -21,7 +21,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPromptGuard":              schema_kgateway_v2_api_v1alpha1_AIPromptGuard(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIRoutePolicy":              schema_kgateway_v2_api_v1alpha1_AIRoutePolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AWSAuthIRSA":                schema_kgateway_v2_api_v1alpha1_AWSAuthIRSA(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AWSAuthStatic":              schema_kgateway_v2_api_v1alpha1_AWSAuthStatic(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLog":                  schema_kgateway_v2_api_v1alpha1_AccessLog(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLogFilter":            schema_kgateway_v2_api_v1alpha1_AccessLogFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtension":                schema_kgateway_v2_api_v1alpha1_AiExtension(ref),
@@ -600,7 +599,7 @@ func schema_kgateway_v2_api_v1alpha1_AWSAuthIRSA(ref common.ReferenceCallback) c
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "AwsIRSAProvider specifies the configuration for using IRSA.",
+				Description: "AWSAuthIRSA specifies the configuration for using IRSA.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"roleARN": {
@@ -615,29 +614,6 @@ func schema_kgateway_v2_api_v1alpha1_AWSAuthIRSA(ref common.ReferenceCallback) c
 				Required: []string{"roleARN"},
 			},
 		},
-	}
-}
-
-func schema_kgateway_v2_api_v1alpha1_AWSAuthStatic(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "AwsStaticCredentialProvider specifies a Secret reference for static AWS credentials.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"secret": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Secret references a Kubernetes Secret containing the AWS credentials. The Secret must have keys \"accessKey\", \"secretKey\", and optionally \"sessionToken\".",
-							Default:     map[string]interface{}{},
-							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
-						},
-					},
-				},
-				Required: []string{"secret"},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/api/core/v1.LocalObjectReference"},
 	}
 }
 
@@ -916,8 +892,8 @@ func schema_kgateway_v2_api_v1alpha1_AwsAuth(ref common.ReferenceCallback) commo
 					},
 					"secret": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Secret is a reference a secret containing AWS credentials.",
-							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AWSAuthStatic"),
+							Description: "Secret references a Kubernetes Secret containing the AWS credentials. The Secret must have keys \"accessKey\", \"secretKey\", and optionally \"sessionToken\".",
+							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
 						},
 					},
 					"irsa": {
@@ -944,7 +920,7 @@ func schema_kgateway_v2_api_v1alpha1_AwsAuth(ref common.ReferenceCallback) commo
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AWSAuthIRSA", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AWSAuthStatic"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AWSAuthIRSA", "k8s.io/api/core/v1.LocalObjectReference"},
 	}
 }
 

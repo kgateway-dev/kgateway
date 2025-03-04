@@ -116,25 +116,18 @@ type AwsAuth struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum=secret;irsa
 	Type AwsAuthType `json:"type"`
-	// Secret is a reference a secret containing AWS credentials.
+	// Secret references a Kubernetes Secret containing the AWS credentials.
+	// The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
 	// +optional
 	// +kubebuilder:validation:Optional
-	Secret *AWSAuthStatic `json:"secret,omitempty"`
+	Secret *corev1.LocalObjectReference `json:"secret,omitempty"`
 	// IRSA specifies the IRSA configuration to use for the backend.
 	// +optional
 	// +kubebuilder:validation:Optional
 	IRSA *AWSAuthIRSA `json:"irsa,omitempty"`
 }
 
-// AwsStaticCredentialProvider specifies a Secret reference for static AWS credentials.
-type AWSAuthStatic struct {
-	// Secret references a Kubernetes Secret containing the AWS credentials.
-	// The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
-	// +kubebuilder:validation:Required
-	Secret corev1.LocalObjectReference `json:"secret"`
-}
-
-// AwsIRSAProvider specifies the configuration for using IRSA.
+// AWSAuthIRSA specifies the configuration for using IRSA.
 type AWSAuthIRSA struct {
 	// RoleARN is the AWS IAM Role ARN used for pod identity.
 	// +kubebuilder:validation:Required

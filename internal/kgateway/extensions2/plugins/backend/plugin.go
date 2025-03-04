@@ -202,7 +202,7 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 				return &backendIr
 			}
 			ns := i.GetNamespace()
-			secret, err := pluginutils.GetSecretIr(secrets, krtctx, i.Spec.Aws.Auth.Secret.Secret.Name, ns)
+			secret, err := pluginutils.GetSecretIr(secrets, krtctx, i.Spec.Aws.Auth.Secret.Name, ns)
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Error(err)
 			}

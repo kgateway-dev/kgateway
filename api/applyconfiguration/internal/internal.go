@@ -81,13 +81,6 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: string
       default: ""
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AWSAuthStatic
-  map:
-    fields:
-    - name: secret
-      type:
-        namedType: io.k8s.api.core.v1.LocalObjectReference
-      default: {}
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AccessLog
   map:
     fields:
@@ -199,7 +192,7 @@ var schemaYAML = typed.YAMLObject(`types:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AWSAuthIRSA
     - name: secret
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AWSAuthStatic
+        namedType: io.k8s.api.core.v1.LocalObjectReference
     - name: type
       type:
         scalar: string
