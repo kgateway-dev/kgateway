@@ -67,8 +67,11 @@ type AwsBackend struct {
 	// +kubebuilder:validation:MaxLength=12
 	// +kubebuilder:validation:Pattern="^[0-9]{12}$"
 	AccountId string `json:"accountId"`
-	// Auth specifies the authentication method to use for the backend.
-	// When unspecified, the default authentication method will be used.
+	// Auth specifies the authentication method for the AWS backend.
+	// Defaults to "default", which reads credentials from the instance or ECS
+	// task metadata service. Credentials are cached for up to 1 hour or until
+	// expiration. For IRSA (IAM Roles for Service Accounts) or static credentials,
+	// set `type` accordingly.
 	// +optional
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default={type: default}
