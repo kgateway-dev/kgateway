@@ -241,7 +241,7 @@ func testScenario(
 
 	// read the out file
 	fout := fpre + "-out" + fext
-	write := false
+	write := false || os.Getenv("KGW_WRITE_OUT_FILES") == "true"
 	ya, err := os.ReadFile(fout)
 	// if not exist
 	if os.IsNotExist(err) {
