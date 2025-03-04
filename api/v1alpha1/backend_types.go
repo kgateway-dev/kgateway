@@ -160,9 +160,11 @@ type AwsLambda struct {
 	// +kubebuilder:default=Sync
 	InvocationMode string `json:"invocationMode,omitempty"`
 	// Qualifier is the alias or version for the Lambda function.
+	// Valid values include a numeric version (e.g. "1"), an alias name
+	// (alphanumeric plus "-" or "_"), or the special literal "$LATEST".
 	// +optional
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Pattern="^[A-Za-z0-9-_]{1,128}$"
+	// +kubebuilder:validation:Pattern="^(\\$LATEST|[0-9]+|[A-Za-z0-9-_]{1,128})$"
 	Qualifier string `json:"qualifier,omitempty"`
 }
 

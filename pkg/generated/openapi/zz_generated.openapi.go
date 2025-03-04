@@ -994,7 +994,7 @@ func schema_kgateway_v2_api_v1alpha1_AwsLambda(ref common.ReferenceCallback) com
 					},
 					"qualifier": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Qualifier is the alias or version for the Lambda function.",
+							Description: "Qualifier is the alias or version for the Lambda function. Valid values include a numeric version (e.g. \"1\"), an alias name (alphanumeric plus \"-\" or \"_\"), or the special literal \"$LATEST\".",
 							Type:        []string{"string"},
 							Format:      "",
 						},

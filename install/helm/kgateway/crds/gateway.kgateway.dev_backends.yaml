@@ -508,7 +508,7 @@ spec:
                         - Async
                         type: string
                       qualifier:
-                        pattern: ^[A-Za-z0-9-_]{1,128}$
+                        pattern: ^(\$LATEST|[0-9]+|[A-Za-z0-9-_]{1,128})$
                         type: string
                     required:
                     - functionName
