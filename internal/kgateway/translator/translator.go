@@ -5,7 +5,9 @@ import (
 
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/cache"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"istio.io/istio/pkg/kube/krt"
 
@@ -23,6 +25,7 @@ import (
 	gwtranslator "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 // Combines all the translators needed for xDS translation.
@@ -91,6 +94,7 @@ func (s *CombinedTranslator) Init(ctx context.Context, routes *krtcollections.Ro
 	)
 	return nil
 }
+
 func (s *CombinedTranslator) HasSynced() bool {
 	for _, sync := range s.waitForSync {
 		if !sync() {
@@ -108,13 +112,10 @@ func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Con
 	if s.extensions.ContributesGwTranslator != nil {
 		maybeGatewayTranslator := s.extensions.ContributesGwTranslator(gw.Obj)
 		if maybeGatewayTranslator != nil {
-			// TODO: need better error handling here
-			// and filtering out of our gateway classes, like before
-			// contextutils.LoggerFrom(ctx).Errorf("no translator found for Gateway %s (gatewayClass %s)", gw.Name, gw.Obj.Spec.GatewayClassName)
 			gatewayTranslator = maybeGatewayTranslator
+		} else if wellknown.SupportedGatewayClasses.Has(gw.Obj.Spec.GatewayClassName) {
+			contextutils.LoggerFrom(ctx).Errorf("translation not enabled for Gateway %s (gatewayClass %s)", gw.Name, gw.Obj.Spec.GatewayClassName)
 		}
-	} else {
-
 	}
 	proxy := gatewayTranslator.Translate(kctx, ctx, &gw, r)
 	if proxy == nil {
