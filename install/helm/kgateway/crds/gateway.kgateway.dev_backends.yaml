@@ -24,7 +24,7 @@ spec:
   - additionalPrinterColumns:
     - description: Which backend type?
       jsonPath: .spec.type
-      name: Backend Type
+      name: Type
       type: string
     - description: The age of the backend.
       jsonPath: .metadata.creationTimestamp
