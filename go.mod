@@ -105,6 +105,7 @@ require (
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/go-errors/errors v1.5.1 // indirect
 	github.com/go-gorp/gorp/v3 v3.1.0 // indirect
+	github.com/go-jose/go-jose/v3 v3.0.3 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -132,6 +133,7 @@ require (
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -156,6 +158,7 @@ require (
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
+	github.com/miekg/dns v1.1.62 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
