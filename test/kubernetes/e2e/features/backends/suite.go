@@ -14,10 +14,10 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite
@@ -34,23 +34,17 @@ var (
 	proxyDeployment = &appsv1.Deployment{ObjectMeta: proxyObjMeta}
 	proxyService    = &corev1.Service{ObjectMeta: proxyObjMeta}
 
-	curlPodExecOpt = kubectl.PodExecOptions{
-		Name:      "curl",
-		Namespace: "curl",
-		Container: "curl",
-	}
-
-	expectedResponse = &matchers.HttpResponse{
-		StatusCode: http.StatusOK,
-		Body:       gomega.ContainSubstring("Welcome to nginx!"),
-	}
-
 	backendMeta = metav1.ObjectMeta{
 		Name:      "nginx-static",
 		Namespace: "default",
 	}
 	be = v1alpha1.Backend{
 		ObjectMeta: backendMeta,
+	}
+
+	nginxMeta = metav1.ObjectMeta{
+		Name:      "nginx",
+		Namespace: "default",
 	}
 )
 
@@ -79,21 +73,34 @@ func (s *testingSuite) TestConfigureBackingDestinationsWithUpstream() {
 	err := s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, baseManifest)
 	s.Require().NoError(err, "can apply base manifest")
 
-	// apply the upstream manifest separately, after the route table is applied, to ensure it can be applied after the route table
+	// apply the backend manifest separately, after httproute, to assert it can be applied after the route
 	err = s.testInstallation.Actions.Kubectl().ApplyFile(s.ctx, backendManifest)
 	s.Require().NoError(err, "can apply Backend manifest")
 
+	// assert the expected resources are created and running before attempting to send traffic
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, proxyService, proxyDeployment)
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, defaults.CurlPod.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=curl",
+	})
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, nginxMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=nginx",
+	})
+	s.testInstallation.Assertions.EventuallyPodsRunning(s.ctx, proxyObjMeta.GetNamespace(), metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=gw",
+	})
+
 	s.testInstallation.Assertions.AssertEventualCurlResponse(
 		s.ctx,
-		curlPodExecOpt,
+		defaults.CurlPodExecOpt,
 		[]curl.Option{
 			curl.WithHost(kubeutils.ServiceFQDN(proxyService.ObjectMeta)),
 			curl.WithHostHeader("example.com"),
 			curl.WithPath("/"),
 		},
-		expectedResponse,
-	)
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+			Body:       gomega.ContainSubstring(defaults.NginxResponse),
+		})
 
 	s.testInstallation.Assertions.EventuallyObjectsExist(s.ctx, &be)
 }
