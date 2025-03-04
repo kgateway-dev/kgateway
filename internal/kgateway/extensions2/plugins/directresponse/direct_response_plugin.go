@@ -54,6 +54,11 @@ func (p *directResponsePluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmC
 	return nil
 }
 
+func (p *directResponsePluginGwPass) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoy_config_route_v3.Route) error {
+	// no op
+	return nil
+}
+
 func registerTypes(ourCli versioned.Interface) {
 	skubeclient.Register[*v1alpha1.DirectResponse](
 		v1alpha1.DirectResponseGVK.GroupVersion().WithResource("directresponses"),

@@ -71,11 +71,18 @@ func (c HttpRouteIR) backendsEqual(in HttpRouteIR) bool {
 			return false
 		}
 		for j, backend := range backendsa {
-			if backend.Backend == nil && backendsb[j].Backend == nil {
+			otherbackend := backendsb[j]
+			if backend.Backend == nil && otherbackend.Backend == nil {
 				continue
 			}
-			if backend.Backend != nil && backendsb[j].Backend != nil {
-				if backend.Backend.ClusterName != backendsb[j].Backend.ClusterName {
+			if backend.Backend != nil && otherbackend.Backend != nil {
+				if backend.Backend.ClusterName != otherbackend.Backend.ClusterName {
+					return false
+				}
+				if backend.Backend.Weight != otherbackend.Backend.Weight {
+					return false
+				}
+				if !backend.AttachedPolicies.Equals(otherbackend.AttachedPolicies) {
 					return false
 				}
 			} else {

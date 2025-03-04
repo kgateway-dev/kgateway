@@ -9,7 +9,7 @@ import (
 var _ = Describe("GatewayHttpRouteTranslator", func() {
 	/* TODO: move to upstream unit tests
 	type makeDestinationSpecTestCase struct {
-		upstream     *gloov1.Upstream
+		upstream     *gloov1.Backend
 		filters      []gwv1.HTTPRouteFilter
 		expectedSpec *v1.DestinationSpec
 		expectedErr  error
@@ -32,15 +32,15 @@ var _ = Describe("GatewayHttpRouteTranslator", func() {
 			Name:  funcName,
 		},
 	}}
-	azureUpstream := &gloov1.Upstream{Spec: v1.Upstream{
+	azureUpstream := &gloov1.Backend{Spec: v1.Backend{
 		UpstreamType: &v1.Upstream_Azure{},
 	}}
 
-	awsUpstream := &gloov1.Upstream{Spec: v1.Upstream{
+	awsUpstream := &gloov1.Backend{Spec: v1.Backend{
 		UpstreamType: &v1.Upstream_Aws{},
 	}}
 
-	staticUpstream := &gloov1.Upstream{Spec: v1.Upstream{
+	staticUpstream := &gloov1.Backend{Spec: v1.Backend{
 		UpstreamType: &v1.Upstream_Static{},
 	}}
 

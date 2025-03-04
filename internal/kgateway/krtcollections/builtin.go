@@ -51,6 +51,11 @@ type builtinPluginGwPass struct {
 	ir.UnimplementedProxyTranslationPass
 }
 
+func (p *builtinPluginGwPass) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoy_config_route_v3.Route) error {
+	// no op
+	return nil
+}
+
 func (p *builtinPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {
 	// no-op
 	return nil

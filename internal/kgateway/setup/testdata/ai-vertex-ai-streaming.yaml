@@ -1,0 +1,72 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: http-gw-for-test
+  namespace: gwtest
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: All
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: route-to-upstream
+  namespace: gwtest
+spec:
+  parentRefs:
+    - name: http-gw-for-test
+  hostnames:
+    - "test"
+  rules:
+    - matches:
+        - path:
+            type: Exact
+            value: /vertexai
+      backendRefs:
+        - name: vertexai
+          kind: Backend
+          group: gateway.kgateway.dev
+          filters:
+          - type: ExtensionRef
+            extensionRef:
+              group: gateway.kgateway.dev
+              kind: RoutePolicy
+              name: route-test
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: RoutePolicy
+metadata:
+  name: route-test
+  namespace: gwtest
+spec:
+  ai:
+    routeType: CHAT_STREAMING
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  labels:
+    app: kgateway
+  name: vertexai
+  namespace: gwtest
+spec:
+  type: ai
+  ai:
+    llm:
+      provider:
+        vertexai:
+          model: gemini-1.5-flash-001
+          apiVersion: v1
+          location: us-central1
+          projectId: gloo-ee
+          publisher: GOOGLE
+          authToken:
+            kind: "Inline"
+            inline: mysecretkey
+---
