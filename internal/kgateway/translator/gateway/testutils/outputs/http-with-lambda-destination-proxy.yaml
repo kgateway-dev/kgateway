@@ -38,3 +38,7 @@ Routes:
       route:
         cluster: backend_default_aws-backend_0
         clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+      typedPerFilterConfig:
+        ai.extproc.kgateway.io:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExtProcPerRoute
+          disabled: true

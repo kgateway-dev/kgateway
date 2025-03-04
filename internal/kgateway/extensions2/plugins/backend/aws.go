@@ -91,8 +91,6 @@ func configureEndpoint(in *v1alpha1.AwsBackend) (*endpointConfig, error) {
 		return config, nil
 	}
 
-	// TODO(tim): Bubble up error to Backend status once https://github.com/kgateway-dev/kgateway/issues/10555
-	// is resolved and add test cases for invalid endpoint URLs.
 	parsedURL, err := url.Parse(in.Lambda.EndpointURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse endpoint URL: %v", err)
@@ -284,6 +282,11 @@ func getLambdaHostname(in *v1alpha1.AwsBackend) string {
 		return in.Lambda.EndpointURL
 	}
 	return fmt.Sprintf("lambda.%s.amazonaws.com", getRegion(in))
+}
+
+// processEndpointsAws processes the endpoints for the aws backend.
+func processEndpointsAws(_ *v1alpha1.AwsBackend) *ir.EndpointsForBackend {
+	return nil
 }
 
 // getRegion returns the region for the aws backend. If a region is specified, it will be returned.

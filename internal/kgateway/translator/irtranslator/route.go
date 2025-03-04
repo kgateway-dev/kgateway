@@ -11,10 +11,13 @@ import (
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
-	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/routeutils"
@@ -112,10 +115,9 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(ctx context.Context,
 ) *envoy_config_route_v3.Route {
 	out := h.initRoutes(in, generatedName)
 	if len(in.Backends) > 0 {
-		out.Action = h.translateRouteAction(in, out)
+		out.Action = h.translateRouteAction(ctx, in, out)
 	}
-
-	// run plugins here that may set actoin
+	// run plugins here that may set action
 	err := h.runRoutePlugins(ctx, routeReport, in, out)
 	if err == nil {
 		err = validateEnvoyRoute(out)
@@ -233,6 +235,7 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(ctx context.Contex
 			continue
 		}
 		for _, pol := range pols {
+			// Policy on extension ref
 			err := pass.ApplyForRouteBackend(ctx, pol.PolicyIr, pCtx)
 			if err != nil {
 				errs = append(errs, err)
@@ -243,7 +246,22 @@ func (h *httpRouteConfigurationTranslator) runBackendPolicies(ctx context.Contex
 	return errors.Join(errs...)
 }
 
+func (h *httpRouteConfigurationTranslator) runBackend(ctx context.Context, in ir.HttpBackend, pCtx *ir.RouteBackendContext, outRoute *envoy_config_route_v3.Route) error {
+	var errs []error
+	if in.Backend.BackendObject != nil {
+		if in.Backend.BackendObject.GetGroupKind().Kind == v1alpha1.BackendGVK.Kind {
+			err := h.PluginPass[in.Backend.BackendObject.GetGroupKind()].ApplyForBackend(ctx, pCtx, in, outRoute)
+			if err != nil {
+				errs = append(errs, err)
+			}
+		}
+	}
+	// TODO: check return value, if error returned, log error and report condition
+	return errors.Join(errs...)
+}
+
 func (h *httpRouteConfigurationTranslator) translateRouteAction(
+	ctx context.Context,
 	in ir.HttpRouteRuleMatchIR,
 	outRoute *envoy_config_route_v3.Route,
 ) *envoy_config_route_v3.Route_Route {
@@ -258,24 +276,57 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 			Name:   clusterName,
 			Weight: wrapperspb.UInt32(backend.Backend.Weight),
 		}
+
+		typedPerFilterConfig := map[string]proto.Message{}
+
 		pCtx := ir.RouteBackendContext{
-			FilterChainName:  h.fc.FilterChainName,
-			Upstream:         backend.Backend.BackendObject,
-			TypedFiledConfig: &cw.TypedPerFilterConfig,
+			FilterChainName:   h.fc.FilterChainName,
+			Backend:           backend.Backend.BackendObject,
+			TypedFilterConfig: &typedPerFilterConfig,
 		}
 
-		h.runBackendPolicies(
-			context.TODO(),
+		// non attached policy translation
+		err := h.runBackend(
+			ctx,
+			backend,
+			&pCtx,
+			outRoute,
+		)
+		if err != nil {
+			// TODO: error on status
+			contextutils.LoggerFrom(ctx).Error(err)
+		}
+
+		err = h.runBackendPolicies(
+			ctx,
 			backend,
 			&pCtx,
 		)
+		if err != nil {
+			// TODO: error on status
+			contextutils.LoggerFrom(ctx).Error(err)
+		}
+
+		typedPerFilterConfigAny := map[string]*anypb.Any{}
+		for k, v := range typedPerFilterConfig {
+			config, err := utils.MessageToAny(v)
+			if err != nil {
+				// TODO: error on status
+				contextutils.LoggerFrom(ctx).Error(err)
+				continue
+			}
+			typedPerFilterConfigAny[k] = config
+		}
+		cw.TypedPerFilterConfig = typedPerFilterConfigAny
 		clusters = append(clusters, cw)
 	}
 
 	// TODO: i think envoy nacks if all weights are 0, we should error on that.
-
-	action := &envoy_config_route_v3.RouteAction{
-		ClusterNotFoundResponseCode: envoy_config_route_v3.RouteAction_INTERNAL_SERVER_ERROR,
+	action := outRoute.GetRoute()
+	if action == nil {
+		action = &envoy_config_route_v3.RouteAction{
+			ClusterNotFoundResponseCode: envoy_config_route_v3.RouteAction_INTERNAL_SERVER_ERROR,
+		}
 	}
 	routeAction := &envoy_config_route_v3.Route_Route{
 		Route: action,

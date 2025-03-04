@@ -18,7 +18,6 @@ import (
 	envoy_tls_inspector "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/listener/tls_inspector/v3"
 	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -72,7 +71,7 @@ func computeListenerAddress(bindAddress string, port uint32, reporter reports.Ga
 
 func tlsInspectorFilter() *envoy_config_listener_v3.ListenerFilter {
 	configEnvoy := &envoy_tls_inspector.TlsInspector{}
-	msg, _ := anypb.New(configEnvoy)
+	msg, _ := utils.MessageToAny(configEnvoy)
 	return &envoy_config_listener_v3.ListenerFilter{
 		Name: wellknown.TlsInspector,
 		ConfigType: &envoy_config_listener_v3.ListenerFilter_TypedConfig{
@@ -401,7 +400,7 @@ func NewFilterWithTypedConfig(name string, config proto.Message) (*envoy_config_
 	}
 
 	if config != nil {
-		marshalledConf, err := anypb.New(config)
+		marshalledConf, err := utils.MessageToAny(config)
 		if err != nil {
 			// this should NEVER HAPPEN!
 			return &envoy_config_listener_v3.Filter{}, err
@@ -482,7 +481,7 @@ func (info *FilterChainInfo) toTransportSocket() *envoy_config_core_v3.Transport
 	out := &envoyauth.DownstreamTlsContext{
 		CommonTlsContext: common,
 	}
-	typedConfig, _ := anypb.New(out)
+	typedConfig, _ := utils.MessageToAny(out)
 
 	return &envoy_config_core_v3.TransportSocket{
 		Name:       wellknown.TransportSocketTls,
