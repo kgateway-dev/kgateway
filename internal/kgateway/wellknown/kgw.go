@@ -1,8 +1,9 @@
 package wellknown
 
 import (
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
 func buildKgatewayGvk(kind string) schema.GroupVersionKind {
