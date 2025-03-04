@@ -15,6 +15,7 @@ func buildKgatewayGvk(kind string) schema.GroupVersionKind {
 }
 
 // TODO: consider generating these?
+// manually updated GVKs of the kgateway API types; for convenience
 var (
 	GatewayParametersGVK  = buildKgatewayGvk("GatewayParameters")
 	DirectResponseGVK     = buildKgatewayGvk("DirectResponse")
