@@ -40,7 +40,6 @@ type GatewayConfig struct {
 
 	ControlPlane            deployer.ControlPlaneInfo
 	IstioIntegrationEnabled bool
-	Aws                     *deployer.AwsInfo
 }
 
 func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
@@ -104,7 +103,6 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		Dev:                     c.cfg.Dev,
 		IstioIntegrationEnabled: c.cfg.IstioIntegrationEnabled,
 		ControlPlane:            c.cfg.ControlPlane,
-		Aws:                     c.cfg.Aws,
 	})
 	if err != nil {
 		return err
@@ -143,10 +141,12 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 				log.Error(err, "could not list Gateways using GatewayParameters", "gwpNamespace", gwpNamespace, "gwpName", gwpName)
 				return []reconcile.Request{}
 			}
-			// reconcile each Gateway that is using this GatewayParameters object
-			var reqs []reconcile.Request
+			// requeue each Gateway that is using this GatewayParameters object
+			reqs := make([]reconcile.Request, 0, len(gwList.Items))
 			for _, gw := range gwList.Items {
-				reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKey{Namespace: gw.Namespace, Name: gw.Name}})
+				reqs = append(reqs, reconcile.Request{
+					NamespacedName: client.ObjectKeyFromObject(&gw),
+				})
 			}
 			return reqs
 		}))
@@ -168,17 +168,13 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		}
 		buildr.Owns(clientObj, opts...)
 	}
-	gwReconciler := &gatewayReconciler{
+
+	return buildr.Complete(&gatewayReconciler{
 		cli:           c.cfg.Mgr.GetClient(),
 		scheme:        c.cfg.Mgr.GetScheme(),
 		autoProvision: c.cfg.AutoProvision,
 		deployer:      d,
-	}
-	err = buildr.Complete(gwReconciler)
-	if err != nil {
-		return err
-	}
-	return nil
+	})
 }
 
 func shouldIgnoreStatusChild(gvk schema.GroupVersionKind) bool {
@@ -207,41 +203,35 @@ type controllerReconciler struct {
 
 func (r *controllerReconciler) ReconcileGatewayClasses(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx).WithValues("gwclass", req.NamespacedName)
+	log.Info("reconciling gateway class")
+	defer log.Info("finished reconciling gateway class")
 
 	gwclass := &apiv1.GatewayClass{}
 	if err := r.cli.Get(ctx, req.NamespacedName, gwclass); err != nil {
-		// NOTE: if this reconciliation is a result of a DELETE event, this err will be a NotFound,
-		// therefore we will return a nil error here and thus skip any additional reconciliation below.
-		// At the time of writing this comment, the retrieved GWClass object is only used to update the status,
-		// so it should be fine to return here, because there's no status update needed on a deleted resource.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	log.Info("reconciling gateway class")
-
-	// mark it as accepted:
-	acceptedCondition := metav1.Condition{
+	// implementations are required to accept the GatewayClass
+	meta.SetStatusCondition(&gwclass.Status.Conditions, metav1.Condition{
 		Type:               string(apiv1.GatewayClassConditionStatusAccepted),
 		Status:             metav1.ConditionTrue,
 		Reason:             string(apiv1.GatewayClassReasonAccepted),
 		ObservedGeneration: gwclass.Generation,
-		// no need to set LastTransitionTime, it will be set automatically by SetStatusCondition
-	}
-	meta.SetStatusCondition(&gwclass.Status.Conditions, acceptedCondition)
+	})
 
-	// TODO: This should actually check the version of the CRDs in the cluster to be 100% sure
-	supportedVersionCondition := metav1.Condition{
+	// implementations are required to set the supported version field.
+	// TODO: check the version of the CRDs in the cluster to be 100% sure.
+	// See https://github.com/kgateway-dev/kgateway/issues/10092 for more details.
+	meta.SetStatusCondition(&gwclass.Status.Conditions, metav1.Condition{
 		Type:               string(apiv1.GatewayClassConditionStatusSupportedVersion),
 		Status:             metav1.ConditionTrue,
-		ObservedGeneration: gwclass.Generation,
 		Reason:             string(apiv1.GatewayClassReasonSupportedVersion),
-	}
-	meta.SetStatusCondition(&gwclass.Status.Conditions, supportedVersionCondition)
+		ObservedGeneration: gwclass.Generation,
+	})
 
 	if err := r.cli.Status().Update(ctx, gwclass); err != nil {
 		return ctrl.Result{}, err
 	}
-	log.Info("updated gateway class status")
 
 	return ctrl.Result{}, nil
 }
