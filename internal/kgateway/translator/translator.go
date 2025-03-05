@@ -78,6 +78,7 @@ func (s *CombinedTranslator) Init(ctx context.Context, routes *krtcollections.Ro
 	s.backendTranslator = &irtranslator.BackendTranslator{
 		ContributedBackends: make(map[schema.GroupKind]ir.BackendInit),
 		ContributedPolicies: s.extensions.ContributesPolicies,
+		CommonCols:          s.commonCols,
 	}
 	for k, up := range s.extensions.ContributesBackends {
 		s.backendTranslator.ContributedBackends[k] = up.BackendInit

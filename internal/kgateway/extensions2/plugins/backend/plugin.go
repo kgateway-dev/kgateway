@@ -30,7 +30,6 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backend/ai"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
@@ -157,7 +156,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		ContributesBackends: map[schema.GroupKind]extensionsplug.BackendPlugin{
 			gk: {
 				BackendInit: ir.BackendInit{
-					InitBackend: processBackendWithSettings(commoncol.Settings),
+					InitBackend: processBackend,
 				},
 				Endpoints: endpoints,
 				Backends:  ucol,
@@ -252,65 +251,34 @@ func getAISecretRef(llm v1alpha1.SupportedLLMProvider) *corev1.LocalObjectRefere
 	return secretRef
 }
 
-func processBackendWithSettings(
-	st settings.Settings,
-) func(ctx context.Context, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) {
-	return func(ctx context.Context, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) {
-		up, ok := in.Obj.(*v1alpha1.Backend)
-		if !ok {
-			// log - should never happen
-			return
-		}
+func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) {
+	up, ok := in.Obj.(*v1alpha1.Backend)
+	if !ok {
+		// log - should never happen
+		return
+	}
 
-		ir, ok := in.ObjIr.(*BackendIr)
-		if !ok {
-			// log - should never happen
-			return
-		}
+	ir, ok := in.ObjIr.(*BackendIr)
+	if !ok {
+		// log - should never happen
+		return
+	}
 
-		spec := up.Spec
-		switch {
-		case spec.Type == v1alpha1.BackendTypeStatic:
-			processStatic(ctx, spec.Static, out)
-		case spec.Type == v1alpha1.BackendTypeAWS:
-			processAws(ctx, spec.Aws, ir, out)
-		case spec.Type == v1alpha1.BackendTypeAI:
-			err := ai.ProcessAIBackend(ctx, spec.AI, ir.AISecret, out)
-			if err != nil {
-				// TODO: report error on status
-				contextutils.LoggerFrom(ctx).Error(err)
-			}
-			err = ai.AddUpstreamClusterHttpFilters(out)
-			if err != nil {
-				contextutils.LoggerFrom(ctx).Error(err)
-			}
+	spec := up.Spec
+	switch {
+	case spec.Type == v1alpha1.BackendTypeStatic:
+		processStatic(ctx, spec.Static, out)
+	case spec.Type == v1alpha1.BackendTypeAWS:
+		processAws(ctx, spec.Aws, ir, out)
+	case spec.Type == v1alpha1.BackendTypeAI:
+		err := ai.ProcessAIBackend(ctx, spec.AI, ir.AISecret, out)
+		if err != nil {
+			// TODO: report error on status
+			contextutils.LoggerFrom(ctx).Error(err)
 		}
-
-		// if the output cluster uses DNS-based discovery,
-		// set lookup family if needed from kgateway global setting
-		cdt, ok := out.GetClusterDiscoveryType().(*envoy_config_cluster_v3.Cluster_Type)
-		if !ok {
-			return
-		}
-		setDns := false
-		switch cdt.Type {
-		case envoy_config_cluster_v3.Cluster_STATIC:
-		case envoy_config_cluster_v3.Cluster_LOGICAL_DNS:
-		case envoy_config_cluster_v3.Cluster_STRICT_DNS:
-			setDns = true
-		}
-		if !setDns {
-			return
-		}
-		switch st.DnsLookupFamily {
-		case "V4_ONLY":
-			out.DnsLookupFamily = envoy_config_cluster_v3.Cluster_V4_ONLY
-		case "V6_ONLY":
-			out.DnsLookupFamily = envoy_config_cluster_v3.Cluster_V6_ONLY
-		case "V4_PREFERRED":
-			out.DnsLookupFamily = envoy_config_cluster_v3.Cluster_V4_PREFERRED
-		case "ALL":
-			out.DnsLookupFamily = envoy_config_cluster_v3.Cluster_ALL
+		err = ai.AddUpstreamClusterHttpFilters(out)
+		if err != nil {
+			contextutils.LoggerFrom(ctx).Error(err)
 		}
 	}
 }
