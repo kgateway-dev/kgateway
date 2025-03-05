@@ -8,6 +8,9 @@ import (
 	"testing"
 )
 
+// Following code has been extracted from: https://github.com/aws/aws-sdk-go/tree/8d203ccff393340d080be0417d091cc60354449b/aws/arn to avoid
+// importing the whole package.
+
 func TestParseARN(t *testing.T) {
 	cases := []struct {
 		input string
