@@ -52,7 +52,7 @@ type ProxySyncer struct {
 	mgr        manager.Manager
 	commonCols *common.CommonCollections
 	translator *translator.CombinedTranslator
-	extensions extensionsplug.Plugin
+	plugins    extensionsplug.Plugin
 
 	istioClient     kube.Client
 	proxyTranslator ProxyTranslator
@@ -133,7 +133,7 @@ func NewProxySyncer(
 	commonCols *common.CommonCollections,
 	xdsCache envoycache.SnapshotCache,
 ) *ProxySyncer {
-	extensions := extensionsFactory(ctx, commonCols)
+	plugins := extensionsFactory(ctx, commonCols)
 
 	return &ProxySyncer{
 		controllerName:  controllerName,
@@ -142,8 +142,8 @@ func NewProxySyncer(
 		istioClient:     client,
 		proxyTranslator: NewProxyTranslator(xdsCache),
 		uniqueClients:   uniqueClients,
-		translator:      translator.NewCombinedTranslator(ctx, extensions, commonCols),
-		extensions:      extensions,
+		translator:      translator.NewCombinedTranslator(ctx, plugins, commonCols),
+		plugins:         plugins,
 	}
 }
 
@@ -187,7 +187,7 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 
 	kubeGateways, routes, backendIndex, endpointIRs := krtcollections.InitCollections(
 		ctx,
-		s.extensions,
+		s.plugins,
 		s.istioClient,
 		isOurGw,
 		s.commonCols.RefGrants,
@@ -293,7 +293,7 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 		kubeGateways.Gateways.HasSynced,
 		s.perclientSnapCollection.HasSynced,
 		s.mostXdsSnapshots.HasSynced,
-		s.extensions.HasSynced,
+		s.plugins.HasSynced,
 		routes.HasSynced,
 		s.translator.HasSynced,
 	}

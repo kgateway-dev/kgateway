@@ -59,7 +59,9 @@ type PolicyPlugin struct {
 
 	Policies       krt.Collection[ir.PolicyWrapper]
 	GlobalPolicies func(krt.HandlerContext, AttachmentPoints) ir.PolicyIR
-	PoliciesFetch  func(n, ns string) ir.PolicyIR
+	// PoliciesFetch can optionally be set if the plugin needs a custom mechanism for fetching the policy IR,
+	// rather than the default behavior of fetching by name from the aggregated policy KRT collection
+	PoliciesFetch func(n, ns string) ir.PolicyIR
 }
 
 type BackendPlugin struct {

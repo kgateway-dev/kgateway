@@ -18,6 +18,7 @@ linters:
     - forbidigo
     - ginkgolinter
     - goimports
+    - ineffassign
     - misspell
     - nakedret
     - predeclared

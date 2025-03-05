@@ -21,7 +21,16 @@ spec:
     singular: backend
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - description: Which backend type?
+      jsonPath: .spec.type
+      name: Type
+      type: string
+    - description: The age of the backend.
+      jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:

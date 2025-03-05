@@ -43,8 +43,9 @@ func NewPluginFromCollections(
 		Kind:  "Service",
 	}
 
+	// TODO: reevaluate knative dep, dedupe with pkg/utils/kubeutils/dns.go
 	clusterDomain := network.GetClusterDomainName()
-	k8sServiceUpstreams := krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.BackendObjectIR {
+	k8sServiceBackends := krt.NewManyCollection(services, func(kctx krt.HandlerContext, svc *corev1.Service) []ir.BackendObjectIR {
 		uss := []ir.BackendObjectIR{}
 		for _, port := range svc.Spec.Ports {
 			uss = append(uss, ir.BackendObjectIR{
@@ -56,30 +57,43 @@ func NewPluginFromCollections(
 				},
 				Obj:               svc,
 				Port:              port.Port,
+				AppProtocol:       translateAppProtocol(port.AppProtocol),
 				GvPrefix:          "kube",
 				CanonicalHostname: fmt.Sprintf("%s.%s.svc.%s", svc.Name, svc.Namespace, clusterDomain),
 			})
 		}
 		return uss
-	}, krtOpts.ToOptions("KubernetesServiceUpstreams")...)
+	}, krtOpts.ToOptions("KubernetesServiceBackends")...)
 
-	inputs := krtcollections.NewGlooK8sEndpointInputs(stngs, krtOpts, endpointSlices, pods, k8sServiceUpstreams)
+	inputs := krtcollections.NewGlooK8sEndpointInputs(stngs, krtOpts, endpointSlices, pods, k8sServiceBackends)
 	k8sServiceEndpoints := krtcollections.NewGlooK8sEndpoints(ctx, inputs)
 
 	return extensionsplug.Plugin{
 		ContributesBackends: map[schema.GroupKind]extensionsplug.BackendPlugin{
 			gk: {
 				BackendInit: ir.BackendInit{
-					InitBackend: processUpstream,
+					InitBackend: processBackend,
 				},
 				Endpoints: k8sServiceEndpoints,
-				Backends:  k8sServiceUpstreams,
+				Backends:  k8sServiceBackends,
 			},
 		},
 	}
 }
 
-func processUpstream(ctx context.Context, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) {
+func translateAppProtocol(appProtocol *string) ir.AppProtocol {
+	if appProtocol == nil {
+		return ir.DefaultAppProtocol
+	}
+	switch *appProtocol {
+	case "kubernetes.io/h2c":
+		return ir.HTTP2AppProtocol
+	default:
+		return ir.DefaultAppProtocol
+	}
+}
+
+func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) {
 	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
 		Type: envoy_config_cluster_v3.Cluster_EDS,
 	}

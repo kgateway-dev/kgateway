@@ -145,7 +145,7 @@ var _ = Describe("Deployer", func() {
 					ControllerName: wellknown.GatewayControllerName,
 					ParametersRef: &api.ParametersReference{
 						Group:     gw2_v1alpha1.GroupName,
-						Kind:      gw2_v1alpha1.GatewayParametersKind,
+						Kind:      api.Kind(wellknown.GatewayParametersGVK.Kind),
 						Name:      wellknown.DefaultGatewayParametersName,
 						Namespace: ptr.To(api.Namespace(defaultNamespace)),
 					},
@@ -180,7 +180,7 @@ var _ = Describe("Deployer", func() {
 		defaultGatewayParams = func() *gw2_v1alpha1.GatewayParameters {
 			return &gw2_v1alpha1.GatewayParameters{
 				TypeMeta: metav1.TypeMeta{
-					Kind: gw2_v1alpha1.GatewayParametersKind,
+					Kind: wellknown.GatewayParametersGVK.Kind,
 					// The parsing expects GROUP/VERSION format in this field
 					APIVersion: gw2_v1alpha1.GroupVersion.String(),
 				},
@@ -255,7 +255,7 @@ var _ = Describe("Deployer", func() {
 		selfManagedGatewayParam = func(name string) *gw2_v1alpha1.GatewayParameters {
 			return &gw2_v1alpha1.GatewayParameters{
 				TypeMeta: metav1.TypeMeta{
-					Kind: gw2_v1alpha1.GatewayParametersKind,
+					Kind: wellknown.GatewayParametersGVK.Kind,
 					// The parsing expects GROUP/VERSION format in this field
 					APIVersion: gw2_v1alpha1.GroupVersion.String(),
 				},
@@ -282,7 +282,7 @@ var _ = Describe("Deployer", func() {
 					ControllerName: wellknown.GatewayControllerName,
 					ParametersRef: &api.ParametersReference{
 						Group:     gw2_v1alpha1.GroupName,
-						Kind:      gw2_v1alpha1.GatewayParametersKind,
+						Kind:      api.Kind(wellknown.GatewayParametersGVK.Kind),
 						Name:      wellknown.DefaultGatewayParametersName,
 						Namespace: ptr.To(api.Namespace(defaultNamespace)),
 					},
@@ -290,7 +290,7 @@ var _ = Describe("Deployer", func() {
 			}
 			gwParams := &gw2_v1alpha1.GatewayParameters{
 				TypeMeta: metav1.TypeMeta{
-					Kind: gw2_v1alpha1.GatewayParametersKind,
+					Kind: wellknown.GatewayParametersGVK.Kind,
 					// The parsing expects GROUP/VERSION format in this field
 					APIVersion: gw2_v1alpha1.GroupVersion.String(),
 				},
@@ -562,7 +562,7 @@ var _ = Describe("Deployer", func() {
 			defaultGatewayParamsOverride = func() *gw2_v1alpha1.GatewayParameters {
 				return &gw2_v1alpha1.GatewayParameters{
 					TypeMeta: metav1.TypeMeta{
-						Kind: gw2_v1alpha1.GatewayParametersKind,
+						Kind: wellknown.GatewayParametersGVK.Kind,
 						// The parsing expects GROUP/VERSION format in this field
 						APIVersion: gw2_v1alpha1.GroupVersion.String(),
 					},
@@ -626,7 +626,7 @@ var _ = Describe("Deployer", func() {
 			mergedGatewayParams = func() *gw2_v1alpha1.GatewayParameters {
 				return &gw2_v1alpha1.GatewayParameters{
 					TypeMeta: metav1.TypeMeta{
-						Kind: gw2_v1alpha1.GatewayParametersKind,
+						Kind: wellknown.GatewayParametersGVK.Kind,
 						// The parsing expects GROUP/VERSION format in this field
 						APIVersion: gw2_v1alpha1.GroupVersion.String(),
 					},
@@ -694,7 +694,7 @@ var _ = Describe("Deployer", func() {
 			gatewayParamsOverrideWithSds = func() *gw2_v1alpha1.GatewayParameters {
 				return &gw2_v1alpha1.GatewayParameters{
 					TypeMeta: metav1.TypeMeta{
-						Kind: gw2_v1alpha1.GatewayParametersKind,
+						Kind: wellknown.GatewayParametersGVK.Kind,
 						// The parsing expects GROUP/VERSION format in this field
 						APIVersion: gw2_v1alpha1.GroupVersion.String(),
 					},
@@ -750,7 +750,7 @@ var _ = Describe("Deployer", func() {
 			gatewayParamsOverrideWithoutStats = func() *gw2_v1alpha1.GatewayParameters {
 				return &gw2_v1alpha1.GatewayParameters{
 					TypeMeta: metav1.TypeMeta{
-						Kind: gw2_v1alpha1.GatewayParametersKind,
+						Kind: wellknown.GatewayParametersGVK.Kind,
 						// The parsing expects GROUP/VERSION format in this field
 						APIVersion: gw2_v1alpha1.GroupVersion.String(),
 					},
@@ -1452,7 +1452,7 @@ func newFakeClientWithObjs(objs ...client.Object) client.Client {
 func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.GatewayParameters {
 	return &gw2_v1alpha1.GatewayParameters{
 		TypeMeta: metav1.TypeMeta{
-			Kind: gw2_v1alpha1.GatewayParametersKind,
+			Kind: wellknown.GatewayParametersGVK.Kind,
 			// The parsing expects GROUP/VERSION format in this field
 			APIVersion: gw2_v1alpha1.GroupVersion.String(),
 		},

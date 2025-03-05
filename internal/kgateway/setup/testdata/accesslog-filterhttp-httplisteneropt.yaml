@@ -87,6 +87,7 @@ spec:
   ports:
     - name: grpc
       port: 50051
+      appProtocol: kubernetes.io/h2c
       targetPort: 50051
   selector:
     app: log-test
