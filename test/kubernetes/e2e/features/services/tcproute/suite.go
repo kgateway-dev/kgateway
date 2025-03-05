@@ -160,7 +160,6 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 	}
 
 	for _, tc := range testCases {
-		tc := tc // capture range variable
 		s.Run(tc.name, func() {
 			// Cleanup function
 			s.T().Cleanup(func() {
