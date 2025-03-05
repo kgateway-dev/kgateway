@@ -191,17 +191,23 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex) func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *BackendIr {
 	return func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *BackendIr {
-		// resolve secrets
 		var backendIr BackendIr
-		if i.Spec.Aws != nil {
+		switch i.Spec.Type {
+		case v1alpha1.BackendTypeAWS:
+			if i.Spec.Aws == nil {
+				return &backendIr
+			}
+			// we only need to build an IR for secret-based auth.
+			if i.Spec.Aws.Auth.Type != v1alpha1.AwsAuthTypeSecret {
+				return &backendIr
+			}
 			ns := i.GetNamespace()
-			secret, err := pluginutils.GetSecretIr(secrets, krtctx, i.Spec.Aws.SecretRef.Name, ns)
+			secret, err := pluginutils.GetSecretIr(secrets, krtctx, i.Spec.Aws.Auth.Secret.Name, ns)
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Error(err)
 			}
 			backendIr.AwsSecret = secret
-		}
-		if i.Spec.AI != nil {
+		case v1alpha1.BackendTypeAI:
 			ns := i.GetNamespace()
 			if i.Spec.AI.LLM != nil {
 				secretRef := getAISecretRef(i.Spec.AI.LLM.Provider)

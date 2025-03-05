@@ -58,7 +58,7 @@ metadata:
   name: anthropic
   namespace: gwtest
 spec:
-  type: ai
+  type: AI
   ai:
     llm:
       provider:
