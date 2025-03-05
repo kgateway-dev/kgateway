@@ -38,7 +38,7 @@ kind: Backend
 metadata:
   name: aws-backend
 spec:
-  type: aws
+  type: AWS
   aws:
     region: us-east-1
     auth:

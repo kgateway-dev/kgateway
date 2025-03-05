@@ -81,7 +81,7 @@ metadata:
   name: log
   namespace: gwtest
 spec:
-  type: static
+  type: Static
   static:
     hosts:
       - host: 1.2.3.4

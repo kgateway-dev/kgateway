@@ -27,25 +27,25 @@ type BackendType string
 
 const (
 	// BackendTypeAI is the type for AI backends.
-	BackendTypeAI BackendType = "ai"
+	BackendTypeAI BackendType = "AI"
 	// BackendTypeAWS is the type for AWS backends.
-	BackendTypeAWS BackendType = "aws"
+	BackendTypeAWS BackendType = "AWS"
 	// BackendTypeStatic is the type for static backends.
-	BackendTypeStatic BackendType = "static"
+	BackendTypeStatic BackendType = "Static"
 )
 
 // BackendSpec defines the desired state of Backend.
 // +union
-// +kubebuilder:validation:XValidation:message="ai backend must be nil if the type is not 'ai'",rule="!(has(self.ai) && self.type != 'ai')"
-// +kubebuilder:validation:XValidation:message="ai backend must be specified when type is 'ai'",rule="!(!has(self.ai) && self.type == 'ai')"
-// +kubebuilder:validation:XValidation:message="aws backend must be nil if the type is not 'aws'",rule="!(has(self.aws) && self.type != 'aws')"
-// +kubebuilder:validation:XValidation:message="aws backend must be specified when type is 'aws'",rule="!(!has(self.aws) && self.type == 'aws')"
-// +kubebuilder:validation:XValidation:message="static backend must be nil if the type is not 'static'",rule="!(has(self.static) && self.type != 'static')"
-// +kubebuilder:validation:XValidation:message="static backend must be specified when type is 'static'",rule="!(!has(self.static) && self.type == 'static')"
+// +kubebuilder:validation:XValidation:message="ai backend must be nil if the type is not 'ai'",rule="!(has(self.ai) && self.type != 'AI')"
+// +kubebuilder:validation:XValidation:message="ai backend must be specified when type is 'ai'",rule="!(!has(self.ai) && self.type == 'AI')"
+// +kubebuilder:validation:XValidation:message="aws backend must be nil if the type is not 'aws'",rule="!(has(self.aws) && self.type != 'AWS')"
+// +kubebuilder:validation:XValidation:message="aws backend must be specified when type is 'aws'",rule="!(!has(self.aws) && self.type == 'AWS')"
+// +kubebuilder:validation:XValidation:message="static backend must be nil if the type is not 'static'",rule="!(has(self.static) && self.type != 'Static')"
+// +kubebuilder:validation:XValidation:message="static backend must be specified when type is 'static'",rule="!(!has(self.static) && self.type == 'Static')"
 type BackendSpec struct {
 	// Type indicates the type of the backend to be used.
 	// +unionDiscriminator
-	// +kubebuilder:validation:Enum=ai;aws;static
+	// +kubebuilder:validation:Enum=AI;AWS;Static
 	// +kubebuilder:validation:Required
 	Type BackendType `json:"type"`
 	// AI is the AI backend configuration.
@@ -98,21 +98,22 @@ type AwsAuthType string
 
 const (
 	// AwsAuthTypeSecret uses credentials stored in a Kubernetes Secret.
-	AwsAuthTypeSecret AwsAuthType = "secret"
+	AwsAuthTypeSecret AwsAuthType = "Secret"
 	// AwsAuthTypeIRSA uses pod identity (IRSA) to obtain credentials.
-	AwsAuthTypeIRSA AwsAuthType = "irsa"
+	AwsAuthTypeIRSA AwsAuthType = "IRSA"
 )
 
 // AwsAuth specifies the authentication method to use for the backend.
 // +union
-// +kubebuilder:validation:XValidation:message="secret must be nil if the type is not 'secret'",rule="!(has(self.secret) && self.type != 'secret')"
-// +kubebuilder:validation:XValidation:message="secret must be specified when type is 'secret'",rule="!(!has(self.secret) && self.type == 'secret')"
-// +kubebuilder:validation:XValidation:message="irsa must be nil if the type is not 'irsa'",rule="!(has(self.irsa) && self.type != 'irsa')"
-// +kubebuilder:validation:XValidation:message="irsa must be specified when type is 'irsa'",rule="!(!has(self.irsa) && self.type == 'irsa')"
+// +kubebuilder:validation:XValidation:message="secret must be nil if the type is not 'Secret'",rule="!(has(self.secret) && self.type != 'Secret')"
+// +kubebuilder:validation:XValidation:message="secret must be specified when type is 'Secret'",rule="!(!has(self.secret) && self.type == 'Secret')"
+// +kubebuilder:validation:XValidation:message="irsa must be nil if the type is not 'IRSA'",rule="!(has(self.irsa) && self.type != 'IRSA')"
+// +kubebuilder:validation:XValidation:message="irsa must be specified when type is 'IRSA'",rule="!(!has(self.irsa) && self.type == 'IRSA')"
 type AwsAuth struct {
 	// Type specifies the authentication method to use for the backend.
+	// +unionDiscriminator
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=secret;irsa
+	// +kubebuilder:validation:Enum=Secret;IRSA
 	Type AwsAuthType `json:"type"`
 	// Secret references a Kubernetes Secret containing the AWS credentials.
 	// The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
@@ -131,7 +132,7 @@ type AWSAuthIRSA struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=2048
-	// +kubebuilder:validation:Pattern="^arn:aws-.*:iam::[0-9]{12}:role/.*"
+	// +kubebuilder:validation:Pattern="^arn:aws:iam::[0-9]{12}:role/.*"
 	RoleARN string `json:"roleARN"`
 }
 

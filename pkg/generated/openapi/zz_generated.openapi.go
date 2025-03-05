@@ -909,10 +909,10 @@ func schema_kgateway_v2_api_v1alpha1_AwsAuth(ref common.ReferenceCallback) commo
 				Extensions: spec.Extensions{
 					"x-kubernetes-unions": []interface{}{
 						map[string]interface{}{
+							"discriminator": "type",
 							"fields-to-discriminateBy": map[string]interface{}{
 								"irsa":   "IRSA",
 								"secret": "Secret",
-								"type":   "Type",
 							},
 						},
 					},
