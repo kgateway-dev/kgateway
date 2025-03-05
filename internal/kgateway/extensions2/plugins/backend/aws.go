@@ -154,15 +154,17 @@ func buildLambdaARN(in *v1alpha1.AwsBackend, region string) (string, error) {
 
 // configureAWSAuth configures AWS authentication for the given backend.
 func configureAWSAuth(in *v1alpha1.AwsBackend, ir *BackendIr, region string) (*envoy_request_signing_v3.AwsRequestSigning, error) {
-	var awsRequestSigning *envoy_request_signing_v3.AwsRequestSigning
-	switch in.Auth.Type {
-	case v1alpha1.AwsAuthTypeDefault:
-		// use the default aws auth provider documented by the lambda filter:
-		// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_lambda_filter#credentials.
-		awsRequestSigning = &envoy_request_signing_v3.AwsRequestSigning{
+	// when no auth is specified, use the default aws auth provider documented by the lambda filter:
+	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_lambda_filter#credentials.
+	if in.Auth == nil {
+		return &envoy_request_signing_v3.AwsRequestSigning{
 			ServiceName: lambdaServiceName,
 			Region:      region,
-		}
+		}, nil
+	}
+
+	var awsRequestSigning *envoy_request_signing_v3.AwsRequestSigning
+	switch in.Auth.Type {
 	case v1alpha1.AwsAuthTypeIRSA:
 		awsRequestSigning = &envoy_request_signing_v3.AwsRequestSigning{
 			ServiceName: lambdaServiceName,

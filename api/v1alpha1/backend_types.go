@@ -27,25 +27,25 @@ type BackendType string
 
 const (
 	// BackendTypeAI is the type for AI backends.
-	BackendTypeAI BackendType = "ai"
+	BackendTypeAI BackendType = "AI"
 	// BackendTypeAWS is the type for AWS backends.
-	BackendTypeAWS BackendType = "aws"
+	BackendTypeAWS BackendType = "AWS"
 	// BackendTypeStatic is the type for static backends.
-	BackendTypeStatic BackendType = "static"
+	BackendTypeStatic BackendType = "Static"
 )
 
 // BackendSpec defines the desired state of Backend.
 // +union
-// +kubebuilder:validation:XValidation:message="ai backend must be nil if the type is not 'ai'",rule="!(has(self.ai) && self.type != 'ai')"
-// +kubebuilder:validation:XValidation:message="ai backend must be specified when type is 'ai'",rule="!(!has(self.ai) && self.type == 'ai')"
-// +kubebuilder:validation:XValidation:message="aws backend must be nil if the type is not 'aws'",rule="!(has(self.aws) && self.type != 'aws')"
-// +kubebuilder:validation:XValidation:message="aws backend must be specified when type is 'aws'",rule="!(!has(self.aws) && self.type == 'aws')"
-// +kubebuilder:validation:XValidation:message="static backend must be nil if the type is not 'static'",rule="!(has(self.static) && self.type != 'static')"
-// +kubebuilder:validation:XValidation:message="static backend must be specified when type is 'static'",rule="!(!has(self.static) && self.type == 'static')"
+// +kubebuilder:validation:XValidation:message="ai backend must be nil if the type is not 'ai'",rule="!(has(self.ai) && self.type != 'AI')"
+// +kubebuilder:validation:XValidation:message="ai backend must be specified when type is 'ai'",rule="!(!has(self.ai) && self.type == 'AI')"
+// +kubebuilder:validation:XValidation:message="aws backend must be nil if the type is not 'aws'",rule="!(has(self.aws) && self.type != 'AWS')"
+// +kubebuilder:validation:XValidation:message="aws backend must be specified when type is 'aws'",rule="!(!has(self.aws) && self.type == 'AWS')"
+// +kubebuilder:validation:XValidation:message="static backend must be nil if the type is not 'static'",rule="!(has(self.static) && self.type != 'Static')"
+// +kubebuilder:validation:XValidation:message="static backend must be specified when type is 'static'",rule="!(!has(self.static) && self.type == 'Static')"
 type BackendSpec struct {
 	// Type indicates the type of the backend to be used.
 	// +unionDiscriminator
-	// +kubebuilder:validation:Enum=ai;aws;static
+	// +kubebuilder:validation:Enum=AI;AWS;Static
 	// +kubebuilder:validation:Required
 	Type BackendType `json:"type"`
 	// AI is the AI backend configuration.
@@ -65,12 +65,18 @@ type AwsBackend struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=12
+	// +kubebuilder:validation:Pattern="^[0-9]{12}$"
 	AccountId string `json:"accountId"`
-	// Auth specifies the authentication method to use for the backend.
-	// When unspecified, the default authentication method will be used.
+	// Auth specifies an explicit AWS authentication method for the backend.
+	// When omitted, the authentication method will be inferred from the
+	// environment (e.g. instance metadata, EKS Pod Identity, environment variables, etc.)
+	// This may not work in all environments, so it is recommended to specify an authentication method.
+	//
+	// See the Envoy docs for more info:
+	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_request_signing_filter#credentials
+	//
 	// +optional
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:default={type: default}
 	Auth *AwsAuth `json:"auth,omitempty"`
 	// Lambda configures the AWS lambda service.
 	// +optional
@@ -83,50 +89,51 @@ type AwsBackend struct {
 	// +kubebuilder:default=us-east-1
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=63
+	// +kubebuilder:validation:Pattern="^[a-z0-9-]+$"
 	Region *string `json:"region,omitempty"`
 }
 
-// AwsAuthType is the type of authentication to use for the backend.
+// AwsAuthType specifies the authentication method to use for the backend.
 type AwsAuthType string
 
 const (
-	// AwsAuthTypeDefault is the default authentication method.
-	AwsAuthTypeDefault AwsAuthType = "default"
-	// AwsAuthTypeIRSA is the IRSA authentication method.
-	AwsAuthTypeIRSA AwsAuthType = "irsa"
-	// AwsAuthTypeSecret is the secret authentication method.
-	AwsAuthTypeSecret AwsAuthType = "secret"
+	// AwsAuthTypeSecret uses credentials stored in a Kubernetes Secret.
+	AwsAuthTypeSecret AwsAuthType = "Secret"
+	// AwsAuthTypeIRSA uses pod identity (IRSA) to obtain credentials.
+	AwsAuthTypeIRSA AwsAuthType = "IRSA"
 )
 
-// AwsAuth defines the authentication method to use for the backend.
+// AwsAuth specifies the authentication method to use for the backend.
 // +union
-// +kubebuilder:validation:XValidation:message="irsa auth must be nil if the type is not 'irsa'",rule="!(has(self.irsa) && self.type != 'irsa')"
-// +kubebuilder:validation:XValidation:message="irsa auth must be specified when type is 'irsa'",rule="!(!has(self.irsa) && self.type == 'irsa')"
-// +kubebuilder:validation:XValidation:message="secret auth must be nil if the type is not 'secret'",rule="!(has(self.secret) && self.type != 'secret')"
-// +kubebuilder:validation:XValidation:message="secret auth must be specified when type is 'secret'",rule="!(!has(self.secret) && self.type == 'secret')"
+// +kubebuilder:validation:XValidation:message="secret must be nil if the type is not 'Secret'",rule="!(has(self.secret) && self.type != 'Secret')"
+// +kubebuilder:validation:XValidation:message="secret must be specified when type is 'Secret'",rule="!(!has(self.secret) && self.type == 'Secret')"
+// +kubebuilder:validation:XValidation:message="irsa must be nil if the type is not 'IRSA'",rule="!(has(self.irsa) && self.type != 'IRSA')"
+// +kubebuilder:validation:XValidation:message="irsa must be specified when type is 'IRSA'",rule="!(!has(self.irsa) && self.type == 'IRSA')"
 type AwsAuth struct {
-	// Type is the type of authentication to use for the backend.
-	// +optional
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Enum=default;irsa;secret
-	// +kubebuilder:default=default
-	Type AwsAuthType `json:"type,omitempty"`
-	// IRSA is the IRSA authentication configuration.
-	// +optional
-	// +kubebuilder:validation:Optional
-	IRSA *AWSAuthIRSA `json:"irsa,omitempty"`
-	// Secret is a reference to a secret containing AWS credentials.
+	// Type specifies the authentication method to use for the backend.
+	// +unionDiscriminator
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Enum=Secret;IRSA
+	Type AwsAuthType `json:"type"`
+	// Secret references a Kubernetes Secret containing the AWS credentials.
+	// The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
 	// +optional
 	// +kubebuilder:validation:Optional
 	Secret *corev1.LocalObjectReference `json:"secret,omitempty"`
+	// IRSA specifies the IRSA configuration to use for the backend.
+	// +optional
+	// +kubebuilder:validation:Optional
+	IRSA *AWSAuthIRSA `json:"irsa,omitempty"`
 }
 
-// AWSAuthIRSA defines the IRSA configuration for the upstream.
+// AWSAuthIRSA specifies the configuration for using IRSA.
 type AWSAuthIRSA struct {
-	// RoleARN is the AWS IAM role to assume when using IRSA.
-	// Used for IAM-based authentication.
+	// RoleARN is the AWS IAM Role ARN used for pod identity.
 	// +kubebuilder:validation:Required
-	RoleARN string `json:"roleARN,omitempty"`
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=2048
+	// +kubebuilder:validation:Pattern="^arn:aws:iam::[0-9]{12}:role/.*"
+	RoleARN string `json:"roleARN"`
 }
 
 const (
@@ -138,30 +145,31 @@ const (
 
 // AwsLambda configures the AWS lambda service.
 type AwsLambda struct {
-	// EndpointURL is the URL to use for the upstream host.
+	// EndpointURL is the URL or domain for the Lambda service. This is primarily
+	// useful for testing and development purposes. When omitted, the default
+	// lambda hostname will be used.
 	// +optional
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Pattern="^https?://[-a-zA-Z0-9@:%.+~#?&/=]+$"
 	// +kubebuilder:validation:MaxLength=2048
 	EndpointURL string `json:"endpointURL,omitempty"`
-	// FunctionName is the name of the lambda function to invoke.
+	// FunctionName is the name of the Lambda function to invoke.
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength=140
+	// +kubebuilder:validation:Pattern="^[A-Za-z0-9-_]{1,140}$"
 	FunctionName string `json:"functionName"`
-	// InvocationMode defines how to invoke the lambda function.
-	// Defaults to Sync if not specified.
+	// InvocationMode defines how to invoke the Lambda function.
+	// Defaults to Sync.
 	// +optional
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Enum=Sync;Async
 	// +kubebuilder:default=Sync
 	InvocationMode string `json:"invocationMode,omitempty"`
-	// Qualifier is the qualifier of the lambda function to invoke.
-	// When unspecified, the $LATEST version of the function is used.
+	// Qualifier is the alias or version for the Lambda function.
+	// Valid values include a numeric version (e.g. "1"), an alias name
+	// (alphanumeric plus "-" or "_"), or the special literal "$LATEST".
 	// +optional
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength=128
+	// +kubebuilder:validation:Pattern="^(\\$LATEST|[0-9]+|[A-Za-z0-9-_]{1,128})$"
 	Qualifier string `json:"qualifier,omitempty"`
 }
 
@@ -173,9 +181,9 @@ type StaticBackend struct {
 	Hosts []Host `json:"hosts,omitempty"`
 }
 
-// Host defines a static upstream host.
+// Host defines a static backend host.
 type Host struct {
-	// Host is the host to use for the backend.
+	// Host is the host name to use for the backend.
 	// +kubebuilder:validation:MinLength=1
 	Host string `json:"host"`
 	// Port is the port to use for the backend.

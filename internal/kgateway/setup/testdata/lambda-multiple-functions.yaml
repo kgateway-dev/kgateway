@@ -74,12 +74,12 @@ metadata:
   name: lambda-auth-backend
   namespace: gwtest
 spec:
-  type: aws
+  type: AWS
   aws:
     accountId: "000000000000"
     region: us-west-2
     auth:
-      type: secret
+      type: Secret
       secret:
         name: aws-creds-multi
     lambda:
@@ -93,12 +93,12 @@ metadata:
   name: lambda-orders-backend
   namespace: gwtest
 spec:
-  type: aws
+  type: AWS
   aws:
-    accountId: "00000000000"
+    accountId: "000000000000"
     region: us-east-1
     auth:
-      type: secret
+      type: Secret
       secret:
         name: aws-creds-multi
     lambda:
@@ -112,12 +112,12 @@ metadata:
   name: lambda-products-backend
   namespace: gwtest
 spec:
-  type: aws
+  type: AWS
   aws:
     accountId: "000000000000"
     region: us-east-1
     auth:
-      type: irsa
+      type: IRSA
       irsa:
         roleARN: arn:aws:iam::000000000000:role/products-lambda-role
     lambda:
@@ -131,12 +131,12 @@ metadata:
   name: lambda-local-integration
   namespace: gwtest
 spec:
-  type: aws
+  type: AWS
   aws:
     accountId: "000000000000"
     region: us-west-2
     auth:
-      type: secret
+      type: Secret
       secret:
         name: aws-creds-multi
     lambda:

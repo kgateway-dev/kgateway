@@ -56,7 +56,7 @@ metadata:
   name: lambda-prod
   namespace: gwtest
 spec:
-  type: aws
+  type: AWS
   aws:
     accountId: "000000000000"
     lambda:
@@ -69,7 +69,7 @@ metadata:
   name: lambda-dev
   namespace: gwtest
 spec:
-  type: aws
+  type: AWS
   aws:
     accountId: "000000000000"
     lambda:
@@ -82,7 +82,7 @@ metadata:
   name: lambda-latest
   namespace: gwtest
 spec:
-  type: aws
+  type: AWS
   aws:
     accountId: "000000000000"
     lambda:

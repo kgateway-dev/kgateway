@@ -455,14 +455,16 @@ spec:
                   accountId:
                     maxLength: 12
                     minLength: 1
+                    pattern: ^[0-9]{12}$
                     type: string
                   auth:
-                    default:
-                      type: default
                     properties:
                       irsa:
                         properties:
                           roleARN:
+                            maxLength: 2048
+                            minLength: 1
+                            pattern: ^arn:aws:iam::[0-9]{12}:role/.*
                             type: string
                         required:
                         - roleARN
@@ -475,31 +477,30 @@ spec:
                         type: object
                         x-kubernetes-map-type: atomic
                       type:
-                        default: default
                         enum:
-                        - default
-                        - irsa
-                        - secret
+                        - Secret
+                        - IRSA
                         type: string
+                    required:
+                    - type
                     type: object
                     x-kubernetes-validations:
-                    - message: irsa auth must be nil if the type is not 'irsa'
-                      rule: '!(has(self.irsa) && self.type != ''irsa'')'
-                    - message: irsa auth must be specified when type is 'irsa'
-                      rule: '!(!has(self.irsa) && self.type == ''irsa'')'
-                    - message: secret auth must be nil if the type is not 'secret'
-                      rule: '!(has(self.secret) && self.type != ''secret'')'
-                    - message: secret auth must be specified when type is 'secret'
-                      rule: '!(!has(self.secret) && self.type == ''secret'')'
+                    - message: secret must be nil if the type is not 'Secret'
+                      rule: '!(has(self.secret) && self.type != ''Secret'')'
+                    - message: secret must be specified when type is 'Secret'
+                      rule: '!(!has(self.secret) && self.type == ''Secret'')'
+                    - message: irsa must be nil if the type is not 'IRSA'
+                      rule: '!(has(self.irsa) && self.type != ''IRSA'')'
+                    - message: irsa must be specified when type is 'IRSA'
+                      rule: '!(!has(self.irsa) && self.type == ''IRSA'')'
                   lambda:
                     properties:
                       endpointURL:
                         maxLength: 2048
-                        minLength: 1
+                        pattern: ^https?://[-a-zA-Z0-9@:%.+~#?&/=]+$
                         type: string
                       functionName:
-                        maxLength: 140
-                        minLength: 1
+                        pattern: ^[A-Za-z0-9-_]{1,140}$
                         type: string
                       invocationMode:
                         default: Sync
@@ -508,8 +509,7 @@ spec:
                         - Async
                         type: string
                       qualifier:
-                        maxLength: 128
-                        minLength: 1
+                        pattern: ^(\$LATEST|[0-9]+|[A-Za-z0-9-_]{1,128})$
                         type: string
                     required:
                     - functionName
@@ -518,6 +518,7 @@ spec:
                     default: us-east-1
                     maxLength: 63
                     minLength: 1
+                    pattern: ^[a-z0-9-]+$
                     type: string
                 required:
                 - accountId
@@ -544,26 +545,26 @@ spec:
                 type: object
               type:
                 enum:
-                - ai
-                - aws
-                - static
+                - AI
+                - AWS
+                - Static
                 type: string
             required:
             - type
             type: object
             x-kubernetes-validations:
             - message: ai backend must be nil if the type is not 'ai'
-              rule: '!(has(self.ai) && self.type != ''ai'')'
+              rule: '!(has(self.ai) && self.type != ''AI'')'
             - message: ai backend must be specified when type is 'ai'
-              rule: '!(!has(self.ai) && self.type == ''ai'')'
+              rule: '!(!has(self.ai) && self.type == ''AI'')'
             - message: aws backend must be nil if the type is not 'aws'
-              rule: '!(has(self.aws) && self.type != ''aws'')'
+              rule: '!(has(self.aws) && self.type != ''AWS'')'
             - message: aws backend must be specified when type is 'aws'
-              rule: '!(!has(self.aws) && self.type == ''aws'')'
+              rule: '!(!has(self.aws) && self.type == ''AWS'')'
             - message: static backend must be nil if the type is not 'static'
-              rule: '!(has(self.static) && self.type != ''static'')'
+              rule: '!(has(self.static) && self.type != ''Static'')'
             - message: static backend must be specified when type is 'static'
-              rule: '!(!has(self.static) && self.type == ''static'')'
+              rule: '!(!has(self.static) && self.type == ''Static'')'
           status:
             properties:
               conditions:

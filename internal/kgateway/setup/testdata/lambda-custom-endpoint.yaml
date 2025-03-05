@@ -51,11 +51,11 @@ metadata:
   name: lambda-custom-backend
   namespace: gwtest
 spec:
-  type: aws
+  type: AWS
   aws:
     accountId: "000000000000"
     auth:
-      type: secret
+      type: Secret
       secret:
         name: localstack-creds
     lambda:

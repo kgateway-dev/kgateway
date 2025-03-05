@@ -142,7 +142,7 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 		var backendIr BackendIr
 		switch i.Spec.Type {
 		case v1alpha1.BackendTypeAWS:
-			if i.Spec.Aws.Auth.Type != v1alpha1.AwsAuthTypeSecret {
+			if i.Spec.Aws.Auth == nil || i.Spec.Aws.Auth.Type != v1alpha1.AwsAuthTypeSecret {
 				return &backendIr
 			}
 			ns := i.GetNamespace()
