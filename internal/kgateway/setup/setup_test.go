@@ -49,6 +49,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 func getAssetsDir(t *testing.T) string {
@@ -193,9 +194,10 @@ func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Sett
 	t.Cleanup(func() { grpcServer.Stop() })
 
 	setupOpts := &controller.SetupOpts{
-		Cache:          snapCache,
-		KrtDebugger:    new(krt.DebugHandler),
-		GlobalSettings: globalSettings,
+		Cache:               snapCache,
+		KrtDebugger:         new(krt.DebugHandler),
+		ExtraGatewayClasses: []string{wellknown.WaypointEnabled},
+		GlobalSettings:      globalSettings,
 	}
 
 	// start kgateway
@@ -224,7 +226,7 @@ func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Sett
 				t.Cleanup(func() {
 					writer.set(parentT)
 				})
-				//sadly tests can't run yet in parallel, as kgateway will add all the k8s services as clusters. this means
+				// sadly tests can't run yet in parallel, as kgateway will add all the k8s services as clusters. this means
 				// that we get test pollution.
 				// once we change it to only include the ones in the proxy, we can re-enable this
 				//				t.Parallel()
@@ -275,7 +277,7 @@ func testScenario(
 	testyaml := strings.ReplaceAll(string(testyamlbytes), gwname, testgwname)
 
 	yamlfile := filepath.Join(t.TempDir(), "test.yaml")
-	os.WriteFile(yamlfile, []byte(testyaml), 0644)
+	os.WriteFile(yamlfile, []byte(testyaml), 0o644)
 
 	err = client.ApplyYAMLFiles("", yamlfile)
 
@@ -319,7 +321,7 @@ func testScenario(
 		if err != nil {
 			t.Fatalf("failed to serialize xdsDump: %v", err)
 		}
-		os.WriteFile(fout, d, 0644)
+		os.WriteFile(fout, d, 0o644)
 		t.Fatal("wrote out file - nothing to test")
 	}
 	dump.Compare(t, expectedXdsDump)
@@ -370,7 +372,8 @@ func newXdsDumper(t *testing.T, ctx context.Context, xdsPort int, gwname string)
 		dr: &discovery_v3.DiscoveryRequest{Node: &envoycore.Node{
 			Id: "gateway.gwtest",
 			Metadata: &structpb.Struct{
-				Fields: map[string]*structpb.Value{"role": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("kgateway-kube-gateway-api~%s~%s", "gwtest", gwname)}}}},
+				Fields: map[string]*structpb.Value{"role": {Kind: &structpb.Value_StringValue{StringValue: fmt.Sprintf("kgateway-kube-gateway-api~%s~%s", "gwtest", gwname)}}},
+			},
 		}},
 	}
 

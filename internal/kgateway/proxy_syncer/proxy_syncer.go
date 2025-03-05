@@ -83,10 +83,12 @@ type GatewayXdsResources struct {
 func (r GatewayXdsResources) ResourceName() string {
 	return xds.OwnerNamespaceNameID(wellknown.GatewayApiProxyValue, r.Namespace, r.Name)
 }
+
 func (r GatewayXdsResources) Equals(in GatewayXdsResources) bool {
 	return r.NamespacedName == in.NamespacedName && report{r.reports}.Equals(report{in.reports}) && r.ClustersHash == in.ClustersHash &&
 		r.Routes.Version == in.Routes.Version && r.Listeners.Version == in.Listeners.Version
 }
+
 func sliceToResourcesHash[T proto.Message](slice []T) ([]envoycachetypes.ResourceWithTTL, uint64) {
 	var slicePb []envoycachetypes.ResourceWithTTL
 	var resourcesHash uint64
@@ -184,6 +186,7 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
 	logger := contextutils.LoggerFrom(ctx)
 
+	// TODO(stevenctl) why does this need to be here rather than with the rest of commonCols init?
 	kubeGateways, routes, backendIndex, endpointIRs := krtcollections.InitCollections(
 		ctx,
 		s.plugins,
@@ -197,6 +200,8 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 
 	// add the upstreams to the common collections, so they are available for policies.
 	s.commonCols.Backends = backendIndex
+	// custom translators may need routes
+	s.commonCols.Routes = routes
 
 	s.translator.Init(ctx, routes)
 

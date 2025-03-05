@@ -2,6 +2,10 @@ package ir
 
 import (
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
@@ -55,8 +59,11 @@ type VirtualHost struct {
 }
 
 type FilterChainMatch struct {
-	SniDomains []string
+	SniDomains      []string
+	PrefixRanges    []*v3.CidrRange         `protobuf:"bytes,4,rep,name=prefix_ranges,json=prefixRanges,proto3" json:"prefix_ranges,omitempty"`
+	DestinationPort *wrapperspb.UInt32Value `protobuf:"bytes,5,opt,name=destination_port,json=destinationPort,proto3" json:"destination_port,omitempty"`
 }
+
 type TlsBundle struct {
 	CA            []byte
 	PrivateKey    []byte
@@ -70,6 +77,7 @@ type FilterChainCommon struct {
 	CustomNetworkFilters []CustomEnvoyFilter
 	TLS                  *TlsBundle
 }
+
 type CustomEnvoyFilter struct {
 	// Determines filter ordering.
 	FilterStage plugins.FilterStage[plugins.WellKnownFilterStage]

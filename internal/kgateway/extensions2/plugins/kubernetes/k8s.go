@@ -22,6 +22,8 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 )
 
+const BackendClusterPrefix = "kube"
+
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
 	serviceClient := kclient.New[*corev1.Service](commoncol.Client)
 	services := krt.WrapClient(serviceClient, commoncol.KrtOpts.ToOptions("Services")...)
@@ -58,7 +60,7 @@ func NewPluginFromCollections(
 				Obj:               svc,
 				Port:              port.Port,
 				AppProtocol:       translateAppProtocol(port.AppProtocol),
-				GvPrefix:          "kube",
+				GvPrefix:          BackendClusterPrefix,
 				CanonicalHostname: fmt.Sprintf("%s.%s.svc.%s", svc.Name, svc.Namespace, clusterDomain),
 			})
 		}

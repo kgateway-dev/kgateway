@@ -26,6 +26,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/version"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 )
@@ -40,7 +41,11 @@ func Main(customCtx context.Context) error {
 }
 
 func startSetupLoop(ctx context.Context) error {
-	return StartKgateway(ctx, nil, nil)
+	var extraClasses []string
+	if envutils.IsEnvTruthyOrDefault(wellknown.WaypointEnabled, wellknown.WaypointEnabledByDefault) {
+		extraClasses = append(extraClasses, wellknown.WaypointClassName)
+	}
+	return StartKgateway(ctx, nil, extraClasses)
 }
 
 func createKubeClient(restConfig *rest.Config) (istiokube.Client, error) {

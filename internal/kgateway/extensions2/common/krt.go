@@ -23,6 +23,7 @@ type CommonCollections struct {
 	KrtOpts   krtutil.KrtOptions
 	Secrets   *krtcollections.SecretIndex
 	Backends  *krtcollections.BackendIndex
+	Routes    *krtcollections.RoutesIndex
 
 	Pods      krt.Collection[krtcollections.LocalityPod]
 	RefGrants *krtcollections.RefGrantIndex
