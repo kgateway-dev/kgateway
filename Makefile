@@ -157,6 +157,15 @@ ANALYZE_ARGS ?= --fast --verbose
 analyze:  ## Run golangci-lint. Override options with ANALYZE_ARGS.
 	GOTOOLCHAIN=$(GOTOOLCHAIN) $(GOLANGCI_LINT) run $(ANALYZE_ARGS) ./...
 
+
+#----------------------------------------------------------------------------
+# Info
+#----------------------------------------------------------------------------
+.PHONY: envoyversion
+envoyversion: ENVOY_VERSION_TAG ?= $(shell echo $(ENVOY_IMAGE) | cut -d':' -f2)
+envoyversion:
+	echo "Version is $(ENVOY_VERSION_TAG)"
+	echo "Commit for envoyproxy is $(shell curl -s https://raw.githubusercontent.com/solo-io/envoy-gloo/refs/tags/v$(ENVOY_VERSION_TAG)/bazel/repository_locations.bzl | grep "envoy =" -A 4 | grep commit | cut -d'"' -f2)"
 #----------------------------------------------------------------------------------
 # Ginkgo Tests
 #----------------------------------------------------------------------------------
@@ -443,15 +452,16 @@ ENVOYINIT_OUTPUT_DIR=$(OUTPUT_DIR)/$(ENVOYINIT_DIR)
 export ENVOYINIT_IMAGE_REPO ?= envoy-wrapper
 
 $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH): $(ENVOYINIT_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./cmd/envoyinit/...
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./internal/envoyinit/cmd/...
 
 .PHONY: envoyinit
 envoyinit: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH)
 
-$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: cmd/envoyinit/Dockerfile.envoyinit
+# TODO(nfuden) cheat the process for now with -r but try to find a cleaner method
+$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: internal/envoyinit/Dockerfile.envoyinit
 	cp $< $@
 
-$(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: cmd/envoyinit/docker-entrypoint.sh
+$(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: internal/envoyinit/cmd/docker-entrypoint.sh
 	cp $< $@
 
 .PHONY: envoy-wrapper-docker
@@ -461,7 +471,7 @@ envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYI
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)
 
-$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless: cmd/envoyinit/Dockerfile.envoyinit.distroless
+$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless: internal/envoyinit/Dockerfile.envoyinit.distroless
 	cp $< $@
 
 # Explicitly specify the base image is amd64 as we only build the amd64 flavour of envoy
