@@ -20,14 +20,13 @@ import (
 )
 
 const (
-	AccessKey    = "accessKey"
-	SessionToken = "sessionToken"
-	SecretKey    = "secretKey"
+	AccessKey        = "accessKey"
+	SessionToken     = "sessionToken"
+	SecretKey        = "secretKey"
+	defaultAWSRegion = "us-east-1"
 )
 
 func processAws(ctx context.Context, in *v1alpha1.AwsBackend, ir *BackendIr, out *envoy_config_cluster_v3.Cluster) {
-	lambdaHostname := getLambdaHostname(in)
-
 	// configure Envoy cluster routing info
 	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
 		Type: envoy_config_cluster_v3.Cluster_LOGICAL_DNS,
@@ -35,6 +34,12 @@ func processAws(ctx context.Context, in *v1alpha1.AwsBackend, ir *BackendIr, out
 	// TODO(yuval-k): why do we need to make sure we use ipv4 only dns?
 	// TODO(nfuden): Update to reasonable ipv6 https://aws.amazon.com/about-aws/whats-new/2021/12/aws-lambda-ipv6-endpoints-inbound-connections/
 	out.DnsLookupFamily = envoy_config_cluster_v3.Cluster_V4_ONLY
+
+	region := defaultAWSRegion
+	if in.Region != nil {
+		region = *in.Region
+	}
+	lambdaHostname := getLambdaHostname(region)
 	pluginutils.EnvoySingleEndpointLoadAssignment(out, lambdaHostname, 443)
 
 	// TODO: this returns nil anyway, so don't worry about temporarily migrating legacy util function
@@ -80,7 +85,7 @@ func processAws(ctx context.Context, in *v1alpha1.AwsBackend, ir *BackendIr, out
 
 	lpe := &awspb.AWSLambdaProtocolExtension{
 		Host:         lambdaHostname,
-		Region:       in.Region,
+		Region:       region,
 		AccessKey:    derivedSecret.access,
 		SecretKey:    derivedSecret.secret,
 		SessionToken: derivedSecret.session,
@@ -94,8 +99,8 @@ func processAws(ctx context.Context, in *v1alpha1.AwsBackend, ir *BackendIr, out
 	// return nil
 }
 
-func getLambdaHostname(in *v1alpha1.AwsBackend) string {
-	return fmt.Sprintf("lambda.%s.amazonaws.com", in.Region)
+func getLambdaHostname(region string) string {
+	return fmt.Sprintf("lambda.%s.amazonaws.com", region)
 }
 
 func processEndpointsAws(in *v1alpha1.AwsBackend) *ir.EndpointsForBackend {

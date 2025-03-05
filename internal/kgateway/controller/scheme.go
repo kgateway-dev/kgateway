@@ -12,7 +12,7 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwv1b1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
-	sologatewayv1alpha1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
+	kgwv1a1 "github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
 
 // SchemeBuilder contains all the Schemes for registering the CRDs with which Gloo Gateway interacts.
@@ -32,7 +32,7 @@ var SchemeBuilder = runtime.SchemeBuilder{
 	apiextensionsv1.AddToScheme,
 
 	// Solo Kubernetes Gateway API resources
-	sologatewayv1alpha1.Install,
+	kgwv1a1.Install,
 }
 
 func AddToScheme(s *runtime.Scheme) error {

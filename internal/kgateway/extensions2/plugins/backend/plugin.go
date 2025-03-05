@@ -115,8 +115,8 @@ type backendPlugin struct {
 
 func registerTypes(ourCli versioned.Interface) {
 	kubeclient.Register[*v1alpha1.Backend](
-		v1alpha1.BackendGVK.GroupVersion().WithResource("backends"),
-		v1alpha1.BackendGVK,
+		wellknown.BackendGVK.GroupVersion().WithResource("backends"),
+		wellknown.BackendGVK,
 		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
 			return ourCli.GatewayV1alpha1().Backends(namespace).List(context.Background(), o)
 		},
@@ -131,7 +131,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 	col := krt.WrapClient(kclient.New[*v1alpha1.Backend](commoncol.Client), commoncol.KrtOpts.ToOptions("Backends")...)
 
-	gk := v1alpha1.BackendGVK.GroupKind()
+	gk := wellknown.BackendGVK.GroupKind()
 	translate := buildTranslateFunc(ctx, commoncol.Secrets)
 	ucol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.BackendObjectIR {
 		// resolve secrets
@@ -174,7 +174,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 					}
 				},
 			},
-			v1alpha1.BackendGVK.GroupKind(): {
+			wellknown.BackendGVK.GroupKind(): {
 				Name:                      "backend",
 				NewGatewayTranslationPass: newPlug,
 				//			AttachmentPoints: []ir.AttachmentPoints{ir.HttpBackendRefAttachmentPoint},
@@ -191,17 +191,23 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex) func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *BackendIr {
 	return func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *BackendIr {
-		// resolve secrets
 		var backendIr BackendIr
-		if i.Spec.Aws != nil {
+		switch i.Spec.Type {
+		case v1alpha1.BackendTypeAWS:
+			if i.Spec.Aws == nil {
+				return &backendIr
+			}
+			// we only need to build an IR for secret-based auth.
+			if i.Spec.Aws.Auth.Type != v1alpha1.AwsAuthTypeSecret {
+				return &backendIr
+			}
 			ns := i.GetNamespace()
-			secret, err := pluginutils.GetSecretIr(secrets, krtctx, i.Spec.Aws.SecretRef.Name, ns)
+			secret, err := pluginutils.GetSecretIr(secrets, krtctx, i.Spec.Aws.Auth.Secret.Name, ns)
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Error(err)
 			}
 			backendIr.AwsSecret = secret
-		}
-		if i.Spec.AI != nil {
+		case v1alpha1.BackendTypeAI:
 			ns := i.GetNamespace()
 			if i.Spec.AI.LLM != nil {
 				secretRef := getAISecretRef(i.Spec.AI.LLM.Provider)

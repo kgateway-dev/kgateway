@@ -88,7 +88,7 @@ type BackendRefIR struct {
 	ClusterName string
 	Weight      uint32
 
-	// upstream could be nil if not found or no ref grant
+	// backend could be nil if not found or no ref grant
 	BackendObject *BackendObjectIR
 	// if nil, error might say why
 	Err error
