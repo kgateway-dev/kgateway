@@ -164,9 +164,9 @@ release:
 
     The docker images are available at:
 
-    - {{ .Env.IMAGE_REGISTRY }}:{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}
-    - {{ .Env.IMAGE_REGISTRY }}:{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.VERSION }}
-    - {{ .Env.IMAGE_REGISTRY }}:{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.VERSION }}
+    - cr.kgateway.dev/kgateway-dev/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}
+    - cr.kgateway.dev/kgateway-dev/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.VERSION }}
+    - cr.kgateway.dev/kgateway-dev/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.VERSION }}
 
     ## Quickstart
 
