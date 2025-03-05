@@ -107,12 +107,12 @@ func init() {
 	grpclog.SetLoggerV2(grpclog.NewLoggerV2WithVerbosity(writer, writer, writer, 100))
 }
 
-func TestWithIPv4(t *testing.T) {
-	os.Setenv("KGW_DNS_LOOKUP_FAMILY", "V4_ONLY")
+func TestWithAutoDns(t *testing.T) {
+	os.Setenv("KGW_DNS_LOOKUP_FAMILY", "AUTO")
 	t.Cleanup(func() {
-		os.Setenv("KGW_DNS_LOOKUP_FAMILY", "V4_ONLY")
+		os.Unsetenv("KGW_DNS_LOOKUP_FAMILY")
 	})
-	runScenario(t, "testdata/ipv4")
+	runScenario(t, "testdata/autodns")
 }
 
 func TestScenarios(t *testing.T) {
