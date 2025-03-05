@@ -51,7 +51,6 @@ spec:
                       hostOverride:
                         properties:
                           host:
-                            maxLength: 253
                             minLength: 1
                             type: string
                           port:
@@ -254,7 +253,6 @@ spec:
                                   hostOverride:
                                     properties:
                                       host:
-                                        maxLength: 253
                                         minLength: 1
                                         type: string
                                       port:
@@ -463,15 +461,76 @@ spec:
                     && has(self.multipool))
               aws:
                 properties:
-                  region:
+                  accountId:
+                    maxLength: 12
+                    minLength: 1
+                    pattern: ^[0-9]{12}$
                     type: string
-                  secretRef:
+                  auth:
                     properties:
-                      name:
-                        default: ""
+                      irsa:
+                        properties:
+                          roleARN:
+                            maxLength: 2048
+                            minLength: 1
+                            pattern: ^arn:aws:iam::[0-9]{12}:role/.*
+                            type: string
+                        required:
+                        - roleARN
+                        type: object
+                      secret:
+                        properties:
+                          name:
+                            default: ""
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
+                      type:
+                        enum:
+                        - Secret
+                        - IRSA
                         type: string
+                    required:
+                    - type
                     type: object
-                    x-kubernetes-map-type: atomic
+                    x-kubernetes-validations:
+                    - message: secret must be nil if the type is not 'Secret'
+                      rule: '!(has(self.secret) && self.type != ''Secret'')'
+                    - message: secret must be specified when type is 'Secret'
+                      rule: '!(!has(self.secret) && self.type == ''Secret'')'
+                    - message: irsa must be nil if the type is not 'IRSA'
+                      rule: '!(has(self.irsa) && self.type != ''IRSA'')'
+                    - message: irsa must be specified when type is 'IRSA'
+                      rule: '!(!has(self.irsa) && self.type == ''IRSA'')'
+                  lambda:
+                    properties:
+                      endpointURL:
+                        maxLength: 2048
+                        pattern: ^https?://[-a-zA-Z0-9@:%.+~#?&/=]+$
+                        type: string
+                      functionName:
+                        pattern: ^[A-Za-z0-9-_]{1,140}$
+                        type: string
+                      invocationMode:
+                        default: Sync
+                        enum:
+                        - Sync
+                        - Async
+                        type: string
+                      qualifier:
+                        pattern: ^(\$LATEST|[0-9]+|[A-Za-z0-9-_]{1,128})$
+                        type: string
+                    required:
+                    - functionName
+                    type: object
+                  region:
+                    default: us-east-1
+                    maxLength: 63
+                    minLength: 1
+                    pattern: ^[a-z0-9-]+$
+                    type: string
+                required:
+                - accountId
                 type: object
               static:
                 properties:
@@ -479,7 +538,6 @@ spec:
                     items:
                       properties:
                         host:
-                          maxLength: 253
                           minLength: 1
                           type: string
                         port:
@@ -496,26 +554,26 @@ spec:
                 type: object
               type:
                 enum:
-                - ai
-                - aws
-                - static
+                - AI
+                - AWS
+                - Static
                 type: string
             required:
             - type
             type: object
             x-kubernetes-validations:
             - message: ai backend must be nil if the type is not 'ai'
-              rule: '!(has(self.ai) && self.type != ''ai'')'
+              rule: '!(has(self.ai) && self.type != ''AI'')'
             - message: ai backend must be specified when type is 'ai'
-              rule: '!(!has(self.ai) && self.type == ''ai'')'
+              rule: '!(!has(self.ai) && self.type == ''AI'')'
             - message: aws backend must be nil if the type is not 'aws'
-              rule: '!(has(self.aws) && self.type != ''aws'')'
+              rule: '!(has(self.aws) && self.type != ''AWS'')'
             - message: aws backend must be specified when type is 'aws'
-              rule: '!(!has(self.aws) && self.type == ''aws'')'
+              rule: '!(!has(self.aws) && self.type == ''AWS'')'
             - message: static backend must be nil if the type is not 'static'
-              rule: '!(has(self.static) && self.type != ''static'')'
+              rule: '!(has(self.static) && self.type != ''Static'')'
             - message: static backend must be specified when type is 'static'
-              rule: '!(!has(self.static) && self.type == ''static'')'
+              rule: '!(!has(self.static) && self.type == ''Static'')'
           status:
             properties:
               conditions:
