@@ -45,6 +45,7 @@ spec:
   aws:
     accountId: "000000000000"
     auth:
+      type: Secret
       secret:
         name: aws-creds
     lambda:
@@ -62,6 +63,7 @@ spec:
   aws:
     accountId: "000000000000"
     auth:
+      type: Secret
       secret:
         name: aws-creds
     lambda:

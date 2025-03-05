@@ -4,7 +4,7 @@ kind: Backend
 metadata:
   name: nginx-static
 spec:
-  type: static
+  type: Static
   static:
     hosts:
       - host: nginx.default.svc # static reference to k8s service name

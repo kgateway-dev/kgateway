@@ -95,8 +95,8 @@ func (s *testingSuite) BeforeTest(suiteName, testName string) {
 		err = tmpFile.Close()
 		s.Assert().NoError(err, "can close temp file")
 
-		err = s.ti.Actions.Kubectl().ApplyFile(s.ctx, tmpFile.Name())
-		s.Assert().NoError(err, "can apply manifest "+manifest)
+		err = s.ti.Actions.Kubectl().WithReceiver(os.Stdout).ApplyFile(s.ctx, tmpFile.Name())
+		s.Require().NoError(err, "can apply manifest "+manifest)
 	}
 
 	s.ti.Assertions.EventuallyObjectsExist(s.ctx, testdefaults.CurlPod)
