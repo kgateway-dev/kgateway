@@ -53,7 +53,7 @@ func processAws(ctx context.Context, in *v1alpha1.AwsBackend, ir *BackendIr, out
 	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
 		Type: envoy_config_cluster_v3.Cluster_LOGICAL_DNS,
 	}
-	out.DnsLookupFamily = envoy_config_cluster_v3.Cluster_V4_ONLY
+	out.DnsLookupFamily = envoy_config_cluster_v3.Cluster_AUTO
 
 	endpointConfig, err := configureEndpoint(in)
 	if err != nil {
@@ -111,6 +111,7 @@ func configureEndpoint(in *v1alpha1.AwsBackend) (*endpointConfig, error) {
 
 // configureTLS configures TLS for the cluster.
 func configureTLS(out *envoy_config_cluster_v3.Cluster, hostname string) error {
+	// TODO(yuval-k): Add verification context
 	typedConfig, err := utils.MessageToAny(&envoyauth.UpstreamTlsContext{
 		Sni: hostname,
 	})
