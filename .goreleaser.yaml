@@ -98,7 +98,7 @@ dockers:
   - image_templates:
       - &envoyinit_arm_image "{{ .Env.IMAGE_REGISTRY }}/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.VERSION }}-arm64"
     use: buildx
-    dockerfile: &envoyinit_dockerfile internal/envoyinit/cmd/Dockerfile.envoyinit
+    dockerfile: &envoyinit_dockerfile internal/envoyinit/Dockerfile.envoyinit
     goos: linux
     goarch: arm64
     build_flag_templates:
