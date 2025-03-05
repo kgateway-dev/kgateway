@@ -65,8 +65,7 @@ func getLogId(logName string, idx int) string {
 }
 
 func translateAccessLogs(logger *zap.Logger, configs []v1alpha1.AccessLog, grpcBackends map[string]*ir.BackendObjectIR) ([]*envoyaccesslog.AccessLog, error) {
-	var results []*envoyaccesslog.AccessLog
-
+	results := make([]*envoyaccesslog.AccessLog, 0, len(configs))
 	for idx, logConfig := range configs {
 		accessLogCfg, err := translateAccessLog(logger, logConfig, grpcBackends, idx)
 		if err != nil {
@@ -74,7 +73,6 @@ func translateAccessLogs(logger *zap.Logger, configs []v1alpha1.AccessLog, grpcB
 		}
 		results = append(results, accessLogCfg)
 	}
-
 	return results, nil
 }
 

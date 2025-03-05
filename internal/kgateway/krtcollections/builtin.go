@@ -261,7 +261,7 @@ func convertHeaderModifier(kctx krt.HandlerContext, f *gwv1.HTTPHeaderFilter) fu
 	if f == nil {
 		return nil
 	}
-	var headersToAddd []*envoy_config_core_v3.HeaderValueOption
+	headersToAddd := make([]*envoy_config_core_v3.HeaderValueOption, 0, len(f.Add)+len(f.Set))
 	// TODO: add validation for header names/values with CheckForbiddenCustomHeaders
 	for _, h := range f.Add {
 		headersToAddd = append(headersToAddd, &envoy_config_core_v3.HeaderValueOption{
@@ -294,7 +294,7 @@ func convertResponseHeaderModifier(kctx krt.HandlerContext, f *gwv1.HTTPHeaderFi
 	if f == nil {
 		return nil
 	}
-	var headersToAddd []*envoy_config_core_v3.HeaderValueOption
+	headersToAddd := make([]*envoy_config_core_v3.HeaderValueOption, 0, len(f.Add)+len(f.Set))
 	// TODO: add validation for header names/values with CheckForbiddenCustomHeaders
 	for _, h := range f.Add {
 		headersToAddd = append(headersToAddd, &envoy_config_core_v3.HeaderValueOption{

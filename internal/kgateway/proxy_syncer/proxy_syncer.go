@@ -89,7 +89,7 @@ func (r GatewayXdsResources) Equals(in GatewayXdsResources) bool {
 		r.Routes.Version == in.Routes.Version && r.Listeners.Version == in.Listeners.Version
 }
 func sliceToResourcesHash[T proto.Message](slice []T) ([]envoycachetypes.ResourceWithTTL, uint64) {
-	var slicePb []envoycachetypes.ResourceWithTTL
+	slicePb := make([]envoycachetypes.ResourceWithTTL, 0, len(slice))
 	var resourcesHash uint64
 	for _, r := range slice {
 		var m proto.Message = r
@@ -97,7 +97,6 @@ func sliceToResourcesHash[T proto.Message](slice []T) ([]envoycachetypes.Resourc
 		slicePb = append(slicePb, envoycachetypes.ResourceWithTTL{Resource: m})
 		resourcesHash ^= hash
 	}
-
 	return slicePb, resourcesHash
 }
 

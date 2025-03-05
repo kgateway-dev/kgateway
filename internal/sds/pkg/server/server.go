@@ -92,8 +92,8 @@ func (s *Server) Run(ctx context.Context) (<-chan struct{}, error) {
 
 // UpdateSDSConfig updates with the current certs
 func (s *Server) UpdateSDSConfig(ctx context.Context) error {
-	var certs [][]byte
-	var items []cache_types.Resource
+	certs := make([][]byte, 0, len(s.secrets))
+	items := make([]cache_types.Resource, 0, len(s.secrets))
 	for _, sec := range s.secrets {
 		key, err := readAndVerifyCert(ctx, sec.SslKeyFile)
 		if err != nil {

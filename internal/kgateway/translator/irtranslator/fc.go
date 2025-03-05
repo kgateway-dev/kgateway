@@ -154,7 +154,7 @@ func (n *filterChainTranslator) computePreHCMFilters(ctx context.Context, l ir.H
 }
 
 func convertCustomNetworkFilters(customNetworkFilters []ir.CustomEnvoyFilter) []plugins.StagedNetworkFilter {
-	var out []plugins.StagedNetworkFilter
+	out := make([]plugins.StagedNetworkFilter, 0, len(customNetworkFilters))
 	for _, customFilter := range customNetworkFilters {
 		out = append(out, plugins.StagedNetworkFilter{
 			Filter: &envoy_config_listener_v3.Filter{
@@ -171,7 +171,7 @@ func convertCustomNetworkFilters(customNetworkFilters []ir.CustomEnvoyFilter) []
 
 func sortNetworkFilters(filters plugins.StagedNetworkFilterList) []*envoy_config_listener_v3.Filter {
 	sort.Sort(filters)
-	var sortedFilters []*envoy_config_listener_v3.Filter
+	sortedFilters := make([]*envoy_config_listener_v3.Filter, 0, len(filters))
 	for _, filter := range filters {
 		sortedFilters = append(sortedFilters, filter.Filter)
 	}
@@ -333,7 +333,7 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(ctx context.Context, l i
 
 func sortHttpFilters(filters plugins.StagedHttpFilterList) []*envoyhttp.HttpFilter {
 	sort.Sort(filters)
-	var sortedFilters []*envoyhttp.HttpFilter
+	sortedFilters := make([]*envoyhttp.HttpFilter, 0, len(filters))
 	for _, filter := range filters {
 		sortedFilters = append(sortedFilters, filter.Filter)
 	}

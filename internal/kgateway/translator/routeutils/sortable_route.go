@@ -30,7 +30,7 @@ func (a SortableRoutes) ToRoutes() []ir.HttpRouteRuleMatchIR {
 }
 
 func ToSortable(obj metav1.Object, routes []ir.HttpRouteRuleMatchIR) SortableRoutes {
-	var wrappers SortableRoutes
+	wrappers := make(SortableRoutes, 0, len(routes))
 	for i, route := range routes {
 		wrappers = append(wrappers, &SortableRoute{
 			Route:       route,

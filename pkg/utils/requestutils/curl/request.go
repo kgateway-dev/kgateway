@@ -82,7 +82,7 @@ type requestConfig struct {
 }
 
 func (c *requestConfig) generateArgs() []string {
-	var args []string
+	var args []string //nolint:prealloc
 
 	if c.verbose {
 		args = append(args, "-v")

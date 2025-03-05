@@ -861,7 +861,7 @@ var (
 )
 
 func newQueries(initObjs ...client.Object) query.GatewayQueries {
-	var anys []any
+	anys := make([]any, 0, len(initObjs))
 	for _, obj := range initObjs {
 		anys = append(anys, obj)
 	}

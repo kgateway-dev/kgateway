@@ -251,7 +251,7 @@ func (r *RouteReport) parentRef(parentRef *gwv1.ParentReference) *ParentRefRepor
 // It is used to update the Status of delegatee routes who may not specify
 // the parentRefs field.
 func (r *RouteReport) parentRefs() []gwv1.ParentReference {
-	var refs []gwv1.ParentReference
+	refs := make([]gwv1.ParentReference, 0, len(r.Parents))
 	for key := range r.Parents {
 		var ns *gwv1.Namespace
 		if key.Namespace != "" {

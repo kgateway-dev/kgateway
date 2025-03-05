@@ -62,7 +62,7 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(ctx context
 }
 
 func (h *httpRouteConfigurationTranslator) computeVirtualHosts(ctx context.Context, virtualHosts []*ir.VirtualHost) []*envoy_config_route_v3.VirtualHost {
-	var envoyVirtualHosts []*envoy_config_route_v3.VirtualHost
+	envoyVirtualHosts := make([]*envoy_config_route_v3.VirtualHost, 0, len(virtualHosts))
 	for _, virtualHost := range virtualHosts {
 		envoyVirtualHosts = append(envoyVirtualHosts, h.computeVirtualHost(ctx, virtualHost))
 	}
@@ -75,7 +75,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 ) *envoy_config_route_v3.VirtualHost {
 	sanitizedName := utils.SanitizeForEnvoy(ctx, virtualHost.Name, "virtual host")
 
-	var envoyRoutes []*envoy_config_route_v3.Route
+	envoyRoutes := make([]*envoy_config_route_v3.Route, 0, len(virtualHost.Rules))
 	for i, route := range virtualHost.Rules {
 		// TODO: not sure if we need listener parent ref here or the http parent ref
 		routeReport := h.reporter.Route(route.Parent.SourceObject).ParentRef(&route.ParentRef)
@@ -265,8 +265,7 @@ func (h *httpRouteConfigurationTranslator) translateRouteAction(
 	in ir.HttpRouteRuleMatchIR,
 	outRoute *envoy_config_route_v3.Route,
 ) *envoy_config_route_v3.Route_Route {
-	var clusters []*envoy_config_route_v3.WeightedCluster_ClusterWeight
-
+	clusters := make([]*envoy_config_route_v3.WeightedCluster_ClusterWeight, 0, len(in.Backends))
 	for _, backend := range in.Backends {
 		clusterName := backend.Backend.ClusterName
 
@@ -454,7 +453,7 @@ func setEnvoyPathMatcher(match gwv1.HTTPRouteMatch, out *envoy_config_route_v3.R
 }
 
 func envoyHeaderMatcher(in []gwv1.HTTPHeaderMatch) []*envoy_config_route_v3.HeaderMatcher {
-	var out []*envoy_config_route_v3.HeaderMatcher
+	out := make([]*envoy_config_route_v3.HeaderMatcher, 0, len(in))
 	for _, matcher := range in {
 		envoyMatch := &envoy_config_route_v3.HeaderMatcher{
 			Name: string(matcher.Name),
@@ -486,16 +485,16 @@ func envoyHeaderMatcher(in []gwv1.HTTPHeaderMatch) []*envoy_config_route_v3.Head
 }
 
 func envoyQueryMatcher(in []gwv1.HTTPQueryParamMatch) []*envoy_config_route_v3.QueryParameterMatcher {
-	var out []*envoy_config_route_v3.QueryParameterMatcher
+	out := make([]*envoy_config_route_v3.QueryParameterMatcher, 0, len(in))
 	for _, matcher := range in {
-		envoyMatch := &envoy_config_route_v3.QueryParameterMatcher{
-			Name: string(matcher.Name),
-		}
-		regex := false
+		var regex bool
 		if matcher.Type != nil && *matcher.Type == gwv1.QueryParamMatchRegularExpression {
 			regex = true
 		}
 
+		envoyMatch := &envoy_config_route_v3.QueryParameterMatcher{
+			Name: string(matcher.Name),
+		}
 		// TODO: not sure if we should do PresentMatch according to the spec.
 		if matcher.Value == "" {
 			envoyMatch.QueryParameterMatchSpecifier = &envoy_config_route_v3.QueryParameterMatcher_PresentMatch{

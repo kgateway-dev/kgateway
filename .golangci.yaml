@@ -21,6 +21,7 @@ linters:
     - ineffassign
     - misspell
     - nakedret
+    - prealloc
     - predeclared
     - unused
     - usestdlibvars

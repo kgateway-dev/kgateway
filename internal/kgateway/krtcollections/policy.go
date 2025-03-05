@@ -260,7 +260,8 @@ func (p *PolicyIndex) getTargetingPolicies(
 	targetRef ir.ObjectSource,
 	sectionName string,
 ) []ir.PolicyAtt {
-	var ret []ir.PolicyAtt
+	// TODO: Add Len() field to KRT package.
+	var ret []ir.PolicyAtt //nolint:prealloc
 	for _, gp := range p.globalPolicies {
 		if gp.points.Has(pnt) {
 			if p := gp.ir(kctx, pnt); p != nil {

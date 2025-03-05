@@ -191,8 +191,7 @@ func (ml *MergedListeners) AppendTcpListener(
 	routeInfos []*query.RouteInfo,
 	reporter reports.ListenerReporter,
 ) {
-	var validRouteInfos []*query.RouteInfo
-
+	validRouteInfos := make([]*query.RouteInfo, 0, len(routeInfos))
 	for _, routeInfo := range routeInfos {
 		tRoute, ok := routeInfo.Object.(*ir.TcpRouteIR)
 		if !ok {
@@ -253,8 +252,7 @@ func (ml *MergedListeners) AppendTlsListener(
 	routeInfos []*query.RouteInfo,
 	reporter reports.ListenerReporter,
 ) {
-	var validRouteInfos []*query.RouteInfo
-
+	validRouteInfos := make([]*query.RouteInfo, 0, len(routeInfos))
 	for _, routeInfo := range routeInfos {
 		tRoute, ok := routeInfo.Object.(*ir.TlsRouteIR)
 		if !ok {
@@ -319,7 +317,7 @@ func (ml *MergedListeners) translateListeners(
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
 ) []ir.ListenerIR {
-	var listeners []ir.ListenerIR
+	listeners := make([]ir.ListenerIR, 0, len(ml.Listeners))
 	for _, mergedListener := range ml.Listeners {
 		listener := mergedListener.TranslateListener(kctx, ctx, queries, reporter)
 
@@ -359,11 +357,7 @@ func (ml *MergedListener) TranslateListener(
 	queries query.GatewayQueries,
 	reporter reports.Reporter,
 ) ir.ListenerIR {
-	var (
-		httpFilterChains    []ir.HttpFilterChainIR
-		matchedTcpListeners []ir.TcpIR
-	)
-
+	var httpFilterChains []ir.HttpFilterChainIR //nolint:prealloc
 	// Translate HTTP filter chains
 	if ml.httpFilterChain != nil {
 		httpFilterChain := ml.httpFilterChain.translateHttpFilterChain(
@@ -419,6 +413,7 @@ func (ml *MergedListener) TranslateListener(
 	}
 
 	// Translate TCP listeners (if any exist)
+	matchedTcpListeners := make([]ir.TcpIR, 0, len(ml.TcpFilterChains))
 	for _, tfc := range ml.TcpFilterChains {
 		if tcpListener := tfc.translateTcpFilterChain(ml.listener, reporter); tcpListener != nil {
 			matchedTcpListeners = append(matchedTcpListeners, *tcpListener)

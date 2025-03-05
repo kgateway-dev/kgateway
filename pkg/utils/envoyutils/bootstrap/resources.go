@@ -51,7 +51,7 @@ func resourcesFromSnapshot(snap envoycache.ResourceSnapshot) (*EnvoyResources, e
 // listenersFromSnapshot accepts a Snapshot and extracts from it a slice of pointers to
 // the Listener structs contained in the Snapshot.
 func listenersFromSnapshot(snap envoycache.ResourceSnapshot) ([]*envoy_config_listener_v3.Listener, error) {
-	var listeners []*envoy_config_listener_v3.Listener
+	listeners := make([]*envoy_config_listener_v3.Listener, 0, len(snap.GetResources(envoyresource.ListenerType)))
 	for _, v := range snap.GetResources(envoyresource.ListenerType) {
 		l, ok := v.(*envoy_config_listener_v3.Listener)
 		if !ok {
@@ -65,7 +65,7 @@ func listenersFromSnapshot(snap envoycache.ResourceSnapshot) ([]*envoy_config_li
 // clustersFromSnapshot accepts a Snapshot and extracts from it a slice of pointers to
 // the Cluster structs contained in the Snapshot.
 func clustersFromSnapshot(snap envoycache.ResourceSnapshot) ([]*envoy_config_cluster_v3.Cluster, error) {
-	var clusters []*envoy_config_cluster_v3.Cluster
+	clusters := make([]*envoy_config_cluster_v3.Cluster, 0, len(snap.GetResources(envoyresource.ClusterType)))
 	for _, v := range snap.GetResources(envoyresource.ClusterType) {
 		c, ok := v.(*envoy_config_cluster_v3.Cluster)
 		if !ok {
@@ -79,7 +79,7 @@ func clustersFromSnapshot(snap envoycache.ResourceSnapshot) ([]*envoy_config_clu
 // routesFromSnapshot accepts a Snapshot and extracts from it a slice of pointers to
 // the RouteConfiguration structs contained in the Snapshot.
 func routesFromSnapshot(snap envoycache.ResourceSnapshot) ([]*envoy_config_route_v3.RouteConfiguration, error) {
-	var routes []*envoy_config_route_v3.RouteConfiguration
+	routes := make([]*envoy_config_route_v3.RouteConfiguration, 0, len(snap.GetResources(envoyresource.RouteType)))
 	for _, v := range snap.GetResources(envoyresource.RouteType) {
 		r, ok := v.(*envoy_config_route_v3.RouteConfiguration)
 		if !ok {
@@ -93,7 +93,7 @@ func routesFromSnapshot(snap envoycache.ResourceSnapshot) ([]*envoy_config_route
 // endpointsFromSnapshot accepts a Snapshot and extracts from it a slice of pointers to
 // the ClusterLoadAssignment structs contained in the Snapshot.
 func endpointsFromSnapshot(snap envoycache.ResourceSnapshot) ([]*envoy_config_endpoint_v3.ClusterLoadAssignment, error) {
-	var endpoints []*envoy_config_endpoint_v3.ClusterLoadAssignment
+	endpoints := make([]*envoy_config_endpoint_v3.ClusterLoadAssignment, 0, len(snap.GetResources(envoyresource.EndpointType)))
 	for _, v := range snap.GetResources(envoyresource.EndpointType) {
 		e, ok := v.(*envoy_config_endpoint_v3.ClusterLoadAssignment)
 		if !ok {

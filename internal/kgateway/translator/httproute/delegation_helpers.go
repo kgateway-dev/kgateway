@@ -247,7 +247,7 @@ func mergeHeaders(
 			merged[key] = h
 		}
 	}
-	var result []gwv1.HTTPHeaderMatch
+	result := make([]gwv1.HTTPHeaderMatch, 0, len(merged))
 	for _, h := range merged {
 		result = append(result, h)
 	}
@@ -272,7 +272,7 @@ func mergeQueries(
 			merged[key] = h
 		}
 	}
-	var result []gwv1.HTTPQueryParamMatch
+	result := make([]gwv1.HTTPQueryParamMatch, 0, len(merged))
 	for _, h := range merged {
 		result = append(result, h)
 	}

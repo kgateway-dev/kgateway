@@ -103,7 +103,7 @@ func HaveHttpResponse(expected *HttpResponse) types.GomegaMatcher {
 		expectedCustomMatcher = gstruct.Ignore()
 	}
 
-	var partialResponseMatchers []types.GomegaMatcher
+	var partialResponseMatchers []types.GomegaMatcher //nolint:prealloc
 	partialResponseMatchers = append(partialResponseMatchers, &matchers.HaveHTTPStatusMatcher{
 		Expected: []interface{}{
 			expected.StatusCode,

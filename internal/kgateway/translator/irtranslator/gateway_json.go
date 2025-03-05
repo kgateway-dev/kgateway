@@ -50,7 +50,7 @@ func (tr *TranslationResult) MarshalJSON() ([]byte, error) {
 }
 
 func marshalProtoMessages[T proto.Message](messages []T, m protojson.MarshalOptions) ([]interface{}, error) {
-	var result []interface{}
+	result := make([]interface{}, 0, len(messages))
 	for _, msg := range messages {
 		data, err := m.Marshal(msg)
 		if err != nil {

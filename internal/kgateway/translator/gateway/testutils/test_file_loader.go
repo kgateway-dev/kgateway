@@ -103,7 +103,7 @@ func parseFile(ctx context.Context, filename string) ([]runtime.Object, error) {
 	resourceYamlStrings := bytes.Split(file, []byte("\n---\n"))
 
 	// Create resources from YAML documents
-	var genericResources []runtime.Object
+	genericResources := make([]runtime.Object, 0, len(resourceYamlStrings))
 	for _, objYaml := range resourceYamlStrings {
 		// Skip empty documents
 		if len(bytes.TrimSpace(objYaml)) == 0 {
