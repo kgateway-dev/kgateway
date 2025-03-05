@@ -22,6 +22,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 type httpListenerPolicy struct {
@@ -59,6 +60,11 @@ type httpListenerPolicyPluginGwPass struct {
 	ir.UnimplementedProxyTranslationPass
 }
 
+func (p *httpListenerPolicyPluginGwPass) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoy_config_route_v3.Route) error {
+	// no op
+	return nil
+}
+
 func (p *httpListenerPolicyPluginGwPass) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *envoy_config_listener_v3.Listener) {
 	// no op
 }
@@ -71,7 +77,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		v1alpha1.SchemeGroupVersion.WithResource("httplistenerpolicies"),
 		commoncol.KrtOpts.ToOptions("HTTPListenerPolicy")...,
 	)
-	gk := v1alpha1.HTTPListenerPolicyGVK.GroupKind()
+	gk := wellknown.HTTPListenerPolicyGVK.GroupKind()
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.HTTPListenerPolicy) *ir.PolicyWrapper {
 		objSrc := ir.ObjectSource{
 			Group:     gk.Group,
@@ -104,7 +110,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 	return extensionplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
-			v1alpha1.HTTPListenerPolicyGVK.GroupKind(): {
+			wellknown.HTTPListenerPolicyGVK.GroupKind(): {
 				//AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,

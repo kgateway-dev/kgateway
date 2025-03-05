@@ -47,14 +47,23 @@ func (c ObjectSource) Equals(in ObjectSource) bool {
 	return c.Namespace == in.Namespace && c.Name == in.Name && c.Group == in.Group && c.Kind == in.Kind
 }
 
+type AppProtocol string
+
+const (
+	DefaultAppProtocol AppProtocol = ""
+	HTTP2AppProtocol   AppProtocol = "http2"
+)
+
 type BackendObjectIR struct {
 	// Ref to source object. sometimes the group and kind are not populated from api-server, so
 	// set them explicitly here, and pass this around as the reference.
 	ObjectSource `json:",inline"`
 	// optional port for if ObjectSource is a service that can have multiple ports.
 	Port int32
+	// optional application protocol for the backend. Can be used to enable http2.
+	AppProtocol AppProtocol
 
-	// prefix the cluster name with this string to distringuish it from other GVKs.
+	// prefix the cluster name with this string to distinguish it from other GVKs.
 	// here explicitly as it shows up in stats. each (group, kind) pair should have a unique prefix.
 	GvPrefix string
 	// for things that integrate with destination rule, we need to know what hostname to use.
@@ -78,7 +87,7 @@ func BackendResourceName(objSource ObjectSource, port int32) string {
 }
 
 func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
-	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj) && c.AttachedPolicies.Equals(in.AttachedPolicies)
+	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj) && c.ObjIr.Equals(in.ObjIr) && c.AttachedPolicies.Equals(in.AttachedPolicies)
 }
 
 func (c BackendObjectIR) ClusterName() string {

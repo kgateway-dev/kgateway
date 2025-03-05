@@ -48,11 +48,11 @@ func convertAccessLogConfig(
 	grpcBackends := make(map[string]*ir.BackendObjectIR, len(policy.Spec.AccessLog))
 	for idx, log := range configs {
 		if log.GrpcService != nil && log.GrpcService.BackendRef != nil {
-			upstream, err := commoncol.Backends.GetBackendFromRef(krtctx, parentSrc, log.GrpcService.BackendRef.BackendObjectReference)
+			backend, err := commoncol.Backends.GetBackendFromRef(krtctx, parentSrc, log.GrpcService.BackendRef.BackendObjectReference)
 			if err != nil {
-				return nil, fmt.Errorf("failed to get upstream from ref: %s", err.Error())
+				return nil, fmt.Errorf("failed to get backend from ref: %s", err.Error())
 			}
-			grpcBackends[getLogId(log.GrpcService.LogName, idx)] = upstream
+			grpcBackends[getLogId(log.GrpcService.LogName, idx)] = backend
 		}
 	}
 
@@ -393,15 +393,15 @@ func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, grpcService *v1alp
 		return errors.New("grpc service log name cannot be empty")
 	}
 
-	upstream := grpcBackends[getLogId(grpcService.LogName, accessLogId)]
-	if upstream == nil {
-		return errors.New("upstream backend ref not found")
+	backend := grpcBackends[getLogId(grpcService.LogName, accessLogId)]
+	if backend == nil {
+		return errors.New("backend ref not found")
 	}
 
 	svc := &envoycore.GrpcService{
 		TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
 			EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
-				ClusterName: upstream.GetName(),
+				ClusterName: backend.GetName(),
 			},
 		},
 	}
