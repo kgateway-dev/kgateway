@@ -172,11 +172,8 @@ jobs:
       - name: Install the released chart
         run: |
           helm install --create-namespace --namespace kgateway-system kgateway \
-            oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway \
+            oci://cr.kgateway.dev/kgateway-dev/charts/kgateway \
             --version ${{ needs.setup.outputs.version }} \
-            --set controller.image.registry=${{ env.IMAGE_REGISTRY }} \
-            --set gateway.envoyContainer.image.registry=${{ env.IMAGE_REGISTRY }} \
-            --set gateway.sdsContainer.image.registry=${{ env.IMAGE_REGISTRY }} \
             --wait --timeout 5m
 
       - name: Wait for the kgateway deployment to be ready
