@@ -80,6 +80,8 @@ func processDnsLookupFamily(out *clusterv3.Cluster, st *settings.Settings) {
 	out.DnsLookupFamily = clusterv3.Cluster_V4_PREFERRED
 
 	switch st.DnsLookupFamily {
+	case "V4_PREFERRED":
+		out.DnsLookupFamily = clusterv3.Cluster_V4_PREFERRED
 	case "V4_ONLY":
 		out.DnsLookupFamily = clusterv3.Cluster_V4_ONLY
 	case "V6_ONLY":
