@@ -64,6 +64,7 @@ clusters:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
   type: EDS
 - connectTimeout: 5s
+  dnsLookupFamily: V4_PREFERRED
   loadAssignment:
     clusterName: backend_gwtest_deepseek_0
     endpoints:
