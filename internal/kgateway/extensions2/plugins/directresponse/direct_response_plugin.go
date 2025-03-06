@@ -24,6 +24,7 @@ import (
 	extensionplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 )
 
@@ -46,6 +47,7 @@ func (d *directResponse) Equals(in any) bool {
 }
 
 type directResponsePluginGwPass struct {
+	ir.UnimplementedProxyTranslationPass
 }
 
 func (p *directResponsePluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {
@@ -53,10 +55,15 @@ func (p *directResponsePluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmC
 	return nil
 }
 
+func (p *directResponsePluginGwPass) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoy_config_route_v3.Route) error {
+	// no op
+	return nil
+}
+
 func registerTypes(ourCli versioned.Interface) {
 	skubeclient.Register[*v1alpha1.DirectResponse](
-		v1alpha1.DirectResponseGVK.GroupVersion().WithResource("directresponses"),
-		v1alpha1.DirectResponseGVK,
+		wellknown.DirectResponseGVK.GroupVersion().WithResource("directresponses"),
+		wellknown.DirectResponseGVK,
 		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
 			return ourCli.GatewayV1alpha1().DirectResponses(namespace).List(context.Background(), o)
 		},
@@ -71,7 +78,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 	col := krt.WrapClient(kclient.New[*v1alpha1.DirectResponse](commoncol.Client), commoncol.KrtOpts.ToOptions("DirectResponse")...)
 
-	gk := v1alpha1.DirectResponseGVK.GroupKind()
+	gk := wellknown.DirectResponseGVK.GroupKind()
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.DirectResponse) *ir.PolicyWrapper {
 		var pol = &ir.PolicyWrapper{
 			ObjectSource: ir.ObjectSource{
@@ -89,7 +96,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 	return extensionplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionplug.PolicyPlugin{
-			v1alpha1.DirectResponseGVK.GroupKind(): {
+			wellknown.DirectResponseGVK.GroupKind(): {
 				Name: "directresponse",
 				//	AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
 				Policies: policyCol,
@@ -155,10 +162,6 @@ func (p *directResponsePluginGwPass) ApplyForRouteBackend(
 // if a plugin emits new filters, they must be with a plugin unique name.
 // any filter returned from route config must be disabled, so it doesnt impact other routes.
 func (p *directResponsePluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
-	return nil, nil
-}
-
-func (p *directResponsePluginGwPass) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {
 	return nil, nil
 }
 

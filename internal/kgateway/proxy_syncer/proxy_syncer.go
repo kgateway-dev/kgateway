@@ -42,15 +42,17 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
 )
 
-// ProxySyncer is responsible for translating Kubernetes Gateway CRs into Gloo Proxies
-// and syncing the proxyClient with the newly translated proxies.
+// ProxySyncer orchestrates the translation of K8s Gateway CRs to xDS
+// and setting the output xDS snapshot in the envoy snapshot cache,
+// resulting in each connected proxy getting the correct configuration.
+// ProxySyncer also syncs status resulting from translation to K8s apiserver.
 type ProxySyncer struct {
 	controllerName string
 
-	mgr              manager.Manager
-	commonCols       *common.CommonCollections
-	translatorSyncer *translator.CombinedTranslator
-	extensions       extensionsplug.Plugin
+	mgr        manager.Manager
+	commonCols *common.CommonCollections
+	translator *translator.CombinedTranslator
+	plugins    extensionsplug.Plugin
 
 	istioClient     kube.Client
 	proxyTranslator ProxyTranslator
@@ -131,17 +133,17 @@ func NewProxySyncer(
 	commonCols *common.CommonCollections,
 	xdsCache envoycache.SnapshotCache,
 ) *ProxySyncer {
-	extensions := extensionsFactory(ctx, commonCols)
+	plugins := extensionsFactory(ctx, commonCols)
 
 	return &ProxySyncer{
-		controllerName:   controllerName,
-		commonCols:       commonCols,
-		mgr:              mgr,
-		istioClient:      client,
-		proxyTranslator:  NewProxyTranslator(xdsCache),
-		uniqueClients:    uniqueClients,
-		translatorSyncer: translator.NewCombinedTranslator(ctx, extensions, commonCols),
-		extensions:       extensions,
+		controllerName:  controllerName,
+		commonCols:      commonCols,
+		mgr:             mgr,
+		istioClient:     client,
+		proxyTranslator: NewProxyTranslator(xdsCache),
+		uniqueClients:   uniqueClients,
+		translator:      translator.NewCombinedTranslator(ctx, plugins, commonCols),
+		plugins:         plugins,
 	}
 }
 
@@ -183,26 +185,26 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
 	logger := contextutils.LoggerFrom(ctx)
 
-	kubeGateways, routes, upstreamIndex, endpointIRs := krtcollections.InitCollections(
+	kubeGateways, routes, backendIndex, endpointIRs := krtcollections.InitCollections(
 		ctx,
-		s.extensions,
+		s.plugins,
 		s.istioClient,
 		isOurGw,
 		s.commonCols.RefGrants,
 		krtopts,
 	)
 
-	finalUpstreams := krt.JoinCollection(upstreamIndex.Upstreams(), krtopts.ToOptions("FinalUpstreams")...)
+	finalBackends := krt.JoinCollection(backendIndex.Backends(), krtopts.ToOptions("FinalUpstreams")...)
 
 	// add the upstreams to the common collections, so they are available for policies.
-	s.commonCols.Upstreams = upstreamIndex
+	s.commonCols.Backends = backendIndex
 
-	s.translatorSyncer.Init(ctx, routes)
+	s.translator.Init(ctx, routes)
 
 	s.mostXdsSnapshots = krt.NewCollection(kubeGateways.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
 		logger.Debugf("building proxy for kube gw %s version %s", client.ObjectKeyFromObject(gw.Obj), gw.Obj.GetResourceVersion())
 
-		xdsSnap, rm := s.translatorSyncer.TranslateGateway(kctx, ctx, gw)
+		xdsSnap, rm := s.translator.TranslateGateway(kctx, ctx, gw)
 		if xdsSnap == nil {
 			return nil
 		}
@@ -215,13 +217,13 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 		krtopts,
 		s.uniqueClients,
 		endpointIRs,
-		s.translatorSyncer.TranslateEndpoints,
+		s.translator.TranslateEndpoints,
 	)
 	clustersPerClient := NewPerClientEnvoyClusters(
 		ctx,
 		krtopts,
-		s.translatorSyncer.GetUpstreamTranslator(),
-		finalUpstreams,
+		s.translator.GetUpstreamTranslator(),
+		finalBackends,
 		s.uniqueClients,
 	)
 	s.perclientSnapCollection = snapshotPerClient(
@@ -267,6 +269,18 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 				// obsGen will stay as-is...
 				maps.Copy(p.reports.TCPRoutes[rnn].Parents, rr.Parents)
 			}
+
+			for rnn, rr := range p.reports.TLSRoutes {
+				// if we haven't encountered this route, just copy it over completely
+				old := merged.TLSRoutes[rnn]
+				if old == nil {
+					merged.TLSRoutes[rnn] = rr
+					continue
+				}
+				// else, let's merge our parentRefs into the existing map
+				// obsGen will stay as-is...
+				maps.Copy(p.reports.TLSRoutes[rnn].Parents, rr.Parents)
+			}
 		}
 		return &report{merged}
 	})
@@ -274,14 +288,14 @@ func (s *ProxySyncer) Init(ctx context.Context, isOurGw func(gw *gwv1.Gateway) b
 	s.waitForSync = []cache.InformerSynced{
 		endpointIRs.HasSynced,
 		endpointIRs.HasSynced,
-		upstreamIndex.HasSynced,
-		finalUpstreams.HasSynced,
+		backendIndex.HasSynced,
+		finalBackends.HasSynced,
 		kubeGateways.Gateways.HasSynced,
 		s.perclientSnapCollection.HasSynced,
 		s.mostXdsSnapshots.HasSynced,
-		s.extensions.HasSynced,
+		s.plugins.HasSynced,
 		routes.HasSynced,
-		s.translatorSyncer.HasSynced,
+		s.translator.HasSynced,
 	}
 	return nil
 }
@@ -423,6 +437,12 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 				return nil
 			}
 			r.Status.RouteStatus = *status
+		case *gwv1a2.TLSRoute:
+			status = rm.BuildRouteStatus(ctx, r, s.controllerName)
+			if status == nil || isRouteStatusEqual(&r.Status.RouteStatus, status) {
+				return nil
+			}
+			r.Status.RouteStatus = *status
 		default:
 			logger.Warnw(fmt.Sprintf("unsupported route type for %s", routeType), "route", route)
 			return nil
@@ -449,6 +469,16 @@ func (s *ProxySyncer) syncRouteStatus(ctx context.Context, rm reports.ReportMap)
 		})
 		if err != nil {
 			logger.Errorw("all attempts failed at updating TCPRoute status", "error", err, "route", rnn)
+		}
+	}
+
+	// Sync TLSRoute statuses
+	for rnn := range rm.TLSRoutes {
+		err := syncStatusWithRetry(wellknown.TLSRouteKind, rnn, func() client.Object { return new(gwv1a2.TLSRoute) }, func(route client.Object) error {
+			return buildAndUpdateStatus(route, wellknown.TLSRouteKind)
+		})
+		if err != nil {
+			logger.Errorw("all attempts failed at updating TLSRoute status", "error", err, "route", rnn)
 		}
 	}
 }

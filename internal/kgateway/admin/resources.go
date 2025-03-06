@@ -5,7 +5,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
@@ -33,7 +32,7 @@ var (
 	}
 
 	KubernetesGatewayIntegrationPolicyGVKs = []schema.GroupVersionKind{
-		v1alpha1.GatewayParametersGVK,
+		wellknown.GatewayParametersGVK,
 
 		// While these are in fact Policy APIs, they are only enabled if the Kubernetes Gateway Integration is turned on
 		// gatewayv1.ListenerOptionGVK,

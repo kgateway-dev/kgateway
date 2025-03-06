@@ -1,5 +1,3 @@
-//go:build ignore
-
 package tcproute
 
 import (
@@ -151,7 +149,7 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 			tcpRouteManifest:  crossNsNoRefGrantTCPRouteManifest,
 			proxyService:      crossNsNoRefGrantProxyService,
 			proxyDeployment:   crossNsNoRefGrantProxyDeployment,
-			expectedErrorCode: 7,
+			expectedErrorCode: 56,
 			ports:             []int{8080},
 			listenerNames: []v1.SectionName{
 				v1.SectionName(crossNsNoRefGrantListenerName),
@@ -162,7 +160,6 @@ func (s *testingSuite) TestConfigureTCPRouteBackingDestinations() {
 	}
 
 	for _, tc := range testCases {
-		tc := tc // capture range variable
 		s.Run(tc.name, func() {
 			// Cleanup function
 			s.T().Cleanup(func() {

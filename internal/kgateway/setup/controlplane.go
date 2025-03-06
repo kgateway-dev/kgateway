@@ -29,12 +29,17 @@ func NewControlPlane(
 	if err != nil {
 		return nil, err
 	}
-	return NewControlPlaneWithListener(ctx, lis, callbacks)
+	snapshotCache, grpcServer := NewControlPlaneWithListener(ctx, lis, callbacks)
+	go func() {
+		<-ctx.Done()
+		grpcServer.GracefulStop()
+	}()
+	return snapshotCache, err
 }
 
 func NewControlPlaneWithListener(ctx context.Context,
 	lis net.Listener,
-	callbacks xdsserver.Callbacks) (envoycache.SnapshotCache, error) {
+	callbacks xdsserver.Callbacks) (envoycache.SnapshotCache, *grpc.Server) {
 	logger := contextutils.LoggerFrom(ctx).Desugar()
 	serverOpts := []grpc.ServerOption{
 		grpc.StreamInterceptor(
@@ -61,10 +66,6 @@ func NewControlPlaneWithListener(ctx context.Context,
 	envoy_service_discovery_v3.RegisterAggregatedDiscoveryServiceServer(grpcServer, xdsServer)
 
 	go grpcServer.Serve(lis)
-	go func() {
-		<-ctx.Done()
-		grpcServer.GracefulStop()
-	}()
 
-	return snapshotCache, nil
+	return snapshotCache, grpcServer
 }

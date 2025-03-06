@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
 	"istio.io/istio/pkg/kube/krt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -22,6 +21,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	ourwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 )
@@ -75,8 +75,8 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	return extensionsplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
 			VirtualIstioGK: {
-				Name:            "istio",
-				ProcessUpstream: p.processUpstream,
+				Name:           "istio",
+				ProcessBackend: p.processUpstream,
 				GlobalPolicies: func(_ krt.HandlerContext, _ extensionsplug.AttachmentPoints) ir.PolicyIR {
 					// return static settings which do not change post istioPlugin creation
 					return istioSettings
@@ -88,7 +88,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 type istioPlugin struct{}
 
-func isDisabledForUpstream(_ ir.Upstream) bool {
+func isDisabledForUpstream(_ ir.BackendObjectIR) bool {
 	// return in.GetDisableIstioAutoMtls().GetValue()
 
 	// TODO: implement this; we can do it by checking annotations?
@@ -103,7 +103,7 @@ func doesClusterHaveSslConfigPresent(_ *envoy_config_cluster_v3.Cluster) bool {
 	return false
 }
 
-func (p istioPlugin) processUpstream(ctx context.Context, ir ir.PolicyIR, in ir.Upstream, out *envoy_config_cluster_v3.Cluster) {
+func (p istioPlugin) processUpstream(ctx context.Context, ir ir.PolicyIR, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) {
 	var socketmatches []*envoy_config_cluster_v3.Cluster_TransportSocketMatch
 
 	st, ok := ir.(IstioSettings)
@@ -203,7 +203,7 @@ func createIstioMatch(sni string) *envoy_config_cluster_v3.Cluster_TransportSock
 		},
 	}
 
-	typedConfig, _ := anypb.New(sslSds)
+	typedConfig, _ := utils.MessageToAny(sslSds)
 	transportSocket := &envoy_config_core_v3.TransportSocket{
 		Name:       wellknown.TransportSocketTls,
 		ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
@@ -218,7 +218,7 @@ func createIstioMatch(sni string) *envoy_config_cluster_v3.Cluster_TransportSock
 
 func createDefaultIstioMatch() *envoy_config_cluster_v3.Cluster_TransportSocketMatch {
 	// Based on Istio's default match https://github.com/istio/istio/blob/fa321ebd2a1186325788b0f461aa9f36a1a8d90e/pilot/pkg/xds/filters/filters.go#L78
-	typedConfig, _ := anypb.New(&sockets_raw_buffer.RawBuffer{})
+	typedConfig, _ := utils.MessageToAny(&sockets_raw_buffer.RawBuffer{})
 	rawBufferTransportSocket := &envoy_config_core_v3.TransportSocket{
 		Name:       wellknown.TransportSocketRawBuffer,
 		ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
@@ -231,7 +231,7 @@ func createDefaultIstioMatch() *envoy_config_cluster_v3.Cluster_TransportSocketM
 	}
 }
 
-func buildSni(upstream ir.Upstream) string {
+func buildSni(upstream ir.BackendObjectIR) string {
 	switch us := upstream.Obj.(type) {
 	case *corev1.Service:
 		return buildDNSSrvSubsetKey(

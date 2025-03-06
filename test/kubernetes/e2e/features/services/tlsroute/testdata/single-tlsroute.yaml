@@ -1,0 +1,14 @@
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TLSRoute
+metadata:
+  name: single-tls-route
+spec:
+  parentRefs:
+  - name: single-tls-gateway
+    sectionName: listener-443
+  hostnames:
+  - "example.com"
+  rules:
+  - backendRefs:
+    - name: single-svc
+      port: 443

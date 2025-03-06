@@ -15,8 +15,11 @@ linters:
     # We are aiming to progressively enable linters.
     # If you see a linter that can be added, please do so.
     - bodyclose
+    - copyloopvar
+    - forbidigo
     - ginkgolinter
     - goimports
+    - ineffassign
     - misspell
     - nakedret
     - predeclared
@@ -59,6 +62,10 @@ linters-settings:
   misspell:
     ignore-words:
     - kgateway
+  forbidigo:
+    forbid:
+      - p: "anypb.New"
+        msg: "Do not use anypb.New; Use utils.MessageToAny instead."
 
 issues:
   # Maximum count of issues with the same text.

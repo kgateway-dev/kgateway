@@ -15,4 +15,29 @@ apiVersion: gateway.kgateway.dev/v1alpha1
 metadata:
   name: kgateway
 spec:
-  kube: {}
+  kube:
+    deployment:
+      replicas: 1
+    envoyContainer:
+      image:
+        registry: ghcr.io/kgateway-dev
+        repository: envoy-wrapper
+        tag: v0.0.1
+        pullPolicy: IfNotPresent
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          add:
+          - NET_BIND_SERVICE
+          drop:
+          - ALL
+        readOnlyRootFilesystem: true
+        runAsNonRoot: true
+        runAsUser: 10101
+    service:
+      type: LoadBalancer
+    stats:
+      enableStatsRoute: true
+      enabled: true
+      routePrefixRewrite: /stats/prometheus
+      statsRoutePrefixRewrite: /stats

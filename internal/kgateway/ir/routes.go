@@ -42,6 +42,14 @@ func (c HttpRouteIR) ResourceName() string {
 	return c.ObjectSource.ResourceName()
 }
 
+// get hostnames
+func (c *HttpRouteIR) GetHostnames() []string {
+	if c == nil {
+		return nil
+	}
+	return c.Hostnames
+}
+
 var _ krt.ResourceNamer = &HttpRouteIR{}
 var _ krt.ResourceNamer = HttpRouteIR{}
 
@@ -63,11 +71,18 @@ func (c HttpRouteIR) backendsEqual(in HttpRouteIR) bool {
 			return false
 		}
 		for j, backend := range backendsa {
-			if backend.Backend == nil && backendsb[j].Backend == nil {
+			otherbackend := backendsb[j]
+			if backend.Backend == nil && otherbackend.Backend == nil {
 				continue
 			}
-			if backend.Backend != nil && backendsb[j].Backend != nil {
-				if backend.Backend.ClusterName != backendsb[j].Backend.ClusterName {
+			if backend.Backend != nil && otherbackend.Backend != nil {
+				if backend.Backend.ClusterName != otherbackend.Backend.ClusterName {
+					return false
+				}
+				if backend.Backend.Weight != otherbackend.Backend.Weight {
+					return false
+				}
+				if !backend.AttachedPolicies.Equals(otherbackend.AttachedPolicies) {
 					return false
 				}
 			} else {
@@ -85,7 +100,7 @@ type TcpRouteIR struct {
 	SourceObject     *gwv1alpha2.TCPRoute
 	ParentRefs       []gwv1.ParentReference
 	AttachedPolicies AttachedPolicies
-	Backends         []Backend
+	Backends         []BackendRefIR
 }
 
 func (c *TcpRouteIR) GetParentRefs() []gwv1.ParentReference {
@@ -103,3 +118,36 @@ func (c TcpRouteIR) Equals(in TcpRouteIR) bool {
 }
 
 var _ Route = &TcpRouteIR{}
+
+type TlsRouteIR struct {
+	ObjectSource `json:",inline"`
+	SourceObject *gwv1alpha2.TLSRoute
+	ParentRefs   []gwv1.ParentReference
+
+	Hostnames        []string
+	AttachedPolicies AttachedPolicies
+	Backends         []BackendRefIR
+}
+
+func (c *TlsRouteIR) GetParentRefs() []gwv1.ParentReference {
+	return c.ParentRefs
+}
+func (c *TlsRouteIR) GetSourceObject() metav1.Object {
+	return c.SourceObject
+}
+func (c TlsRouteIR) ResourceName() string {
+	return c.ObjectSource.ResourceName()
+}
+
+func (c TlsRouteIR) Equals(in TlsRouteIR) bool {
+	return c.ObjectSource == in.ObjectSource && versionEquals(c.SourceObject, in.SourceObject) && c.AttachedPolicies.Equals(in.AttachedPolicies)
+}
+
+func (c *TlsRouteIR) GetHostnames() []string {
+	if c == nil {
+		return nil
+	}
+	return c.Hostnames
+}
+
+var _ Route = &TlsRouteIR{}

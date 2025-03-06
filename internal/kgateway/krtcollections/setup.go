@@ -57,60 +57,45 @@ func registerTypes() {
 
 func InitCollections(
 	ctx context.Context,
-	extensions extensionsplug.Plugin,
+	plugins extensionsplug.Plugin,
 	istioClient kube.Client,
 	isOurGw func(gw *gwv1.Gateway) bool,
 	refgrants *RefGrantIndex,
 	krtopts krtutil.KrtOptions,
-) (*GatewayIndex, *RoutesIndex, *UpstreamIndex, krt.Collection[ir.EndpointsForUpstream]) {
+) (*GatewayIndex, *RoutesIndex, *BackendIndex, krt.Collection[ir.EndpointsForBackend]) {
 	registerTypes()
 
 	httpRoutes := krt.WrapClient(kclient.New[*gwv1.HTTPRoute](istioClient), krtopts.ToOptions("HTTPRoute")...)
+	tcproutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TCPRoute](istioClient, gvr.TCPRoute, kubetypes.StandardInformer, kclient.Filter{}), krtopts.ToOptions("TCPRoute")...)
+	tlsRoutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TLSRoute](istioClient, gvr.TLSRoute, kubetypes.StandardInformer, kclient.Filter{}), krtopts.ToOptions("TLSRoute")...)
 	kubeRawGateways := krt.WrapClient(kclient.New[*gwv1.Gateway](istioClient), krtopts.ToOptions("KubeGateways")...)
 
-	tcproutes := krt.WrapClient(kclient.NewDelayedInformer[*gwv1a2.TCPRoute](istioClient, gvr.TCPRoute, kubetypes.StandardInformer, kclient.Filter{}), krtopts.ToOptions("TCPRoute")...)
-
-	return initCollectionsWithGateways(isOurGw, kubeRawGateways, httpRoutes, tcproutes, refgrants, extensions, krtopts)
-}
-
-func initCollectionsWithGateways(
-	isOurGw func(gw *gwv1.Gateway) bool,
-	kubeRawGateways krt.Collection[*gwv1.Gateway],
-	httpRoutes krt.Collection[*gwv1.HTTPRoute],
-	tcproutes krt.Collection[*gwv1a2.TCPRoute],
-	refgrants *RefGrantIndex,
-	extensions extensionsplug.Plugin,
-	krtopts krtutil.KrtOptions,
-) (*GatewayIndex, *RoutesIndex, *UpstreamIndex, krt.Collection[ir.EndpointsForUpstream]) {
-	policies := NewPolicyIndex(krtopts, extensions.ContributesPolicies)
+	policies := NewPolicyIndex(krtopts, plugins.ContributesPolicies)
 	var backendRefPlugins []extensionsplug.GetBackendForRefPlugin
-	for _, ext := range extensions.ContributesPolicies {
+	for _, ext := range plugins.ContributesPolicies {
 		if ext.GetBackendForRef != nil {
 			backendRefPlugins = append(backendRefPlugins, ext.GetBackendForRef)
 		}
 	}
-
-	upstreamIndex := NewUpstreamIndex(krtopts, backendRefPlugins, policies, refgrants)
-	endpointIRs := initUpstreams(extensions, upstreamIndex, krtopts)
-
+	backendIndex := NewBackendIndex(krtopts, backendRefPlugins, policies, refgrants)
+	endpointIRs := initBackends(plugins, backendIndex, krtopts)
 	kubeGateways := NewGatewayIndex(krtopts, isOurGw, policies, kubeRawGateways)
-
-	routes := NewRoutesIndex(krtopts, httpRoutes, tcproutes, policies, upstreamIndex, refgrants)
-	return kubeGateways, routes, upstreamIndex, endpointIRs
+	routes := NewRoutesIndex(krtopts, httpRoutes, tcproutes, tlsRoutes, policies, backendIndex, refgrants)
+	return kubeGateways, routes, backendIndex, endpointIRs
 }
 
-func initUpstreams(
-	extensions extensionsplug.Plugin,
-	upstreamIndex *UpstreamIndex,
+func initBackends(
+	plugins extensionsplug.Plugin,
+	upstreamIndex *BackendIndex,
 	krtopts krtutil.KrtOptions,
-) krt.Collection[ir.EndpointsForUpstream] {
-	allEndpoints := []krt.Collection[ir.EndpointsForUpstream]{}
-	for k, col := range extensions.ContributesUpstreams {
-		if col.Upstreams != nil {
-			upstreamIndex.AddUpstreams(k, col.Upstreams)
+) krt.Collection[ir.EndpointsForBackend] {
+	allEndpoints := []krt.Collection[ir.EndpointsForBackend]{}
+	for gk, plugin := range plugins.ContributesBackends {
+		if plugin.Backends != nil {
+			upstreamIndex.AddBackends(gk, plugin.Backends)
 		}
-		if col.Endpoints != nil {
-			allEndpoints = append(allEndpoints, col.Endpoints)
+		if plugin.Endpoints != nil {
+			allEndpoints = append(allEndpoints, plugin.Endpoints)
 		}
 	}
 

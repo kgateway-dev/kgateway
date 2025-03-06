@@ -24,6 +24,7 @@ metadata:
   labels:
     app.kubernetes.io/name: tcp-echo
 spec:
+  terminationGracePeriodSeconds: 0
   containers:
   - name: tcp-echo
     image: soloio/tcp-echo:latest

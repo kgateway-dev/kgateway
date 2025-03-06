@@ -20,6 +20,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 
 	gloov1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/testutils/resources"
 )
 
@@ -113,7 +114,7 @@ var (
 			Namespace: "default",
 		},
 		Spec: gwv1.GatewaySpec{
-			GatewayClassName: "gloo-gateway",
+			GatewayClassName: wellknown.GatewayClassName,
 			Listeners: []gwv1.Listener{
 				{
 					Name:     "http",

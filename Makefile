@@ -166,7 +166,7 @@ tool/generate: #
 # Repo setup
 #----------------------------------------------------------------------------------
 
-GOIMPORTS ?= go tool golang.org/x/tools/cmd/goimports
+GOIMPORTS ?= go tool goimports
 
 .PHONY: fmt
 fmt: tool/goimports  ## Format the code with goimports
@@ -198,15 +198,23 @@ check-spelling:
 #----------------------------------------------------------------------------
 
 LINTER_VERSION := $(shell cat .github/workflows/static-analysis.yaml | yq '.jobs.static-analysis.steps.[] | select( .uses == "*golangci/golangci-lint-action*") | .with.version ')
+GO_VERSION := $(shell cat go.mod | grep -E '^go' | awk '{print $$2}')
+GOTOOLCHAIN ?= go$(GO_VERSION)
 
 GOLANGCI_LINT ?= go tool github.com/golangci/golangci-lint/cmd/golangci-lint
-# The analyze target runs a suite of static analysis tools against the codebase.
-# The options are defined in .golangci.yaml, and can be overridden by setting the ANALYZE_ARGS variable.
-.PHONY: analyze
 ANALYZE_ARGS ?= --fast --verbose
-analyze: tool/golangci-lint
-	@$(GOLANGCI_LINT) run $(ANALYZE_ARGS) ./...
+.PHONY: analyze
+analyze:  ## Run golangci-lint. Override options with ANALYZE_ARGS.
+	GOTOOLCHAIN=$(GOTOOLCHAIN) $(GOLANGCI_LINT) run $(ANALYZE_ARGS) ./...
 
+#----------------------------------------------------------------------------
+# Info
+#----------------------------------------------------------------------------
+.PHONY: envoyversion
+envoyversion: ENVOY_VERSION_TAG ?= $(shell echo $(ENVOY_IMAGE) | cut -d':' -f2)
+envoyversion:
+	echo "Version is $(ENVOY_VERSION_TAG)"
+	echo "Commit for envoyproxy is $(shell curl -s https://raw.githubusercontent.com/solo-io/envoy-gloo/refs/tags/v$(ENVOY_VERSION_TAG)/bazel/repository_locations.bzl | grep "envoy =" -A 4 | grep commit | cut -d'"' -f2)"
 #----------------------------------------------------------------------------------
 # Ginkgo Tests
 #----------------------------------------------------------------------------------
@@ -305,10 +313,16 @@ view-test-coverage:
 clean:
 	rm -rf _output
 	rm -rf _test
-	rm -rf docs/site*
-	rm -rf docs/themes
-	rm -rf docs/resources
 	git clean -f -X install
+
+# Clean generated code
+# see hack/generate.sh for source of truth of dirs to clean
+.PHONY: clean-gen
+clean-gen:
+	rm -rf api/applyconfiguration
+	rm -rf pkg/generated/openapi
+	rm -rf pkg/client
+	rm -rf install/helm/kgateway/crds
 
 .PHONY: clean-tests
 clean-tests:
@@ -335,17 +349,9 @@ verify: generate-all  ## Verify that generated code is up to date
 .PHONY: generate-all
 generate-all: generated-code
 
-# Run codegen with debug logs
-# DEBUG=1 controls the debug level in the logger used by solo-kit
-# ref: https://github.com/solo-io/solo-kit/blob/main/pkg/code-generator/codegen/generator.go#L14
-# ref: https://github.com/solo-io/go-utils/blob/main/log/log.go#L14
-.PHONY: generate-all-debug
-generate-all-debug: export DEBUG = 1
-generate-all-debug: generate-all
-
 # Generates all required code, cleaning and formatting as well; this target is executed in CI
 .PHONY: generated-code
-generated-code: go-generate-all getter-check mod-tidy
+generated-code: clean-gen go-generate-all getter-check mod-tidy
 generated-code: update-licenses
 # generated-code: generate-crd-reference-docs
 generated-code: fmt
@@ -478,15 +484,16 @@ ENVOYINIT_OUTPUT_DIR=$(OUTPUT_DIR)/$(ENVOYINIT_DIR)
 export ENVOYINIT_IMAGE_REPO ?= envoy-wrapper
 
 $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH): $(ENVOYINIT_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./cmd/envoyinit/...
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags='$(LDFLAGS)' -gcflags='$(GCFLAGS)' -o $@ ./internal/envoyinit/cmd/...
 
 .PHONY: envoyinit
 envoyinit: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH)
 
-$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: cmd/envoyinit/Dockerfile.envoyinit
+# TODO(nfuden) cheat the process for now with -r but try to find a cleaner method
+$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: internal/envoyinit/Dockerfile.envoyinit
 	cp $< $@
 
-$(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: cmd/envoyinit/docker-entrypoint.sh
+$(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: internal/envoyinit/cmd/docker-entrypoint.sh
 	cp $< $@
 
 .PHONY: envoy-wrapper-docker
@@ -496,7 +503,7 @@ envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYI
 		--build-arg ENVOY_IMAGE=$(ENVOY_IMAGE) \
 		-t $(IMAGE_REGISTRY)/$(ENVOYINIT_IMAGE_REPO):$(VERSION)
 
-$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless: cmd/envoyinit/Dockerfile.envoyinit.distroless
+$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit.distroless: internal/envoyinit/Dockerfile.envoyinit.distroless
 	cp $< $@
 
 # Explicitly specify the base image is amd64 as we only build the amd64 flavour of envoy
@@ -743,7 +750,7 @@ $(TEST_ASSET_DIR)/conformance/conformance_test.go:
 	cat $(shell go list -json -m sigs.k8s.io/gateway-api | jq -r '.Dir')/conformance/conformance_test.go >> $@
 	go fmt $@
 
-CONFORMANCE_SUPPORTED_FEATURES ?= -supported-features=Gateway,ReferenceGrant,HTTPRoute,HTTPRouteQueryParamMatching,HTTPRouteMethodMatching,HTTPRouteResponseHeaderModification,HTTPRoutePortRedirect,HTTPRouteHostRewrite,HTTPRouteSchemeRedirect,HTTPRoutePathRedirect,HTTPRouteHostRewrite,HTTPRoutePathRewrite,HTTPRouteRequestMirror
+CONFORMANCE_SUPPORTED_FEATURES ?= -supported-features=Gateway,ReferenceGrant,HTTPRoute,HTTPRouteQueryParamMatching,HTTPRouteMethodMatching,HTTPRouteResponseHeaderModification,HTTPRoutePortRedirect,HTTPRouteHostRewrite,HTTPRouteSchemeRedirect,HTTPRoutePathRedirect,HTTPRouteHostRewrite,HTTPRoutePathRewrite,HTTPRouteRequestMirror,TLSRoute,HTTPRouteBackendProtocolH2C
 CONFORMANCE_SUPPORTED_PROFILES ?= -conformance-profiles=GATEWAY-HTTP
 CONFORMANCE_GATEWAY_CLASS ?= kgateway
 CONFORMANCE_REPORT_ARGS ?= -report-output=$(TEST_ASSET_DIR)/conformance/$(VERSION)-report.yaml -organization=kgateway-dev -project=kgateway -version=$(VERSION) -url=github.com/kgateway-dev/kgateway -contact=github.com/kgateway-dev/kgateway/issues/new/choose

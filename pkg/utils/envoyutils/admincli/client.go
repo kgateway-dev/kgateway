@@ -12,12 +12,15 @@ import (
 	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/solo-io/go-utils/threadsafe"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/cmdutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/protoutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
+	// import for side effects; this is needed so we can unmarshal envoy types
+	_ "github.com/kgateway-dev/kgateway/v2/internal/envoyinit/hack/filter_types"
 )
 
 const (
@@ -31,8 +34,6 @@ const (
 	LoggingPath        = "logging"
 	ServerInfoPath     = "server_info"
 )
-
-var envoyAdminPort uint32 = 19000
 
 // DumpOptions should have flags for any kind of underlying optional
 // filtering or inclusion of Envoy dump data, such as including EDS, filters, etc.
@@ -58,7 +59,7 @@ func NewClient() *Client {
 		curlOptions: []curl.Option{
 			curl.WithScheme("http"),
 			curl.WithHost("127.0.0.1"),
-			curl.WithPort(int(envoyAdminPort)),
+			curl.WithPort(int(wellknown.EnvoyAdminPort)),
 			// 3 retries, exponential back-off, 10 second max
 			curl.WithRetries(3, 0, 10),
 		},
@@ -77,7 +78,7 @@ func NewPortForwardedClient(ctx context.Context, proxySelector, namespace string
 	// 1. Open a port-forward to the Kubernetes Deployment, so that we can query the Envoy Admin API directly
 	portForwarder, err := kubectl.NewCli().StartPortForward(ctx,
 		selector,
-		portforward.WithRemotePort(int(envoyAdminPort)))
+		portforward.WithRemotePort(int(wellknown.EnvoyAdminPort)))
 	if err != nil {
 		return nil, nil, err
 	}

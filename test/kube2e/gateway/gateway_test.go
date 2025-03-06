@@ -8,7 +8,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
 
 	testmatchers "github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
@@ -686,7 +685,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			It("Returns proxies", func() {
 				portForwarder, err := kubeCli.StartPortForward(ctx,
-					portforward.WithDeployment(kubeutils.GlooDeploymentName, testHelper.InstallNamespace),
+					portforward.WithDeployment(helpers.DefaultKgatewayDeploymentName, testHelper.InstallNamespace),
 					portforward.WithRemotePort(defaults2.GlooProxyDebugPort),
 				)
 				Expect(err).NotTo(HaveOccurred())

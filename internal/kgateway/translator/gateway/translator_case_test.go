@@ -14,6 +14,8 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	"istio.io/istio/pkg/config/schema/gvr"
 	kubeclient "istio.io/istio/pkg/kube"
+	"istio.io/istio/pkg/kube/kclient/clienttest"
+	"istio.io/istio/pkg/kube/krt"
 	"istio.io/istio/pkg/test"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -21,13 +23,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"istio.io/istio/pkg/kube/kclient/clienttest"
-	"istio.io/istio/pkg/kube/krt"
-
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
@@ -89,6 +89,19 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 		}
 	}
 
+	for nns, routeReport := range reportsMap.TLSRoutes {
+		for ref, parentRefReport := range routeReport.Parents {
+			for _, c := range parentRefReport.Conditions {
+				// most route conditions true is good, except RouteConditionPartiallyInvalid
+				if c.Type == string(gwv1.RouteConditionPartiallyInvalid) && c.Status != metav1.ConditionFalse {
+					return fmt.Errorf("condition error for tlsroute: %v ref: %v condition: %v", nns, ref, c)
+				} else if c.Status != metav1.ConditionTrue {
+					return fmt.Errorf("condition error for tlsroute: %v ref: %v condition: %v", nns, ref, c)
+				}
+			}
+		}
+	}
+
 	for nns, gwReport := range reportsMap.Gateways {
 		for _, c := range gwReport.GetConditions() {
 			if c.Status != metav1.ConditionTrue {
@@ -107,12 +120,12 @@ var (
 type testBackendPlugin struct{}
 
 // GetBackendForRef implements query.BackendRefResolver.
-func (tp testBackendPlugin) GetBackendForRefPlugin(kctx krt.HandlerContext, key ir.ObjectSource, port int32) *ir.Upstream {
+func (tp testBackendPlugin) GetBackendForRefPlugin(kctx krt.HandlerContext, key ir.ObjectSource, port int32) *ir.BackendObjectIR {
 	if key.Kind != "test-backend-plugin" {
 		return nil
 	}
 	// doesn't matter as long as its not nil
-	return &ir.Upstream{
+	return &ir.BackendObjectIR{
 		ObjectSource: ir.ObjectSource{
 			Group:     "test",
 			Kind:      "test-backend-plugin",
@@ -157,6 +170,7 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		gvr.Service,
 		gvr.Pod,
 		gvr.TCPRoute,
+		gvr.TLSRoute,
 	} {
 		clienttest.MakeCRD(t, cli, crd)
 	}
@@ -167,11 +181,16 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		Stop: ctx.Done(),
 	}
 
+	st, err := settings.BuildSettings()
+	if err != nil {
+		return nil, err
+	}
 	commoncol := common.NewCommonCollections(
 		krtOpts,
 		cli,
 		ourCli,
 		logr.Discard(),
+		*st,
 	)
 
 	plugins := registry.Plugins(ctx, commoncol)
@@ -201,7 +220,7 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 	kubeclient.WaitForCacheSync("extensions", ctx.Done(), extensions.HasSynced)
 	kubeclient.WaitForCacheSync("commoncol", ctx.Done(), commoncol.HasSynced)
 	kubeclient.WaitForCacheSync("translator", ctx.Done(), translator.HasSynced)
-	kubeclient.WaitForCacheSync("upstreams", ctx.Done(), ui.HasSynced)
+	kubeclient.WaitForCacheSync("backends", ctx.Done(), ui.HasSynced)
 	kubeclient.WaitForCacheSync("endpoints", ctx.Done(), ei.HasSynced)
 
 	results := make(map[types.NamespacedName]ActualTestResult)

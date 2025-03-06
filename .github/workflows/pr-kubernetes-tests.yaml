@@ -2,6 +2,8 @@ name: Kubernetes Tests
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+  merge_group:
+    types: [checks_requested]
 
 env:
   VERSION: '1.0.0-ci1'
@@ -25,15 +27,15 @@ jobs:
         # NOTE: We use the GitHub action step time (as opposed to the `go test` time), because it is easier to capture
 
         test:
-        # Feb 18, 2025: 4 minutes
+        # Feb 27, 2025: 13 minutes
         - cluster-name: 'cluster-one'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$'
+          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$|^TestKgateway$$/^Backends$$'
 
 #         # Dec 4, 2024: 23 minutes
 #         - cluster-name: 'cluster-two'
 #           go-test-args: '-v -timeout=25m'
-#           go-test-run-regex: '^TestKgateway$$/^RouteDelegation$$|^TestKgatewayIstioRevision$$|^TestRevisionIstioRegression$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^RouteOptions$$|^TestKgateway$$/^VirtualHostOptions$$|^TestKgateway$$/^Upstreams$$|^TestKgateway$$/^HeadlessSvc$$|^TestKgateway$$/^PortRouting$$|^TestKgatewayMinimalDefaultGatewayParameters$$|^TestKgateway$$/^DirectResponse$$|^TestKgateway$$/^HttpListenerOptions$$|^TestKgateway$$/^ListenerOptions$$|^TestKgateway$$/^GlooAdminServer$$'
+#           go-test-run-regex: '^TestKgateway$$/^RouteDelegation$$|^TestKgatewayIstioRevision$$|^TestRevisionIstioRegression$$|^TestKgateway$$/^RouteOptions$$|^TestKgateway$$/^VirtualHostOptions$$|^TestKgateway$$/^HeadlessSvc$$|^TestKgateway$$/^PortRouting$$|^TestKgatewayMinimalDefaultGatewayParameters$$|^TestKgateway$$/^DirectResponse$$|^TestKgateway$$/^HttpListenerOptions$$|^TestKgateway$$/^ListenerOptions$$|^TestKgateway$$/^GlooAdminServer$$'
 
 #         # Dec 4, 2024: 24 minutes
 #         - cluster-name: 'cluster-three'
@@ -53,7 +55,7 @@ jobs:
 #         # Dec 4, 2024: 26 minutes
 #         - cluster-name: 'cluster-six'
 #           go-test-args: '-v -timeout=30m'
-#           go-test-run-regex: '^TestDiscoveryWatchlabels$$|^TestKgatewayNoValidation$$|^TestHelm$$|^TestHelmSettings$$|^TestKgatewayAws$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TCPRouteServices$$|^TestZeroDowntimeRollout$$'
+#           go-test-run-regex: '^TestDiscoveryWatchlabels$$|^TestKgatewayNoValidation$$|^TestHelm$$|^TestHelmSettings$$|^TestKgatewayAws$$|^TestZeroDowntimeRollout$$'
 
 #         # Dec 4, 2024: 13 minutes
 #         - cluster-name: 'cluster-seven'

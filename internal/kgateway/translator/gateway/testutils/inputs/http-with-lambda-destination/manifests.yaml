@@ -23,25 +23,24 @@ spec:
     - "example.com"
   rules:
     - backendRefs:
-        - name: aws-upstream
-          kind: Upstream
+        - name: aws-backend
+          kind: Backend
           group: gateway.kgateway.dev
           filters:
             - type: ExtensionRef
               extensionRef:
-                group: gloo.solo.io
+                group: kgateway.io
                 kind: Parameter
                 name: uppercase
 ---
 apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Upstream
+kind: Backend
 metadata:
-  name: aws-upstream
+  name: aws-backend
 spec:
+  type: AWS
   aws:
     region: us-east-1
-    # TODO: add these back
-    # roleArn: arn:aws:iam::123456789012:role/lambda-role
-    # lambdaFunctions:
-    #   - lambdaFunctionName: uppercase
-    #     logicalName: uppercase
+    auth:
+      type: irsa
+      roleArn: arn:aws:iam::123456789012:role/lambda-role

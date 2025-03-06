@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
 
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/settingsutil"
@@ -34,6 +33,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/grpc/validation"
 	v1 "github.com/kgateway-dev/kgateway/v2/internal/gloo/pkg/api/v1"
+	"github.com/kgateway-dev/kgateway/v2/test/helpers"
 	"github.com/kgateway-dev/kgateway/v2/test/kube2e"
 )
 
@@ -122,7 +122,7 @@ var _ = Describe("Setup Syncer", func() {
 
 		It("restarts validation grpc server when settings change", func() {
 			portForwarder, err := testHelper.StartPortForward(ctx,
-				portforward.WithDeployment(kubeutils.GlooDeploymentName, testHelper.InstallNamespace),
+				portforward.WithDeployment(helpers.DefaultKgatewayDeploymentName, testHelper.InstallNamespace),
 				portforward.WithRemotePort(defaults.GlooValidationPort),
 			)
 			Expect(err).NotTo(HaveOccurred())

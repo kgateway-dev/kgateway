@@ -10,6 +10,9 @@
 # defaults in our values-template.yaml overtime. That way, users of the product can have the easiest experience,
 # and gain the best value, without custom configuration.
 
+image:
+  registry: ghcr.io/kgateway-dev
+
 # Configuration for the kgateway controller pod
 controller:
   # we need to be able to troubleshoot failures using logs; when users encounter problems enabling debug logging is

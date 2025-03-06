@@ -58,6 +58,13 @@ func (r *ReportMap) BuildGWStatus(ctx context.Context, gw gwv1.Gateway) *gwv1.Ga
 		}
 		meta.SetStatusCondition(&finalConditions, gwCondition)
 	}
+	// If there are conditions on the Gateway that are not owned by our reporter, include
+	// them in the final list of conditions to preseve conditions we do not own
+	for _, condition := range gw.Status.Conditions {
+		if meta.FindStatusCondition(finalConditions, condition.Type) == nil {
+			finalConditions = append(finalConditions, condition)
+		}
+	}
 
 	finalGwStatus := gwv1.GatewayStatus{}
 	finalGwStatus.Conditions = finalConditions
@@ -102,6 +109,12 @@ func (r *ReportMap) BuildRouteStatus(ctx context.Context, obj client.Object, cNa
 		if len(parentRefs) == 0 {
 			parentRefs = append(parentRefs, routeReport.parentRefs()...)
 		}
+	case *gwv1a2.TLSRoute:
+		existingStatus = route.Status.RouteStatus
+		parentRefs = append(parentRefs, route.Spec.ParentRefs...)
+		if len(parentRefs) == 0 {
+			parentRefs = append(parentRefs, routeReport.parentRefs()...)
+		}
 	default:
 		contextutils.LoggerFrom(ctx).Error(fmt.Errorf("unsupported route type %T", obj), "failed to build route status")
 		return nil
@@ -131,6 +144,13 @@ func (r *ReportMap) BuildRouteStatus(ctx context.Context, obj client.Object, cNa
 				finalConditions = append(finalConditions, *cond)
 			}
 			meta.SetStatusCondition(&finalConditions, pCondition)
+		}
+		// If there are conditions on the route that are not owned by our reporter, include
+		// them in the final list of conditions to preseve conditions we do not own
+		for _, condition := range currentParentRefConditions {
+			if meta.FindStatusCondition(finalConditions, condition.Type) == nil {
+				finalConditions = append(finalConditions, condition)
+			}
 		}
 
 		routeParentStatus := gwv1.RouteParentStatus{

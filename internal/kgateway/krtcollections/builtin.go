@@ -45,17 +45,15 @@ func (d *builtinPlugin) Equals(in any) bool {
 	// we don't really need equality check here, because this policy is embedded in the httproute,
 	// and we have generation based equality checks for that already.
 	return true
-	// d2, ok := in.(*builtinPlugin)
-	//
-	//	if !ok {
-	//		return false
-	//	}
-	//
-	// // TODO: implement equality check
-	// return d.spec == d2.spec
 }
 
 type builtinPluginGwPass struct {
+	ir.UnimplementedProxyTranslationPass
+}
+
+func (p *builtinPluginGwPass) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoy_config_route_v3.Route) error {
+	// no op
+	return nil
 }
 
 func (p *builtinPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoyhttp.HttpConnectionManager) error {
@@ -63,7 +61,7 @@ func (p *builtinPluginGwPass) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext,
 	return nil
 }
 
-func NewBuiltInIr(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *UpstreamIndex) ir.PolicyIR {
+func NewBuiltInIr(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *BackendIndex) ir.PolicyIR {
 	return &builtinPlugin{
 		spec:     f,
 		mutation: convert(kctx, f, fromgk, fromns, refgrants, ups),
@@ -81,7 +79,7 @@ func NewBuiltinPlugin(ctx context.Context) extensionplug.Plugin {
 	}
 }
 
-func convert(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *UpstreamIndex) func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
+func convert(kctx krt.HandlerContext, f gwv1.HTTPRouteFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *BackendIndex) func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
 	switch f.Type {
 	case gwv1.HTTPRouteFilterRequestMirror:
 		return convertMirror(kctx, f.RequestMirror, fromgk, fromns, refgrants, ups)
@@ -325,7 +323,7 @@ func convertResponseHeaderModifier(kctx krt.HandlerContext, f *gwv1.HTTPHeaderFi
 	}
 }
 
-func convertMirror(kctx krt.HandlerContext, f *gwv1.HTTPRequestMirrorFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *UpstreamIndex) func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
+func convertMirror(kctx krt.HandlerContext, f *gwv1.HTTPRequestMirrorFilter, fromgk schema.GroupKind, fromns string, refgrants *RefGrantIndex, ups *BackendIndex) func(in ir.HttpRouteRuleMatchIR, outputRoute *envoy_config_route_v3.Route) error {
 	if f == nil {
 		return nil
 	}
@@ -334,7 +332,7 @@ func convertMirror(kctx krt.HandlerContext, f *gwv1.HTTPRequestMirrorFilter, fro
 		// TODO: report error
 		return nil
 	}
-	up, err := ups.getUpstreamFromRef(kctx, fromns, f.BackendRef)
+	up, err := ups.getBackendFromRef(kctx, fromns, f.BackendRef)
 	if err != nil {
 		// TODO: report error
 		return nil
@@ -424,10 +422,6 @@ func (p *builtinPluginGwPass) ApplyForRouteBackend(
 }
 
 func (p *builtinPluginGwPass) HttpFilters(ctx context.Context, fcc ir.FilterChainCommon) ([]plugins.StagedHttpFilter, error) {
-	return nil, nil
-}
-
-func (p *builtinPluginGwPass) UpstreamHttpFilters(ctx context.Context) ([]plugins.StagedUpstreamHttpFilter, error) {
 	return nil, nil
 }
 

@@ -1,6 +1,6 @@
 package parameters
 
 const (
-	ParameterGroup = "gloo.solo.io"
+	ParameterGroup = "kgateway.io"
 	ParameterKind  = "Parameter"
 )

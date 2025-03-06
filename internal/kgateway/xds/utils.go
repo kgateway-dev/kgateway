@@ -67,7 +67,6 @@ func CloneSnap(snap *cache.Snapshot) *cache.Snapshot {
 		items := map[string]envoycachetypes.ResourceWithTTL{}
 		s.Resources[k].Items = items
 		for a, b := range v.Items {
-			b := b
 			b.Resource = proto.Clone(b.Resource)
 			items[a] = b
 		}

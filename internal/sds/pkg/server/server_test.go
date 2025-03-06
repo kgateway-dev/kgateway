@@ -137,6 +137,7 @@ var _ = Describe("SDS Server", func() {
 			// Before any snapshot is set, expect an error when fetching secrets
 			resp, err := client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
 			Expect(err).To(HaveOccurred())
+			Expect(resp).To(BeNil())
 
 			// After snapshot is set, expect to see the secrets
 			srv.UpdateSDSConfig(ctx)

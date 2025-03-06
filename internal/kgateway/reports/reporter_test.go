@@ -37,6 +37,26 @@ var _ = Describe("Reporting Infrastructure", func() {
 			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
 		})
 
+		It("should preserve conditions set externally", func() {
+			gw := gw()
+			gw.Status.Conditions = append(gw.Status.Conditions, metav1.Condition{
+				Type:   "gloo.solo.io/SomeCondition",
+				Status: metav1.ConditionFalse,
+			})
+			rm := reports.NewReportMap()
+
+			reporter := reports.NewReporter(&rm)
+			// initialize GatewayReporter to mimic translation loop (i.e. report gets initialized for all GWs)
+			reporter.Gateway(gw)
+
+			status := rm.BuildGWStatus(context.Background(), *gw)
+
+			Expect(status).NotTo(BeNil())
+			Expect(status.Conditions).To(HaveLen(3)) // 2 from the report, 1 from the original status
+			Expect(status.Listeners).To(HaveLen(1))
+			Expect(status.Listeners[0].Conditions).To(HaveLen(4))
+		})
+
 		It("should correctly set negative gateway conditions from report and not add extra conditions", func() {
 			gw := gw()
 			rm := reports.NewReportMap()
@@ -129,7 +149,44 @@ var _ = Describe("Reporting Infrastructure", func() {
 			},
 			Entry("regular httproute", httpRoute()),
 			Entry("regular tcproute", tcpRoute()),
+			Entry("regular tlsroute", tlsRoute()),
 			Entry("delegatee route", delegateeRoute()),
+		)
+
+		DescribeTable("should preserve conditions set externally",
+			func(obj client.Object) {
+				rm := reports.NewReportMap()
+
+				reporter := reports.NewReporter(&rm)
+				// initialize RouteReporter to mimic translation loop (i.e. report gets initialized for all Routes)
+				reporter.Route(obj)
+
+				status := rm.BuildRouteStatus(context.Background(), obj, "gloo-gateway")
+
+				Expect(status).NotTo(BeNil())
+				Expect(status.Parents).To(HaveLen(1))
+				Expect(status.Parents[0].Conditions).To(HaveLen(3)) // 2 from the report, 1 from the original status
+			},
+			Entry("regular httproute", httpRoute(
+				metav1.Condition{
+					Type: "gloo.solo.io/SomeCondition",
+				},
+			)),
+			Entry("regular tcproute", tcpRoute(
+				metav1.Condition{
+					Type: "gloo.solo.io/SomeCondition",
+				},
+			)),
+			Entry("regular tlsroute", tlsRoute(
+				metav1.Condition{
+					Type: "gloo.solo.io/SomeCondition",
+				},
+			)),
+			Entry("delegatee route", delegateeRoute(
+				metav1.Condition{
+					Type: "gloo.solo.io/SomeCondition",
+				},
+			)),
 		)
 
 		DescribeTable("should correctly set negative route conditions from report and not add extra conditions",
@@ -153,6 +210,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			},
 			Entry("regular httproute", httpRoute(), parentRef()),
 			Entry("regular tcproute", tcpRoute(), parentRef()),
+			Entry("regular tlsroute", tlsRoute(), parentRef()),
 			Entry("delegatee route", delegateeRoute(), parentRouteRef()),
 		)
 
@@ -182,6 +240,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			},
 			Entry("regular httproute", httpRoute(), parentRef()),
 			Entry("regular tcproute", tcpRoute(), parentRef()),
+			Entry("regular tlsroute", tlsRoute(), parentRef()),
 			Entry("delegatee route", delegateeRoute(), parentRouteRef()),
 		)
 
@@ -208,6 +267,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 					route.Status.RouteStatus = *status
 				case *gwv1a2.TCPRoute:
 					route.Status.RouteStatus = *status
+				case *gwv1a2.TLSRoute:
+					route.Status.RouteStatus = *status
 				default:
 					Fail(fmt.Sprintf("unsupported route type: %T", obj))
 				}
@@ -225,6 +286,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			Entry("regular httproute", httpRoute()),
 			Entry("delegatee route", delegateeRoute()),
 			Entry("regular tcproute", tcpRoute()),
+			Entry("regular tlsroute", tlsRoute()),
 		)
 
 		DescribeTable("should correctly handle multiple ParentRefs on a route",
@@ -236,6 +298,10 @@ var _ = Describe("Reporting Infrastructure", func() {
 						Name: "additional-gateway",
 					})
 				case *gwv1a2.TCPRoute:
+					route.Spec.ParentRefs = append(route.Spec.ParentRefs, gwv1.ParentReference{
+						Name: "additional-gateway",
+					})
+				case *gwv1a2.TLSRoute:
 					route.Spec.ParentRefs = append(route.Spec.ParentRefs, gwv1.ParentReference{
 						Name: "additional-gateway",
 					})
@@ -261,6 +327,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			},
 			Entry("regular HTTPRoute", httpRoute()),
 			Entry("regular TCPRoute", tcpRoute()),
+			Entry("regular tlsroute", tlsRoute()),
 		)
 
 		DescribeTable("should correctly associate multiple routes with shared and separate listeners",
@@ -274,6 +341,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 					r1.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener1.Name))
 				case *gwv1a2.TCPRoute:
 					r1.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener1.Name))
+				case *gwv1a2.TLSRoute:
+					r1.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener1.Name))
 				}
 
 				// Assign the second listener to the second route's parent ref
@@ -281,6 +350,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 				case *gwv1.HTTPRoute:
 					r2.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener2.Name))
 				case *gwv1a2.TCPRoute:
+					r2.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener2.Name))
+				case *gwv1a2.TLSRoute:
 					r2.Spec.ParentRefs[0].SectionName = ptr.To(gwv1.SectionName(listener2.Name))
 				}
 
@@ -310,6 +381,11 @@ var _ = Describe("Reporting Infrastructure", func() {
 				gwv1.Listener{Name: "foo-tcp", Protocol: gwv1.TCPProtocolType},
 				gwv1.Listener{Name: "bar-tcp", Protocol: gwv1.TCPProtocolType},
 			),
+			Entry("TLSRoutes with shared and separate listeners",
+				tlsRoute(), tlsRoute(),
+				gwv1.Listener{Name: "foo-tls", Protocol: gwv1.TLSProtocolType},
+				gwv1.Listener{Name: "bar-tls", Protocol: gwv1.TLSProtocolType},
+			),
 		)
 	})
 
@@ -320,6 +396,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 			case *gwv1.HTTPRoute:
 				r.Spec.ParentRefs = nil
 			case *gwv1a2.TCPRoute:
+				r.Spec.ParentRefs = nil
+			case *gwv1a2.TLSRoute:
 				r.Spec.ParentRefs = nil
 			}
 
@@ -335,10 +413,11 @@ var _ = Describe("Reporting Infrastructure", func() {
 		},
 		Entry("HTTPRoute with missing parent reference", httpRoute()),
 		Entry("TCPRoute with missing parent reference", tcpRoute()),
+		Entry("TLSRoute with missing parent reference", tlsRoute()),
 	)
 })
 
-func httpRoute() client.Object {
+func httpRoute(conditions ...metav1.Condition) client.Object {
 	route := &gwv1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "route",
@@ -346,10 +425,16 @@ func httpRoute() client.Object {
 		},
 	}
 	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRef())
+	if len(conditions) > 0 {
+		route.Status.Parents = append(route.Status.Parents, gwv1.RouteParentStatus{
+			ParentRef:  *parentRef(),
+			Conditions: conditions,
+		})
+	}
 	return route
 }
 
-func tcpRoute() client.Object {
+func tcpRoute(conditions ...metav1.Condition) client.Object {
 	route := &gwv1a2.TCPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "route",
@@ -357,6 +442,29 @@ func tcpRoute() client.Object {
 		},
 	}
 	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRef())
+	if len(conditions) > 0 {
+		route.Status.Parents = append(route.Status.Parents, gwv1.RouteParentStatus{
+			ParentRef:  *parentRef(),
+			Conditions: conditions,
+		})
+	}
+	return route
+}
+
+func tlsRoute(conditions ...metav1.Condition) client.Object {
+	route := &gwv1a2.TLSRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "route",
+			Namespace: "default",
+		},
+	}
+	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRef())
+	if len(conditions) > 0 {
+		route.Status.Parents = append(route.Status.Parents, gwv1.RouteParentStatus{
+			ParentRef:  *parentRef(),
+			Conditions: conditions,
+		})
+	}
 	return route
 }
 
@@ -366,7 +474,7 @@ func parentRef() *gwv1.ParentReference {
 	}
 }
 
-func delegateeRoute() client.Object {
+func delegateeRoute(conditions ...metav1.Condition) client.Object {
 	route := &gwv1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "child-route",
@@ -374,6 +482,12 @@ func delegateeRoute() client.Object {
 		},
 	}
 	route.Spec.CommonRouteSpec.ParentRefs = append(route.Spec.CommonRouteSpec.ParentRefs, *parentRouteRef())
+	if len(conditions) > 0 {
+		route.Status.Parents = append(route.Status.Parents, gwv1.RouteParentStatus{
+			ParentRef:  *parentRouteRef(),
+			Conditions: conditions,
+		})
+	}
 	return route
 }
 

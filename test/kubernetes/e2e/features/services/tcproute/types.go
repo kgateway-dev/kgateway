@@ -1,5 +1,3 @@
-//go:build ignore
-
 package tcproute
 
 import (
@@ -88,25 +86,12 @@ var (
 	ctxTimeout = 5 * time.Minute
 	timeout    = 60 * time.Second
 
-	// Proxy resources to be translated
-	singleSvcNS = &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: singleSvcNsName,
-		},
-	}
-
 	singleGlooProxy = metav1.ObjectMeta{
 		Name:      "single-tcp-gateway",
 		Namespace: singleSvcNsName,
 	}
 	singleSvcProxyDeployment = &appsv1.Deployment{ObjectMeta: singleGlooProxy}
 	singleSvcProxyService    = &corev1.Service{ObjectMeta: singleGlooProxy}
-
-	multiSvcNS = &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: multiSvcNsName,
-		},
-	}
 
 	multiGlooProxy = metav1.ObjectMeta{
 		Name:      "multi-tcp-gateway",

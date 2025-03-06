@@ -23,7 +23,7 @@ jobs:
   #       # ingress will be deprecated from 1.17. Ref: https://solo-io-corp.slack.com/archives/G01EERAK3KJ/p1716389614777799
   #       # this is the github action version of ternary op
   #       kube-e2e-test-type: [ 'gateway', 'gloo', 'upgrade' ]
-  #       kube-version: [ { node: 'v1.31.0@sha256:53df588e04085fd41ae12de0c3fe4c72f7013bba32a20e7325357a1ac94ba865', kubectl: 'v1.31.0', kind: 'v0.24.0', helm: 'v3.14.4' } ]
+  #       kube-version: [ { node: 'v1.32.2@sha256:f226345927d7e348497136874b6d207e0b32cc52154ad8323129352923a3142f', kubectl: 'v1.32.2', kind: 'v0.27.0', helm: 'v3.17.1' } ]
   #       image-variant:
   #         - distroless
   #       merge-to-main:
@@ -44,7 +44,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kube-version: [ { node: 'v1.31.0@sha256:53df588e04085fd41ae12de0c3fe4c72f7013bba32a20e7325357a1ac94ba865', kubectl: 'v1.31.0', kind: 'v0.24.0', helm: 'v3.14.4' } ]
+        kube-version: [ { node: 'v1.32.2@sha256:f226345927d7e348497136874b6d207e0b32cc52154ad8323129352923a3142f', kubectl: 'v1.32.2', kind: 'v0.27.0', helm: 'v3.17.1' } ]
         # use standard since other variants don't currently work with these tests
         # (see https://github.com/solo-io/solo-projects/issues/6094)
         image-variant:

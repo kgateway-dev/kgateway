@@ -4,8 +4,8 @@
 package v1alpha1
 
 // Gateway API resources with status management
-// +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses;gateways;httproutes;tcproutes;referencegrants,verbs=get;list;watch
-// +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses/status;gateways/status;httproutes/status;tcproutes/status,verbs=patch;update
+// +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses;gateways;httproutes;tcproutes;tlsroutes;referencegrants,verbs=get;list;watch
+// +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gatewayclasses/status;gateways/status;httproutes/status;tcproutes/status;tlsroutes/status,verbs=patch;update
 
 // Controller resources
 // +kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch

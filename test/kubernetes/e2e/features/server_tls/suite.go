@@ -327,7 +327,7 @@ func (s *serverTlsTestingSuite) eventuallyInSnapshot(gvk schema.GroupVersionKind
 	s.testInstallation.Assertions.AssertGlooAdminApi(
 		s.ctx,
 		metav1.ObjectMeta{
-			Name:      kubeutils.GlooDeploymentName,
+			Name:      helpers.DefaultKgatewayDeploymentName,
 			Namespace: s.testInstallation.Metadata.InstallNamespace,
 		},
 		s.testInstallation.Assertions.InputSnapshotContainsElement(gvk, meta),
@@ -337,7 +337,7 @@ func (s *serverTlsTestingSuite) eventuallyNotInSnapshot(gvk schema.GroupVersionK
 	s.testInstallation.Assertions.AssertGlooAdminApi(
 		s.ctx,
 		metav1.ObjectMeta{
-			Name:      kubeutils.GlooDeploymentName,
+			Name:      helpers.DefaultKgatewayDeploymentName,
 			Namespace: s.testInstallation.Metadata.InstallNamespace,
 		},
 		s.testInstallation.Assertions.InputSnapshotDoesNotContainElement(gvk, meta),

@@ -23,6 +23,9 @@ const (
 	// Kind string for TCPRoute resource
 	TCPRouteKind = "TCPRoute"
 
+	// Kind string for TLSRoute resource
+	TLSRouteKind = "TLSRoute"
+
 	// Kind string for Gateway resource
 	GatewayKind = "Gateway"
 

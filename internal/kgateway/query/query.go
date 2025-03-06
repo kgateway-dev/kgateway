@@ -179,6 +179,7 @@ func parentRefMatchListener(ref *apiv1.ParentReference, l *apiv1.Listener) bool 
 //
 //   - HTTPRoute
 //   - TCPRoute
+//   - TLSRoute
 func getParentRefsForGw(gw *apiv1.Gateway, obj ir.Route) []apiv1.ParentReference {
 	var ret []apiv1.ParentReference
 
@@ -212,13 +213,13 @@ func isParentRefForGw(pRef *apiv1.ParentReference, gw *apiv1.Gateway, defaultNs 
 	return ns == gw.Namespace && string(pRef.Name) == gw.Name
 }
 
-func hostnameIntersect(l *apiv1.Listener, hr *ir.HttpRouteIR) (bool, []string) {
+func hostnameIntersect(l *apiv1.Listener, routeHostnames []string) (bool, []string) {
 	var hostnames []string
-	if l == nil || hr == nil {
+	if l == nil {
 		return false, hostnames
 	}
 	if l.Hostname == nil {
-		for _, h := range hr.Hostnames {
+		for _, h := range routeHostnames {
 			hostnames = append(hostnames, string(h))
 		}
 		return true, hostnames
@@ -226,34 +227,33 @@ func hostnameIntersect(l *apiv1.Listener, hr *ir.HttpRouteIR) (bool, []string) {
 	var listenerHostname string = string(*l.Hostname)
 
 	if strings.HasPrefix(listenerHostname, "*.") {
-		if hr.Hostnames == nil {
+		if len(routeHostnames) == 0 {
 			return true, []string{listenerHostname}
 		}
 
-		for _, hostname := range hr.Hostnames {
+		for _, hostname := range routeHostnames {
 			hrHost := string(hostname)
 			if strings.HasSuffix(hrHost, listenerHostname[1:]) {
 				hostnames = append(hostnames, hrHost)
 			}
 		}
 		return len(hostnames) > 0, hostnames
-	} else {
-		if len(hr.Hostnames) == 0 {
+	}
+	if len(routeHostnames) == 0 {
+		return true, []string{listenerHostname}
+	}
+	for _, hostname := range routeHostnames {
+		hrHost := string(hostname)
+		if hrHost == listenerHostname {
 			return true, []string{listenerHostname}
 		}
-		for _, hostname := range hr.Hostnames {
-			hrHost := string(hostname)
-			if hrHost == listenerHostname {
+
+		if strings.HasPrefix(hrHost, "*.") {
+			if strings.HasSuffix(listenerHostname, hrHost[1:]) {
 				return true, []string{listenerHostname}
 			}
-
-			if strings.HasPrefix(hrHost, "*.") {
-				if strings.HasSuffix(listenerHostname, hrHost[1:]) {
-					return true, []string{listenerHostname}
-				}
-			}
-			// also possible that listener hostname is more specific than the hr hostname
 		}
+		// also possible that listener hostname is more specific than the hr hostname
 	}
 
 	return false, nil

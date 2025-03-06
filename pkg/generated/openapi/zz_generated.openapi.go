@@ -16,17 +16,24 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIBackend":                  schema_kgateway_v2_api_v1alpha1_AIBackend(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPromptEnrichment":         schema_kgateway_v2_api_v1alpha1_AIPromptEnrichment(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPromptGuard":              schema_kgateway_v2_api_v1alpha1_AIPromptGuard(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIRoutePolicy":              schema_kgateway_v2_api_v1alpha1_AIRoutePolicy(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIUpstream":                 schema_kgateway_v2_api_v1alpha1_AIUpstream(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AWSAuthIRSA":                schema_kgateway_v2_api_v1alpha1_AWSAuthIRSA(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLog":                  schema_kgateway_v2_api_v1alpha1_AccessLog(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLogFilter":            schema_kgateway_v2_api_v1alpha1_AccessLogFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtension":                schema_kgateway_v2_api_v1alpha1_AiExtension(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtensionStats":           schema_kgateway_v2_api_v1alpha1_AiExtensionStats(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AnthropicConfig":            schema_kgateway_v2_api_v1alpha1_AnthropicConfig(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsUpstream":                schema_kgateway_v2_api_v1alpha1_AwsUpstream(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsAuth":                    schema_kgateway_v2_api_v1alpha1_AwsAuth(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsBackend":                 schema_kgateway_v2_api_v1alpha1_AwsBackend(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsLambda":                  schema_kgateway_v2_api_v1alpha1_AwsLambda(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AzureOpenAIConfig":          schema_kgateway_v2_api_v1alpha1_AzureOpenAIConfig(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Backend":                    schema_kgateway_v2_api_v1alpha1_Backend(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendList":                schema_kgateway_v2_api_v1alpha1_BackendList(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendSpec":                schema_kgateway_v2_api_v1alpha1_BackendSpec(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendStatus":              schema_kgateway_v2_api_v1alpha1_BackendStatus(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CELFilter":                  schema_kgateway_v2_api_v1alpha1_CELFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ComparisonFilter":           schema_kgateway_v2_api_v1alpha1_ComparisonFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CustomLabel":                schema_kgateway_v2_api_v1alpha1_CustomLabel(ref),
@@ -86,14 +93,10 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Service":                    schema_kgateway_v2_api_v1alpha1_Service(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ServiceAccount":             schema_kgateway_v2_api_v1alpha1_ServiceAccount(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SingleAuthToken":            schema_kgateway_v2_api_v1alpha1_SingleAuthToken(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StaticUpstream":             schema_kgateway_v2_api_v1alpha1_StaticUpstream(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StaticBackend":              schema_kgateway_v2_api_v1alpha1_StaticBackend(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StatsConfig":                schema_kgateway_v2_api_v1alpha1_StatsConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StatusCodeFilter":           schema_kgateway_v2_api_v1alpha1_StatusCodeFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SupportedLLMProvider":       schema_kgateway_v2_api_v1alpha1_SupportedLLMProvider(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Upstream":                   schema_kgateway_v2_api_v1alpha1_Upstream(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.UpstreamList":               schema_kgateway_v2_api_v1alpha1_UpstreamList(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.UpstreamSpec":               schema_kgateway_v2_api_v1alpha1_UpstreamSpec(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.UpstreamStatus":             schema_kgateway_v2_api_v1alpha1_UpstreamStatus(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.VertexAIConfig":             schema_kgateway_v2_api_v1alpha1_VertexAIConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Webhook":                    schema_kgateway_v2_api_v1alpha1_Webhook(ref),
 		"k8s.io/api/core/v1.AWSElasticBlockStoreVolumeSource":                         schema_k8sio_api_core_v1_AWSElasticBlockStoreVolumeSource(ref),
@@ -448,6 +451,32 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_AIBackend(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"llm": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The LLM configures the AI gateway to use a single LLM provider backend.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LLMProvider"),
+						},
+					},
+					"multipool": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The MultiPool configures the backends for multiple hosts or models from the same provider in one Backend resource.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MultiPoolConfig"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LLMProvider", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MultiPoolConfig"},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_AIPromptEnrichment(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -566,29 +595,25 @@ func schema_kgateway_v2_api_v1alpha1_AIRoutePolicy(ref common.ReferenceCallback)
 	}
 }
 
-func schema_kgateway_v2_api_v1alpha1_AIUpstream(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_v2_api_v1alpha1_AWSAuthIRSA(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "AWSAuthIRSA specifies the configuration for using IRSA.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"llm": {
+					"roleARN": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The LLM configures the AI gateway to use a single LLM provider backend.",
-							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LLMProvider"),
-						},
-					},
-					"multipool": {
-						SchemaProps: spec.SchemaProps{
-							Description: "The MultiPool configures the backends for multiple hosts or models from the same provider in one Upstream resource.",
-							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MultiPoolConfig"),
+							Description: "RoleARN is the AWS IAM Role ARN used for pod identity.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
+				Required: []string{"roleARN"},
 			},
 		},
-		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LLMProvider", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MultiPoolConfig"},
 	}
 }
 
@@ -850,29 +875,138 @@ func schema_kgateway_v2_api_v1alpha1_AnthropicConfig(ref common.ReferenceCallbac
 	}
 }
 
-func schema_kgateway_v2_api_v1alpha1_AwsUpstream(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_v2_api_v1alpha1_AwsAuth(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "AwsAuth specifies the authentication method to use for the backend.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"region": {
+					"type": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "Type specifies the authentication method to use for the backend.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
-					"secretRef": {
+					"secret": {
 						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/api/core/v1.LocalObjectReference"),
+							Description: "Secret references a Kubernetes Secret containing the AWS credentials. The Secret must have keys \"accessKey\", \"secretKey\", and optionally \"sessionToken\".",
+							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
+						},
+					},
+					"irsa": {
+						SchemaProps: spec.SchemaProps{
+							Description: "IRSA specifies the IRSA configuration to use for the backend.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AWSAuthIRSA"),
+						},
+					},
+				},
+				Required: []string{"type"},
+			},
+			VendorExtensible: spec.VendorExtensible{
+				Extensions: spec.Extensions{
+					"x-kubernetes-unions": []interface{}{
+						map[string]interface{}{
+							"discriminator": "type",
+							"fields-to-discriminateBy": map[string]interface{}{
+								"irsa":   "IRSA",
+								"secret": "Secret",
+							},
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.LocalObjectReference"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AWSAuthIRSA", "k8s.io/api/core/v1.LocalObjectReference"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_AwsBackend(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "AwsBackend is the AWS backend configuration.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"accountId": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AccountId is the AWS account ID to use for the backend.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"auth": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Auth specifies an explicit AWS authentication method for the backend. When omitted, the authentication method will be inferred from the environment (e.g. instance metadata, EKS Pod Identity, environment variables, etc.) This may not work in all environments, so it is recommended to specify an authentication method.\n\nSee the Envoy docs for more info: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_request_signing_filter#credentials",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsAuth"),
+						},
+					},
+					"lambda": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Lambda configures the AWS lambda service.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsLambda"),
+						},
+					},
+					"region": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Region is the AWS region to use for the backend. Defaults to us-east-1 if not specified.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"accountId"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsAuth", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsLambda"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_AwsLambda(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "AwsLambda configures the AWS lambda service.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"endpointURL": {
+						SchemaProps: spec.SchemaProps{
+							Description: "EndpointURL is the URL or domain for the Lambda service. This is primarily useful for testing and development purposes. When omitted, the default lambda hostname will be used.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"functionName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FunctionName is the name of the Lambda function to invoke.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"invocationMode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "InvocationMode defines how to invoke the Lambda function. Defaults to Sync.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"qualifier": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Qualifier is the alias or version for the Lambda function. Valid values include a numeric version (e.g. \"1\"), an alias name (alphanumeric plus \"-\" or \"_\"), or the special literal \"$LATEST\".",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"functionName"},
+			},
+		},
 	}
 }
 
@@ -920,6 +1054,193 @@ func schema_kgateway_v2_api_v1alpha1_AzureOpenAIConfig(ref common.ReferenceCallb
 		},
 		Dependencies: []string{
 			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SingleAuthToken"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_Backend(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
+					"spec": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendSpec"),
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendStatus"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendSpec", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_BackendList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+						},
+					},
+					"items": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Backend"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"items"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Backend", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_BackendSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "BackendSpec defines the desired state of Backend.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"type": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Type indicates the type of the backend to be used.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"ai": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AI is the AI backend configuration.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIBackend"),
+						},
+					},
+					"aws": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Aws is the AWS backend configuration.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsBackend"),
+						},
+					},
+					"static": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Static is the static backend configuration.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StaticBackend"),
+						},
+					},
+				},
+				Required: []string{"type"},
+			},
+			VendorExtensible: spec.VendorExtensible{
+				Extensions: spec.Extensions{
+					"x-kubernetes-unions": []interface{}{
+						map[string]interface{}{
+							"discriminator": "type",
+							"fields-to-discriminateBy": map[string]interface{}{
+								"ai":     "AI",
+								"aws":    "Aws",
+								"static": "Static",
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIBackend", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsBackend", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StaticBackend"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_BackendStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "BackendStatus defines the observed state of Backend.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"conditions": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"type",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Conditions is the list of conditions for the backend.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.Condition"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/apis/meta/v1.Condition"},
 	}
 }
 
@@ -1625,7 +1946,7 @@ func schema_kgateway_v2_api_v1alpha1_GrpcService(ref common.ReferenceCallback) c
 					},
 					"backendRef": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The backend gRPC service. Can be any type of supported backed (Kubernetes Service, kgateway Upstream, etc..)",
+							Description: "The backend gRPC service. Can be any type of supported backed (Kubernetes Service, kgateway Backend, etc..)",
 							Ref:         ref("sigs.k8s.io/gateway-api/apis/v1.BackendRef"),
 						},
 					},
@@ -1876,20 +2197,23 @@ func schema_kgateway_v2_api_v1alpha1_Host(ref common.ReferenceCallback) common.O
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "Host defines a static backend host.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"host": {
 						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
+							Description: "Host is the host name to use for the backend.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"port": {
 						SchemaProps: spec.SchemaProps{
-							Default: 0,
-							Type:    []string{"integer"},
-							Format:  "int32",
+							Description: "Port is the port to use for the backend.",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 				},
@@ -2135,7 +2459,7 @@ func schema_kgateway_v2_api_v1alpha1_LLMProvider(ref common.ReferenceCallback) c
 					},
 					"hostOverride": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Send requests to a custom host and port, such as to proxy the request, or to use a different backend that is API-compliant with the upstream version.",
+							Description: "Send requests to a custom host and port, such as to proxy the request, or to use a different backend that is API-compliant with the Backend version.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host"),
 						},
 					},
@@ -2361,7 +2685,7 @@ func schema_kgateway_v2_api_v1alpha1_MultiPoolConfig(ref common.ReferenceCallbac
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "MultiPoolConfig configures the backends for multiple hosts or models from the same provider in one Upstream resource. This method can be useful for creating one logical endpoint that is backed by multiple hosts or models.\n\nIn the `priorities` section, the order of `pool` entries defines the priority of the backend endpoints. The `pool` entries can either define a list of backends or a single backend. Note: Only two levels of nesting are permitted. Any nested entries after the second level are ignored.\n\n```yaml multi:\n\n\tpriorities:\n\t- pool:\n\t  - azureOpenai:\n\t      deploymentName: gpt-4o-mini\n\t      apiVersion: 2024-02-15-preview\n\t      endpoint: ai-gateway.openai.azure.com\n\t      authToken:\n\t        secretRef:\n\t          name: azure-secret\n\t          namespace: kgateway-system\n\t- pool:\n\t  - azureOpenai:\n\t      deploymentName: gpt-4o-mini-2\n\t      apiVersion: 2024-02-15-preview\n\t      endpoint: ai-gateway-2.openai.azure.com\n\t      authToken:\n\t        secretRef:\n\t          name: azure-secret-2\n\t          namespace: kgateway-system\n\n```",
+				Description: "MultiPoolConfig configures the backends for multiple hosts or models from the same provider in one Backend resource. This method can be useful for creating one logical endpoint that is backed by multiple hosts or models.\n\nIn the `priorities` section, the order of `pool` entries defines the priority of the backend endpoints. The `pool` entries can either define a list of backends or a single backend. Note: Only two levels of nesting are permitted. Any nested entries after the second level are ignored.\n\n```yaml multi:\n\n\tpriorities:\n\t- pool:\n\t  - azureOpenai:\n\t      deploymentName: gpt-4o-mini\n\t      apiVersion: 2024-02-15-preview\n\t      endpoint: ai-gateway.openai.azure.com\n\t      authToken:\n\t        secretRef:\n\t          name: azure-secret\n\t          namespace: kgateway-system\n\t- pool:\n\t  - azureOpenai:\n\t      deploymentName: gpt-4o-mini-2\n\t      apiVersion: 2024-02-15-preview\n\t      endpoint: ai-gateway-2.openai.azure.com\n\t      authToken:\n\t        secretRef:\n\t          name: azure-secret-2\n\t          namespace: kgateway-system\n\n```",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"priorities": {
@@ -3181,14 +3505,14 @@ func schema_kgateway_v2_api_v1alpha1_SingleAuthToken(ref common.ReferenceCallbac
 					},
 					"inline": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Provide the token directly in the configuration for the Upstream. This option is the least secure. Only use this option for quick tests such as trying out AI Gateway.",
+							Description: "Provide the token directly in the configuration for the Backend. This option is the least secure. Only use this option for quick tests such as trying out AI Gateway.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"secretRef": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Store the API key in a Kubernetes secret in the same namespace as the Upstream. Then, refer to the secret in the Upstream configuration. This option is more secure than an inline token, because the API key is encoded and you can restrict access to secrets through RBAC rules. You might use this option in proofs of concept, controlled development and staging environments, or well-controlled prod environments that use secrets.",
+							Description: "Store the API key in a Kubernetes secret in the same namespace as the Backend. Then, refer to the secret in the Backend configuration. This option is more secure than an inline token, because the API key is encoded and you can restrict access to secrets through RBAC rules. You might use this option in proofs of concept, controlled development and staging environments, or well-controlled prod environments that use secrets.",
 							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
 						},
 					},
@@ -3201,15 +3525,17 @@ func schema_kgateway_v2_api_v1alpha1_SingleAuthToken(ref common.ReferenceCallbac
 	}
 }
 
-func schema_kgateway_v2_api_v1alpha1_StaticUpstream(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_kgateway_v2_api_v1alpha1_StaticBackend(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "StaticBackend references a static list of hosts.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"hosts": {
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
+							Description: "Hosts is a list of hosts to use for the backend.",
+							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
@@ -3332,164 +3658,6 @@ func schema_kgateway_v2_api_v1alpha1_SupportedLLMProvider(ref common.ReferenceCa
 		},
 		Dependencies: []string{
 			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AnthropicConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AzureOpenAIConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GeminiConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenAIConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.VertexAIConfig"},
-	}
-}
-
-func schema_kgateway_v2_api_v1alpha1_Upstream(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
-						},
-					},
-					"spec": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.UpstreamSpec"),
-						},
-					},
-					"status": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.UpstreamStatus"),
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.UpstreamSpec", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.UpstreamStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
-	}
-}
-
-func schema_kgateway_v2_api_v1alpha1_UpstreamList(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"metadata": {
-						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
-						},
-					},
-					"items": {
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Upstream"),
-									},
-								},
-							},
-						},
-					},
-				},
-				Required: []string{"items"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Upstream", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
-	}
-}
-
-func schema_kgateway_v2_api_v1alpha1_UpstreamSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"aws": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsUpstream"),
-						},
-					},
-					"static": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StaticUpstream"),
-						},
-					},
-					"ai": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIUpstream"),
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIUpstream", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsUpstream", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StaticUpstream"},
-	}
-}
-
-func schema_kgateway_v2_api_v1alpha1_UpstreamStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"conditions": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-map-keys": []interface{}{
-									"type",
-								},
-								"x-kubernetes-list-type": "map",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.Condition"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.Condition"},
 	}
 }
 

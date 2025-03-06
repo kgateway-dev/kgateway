@@ -9,6 +9,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backend"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/destrule"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/directresponse"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/httplistenerpolicy"
@@ -16,7 +17,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/kubernetes"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/listenerpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/routepolicy"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/upstream"
 )
 
 func mergedGw(funcs []extensionsplug.GwTranslatorFactory) extensionsplug.GwTranslatorFactory {
@@ -44,14 +44,14 @@ func mergeSynced(funcs []func() bool) func() bool {
 
 func MergePlugins(plug ...extensionsplug.Plugin) extensionsplug.Plugin {
 	ret := extensionsplug.Plugin{
-		ContributesPolicies:  make(map[schema.GroupKind]extensionsplug.PolicyPlugin),
-		ContributesUpstreams: make(map[schema.GroupKind]extensionsplug.UpstreamPlugin),
+		ContributesPolicies: make(map[schema.GroupKind]extensionsplug.PolicyPlugin),
+		ContributesBackends: make(map[schema.GroupKind]extensionsplug.BackendPlugin),
 	}
 	var funcs []extensionsplug.GwTranslatorFactory
 	var hasSynced []func() bool
 	for _, p := range plug {
 		maps.Copy(ret.ContributesPolicies, p.ContributesPolicies)
-		maps.Copy(ret.ContributesUpstreams, p.ContributesUpstreams)
+		maps.Copy(ret.ContributesBackends, p.ContributesBackends)
 		if p.ContributesGwTranslator != nil {
 			funcs = append(funcs, p.ContributesGwTranslator)
 		}
@@ -67,7 +67,7 @@ func MergePlugins(plug ...extensionsplug.Plugin) extensionsplug.Plugin {
 func Plugins(ctx context.Context, commoncol *common.CommonCollections) []extensionsplug.Plugin {
 	return []extensionsplug.Plugin{
 		// Add plugins here
-		upstream.NewPlugin(ctx, commoncol),
+		backend.NewPlugin(ctx, commoncol),
 		routepolicy.NewPlugin(ctx, commoncol),
 		directresponse.NewPlugin(ctx, commoncol),
 		kubernetes.NewPlugin(ctx, commoncol),

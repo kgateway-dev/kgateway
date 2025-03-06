@@ -1,0 +1,44 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gateway
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - name: listener-8443
+      port: 8443
+      protocol: TLS
+      hostname: "example.com"
+      tls:
+        mode: Passthrough
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: curl
+  labels:
+    app: curl
+    version: v1
+spec:
+  containers:
+    - name: curl
+      image: curlimages/curl:7.83.1
+      imagePullPolicy: IfNotPresent
+      command:
+        - "tail"
+        - "-f"
+        - "/dev/null"
+      resources:
+        requests:
+          cpu: "100m"
+        limits:
+          cpu: "200m"
+      volumeMounts:
+        - name: server-certs
+          mountPath: /etc/server-certs
+          readOnly: true
+  volumes:
+    - name: server-certs
+      secret:
+        secretName: tls-secret
+        

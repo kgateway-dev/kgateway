@@ -878,6 +878,57 @@ func tcpHostnameConflictGw() *gwv1.Gateway {
 	}
 }
 
+func TestValidTLSRouteListener(t *testing.T) {
+	gateway := simpleGwTLSRoute()
+	listeners := gateway.Spec.Listeners
+	report := reports.NewReportMap()
+	reporter := reports.NewReporter(&report)
+	gatewayReporter := reporter.Gateway(gateway)
+
+	validListeners := validateListeners(gwToIr(gateway), gatewayReporter)
+	g := NewWithT(t)
+	g.Expect(validListeners).To(HaveLen(1))
+
+	expectedStatuses := map[string]gwv1.ListenerStatus{
+		"tls": {
+			Name: "tls",
+			SupportedKinds: []gwv1.RouteGroupKind{
+				{
+					Group: GroupNameHelper(),
+					Kind:  "TLSRoute",
+				},
+			},
+		},
+	}
+	assertExpectedListenerStatuses(t, g, gateway, listeners, report, expectedStatuses)
+}
+
+func simpleGwTLSRoute() *gwv1.Gateway {
+	return &gwv1.Gateway{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "tls-gateway",
+		},
+		Spec: gwv1.GatewaySpec{
+			GatewayClassName: "solo",
+			Listeners: []gwv1.Listener{
+				{
+					Name:     "tls",
+					Port:     443,
+					Protocol: gwv1.TLSProtocolType,
+					AllowedRoutes: &gwv1.AllowedRoutes{
+						Kinds: []gwv1.RouteGroupKind{
+							{
+								Kind: "TLSRoute",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 // func TestRouteValidation(t *testing.T) {
 // 	scheme := scheme.NewScheme()
 // 	builder := fake.NewClientBuilder().WithScheme(scheme)

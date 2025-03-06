@@ -99,7 +99,7 @@ clusters:
   type: EDS
 - connectTimeout: 5s
   loadAssignment:
-    clusterName: upstream_gwtest_log_0
+    clusterName: backend_gwtest_log_0
     endpoints:
     - lbEndpoints:
       - endpoint:
@@ -111,7 +111,7 @@ clusters:
             hostname: 1.2.3.4
           hostname: 1.2.3.4
   metadata: {}
-  name: upstream_gwtest_log_0
+  name: backend_gwtest_log_0
   transportSocketMatches:
   - match:
       tlsMode: istio

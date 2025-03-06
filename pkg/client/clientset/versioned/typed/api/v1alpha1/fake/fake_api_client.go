@@ -13,6 +13,10 @@ type FakeGatewayV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeGatewayV1alpha1) Backends(namespace string) v1alpha1.BackendInterface {
+	return newFakeBackends(c, namespace)
+}
+
 func (c *FakeGatewayV1alpha1) DirectResponses(namespace string) v1alpha1.DirectResponseInterface {
 	return newFakeDirectResponses(c, namespace)
 }
@@ -31,10 +35,6 @@ func (c *FakeGatewayV1alpha1) ListenerPolicies(namespace string) v1alpha1.Listen
 
 func (c *FakeGatewayV1alpha1) RoutePolicies(namespace string) v1alpha1.RoutePolicyInterface {
 	return newFakeRoutePolicies(c, namespace)
-}
-
-func (c *FakeGatewayV1alpha1) Upstreams(namespace string) v1alpha1.UpstreamInterface {
-	return newFakeUpstreams(c, namespace)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

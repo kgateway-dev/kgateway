@@ -3,6 +3,7 @@ package helpers
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -11,14 +12,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/solo-io/go-utils/threadsafe"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/admin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	kgatewayAdminCli "github.com/kgateway-dev/kgateway/v2/pkg/utils/controllerutils/admincli"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envoyutils/admincli"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/portforward"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
@@ -185,7 +184,7 @@ func recordPods(podDir, namespace string) error {
 		return err
 	}
 
-	outErr := &multierror.Error{}
+	var errs []error
 
 	for _, pod := range pods {
 		if err := os.MkdirAll(podDir, os.ModePerm); err != nil {
@@ -197,7 +196,7 @@ func recordPods(podDir, namespace string) error {
 		// the error represents the cause of the failure, and should be bubbled up
 		// we will still try to get logs for other pods even if this one returns an error
 		if err != nil {
-			outErr = multierror.Append(outErr, err)
+			errs = append(errs, err)
 		}
 		// write any log output to the standard file
 		if logs != "" {
@@ -214,7 +213,7 @@ func recordPods(podDir, namespace string) error {
 		}
 	}
 
-	return outErr.ErrorOrNil()
+	return errors.Join(errs...)
 }
 
 // recordCRs records all unique CRs floating about to <output-dir>/$namespace/$crd/$cr.yaml
@@ -345,7 +344,7 @@ func ControllerDumpOnFail(ctx context.Context, kubectlCli *kubectl.Cli, outLog i
 				// Open a port-forward to the controller pod's admin port
 				portForwarder, err := kubectlCli.StartPortForward(ctx,
 					portforward.WithPod(podName, ns),
-					portforward.WithPorts(int(admin.AdminPort), int(admin.AdminPort)),
+					portforward.WithPorts(int(wellknown.KgatewayAdminPort), int(wellknown.KgatewayAdminPort)),
 				)
 				if err != nil {
 					fmt.Printf("error starting port forward to controller admin port: %f\n", err)
@@ -360,7 +359,7 @@ func ControllerDumpOnFail(ctx context.Context, kubectlCli *kubectl.Cli, outLog i
 					WithReceiver(io.Discard).
 					WithCurlOptions(
 						curl.WithRetries(3, 0, 10),
-						curl.WithPort(int(admin.AdminPort)),
+						curl.WithPort(int(wellknown.KgatewayAdminPort)),
 					)
 
 				krtSnapshotFile := fileAtPath(filepath.Join(namespaceOutDir, fmt.Sprintf("%s.krt_snapshot.log", podName)))
@@ -479,7 +478,7 @@ func writeControllerLog(ctx context.Context, outDir string, ns string, podName s
 	// Get the kgateway controller logs
 	controllerLogsFile := fileAtPath(filepath.Join(outDir, fmt.Sprintf("%s.controller.log", podName)))
 	controllerLogsCmd := kubectlCli.WithReceiver(controllerLogsFile).Command(ctx,
-		"-n", ns, "logs", podName, "-c", kubeutils.KgatewayContainerName, "--tail=1000")
+		"-n", ns, "logs", podName, "-c", KgatewayContainerName, "--tail=1000")
 	err := controllerLogsCmd.Run().Cause()
 	if err != nil {
 		fmt.Printf("error running controller logs for %s in %s command: %v\n", podName, ns, err)
