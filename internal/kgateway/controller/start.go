@@ -18,7 +18,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	czap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2"
@@ -82,7 +81,6 @@ type ControllerBuilder struct {
 	proxySyncer *proxy_syncer.ProxySyncer
 	cfg         StartConfig
 	mgr         ctrl.Manager
-	isOurGw     func(gw *apiv1.Gateway) bool
 }
 
 func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuilder, error) {
@@ -136,16 +134,17 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		return nil, err
 	}
 	commoncol := common.NewCommonCollections(
+		ctx,
 		cfg.KrtOptions,
 		cfg.Client,
 		cli,
 		setupLog,
 		*cfg.SetupOpts.GlobalSettings,
 	)
+	mergedPlugins := pluginFactoryWithBuiltin(cfg.ExtraPlugins)(ctx, commoncol)
+	commoncol.InitPlugins(ctx, mergedPlugins)
+
 	gwClasses := sets.New(append(cfg.SetupOpts.ExtraGatewayClasses, wellknown.GatewayClassName)...)
-	isOurGw := func(gw *apiv1.Gateway) bool {
-		return gwClasses.Has(string(gw.Spec.GatewayClassName))
-	}
 	// Create the proxy syncer for the Gateway API resources
 	setupLog.Info("initializing proxy syncer")
 	proxySyncer := proxy_syncer.NewProxySyncer(
@@ -154,11 +153,11 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		mgr,
 		cfg.Client,
 		cfg.UniqueClients,
-		pluginFactoryWithBuiltin(cfg.ExtraPlugins),
+		mergedPlugins,
 		commoncol,
 		cfg.SetupOpts.Cache,
 	)
-	proxySyncer.Init(ctx, isOurGw, cfg.KrtOptions)
+	proxySyncer.Init(ctx, cfg.KrtOptions)
 
 	if err := mgr.Add(proxySyncer); err != nil {
 		setupLog.Error(err, "unable to add proxySyncer runnable")
@@ -170,7 +169,6 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		proxySyncer: proxySyncer,
 		cfg:         cfg,
 		mgr:         mgr,
-		isOurGw:     isOurGw,
 	}, nil
 }
 
@@ -202,7 +200,6 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 
 	if err := NewBaseGatewayController(ctx, GatewayConfig{
 		Mgr:            c.mgr,
-		OurGateway:     c.isOurGw,
 		ControllerName: wellknown.GatewayControllerName,
 		AutoProvision:  AutoProvision,
 		ControlPlane: deployer.ControlPlaneInfo{

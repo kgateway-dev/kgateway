@@ -17,7 +17,6 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -29,7 +28,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	api "sigs.k8s.io/gateway-api/apis/v1"
-	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
@@ -44,13 +42,9 @@ var (
 	cancel    context.CancelFunc
 
 	kubeconfig string
-
-	gwClasses = sets.New(gatewayClassName, altGatewayClassName)
 )
 
 const (
-	gatewayClassName      = "clsname"
-	altGatewayClassName   = "clsname-alt"
 	gatewayControllerName = "controller/name"
 )
 
@@ -119,18 +113,15 @@ var _ = BeforeSuite(func() {
 	cfg := controller.GatewayConfig{
 		Mgr:            mgr,
 		ControllerName: gatewayControllerName,
-		OurGateway: func(gw *apiv1.Gateway) bool {
-			return gwClasses.Has(string(gw.Spec.GatewayClassName))
-		},
-		AutoProvision: true,
+		AutoProvision:  true,
 	}
 	err = controller.NewBaseGatewayController(ctx, cfg)
 	Expect(err).ToNot(HaveOccurred())
 
-	for class := range gwClasses {
+	for class := range wellknown.SupportedGatewayClasses {
 		err = k8sClient.Create(ctx, &api.GatewayClass{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: class,
+				Name: string(class),
 			},
 			Spec: api.GatewayClassSpec{
 				ControllerName: api.GatewayController(gatewayControllerName),

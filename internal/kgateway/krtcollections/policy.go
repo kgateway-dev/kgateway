@@ -16,6 +16,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/backendref"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 var (
@@ -147,13 +148,12 @@ type GatewayIndex struct {
 
 func NewGatewayIndex(
 	krtopts krtutil.KrtOptions,
-	isOurGw func(gw *gwv1.Gateway) bool,
 	policies *PolicyIndex,
 	gws krt.Collection[*gwv1.Gateway],
 ) *GatewayIndex {
 	h := &GatewayIndex{policies: policies}
 	h.Gateways = krt.NewCollection(gws, func(kctx krt.HandlerContext, i *gwv1.Gateway) *ir.Gateway {
-		if !isOurGw(i) {
+		if !wellknown.IsOurGateway(i) {
 			return nil
 		}
 		out := ir.Gateway{
@@ -558,6 +558,7 @@ func (h *RoutesIndex) transformTlsRoute(kctx krt.HandlerContext, i *gwv1a2.TLSRo
 		AttachedPolicies: toAttachedPolicies(h.policies.getTargetingPolicies(kctx, extensionsplug.RouteAttachmentPoint, src, "")),
 	}
 }
+
 func (h *RoutesIndex) transformHttpRoute(kctx krt.HandlerContext, i *gwv1.HTTPRoute) *ir.HttpRouteIR {
 	src := ir.ObjectSource{
 		Group:     gwv1.SchemeGroupVersion.Group,
@@ -759,6 +760,7 @@ func tostr(in []gwv1.Hostname) []string {
 	}
 	return out
 }
+
 func emptyIfCore(s string) string {
 	if s == "core" {
 		return ""

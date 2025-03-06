@@ -59,7 +59,6 @@ func InitCollections(
 	ctx context.Context,
 	plugins extensionsplug.Plugin,
 	istioClient kube.Client,
-	isOurGw func(gw *gwv1.Gateway) bool,
 	refgrants *RefGrantIndex,
 	krtopts krtutil.KrtOptions,
 ) (*GatewayIndex, *RoutesIndex, *BackendIndex, krt.Collection[ir.EndpointsForBackend]) {
@@ -79,7 +78,7 @@ func InitCollections(
 	}
 	backendIndex := NewBackendIndex(krtopts, backendRefPlugins, policies, refgrants)
 	endpointIRs := initBackends(plugins, backendIndex, krtopts)
-	kubeGateways := NewGatewayIndex(krtopts, isOurGw, policies, kubeRawGateways)
+	kubeGateways := NewGatewayIndex(krtopts, policies, kubeRawGateways)
 	routes := NewRoutesIndex(krtopts, httpRoutes, tcproutes, tlsRoutes, policies, backendIndex, refgrants)
 	return kubeGateways, routes, backendIndex, endpointIRs
 }

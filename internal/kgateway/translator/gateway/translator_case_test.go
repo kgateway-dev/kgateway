@@ -53,7 +53,7 @@ func CompareProxy(expectedFile string, actualProxy *irtranslator.TranslationResu
 		if err != nil {
 			return "", err
 		}
-		os.WriteFile(expectedFile, d, 0644)
+		os.WriteFile(expectedFile, d, 0o644)
 	}
 
 	expectedProxy, err := testutils.ReadProxyFromFile(expectedFile)
@@ -113,9 +113,7 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 	return nil
 }
 
-var (
-	_ extensionsplug.GetBackendForRefPlugin = testBackendPlugin{}.GetBackendForRefPlugin
-)
+var _ extensionsplug.GetBackendForRefPlugin = testBackendPlugin{}.GetBackendForRefPlugin
 
 type testBackendPlugin struct{}
 
@@ -186,6 +184,7 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		return nil, err
 	}
 	commoncol := common.NewCommonCollections(
+		ctx,
 		krtOpts,
 		cli,
 		ourCli,
@@ -197,19 +196,18 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 	// TODO: consider moving the common code to a util that both proxy syncer and this test call
 	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
 	extensions := registry.MergePlugins(plugins...)
+	commoncol.InitPlugins(ctx, extensions)
+
 	gk := schema.GroupKind{
 		Group: "",
-		Kind:  "test-backend-plugin"}
+		Kind:  "test-backend-plugin",
+	}
 	extensions.ContributesPolicies[gk] = extensionsplug.PolicyPlugin{
 		Name:             "test-backend-plugin",
 		GetBackendForRef: testBackendPlugin{}.GetBackendForRefPlugin,
 	}
 
-	isOurGw := func(gw *gwv1.Gateway) bool {
-		return true
-	}
-
-	gi, ri, ui, ei := krtcollections.InitCollections(ctx, extensions, cli, isOurGw, commoncol.RefGrants, krtOpts)
+	gi, ri, ui, ei := krtcollections.InitCollections(ctx, extensions, cli, commoncol.RefGrants, krtOpts)
 
 	translator := translator.NewCombinedTranslator(ctx, extensions, commoncol)
 	translator.Init(ctx, ri)

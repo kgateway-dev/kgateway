@@ -3,6 +3,7 @@ package controller_test
 import (
 	"time"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -84,7 +85,7 @@ var _ = Describe("GwController", func() {
 			Expect(*gw.Status.Addresses[0].Type).To(Equal(api.IPAddressType))
 			Expect(gw.Status.Addresses[0].Value).To(Equal("127.0.0.1"))
 		},
-		Entry("default gateway class", gatewayClassName),
-		Entry("alternative gateway class", altGatewayClassName),
+		Entry("default gateway class", wellknown.GatewayClassName),
+		Entry("waypoint gateway class", wellknown.WaypointClassName),
 	)
 })

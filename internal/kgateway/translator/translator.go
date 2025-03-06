@@ -5,9 +5,7 @@ import (
 
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/cache"
-	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"istio.io/istio/pkg/kube/krt"
 
@@ -63,16 +61,13 @@ func NewCombinedTranslator(
 	}
 }
 
-// Note: isOurGw is shared between us and the deployer.
 func (s *CombinedTranslator) Init(ctx context.Context, routes *krtcollections.RoutesIndex) error {
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
 
-	nsCol := krtcollections.NewNamespaceCollection(ctx, s.commonCols.Client, s.commonCols.KrtOpts)
-
 	queries := query.NewData(
-		routes,
+		s.commonCols.Routes,
 		s.commonCols.Secrets,
-		nsCol,
+		s.commonCols.Namespaces,
 	)
 	s.gwtranslator = gwtranslator.NewTranslator(queries)
 	s.irtranslator = &irtranslator.Translator{
@@ -90,7 +85,6 @@ func (s *CombinedTranslator) Init(ctx context.Context, routes *krtcollections.Ro
 	s.waitForSync = append(s.waitForSync,
 		s.commonCols.HasSynced,
 		s.extensions.HasSynced,
-		routes.HasSynced,
 	)
 	return nil
 }

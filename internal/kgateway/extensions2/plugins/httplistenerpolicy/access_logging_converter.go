@@ -48,7 +48,7 @@ func convertAccessLogConfig(
 	grpcBackends := make(map[string]*ir.BackendObjectIR, len(policy.Spec.AccessLog))
 	for idx, log := range configs {
 		if log.GrpcService != nil && log.GrpcService.BackendRef != nil {
-			backend, err := commoncol.Backends.GetBackendFromRef(krtctx, parentSrc, log.GrpcService.BackendRef.BackendObjectReference)
+			backend, err := commoncol.BackendIndex.GetBackendFromRef(krtctx, parentSrc, log.GrpcService.BackendRef.BackendObjectReference)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get backend from ref: %s", err.Error())
 			}

@@ -584,7 +584,6 @@ var _ = Describe("Query", func() {
 			Expect(routes.ListenerResults["foo-tcp"].Routes).To(HaveLen(1))
 			Expect(routes.ListenerResults["bar"].Routes).To(BeEmpty())
 		})
-
 	})
 
 	It("should match TLSRoutes for Listener", func() {
@@ -853,12 +852,10 @@ func nsptr(s string) *apiv1.Namespace {
 	return &ns
 }
 
-var (
-	SvcGk = schema.GroupKind{
-		Group: corev1.GroupName,
-		Kind:  "Service",
-	}
-)
+var SvcGk = schema.GroupKind{
+	Group: corev1.GroupName,
+	Kind:  "Service",
+}
 
 func newQueries(initObjs ...client.Object) query.GatewayQueries {
 	var anys []any
@@ -895,7 +892,7 @@ func newQueries(initObjs ...client.Object) query.GatewayQueries {
 		}),
 	}
 	secrets := krtcollections.NewSecretIndex(secretsCol, refgrants)
-	nsCol := krtcollections.NewNamespaceCollectionFromCol(context.Background(), krttest.GetMockCollection[*corev1.Namespace](mock), krtutil.KrtOptions{})
+	nsCol := krtcollections.NewNamespaceCollectionFromCol(krttest.GetMockCollection[*corev1.Namespace](mock), krtutil.KrtOptions{})
 	for !rtidx.HasSynced() || !refgrants.HasSynced() || !secrets.HasSynced() || !upstreams.HasSynced() {
 		time.Sleep(time.Second / 10)
 	}

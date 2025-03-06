@@ -32,8 +32,6 @@ const (
 type GatewayConfig struct {
 	Mgr manager.Manager
 
-	OurGateway func(gw *apiv1.Gateway) bool
-
 	Dev            bool
 	ControllerName string
 	AutoProvision  bool
@@ -116,9 +114,9 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	buildr := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		// Don't use WithEventFilter here as it also filters events for Owned objects.
 		For(&apiv1.Gateway{}, builder.WithPredicates(predicate.NewPredicateFuncs(func(object client.Object) bool {
-			// We only care about Gateways that use our GatewayClass
+			// We only care about Gateways that use our GatewayClasses
 			if gw, ok := object.(*apiv1.Gateway); ok {
-				return c.cfg.OurGateway(gw)
+				return wellknown.SupportedGatewayClasses.Has(gw.Spec.GatewayClassName)
 			}
 			return false
 		}),

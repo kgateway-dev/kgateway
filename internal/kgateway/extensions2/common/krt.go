@@ -1,6 +1,8 @@
 package common
 
 import (
+	"context"
+
 	"github.com/go-logr/logr"
 	"istio.io/istio/pkg/kube"
 	istiokube "istio.io/istio/pkg/kube"
@@ -10,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	gwv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
+	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
@@ -18,12 +21,15 @@ import (
 )
 
 type CommonCollections struct {
-	OurClient versioned.Interface
-	Client    kube.Client
-	KrtOpts   krtutil.KrtOptions
-	Secrets   *krtcollections.SecretIndex
-	Backends  *krtcollections.BackendIndex
-	Routes    *krtcollections.RoutesIndex
+	OurClient    versioned.Interface
+	Client       kube.Client
+	KrtOpts      krtutil.KrtOptions
+	Secrets      *krtcollections.SecretIndex
+	BackendIndex *krtcollections.BackendIndex
+	Routes       *krtcollections.RoutesIndex
+	Namespaces   krt.Collection[krtcollections.NamespaceMetadata]
+	Endpoints    krt.Collection[ir.EndpointsForBackend]
+	GatewayIndex *krtcollections.GatewayIndex
 
 	Pods      krt.Collection[krtcollections.LocalityPod]
 	RefGrants *krtcollections.RefGrantIndex
@@ -35,10 +41,19 @@ type CommonCollections struct {
 }
 
 func (c *CommonCollections) HasSynced() bool {
-	return c.Secrets.HasSynced() && c.Pods.HasSynced() && c.RefGrants.HasSynced()
+	return c.Secrets.HasSynced() &&
+		c.BackendIndex.HasSynced() &&
+		c.Routes.HasSynced() &&
+		c.Namespaces.HasSynced() &&
+		c.Pods.HasSynced() &&
+		c.RefGrants.HasSynced()
 }
 
+// NewCommonCollections initializes the core krt collections.
+// Collections that rely on plugins aren't initialized here,
+// and InitPlugins must be called.
 func NewCommonCollections(
+	ctx context.Context,
 	krtOptions krtutil.KrtOptions,
 	client istiokube.Client,
 	ourClient versioned.Interface,
@@ -67,13 +82,37 @@ func NewCommonCollections(
 	refgrantsCol := krt.WrapClient(kclient.New[*gwv1beta1.ReferenceGrant](client), krtOptions.ToOptions("RefGrants")...)
 	refgrants := krtcollections.NewRefGrantIndex(refgrantsCol)
 
+	namespaces := krtcollections.NewNamespaceCollection(ctx, client, krtOptions)
+
 	return &CommonCollections{
 		OurClient: ourClient,
 		Client:    client,
 		KrtOpts:   krtOptions,
-		Secrets:   krtcollections.NewSecretIndex(secrets, refgrants),
-		Pods:      krtcollections.NewPodsCollection(client, krtOptions),
-		RefGrants: refgrants,
-		Settings:  settings,
+
+		// Core stuff
+		Secrets:    krtcollections.NewSecretIndex(secrets, refgrants),
+		Pods:       krtcollections.NewPodsCollection(client, krtOptions),
+		RefGrants:  refgrants,
+		Settings:   settings,
+		Namespaces: namespaces,
 	}
+}
+
+// InitPlugins set up collections that rely on plugins.
+// This can't be part of NewCommonCollections because the setup
+// of plugins themselves rely on a reference to CommonCollections.
+func (c *CommonCollections) InitPlugins(ctx context.Context, mergedPlugins extensionsplug.Plugin) {
+	kubeGateways, routeIndex, backendIndex, endpointIRs := krtcollections.InitCollections(
+		ctx,
+		mergedPlugins,
+		c.Client,
+		c.RefGrants,
+		c.KrtOpts,
+	)
+
+	// With plugins applied
+	c.BackendIndex = backendIndex
+	c.Routes = routeIndex
+	c.Endpoints = endpointIRs
+	c.GatewayIndex = kubeGateways
 }
