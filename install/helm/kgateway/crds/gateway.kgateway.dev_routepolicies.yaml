@@ -325,6 +325,8 @@ spec:
                             type: string
                           value:
                             type: string
+                        required:
+                        - parseAs
                         type: object
                       remove:
                         items:
@@ -381,6 +383,8 @@ spec:
                             type: string
                           value:
                             type: string
+                        required:
+                        - parseAs
                         type: object
                       remove:
                         items:

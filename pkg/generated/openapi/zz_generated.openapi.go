@@ -1258,6 +1258,7 @@ func schema_kgateway_v2_api_v1alpha1_BodyTransformation(ref common.ReferenceCall
 					"parseAs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ParseAs defines what auto formatting should be applied to the body. This can make interacting with keys within a json body much easier if AsJson is selected.",
+							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1270,6 +1271,7 @@ func schema_kgateway_v2_api_v1alpha1_BodyTransformation(ref common.ReferenceCall
 						},
 					},
 				},
+				Required: []string{"parseAs"},
 			},
 		},
 	}

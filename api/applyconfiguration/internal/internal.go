@@ -318,6 +318,7 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: parseAs
       type:
         scalar: string
+      default: ""
     - name: value
       type:
         scalar: string
