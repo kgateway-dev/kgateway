@@ -30,7 +30,7 @@ func TestSettings(t *testing.T) {
 			name:    "defaults to empty or default values",
 			envVars: map[string]string{},
 			expectedSettings: &settings.Settings{
-				DnsLookupFamily:        "",
+				DnsLookupFamily:        "V4_PREFERRED",
 				EnableIstioIntegration: false,
 				EnableAutoMtls:         false,
 				StsClusterName:         "",

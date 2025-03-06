@@ -76,9 +76,13 @@ func processDnsLookupFamily(out *clusterv3.Cluster, st *settings.Settings) {
 		return
 	}
 
-	// default to V4_PREFERRED, overriding Envoy default
+	// irrespective of settings, default to V4_PREFERRED, overriding Envoy default
 	out.DnsLookupFamily = clusterv3.Cluster_V4_PREFERRED
 
+	if st == nil {
+		return
+	}
+	// if we have settings, use value from it
 	switch st.DnsLookupFamily {
 	case "V4_PREFERRED":
 		out.DnsLookupFamily = clusterv3.Cluster_V4_PREFERRED
