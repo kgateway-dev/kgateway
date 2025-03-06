@@ -60,7 +60,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 		v1alpha1.SchemeGroupVersion.WithResource("routepolicies"),
 		commoncol.KrtOpts.ToOptions("RoutePolicy")...,
 	)
-	gk := v1alpha1.RoutePolicyGVK.GroupKind()
+	gk := wellknown.RoutePolicyGVK.GroupKind()
 	translate := buildTranslateFunc(ctx, commoncol.Secrets)
 	// RoutePolicy IR will have TypedConfig -> implement backendroute method to add prompt guard, etc.
 	policyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, policyCR *v1alpha1.RoutePolicy) *ir.PolicyWrapper {
@@ -80,7 +80,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 
 	return extensionplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
-			v1alpha1.RoutePolicyGVK.GroupKind(): {
+			wellknown.RoutePolicyGVK.GroupKind(): {
 				//AttachmentPoints: []ir.AttachmentPoints{ir.HttpAttachmentPoint},
 				NewGatewayTranslationPass: NewGatewayTranslationPass,
 				Policies:                  policyCol,

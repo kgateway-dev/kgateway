@@ -15,9 +15,11 @@ linters:
     # We are aiming to progressively enable linters.
     # If you see a linter that can be added, please do so.
     - bodyclose
+    - copyloopvar
     - forbidigo
     - ginkgolinter
     - goimports
+    - ineffassign
     - misspell
     - nakedret
     - predeclared

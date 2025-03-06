@@ -76,7 +76,7 @@ metadata:
   name: openai
   namespace: gwtest
 spec:
-  type: ai
+  type: AI
   ai:
     llm:
       provider:
