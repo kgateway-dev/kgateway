@@ -138,6 +138,6 @@ gateway:
     statsRoutePrefixRewrite: "/stats"
 
 image:
-  registry: ghcr.io/kgateway-dev
+  registry: cr.kgateway.dev/kgateway-dev
   tag: ""
   pullPolicy: IfNotPresent

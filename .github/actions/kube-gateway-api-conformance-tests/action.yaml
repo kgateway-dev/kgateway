@@ -57,7 +57,7 @@ runs:
         # If matrix.version is empty, use the local chart path specified in the Makefile.
         helm upgrade -i -n kgateway-system kgateway ./install/helm/kgateway/ \
           --create-namespace \
-          --set image.tag=${VERSION}
+          --set image.tag=${VERSION} --set image.registry=ghcr.io/kgateway-dev
       else
         # TODO(tim): this will require changes once the new helm chart is integrated
         # and published with the release pipeline.

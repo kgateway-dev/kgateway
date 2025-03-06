@@ -21,6 +21,7 @@ on:
       - main
 
 env:
+  # this is uses the `github.repository_owner` to support releases from forks (useful for testing).
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
 
 permissions:
@@ -172,11 +173,9 @@ jobs:
       - name: Install the released chart
         run: |
           helm install --create-namespace --namespace kgateway-system kgateway \
-            oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway \
+            oci://${{ env.IMAGE_REGISTRY }}/kgateway-dev/charts/kgateway \
+            --set image.registry=${{ env.IMAGE_REGISTRY }} \
             --version ${{ needs.setup.outputs.version }} \
-            --set controller.image.registry=${{ env.IMAGE_REGISTRY }} \
-            --set gateway.envoyContainer.image.registry=${{ env.IMAGE_REGISTRY }} \
-            --set gateway.sdsContainer.image.registry=${{ env.IMAGE_REGISTRY }} \
             --wait --timeout 5m
 
       - name: Wait for the kgateway deployment to be ready
