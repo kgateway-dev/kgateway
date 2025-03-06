@@ -173,7 +173,7 @@ jobs:
       - name: Install the released chart
         run: |
           helm install --create-namespace --namespace kgateway-system kgateway \
-            oci://${{ env.IMAGE_REGISTRY }}/kgateway-dev/charts/kgateway \
+            oci://${{ env.IMAGE_REGISTRY }}/charts/kgateway \
             --set image.registry=${{ env.IMAGE_REGISTRY }} \
             --version ${{ needs.setup.outputs.version }} \
             --wait --timeout 5m
