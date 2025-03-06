@@ -49,7 +49,6 @@ clusters:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
   type: EDS
 - connectTimeout: 5s
-  dnsLookupFamily: V4_ONLY
   loadAssignment:
     clusterName: backend_gwtest_lambda-auth-backend_0
     endpoints:
@@ -132,7 +131,6 @@ clusters:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
 - connectTimeout: 5s
-  dnsLookupFamily: V4_ONLY
   loadAssignment:
     clusterName: backend_gwtest_lambda-local-integration_0
     endpoints:
@@ -210,7 +208,6 @@ clusters:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
 - connectTimeout: 5s
-  dnsLookupFamily: V4_ONLY
   loadAssignment:
     clusterName: backend_gwtest_lambda-orders-backend_0
     endpoints:
@@ -293,7 +290,6 @@ clusters:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
 - connectTimeout: 5s
-  dnsLookupFamily: V4_ONLY
   loadAssignment:
     clusterName: backend_gwtest_lambda-products-backend_0
     endpoints:

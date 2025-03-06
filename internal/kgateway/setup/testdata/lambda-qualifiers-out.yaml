@@ -49,7 +49,6 @@ clusters:
         '@type': type.googleapis.com/envoy.extensions.transport_sockets.raw_buffer.v3.RawBuffer
   type: EDS
 - connectTimeout: 5s
-  dnsLookupFamily: V4_ONLY
   loadAssignment:
     clusterName: backend_gwtest_lambda-dev_0
     endpoints:
@@ -128,7 +127,6 @@ clusters:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
 - connectTimeout: 5s
-  dnsLookupFamily: V4_ONLY
   loadAssignment:
     clusterName: backend_gwtest_lambda-latest_0
     endpoints:
@@ -207,7 +205,6 @@ clusters:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.upstream_codec.v3.UpstreamCodec
 - connectTimeout: 5s
-  dnsLookupFamily: V4_ONLY
   loadAssignment:
     clusterName: backend_gwtest_lambda-prod_0
     endpoints:
