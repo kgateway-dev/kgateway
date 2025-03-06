@@ -1252,7 +1252,7 @@ func schema_kgateway_v2_api_v1alpha1_BodyTransformation(ref common.ReferenceCall
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "BodyTransformation controls how the body should be parsed and trasnformed.",
+				Description: "BodyTransformation controls how the body should be parsed and transformed.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"parseAs": {

@@ -99,7 +99,7 @@ const (
 	BodyParseBehaviorAsJSON   BodyParseBehavior = "AsJson"
 )
 
-// BodyTransformation controls how the body should be parsed and trasnformed.
+// BodyTransformation controls how the body should be parsed and transformed.
 type BodyTransformation struct {
 	// ParseAs defines what auto formatting should be applied to the body.
 	// This can make interacting with keys within a json body much easier if AsJson is selected.
