@@ -107,6 +107,7 @@ dockers:
       - "--build-arg=GOARCH=arm64"
       - "--build-arg=ENTRYPOINT_SCRIPT=/internal/envoyinit/cmd/docker-entrypoint.sh"
       - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
+      - "--build-arg=RUSTFORMATIONS_DIR=/internal/envoyinit/rustformations"
     extra_files:
       - internal/envoyinit/cmd/docker-entrypoint.sh
       - internal/envoyinit/rustformations
@@ -122,6 +123,7 @@ dockers:
       - "--build-arg=GOARCH=amd64"
       - "--build-arg=ENTRYPOINT_SCRIPT=/internal/envoyinit/cmd/docker-entrypoint.sh"
       - "--build-arg=ENVOY_IMAGE={{ .Env.ENVOY_IMAGE }}"
+      - "--build-arg=RUSTFORMATIONS_DIR=/internal/envoyinit/rustformations"
     extra_files:
       - internal/envoyinit/cmd/docker-entrypoint.sh
       - internal/envoyinit/rustformations
