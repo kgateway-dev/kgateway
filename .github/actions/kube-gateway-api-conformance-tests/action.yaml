@@ -47,7 +47,7 @@ runs:
       IMAGE_VARIANT: ${{ matrix.image-variant }}
       CONFORMANCE: "true"
       CONFORMANCE_VERSION: ${{ env.CONFORMANCE_VERSION }}
-    run: make tool/kind && ./hack/kind/setup-kind.sh
+    run: ./hack/kind/setup-kind.sh
 
   - name: Install kgateway via helm
     shell: bash

@@ -118,50 +118,6 @@ export ALPINE_BASE_IMAGE ?= alpine:3.17.6
 # in the tree rooted at that directory that match the given criteria.
 get_sources = $(shell find $(1) -name "*.go" | grep -v test | grep -v generated.go | grep -v mock_)
 
-#----------------------------------------------------------------------------
-# Tools
-#----------------------------------------------------------------------------
-
-.PHONY: tools
-tools: ## Install the tools needed to build and test the project
-tools: tool/generate tool/kind tool/goreleaser tool/golangci-lint tool/ginkgo tool/goimports tool/gettercheck mod-tidy
-
-.PHONY: tool/goimports
-tool/goimports:
-	@go get -tool golang.org/x/tools/cmd/goimports@latest
-
-.PHONY: tool/golangci-lint
-tool/golangci-lint:
-	@go get -tool github.com/golangci/golangci-lint/cmd/golangci-lint@$(LINTER_VERSION)
-
-.PHONY: tool/ginkgo
-tool/ginkgo:
-	@go get -tool github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
-
-.PHONY: tool/go-test-coverage
-tool/go-test-coverage:
-	@go get -tool github.com/vladopajic/go-test-coverage/v2@v2.8.1
-
-.PHONY: tool/gettercheck
-tool/gettercheck:
-	@go get -tool github.com/saiskee/gettercheck@latest
-
-.PHONY: tool/goreleaser
-tool/goreleaser:
-	@go get -tool github.com/goreleaser/goreleaser/v2@v2.5.1
-
-.PHONY: tool/kind
-tool/kind:
-	@go get -tool sigs.k8s.io/kind@v0.24.0
-
-.PHONY: tool/generate
-tool/generate: #
-	@go get -tool k8s.io/kube-openapi/cmd/openapi-gen@latest
-	@go get -tool k8s.io/code-generator/cmd/register-gen@v0.32.2
-	@go get -tool k8s.io/code-generator/cmd/applyconfiguration-gen@v0.32.2
-	@go get -tool k8s.io/code-generator/cmd/client-gen@v0.32.2
-	@go get -tool sigs.k8s.io/controller-tools/cmd/controller-gen@v0.16.5
-
 #----------------------------------------------------------------------------------
 # Repo setup
 #----------------------------------------------------------------------------------
@@ -169,11 +125,11 @@ tool/generate: #
 GOIMPORTS ?= go tool goimports
 
 .PHONY: fmt
-fmt: tool/goimports  ## Format the code with goimports
+fmt:  ## Format the code with goimports
 	$(GOIMPORTS) -local "github.com/kgateway-dev/kgateway/v2/"  -w $(shell ls -d */ | grep -v vendor)
 
 .PHONY: fmt-changed
-fmt-changed: tool/goimports  ## Format the code with goimports
+fmt-changed:  ## Format the code with goimports
 	git diff --name-only | grep '.*.go$$' | xargs -- $(GOIMPORTS) -w
 
 # must be a separate target so that make waits for it to complete before moving on
@@ -201,7 +157,7 @@ LINTER_VERSION := $(shell cat .github/workflows/static-analysis.yaml | yq '.jobs
 GO_VERSION := $(shell cat go.mod | grep -E '^go' | awk '{print $$2}')
 GOTOOLCHAIN ?= go$(GO_VERSION)
 
-GOLANGCI_LINT ?= go tool github.com/golangci/golangci-lint/cmd/golangci-lint
+GOLANGCI_LINT ?= go tool golangci-lint
 ANALYZE_ARGS ?= --fast --verbose
 .PHONY: analyze
 analyze:  ## Run golangci-lint. Override options with ANALYZE_ARGS.
@@ -215,6 +171,7 @@ envoyversion: ENVOY_VERSION_TAG ?= $(shell echo $(ENVOY_IMAGE) | cut -d':' -f2)
 envoyversion:
 	echo "Version is $(ENVOY_VERSION_TAG)"
 	echo "Commit for envoyproxy is $(shell curl -s https://raw.githubusercontent.com/solo-io/envoy-gloo/refs/tags/v$(ENVOY_VERSION_TAG)/bazel/repository_locations.bzl | grep "envoy =" -A 4 | grep commit | cut -d'"' -f2)"
+
 #----------------------------------------------------------------------------------
 # Ginkgo Tests
 #----------------------------------------------------------------------------------
@@ -231,8 +188,8 @@ TEST_PKG ?= ./... # Default to run all tests
 GINKGO_USER_FLAGS ?=
 
 .PHONY: test
-test: tool/ginkgo ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
-	$(GINKGO_ENV) go tool github.com/onsi/ginkgo/v2/ginkgo -ldflags='$(LDFLAGS)' \
+test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
+	$(GINKGO_ENV) go tool ginkgo -ldflags='$(LDFLAGS)' \
 	$(GINKGO_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
 	$(TEST_PKG)
 
@@ -263,6 +220,17 @@ run-e2e-tests: test
 .PHONY: run-kube-e2e-tests
 run-kube-e2e-tests: TEST_PKG = ./test/kube2e/$(KUBE2E_TESTS) ## Run the legacy Kubernetes E2E Tests in the {KUBE2E_TESTS} package
 run-kube-e2e-tests: test
+
+#----------------------------------------------------------------------------------
+# Env test
+#----------------------------------------------------------------------------------
+
+ENVTEST_K8S_VERSION = 1.23
+ENVTEST ?= go tool setup-envtest
+
+.PHONY: envtest-path
+envtest-path: ## Set the envtest path
+	@$(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path --arch=amd64
 
 #----------------------------------------------------------------------------------
 # Go Tests
@@ -296,7 +264,7 @@ go-test-with-coverage: GO_TEST_ARGS += $(GO_TEST_COVERAGE_ARGS)
 go-test-with-coverage: go-test
 
 .PHONY: validate-test-coverage
-validate-test-coverage: tool/go-test-coverage ## Validate the test coverage
+validate-test-coverage: ## Validate the test coverage
 	$(GO_TEST_COVERAGE) --config=./test_coverage.yml
 
 # https://go.dev/blog/cover#heat-maps
@@ -357,7 +325,7 @@ generated-code: update-licenses
 generated-code: fmt
 
 .PHONY: go-generate-all
-go-generate-all: tool/generate tool/goimports ## Run all go generate directives in the repo, including codegen for protos, mockgen, and more
+go-generate-all: ## Run all go generate directives in the repo, including codegen for protos, mockgen, and more
 	GO111MODULE=on go generate ./hack/...
 
 .PHONY: go-generate-mocks
@@ -368,7 +336,7 @@ GETTERCHECK ?= go tool github.com/saiskee/gettercheck
 # Ensures that accesses for fields which have "getter" functions are exclusively done via said "getter" functions
 # TODO: do we still want this?
 .PHONY: getter-check
-getter-check: tool/gettercheck ## Runs all generate directives for mockgen in the repo
+getter-check: ## Runs all generate directives for mockgen in the repo
 	$(GETTERCHECK) -ignoretests -ignoregenerated -write ./internal/kgateway/...
 
 #----------------------------------------------------------------------------------
@@ -536,7 +504,7 @@ GORELEASER_ARGS ?= --snapshot --clean
 GORELEASER_CURRENT_TAG ?= $(VERSION)
 
 .PHONY: release
-release: tool/goreleaser ## Create a release using goreleaser
+release: ## Create a release using goreleaser
 	GORELEASER_CURRENT_TAG=$(GORELEASER_CURRENT_TAG) $(GORELEASER) release $(GORELEASER_ARGS)
 
 #----------------------------------------------------------------------------------
@@ -630,7 +598,7 @@ INSTALL_NAMESPACE ?= kgateway-system
 
 KIND ?= go tool sigs.k8s.io/kind
 
-kind-setup: tool/kind
+kind-setup:
 	VERSION=${VERSION} CLUSTER_NAME=${CLUSTER_NAME} ./hack/kind/setup-kind.sh
 
 kind-load-%-distroless:

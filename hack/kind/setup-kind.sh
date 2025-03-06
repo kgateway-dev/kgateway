@@ -22,7 +22,7 @@ CONFORMANCE_VERSION="${CONFORMANCE_VERSION:-v1.2.0}"
 # The channel of the k8s gateway api conformance tests to run. Requires CONFORMANCE=true
 CONFORMANCE_CHANNEL="${CONFORMANCE_CHANNEL:-"experimental"}"
 # The kind CLI to use. Defaults to the latest version from the kind repo.
-KIND="${KIND:-go tool sigs.k8s.io/kind}"
+KIND="${KIND:-go tool kind}"
 
 function create_kind_cluster_or_skip() {
   activeClusters=$(kind get clusters)

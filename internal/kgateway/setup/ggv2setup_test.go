@@ -52,10 +52,10 @@ import (
 )
 
 func getAssetsDir(t *testing.T) string {
-	assets := ""
+	var assets string
 	if os.Getenv("KUBEBUILDER_ASSETS") == "" {
 		// set default if not user provided
-		out, err := exec.Command("sh", "-c", "make -sC $(dirname $(go env GOMOD))/internal/kgateway envtest-path").CombinedOutput()
+		out, err := exec.Command("sh", "-c", "make -sC $(dirname $(go env GOMOD)) envtest-path").CombinedOutput()
 		t.Log("out:", string(out))
 		if err != nil {
 			t.Fatalf("failed to get assets dir: %v", err)

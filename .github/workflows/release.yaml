@@ -164,7 +164,7 @@ jobs:
         run: make mod-download
 
       - name: Setup kind cluster
-        run: make tool/kind && ./hack/kind/setup-kind.sh
+        run: ./hack/kind/setup-kind.sh
         env:
           VERSION: ${{ needs.setup.outputs.version }}
           SKIP_DOCKER: "true"

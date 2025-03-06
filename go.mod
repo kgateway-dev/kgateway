@@ -578,6 +578,7 @@ require (
 	mvdan.cc/gofumpt v0.7.0 // indirect
 	mvdan.cc/unparam v0.0.0-20240528143540-8a5130ca722f // indirect
 	oras.land/oras-go v1.2.5 // indirect
+	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20231019135941-15d792835235 // indirect
 	sigs.k8s.io/controller-tools v0.16.5 // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
 	sigs.k8s.io/kind v0.24.0 // indirect
@@ -591,6 +592,7 @@ require (
 replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
 
 tool (
+	github.com/golang/mock/mockgen
 	github.com/golangci/golangci-lint/cmd/golangci-lint
 	github.com/goreleaser/goreleaser/v2
 	github.com/onsi/ginkgo/v2/ginkgo
@@ -600,6 +602,7 @@ tool (
 	k8s.io/code-generator/cmd/client-gen
 	k8s.io/code-generator/cmd/register-gen
 	k8s.io/kube-openapi/cmd/openapi-gen
+	sigs.k8s.io/controller-runtime/tools/setup-envtest
 	sigs.k8s.io/controller-tools/cmd/controller-gen
 	sigs.k8s.io/kind
 )
