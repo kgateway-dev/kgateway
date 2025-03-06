@@ -128,21 +128,11 @@ type RouteError struct {
 	Error     Error
 }
 
-type options struct {
-}
-
-type Option func(*options)
-
 func NewData(
 	routes *krtcollections.RoutesIndex,
 	secrets *krtcollections.SecretIndex,
 	namespaces krt.Collection[krtcollections.NamespaceMetadata],
-	opts ...Option,
 ) GatewayQueries {
-	builtOpts := &options{}
-	for _, opt := range opts {
-		opt(builtOpts)
-	}
 	return &gatewayQueries{
 		routes:     routes,
 		secrets:    secrets,

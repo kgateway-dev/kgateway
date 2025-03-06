@@ -10,11 +10,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/sandwich"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/waypoint/waypointquery"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
@@ -44,20 +43,15 @@ var _ extensionsplug.KGwTranslator = &waypointTranslator{}
 type waypointTranslator struct {
 	queries         query.GatewayQueries
 	waypointQueries waypointquery.WaypointQueries
-
-	mergedPlugins extensionsplug.Plugin
 }
 
 func NewTranslator(
 	queries query.GatewayQueries,
-	client client.Client,
-	mergedPlugins extensionsplug.Plugin,
+	waypointQueries waypointquery.WaypointQueries,
 ) extensionsplug.KGwTranslator {
-	wpQueries := waypointquery.NewQueries(client, queries)
 	return &waypointTranslator{
 		queries:         queries,
-		waypointQueries: wpQueries,
-		mergedPlugins:   mergedPlugins,
+		waypointQueries: waypointQueries,
 	}
 }
 
@@ -94,6 +88,7 @@ func (w *waypointTranslator) Translate(
 
 	if waypointFor.ForService() {
 		w.buildServiceChains(
+			kctx,
 			ctx,
 			reporter,
 			gateway,
@@ -181,9 +176,9 @@ func buildInboundListener(gw *ir.Gateway, reporter reports.GatewayReporter) (*ir
 
 		AttachedPolicies: ir.AttachedPolicies{
 			Policies: map[schema.GroupKind][]ir.PolicyAtt{
-				v1alpha1.ListenerPolicyGVK.GroupKind(): {{
-					GroupKind: SandwichedInboundGVK,
-					PolicyIr:  SandwichedInboundPolicy{},
+				wellknown.ListenerPolicyGVK.GroupKind(): {{
+					GroupKind: sandwich.SandwichedInboundGVK,
+					PolicyIr:  sandwich.SandwichedInboundPolicy{},
 				}},
 			},
 		},
@@ -230,6 +225,7 @@ func (t *waypointTranslator) fetchGatewayRoutes(
 }
 
 func (t *waypointTranslator) buildServiceChains(
+	kctx krt.HandlerContext,
 	ctx context.Context,
 	baseReporter reports.Reporter,
 	gw *ir.Gateway,
@@ -239,12 +235,7 @@ func (t *waypointTranslator) buildServiceChains(
 	out *ir.ListenerIR,
 ) {
 	// get attached services (istio.io/use-waypoint)
-	// TODO krt
-	services, err := t.waypointQueries.GetWaypointServices(ctx, gw.Obj)
-	if err != nil {
-		contextutils.LoggerFrom(ctx).Errorf("Failed getting waypoint services: %v", err)
-		return
-	}
+	services := t.waypointQueries.GetWaypointServices(kctx, ctx, gw.Obj)
 
 	// for each service:
 	// * 1:1 Service port -> filter chain
@@ -258,28 +249,16 @@ func (t *waypointTranslator) buildServiceChains(
 	for _, svc := range services {
 		// get Service-specific routes
 		httpRoutes := gwRoutes
-		// TODO krt
-		if svcRoutes, err := t.waypointQueries.GetHTTPRoutesForService(ctx, &svc); err == nil {
-			for _, r := range svcRoutes {
-				attachedRoutes.Insert(namespacedName(r))
-				// may have httproute parent ref to the gateway AND the service
-				httpRoutes = append(httpRoutes, &r)
-			}
-		} else {
-			contextutils.LoggerFrom(ctx).Errorw(
-				"failed getting service attached routes",
-				"error",
-				err,
-				"service",
-				namespacedName(svc).String(),
-				"gateway",
-				namespacedName(gw),
-			)
+		svcRoutes := t.waypointQueries.GetHTTPRoutesForService(kctx, ctx, &svc)
+		for _, r := range svcRoutes {
+			attachedRoutes.Insert(namespacedName(r))
+			httpRoutes = append(httpRoutes, &r)
 		}
 
 		// build a single virtual host from HTTPRoutes
 		// HTTPRoutes apply at the Service level, not the port
 		// level so we don't need to generate this multiple times
+		// TODO respect `port` on parentRef
 		httpRoutesVirtualHost := t.buildHTTPVirtualHost(ctx, baseReporter, gw, gwListener, svc, httpRoutes)
 
 		for _, svcPort := range svc.Ports {

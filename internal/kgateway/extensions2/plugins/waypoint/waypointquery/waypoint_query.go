@@ -2,13 +2,20 @@ package waypointquery
 
 import (
 	"context"
+	"fmt"
 
-	istiosecurity "istio.io/client-go/pkg/apis/security/v1"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"istio.io/api/label"
+	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/slices"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 const (
@@ -23,16 +30,189 @@ const (
 type WaypointQueries interface {
 	// GetWaypointServices returns all Services that are marked as using the Gateway
 	// via istio.io/use-waypoint (and possibly istio.io/use-waypoint-namespace).
-	GetWaypointServices(ctx context.Context, gw *gwv1.Gateway) ([]Service, error)
+	GetWaypointServices(kctx krt.HandlerContext, ctx context.Context, gw *gwv1.Gateway) []Service
 
 	// GetHTTPRoutesForService fetches HTTPRoutes that have the given Service in parentRefs.
-	GetHTTPRoutesForService(ctx context.Context, svc *Service) ([]query.RouteInfo, error)
-
-	// GetAuthorizationPolicies gets all AuthorizationPolicy resources in the targetNamespace and rootNamespace.
-	// Callers should apply attachment logic themselves for particular Gateways and Services.
-	GetAuthorizationPolicies(ctx context.Context, targetNamespace, rootNamespace string) ([]*istiosecurity.AuthorizationPolicy, error)
+	GetHTTPRoutesForService(kctx krt.HandlerContext, ctx context.Context, svc *Service) []query.RouteInfo
 }
 
-func NewQueries(client client.Client, gwQueries query.GatewayQueries) WaypointQueries {
-	return nil // TODO TODO TODO
+func NewQueries(
+	commonCols *common.CommonCollections,
+	gwQueries query.GatewayQueries,
+) WaypointQueries {
+	waypointedServices, servicesByWaypoint := waypointAttachmentIndex(commonCols)
+	return &waypointQueries{
+		queries:            gwQueries,
+		commonCols:         commonCols,
+		waypointedServices: waypointedServices,
+		servicesByWaypoint: servicesByWaypoint,
+	}
+}
+
+type waypointQueries struct {
+	queries    query.GatewayQueries
+	commonCols *common.CommonCollections
+
+	waypointedServices krt.Collection[WaypointedService]
+	servicesByWaypoint krt.Index[krt.Named, WaypointedService]
+}
+
+func (w *waypointQueries) GetHTTPRoutesForService(
+	kctx krt.HandlerContext,
+	ctx context.Context,
+	svc *Service,
+) []query.RouteInfo {
+	nns := types.NamespacedName{
+		Namespace: svc.GetNamespace(),
+		Name:      svc.GetName(),
+	}
+	routes := w.commonCols.Routes.RoutesFor(kctx, nns, wellknown.ServiceGVK.Group, wellknown.ServiceGVK.Kind)
+	// resolve delegation
+	out := slices.MapFilter(routes, func(route ir.Route) *query.RouteInfo {
+		pRef := findParentRef(
+			svc,
+			route.GetNamespace(),
+			route.GetParentRefs(),
+			svc.GetObjectKind().GroupVersionKind().GroupKind(),
+		)
+		if pRef == nil {
+			return nil
+		}
+		return w.queries.GetRouteChain(kctx, ctx, route, nil, *pRef)
+	})
+	return out
+}
+
+// findParentRef that targets the given object
+func findParentRef(
+	svc *Service,
+	routeNs string,
+	parentRefs []gwv1.ParentReference,
+	gk schema.GroupKind,
+) *gwv1.ParentReference {
+	// TODO peering will need to consider original and simulated GK
+	matchingParentRefs := findParentRefsForType(parentRefs, gk.Group, gk.Kind)
+	for _, pr := range matchingParentRefs {
+		// default to routes's own ns if not specified on the ref
+		ns := routeNs
+		if pr.Namespace != nil {
+			ns = string(*pr.Namespace)
+		}
+		if string(pr.Name) == svc.GetName() && ns == svc.GetNamespace() {
+			return pr
+		}
+	}
+	return nil
+}
+
+func findParentRefsForType(refs []gwv1.ParentReference, targetGroup, targetKind string) []*gwv1.ParentReference {
+	var matchingParentRefs []*gwv1.ParentReference
+	for _, pr := range refs {
+		prGroup := gwv1.GroupName
+		prKind := "Gateway"
+		if pr.Group != nil {
+			prGroup = string(*pr.Group)
+		}
+		if pr.Kind != nil {
+			prKind = string(*pr.Kind)
+		}
+		if compareCanonicalGroup(prGroup, targetGroup) && prKind == targetKind {
+			matchingParentRefs = append(matchingParentRefs, &pr)
+		}
+	}
+	return matchingParentRefs
+}
+
+func compareCanonicalGroup(a, b string) bool {
+	if a == "core" {
+		a = ""
+	}
+	if b == "core" {
+		b = ""
+	}
+	return a == b
+}
+
+func (w *waypointQueries) GetWaypointServices(kctx krt.HandlerContext, ctx context.Context, gw *gwv1.Gateway) []Service {
+	attached := krt.Fetch(kctx, w.waypointedServices, krt.FilterIndex(w.servicesByWaypoint, krt.NewNamed(gw)))
+	return slices.Map(attached, func(e WaypointedService) Service {
+		return e.Service
+	})
+}
+
+type WaypointedService struct {
+	Waypoint krt.Named
+	Service  Service
+}
+
+func (wa *WaypointedService) ResourceName() string {
+	// TODO this also needs to be the original (non-peering)
+	// group/kind/name/namesspace
+	gk := wa.Service.GetObjectKind().GroupVersionKind().GroupKind()
+	return fmt.Sprintf("%s/%s(%s/%s)[%s/%s]",
+		wa.Service.GetName(), wa.Service.GetNamespace(),
+		gk.Group, gk.Kind,
+		wa.Waypoint.Namespace, wa.Waypoint.Name,
+	)
+}
+
+func waypointAttachmentIndex(
+	commonCols *common.CommonCollections,
+) (
+	krt.Collection[WaypointedService],
+	krt.Index[krt.Named, WaypointedService],
+) {
+	// TODO we may want to expand the "logical Service" concept outside of this
+	// package to capture both Service and ServiceEntry this will help de-dupe
+	// and de-risk handling each of those for peering and waypoint
+	// purposes
+	serviceWithWaypoint := krt.NewCollection(commonCols.Services, func(ctx krt.HandlerContext, svc *corev1.Service) *WaypointedService {
+		// direct attachment
+		waypoint, noWaypoint := getUseWaypoint(svc.GetLabels(), svc.GetNamespace())
+		// try Namespace attachment
+		if noWaypoint {
+			nsMeta := krt.FetchOne(ctx, commonCols.Namespaces, krt.FilterKey(svc.GetNamespace()))
+			if nsMeta != nil {
+				waypoint, noWaypoint = getUseWaypoint(nsMeta.Labels, nsMeta.Name)
+			}
+		}
+		// don't bother converting things we're not going to attach
+		if noWaypoint || waypoint == nil {
+			return nil
+		}
+
+		return &WaypointedService{
+			Waypoint: *waypoint,
+			Service:  FromService(svc),
+		}
+	})
+
+	attachments := krt.JoinCollection([]krt.Collection[WaypointedService]{
+		serviceWithWaypoint,
+		// TODO serviceentry
+	})
+	byGateway := krt.NewIndex(attachments, func(o WaypointedService) []krt.Named {
+		return []krt.Named{o.Waypoint}
+	})
+	return attachments, byGateway
+}
+
+func getUseWaypoint(labels map[string]string, defaultNamespace string) (named *krt.Named, isNone bool) {
+	// TODO serviceentry
+	if labelValue, ok := labels[label.IoIstioUseWaypoint.Name]; ok {
+		// NOTE: this means Istio reserves the word "none" in this field with a special meaning
+		//   a waypoint named "none" cannot be used and will be ignored
+		if labelValue == "none" {
+			return nil, true
+		}
+		namespace := defaultNamespace
+		if override, f := labels[label.IoIstioUseWaypointNamespace.Name]; f {
+			namespace = override
+		}
+		return &krt.Named{
+			Name:      labelValue,
+			Namespace: namespace,
+		}, false
+	}
+	return nil, false
 }

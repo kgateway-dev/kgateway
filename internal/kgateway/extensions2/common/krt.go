@@ -30,6 +30,7 @@ type CommonCollections struct {
 	Namespaces   krt.Collection[krtcollections.NamespaceMetadata]
 	Endpoints    krt.Collection[ir.EndpointsForBackend]
 	GatewayIndex *krtcollections.GatewayIndex
+	Services     krt.Collection[*corev1.Service]
 
 	Pods      krt.Collection[krtcollections.LocalityPod]
 	RefGrants *krtcollections.RefGrantIndex
@@ -84,6 +85,9 @@ func NewCommonCollections(
 
 	namespaces := krtcollections.NewNamespaceCollection(ctx, client, krtOptions)
 
+	serviceClient := kclient.New[*corev1.Service](client)
+	services := krt.WrapClient(serviceClient, krtOptions.ToOptions("Services")...)
+
 	return &CommonCollections{
 		OurClient: ourClient,
 		Client:    client,
@@ -95,6 +99,7 @@ func NewCommonCollections(
 		RefGrants:  refgrants,
 		Settings:   settings,
 		Namespaces: namespaces,
+		Services:   services,
 	}
 }
 

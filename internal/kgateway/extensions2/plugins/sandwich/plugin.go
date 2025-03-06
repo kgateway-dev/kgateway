@@ -93,7 +93,7 @@ func (w SandwichedInboundPolicy) Equals(in any) bool {
 }
 
 type sandwichedTranslationPass struct {
-	ir.NoopProxyTranslationPass
+	ir.UnimplementedProxyTranslationPass
 
 	// isSandwiched is marked true when we process the listener
 	// so that we add the FilterChain level network filters

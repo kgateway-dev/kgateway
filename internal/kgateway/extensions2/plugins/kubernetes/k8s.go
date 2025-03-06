@@ -25,11 +25,9 @@ import (
 const BackendClusterPrefix = "kube"
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
-	serviceClient := kclient.New[*corev1.Service](commoncol.Client)
-	services := krt.WrapClient(serviceClient, commoncol.KrtOpts.ToOptions("Services")...)
 	epSliceClient := kclient.New[*discoveryv1.EndpointSlice](commoncol.Client)
 	endpointSlices := krt.WrapClient(epSliceClient, commoncol.KrtOpts.ToOptions("EndpointSlices")...)
-	return NewPluginFromCollections(ctx, commoncol.KrtOpts, commoncol.Pods, services, endpointSlices, commoncol.Settings)
+	return NewPluginFromCollections(ctx, commoncol.KrtOpts, commoncol.Pods, commoncol.Services, endpointSlices, commoncol.Settings)
 }
 
 func NewPluginFromCollections(

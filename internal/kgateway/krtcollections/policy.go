@@ -420,7 +420,7 @@ type RoutesIndex struct {
 	routes          krt.Collection[RouteWrapper]
 	httpRoutes      krt.Collection[ir.HttpRouteIR]
 	httpByNamespace krt.Index[string, ir.HttpRouteIR]
-	byTargetRef     krt.Index[types.NamespacedName, RouteWrapper]
+	byParentRef     krt.Index[targetRefIndexKey, RouteWrapper]
 
 	policies  *PolicyIndex
 	refgrants *RefGrantIndex
@@ -467,20 +467,38 @@ func NewRoutesIndex(
 	httpByNamespace := krt.NewIndex(h.httpRoutes, func(i ir.HttpRouteIR) []string {
 		return []string{i.GetNamespace()}
 	})
-	byTargetRef := krt.NewIndex(h.routes, func(in RouteWrapper) []types.NamespacedName {
+	byParentRef := krt.NewIndex(h.routes, func(in RouteWrapper) []targetRefIndexKey {
 		parentRefs := in.Route.GetParentRefs()
-		ret := make([]types.NamespacedName, len(parentRefs))
+		ret := make([]targetRefIndexKey, len(parentRefs))
 		for i, pRef := range parentRefs {
 			ns := strOr(pRef.Namespace, "")
 			if ns == "" {
 				ns = in.Route.GetNamespace()
 			}
-			ret[i] = types.NamespacedName{Namespace: ns, Name: string(pRef.Name)}
+			// HTTPRoute defaults GK to Gateway
+			group := wellknown.GatewayGVK.Group
+			kind := wellknown.GatewayGVK.Kind
+			if pRef.Group != nil {
+				group = string(*pRef.Group)
+			}
+			if pRef.Kind != nil {
+				kind = string(*pRef.Kind)
+			}
+			// lookup by the root object
+			ret[i] = targetRefIndexKey{
+				Namespace: ns,
+				PolicyTargetRef: ir.PolicyTargetRef{
+					Group: group,
+					Kind:  kind,
+					Name:  string(pRef.Name),
+					// handle port, section name post-query
+				},
+			}
 		}
 		return ret
 	})
 	h.httpByNamespace = httpByNamespace
-	h.byTargetRef = byTargetRef
+	h.byParentRef = byParentRef
 	return h
 }
 
@@ -489,7 +507,30 @@ func (h *RoutesIndex) ListHttp(kctx krt.HandlerContext, ns string) []ir.HttpRout
 }
 
 func (h *RoutesIndex) RoutesForGateway(kctx krt.HandlerContext, nns types.NamespacedName) []ir.Route {
-	rts := krt.Fetch(kctx, h.routes, krt.FilterIndex(h.byTargetRef, nns))
+	rts := krt.Fetch(kctx, h.routes, krt.FilterIndex(h.byParentRef, targetRefIndexKey{
+		PolicyTargetRef: ir.PolicyTargetRef{
+			Name:  nns.Name,
+			Group: wellknown.GatewayGVK.Group,
+			Kind:  wellknown.GatewayGVK.Kind,
+		},
+		Namespace: nns.Namespace,
+	}))
+	ret := make([]ir.Route, len(rts))
+	for i, r := range rts {
+		ret[i] = r.Route
+	}
+	return ret
+}
+
+func (h *RoutesIndex) RoutesFor(kctx krt.HandlerContext, nns types.NamespacedName, group, kind string) []ir.Route {
+	rts := krt.Fetch(kctx, h.routes, krt.FilterIndex(h.byParentRef, targetRefIndexKey{
+		PolicyTargetRef: ir.PolicyTargetRef{
+			Name:  nns.Name,
+			Group: group,
+			Kind:  kind,
+		},
+		Namespace: nns.Namespace,
+	}))
 	ret := make([]ir.Route, len(rts))
 	for i, r := range rts {
 		ret[i] = r.Route

@@ -108,6 +108,30 @@ var _ = Describe("Query", func() {
 			Expect(routes.ListenerResults["foo"].Routes).To(HaveLen(1))
 		})
 
+		FIt("should ignore http routes for wrong kind", func() {
+			gwWithListener := gw()
+			gwWithListener.Spec.Listeners = []apiv1.Listener{
+				{
+					Name:     "foo",
+					Protocol: apiv1.HTTPProtocolType,
+				},
+			}
+			hr := httpRoute()
+			hr.Spec.ParentRefs = []apiv1.ParentReference{
+				{
+					Name:  "test",
+					Group: ptr.To(gwv1.Group("")),
+					Kind:  ptr.To(gwv1.Kind("Service")),
+				},
+			}
+
+			gq := newQueries(hr)
+			routes, err := gq.GetRoutesForGateway(krt.TestingDummyContext{}, context.Background(), gwWithListener)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(routes.RouteErrors).To(BeEmpty())
+		})
+
 		It("should error with invalid label selector", func() {
 			gwWithListener := gw()
 			selector := apiv1.NamespacesFromSelector
@@ -892,7 +916,7 @@ func newQueries(initObjs ...client.Object) query.GatewayQueries {
 		}),
 	}
 	secrets := krtcollections.NewSecretIndex(secretsCol, refgrants)
-	nsCol := krtcollections.NewNamespaceCollectionFromCol(krttest.GetMockCollection[*corev1.Namespace](mock), krtutil.KrtOptions{})
+	nsCol := krtcollections.NewNamespaceCollectionFromCol(context.Background(), krttest.GetMockCollection[*corev1.Namespace](mock), krtutil.KrtOptions{})
 	for !rtidx.HasSynced() || !refgrants.HasSynced() || !secrets.HasSynced() || !upstreams.HasSynced() {
 		time.Sleep(time.Second / 10)
 	}
