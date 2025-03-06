@@ -5,6 +5,14 @@ import (
 )
 
 type Settings struct {
+	// Controls the DnsLookupFamily for all static clusters created via Backend resources.
+	// If not set, kgateway will default to "V4_PREFERRED". Note that this is different
+	// from the Envoy default of "AUTO", which is effectively "V6_PREFERRED".
+	// Supported values are: "ALL", "AUTO", "V4_PREFERRED", "V4_ONLY", "V6_ONLY"
+	// Details on the behavior of these options are available on the Envoy documentation:
+	// https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#enum-config-cluster-v3-cluster-dnslookupfamily
+	DnsLookupFamily string `split_words:"true" default:"V4_PREFERRED"`
+
 	EnableIstioIntegration bool   `split_words:"true"`
 	EnableAutoMtls         bool   `split_words:"true"`
 	StsClusterName         string `split_words:"true"`
