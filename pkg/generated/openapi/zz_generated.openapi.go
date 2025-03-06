@@ -1252,18 +1252,21 @@ func schema_kgateway_v2_api_v1alpha1_BodyTransformation(ref common.ReferenceCall
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "BodyTransformation controls how the body should be parsed and trasnformed.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"parseAs": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "ParseAs defines what auto formatting should be applied to the body. This can make interacting with keys within a json body much easier if AsJson is selected.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"value": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "Value is the template to apply to generate the output value for the body.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
@@ -2229,14 +2232,16 @@ func schema_kgateway_v2_api_v1alpha1_HeaderTransformation(ref common.ReferenceCa
 				Properties: map[string]spec.Schema{
 					"name": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "Name is the name of the header to interact with.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"value": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "Value is the template to apply to generate the output value for the header.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
@@ -3724,7 +3729,8 @@ func schema_kgateway_v2_api_v1alpha1_Transform(ref common.ReferenceCallback) com
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "Transform defines the operations to be performed by the transformation. These operations may include changing the actual request/response but may also cause side effects. Side effects may include setting info that can be used in future steps (e.g. dynamic metadata) and can cause envoy to buffer.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"set": {
 						VendorExtensible: spec.VendorExtensible{
@@ -3736,7 +3742,8 @@ func schema_kgateway_v2_api_v1alpha1_Transform(ref common.ReferenceCallback) com
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
+							Description: "Set is a list of headers and the value they should be set to.",
+							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
@@ -3757,7 +3764,8 @@ func schema_kgateway_v2_api_v1alpha1_Transform(ref common.ReferenceCallback) com
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
+							Description: "Add is a list of headers to add to the request and what that value should be set to. If there is already a header with these values then append the value as an extra entry.",
+							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
@@ -3775,7 +3783,8 @@ func schema_kgateway_v2_api_v1alpha1_Transform(ref common.ReferenceCallback) com
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
+							Description: "Remove is a list of header names to remove from the request/response.",
+							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
@@ -3789,7 +3798,7 @@ func schema_kgateway_v2_api_v1alpha1_Transform(ref common.ReferenceCallback) com
 					},
 					"body": {
 						SchemaProps: spec.SchemaProps{
-							Description: "If empty, body will not be buffered.",
+							Description: "Body controls both how to parse the body and if needed how to set.\n\nIf empty, body will not be buffered.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BodyTransformation"),
 						},
 					},
@@ -3805,7 +3814,8 @@ func schema_kgateway_v2_api_v1alpha1_TransformationPolicy(ref common.ReferenceCa
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "TransformationPolicy config is used to modify envoy behavior at a route level. These modifications can be performed on the request and response paths.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"request": {
 						SchemaProps: spec.SchemaProps{
