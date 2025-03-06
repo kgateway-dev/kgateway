@@ -27,7 +27,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
-//go:generate go run github.com/golang/mock/mockgen -destination mocks/mock_queries.go -package mocks github.com/kgateway-dev/kgateway/internal/kgateway/query GatewayQueries
+//go:generate go run github.com/golang/mock/mockgen -destination mocks/mock_queries.go -package mocks github.com/kgateway-dev/kgateway/v2/internal/kgateway/query GatewayQueries
 
 var _ = Describe("Query", func() {
 	Describe("GetSecretRef", func() {
