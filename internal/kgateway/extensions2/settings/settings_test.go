@@ -82,9 +82,10 @@ func TestSettings(t *testing.T) {
 				"KGW_ENABLE_AUTO_MTLS": "true",
 			},
 			expectedSettings: &settings.Settings{
-				EnableAutoMtls: true,
-				XdsServiceName: wellknown.DefaultXdsService,
-				XdsServicePort: wellknown.DefaultXdsPort,
+				DnsLookupFamily: "V4_PREFERRED",
+				EnableAutoMtls:  true,
+				XdsServiceName:  wellknown.DefaultXdsService,
+				XdsServicePort:  wellknown.DefaultXdsPort,
 			},
 		},
 	}
