@@ -312,7 +312,10 @@ generated-code: update-licenses
 generated-code: fmt
 
 .PHONY: go-generate-all
-go-generate-all: ## Run all go generate directives in the repo, including codegen for protos, mockgen, and more
+go-generate-all: go-generate-apis go-generate-mocks
+
+.PHONY: go-generate-apis
+go-generate-apis: ## Run all go generate directives in the repo, including codegen for protos, mockgen, and more
 	GO111MODULE=on go generate ./hack/...
 
 .PHONY: go-generate-mocks
