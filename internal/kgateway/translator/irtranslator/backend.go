@@ -17,7 +17,6 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 )
@@ -52,7 +51,7 @@ func (t *BackendTranslator) TranslateBackend(
 
 	out := initializeCluster(backend)
 	process.InitBackend(context.TODO(), backend, out)
-	processDnsLookupFamily(out, &t.CommonCols.Settings)
+	processDnsLookupFamily(out, t.CommonCols)
 
 	// now process backend policies
 	t.runPolicies(kctx, context.TODO(), ucc, backend, out)
@@ -62,7 +61,7 @@ func (t *BackendTranslator) TranslateBackend(
 // processDnsLookupFamily modifies clusters that use DNS-based discovery in the following way:
 // 1. explicitly default to 'V4_PREFERRED' (as opposed to the envoy default of effectively V6_PREFERRED)
 // 2. override to value defined in kgateway global setting if present
-func processDnsLookupFamily(out *clusterv3.Cluster, st *settings.Settings) {
+func processDnsLookupFamily(out *clusterv3.Cluster, cc *common.CommonCollections) {
 	cdt, ok := out.GetClusterDiscoveryType().(*clusterv3.Cluster_Type)
 	if !ok {
 		return
@@ -79,11 +78,11 @@ func processDnsLookupFamily(out *clusterv3.Cluster, st *settings.Settings) {
 	// irrespective of settings, default to V4_PREFERRED, overriding Envoy default
 	out.DnsLookupFamily = clusterv3.Cluster_V4_PREFERRED
 
-	if st == nil {
+	if cc == nil {
 		return
 	}
 	// if we have settings, use value from it
-	switch st.DnsLookupFamily {
+	switch cc.Settings.DnsLookupFamily {
 	case "V4_PREFERRED":
 		out.DnsLookupFamily = clusterv3.Cluster_V4_PREFERRED
 	case "V4_ONLY":
