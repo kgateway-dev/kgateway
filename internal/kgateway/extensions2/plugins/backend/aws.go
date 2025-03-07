@@ -21,6 +21,7 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -79,10 +80,16 @@ func (u *AwsIr) Equals(other any) bool {
 	}) {
 		return false
 	}
+	if !u.lambdaEndpoint.Equals(otherAws.lambdaEndpoint) {
+		return false
+	}
 	if u.lambdaArn != otherAws.lambdaArn {
 		return false
 	}
 	if u.lambdaInvokeMode != otherAws.lambdaInvokeMode {
+		return false
+	}
+	if !u.lambdaFilters.Equals(otherAws.lambdaFilters) {
 		return false
 	}
 
@@ -189,6 +196,13 @@ type lambdaFilters struct {
 	codecConfigAny       *anypb.Any
 }
 
+// Equals checks if two lambdaFilters objects are equal.
+func (u *lambdaFilters) Equals(other *lambdaFilters) bool {
+	return proto.Equal(u.lambdaConfigAny, other.lambdaConfigAny) &&
+		proto.Equal(u.awsRequestSigningAny, other.awsRequestSigningAny) &&
+		proto.Equal(u.codecConfigAny, other.codecConfigAny)
+}
+
 // buildLambdaFilters configures cluster's upstream HTTP filters for the given backend.
 func buildLambdaFilters(ir *AwsIr) (*lambdaFilters, error) {
 	lambdaConfigAny, err := utils.MessageToAny(&envoy_lambda_v3.Config{
@@ -269,6 +283,11 @@ type lambdaEndpointConfig struct {
 	hostname string
 	port     uint32
 	useTLS   bool
+}
+
+// Equals checks if two lambdaEndpointConfig objects are equal.
+func (u *lambdaEndpointConfig) Equals(other *lambdaEndpointConfig) bool {
+	return u.hostname == other.hostname && u.port == other.port && u.useTLS == other.useTLS
 }
 
 // configureLambdaEndpoint parses the endpoint URL and returns the endpoint configuration.
