@@ -53,7 +53,6 @@ func processAws(ctx context.Context, in *v1alpha1.AwsBackend, ir *BackendIr, out
 	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
 		Type: envoy_config_cluster_v3.Cluster_LOGICAL_DNS,
 	}
-	out.DnsLookupFamily = envoy_config_cluster_v3.Cluster_AUTO
 
 	endpointConfig, err := configureEndpoint(in)
 	if err != nil {
