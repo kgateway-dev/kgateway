@@ -166,6 +166,7 @@ envoyversion: ENVOY_VERSION_TAG ?= $(shell echo $(ENVOY_IMAGE) | cut -d':' -f2)
 envoyversion:
 	echo "Version is $(ENVOY_VERSION_TAG)"
 	echo "Commit for envoyproxy is $(shell curl -s https://raw.githubusercontent.com/solo-io/envoy-gloo/refs/tags/v$(ENVOY_VERSION_TAG)/bazel/repository_locations.bzl | grep "envoy =" -A 4 | grep commit | cut -d'"' -f2)"
+	echo "Current ABI in envoyinit can be found in the cargo.toml's envoy-proxy-dynamic-modules-rust-sdk"
 #----------------------------------------------------------------------------------
 # Ginkgo Tests
 #----------------------------------------------------------------------------------
@@ -462,6 +463,7 @@ envoyinit: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH)
 
 # TODO(nfuden) cheat the process for now with -r but try to find a cleaner method
 $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: internal/envoyinit/Dockerfile.envoyinit
+	cp  -r  ${ENVOYINIT_DIR}/rustformations $(ENVOYINIT_OUTPUT_DIR)
 	cp $< $@
 
 $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: internal/envoyinit/cmd/docker-entrypoint.sh

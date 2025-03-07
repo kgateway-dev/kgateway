@@ -5,9 +5,10 @@ package v1alpha1
 // RoutePolicySpecApplyConfiguration represents a declarative configuration of the RoutePolicySpec type for use
 // with apply.
 type RoutePolicySpecApplyConfiguration struct {
-	TargetRef *LocalPolicyTargetReferenceApplyConfiguration `json:"targetRef,omitempty"`
-	Timeout   *int                                          `json:"timeout,omitempty"`
-	AI        *AIRoutePolicyApplyConfiguration              `json:"ai,omitempty"`
+	TargetRef      *LocalPolicyTargetReferenceApplyConfiguration `json:"targetRef,omitempty"`
+	Timeout        *int                                          `json:"timeout,omitempty"`
+	AI             *AIRoutePolicyApplyConfiguration              `json:"ai,omitempty"`
+	Transformation *TransformationPolicyApplyConfiguration       `json:"transformation,omitempty"`
 }
 
 // RoutePolicySpecApplyConfiguration constructs a declarative configuration of the RoutePolicySpec type for use with
@@ -37,5 +38,13 @@ func (b *RoutePolicySpecApplyConfiguration) WithTimeout(value int) *RoutePolicyS
 // If called multiple times, the AI field is set to the value of the last call.
 func (b *RoutePolicySpecApplyConfiguration) WithAI(value *AIRoutePolicyApplyConfiguration) *RoutePolicySpecApplyConfiguration {
 	b.AI = value
+	return b
+}
+
+// WithTransformation sets the Transformation field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Transformation field is set to the value of the last call.
+func (b *RoutePolicySpecApplyConfiguration) WithTransformation(value *TransformationPolicyApplyConfiguration) *RoutePolicySpecApplyConfiguration {
+	b.Transformation = value
 	return b
 }

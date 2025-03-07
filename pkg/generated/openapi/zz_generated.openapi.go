@@ -34,6 +34,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendList":                schema_kgateway_v2_api_v1alpha1_BackendList(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendSpec":                schema_kgateway_v2_api_v1alpha1_BackendSpec(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BackendStatus":              schema_kgateway_v2_api_v1alpha1_BackendStatus(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BodyTransformation":         schema_kgateway_v2_api_v1alpha1_BodyTransformation(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CELFilter":                  schema_kgateway_v2_api_v1alpha1_CELFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.ComparisonFilter":           schema_kgateway_v2_api_v1alpha1_ComparisonFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CustomLabel":                schema_kgateway_v2_api_v1alpha1_CustomLabel(ref),
@@ -60,6 +61,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HTTPListenerPolicyList":     schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicyList(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HTTPListenerPolicySpec":     schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicySpec(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderFilter":               schema_kgateway_v2_api_v1alpha1_HeaderFilter(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderTransformation":       schema_kgateway_v2_api_v1alpha1_HeaderTransformation(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host":                       schema_kgateway_v2_api_v1alpha1_Host(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Image":                      schema_kgateway_v2_api_v1alpha1_Image(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.IstioContainer":             schema_kgateway_v2_api_v1alpha1_IstioContainer(ref),
@@ -97,6 +99,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StatsConfig":                schema_kgateway_v2_api_v1alpha1_StatsConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.StatusCodeFilter":           schema_kgateway_v2_api_v1alpha1_StatusCodeFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SupportedLLMProvider":       schema_kgateway_v2_api_v1alpha1_SupportedLLMProvider(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Transform":                  schema_kgateway_v2_api_v1alpha1_Transform(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy":       schema_kgateway_v2_api_v1alpha1_TransformationPolicy(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.VertexAIConfig":             schema_kgateway_v2_api_v1alpha1_VertexAIConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Webhook":                    schema_kgateway_v2_api_v1alpha1_Webhook(ref),
 		"k8s.io/api/core/v1.AWSElasticBlockStoreVolumeSource":                         schema_k8sio_api_core_v1_AWSElasticBlockStoreVolumeSource(ref),
@@ -1244,6 +1248,35 @@ func schema_kgateway_v2_api_v1alpha1_BackendStatus(ref common.ReferenceCallback)
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_BodyTransformation(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "BodyTransformation controls how the body should be parsed and transformed.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"parseAs": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ParseAs defines what auto formatting should be applied to the body. This can make interacting with keys within a json body much easier if AsJson is selected.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"value": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Value is the template to apply to generate the output value for the body.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"parseAs"},
+			},
+		},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_CELFilter(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -2190,6 +2223,33 @@ func schema_kgateway_v2_api_v1alpha1_HeaderFilter(ref common.ReferenceCallback) 
 		},
 		Dependencies: []string{
 			"sigs.k8s.io/gateway-api/apis/v1.HTTPHeaderMatch"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_HeaderTransformation(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name is the name of the header to interact with.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"value": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Value is the template to apply to generate the output value for the header.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"name"},
+			},
+		},
 	}
 }
 
@@ -3307,11 +3367,17 @@ func schema_kgateway_v2_api_v1alpha1_RoutePolicySpec(ref common.ReferenceCallbac
 							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIRoutePolicy"),
 						},
 					},
+					"transformation": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIRoutePolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIRoutePolicy", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.LocalPolicyTargetReference", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.TransformationPolicy"},
 	}
 }
 
@@ -3658,6 +3724,116 @@ func schema_kgateway_v2_api_v1alpha1_SupportedLLMProvider(ref common.ReferenceCa
 		},
 		Dependencies: []string{
 			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AnthropicConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AzureOpenAIConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GeminiConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenAIConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.VertexAIConfig"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_Transform(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "Transform defines the operations to be performed by the transformation. These operations may include changing the actual request/response but may also cause side effects. Side effects may include setting info that can be used in future steps (e.g. dynamic metadata) and can cause envoy to buffer.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"set": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"name",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Set is a list of headers and the value they should be set to.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderTransformation"),
+									},
+								},
+							},
+						},
+					},
+					"add": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"name",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Add is a list of headers to add to the request and what that value should be set to. If there is already a header with these values then append the value as an extra entry.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderTransformation"),
+									},
+								},
+							},
+						},
+					},
+					"remove": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "set",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Remove is a list of header names to remove from the request/response.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"body": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Body controls both how to parse the body and if needed how to set.\n\nIf empty, body will not be buffered.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BodyTransformation"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.BodyTransformation", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.HeaderTransformation"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_TransformationPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "TransformationPolicy config is used to modify envoy behavior at a route level. These modifications can be performed on the request and response paths.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"request": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Transform"),
+						},
+					},
+					"response": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Transform"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Transform"},
 	}
 }
 
