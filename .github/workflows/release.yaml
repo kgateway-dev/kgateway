@@ -39,7 +39,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
+      - name: Prep Go Runner
+        uses: ./.github/actions/prep-go-runner
       - name: Set the release related variables
         id: set_vars
         run: |
