@@ -3,7 +3,6 @@ package gateway_test
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -13,7 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	"sigs.k8s.io/yaml"
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
@@ -39,19 +37,6 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 		Expect(results).To(HaveLen(1))
 		Expect(results).To(HaveKey(in.gwNN))
 		result := results[in.gwNN]
-
-		// stat the expected output file to see whether we should write the actual output to the file
-		var write bool
-		if _, err := os.Stat(filepath.Join(dir, "testutils/outputs/", in.outputFile)); os.IsNotExist(err) {
-			write = true
-		}
-		if write {
-			data, err := result.Proxy.MarshalJSON()
-			Expect(err).NotTo(HaveOccurred())
-			yaml, err := yaml.JSONToYAML(data)
-			Expect(err).NotTo(HaveOccurred())
-			os.WriteFile(filepath.Join(dir, "testutils/outputs/", in.outputFile), yaml, 0644)
-		}
 		expectedProxyFile := filepath.Join(dir, "testutils/outputs/", in.outputFile)
 		fmt.Fprintf(GinkgoWriter, "Comparing expected proxy from %s to actual proxy generated from %s\n", in.outputFile, in.inputFile)
 

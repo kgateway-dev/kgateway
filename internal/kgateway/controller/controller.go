@@ -203,8 +203,6 @@ type controllerReconciler struct {
 
 func (r *controllerReconciler) ReconcileGatewayClasses(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx).WithValues("gwclass", req.NamespacedName)
-	log.Info("reconciling gateway class")
-	defer log.Info("finished reconciling gateway class")
 
 	gwclass := &apiv1.GatewayClass{}
 	if err := r.cli.Get(ctx, req.NamespacedName, gwclass); err != nil {
@@ -215,27 +213,31 @@ func (r *controllerReconciler) ReconcileGatewayClasses(ctx context.Context, req 
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// implementations are required to accept the GatewayClass
-	meta.SetStatusCondition(&gwclass.Status.Conditions, metav1.Condition{
+	log.Info("reconciling gateway class")
+
+	// mark it as accepted:
+	acceptedCondition := metav1.Condition{
 		Type:               string(apiv1.GatewayClassConditionStatusAccepted),
 		Status:             metav1.ConditionTrue,
 		Reason:             string(apiv1.GatewayClassReasonAccepted),
 		ObservedGeneration: gwclass.Generation,
-	})
+		// no need to set LastTransitionTime, it will be set automatically by SetStatusCondition
+	}
+	meta.SetStatusCondition(&gwclass.Status.Conditions, acceptedCondition)
 
-	// implementations are required to set the supported version field.
-	// TODO: check the version of the CRDs in the cluster to be 100% sure.
-	// See https://github.com/kgateway-dev/kgateway/issues/10092 for more details.
-	meta.SetStatusCondition(&gwclass.Status.Conditions, metav1.Condition{
+	// TODO: This should actually check the version of the CRDs in the cluster to be 100% sure
+	supportedVersionCondition := metav1.Condition{
 		Type:               string(apiv1.GatewayClassConditionStatusSupportedVersion),
 		Status:             metav1.ConditionTrue,
-		Reason:             string(apiv1.GatewayClassReasonSupportedVersion),
 		ObservedGeneration: gwclass.Generation,
-	})
+		Reason:             string(apiv1.GatewayClassReasonSupportedVersion),
+	}
+	meta.SetStatusCondition(&gwclass.Status.Conditions, supportedVersionCondition)
 
 	if err := r.cli.Status().Update(ctx, gwclass); err != nil {
 		return ctrl.Result{}, err
 	}
+	log.Info("updated gateway class status")
 
 	return ctrl.Result{}, nil
 }

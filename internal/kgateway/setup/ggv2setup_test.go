@@ -255,7 +255,7 @@ func testScenario(
 
 	// read the out file
 	fout := fpre + "-out" + fext
-	write := false || os.Getenv("KGW_WRITE_OUT_FILES") == "true"
+	write := false
 	ya, err := os.ReadFile(fout)
 	// if not exist
 	if os.IsNotExist(err) {
@@ -312,7 +312,6 @@ func testScenario(
 		}
 	})
 
-	t.Logf("dumping xds")
 	dump := dumper.Dump(t, ctx)
 	if len(dump.Listeners) == 0 {
 		j, _ := kdbg.MarshalJSON()
@@ -329,9 +328,8 @@ func testScenario(
 		os.WriteFile(fout, d, 0644)
 		t.Fatal("wrote out file - nothing to test")
 	}
-	t.Logf("comparing xds dump")
 	dump.Compare(t, expectedXdsDump)
-	t.Logf("xds dump compared")
+	fmt.Println("test done")
 }
 
 // logKrtState logs the krt state with a message
