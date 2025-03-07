@@ -15,7 +15,11 @@ func GetSecretIr(secrets *krtcollections.SecretIndex, krtctx krt.HandlerContext,
 	secretRef := gwv1.SecretObjectReference{
 		Name: gwv1.ObjectName(secretName),
 	}
-	secret, err := secrets.GetSecret(krtctx, krtcollections.From{GroupKind: wellknown.BackendGVK.GroupKind(), Namespace: ns}, secretRef)
+	from := krtcollections.From{
+		GroupKind: wellknown.BackendGVK.GroupKind(),
+		Namespace: ns,
+	}
+	secret, err := secrets.GetSecret(krtctx, from, secretRef)
 	if secret != nil {
 		return secret, nil
 	} else {
