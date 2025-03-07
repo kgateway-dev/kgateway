@@ -74,13 +74,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: routeType
       type:
         scalar: string
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AWSAuthIRSA
-  map:
-    fields:
-    - name: roleARN
-      type:
-        scalar: string
-      default: ""
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AccessLog
   map:
     fields:
@@ -187,9 +180,6 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsAuth
   map:
     fields:
-    - name: irsa
-      type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AWSAuthIRSA
     - name: secret
       type:
         namedType: io.k8s.api.core.v1.LocalObjectReference
@@ -200,8 +190,6 @@ var schemaYAML = typed.YAMLObject(`types:
     unions:
     - discriminator: type
       fields:
-      - fieldName: irsa
-        discriminatorValue: IRSA
       - fieldName: secret
         discriminatorValue: Secret
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsBackend

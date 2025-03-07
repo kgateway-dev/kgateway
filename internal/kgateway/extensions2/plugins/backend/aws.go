@@ -157,53 +157,30 @@ func buildLambdaARN(in *v1alpha1.AwsBackend, region string) (string, error) {
 func configureAWSAuth(in *v1alpha1.AwsBackend, ir *BackendIr, region string) (*envoy_request_signing_v3.AwsRequestSigning, error) {
 	// when no auth is specified, use the default aws auth provider documented by the lambda filter:
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_lambda_filter#credentials.
-	if in.Auth == nil {
+	if in.Auth == nil || in.Auth.Type != v1alpha1.AwsAuthTypeSecret {
 		return &envoy_request_signing_v3.AwsRequestSigning{
 			ServiceName: lambdaServiceName,
 			Region:      region,
 		}, nil
 	}
 
-	var awsRequestSigning *envoy_request_signing_v3.AwsRequestSigning
-	switch in.Auth.Type {
-	case v1alpha1.AwsAuthTypeIRSA:
-		awsRequestSigning = &envoy_request_signing_v3.AwsRequestSigning{
-			ServiceName: lambdaServiceName,
-			Region:      region,
-			CredentialProvider: &envoy_aws_common_v3.AwsCredentialProvider{
-				CustomCredentialProviderChain: true,
-				AssumeRoleWithWebIdentityProvider: &envoy_aws_common_v3.AssumeRoleWithWebIdentityCredentialProvider{
-					RoleArn: in.Auth.IRSA.RoleARN,
-					WebIdentityTokenDataSource: &envoy_core_v3.DataSource{
-						Specifier: &envoy_core_v3.DataSource_Filename{
-							Filename: "/var/run/secrets/eks.amazonaws.com/serviceaccount/token",
-						},
-					},
-				},
-			},
-		}
-	case v1alpha1.AwsAuthTypeSecret:
-		derived, err := deriveStaticSecret(ir.AwsSecret)
-		if err != nil {
-			return nil, fmt.Errorf("failed to derive static secret: %v", err)
-		}
-
-		awsRequestSigning = &envoy_request_signing_v3.AwsRequestSigning{
-			ServiceName: lambdaServiceName,
-			Region:      region,
-			CredentialProvider: &envoy_aws_common_v3.AwsCredentialProvider{
-				InlineCredential: &envoy_aws_common_v3.InlineCredentialProvider{
-					AccessKeyId:     derived.access,
-					SecretAccessKey: derived.secret,
-					SessionToken:    derived.session,
-				},
-			},
-		}
-	default:
-		return nil, fmt.Errorf("unsupported auth type")
+	// handle secret-based auth. configure inline credentials.
+	derived, err := deriveStaticSecret(ir.AwsSecret)
+	if err != nil {
+		return nil, fmt.Errorf("failed to derive static secret: %v", err)
 	}
 
-	return awsRequestSigning, nil
+	return &envoy_request_signing_v3.AwsRequestSigning{
+		ServiceName: lambdaServiceName,
+		Region:      region,
+		CredentialProvider: &envoy_aws_common_v3.AwsCredentialProvider{
+			InlineCredential: &envoy_aws_common_v3.InlineCredentialProvider{
+				AccessKeyId:     derived.access,
+				SecretAccessKey: derived.secret,
+				SessionToken:    derived.session,
+			},
+		},
+	}, nil
 }
 
 // configureUpstreamHTTPFilters configures HTTP filters for the cluster

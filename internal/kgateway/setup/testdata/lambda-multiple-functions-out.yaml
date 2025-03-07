@@ -363,12 +363,6 @@ clusters:
       - name: envoy.filters.http.aws_request_signing
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.aws_request_signing.v3.AwsRequestSigning
-          credentialProvider:
-            assumeRoleWithWebIdentityProvider:
-              roleArn: arn:aws:iam::000000000000:role/products-lambda-role
-              webIdentityTokenDataSource:
-                filename: /var/run/secrets/eks.amazonaws.com/serviceaccount/token
-            customCredentialProviderChain: true
           region: us-east-1
           serviceName: lambda
       - name: envoy.filters.http.upstream_codec

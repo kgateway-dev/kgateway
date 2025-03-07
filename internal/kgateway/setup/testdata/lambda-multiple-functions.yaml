@@ -105,7 +105,7 @@ spec:
       functionName: orders-service
       invocationMode: Sync
 ---
-# Products Lambda Backend with IRSA auth
+# Products Lambda Backend with default auth
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
 metadata:
@@ -116,10 +116,6 @@ spec:
   aws:
     accountId: "000000000000"
     region: us-east-1
-    auth:
-      type: IRSA
-      irsa:
-        roleARN: arn:aws:iam::000000000000:role/products-lambda-role
     lambda:
       functionName: products-service
       invocationMode: Async

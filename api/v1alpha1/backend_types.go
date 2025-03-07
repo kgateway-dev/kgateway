@@ -110,8 +110,6 @@ const (
 // +union
 // +kubebuilder:validation:XValidation:message="secret must be nil if the type is not 'Secret'",rule="!(has(self.secret) && self.type != 'Secret')"
 // +kubebuilder:validation:XValidation:message="secret must be specified when type is 'Secret'",rule="!(!has(self.secret) && self.type == 'Secret')"
-// +kubebuilder:validation:XValidation:message="irsa must be nil if the type is not 'IRSA'",rule="!(has(self.irsa) && self.type != 'IRSA')"
-// +kubebuilder:validation:XValidation:message="irsa must be specified when type is 'IRSA'",rule="!(!has(self.irsa) && self.type == 'IRSA')"
 type AwsAuth struct {
 	// Type specifies the authentication method to use for the backend.
 	// +unionDiscriminator
@@ -123,20 +121,6 @@ type AwsAuth struct {
 	// +optional
 	// +kubebuilder:validation:Optional
 	Secret *corev1.LocalObjectReference `json:"secret,omitempty"`
-	// IRSA specifies the IRSA configuration to use for the backend.
-	// +optional
-	// +kubebuilder:validation:Optional
-	IRSA *AWSAuthIRSA `json:"irsa,omitempty"`
-}
-
-// AWSAuthIRSA specifies the configuration for using IRSA.
-type AWSAuthIRSA struct {
-	// RoleARN is the AWS IAM Role ARN used for pod identity.
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength=2048
-	// +kubebuilder:validation:Pattern="^arn:aws:iam::[0-9]{12}:role/.*"
-	RoleARN string `json:"roleARN"`
 }
 
 const (
