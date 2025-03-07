@@ -1,0 +1,11 @@
+##################################################################################################
+# Update the httpbin Namespace to capture traffic with ambient
+# and route traffic through a Waypoint proxy.
+##################################################################################################
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: httpbin
+  labels:
+    istio.io/dataplane-mode: ambient
+    istio.io/use-waypoint: httpbin-waypoint
