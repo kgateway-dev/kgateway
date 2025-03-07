@@ -186,13 +186,18 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(ctx context.Context, 
 		policiesFromDelegateParent = in.DelegateParent.AttachedPolicies
 	}
 
-	attachedPoliciesSlice := []ir.AttachedPolicies{
-		in.Parent.AttachedPolicies,
+	var attachedPoliciesSlice []ir.AttachedPolicies
+	if in.Parent != nil {
+		attachedPoliciesSlice = append(attachedPoliciesSlice,
+			in.Parent.AttachedPolicies,
+		)
+	}
+	attachedPoliciesSlice = append(attachedPoliciesSlice,
 		in.AttachedPolicies,
 		in.ExtensionRefs,
 		policiesFromDelegateParent,
 		// TODO: add policies from the parent's parent recursively
-	}
+	)
 
 	var errs []error
 

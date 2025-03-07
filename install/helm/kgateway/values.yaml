@@ -101,7 +101,7 @@ waypointClass:
     kind: "GatewayParameters"
     podTemplate:
       extraLabels:
-        ambient.istio.io/redirection: enabled
+        istio.io/dataplane-mode: ambient
       extraAnnotations: {}
 
 # Gateway proxy configuration

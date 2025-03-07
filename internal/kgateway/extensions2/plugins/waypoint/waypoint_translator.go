@@ -87,7 +87,7 @@ func (w *waypointTranslator) Translate(
 	waypointFor := waypointquery.GetWaypointFor(gateway.Obj)
 
 	if waypointFor.ForService() {
-		w.buildServiceChains(
+		http, tcp := w.buildServiceChains(
 			kctx,
 			ctx,
 			reporter,
@@ -95,8 +95,9 @@ func (w *waypointTranslator) Translate(
 			routes,
 			gwListener,
 			attachedRoutes,
-			proxyListener,
 		)
+		proxyListener.HttpFilterChain = append(proxyListener.HttpFilterChain, http...)
+		proxyListener.TcpFilterChain = append(proxyListener.TcpFilterChain, tcp...)
 	}
 
 	if proxyListener == nil {
@@ -176,8 +177,8 @@ func buildInboundListener(gw *ir.Gateway, reporter reports.GatewayReporter) (*ir
 
 		AttachedPolicies: ir.AttachedPolicies{
 			Policies: map[schema.GroupKind][]ir.PolicyAtt{
-				wellknown.ListenerPolicyGVK.GroupKind(): {{
-					GroupKind: sandwich.SandwichedInboundGVK,
+				sandwich.SandwichedInboundGK: {{
+					GroupKind: sandwich.SandwichedInboundGK,
 					PolicyIr:  sandwich.SandwichedInboundPolicy{},
 				}},
 			},
@@ -232,8 +233,9 @@ func (t *waypointTranslator) buildServiceChains(
 	gwRoutes []*query.RouteInfo,
 	gwListener *ir.Listener,
 	attachedRoutes sets.Set[types.NamespacedName],
-	out *ir.ListenerIR,
-) {
+) ([]ir.HttpFilterChainIR, []ir.TcpIR) {
+	var httpOut []ir.HttpFilterChainIR
+	var tcpOut []ir.TcpIR
 	// get attached services (istio.io/use-waypoint)
 	services := t.waypointQueries.GetWaypointServices(kctx, ctx, gw.Obj)
 
@@ -284,19 +286,19 @@ func (t *waypointTranslator) buildServiceChains(
 					// that just forwards traffic
 					virtualHostForPort = buildDefaultToPortVirtualHost(svc, svcPort)
 				}
-				out.HttpFilterChain = append(out.HttpFilterChain, ir.HttpFilterChainIR{
+				httpOut = append(httpOut, ir.HttpFilterChainIR{
 					FilterChainCommon: filterChain,
 					Vhosts:            []*ir.VirtualHost{virtualHostForPort},
 				})
 			} else {
-				out.TcpFilterChain = append(out.TcpFilterChain, ir.TcpIR{
+				tcpOut = append(tcpOut, ir.TcpIR{
 					FilterChainCommon: filterChain,
 					BackendRefs:       []ir.BackendRefIR{svc.BackendRef(svcPort)},
 				})
 			}
 		}
-
 	}
+	return httpOut, tcpOut
 }
 
 func filterChainName(

@@ -34,6 +34,8 @@ type WaypointQueries interface {
 
 	// GetHTTPRoutesForService fetches HTTPRoutes that have the given Service in parentRefs.
 	GetHTTPRoutesForService(kctx krt.HandlerContext, ctx context.Context, svc *Service) []query.RouteInfo
+
+	HasSynced() bool
 }
 
 func NewQueries(
@@ -54,7 +56,11 @@ type waypointQueries struct {
 	commonCols *common.CommonCollections
 
 	waypointedServices krt.Collection[WaypointedService]
-	servicesByWaypoint krt.Index[krt.Named, WaypointedService]
+	servicesByWaypoint krt.Index[types.NamespacedName, WaypointedService]
+}
+
+func (w *waypointQueries) HasSynced() bool {
+	return w.waypointedServices.HasSynced()
 }
 
 func (w *waypointQueries) GetHTTPRoutesForService(
@@ -134,21 +140,27 @@ func compareCanonicalGroup(a, b string) bool {
 }
 
 func (w *waypointQueries) GetWaypointServices(kctx krt.HandlerContext, ctx context.Context, gw *gwv1.Gateway) []Service {
-	attached := krt.Fetch(kctx, w.waypointedServices, krt.FilterIndex(w.servicesByWaypoint, krt.NewNamed(gw)))
+	attached := krt.Fetch(kctx, w.waypointedServices, krt.FilterIndex(w.servicesByWaypoint, types.NamespacedName{
+		Name:      gw.GetName(),
+		Namespace: gw.GetNamespace(),
+	}))
 	return slices.Map(attached, func(e WaypointedService) Service {
 		return e.Service
 	})
 }
 
 type WaypointedService struct {
-	Waypoint krt.Named
+	Waypoint types.NamespacedName
 	Service  Service
 }
 
-func (wa *WaypointedService) ResourceName() string {
+func (wa WaypointedService) ResourceName() string {
 	// TODO this also needs to be the original (non-peering)
 	// group/kind/name/namesspace
-	gk := wa.Service.GetObjectKind().GroupVersionKind().GroupKind()
+
+	// TODO seems like this returns empty?
+	gk := wa.Service.GroupKind
+
 	return fmt.Sprintf("%s/%s(%s/%s)[%s/%s]",
 		wa.Service.GetName(), wa.Service.GetNamespace(),
 		gk.Group, gk.Kind,
@@ -160,7 +172,7 @@ func waypointAttachmentIndex(
 	commonCols *common.CommonCollections,
 ) (
 	krt.Collection[WaypointedService],
-	krt.Index[krt.Named, WaypointedService],
+	krt.Index[types.NamespacedName, WaypointedService],
 ) {
 	// TODO we may want to expand the "logical Service" concept outside of this
 	// package to capture both Service and ServiceEntry this will help de-dupe
@@ -168,16 +180,26 @@ func waypointAttachmentIndex(
 	// purposes
 	serviceWithWaypoint := krt.NewCollection(commonCols.Services, func(ctx krt.HandlerContext, svc *corev1.Service) *WaypointedService {
 		// direct attachment
-		waypoint, noWaypoint := getUseWaypoint(svc.GetLabels(), svc.GetNamespace())
+		waypoint, waypointNone := getUseWaypoint(svc.GetLabels(), svc.GetNamespace())
+		if waypointNone {
+			// explicitly don't want it
+			return nil
+		}
+
 		// try Namespace attachment
-		if noWaypoint {
+		if waypoint == nil {
 			nsMeta := krt.FetchOne(ctx, commonCols.Namespaces, krt.FilterKey(svc.GetNamespace()))
 			if nsMeta != nil {
-				waypoint, noWaypoint = getUseWaypoint(nsMeta.Labels, nsMeta.Name)
+				waypoint, waypointNone = getUseWaypoint(nsMeta.Labels, nsMeta.Name)
+				if waypointNone {
+					// explicitly don't want it
+					return nil
+				}
 			}
 		}
-		// don't bother converting things we're not going to attach
-		if noWaypoint || waypoint == nil {
+
+		// no waypoint labels found
+		if waypoint == nil {
 			return nil
 		}
 
@@ -185,23 +207,22 @@ func waypointAttachmentIndex(
 			Waypoint: *waypoint,
 			Service:  FromService(svc),
 		}
-	})
+	}, commonCols.KrtOpts.ToOptions("KubeServiceToWaypoints")...)
 
 	attachments := krt.JoinCollection([]krt.Collection[WaypointedService]{
 		serviceWithWaypoint,
 		// TODO serviceentry
-	})
-	byGateway := krt.NewIndex(attachments, func(o WaypointedService) []krt.Named {
-		return []krt.Named{o.Waypoint}
+	}, commonCols.KrtOpts.ToOptions("ServiceWaypoints")...)
+	byGateway := krt.NewIndex(attachments, func(o WaypointedService) []types.NamespacedName {
+		return []types.NamespacedName{o.Waypoint}
 	})
 	return attachments, byGateway
 }
 
-func getUseWaypoint(labels map[string]string, defaultNamespace string) (named *krt.Named, isNone bool) {
-	// TODO serviceentry
+// getUseWaypoint returns the NamespacedName of the waypoint the given object uses.
+// It also returns a bool that indicates we specifically want NO Waypoint.
+func getUseWaypoint(labels map[string]string, defaultNamespace string) (named *types.NamespacedName, isNone bool) {
 	if labelValue, ok := labels[label.IoIstioUseWaypoint.Name]; ok {
-		// NOTE: this means Istio reserves the word "none" in this field with a special meaning
-		//   a waypoint named "none" cannot be used and will be ignored
 		if labelValue == "none" {
 			return nil, true
 		}
@@ -209,7 +230,7 @@ func getUseWaypoint(labels map[string]string, defaultNamespace string) (named *k
 		if override, f := labels[label.IoIstioUseWaypointNamespace.Name]; f {
 			namespace = override
 		}
-		return &krt.Named{
+		return &types.NamespacedName{
 			Name:      labelValue,
 			Namespace: namespace,
 		}, false

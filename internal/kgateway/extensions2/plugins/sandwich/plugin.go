@@ -51,7 +51,7 @@ import (
 func NewPlugin() extensionsplug.Plugin {
 	return extensionsplug.Plugin{
 		ContributesPolicies: extensionsplug.ContributesPolicies{
-			SandwichedInboundGVK: extensionsplug.PolicyPlugin{
+			SandwichedInboundGK: extensionsplug.PolicyPlugin{
 				Name: "sandwich",
 				NewGatewayTranslationPass: func(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {
 					// TODO we could read the waypoint-inbound-binding annotation here and set isSandwiched = true
@@ -60,15 +60,10 @@ func NewPlugin() extensionsplug.Plugin {
 				},
 			},
 		},
-		ContributesBackends:     map[schema.GroupKind]extensionsplug.BackendPlugin{},
-		ContributesGwTranslator: nil,
-		ExtraHasSynced: func() bool {
-			return true
-		},
 	}
 }
 
-var SandwichedInboundGVK = schema.GroupKind{
+var SandwichedInboundGK = schema.GroupKind{
 	Group: "internal.kgateway.dev",
 	Kind:  "SandwichedInboundPolicy",
 }
@@ -112,6 +107,7 @@ func (p *sandwichedTranslationPass) ApplyListenerPlugin(ctx context.Context, pCt
 	}
 
 	out.ListenerFilters = append(out.ListenerFilters, ProxyProtocolTLV)
+	p.isSandwiched = true
 
 	return
 }

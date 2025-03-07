@@ -6,6 +6,7 @@ import (
 
 	"github.com/rotisserie/eris"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/network"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -18,6 +19,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/kubernetes"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
 // ErrUnsupportedServiceType should never occur due to unexpected input.
@@ -27,6 +29,7 @@ var ErrUnsupportedServiceType = eris.New("unsupported service type")
 // Service is a common type to use between Service and ServiceEntry
 type Service struct {
 	client.Object
+	GroupKind schema.GroupKind
 	Addresses []string
 	Ports     []ServicePort
 	Hostnames []string
@@ -44,7 +47,7 @@ func (s Service) IsHeadless() bool {
 }
 
 func (s Service) Kind() string {
-	return s.GetObjectKind().GroupVersionKind().Kind
+	return s.GroupKind.Kind
 }
 
 func (s Service) String() string {
@@ -176,6 +179,7 @@ func FromService(svc *corev1.Service) Service {
 
 	return Service{
 		Object:    svc,
+		GroupKind: wellknown.ServiceGVK.GroupKind(),
 		Addresses: addrs,
 		Hostnames: []string{fqdn(svc.GetName(), svc.GetNamespace())},
 		Ports: slices.Map(svc.Spec.Ports, func(p corev1.ServicePort) ServicePort {
@@ -202,6 +206,7 @@ func FromServiceEntry(se *istionetworking.ServiceEntry) Service {
 
 	return Service{
 		Object:    se,
+		GroupKind: wellknown.ServiceEntryGVK.GroupKind(),
 		Addresses: addrs,
 		Hostnames: se.Spec.GetHosts(),
 		Ports: slices.Map(se.Spec.Ports, func(p *networkingv1beta1.ServicePort) ServicePort {

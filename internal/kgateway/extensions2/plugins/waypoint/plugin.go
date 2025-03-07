@@ -19,9 +19,6 @@ func NewPlugin(
 	return extensionsplug.Plugin{
 		ContributesPolicies: extensionsplug.ContributesPolicies{},
 		ContributesGwTranslator: func(gw *gwv1.Gateway) extensionsplug.KGwTranslator {
-			if gw.Spec.GatewayClassName != wellknown.WaypointClassName {
-				return nil
-			}
 			queries := query.NewData(
 				commonCols.Routes,
 				commonCols.Secrets,
@@ -31,10 +28,13 @@ func NewPlugin(
 				commonCols,
 				queries,
 			)
+			if gw.Spec.GatewayClassName != wellknown.WaypointClassName {
+				return nil
+			}
 			return NewTranslator(queries, waypointQueries)
 		},
-		ExtraHasSynced: func() bool {
-			panic("TODO")
-		},
+		// ExtraHasSynced: func() bool {
+		// 	return waypointQueries.HasSynced()
+		// },
 	}
 }
