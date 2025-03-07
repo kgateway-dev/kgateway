@@ -39,7 +39,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Set the release related variables
         id: set_vars
         run: |
@@ -79,6 +78,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Prep Go Runner
+        uses: ./.github/actions/prep-go-runner
+
       - name: Helm login to ${{ env.IMAGE_REGISTRY }}
         if: ${{ github.event_name != 'pull_request' }}
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
@@ -105,11 +107,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: "go.mod"
-          cache: true
+      - name: Prep Go Runner
+        uses: ./.github/actions/prep-go-runner
 
       # We publish a rolling main release for every commit to main. Deleting the release
       # ensures that the tagged commit is not stale. Goreleaser will create a new tag
@@ -151,10 +150,8 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: "go.mod"
+      - name: Prep Go Runner
+        uses: ./.github/actions/prep-go-runner
 
       - name: Login to ghcr.io
         if: ${{ github.event_name != 'pull_request' }}
