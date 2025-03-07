@@ -56,6 +56,7 @@ require (
 require (
 	4d63.com/gocheckcompilerdirectives v1.2.1 // indirect
 	4d63.com/gochecknoglobals v0.2.2 // indirect
+	al.essio.dev/pkg/shellescape v1.5.1 // indirect
 	cel.dev/expr v0.19.1 // indirect
 	cloud.google.com/go v0.116.0 // indirect
 	cloud.google.com/go/auth v0.14.1 // indirect
@@ -110,7 +111,6 @@ require (
 	github.com/OpenPeeDeeP/depguard/v2 v2.2.0 // indirect
 	github.com/ProtonMail/go-crypto v1.0.0 // indirect
 	github.com/alecthomas/go-check-sumtype v0.3.1 // indirect
-	github.com/alessio/shellescape v1.4.2 // indirect
 	github.com/alexkohler/nakedret/v2 v2.0.5 // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
@@ -581,7 +581,7 @@ require (
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20231019135941-15d792835235 // indirect
 	sigs.k8s.io/controller-tools v0.16.5 // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
-	sigs.k8s.io/kind v0.24.0 // indirect
+	sigs.k8s.io/kind v0.27.0 // indirect
 	sigs.k8s.io/kustomize/api v0.18.0 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.18.1 // indirect
 	sigs.k8s.io/mcs-api v0.1.1-0.20240624222831-d7001fe1d21c // indirect

@@ -599,7 +599,7 @@ endif # distroless images
 CLUSTER_NAME ?= kind
 INSTALL_NAMESPACE ?= kgateway-system
 
-KIND ?= go tool sigs.k8s.io/kind
+KIND ?= go tool kind
 
 kind-setup:
 	VERSION=${VERSION} CLUSTER_NAME=${CLUSTER_NAME} ./hack/kind/setup-kind.sh
