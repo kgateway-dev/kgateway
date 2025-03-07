@@ -37,6 +37,7 @@ func TestSettings(t *testing.T) {
 				StsUri:                 "",
 				XdsServiceName:         wellknown.DefaultXdsService,
 				XdsServicePort:         wellknown.DefaultXdsPort,
+				UseRustFormations:      false,
 			},
 		},
 		{
@@ -49,6 +50,7 @@ func TestSettings(t *testing.T) {
 				"KGW_STS_URI":                  "my.sts.uri",
 				"KGW_XDS_SERVICE_NAME":         "custom-svc",
 				"KGW_XDS_SERVICE_PORT":         "1234",
+				"KGW_USE_RUST_FORMATIONS":      "true",
 			},
 			expectedSettings: &settings.Settings{
 				DnsLookupFamily:        "V4_ONLY",
@@ -58,6 +60,7 @@ func TestSettings(t *testing.T) {
 				StsUri:                 "my.sts.uri",
 				XdsServiceName:         "custom-svc",
 				XdsServicePort:         1234,
+				UseRustFormations:      true,
 			},
 		},
 		{

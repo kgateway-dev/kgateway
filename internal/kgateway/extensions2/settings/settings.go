@@ -25,6 +25,8 @@ type Settings struct {
 	// XdsServicePort is the port of the Kubernetes Service that serves xDS config.
 	// This corresponds to the value of the `grpc-xds` port in the service.
 	XdsServicePort uint32 `split_words:"true" default:"9977"`
+
+	UseRustFormations bool `split_words:"true" default:"false"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env

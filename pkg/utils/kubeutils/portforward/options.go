@@ -68,11 +68,16 @@ func WithResource(name, namespace, resourceType string) Option {
 	}
 }
 
+// WithRemotePort sets the remote port for the port-forwarding
+// This overrides the local port and makes it set as random.
+// Retrieve the allocated port with the Address() method on the PortForwarder.
 func WithRemotePort(remotePort int) Option {
 	// 0 is special value for the local port, it will result in a port being chosen at random
 	return WithPorts(0, remotePort)
 }
 
+// WithPorts sets the local and remote ports for the port-forwarding
+// Prefer WithRemotePort for local tests to prevent collisions.
 func WithPorts(localPort, remotePort int) Option {
 	return func(config *properties) {
 		config.localPort = localPort

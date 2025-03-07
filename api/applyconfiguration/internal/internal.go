@@ -312,6 +312,16 @@ var schemaYAML = typed.YAMLObject(`types:
           elementRelationship: associative
           keys:
           - type
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BodyTransformation
+  map:
+    fields:
+    - name: parseAs
+      type:
+        scalar: string
+      default: ""
+    - name: value
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CELFilter
   map:
     fields:
@@ -627,6 +637,15 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: io.k8s.sigs.gateway-api.apis.v1.HTTPHeaderMatch
       default: {}
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderTransformation
+  map:
+    fields:
+    - name: name
+      type:
+        scalar: string
+    - name: value
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Host
   map:
     fields:
@@ -1010,6 +1029,10 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: timeout
       type:
         scalar: numeric
+    - name: transformation
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TransformationPolicy
+      default: {}
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SdsBootstrap
   map:
     fields:
@@ -1139,6 +1162,43 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: vertexai
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.VertexAIConfig
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Transform
+  map:
+    fields:
+    - name: add
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderTransformation
+          elementRelationship: associative
+          keys:
+          - name
+    - name: body
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.BodyTransformation
+    - name: remove
+      type:
+        list:
+          elementType:
+            scalar: string
+          elementRelationship: associative
+    - name: set
+      type:
+        list:
+          elementType:
+            namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.HeaderTransformation
+          elementRelationship: associative
+          keys:
+          - name
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.TransformationPolicy
+  map:
+    fields:
+    - name: request
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Transform
+    - name: response
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Transform
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.VertexAIConfig
   map:
     fields:
