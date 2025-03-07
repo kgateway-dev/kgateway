@@ -5,10 +5,8 @@ import (
 )
 
 type Settings struct {
-	EnableIstioIntegration bool   `split_words:"true"`
-	EnableAutoMtls         bool   `split_words:"true"`
-	StsClusterName         string `split_words:"true"`
-	StsUri                 string `split_words:"true"`
+	EnableIstioIntegration bool `split_words:"true"`
+	EnableAutoMtls         bool `split_words:"true"`
 
 	// XdsServiceName is the name of the Kubernetes Service that serves xDS config.
 	// It it assumed to be in the kgateway install namespace.

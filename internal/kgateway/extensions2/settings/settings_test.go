@@ -31,8 +31,6 @@ func TestSettings(t *testing.T) {
 			expectedSettings: &settings.Settings{
 				EnableIstioIntegration: false,
 				EnableAutoMtls:         false,
-				StsClusterName:         "",
-				StsUri:                 "",
 				XdsServiceName:         wellknown.DefaultXdsService,
 				XdsServicePort:         wellknown.DefaultXdsPort,
 			},
@@ -50,8 +48,6 @@ func TestSettings(t *testing.T) {
 			expectedSettings: &settings.Settings{
 				EnableIstioIntegration: true,
 				EnableAutoMtls:         true,
-				StsClusterName:         "my-cluster",
-				StsUri:                 "my.sts.uri",
 				XdsServiceName:         "custom-svc",
 				XdsServicePort:         1234,
 			},
