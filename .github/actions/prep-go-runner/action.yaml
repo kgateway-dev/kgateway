@@ -20,19 +20,45 @@ runs:
       run: |
         echo "Before clearing disk space:"
         df -h
+        docker system df -v
         
-        # https://github.com/actions/virtual-environments/issues/709
-        sudo apt-get clean
-        
+        # https://github.com/actions/runner-images/discussions/3242 github runners are bad at cleanup
+        echo "Removing large packages"
+        sudo apt-get remove -y '^dotnet-.*' || true
+        sudo apt-get remove -y '^llvm-.*' || true
+        sudo apt-get remove -y 'php.*' || true
+        sudo apt-get remove -y '^mongodb-.*' || true
+        sudo apt-get remove -y '^mysql-.*' || true
+        sudo apt-get remove -y azure-cli google-chrome-stable firefox powershell mono-devel libgl1-mesa-dri || true
+        sudo apt-get autoremove -y || true
+        sudo apt-get clean -y || true
+        echo "Done removing large packages"
+
         # Clean up pre-installed tools
-        # https://github.com/actions/virtual-environments/issues/1918
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /opt/ghc
-        sudo rm -rf /usr/local/share/boost
-        sudo rm -rf $AGENT_TOOLSDIRECTORY
+        sudo rm -rf /usr/local/lib/android || true
+        sudo rm -rf /usr/share/dotnet || true
+        sudo rm -rf /usr/local/graalvm || true
+        sudo rm -rf /opt/ghc || true
+        sudo rm -rf /usr/local/.ghcup || true
+        sudo rm -rf /usr/local/share/boost || true
+        sudo rm -rf /usr/local/share/powershell || true
+        sudo rm -rf /usr/local/share/chromium || true
+        sudo rm -rf $AGENT_TOOLSDIRECTORY || true
+
+        # Clean up images
+        docker image rm node:16 || true
+        docker image rm node:16-alpine || true
+        docker image rm node:18 || true
+        docker image rm node:18-alpine || true
+        docker image rm node:20 || true
+        docker image rm node:20-alpine || true
+        # remove the dangling images and containers
+        docker images | tail -n +2 | awk '$1 == "<none>" {print $3}' | xargs --no-run-if-empty docker rmi
+        docker ps -a | tail -n +2 | awk '$2 ~ "^[0-9a-f]+$" {print $1}' | xargs --no-run-if-empty docker rm --volumes=true
         
         echo "After clearing disk space:"
         df -h
+        docker system df -v
     - name: Set up Go
       id: setup-go
       uses: actions/setup-go@v5
