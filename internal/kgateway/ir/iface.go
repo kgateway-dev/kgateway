@@ -65,12 +65,13 @@ type ProxyTranslationPass interface {
 		pCtx *ListenerContext,
 		out *envoy_config_listener_v3.Listener,
 	)
-	// called 1 time per filter chain after listeners
+	// called 1 time per filter chain after listeners and allows tweaking HCM settings.
 	ApplyHCM(ctx context.Context,
 		pCtx *HcmContext,
 		out *envoy_hcm.HttpConnectionManager) error
 
-	// called 1 time for all the routes in a filter chain.
+	// called 1 time for all the routes in a filter chain. Use this to set default PerFilterConfig
+	// No policy is provided here.
 	ApplyRouteConfigPlugin(
 		ctx context.Context,
 		pCtx *RouteConfigContext,
@@ -81,18 +82,22 @@ type ProxyTranslationPass interface {
 		pCtx *VirtualHostContext,
 		out *envoy_config_route_v3.VirtualHost,
 	)
-	// called 0 or more times
+	// called 0 or more times (one for each route)
+	// Applies policy for an HTTPRoute that has a policy attached via a targetRef.
+	// The output configures the envoy_config_route_v3.Route
 	ApplyForRoute(
 		ctx context.Context,
 		pCtx *RouteContext,
 		out *envoy_config_route_v3.Route) error
-	// runs for policy applied
+
+	// Appliesa policy attached to a specific Backend (via extensionRef on the BackendRef).
 	ApplyForRouteBackend(
 		ctx context.Context,
 		policy PolicyIR,
 		pCtx *RouteBackendContext,
 	) error
-	// no policy applied
+	// no policy applied - this is called for every backend in a route.
+	// For this to work the backend needs to register itself as a policy. TODO: rethink this.
 	ApplyForBackend(
 		ctx context.Context,
 		pCtx *RouteBackendContext,
@@ -100,13 +105,13 @@ type ProxyTranslationPass interface {
 		out *envoy_config_route_v3.Route,
 	) error
 
-	// called 1 time per listener
-	// if a plugin emits new filters, they must be with a plugin unique name.
-	// any filter returned from route config must be disabled, so it doesnt impact other routes.
+	// called 1 time per filter-chain.
+	// If a plugin emits new filters, they must be with a plugin unique name.
+	// filters added to impact specific routes should be disabled on the listener level, so they don't impact other routes.
 	HttpFilters(ctx context.Context, fc FilterChainCommon) ([]plugins.StagedHttpFilter, error)
 
 	NetworkFilters(ctx context.Context) ([]plugins.StagedNetworkFilter, error)
-	// called 1 time (per envoy proxy). replaces GeneratedResources
+	// called 1 time (per envoy proxy). replaces GeneratedResources and allows adding clusters to the envoy.
 	ResourcesToAdd(ctx context.Context) Resources
 }
 
@@ -157,18 +162,21 @@ type PolicyIR interface {
 }
 
 type PolicyWrapper struct {
+	// A reference to the original policy object
 	ObjectSource `json:",inline"`
-	Policy       metav1.Object
+	// The policy object itself. TODO: we can probably remove this
+	Policy metav1.Object
 
 	// Errors processing it for status.
 	// note: these errors are based on policy itself, regardless of whether it's attached to a resource.
 	// TODO: change for conditions
 	Errors []error
 
-	// original object. ideally with structural errors removed.
+	// The IR of the policy objects. ideally with structural errors removed.
 	// Opaque to us other than metadata.
 	PolicyIR PolicyIR
 
+	// Where to attach the policy. This usually comes from the policy CRD.
 	TargetRefs []PolicyTargetRef
 }
 
@@ -199,6 +207,8 @@ var (
 )
 
 type PolicyRun interface {
+	// Allocate state for single listener+rotue translation pass.
 	NewGatewayTranslationPass(ctx context.Context, tctx GwTranslationCtx) ProxyTranslationPass
+	// Process cluster for a backend
 	ProcessBackend(ctx context.Context, in BackendObjectIR, out *envoy_config_cluster_v3.Cluster) error
 }
