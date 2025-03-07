@@ -1,0 +1,47 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: gw
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+spec:
+  parentRefs:
+    - name: gw
+  hostnames:
+    - "example.com"
+  rules:
+    - backendRefs:
+        - name: simple-svc
+          port: 8080
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: RoutePolicy
+metadata:
+  name: requestresponse-transformer
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: example-route
+  timeout: 1
+  transformation:
+    request:
+      set:
+        - name: x-foo-bar
+          value: "foolen_{{header(\"content-length\")}}"
+    response:
+      set:
+        - name: x-foo-response
+          value: "{%- if request_header(\"x-add-bar\") != \"\" -%}supersuper{{request_header(\"x-add-bar\")}}{% else %}notsuper{% endif %}"

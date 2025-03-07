@@ -293,6 +293,125 @@ spec:
               timeout:
                 minimum: 1
                 type: integer
+              transformation:
+                properties:
+                  request:
+                    properties:
+                      add:
+                        items:
+                          properties:
+                            name:
+                              maxLength: 256
+                              minLength: 1
+                              pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                              type: string
+                            value:
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
+                      body:
+                        properties:
+                          parseAs:
+                            default: AsString
+                            enum:
+                            - AsString
+                            - AsJson
+                            type: string
+                          value:
+                            type: string
+                        required:
+                        - parseAs
+                        type: object
+                      remove:
+                        items:
+                          type: string
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-type: set
+                      set:
+                        items:
+                          properties:
+                            name:
+                              maxLength: 256
+                              minLength: 1
+                              pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                              type: string
+                            value:
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
+                    type: object
+                  response:
+                    properties:
+                      add:
+                        items:
+                          properties:
+                            name:
+                              maxLength: 256
+                              minLength: 1
+                              pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                              type: string
+                            value:
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
+                      body:
+                        properties:
+                          parseAs:
+                            default: AsString
+                            enum:
+                            - AsString
+                            - AsJson
+                            type: string
+                          value:
+                            type: string
+                        required:
+                        - parseAs
+                        type: object
+                      remove:
+                        items:
+                          type: string
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-type: set
+                      set:
+                        items:
+                          properties:
+                            name:
+                              maxLength: 256
+                              minLength: 1
+                              pattern: ^[A-Za-z0-9!#$%&'*+\-.^_\x60|~]+$
+                              type: string
+                            value:
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        maxItems: 16
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
+                    type: object
+                type: object
             type: object
           status:
             properties:

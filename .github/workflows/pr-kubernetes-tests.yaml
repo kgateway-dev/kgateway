@@ -31,7 +31,13 @@ jobs:
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$|^TestKgateway$$/^Backends$$'
           localstack: 'false'
+        # Mar 4, 2025: TODO minutes
         - cluster-name: 'cluster-two'
+          go-test-args: '-v -timeout=25m'
+          go-test-run-regex: '^TestKgateway$$/^Transformation$$'
+          localstack: 'false'
+        # TODO: measure minutes.
+        - cluster-name: 'cluster-three'
           go-test-args: '-v -timeout=25m'
           go-test-run-regex: '^TestKgateway$$/^Lambda$$'
           localstack: 'true'
