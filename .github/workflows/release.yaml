@@ -78,6 +78,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Prep Go Runner
+        uses: ./.github/actions/prep-go-runner
+
       - name: Helm login to ${{ env.IMAGE_REGISTRY }}
         if: ${{ github.event_name != 'pull_request' }}
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
@@ -147,10 +150,8 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: "go.mod"
+      - name: Prep Go Runner
+        uses: ./.github/actions/prep-go-runner
 
       - name: Login to ghcr.io
         if: ${{ github.event_name != 'pull_request' }}
