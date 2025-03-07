@@ -162,6 +162,11 @@ func configureAWSAuth(in *v1alpha1.AwsBackend, ir *BackendIr, region string) (*e
 			Region:      region,
 		}, nil
 	}
+	// defensive check: validate that the IR correctly populated the secret.
+	// this can happen if the secret is not found and the IR was not populated.
+	if ir.AwsSecret == nil {
+		return nil, fmt.Errorf("aws secret not found")
+	}
 
 	// handle secret-based auth. configure inline credentials.
 	derived, err := deriveStaticSecret(ir.AwsSecret)
@@ -283,8 +288,7 @@ type staticSecretDerivation struct {
 	access, session, secret string
 }
 
-// deriveStaticSecret from ingest if we are using a kubernetes secretref
-// Named returns with the derived string contents or an error due to retrieval or format.
+// deriveStaticSecret derives the static secret from the given secret.
 func deriveStaticSecret(awsSecrets *ir.Secret) (*staticSecretDerivation, error) {
 	var errs []error
 	// validate that the secret has field in string format and has an access_key and secret_key
