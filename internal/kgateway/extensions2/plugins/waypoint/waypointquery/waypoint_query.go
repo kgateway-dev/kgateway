@@ -79,7 +79,7 @@ func (w *waypointQueries) GetHTTPRoutesForService(
 			svc,
 			route.GetNamespace(),
 			route.GetParentRefs(),
-			svc.GetObjectKind().GroupVersionKind().GroupKind(),
+			svc.GroupKind,
 		)
 		if pRef == nil {
 			return nil
@@ -114,8 +114,8 @@ func findParentRef(
 func findParentRefsForType(refs []gwv1.ParentReference, targetGroup, targetKind string) []*gwv1.ParentReference {
 	var matchingParentRefs []*gwv1.ParentReference
 	for _, pr := range refs {
-		prGroup := gwv1.GroupName
-		prKind := "Gateway"
+		prGroup := wellknown.GatewayGVK.Group
+		prKind := wellknown.GatewayGVK.Kind
 		if pr.Group != nil {
 			prGroup = string(*pr.Group)
 		}

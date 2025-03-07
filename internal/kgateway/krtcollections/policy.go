@@ -491,7 +491,7 @@ func NewRoutesIndex(
 					Group: group,
 					Kind:  kind,
 					Name:  string(pRef.Name),
-					// handle port, section name post-query
+					// this index intentionally doesn't include sectionName or port
 				},
 			}
 		}
