@@ -40,7 +40,7 @@ const (
 
 // BackendIr is the internal representation of a backend.
 type BackendIr struct {
-	AwsSecret     *ir.Secret
+	AwsIr         *AwsIr
 	AISecret      *ir.Secret
 	AIMultiSecret map[string]*ir.Secret
 }
@@ -52,18 +52,12 @@ func data(s *ir.Secret) map[string][]byte {
 	return s.Data
 }
 
-// TODO: Is this missing CreationTime? The interface check is failing.
-
 func (u *BackendIr) Equals(other any) bool {
 	otherBackend, ok := other.(*BackendIr)
 	if !ok {
 		return false
 	}
-	if !maps.EqualFunc(data(u.AwsSecret), data(otherBackend.AwsSecret), func(a, b []byte) bool {
-		return bytes.Equal(a, b)
-	}) {
-		return false
-	}
+	// AI
 	if !maps.EqualFunc(data(u.AISecret), data(otherBackend.AISecret), func(a, b []byte) bool {
 		return bytes.Equal(a, b)
 	}) {
@@ -76,7 +70,10 @@ func (u *BackendIr) Equals(other any) bool {
 	}) {
 		return false
 	}
-
+	// AWS
+	if !u.AwsIr.Equals(otherBackend.AwsIr) {
+		return false
+	}
 	return true
 }
 
@@ -142,18 +139,39 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 		var backendIr BackendIr
 		switch i.Spec.Type {
 		case v1alpha1.BackendTypeAWS:
-			if i.Spec.Aws.Auth == nil {
-				return &backendIr
-			}
-			if i.Spec.Aws.Auth.Type != v1alpha1.AwsAuthTypeSecret {
-				return &backendIr
-			}
-			ns := i.GetNamespace()
-			secret, err := pluginutils.GetSecretIr(secrets, krtctx, i.Spec.Aws.Auth.Secret.Name, ns)
+			awsIr := &AwsIr{}
+			awsIr.accountId = i.Spec.Aws.AccountId
+			awsIr.region = getRegion(i.Spec.Aws)
+			awsIr.lambdaInvokeMode = getLambdaInvocationMode(i.Spec.Aws)
+
+			lambdaArn, err := buildLambdaARN(i.Spec.Aws, awsIr.region)
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Error(err)
 			}
-			backendIr.AwsSecret = secret
+			awsIr.lambdaArn = lambdaArn
+
+			endpointConfig, err := configureLambdaEndpoint(i.Spec.Aws)
+			if err != nil {
+				contextutils.LoggerFrom(ctx).Error(err)
+			}
+			awsIr.lambdaEndpoint = endpointConfig
+
+			if i.Spec.Aws.Auth != nil && i.Spec.Aws.Auth.Type == v1alpha1.AwsAuthTypeSecret {
+				ns := i.GetNamespace()
+				secret, err := pluginutils.GetSecretIr(secrets, krtctx, i.Spec.Aws.Auth.Secret.Name, ns)
+				if err != nil {
+					contextutils.LoggerFrom(ctx).Error(err)
+				}
+				awsIr.secret = secret
+			}
+
+			lambdaFilters, err := buildLambdaFilters(awsIr)
+			if err != nil {
+				contextutils.LoggerFrom(ctx).Error(err)
+			}
+			awsIr.lambdaFilters = lambdaFilters
+
+			backendIr.AwsIr = awsIr
 		case v1alpha1.BackendTypeAI:
 			ns := i.GetNamespace()
 			if i.Spec.AI.LLM != nil {
@@ -229,7 +247,7 @@ func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_confi
 			log.Error("failed to process static backend", "error", err)
 		}
 	case spec.Type == v1alpha1.BackendTypeAWS:
-		if err := processAws(ctx, spec.Aws, ir, out); err != nil {
+		if err := processAws(ctx, spec.Aws, ir.AwsIr, out); err != nil {
 			log.Error("failed to process aws backend", "error", err)
 		}
 	case spec.Type == v1alpha1.BackendTypeAI:

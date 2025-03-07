@@ -1,9 +1,11 @@
 package backend
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"net/url"
 	"strconv"
 	"unicode/utf8"
@@ -19,6 +21,7 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -48,82 +51,191 @@ const (
 	defaultAWSRegion = "us-east-1"
 )
 
+// AwsIr is the internal representation of an AWS backend.
+type AwsIr struct {
+	region           string
+	accountId        string
+	secret           *ir.Secret
+	lambdaEndpoint   *lambdaEndpointConfig
+	lambdaArn        string
+	lambdaInvokeMode envoy_lambda_v3.Config_InvocationMode
+	lambdaFilters    *lambdaFilters
+}
+
+// Equals checks if two AwsIr objects are equal.
+func (u *AwsIr) Equals(other any) bool {
+	otherAws, ok := other.(*AwsIr)
+	if !ok {
+		return false
+	}
+	if u.region != otherAws.region {
+		return false
+	}
+	if u.accountId != otherAws.accountId {
+		return false
+	}
+	if !maps.EqualFunc(data(u.secret), data(otherAws.secret), func(a, b []byte) bool {
+		return bytes.Equal(a, b)
+	}) {
+		return false
+	}
+	if u.lambdaArn != otherAws.lambdaArn {
+		return false
+	}
+	if u.lambdaInvokeMode != otherAws.lambdaInvokeMode {
+		return false
+	}
+
+	return true
+}
+
 // processAws processes an AWS backend and returns an envoy cluster.
-func processAws(ctx context.Context, in *v1alpha1.AwsBackend, ir *BackendIr, out *envoy_config_cluster_v3.Cluster) error {
+func processAws(ctx context.Context, in *v1alpha1.AwsBackend, ir *AwsIr, out *envoy_config_cluster_v3.Cluster) error {
+	// defensive check; this should never happen with union types
+	if ir == nil {
+		return fmt.Errorf("aws ir is nil")
+	}
+
 	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
 		Type: envoy_config_cluster_v3.Cluster_LOGICAL_DNS,
 	}
-
-	endpointConfig, err := configureEndpoint(in)
-	if err != nil {
-		return err
-	}
-	if endpointConfig.useTLS {
-		if err := configureTLS(out, endpointConfig.hostname); err != nil {
-			return err
+	if ir.lambdaEndpoint.useTLS {
+		// TODO(yuval-k): Add verification context
+		typedConfig, err := utils.MessageToAny(&envoyauth.UpstreamTlsContext{
+			Sni: ir.lambdaEndpoint.hostname,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create tls context: %v", err)
+		}
+		out.TransportSocket = &envoy_config_core_v3.TransportSocket{
+			Name: wellknown.TransportSocketTls,
+			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{
+				TypedConfig: typedConfig,
+			},
 		}
 	}
-	if err := configureUpstreamHTTPFilters(out, in, ir); err != nil {
-		return err
+	if err := translatorutils.MutateHttpOptions(out, func(opts *envoy_upstreams_v3.HttpProtocolOptions) {
+		opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+			ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
+				ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
+					Http2ProtocolOptions: &envoy_core_v3.Http2ProtocolOptions{},
+				},
+			},
+		}
+		opts.CommonHttpProtocolOptions = &envoy_core_v3.HttpProtocolOptions{
+			IdleTimeout: &durationpb.Duration{
+				Seconds: 30,
+			},
+		}
+		opts.HttpFilters = append(opts.GetHttpFilters(), &envoy_hcm.HttpFilter{
+			Name: lambdaFilterName,
+			ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
+				TypedConfig: ir.lambdaFilters.lambdaConfigAny,
+			},
+		})
+		opts.HttpFilters = append(opts.GetHttpFilters(), &envoy_hcm.HttpFilter{
+			Name: awsRequestSigningFilterName,
+			ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
+				TypedConfig: ir.lambdaFilters.awsRequestSigningAny,
+			},
+		})
+		opts.HttpFilters = append(opts.GetHttpFilters(), &envoy_hcm.HttpFilter{
+			Name: upstreamCodecFilterName,
+			ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
+				TypedConfig: ir.lambdaFilters.codecConfigAny,
+			},
+		})
+	}); err != nil {
+		return fmt.Errorf("failed to mutate http options: %v", err)
 	}
 
-	pluginutils.EnvoySingleEndpointLoadAssignment(out, endpointConfig.hostname, endpointConfig.port)
+	pluginutils.EnvoySingleEndpointLoadAssignment(out, ir.lambdaEndpoint.hostname, ir.lambdaEndpoint.port)
 	return nil
 }
 
-// endpointConfig is a helper struct to store the endpoint configuration for the Lambda backend.
-type endpointConfig struct {
-	hostname string
-	port     uint32
-	useTLS   bool
-}
-
-// configureEndpoint parses the endpoint URL and returns the endpoint configuration
-func configureEndpoint(in *v1alpha1.AwsBackend) (*endpointConfig, error) {
-	config := &endpointConfig{
-		hostname: getLambdaHostname(in),
-		port:     443,
-		useTLS:   true,
+// configureAWSAuth configures AWS authentication for the given backend.
+func configureAWSAuth(secret *ir.Secret, region string) (*envoy_request_signing_v3.AwsRequestSigning, error) {
+	// when no auth is specified, use the default aws auth provider documented by the lambda filter:
+	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_lambda_filter#credentials.
+	if secret == nil || secret.Data == nil {
+		return &envoy_request_signing_v3.AwsRequestSigning{
+			ServiceName: lambdaServiceName,
+			Region:      region,
+		}, nil
 	}
-	if in.Lambda.EndpointURL == "" {
-		// no custom endpoint specified, use the default lambda hostname.
-		return config, nil
-	}
-
-	parsedURL, err := url.Parse(in.Lambda.EndpointURL)
+	// handle secret-based auth. configure inline credentials.
+	derived, err := deriveStaticSecret(secret)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse endpoint URL: %v", err)
-	}
-	config.useTLS = parsedURL.Scheme == "https"
-	if !config.useTLS {
-		config.port = 80
-	}
-	config.hostname = parsedURL.Hostname()
-	if parsedURL.Port() != "" {
-		if p, err := strconv.ParseUint(parsedURL.Port(), 10, 32); err == nil {
-			config.port = uint32(p)
-		}
+		return nil, fmt.Errorf("failed to derive static secret: %v", err)
 	}
 
-	return config, nil
+	return &envoy_request_signing_v3.AwsRequestSigning{
+		ServiceName: lambdaServiceName,
+		Region:      region,
+		CredentialProvider: &envoy_aws_common_v3.AwsCredentialProvider{
+			InlineCredential: &envoy_aws_common_v3.InlineCredentialProvider{
+				AccessKeyId:     derived.access,
+				SecretAccessKey: derived.secret,
+				SessionToken:    derived.session,
+			},
+		},
+	}, nil
 }
 
-// configureTLS configures TLS for the cluster.
-func configureTLS(out *envoy_config_cluster_v3.Cluster, hostname string) error {
-	// TODO(yuval-k): Add verification context
-	typedConfig, err := utils.MessageToAny(&envoyauth.UpstreamTlsContext{
-		Sni: hostname,
+// lambdaFilters is a helper struct to store the lambda filters for the given backend.
+type lambdaFilters struct {
+	lambdaConfigAny      *anypb.Any
+	awsRequestSigningAny *anypb.Any
+	codecConfigAny       *anypb.Any
+}
+
+// buildLambdaFilters configures cluster's upstream HTTP filters for the given backend.
+func buildLambdaFilters(ir *AwsIr) (*lambdaFilters, error) {
+	lambdaConfigAny, err := utils.MessageToAny(&envoy_lambda_v3.Config{
+		Arn:            ir.lambdaArn,
+		InvocationMode: ir.lambdaInvokeMode,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create tls context: %v", err)
+		return nil, fmt.Errorf("failed to create lambda config: %v", err)
 	}
-	out.TransportSocket = &envoy_config_core_v3.TransportSocket{
-		Name: wellknown.TransportSocketTls,
-		ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{
-			TypedConfig: typedConfig,
-		},
+
+	awsRequestSigning, err := configureAWSAuth(ir.secret, ir.region)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create aws request signing config: %v", err)
 	}
-	return nil
+	awsRequestSigningAny, err := utils.MessageToAny(awsRequestSigning)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create aws request signing config: %v", err)
+	}
+
+	codecConfigAny, err := utils.MessageToAny(&envoy_upstream_codec.UpstreamCodec{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create upstream codec config: %v", err)
+	}
+
+	return &lambdaFilters{
+		lambdaConfigAny:      lambdaConfigAny,
+		awsRequestSigningAny: awsRequestSigningAny,
+		codecConfigAny:       codecConfigAny,
+	}, nil
+}
+
+// getRegion returns the region for the aws backend. If a region is specified, it will be returned.
+// Otherwise, the default region is returned.
+func getRegion(in *v1alpha1.AwsBackend) string {
+	if in.Region != nil {
+		return *in.Region
+	}
+	return defaultAWSRegion
+}
+
+// getLambdaHostname returns the hostname for the lambda function. When using a custom endpoint
+// has been specified, it will be returned. Otherwise, the default lambda hostname is returned.
+func getLambdaHostname(in *v1alpha1.AwsBackend) string {
+	if in.Lambda.EndpointURL != "" {
+		return in.Lambda.EndpointURL
+	}
+	return fmt.Sprintf("lambda.%s.amazonaws.com", getRegion(in))
 }
 
 // getLambdaInvocationMode returns the Lambda invocation mode. Default is synchronous.
@@ -152,134 +264,44 @@ func buildLambdaARN(in *v1alpha1.AwsBackend, region string) (string, error) {
 	return parsedARN.String(), nil
 }
 
-// configureAWSAuth configures AWS authentication for the given backend.
-func configureAWSAuth(in *v1alpha1.AwsBackend, ir *BackendIr, region string) (*envoy_request_signing_v3.AwsRequestSigning, error) {
-	// when no auth is specified, use the default aws auth provider documented by the lambda filter:
-	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_lambda_filter#credentials.
-	if in.Auth == nil || in.Auth.Type != v1alpha1.AwsAuthTypeSecret {
-		return &envoy_request_signing_v3.AwsRequestSigning{
-			ServiceName: lambdaServiceName,
-			Region:      region,
-		}, nil
-	}
-	// defensive check: validate that the IR correctly populated the secret.
-	// this can happen if the secret is not found and the IR was not populated.
-	if ir.AwsSecret == nil {
-		return nil, fmt.Errorf("aws secret not found")
-	}
-
-	// handle secret-based auth. configure inline credentials.
-	derived, err := deriveStaticSecret(ir.AwsSecret)
-	if err != nil {
-		return nil, fmt.Errorf("failed to derive static secret: %v", err)
-	}
-
-	return &envoy_request_signing_v3.AwsRequestSigning{
-		ServiceName: lambdaServiceName,
-		Region:      region,
-		CredentialProvider: &envoy_aws_common_v3.AwsCredentialProvider{
-			InlineCredential: &envoy_aws_common_v3.InlineCredentialProvider{
-				AccessKeyId:     derived.access,
-				SecretAccessKey: derived.secret,
-				SessionToken:    derived.session,
-			},
-		},
-	}, nil
+// lambdaEndpointConfig is a helper struct to store the endpoint configuration for the Lambda backend.
+type lambdaEndpointConfig struct {
+	hostname string
+	port     uint32
+	useTLS   bool
 }
 
-// configureUpstreamHTTPFilters configures HTTP filters for the cluster
-func configureUpstreamHTTPFilters(
-	out *envoy_config_cluster_v3.Cluster,
-	in *v1alpha1.AwsBackend,
-	ir *BackendIr,
-) error {
-	region := getRegion(in)
-	lambdaARN, err := buildLambdaARN(in, region)
+// configureLambdaEndpoint parses the endpoint URL and returns the endpoint configuration.
+func configureLambdaEndpoint(in *v1alpha1.AwsBackend) (*lambdaEndpointConfig, error) {
+	config := &lambdaEndpointConfig{
+		hostname: getLambdaHostname(in),
+		port:     443,
+		useTLS:   true,
+	}
+	if in.Lambda.EndpointURL == "" {
+		// no custom endpoint specified, use the default lambda hostname.
+		return config, nil
+	}
+
+	parsedURL, err := url.Parse(in.Lambda.EndpointURL)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to parse endpoint URL: %v", err)
 	}
+	config.useTLS = parsedURL.Scheme == "https"
+	config.hostname = parsedURL.Hostname()
 
-	lambdaConfigAny, err := utils.MessageToAny(&envoy_lambda_v3.Config{
-		Arn:            lambdaARN,
-		InvocationMode: getLambdaInvocationMode(in),
-	})
+	port, err := strconv.ParseUint(parsedURL.Port(), 10, 32)
 	if err != nil {
-		return fmt.Errorf("failed to create lambda config: %v", err)
+		return nil, fmt.Errorf("failed to parse port: %v", err)
 	}
+	config.port = uint32(port)
 
-	awsRequestSigning, err := configureAWSAuth(in, ir, region)
-	if err != nil {
-		return err
-	}
-	awsRequestSigningAny, err := utils.MessageToAny(awsRequestSigning)
-	if err != nil {
-		return fmt.Errorf("failed to create aws request signing config: %v", err)
-	}
-
-	codecConfigAny, err := utils.MessageToAny(&envoy_upstream_codec.UpstreamCodec{})
-	if err != nil {
-		return fmt.Errorf("failed to create upstream codec config: %v", err)
-	}
-
-	if err := translatorutils.MutateHttpOptions(out, func(opts *envoy_upstreams_v3.HttpProtocolOptions) {
-		opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
-			ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
-				ProtocolConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
-					Http2ProtocolOptions: &envoy_core_v3.Http2ProtocolOptions{},
-				},
-			},
-		}
-		opts.CommonHttpProtocolOptions = &envoy_core_v3.HttpProtocolOptions{
-			IdleTimeout: &durationpb.Duration{
-				Seconds: 30,
-			},
-		}
-		opts.HttpFilters = append(opts.GetHttpFilters(), &envoy_hcm.HttpFilter{
-			Name: lambdaFilterName,
-			ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
-				TypedConfig: lambdaConfigAny,
-			},
-		})
-		opts.HttpFilters = append(opts.GetHttpFilters(), &envoy_hcm.HttpFilter{
-			Name: awsRequestSigningFilterName,
-			ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
-				TypedConfig: awsRequestSigningAny,
-			},
-		})
-		opts.HttpFilters = append(opts.GetHttpFilters(), &envoy_hcm.HttpFilter{
-			Name: upstreamCodecFilterName,
-			ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
-				TypedConfig: codecConfigAny,
-			},
-		})
-	}); err != nil {
-		return fmt.Errorf("failed to mutate http options: %v", err)
-	}
-
-	return nil
-}
-
-// getLambdaHostname returns the hostname for the lambda function. When using a custom endpoint
-// has been specified, it will be returned. Otherwise, the default lambda hostname is returned.
-func getLambdaHostname(in *v1alpha1.AwsBackend) string {
-	if in.Lambda.EndpointURL != "" {
-		return in.Lambda.EndpointURL
-	}
-	return fmt.Sprintf("lambda.%s.amazonaws.com", getRegion(in))
+	return config, nil
 }
 
 // processEndpointsAws processes the endpoints for the aws backend.
 func processEndpointsAws(_ *v1alpha1.AwsBackend) *ir.EndpointsForBackend {
 	return nil
-}
-
-// getRegion returns the region for the aws backend. If a region is specified, it will be returned.
-// Otherwise, the default region is returned.
-func getRegion(in *v1alpha1.AwsBackend) string {
-	if in.Region != nil {
-		return *in.Region
-	}
-	return defaultAWSRegion
 }
 
 // staticSecretDerivation is a helper struct to store the decoded secret values
