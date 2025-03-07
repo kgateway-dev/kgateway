@@ -186,12 +186,13 @@ TEST_PKG ?= ./... # Default to run all tests
 # This is a way for a user executing `make test` to be able to provide flags which we do not include by default
 # For example, you may want to run tests multiple times, or with various timeouts
 GINKGO_USER_FLAGS ?=
+GINKGO ?= go tool ginkgo
 
 .PHONY: test
 test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
-	$(GINKGO_ENV) go tool ginkgo -ldflags='$(LDFLAGS)' \
-	$(GINKGO_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
-	$(TEST_PKG)
+	$(GINKGO_ENV) $(GINKGO) -ldflags='$(LDFLAGS)' \
+		$(GINKGO_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
+		$(TEST_PKG)
 
 # https://go.dev/blog/cover#heat-maps
 .PHONY: test-with-coverage
