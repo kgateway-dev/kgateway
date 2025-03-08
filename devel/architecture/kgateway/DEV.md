@@ -12,7 +12,8 @@ Going down further, to enable these goals we use [KRT](https://github.com/istio/
 - The ability to complement controllers of custom Intermediate Representation (henceforth IR).
 - Automatically track object dependencies and changes and only invoke logic that depends on the object that changed.
 
-# CRD Journey
+# CRD Lifecycle
+
 How does a user CRD make it into envoy?
 
 We have 3 main translation lifecycles: Routes & Listeners, Clusters and Endpoints.
@@ -23,15 +24,13 @@ Envoy Routes & Listeners translate from Gateways, HttpRoutes, and user policies 
 
 ## Policies (Contributed by Plugins)
 
+To add a policy to KGateway, it needs to be contributed through a **plugin**. Each plugin acts as an independent Kubernetes controller that provides Kgateway with a **KRT collection of IR policies** (this is done by translating the policy CRD to a policy IR). The second important thing a plugin provides is a function that allocates a **translation pass** for the gateway translation phase. This will be used when doing xDS translation. More on that later.
+
 To add a policy to Kgateway we need to 'contribute' it as a plugin. You can think of a plugin as an
 independent k8s controller that translates a CRD to an krt-collection of policies in IR form Kgateway can understand (it's called `ir.PolicyWrapper`).
 A plugin lifecycle is the length of the program - it doesn't reset on each translation (we will explain later where we hold translation state).
 
-
-The first step is to convert each user policy into an IR form. This is done by creating a collection of these objects from k8s, and transforming the collection to an IR representation.
-
-When a plugin can contribute a policy to Kgateway, Kgateway uses policy collection to perform policy attachment - this is the process of assigning policies to the object they impact (like HttpRoutes) based on their targetRefs.
-It's the plugin responsibility to convert the policy CRD to the IR form. Ideally, the IR should look as close as possible to the envoy configuration, so this translation only happens when the policy CRD changes.
+When a plugin can contribute a policy to Kgateway, Kgateway uses policy collection to perform **policy attachment** - this is the process of assigning policies to the object they impact (like HttpRoutes) based on their targetRefs.
 
 You can see in the Plugin interface a field called `ContributesPolicies` which is a map of GK -> `PolicyPlugin`.
 The policy plugin contains a bunch of fields, but for our discussion we'll focus on these two:
@@ -63,7 +62,7 @@ type PolicyWrapper struct {
 The system will make use of the targetRefs to attach the policy IR to Listners and HttpRoutes. You will then 
 get access to the IR during translation (more on that later).
 
-When translating a Policy to a PolicyIR, you'll want to take the translation as far as you can. For example, if your policy will result in an envoy
+When translating a Policy to a PolicyIR, you'll want to take the translation **as close as you can** to envoy's config structures. For example, if your policy will result in an envoy
 PerFilterConfig on a route, the PolicyIR should contain the proto.Any that will be applied there. Doing most of the policy translation at this phase as advantages:
 - Policy will only re-translate when the policy CRD changes
 - We can expose errors in translation on the policy CRD status as soon as the policy is written (no need to depend on later translation phases).
@@ -98,3 +97,7 @@ This allows us for example translate a route, and in response to that hold state
 When it translates GW-api route rules to envoy routes, it reads the `AttachedPolicies` and calls the appropriate function in the `ProxyTranslationPass` and passes in 
 the attached policy IR. This let's the policy plugin code the modify the route or listener as needed, based on the policy IR (add filters, add filter route config, etc..).
 Then policy plugins are invoked with the attached policy IR, and can modify the envoy protbufs as needed 
+
+# Diagram of the translation lifecycle
+
+![](translation.svg)
