@@ -23,7 +23,7 @@ func (p *Provider) AssertEnvoyAdminApi(
 
 	portForwarder, err := p.clusterContext.Cli.StartPortForward(ctx,
 		portforward.WithDeployment(envoyDeployment.GetName(), envoyDeployment.GetNamespace()),
-		portforward.WithPorts(int(wellknown.EnvoyAdminPort), int(wellknown.EnvoyAdminPort)),
+		portforward.WithRemotePort(int(wellknown.EnvoyAdminPort)),
 	)
 	p.Require.NoError(err, "can open port-forward")
 	defer func() {
@@ -35,7 +35,7 @@ func (p *Provider) AssertEnvoyAdminApi(
 		WithReceiver(io.Discard). // adminAssertion can overwrite this
 		WithCurlOptions(
 			curl.WithRetries(3, 0, 10),
-			curl.WithPort(int(wellknown.EnvoyAdminPort)),
+			curl.WithHostPort(portForwarder.Address()),
 		)
 
 	for _, adminAssertion := range adminAssertions {

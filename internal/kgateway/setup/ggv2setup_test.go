@@ -107,18 +107,32 @@ func init() {
 	grpclog.SetLoggerV2(grpclog.NewLoggerV2WithVerbosity(writer, writer, writer, 100))
 }
 
+func TestWithAutoDns(t *testing.T) {
+	os.Setenv("KGW_DNS_LOOKUP_FAMILY", "AUTO")
+	t.Cleanup(func() {
+		os.Unsetenv("KGW_DNS_LOOKUP_FAMILY")
+	})
+	runScenario(t, "testdata/autodns")
+}
+
 func TestScenarios(t *testing.T) {
+	// set global settings env vars; "default" ggv2setup_tests assume these are set to true
+	os.Setenv("KGW_ENABLE_ISTIO_INTEGRATION", "true")
+	os.Setenv("KGW_ENABLE_AUTO_MTLS", "true")
+	t.Cleanup(func() {
+		os.Unsetenv("KGW_ENABLE_ISTIO_INTEGRATION")
+		os.Unsetenv("KGW_ENABLE_AUTO_MTLS")
+	})
+	runScenario(t, "testdata")
+}
+
+func runScenario(t *testing.T, scenarioDir string) {
 	proxy_syncer.UseDetailedUnmarshalling = true
 	writer.set(t)
 
 	os.Setenv("POD_NAMESPACE", "gwtest") // TODO: is this still needed?
-	// set global settings env vars; current ggv2setup_tests all assume these are set to true
-	os.Setenv("KGW_ENABLE_ISTIO_INTEGRATION", "true")
-	os.Setenv("KGW_ENABLE_AUTO_MTLS", "true")
 	t.Cleanup(func() {
 		os.Unsetenv("POD_NAMESPACE")
-		os.Unsetenv("KGW_ENABLE_ISTIO_INTEGRATION")
-		os.Unsetenv("KGW_ENABLE_AUTO_MTLS")
 	})
 
 	testEnv := &envtest.Environment{
@@ -203,7 +217,7 @@ func TestScenarios(t *testing.T) {
 	time.Sleep(time.Second)
 
 	// list all yamls in test data
-	files, err := os.ReadDir("testdata")
+	files, err := os.ReadDir(scenarioDir)
 	if err != nil {
 		t.Fatalf("failed to read dir: %v", err)
 	}
@@ -211,7 +225,7 @@ func TestScenarios(t *testing.T) {
 		// run tests with the yaml files (but not -out.yaml files)/s
 		parentT := t
 		if strings.HasSuffix(f.Name(), ".yaml") && !strings.HasSuffix(f.Name(), "-out.yaml") {
-			fullpath := filepath.Join("testdata", f.Name())
+			fullpath := filepath.Join(scenarioDir, f.Name())
 			t.Run(strings.TrimSuffix(f.Name(), ".yaml"), func(t *testing.T) {
 				writer.set(t)
 				t.Cleanup(func() {
