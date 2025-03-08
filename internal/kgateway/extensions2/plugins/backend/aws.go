@@ -1,26 +1,21 @@
 package backend
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"net/url"
 	"strconv"
 	"unicode/utf8"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_aws_common_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/aws/v3"
 	envoy_lambda_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/aws_lambda/v3"
 	envoy_request_signing_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/aws_request_signing/v3"
 	envoy_upstream_codec "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/upstream_codec/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -54,13 +49,9 @@ const (
 
 // AwsIr is the internal representation of an AWS backend.
 type AwsIr struct {
-	region           string
-	accountId        string
-	secret           *ir.Secret
-	lambdaEndpoint   *lambdaEndpointConfig
-	lambdaArn        string
-	lambdaInvokeMode envoy_lambda_v3.Config_InvocationMode
-	lambdaFilters    *lambdaFilters
+	lambdaFilters         *lambdaFilters
+	lambdaEndpoint        *lambdaEndpointConfig
+	lambdaTransportSocket *envoy_core_v3.TransportSocket
 }
 
 // Equals checks if two AwsIr objects are equal.
@@ -69,30 +60,15 @@ func (u *AwsIr) Equals(other any) bool {
 	if !ok {
 		return false
 	}
-	if u.region != otherAws.region {
-		return false
-	}
-	if u.accountId != otherAws.accountId {
-		return false
-	}
-	if !maps.EqualFunc(data(u.secret), data(otherAws.secret), func(a, b []byte) bool {
-		return bytes.Equal(a, b)
-	}) {
-		return false
-	}
 	if !u.lambdaEndpoint.Equals(otherAws.lambdaEndpoint) {
-		return false
-	}
-	if u.lambdaArn != otherAws.lambdaArn {
-		return false
-	}
-	if u.lambdaInvokeMode != otherAws.lambdaInvokeMode {
 		return false
 	}
 	if !u.lambdaFilters.Equals(otherAws.lambdaFilters) {
 		return false
 	}
-
+	if !proto.Equal(u.lambdaTransportSocket, otherAws.lambdaTransportSocket) {
+		return false
+	}
 	return true
 }
 
@@ -106,21 +82,10 @@ func processAws(ctx context.Context, in *v1alpha1.AwsBackend, ir *AwsIr, out *en
 	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
 		Type: envoy_config_cluster_v3.Cluster_LOGICAL_DNS,
 	}
-	if ir.lambdaEndpoint.useTLS {
-		// TODO(yuval-k): Add verification context
-		typedConfig, err := utils.MessageToAny(&envoyauth.UpstreamTlsContext{
-			Sni: ir.lambdaEndpoint.hostname,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to create tls context: %v", err)
-		}
-		out.TransportSocket = &envoy_config_core_v3.TransportSocket{
-			Name: wellknown.TransportSocketTls,
-			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{
-				TypedConfig: typedConfig,
-			},
-		}
+	if ir.lambdaTransportSocket != nil {
+		out.TransportSocket = ir.lambdaTransportSocket
 	}
+
 	if err := translatorutils.MutateHttpOptions(out, func(opts *envoy_upstreams_v3.HttpProtocolOptions) {
 		opts.UpstreamProtocolOptions = &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig_{
 			ExplicitHttpConfig: &envoy_upstreams_v3.HttpProtocolOptions_ExplicitHttpConfig{
@@ -204,16 +169,16 @@ func (u *lambdaFilters) Equals(other *lambdaFilters) bool {
 }
 
 // buildLambdaFilters configures cluster's upstream HTTP filters for the given backend.
-func buildLambdaFilters(ir *AwsIr) (*lambdaFilters, error) {
+func buildLambdaFilters(arn, region string, secret *ir.Secret, invokeMode envoy_lambda_v3.Config_InvocationMode) (*lambdaFilters, error) {
 	lambdaConfigAny, err := utils.MessageToAny(&envoy_lambda_v3.Config{
-		Arn:            ir.lambdaArn,
-		InvocationMode: ir.lambdaInvokeMode,
+		Arn:            arn,
+		InvocationMode: invokeMode,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create lambda config: %v", err)
 	}
 
-	awsRequestSigning, err := configureAWSAuth(ir.secret, ir.region)
+	awsRequestSigning, err := configureAWSAuth(secret, region)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create aws request signing config: %v", err)
 	}

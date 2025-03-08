@@ -8,10 +8,13 @@ import (
 	"maps"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
@@ -30,6 +33,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 )
@@ -134,44 +138,66 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
+// buildTranslateFunc builds a function that translates a Backend to a BackendIr that
+// the plugin can use to build the envoy config.
+//
+// TODO(tim): Any errors encountered here should be returned and stored on the BackendIR
+// so that we can report them in the status once https://github.com/kgateway-dev/kgateway/issues/10555
+// is resolved.
 func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex) func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *BackendIr {
 	return func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *BackendIr {
 		var backendIr BackendIr
 		switch i.Spec.Type {
 		case v1alpha1.BackendTypeAWS:
-			awsIr := &AwsIr{}
-			awsIr.accountId = i.Spec.Aws.AccountId
-			awsIr.region = getRegion(i.Spec.Aws)
-			awsIr.lambdaInvokeMode = getLambdaInvocationMode(i.Spec.Aws)
+			region := getRegion(i.Spec.Aws)
+			invokeMode := getLambdaInvocationMode(i.Spec.Aws)
 
-			lambdaArn, err := buildLambdaARN(i.Spec.Aws, awsIr.region)
+			lambdaArn, err := buildLambdaARN(i.Spec.Aws, region)
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Error(err)
 			}
-			awsIr.lambdaArn = lambdaArn
 
 			endpointConfig, err := configureLambdaEndpoint(i.Spec.Aws)
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Error(err)
 			}
-			awsIr.lambdaEndpoint = endpointConfig
 
-			if i.Spec.Aws.Auth != nil && i.Spec.Aws.Auth.Type == v1alpha1.AwsAuthTypeSecret {
-				ns := i.GetNamespace()
-				secret, err := pluginutils.GetSecretIr(secrets, krtctx, i.Spec.Aws.Auth.Secret.Name, ns)
+			var lambdaTransportSocket *envoy_config_core_v3.TransportSocket
+			if endpointConfig.useTLS {
+				// TODO(yuval-k): Add verification context
+				typedConfig, err := utils.MessageToAny(&envoyauth.UpstreamTlsContext{
+					Sni: endpointConfig.hostname,
+				})
 				if err != nil {
 					contextutils.LoggerFrom(ctx).Error(err)
 				}
-				awsIr.secret = secret
+				lambdaTransportSocket = &envoy_config_core_v3.TransportSocket{
+					Name: envoywellknown.TransportSocketTls,
+					ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{
+						TypedConfig: typedConfig,
+					},
+				}
 			}
 
-			lambdaFilters, err := buildLambdaFilters(awsIr)
+			var secret *ir.Secret
+			if i.Spec.Aws.Auth != nil && i.Spec.Aws.Auth.Type == v1alpha1.AwsAuthTypeSecret {
+				var err error
+				secret, err = pluginutils.GetSecretIr(secrets, krtctx, i.Spec.Aws.Auth.Secret.Name, i.GetNamespace())
+				if err != nil {
+					contextutils.LoggerFrom(ctx).Error(err)
+				}
+			}
+
+			lambdaFilters, err := buildLambdaFilters(lambdaArn, region, secret, invokeMode)
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Error(err)
 			}
-			awsIr.lambdaFilters = lambdaFilters
 
-			backendIr.AwsIr = awsIr
+			backendIr.AwsIr = &AwsIr{
+				lambdaEndpoint:        endpointConfig,
+				lambdaTransportSocket: lambdaTransportSocket,
+				lambdaFilters:         lambdaFilters,
+			}
 		case v1alpha1.BackendTypeAI:
 			ns := i.GetNamespace()
 			if i.Spec.AI.LLM != nil {
