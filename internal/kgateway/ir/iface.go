@@ -57,6 +57,9 @@ type HcmContext struct {
 	Policy PolicyIR
 }
 
+// ProxyTranslationPass represents a single translation pass for a gateway. It can hold state
+// for the duration of the translation.
+// Each of the functions here will be called in the order they appear in the interface.
 type ProxyTranslationPass interface {
 	//	Name() string
 	// called 1 time for each listener
@@ -90,12 +93,6 @@ type ProxyTranslationPass interface {
 		pCtx *RouteContext,
 		out *envoy_config_route_v3.Route) error
 
-	// Appliesa policy attached to a specific Backend (via extensionRef on the BackendRef).
-	ApplyForRouteBackend(
-		ctx context.Context,
-		policy PolicyIR,
-		pCtx *RouteBackendContext,
-	) error
 	// no policy applied - this is called for every backend in a route.
 	// For this to work the backend needs to register itself as a policy. TODO: rethink this.
 	ApplyForBackend(
@@ -103,6 +100,13 @@ type ProxyTranslationPass interface {
 		pCtx *RouteBackendContext,
 		in HttpBackend,
 		out *envoy_config_route_v3.Route,
+	) error
+
+	// Applies a policy attached to a specific Backend (via extensionRef on the BackendRef).
+	ApplyForRouteBackend(
+		ctx context.Context,
+		policy PolicyIR,
+		pCtx *RouteBackendContext,
 	) error
 
 	// called 1 time per filter-chain.
