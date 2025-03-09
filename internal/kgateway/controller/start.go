@@ -178,7 +178,9 @@ func pluginFactoryWithBuiltin(extraPlugins func(ctx context.Context, commoncol *
 	return func(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
 		plugins := registry.Plugins(ctx, commoncol)
 		plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
-		plugins = append(plugins, extraPlugins(ctx, commoncol)...)
+		if extraPlugins != nil {
+			plugins = append(plugins, extraPlugins(ctx, commoncol)...)
+		}
 		return registry.MergePlugins(plugins...)
 	}
 }
