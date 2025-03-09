@@ -123,6 +123,11 @@ func extractTargetRefs(cm *corev1.ConfigMap) []ir.PolicyTargetRef {
 // Create a collection of our policies. This will be done by converting a configmap collection
 // to our policy IR.
 func ourPolicies(commoncol *common.CommonCollections) krt.Collection[ir.PolicyWrapper] {
+	// We create 2 collections here - one for the source config maps, and one for the policy IR.
+	// Whenever creating a new krtCollection use commoncol.KrtOpts.ToOptions("<Name>") to provide the
+	// collection with common options and a name. It's important so that the collection appears in
+	// the krt debug page.
+
 	// get a configmap client going
 	configMapCol := krt.WrapClient(kclient.New[*corev1.ConfigMap](commoncol.Client), commoncol.KrtOpts.ToOptions("ConfigMaps")...)
 
@@ -144,7 +149,7 @@ func ourPolicies(commoncol *common.CommonCollections) krt.Collection[ir.PolicyWr
 			TargetRefs: extractTargetRefs(i),
 		}
 		return pol
-	})
+	}, commoncol.KrtOpts.ToOptions("MetadataPolicies")...)
 
 }
 
@@ -160,13 +165,15 @@ type ourPolicyPass struct {
 
 // ApplyForRoute is called when a an HTTPRouteRule is being translated to an envoy route.
 func (s *ourPolicyPass) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext, out *envoy_config_route_v3.Route) error {
-	// get our policy IR
+	// get our policy IR. Kgateway used the targetRef to attach the policy to the HTTPRoute. and now as it
+	// translates the HTTPRoute to xDS, it calls our plugin and passes the policy for the plugin's translation pass to do the
+	// policy to xDS translation.
 	cmIr, ok := pCtx.Policy.(*configMapIr)
 	if !ok {
 		// should never happen
 		return nil
 	}
-	// apply the metadata from our IR to the route
+	// apply the metadata from our IR to envoy's route object
 	if out.Metadata == nil {
 		out.Metadata = &envoy_core_v3.Metadata{}
 	}
@@ -229,7 +236,7 @@ func pluginFactory(ctx context.Context, commoncol *common.CommonCollections) []e
 
 func main() {
 
-	// TODO: move this from internal to public.
+	// TODO: move setup.StartGGv2 from internal to public.
 	// Start Kgateway and provide our plugin.
 	// This demonstrates how to start Kgateway with a custom plugin.
 	// This binary is the control plane. normally it would be packaged in a docker image and run
