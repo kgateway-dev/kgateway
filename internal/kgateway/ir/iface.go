@@ -49,8 +49,9 @@ func (r *RouteBackendContext) GetTypedConfig(key string) proto.Message {
 }
 
 type RouteContext struct {
-	Policy PolicyIR
-	In     HttpRouteRuleMatchIR
+	FilterChainName string
+	Policy          PolicyIR
+	In              HttpRouteRuleMatchIR
 }
 
 type HcmContext struct {
