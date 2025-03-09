@@ -75,7 +75,7 @@ If the application that we’re running can logs requests that it receives, we c
 
 # Testing automtls
 
-The Istio e2e integration tests automtls functionality with Gloo Gateway (Gloo Edge API) and Gloo Gateway (Kubernetes Gateway API) resources. This
+The Istio e2e integration tests automtls functionality with kgateway resources. This
 can be manually tested by following the steps below on a kind cluster:
 
 1. Setup environment and kind cluster
