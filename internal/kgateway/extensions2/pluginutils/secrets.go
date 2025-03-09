@@ -11,6 +11,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
+// TODO: move to internal/kgateway/krtcollections package near the secret index collection?
 func GetSecretIr(secrets *krtcollections.SecretIndex, krtctx krt.HandlerContext, secretName, ns string) (*ir.Secret, error) {
 	secretRef := gwv1.SecretObjectReference{
 		Name: gwv1.ObjectName(secretName),

@@ -34,6 +34,7 @@ func (s *SecretIndex) HasSynced() bool {
 	return true
 }
 
+// TODO: comment seems out of date; method is already public and does refgrant logic
 // if we want to make this function public, make it do ref grants
 func (s *SecretIndex) GetSecret(kctx krt.HandlerContext, from From, secretRef gwv1.SecretObjectReference) (*ir.Secret, error) {
 	secretKind := "Secret"
