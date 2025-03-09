@@ -68,10 +68,10 @@ func (d *backendDestination) Equals(in any) bool {
 	return d.FunctionName == d2.FunctionName
 }
 
-type BackendIr struct {
-	AwsSecret     *ir.Secret
-	AISecret      *ir.Secret
-	AIMultiSecret map[string]*ir.Secret
+type backendIr struct {
+	awsSecret     *ir.Secret
+	aiSecret      *ir.Secret
+	aiMultiSecret map[string]*ir.Secret
 }
 
 func data(s *ir.Secret) map[string][]byte {
@@ -81,22 +81,22 @@ func data(s *ir.Secret) map[string][]byte {
 	return s.Data
 }
 
-func (u *BackendIr) Equals(other any) bool {
-	otherBackend, ok := other.(*BackendIr)
+func (u *backendIr) Equals(other any) bool {
+	otherBackend, ok := other.(*backendIr)
 	if !ok {
 		return false
 	}
-	if !maps.EqualFunc(data(u.AwsSecret), data(otherBackend.AwsSecret), func(a, b []byte) bool {
+	if !maps.EqualFunc(data(u.awsSecret), data(otherBackend.awsSecret), func(a, b []byte) bool {
 		return bytes.Equal(a, b)
 	}) {
 		return false
 	}
-	if !maps.EqualFunc(data(u.AISecret), data(otherBackend.AISecret), func(a, b []byte) bool {
+	if !maps.EqualFunc(data(u.aiSecret), data(otherBackend.aiSecret), func(a, b []byte) bool {
 		return bytes.Equal(a, b)
 	}) {
 		return false
 	}
-	if !maps.EqualFunc(u.AIMultiSecret, otherBackend.AIMultiSecret, func(a, b *ir.Secret) bool {
+	if !maps.EqualFunc(u.aiMultiSecret, otherBackend.aiMultiSecret, func(a, b *ir.Secret) bool {
 		return maps.EqualFunc(data(a), data(b), func(a, b []byte) bool {
 			return bytes.Equal(a, b)
 		})
@@ -189,9 +189,9 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	}
 }
 
-func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex) func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *BackendIr {
-	return func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *BackendIr {
-		var backendIr BackendIr
+func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex) func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *backendIr {
+	return func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *backendIr {
+		var backendIr backendIr
 		switch i.Spec.Type {
 		case v1alpha1.BackendTypeAWS:
 			if i.Spec.Aws == nil {
@@ -206,7 +206,7 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Error(err)
 			}
-			backendIr.AwsSecret = secret
+			backendIr.awsSecret = secret
 		case v1alpha1.BackendTypeAI:
 			ns := i.GetNamespace()
 			if i.Spec.AI.LLM != nil {
@@ -217,10 +217,10 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 					if err != nil {
 						contextutils.LoggerFrom(ctx).Error(err)
 					}
-					backendIr.AISecret = secret
+					backendIr.aiSecret = secret
 				}
 			} else if i.Spec.AI.MultiPool != nil {
-				backendIr.AIMultiSecret = map[string]*ir.Secret{}
+				backendIr.aiMultiSecret = map[string]*ir.Secret{}
 				for idx, priority := range i.Spec.AI.MultiPool.Priorities {
 					for jdx, pool := range priority.Pool {
 						secretRef := getAISecretRef(pool.Provider)
@@ -230,7 +230,7 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 							if err != nil {
 								contextutils.LoggerFrom(ctx).Error(err)
 							}
-							backendIr.AIMultiSecret[getMultiPoolSecretKey(idx, jdx, secretRef.Name)] = secret
+							backendIr.aiMultiSecret[getMultiPoolSecretKey(idx, jdx, secretRef.Name)] = secret
 						}
 					}
 				}
@@ -264,7 +264,7 @@ func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_confi
 		return
 	}
 
-	ir, ok := in.ObjIr.(*BackendIr)
+	ir, ok := in.ObjIr.(*backendIr)
 	if !ok {
 		// log - should never happen
 		return
@@ -277,7 +277,7 @@ func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_confi
 	case spec.Type == v1alpha1.BackendTypeAWS:
 		processAws(ctx, spec.Aws, ir, out)
 	case spec.Type == v1alpha1.BackendTypeAI:
-		err := ai.ProcessAIBackend(ctx, spec.AI, ir.AISecret, out)
+		err := ai.ProcessAIBackend(ctx, spec.AI, ir.aiSecret, out)
 		if err != nil {
 			// TODO: report error on status
 			contextutils.LoggerFrom(ctx).Error(err)

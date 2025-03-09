@@ -26,7 +26,7 @@ const (
 	defaultAWSRegion = "us-east-1"
 )
 
-func processAws(ctx context.Context, in *v1alpha1.AwsBackend, ir *BackendIr, out *envoy_config_cluster_v3.Cluster) {
+func processAws(ctx context.Context, in *v1alpha1.AwsBackend, ir *backendIr, out *envoy_config_cluster_v3.Cluster) {
 	// configure Envoy cluster routing info
 	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
 		Type: envoy_config_cluster_v3.Cluster_LOGICAL_DNS,
@@ -68,15 +68,15 @@ func processAws(ctx context.Context, in *v1alpha1.AwsBackend, ir *BackendIr, out
 	// Check that one of the supported auth paradigms in enabled.
 	// Currently: static secret ref, credential discovery or ServiceAccountCreds such in eks
 
-	if ir.AwsSecret == nil {
+	if ir.awsSecret == nil {
 		// return errors.Errorf("no aws secret provided. consider setting enableCredentialsDiscovey to true or enabling service account credentials if running in EKS")
 		return
 	}
 
 	// If static secret is set retrieve the information needed
 	var derivedSecret staticSecretDerivation
-	if ir.AwsSecret != nil {
-		derivedSecret, err = deriveStaticSecret(ir.AwsSecret)
+	if ir.awsSecret != nil {
+		derivedSecret, err = deriveStaticSecret(ir.awsSecret)
 		if err != nil {
 			//			return err
 			return
