@@ -39,6 +39,7 @@ import (
 
 const transformationFilterNamePrefix = "transformation"
 const rustformationFilterNamePrefix = "dynamic_modules/simple_mutations"
+const metadataRouteTransformation = "transformation/helper"
 
 type routePolicy struct {
 	ct       time.Time
@@ -222,7 +223,7 @@ func (p *routePolicyPluginGwPass) ApplyForRoute(ctx context.Context, pCtx *ir.Ro
 				},
 			},
 		}
-		outputRoute.GetTypedPerFilterConfig()["helper/perroute/transform"], _ = utils.MessageToAny(setmetaTransform)
+		outputRoute.GetTypedPerFilterConfig()[metadataRouteTransformation], _ = utils.MessageToAny(setmetaTransform)
 
 		p.setTransformationInChain = true
 	}
@@ -312,7 +313,7 @@ func (p *routePolicyPluginGwPass) HttpFilters(ctx context.Context, fcc ir.Filter
 
 		// filters = append(filters, plugins.MustNewStagedFilter(setFilterStateFilterName,
 		// 	&set_filter_statev3.Config{}, plugins.AfterStage(plugins.FaultStage)))
-		filters = append(filters, plugins.MustNewStagedFilter("helper/perroute/transform",
+		filters = append(filters, plugins.MustNewStagedFilter(metadataRouteTransformation,
 			&transformationpb.FilterTransformations{},
 			plugins.AfterStage(plugins.FaultStage)))
 	}
