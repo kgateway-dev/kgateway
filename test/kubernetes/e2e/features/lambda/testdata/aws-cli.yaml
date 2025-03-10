@@ -1,0 +1,45 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: aws-cli
+  namespace: lambda-test
+  labels:
+    app.kubernetes.io/name: aws-cli
+spec:
+  terminationGracePeriodSeconds: 0
+  containers:
+  - name: aws-cli
+    image: amazon/aws-cli:latest
+    command:
+    - /bin/sh
+    - -c
+    - |
+      # Install dependencies
+      yum install -y zip tar && \
+      touch /tmp/deps-installed
+      # Keep container running
+      sleep infinity
+    env:
+    - name: AWS_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: aws-creds
+          key: accessKey
+    - name: AWS_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: aws-creds
+          key: secretKey
+    - name: AWS_DEFAULT_REGION
+      value: us-east-1
+    readinessProbe:
+      exec:
+        command:
+        - zip
+        - --version
+      initialDelaySeconds: 5
+      periodSeconds: 5
+  volumes:
+  - name: deps-check
+    emptyDir: {}

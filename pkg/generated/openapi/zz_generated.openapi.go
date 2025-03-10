@@ -20,7 +20,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPromptEnrichment":         schema_kgateway_v2_api_v1alpha1_AIPromptEnrichment(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIPromptGuard":              schema_kgateway_v2_api_v1alpha1_AIPromptGuard(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AIRoutePolicy":              schema_kgateway_v2_api_v1alpha1_AIRoutePolicy(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AWSAuthIRSA":                schema_kgateway_v2_api_v1alpha1_AWSAuthIRSA(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLog":                  schema_kgateway_v2_api_v1alpha1_AccessLog(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AccessLogFilter":            schema_kgateway_v2_api_v1alpha1_AccessLogFilter(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtension":                schema_kgateway_v2_api_v1alpha1_AiExtension(ref),
@@ -599,28 +598,6 @@ func schema_kgateway_v2_api_v1alpha1_AIRoutePolicy(ref common.ReferenceCallback)
 	}
 }
 
-func schema_kgateway_v2_api_v1alpha1_AWSAuthIRSA(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "AWSAuthIRSA specifies the configuration for using IRSA.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"roleARN": {
-						SchemaProps: spec.SchemaProps{
-							Description: "RoleARN is the AWS IAM Role ARN used for pod identity.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-				},
-				Required: []string{"roleARN"},
-			},
-		},
-	}
-}
-
 func schema_kgateway_v2_api_v1alpha1_AccessLog(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -900,12 +877,6 @@ func schema_kgateway_v2_api_v1alpha1_AwsAuth(ref common.ReferenceCallback) commo
 							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
 						},
 					},
-					"irsa": {
-						SchemaProps: spec.SchemaProps{
-							Description: "IRSA specifies the IRSA configuration to use for the backend.",
-							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AWSAuthIRSA"),
-						},
-					},
 				},
 				Required: []string{"type"},
 			},
@@ -915,7 +886,6 @@ func schema_kgateway_v2_api_v1alpha1_AwsAuth(ref common.ReferenceCallback) commo
 						map[string]interface{}{
 							"discriminator": "type",
 							"fields-to-discriminateBy": map[string]interface{}{
-								"irsa":   "IRSA",
 								"secret": "Secret",
 							},
 						},
@@ -924,7 +894,7 @@ func schema_kgateway_v2_api_v1alpha1_AwsAuth(ref common.ReferenceCallback) commo
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AWSAuthIRSA", "k8s.io/api/core/v1.LocalObjectReference"},
+			"k8s.io/api/core/v1.LocalObjectReference"},
 	}
 }
 
