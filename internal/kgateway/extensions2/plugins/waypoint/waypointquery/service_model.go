@@ -40,7 +40,7 @@ func (s Service) IsHeadless() bool {
 	case *corev1.Service:
 		return o.Spec.ClusterIP == "None"
 	case *istionetworking.ServiceEntry:
-		return o.Spec.Resolution == networkingv1beta1.ServiceEntry_NONE
+		return o.Spec.GetResolution() == networkingv1beta1.ServiceEntry_NONE
 	default:
 		return false
 	}
@@ -200,7 +200,7 @@ func FromService(svc *corev1.Service) Service {
 }
 
 func FromServiceEntry(se *istionetworking.ServiceEntry) Service {
-	addrs := append(se.Spec.Addresses, slices.Map(se.Status.GetAddresses(), func(a *networkingv1beta1.ServiceEntryAddress) string {
+	addrs := append(se.Spec.GetAddresses(), slices.Map(se.Status.GetAddresses(), func(a *networkingv1beta1.ServiceEntryAddress) string {
 		return a.Value
 	})...)
 
@@ -209,7 +209,7 @@ func FromServiceEntry(se *istionetworking.ServiceEntry) Service {
 		GroupKind: wellknown.ServiceEntryGVK.GroupKind(),
 		Addresses: addrs,
 		Hostnames: se.Spec.GetHosts(),
-		Ports: slices.Map(se.Spec.Ports, func(p *networkingv1beta1.ServicePort) ServicePort {
+		Ports: slices.Map(se.Spec.GetPorts(), func(p *networkingv1beta1.ServicePort) ServicePort {
 			return ServicePort{
 				Port:       int32(p.Number),
 				Protocol:   string(p.Protocol),
@@ -258,12 +258,12 @@ func FromPod(pod corev1.Pod) Workload {
 
 func FromWorkloadEntry(we *istionetworking.WorkloadEntry) Workload {
 	var addrs []string
-	if len(we.Spec.Address) > 0 {
-		addrs = []string{we.Spec.Address}
+	if len(we.Spec.GetAddress()) > 0 {
+		addrs = []string{we.Spec.GetAddress()}
 	}
 	return Workload{
 		Object:    we,
 		Addresses: addrs,
-		ports:     we.Spec.Ports,
+		ports:     we.Spec.GetPorts(),
 	}
 }

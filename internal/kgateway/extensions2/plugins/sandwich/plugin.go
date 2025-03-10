@@ -106,7 +106,7 @@ func (p *sandwichedTranslationPass) ApplyListenerPlugin(ctx context.Context, pCt
 		return
 	}
 
-	out.ListenerFilters = append(out.ListenerFilters, ProxyProtocolTLV)
+	out.ListenerFilters = append(out.GetListenerFilters(), ProxyProtocolTLV)
 	p.isSandwiched = true
 
 	return
