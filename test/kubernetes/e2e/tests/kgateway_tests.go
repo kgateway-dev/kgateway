@@ -3,6 +3,7 @@ package tests
 import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/basicrouting"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/lambda"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/transformation"
 
 	// "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/admin_server"
@@ -28,6 +29,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 
 	kubeGatewaySuiteRunner.Register("BasicRouting", basicrouting.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Deployer", deployer.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("Lambda", lambda.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Transforms", transformation.NewTestingSuite)
 
 	// kubeGatewaySuiteRunner.Register("HttpListenerOptions", http_listener_options.NewTestingSuite)

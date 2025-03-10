@@ -11,9 +11,8 @@ import (
 // AwsAuthApplyConfiguration represents a declarative configuration of the AwsAuth type for use
 // with apply.
 type AwsAuthApplyConfiguration struct {
-	Type   *apiv1alpha1.AwsAuthType       `json:"type,omitempty"`
-	Secret *v1.LocalObjectReference       `json:"secret,omitempty"`
-	IRSA   *AWSAuthIRSAApplyConfiguration `json:"irsa,omitempty"`
+	Type   *apiv1alpha1.AwsAuthType `json:"type,omitempty"`
+	Secret *v1.LocalObjectReference `json:"secret,omitempty"`
 }
 
 // AwsAuthApplyConfiguration constructs a declarative configuration of the AwsAuth type for use with
@@ -35,13 +34,5 @@ func (b *AwsAuthApplyConfiguration) WithType(value apiv1alpha1.AwsAuthType) *Aws
 // If called multiple times, the Secret field is set to the value of the last call.
 func (b *AwsAuthApplyConfiguration) WithSecret(value v1.LocalObjectReference) *AwsAuthApplyConfiguration {
 	b.Secret = &value
-	return b
-}
-
-// WithIRSA sets the IRSA field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the IRSA field is set to the value of the last call.
-func (b *AwsAuthApplyConfiguration) WithIRSA(value *AWSAuthIRSAApplyConfiguration) *AwsAuthApplyConfiguration {
-	b.IRSA = value
 	return b
 }

@@ -2,6 +2,7 @@ package backend
 
 import (
 	"context"
+	"fmt"
 	"net/netip"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -12,19 +13,17 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 )
 
-func processStatic(ctx context.Context, in *v1alpha1.StaticBackend, out *envoy_config_cluster_v3.Cluster) {
+func processStatic(ctx context.Context, in *v1alpha1.StaticBackend, out *envoy_config_cluster_v3.Cluster) error {
 	var hostname string
 	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
 		Type: envoy_config_cluster_v3.Cluster_STATIC,
 	}
 	for _, host := range in.Hosts {
 		if host.Host == "" {
-			//	return errors.Errorf("addr cannot be empty for host")
-			return
+			return fmt.Errorf("addr cannot be empty for host")
 		}
 		if host.Port == 0 {
-			//return errors.Errorf("port cannot be empty for host")
-			return
+			return fmt.Errorf("port cannot be empty for host")
 		}
 
 		_, err := netip.ParseAddr(host.Host)
@@ -81,6 +80,7 @@ func processStatic(ctx context.Context, in *v1alpha1.StaticBackend, out *envoy_c
 		//		// fix issue where ipv6 addr cannot bind
 		//		out.DnsLookupFamily = envoy_config_cluster_v3.Cluster_V4_ONLY
 	}
+	return nil
 }
 
 func processEndpointsStatic(in *v1alpha1.StaticBackend) *ir.EndpointsForBackend {

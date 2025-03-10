@@ -6,24 +6,24 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"time"
-
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/watch"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	awspb "github.com/solo-io/envoy-gloo/go/config/filter/http/aws_lambda/v2"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoywellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/solo-io/go-utils/contextutils"
 	"istio.io/istio/pkg/config/schema/kubeclient"
 	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
@@ -33,45 +33,21 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/plugins"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 )
 
 const (
-	ParameterGroup = "kgateway.io"
-	ParameterKind  = "Parameter"
-
-	ExtensionName = "Backend"
-	FilterName    = "io.solo.aws_lambda"
+	ExtensionName = "backend"
 )
 
-var (
-	ParameterGK = schema.GroupKind{
-		Group: ParameterGroup,
-		Kind:  ParameterKind,
-	}
-)
-
-type backendDestination struct {
-	FunctionName string
-}
-
-func (d *backendDestination) CreationTime() time.Time {
-	return time.Time{}
-}
-
-func (d *backendDestination) Equals(in any) bool {
-	d2, ok := in.(*backendDestination)
-	if !ok {
-		return false
-	}
-	return d.FunctionName == d2.FunctionName
-}
-
+// BackendIr is the internal representation of a backend.
 type BackendIr struct {
-	AwsSecret     *ir.Secret
+	AwsIr         *AwsIr
 	AISecret      *ir.Secret
 	AIMultiSecret map[string]*ir.Secret
+	Errors        []error
 }
 
 func data(s *ir.Secret) map[string][]byte {
@@ -86,11 +62,7 @@ func (u *BackendIr) Equals(other any) bool {
 	if !ok {
 		return false
 	}
-	if !maps.EqualFunc(data(u.AwsSecret), data(otherBackend.AwsSecret), func(a, b []byte) bool {
-		return bytes.Equal(a, b)
-	}) {
-		return false
-	}
+	// AI
 	if !maps.EqualFunc(data(u.AISecret), data(otherBackend.AISecret), func(a, b []byte) bool {
 		return bytes.Equal(a, b)
 	}) {
@@ -103,14 +75,11 @@ func (u *BackendIr) Equals(other any) bool {
 	}) {
 		return false
 	}
-
+	// AWS
+	if !u.AwsIr.Equals(otherBackend.AwsIr) {
+		return false
+	}
 	return true
-}
-
-type backendPlugin struct {
-	ir.UnimplementedProxyTranslationPass
-	needFilter       map[string]bool
-	aiGatewayEnabled map[string]bool
 }
 
 func registerTypes(ourCli versioned.Interface) {
@@ -132,8 +101,13 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	col := krt.WrapClient(kclient.New[*v1alpha1.Backend](commoncol.Client), commoncol.KrtOpts.ToOptions("Backends")...)
 
 	gk := wellknown.BackendGVK.GroupKind()
-	translate := buildTranslateFunc(ctx, commoncol.Secrets)
-	ucol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.BackendObjectIR {
+	translateFn := buildTranslateFunc(ctx, commoncol.Secrets)
+	bcol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.BackendObjectIR {
+		backendIR := translateFn(krtctx, i)
+		if len(backendIR.Errors) > 0 {
+			contextutils.LoggerFrom(ctx).Error("failed to translate backend", "backend", i.GetName(), "error", errors.Join(backendIR.Errors...))
+			return nil
+		}
 		// resolve secrets
 		return &ir.BackendObjectIR{
 			ObjectSource: ir.ObjectSource{
@@ -142,13 +116,12 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 				Namespace: i.GetNamespace(),
 				Name:      i.GetName(),
 			},
-			GvPrefix:          "backend",
+			GvPrefix:          ExtensionName,
 			CanonicalHostname: hostname(i),
 			Obj:               i,
-			ObjIr:             translate(krtctx, i),
+			ObjIr:             backendIR,
 		}
 	})
-
 	endpoints := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.EndpointsForBackend {
 		return processEndpoints(i)
 	})
@@ -159,54 +132,78 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 					InitBackend: processBackend,
 				},
 				Endpoints: endpoints,
-				Backends:  ucol,
+				Backends:  bcol,
 			},
 		},
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
-			ParameterGK: {
-				Name:                      "backend",
-				NewGatewayTranslationPass: newPlug,
-				//			AttachmentPoints: []ir.AttachmentPoints{ir.HttpBackendRefAttachmentPoint},
-				PoliciesFetch: func(n, ns string) ir.PolicyIR {
-					// virtual policy - we don't have a real policy object
-					return &backendDestination{
-						FunctionName: n,
-					}
-				},
-			},
 			wellknown.BackendGVK.GroupKind(): {
 				Name:                      "backend",
 				NewGatewayTranslationPass: newPlug,
-				//			AttachmentPoints: []ir.AttachmentPoints{ir.HttpBackendRefAttachmentPoint},
-				PoliciesFetch: func(n, ns string) ir.PolicyIR {
-					// virtual policy - we don't have a real policy object
-					return &backendDestination{
-						FunctionName: n,
-					}
-				},
 			},
 		},
 	}
 }
 
+// buildTranslateFunc builds a function that translates a Backend to a BackendIr that
+// the plugin can use to build the envoy config.
+//
+// TODO(tim): Any errors encountered here should be returned and stored on the BackendIR
+// so that we can report them in the status once https://github.com/kgateway-dev/kgateway/issues/10555
+// is resolved.
 func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex) func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *BackendIr {
 	return func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *BackendIr {
 		var backendIr BackendIr
 		switch i.Spec.Type {
 		case v1alpha1.BackendTypeAWS:
-			if i.Spec.Aws == nil {
-				return &backendIr
-			}
-			// we only need to build an IR for secret-based auth.
-			if i.Spec.Aws.Auth.Type != v1alpha1.AwsAuthTypeSecret {
-				return &backendIr
-			}
-			ns := i.GetNamespace()
-			secret, err := pluginutils.GetSecretIr(secrets, krtctx, i.Spec.Aws.Auth.Secret.Name, ns)
+			region := getRegion(i.Spec.Aws)
+			invokeMode := getLambdaInvocationMode(i.Spec.Aws)
+
+			lambdaArn, err := buildLambdaARN(i.Spec.Aws, region)
 			if err != nil {
-				contextutils.LoggerFrom(ctx).Error(err)
+				backendIr.Errors = append(backendIr.Errors, err)
 			}
-			backendIr.AwsSecret = secret
+
+			endpointConfig, err := configureLambdaEndpoint(i.Spec.Aws)
+			if err != nil {
+				backendIr.Errors = append(backendIr.Errors, err)
+			}
+
+			var lambdaTransportSocket *envoy_config_core_v3.TransportSocket
+			if endpointConfig.useTLS {
+				// TODO(yuval-k): Add verification context
+				typedConfig, err := utils.MessageToAny(&envoyauth.UpstreamTlsContext{
+					Sni: endpointConfig.hostname,
+				})
+				if err != nil {
+					backendIr.Errors = append(backendIr.Errors, err)
+				}
+				lambdaTransportSocket = &envoy_config_core_v3.TransportSocket{
+					Name: envoywellknown.TransportSocketTls,
+					ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{
+						TypedConfig: typedConfig,
+					},
+				}
+			}
+
+			var secret *ir.Secret
+			if i.Spec.Aws.Auth != nil && i.Spec.Aws.Auth.Type == v1alpha1.AwsAuthTypeSecret {
+				var err error
+				secret, err = pluginutils.GetSecretIr(secrets, krtctx, i.Spec.Aws.Auth.Secret.Name, i.GetNamespace())
+				if err != nil {
+					backendIr.Errors = append(backendIr.Errors, err)
+				}
+			}
+
+			lambdaFilters, err := buildLambdaFilters(lambdaArn, region, secret, invokeMode)
+			if err != nil {
+				backendIr.Errors = append(backendIr.Errors, err)
+			}
+
+			backendIr.AwsIr = &AwsIr{
+				lambdaEndpoint:        endpointConfig,
+				lambdaTransportSocket: lambdaTransportSocket,
+				lambdaFilters:         lambdaFilters,
+			}
 		case v1alpha1.BackendTypeAI:
 			ns := i.GetNamespace()
 			if i.Spec.AI.LLM != nil {
@@ -215,23 +212,26 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 				if secretRef != nil {
 					secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, ns)
 					if err != nil {
-						contextutils.LoggerFrom(ctx).Error(err)
+						backendIr.Errors = append(backendIr.Errors, err)
 					}
 					backendIr.AISecret = secret
 				}
-			} else if i.Spec.AI.MultiPool != nil {
+				return &backendIr
+			}
+			if i.Spec.AI.MultiPool != nil {
 				backendIr.AIMultiSecret = map[string]*ir.Secret{}
 				for idx, priority := range i.Spec.AI.MultiPool.Priorities {
 					for jdx, pool := range priority.Pool {
 						secretRef := getAISecretRef(pool.Provider)
-						// if secretRef is used, set the secret on the backend ir
-						if secretRef != nil {
-							secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, ns)
-							if err != nil {
-								contextutils.LoggerFrom(ctx).Error(err)
-							}
-							backendIr.AIMultiSecret[getMultiPoolSecretKey(idx, jdx, secretRef.Name)] = secret
+						if secretRef == nil {
+							continue
 						}
+						// if secretRef is used, set the secret on the backend ir
+						secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, ns)
+						if err != nil {
+							backendIr.Errors = append(backendIr.Errors, err)
+						}
+						backendIr.AIMultiSecret[getMultiPoolSecretKey(idx, jdx, secretRef.Name)] = secret
 					}
 				}
 			}
@@ -258,47 +258,51 @@ func getAISecretRef(llm v1alpha1.SupportedLLMProvider) *corev1.LocalObjectRefere
 }
 
 func processBackend(ctx context.Context, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) {
+	log := contextutils.LoggerFrom(ctx)
 	up, ok := in.Obj.(*v1alpha1.Backend)
 	if !ok {
-		// log - should never happen
+		log.DPanic("failed to cast backend object")
 		return
 	}
-
 	ir, ok := in.ObjIr.(*BackendIr)
 	if !ok {
-		// log - should never happen
+		log.DPanic("failed to cast backend ir")
 		return
 	}
 
+	// TODO(tim): Bubble up error to Backend status once https://github.com/kgateway-dev/kgateway/issues/10555
+	// is resolved and add test cases for invalid endpoint URLs.
 	spec := up.Spec
 	switch {
 	case spec.Type == v1alpha1.BackendTypeStatic:
-		processStatic(ctx, spec.Static, out)
+		if err := processStatic(ctx, spec.Static, out); err != nil {
+			log.Error("failed to process static backend", "error", err)
+		}
 	case spec.Type == v1alpha1.BackendTypeAWS:
-		processAws(ctx, spec.Aws, ir, out)
+		if err := processAws(ctx, spec.Aws, ir.AwsIr, out); err != nil {
+			log.Error("failed to process aws backend", "error", err)
+		}
 	case spec.Type == v1alpha1.BackendTypeAI:
 		err := ai.ProcessAIBackend(ctx, spec.AI, ir.AISecret, out)
 		if err != nil {
-			// TODO: report error on status
-			contextutils.LoggerFrom(ctx).Error(err)
+			log.Error(err)
 		}
 		err = ai.AddUpstreamClusterHttpFilters(out)
 		if err != nil {
-			contextutils.LoggerFrom(ctx).Error(err)
+			log.Error(err)
 		}
 	}
 }
 
+// hostname returns the hostname for the backend. Only static backends are supported.
 func hostname(in *v1alpha1.Backend) string {
 	if in.Spec.Type != v1alpha1.BackendTypeStatic {
 		return ""
 	}
-	if in.Spec.Static != nil {
-		if len(in.Spec.Static.Hosts) > 0 {
-			return in.Spec.Static.Hosts[0].Host
-		}
+	if len(in.Spec.Static.Hosts) == 0 {
+		return ""
 	}
-	return ""
+	return in.Spec.Static.Hosts[0].Host
 }
 
 func processEndpoints(up *v1alpha1.Backend) *ir.EndpointsForBackend {
@@ -312,6 +316,11 @@ func processEndpoints(up *v1alpha1.Backend) *ir.EndpointsForBackend {
 	return nil
 }
 
+type backendPlugin struct {
+	ir.UnimplementedProxyTranslationPass
+	aiGatewayEnabled map[string]bool
+}
+
 func newPlug(ctx context.Context, tctx ir.GwTranslationCtx) ir.ProxyTranslationPass {
 	return &backendPlugin{}
 }
@@ -320,13 +329,10 @@ func (p *backendPlugin) Name() string {
 	return ExtensionName
 }
 
-// called 1 time for each listener
 func (p *backendPlugin) ApplyListenerPlugin(ctx context.Context, pCtx *ir.ListenerContext, out *envoy_config_listener_v3.Listener) {
 }
 
-func (p *backendPlugin) ApplyHCM(ctx context.Context,
-	pCtx *ir.HcmContext,
-	out *envoy_hcm.HttpConnectionManager) error { //no-op
+func (p *backendPlugin) ApplyHCM(ctx context.Context, pCtx *ir.HcmContext, out *envoy_hcm.HttpConnectionManager) error { //no-op
 	return nil
 }
 
@@ -338,11 +344,10 @@ func (p *backendPlugin) ApplyForRoute(ctx context.Context, pCtx *ir.RouteContext
 	return nil
 }
 
-// Run on backend, regardless of policy (based on backend gvk)
-// share route proto message
 func (p *backendPlugin) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBackendContext, in ir.HttpBackend, out *envoy_config_route_v3.Route) error {
 	backend := pCtx.Backend.Obj.(*v1alpha1.Backend)
-	if backend.Spec.AI != nil {
+	switch backend.Spec.Type {
+	case v1alpha1.BackendTypeAI:
 		err := ai.ApplyAIBackend(ctx, backend.Spec.AI, pCtx, out)
 		if err != nil {
 			return err
@@ -352,9 +357,9 @@ func (p *backendPlugin) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBacke
 			p.aiGatewayEnabled = make(map[string]bool)
 		}
 		p.aiGatewayEnabled[pCtx.FilterChainName] = true
-	} else {
+	default:
 		// If it's not an AI route we want to disable our ext-proc filter just in case.
-		// This will have no effect if we don't add the listener filter
+		// This will have no effect if we don't add the listener filter.
 		// TODO: optimize this be on the route config so it applied to all routes (https://github.com/kgateway-dev/kgateway/issues/10721)
 		disabledExtprocSettings := &envoy_ext_proc_v3.ExtProcPerRoute{
 			Override: &envoy_ext_proc_v3.ExtProcPerRoute_Disabled{
@@ -367,22 +372,12 @@ func (p *backendPlugin) ApplyForBackend(ctx context.Context, pCtx *ir.RouteBacke
 	return nil
 }
 
-// Only called if policy attached (extension ref)
-// Can implement in route policy for ai (prompt guard, etc.)
-// Alt. apply regardless if policy is present...?
 func (p *backendPlugin) ApplyForRouteBackend(
-	ctx context.Context, policy ir.PolicyIR,
-	pCtx *ir.RouteBackendContext,
+	_ context.Context,
+	_ ir.PolicyIR,
+	_ *ir.RouteBackendContext,
 ) error {
-	pol, ok := policy.(*backendDestination)
-	if !ok {
-		return nil
-		// todo: should we return fmt.Errorf("internal error: policy is not a backend destination")
-	}
-
-	// TODO: AI config for ApplyToRouteBackend
-
-	return p.processBackendAws(ctx, pCtx, pol)
+	return nil
 }
 
 // called 1 time per listener
@@ -399,13 +394,6 @@ func (p *backendPlugin) HttpFilters(ctx context.Context, fc ir.FilterChainCommon
 		}
 		result = append(result, aiFilters...)
 	}
-	if p.needFilter[fc.FilterChainName] {
-		filterConfig := &awspb.AWSLambdaConfig{}
-		pluginStage := plugins.DuringStage(plugins.OutAuthStage)
-		f, _ := plugins.NewStagedFilter(FilterName, filterConfig, pluginStage)
-
-		result = append(result, f)
-	}
 	return result, errors.Join(errs...)
 }
 
@@ -420,10 +408,8 @@ func (p *backendPlugin) NetworkFilters(ctx context.Context) ([]plugins.StagedNet
 // called 1 time (per envoy proxy). replaces GeneratedResources
 func (p *backendPlugin) ResourcesToAdd(ctx context.Context) ir.Resources {
 	var additionalClusters []*envoy_config_cluster_v3.Cluster
-
 	if len(p.aiGatewayEnabled) > 0 {
 		aiClusters := ai.GetAIAdditionalResources(ctx)
-
 		additionalClusters = append(additionalClusters, aiClusters...)
 	}
 	return ir.Resources{

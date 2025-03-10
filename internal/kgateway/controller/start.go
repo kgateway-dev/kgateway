@@ -198,23 +198,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 
 	integrationEnabled := globalSettings.EnableIstioIntegration
 
-	// copy over relevant aws options (if any) from Settings
-	var awsInfo *deployer.AwsInfo
-	stsCluster := globalSettings.StsClusterName
-	stsUri := globalSettings.StsUri
-	if stsCluster != "" && stsUri != "" {
-		awsInfo = &deployer.AwsInfo{
-			EnableServiceAccountCredentials: true,
-			StsClusterName:                  stsCluster,
-			StsUri:                          stsUri,
-		}
-	} else {
-		awsInfo = &deployer.AwsInfo{
-			EnableServiceAccountCredentials: false,
-		}
-	}
-
-	gwCfg := GatewayConfig{
+	if err := NewBaseGatewayController(ctx, GatewayConfig{
 		Mgr:            c.mgr,
 		OurGateway:     c.isOurGw,
 		ControllerName: wellknown.GatewayControllerName,
@@ -223,12 +207,8 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 			XdsHost: xdsHost,
 			XdsPort: xdsPort,
 		},
-		// TODO pass in the settings so that the deloyer can register to it for changes.
 		IstioIntegrationEnabled: integrationEnabled,
-		Aws:                     awsInfo,
-	}
-
-	if err := NewBaseGatewayController(ctx, gwCfg); err != nil {
+	}); err != nil {
 		setupLog.Error(err, "unable to create controller")
 		return err
 	}

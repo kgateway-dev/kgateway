@@ -40,7 +40,6 @@ type GatewayConfig struct {
 
 	ControlPlane            deployer.ControlPlaneInfo
 	IstioIntegrationEnabled bool
-	Aws                     *deployer.AwsInfo
 }
 
 func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
@@ -104,7 +103,6 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		Dev:                     c.cfg.Dev,
 		IstioIntegrationEnabled: c.cfg.IstioIntegrationEnabled,
 		ControlPlane:            c.cfg.ControlPlane,
-		Aws:                     c.cfg.Aws,
 	})
 	if err != nil {
 		return err
@@ -143,10 +141,12 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 				log.Error(err, "could not list Gateways using GatewayParameters", "gwpNamespace", gwpNamespace, "gwpName", gwpName)
 				return []reconcile.Request{}
 			}
-			// reconcile each Gateway that is using this GatewayParameters object
-			var reqs []reconcile.Request
+			// requeue each Gateway that is using this GatewayParameters object
+			reqs := make([]reconcile.Request, 0, len(gwList.Items))
 			for _, gw := range gwList.Items {
-				reqs = append(reqs, reconcile.Request{NamespacedName: client.ObjectKey{Namespace: gw.Namespace, Name: gw.Name}})
+				reqs = append(reqs, reconcile.Request{
+					NamespacedName: client.ObjectKeyFromObject(&gw),
+				})
 			}
 			return reqs
 		}))
@@ -168,17 +168,13 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		}
 		buildr.Owns(clientObj, opts...)
 	}
-	gwReconciler := &gatewayReconciler{
+
+	return buildr.Complete(&gatewayReconciler{
 		cli:           c.cfg.Mgr.GetClient(),
 		scheme:        c.cfg.Mgr.GetScheme(),
 		autoProvision: c.cfg.AutoProvision,
 		deployer:      d,
-	}
-	err = buildr.Complete(gwReconciler)
-	if err != nil {
-		return err
-	}
-	return nil
+	})
 }
 
 func shouldIgnoreStatusChild(gvk schema.GroupVersionKind) bool {
