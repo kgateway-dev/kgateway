@@ -48,7 +48,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
-	ggv2setup "github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
 )
 
 func getAssetsDir(t *testing.T) string {
@@ -189,7 +189,7 @@ func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Sett
 		t.Fatalf("can't listen %v", err)
 	}
 	xdsPort := lis.Addr().(*net.TCPAddr).Port
-	snapCache, grpcServer := ggv2setup.NewControlPlaneWithListener(ctx, lis, uniqueClientCallbacks)
+	snapCache, grpcServer := setup.NewControlPlaneWithListener(ctx, lis, uniqueClientCallbacks)
 	t.Cleanup(func() { grpcServer.Stop() })
 
 	setupOpts := &controller.SetupOpts{
@@ -198,14 +198,14 @@ func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Sett
 		GlobalSettings: globalSettings,
 	}
 
-	// start ggv2
+	// start kgateway
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		ggv2setup.StartGGv2WithConfig(ctx, setupOpts, cfg, builder, nil, nil)
+		setup.StartKgatewayWithConfig(ctx, setupOpts, cfg, builder, nil, nil)
 	}()
-	// give ggv2 time to initialize so we don't get
-	// "ggv2 not initialized" error
+	// give kgateway time to initialize so we don't get
+	// "kgateway not initialized" error
 	// this means that it attaches the pod collection to the unique client set collection.
 	time.Sleep(time.Second)
 
@@ -224,7 +224,7 @@ func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Sett
 				t.Cleanup(func() {
 					writer.set(parentT)
 				})
-				//sadly tests can't run yet in parallel, as ggv2 will add all the k8s services as clusters. this means
+				//sadly tests can't run yet in parallel, as kgateway will add all the k8s services as clusters. this means
 				// that we get test pollution.
 				// once we change it to only include the ones in the proxy, we can re-enable this
 				//				t.Parallel()
