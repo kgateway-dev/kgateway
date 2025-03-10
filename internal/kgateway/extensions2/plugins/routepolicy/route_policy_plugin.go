@@ -79,7 +79,7 @@ func (d *routePolicy) Equals(in any) bool {
 }
 
 type routePolicyPluginGwPass struct {
-	setTransformationInChain bool // TODO(nfuden): mae this multi stage
+	setTransformationInChain bool // TODO(nfuden): make this multi stage
 	// TODO(nfuden): dont abuse httplevel filter in favor of route level
 	rustformationStash map[string]string
 	ir.UnimplementedProxyTranslationPass
