@@ -117,31 +117,30 @@ func (i *TestInstallation) finalize() {
 	}
 }
 
-// TODO re-enable when adding back istio tests
-// func (i *TestInstallation) AddIstioctl(ctx context.Context) error {
-// 	istioctl, err := cluster.GetIstioctl(ctx)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to download istio: %w", err)
-// 	}
-// 	i.IstioctlBinary = istioctl
-// 	return nil
-// }
+func (i *TestInstallation) AddIstioctl(ctx context.Context) error {
+	istioctl, err := cluster.GetIstioctl(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to download istio: %w", err)
+	}
+	i.IstioctlBinary = istioctl
+	return nil
+}
 
-// func (i *TestInstallation) InstallMinimalIstio(ctx context.Context) error {
-// 	return cluster.InstallMinimalIstio(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext)
-// }
+func (i *TestInstallation) InstallMinimalIstio(ctx context.Context) error {
+	return cluster.InstallMinimalIstio(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext)
+}
 
-// func (i *TestInstallation) InstallRevisionedIstio(ctx context.Context, rev, profile string) error {
-// 	return cluster.InstallRevisionedIstio(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext, rev, profile)
-// }
+func (i *TestInstallation) InstallRevisionedIstio(ctx context.Context, rev, profile string) error {
+	return cluster.InstallRevisionedIstio(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext, rev, profile)
+}
 
-// func (i *TestInstallation) UninstallIstio() error {
-// 	return cluster.UninstallIstio(i.IstioctlBinary, i.ClusterContext.KubeContext)
-// }
+func (i *TestInstallation) UninstallIstio() error {
+	return cluster.UninstallIstio(i.IstioctlBinary, i.ClusterContext.KubeContext)
+}
 
-// func (i *TestInstallation) CreateIstioBugReport(ctx context.Context) {
-// 	cluster.CreateIstioBugReport(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext, i.GeneratedFiles.FailureDir)
-// }
+func (i *TestInstallation) CreateIstioBugReport(ctx context.Context) {
+	cluster.CreateIstioBugReport(ctx, i.IstioctlBinary, i.ClusterContext.KubeContext, i.GeneratedFiles.FailureDir)
+}
 
 func (i *TestInstallation) InstallKgatewayFromLocalChart(ctx context.Context) {
 	if testutils.ShouldSkipInstall() {

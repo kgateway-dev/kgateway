@@ -106,6 +106,15 @@ func (w *waypointTranslator) Translate(
 		contextutils.LoggerFrom(ctx).DPanic("PROXY listener was nil")
 		return nil
 	}
+
+	// ensure consistent ordering in outputs
+	proxyListener.HttpFilterChain = slices.SortBy(proxyListener.HttpFilterChain, func(fc ir.HttpFilterChainIR) string {
+		return fc.FilterChainName
+	})
+	proxyListener.TcpFilterChain = slices.SortBy(proxyListener.TcpFilterChain, func(fc ir.TcpIR) string {
+		return fc.FilterChainName
+	})
+
 	return &ir.GatewayIR{
 		// single listener
 		Listeners: []ir.ListenerIR{

@@ -163,6 +163,24 @@ func (c *Cli) DeleteFile(ctx context.Context, fileName string, extraArgs ...stri
 	return err
 }
 
+// DeleteFilePath deletes the resources defined at the file path, and returns an error if one occurred.
+// If filePath is a directory, this will delete all of the files in the directory.
+func (c *Cli) DeleteFilePath(ctx context.Context, filePath string, extraArgs ...string) error {
+	stat, err := os.Stat(filePath)
+	if err != nil {
+		return err
+	}
+	if !stat.IsDir() {
+		_, err := c.DeleteFileWithOutput(ctx, filePath, extraArgs...)
+		return err
+	}
+
+	args := append([]string{"delete", "-f", filePath}, extraArgs...)
+	return c.Command(ctx, args...).
+		Run().
+		Cause()
+}
+
 // DeleteFileWithOutput deletes the resources defined in a file,
 // if an error occurred, it will be returned along with the output of the command
 func (c *Cli) DeleteFileWithOutput(ctx context.Context, fileName string, extraArgs ...string) (string, error) {
@@ -192,6 +210,33 @@ func (c *Cli) DeleteFileSafe(ctx context.Context, fileName string, extraArgs ...
 // Copy copies a file from one location to another
 func (c *Cli) Copy(ctx context.Context, from, to string) error {
 	return c.RunCommand(ctx, "cp", from, to)
+}
+
+// SetLabel sets a label on a given resource.
+func (c *Cli) SetLabel(
+	ctx context.Context,
+	kind, name, namespace string,
+	label, value string,
+) error {
+	// ex: k -n ns label svc svc-a foo=val --overwrite
+	args := []string{"label", kind, name, label + "=", value, "--overwrite"}
+	if namespace != "" {
+		args = append(
+			[]string{"-n", namespace},
+			args...,
+		)
+	}
+	return c.RunCommand(ctx, args...)
+}
+
+// UnsetLabel unsets a label on a given resource.
+func (c *Cli) UnsetLabel(
+	ctx context.Context,
+	kind, name, namespace string,
+	label string,
+) error {
+	// ex: k -n ns label svc svc-a foo=- --overwrite
+	return c.SetLabel(ctx, kind, name, namespace, label, "-")
 }
 
 // DeploymentRolloutStatus waits for the deployment to complete rolling out
