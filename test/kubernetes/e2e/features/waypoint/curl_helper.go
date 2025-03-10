@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"time"
 
+	"knative.dev/pkg/network"
+
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils/kubectl"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
 	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
-	"knative.dev/pkg/network"
 )
 
 var (

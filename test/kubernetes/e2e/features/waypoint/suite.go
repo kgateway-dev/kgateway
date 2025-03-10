@@ -8,9 +8,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/stretchr/testify/suite"
+
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
-	"github.com/stretchr/testify/suite"
 )
 
 var _ e2e.NewSuiteFunc = NewTestingSuite

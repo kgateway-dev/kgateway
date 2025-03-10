@@ -3,9 +3,10 @@ package waypoint
 import (
 	"net/http"
 
-	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/onsi/gomega/gstruct"
 	"istio.io/api/label"
+
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 )
 
 var (
