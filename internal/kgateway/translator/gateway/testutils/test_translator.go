@@ -1,4 +1,4 @@
-package gateway_test
+package testutils
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/testing/protocmp"
 	"istio.io/istio/pkg/config/schema/gvr"
 	kubeclient "istio.io/istio/pkg/kube"
@@ -32,11 +33,42 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway/testutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/fake"
 )
+
+type AssertReports func(gwNN types.NamespacedName, reportsMap reports.ReportMap)
+
+func TestTranslation(
+	t test.Failer,
+	ctx context.Context,
+	inputFiles []string,
+	outputFile string,
+	gwNN types.NamespacedName,
+	assertReports AssertReports,
+) {
+	results, err := TestCase{
+		InputFiles: inputFiles,
+	}.Run(t, ctx)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(results).To(HaveLen(1))
+	Expect(results).To(HaveKey(gwNN))
+	result := results[gwNN]
+
+	//// do a json round trip to normalize the output (i.e. things like omit empty)
+	//b, _ := json.Marshal(result.Proxy)
+	//var proxy ir.GatewayIR
+	//Expect(json.Unmarshal(b, &proxy)).NotTo(HaveOccurred())
+
+	Expect(CompareProxy(outputFile, result.Proxy)).To(BeEmpty())
+
+	if assertReports != nil {
+		assertReports(gwNN, result.ReportsMap)
+	} else {
+		Expect(AreReportsSuccess(gwNN, result.ReportsMap)).NotTo(HaveOccurred())
+	}
+}
 
 type TestCase struct {
 	InputFiles []string
@@ -49,14 +81,14 @@ type ActualTestResult struct {
 
 func CompareProxy(expectedFile string, actualProxy *irtranslator.TranslationResult) (string, error) {
 	if os.Getenv("UPDATE_OUTPUTS") == "1" {
-		d, err := testutils.MarshalAnyYaml(actualProxy)
+		d, err := MarshalAnyYaml(actualProxy)
 		if err != nil {
 			return "", err
 		}
 		os.WriteFile(expectedFile, d, 0o644)
 	}
 
-	expectedProxy, err := testutils.ReadProxyFromFile(expectedFile)
+	expectedProxy, err := ReadProxyFromFile(expectedFile)
 	if err != nil {
 		return "", err
 	}
@@ -139,7 +171,7 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		ourObjs []runtime.Object
 	)
 	for _, file := range tc.InputFiles {
-		objs, err := testutils.LoadFromFiles(ctx, file)
+		objs, err := LoadFromFiles(ctx, file)
 		if err != nil {
 			return nil, err
 		}
@@ -230,7 +262,7 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 
 		xdsSnap, reportsMap := translator.TranslateGateway(krt.TestingDummyContext{}, ctx, gw)
 
-		act, _ := testutils.MarshalAnyYaml(xdsSnap)
+		act, _ := MarshalAnyYaml(xdsSnap)
 		fmt.Fprintf(ginkgo.GinkgoWriter, "actual result:\n %s \n", act)
 
 		actual := ActualTestResult{
