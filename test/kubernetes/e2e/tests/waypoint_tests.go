@@ -7,6 +7,6 @@ import (
 
 func WaypointSuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner := e2e.NewSuiteRunner(false)
-	kubeGatewaySuiteRunner.Register("waypoint", waypoint.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("Waypoint", waypoint.NewTestingSuite)
 	return kubeGatewaySuiteRunner
 }

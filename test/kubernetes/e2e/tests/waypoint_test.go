@@ -14,7 +14,7 @@ import (
 
 func TestKgatewayWaypoint(t *testing.T) {
 	ctx := context.Background()
-	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "kgateway-test")
+	installNs, nsEnvPredefined := envutils.LookupOrDefault(testutils.InstallNamespace, "kgateway-waypoint-test")
 	testInstallation := e2e.CreateTestInstallation(
 		t,
 		&install.Context{
@@ -46,10 +46,10 @@ func TestKgatewayWaypoint(t *testing.T) {
 	// Download the latest Istio
 	testInstallation.AddIstioctl(ctx)
 	// Install the ambient profile to enable zTunnel
-	testInstallation.InstallRevisionedIstio(ctx, "waypoint-test", "ambient")
+	testInstallation.InstallRevisionedIstio(ctx, "kgateway-waypoint-rev", "ambient")
 
 	// Install kgateway
 	testInstallation.InstallKgatewayFromLocalChart(ctx)
 
-	KubeGatewaySuiteRunner().Run(ctx, t, testInstallation)
+	WaypointSuiteRunner().Run(ctx, t, testInstallation)
 }
