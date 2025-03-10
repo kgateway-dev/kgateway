@@ -61,7 +61,6 @@ func NewCombinedTranslator(
 }
 
 func (s *CombinedTranslator) Init(ctx context.Context) error {
-	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
 	queries := query.NewData(s.commonCols)
 	s.gwtranslator = gwtranslator.NewTranslator(queries)
 	s.irtranslator = &irtranslator.Translator{

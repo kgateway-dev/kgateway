@@ -5,10 +5,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway/testutils"
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 	"github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway/testutils"
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/fsutils"
 )
 
 // exampleGw is used in most tests, but we may want to have
