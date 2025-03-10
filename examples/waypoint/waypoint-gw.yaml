@@ -13,13 +13,3 @@ spec:
     allowedRoutes:
       namespaces:
         from: Same
----
-# Route all traffic to Services in the httpbin Namespace
-# through the zTunnel, and through the Waypoint.
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: httpbin
-  labels:
-    istio.io/dataplane-mode: ambient
-    istio.io/use-waypoint: httpbin-waypoint

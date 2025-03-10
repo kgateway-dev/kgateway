@@ -1,7 +1,5 @@
-##################################################################################################
-# Update the httpbin Namespace to capture traffic with ambient
-# and route traffic through a Waypoint proxy.
-##################################################################################################
+# Namespace with the labels to capture all traffic
+# via the waypoint proxy named httpbin-waypoint.
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -9,3 +7,77 @@ metadata:
   labels:
     istio.io/dataplane-mode: ambient
     istio.io/use-waypoint: httpbin-waypoint
+---
+# httpbin Service captured by the Waypoint
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+  labels:
+    app: httpbin
+    service: httpbin
+spec:
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8080
+  selector:
+    app: httpbin
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: httpbin
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: httpbin
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: httpbin
+        version: v1
+    spec:
+      serviceAccountName: httpbin
+      containers:
+      - image: docker.io/mccutchen/go-httpbin:v2.15.0
+        imagePullPolicy: IfNotPresent
+        name: httpbin
+        ports:
+        - containerPort: 8080
+# curl client pod for sending traffic to httpbin
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: curl
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: curl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: curl
+  template:
+    metadata:
+      labels:
+        app: curl
+    spec:
+      terminationGracePeriodSeconds: 0
+      serviceAccountName: curl
+      containers:
+      - name: curl
+        image: curlimages/curl
+        command: ["/bin/sleep", "infinity"]
+        imagePullPolicy: IfNotPresent
+---

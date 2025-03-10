@@ -5,7 +5,9 @@ metadata:
   namespace: httpbin
 spec:
   parentRefs:
-  - name: httpbin-waypoint
+  - name: httpbin
+    group: ""
+    kind: Service
   rules:
   - backendRefs:
     - name: httpbin
