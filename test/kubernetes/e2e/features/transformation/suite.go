@@ -197,6 +197,8 @@ func (s *testingSuite) TestGatewayRustformationsWithTransformedRoute() {
 		// also we dont intend for this to be long term so dont worry about pulling it out to wellknown or something like that for now
 		dynamicModuleLoaded := strings.Contains(listener.String(), "dynamic_modules/")
 		g.Expect(dynamicModuleLoaded).To(gomega.BeTrue(), fmt.Sprintf("dynamic module not loaded: %v", listener.String()))
+		dynamicModuleRouteConfigured := strings.Contains(listener.String(), "transformation/helper")
+		g.Expect(dynamicModuleRouteConfigured).To(gomega.BeTrue(), fmt.Sprintf("dynamic module routespecific not loaded: %v", listener.String()))
 	}).
 		WithTimeout(time.Second*20).
 		WithPolling(time.Second).Should(gomega.Succeed(), "failed to load in dynamic modules")
