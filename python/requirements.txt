@@ -4,7 +4,6 @@ grpcio-health-checking
 protobuf>4.0.0,<5.0.0
 prometheus-client
 langchain-openai
-langchain-weaviate
 langchain-community
 langchain-postgres
 langchainhub
@@ -13,13 +12,11 @@ openai
 bs4
 psycopg[c]
 gptcache
-redis
 fastapi[standard]
 uvicorn[standard]
 async-lru
 python-multipart
 kubernetes
-weaviate-client==4.8.1
 # There is an issue: https://github.com/explosion/cython-blis/issues/117 that causes mac and arm linux 
 # build to fail. Temp workaround is to limit spacy to < 3.8.0. Switch over to pyproject.toml and use 
 # platform specific deps if needed

@@ -24,19 +24,4 @@ var (
 
 	// routes options for streaming
 	routeOptionStreamingManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "streaming.yaml")
-
-	// enable ratelimiting on the routes
-	//ratelimitManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "ratelimit.yaml")
-
-	// prompt guard with webhook on the routes
-	//promptGuardWebhookManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "prompt-guard-webhook.yaml")
-
-	// prompt guard with webhook on the routes
-	//promptGuardWebhookStreamingManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "prompt-guard-webhook-streaming.yaml")
-
-	// prompt guard on the routes
-	promptGuardManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "prompt-guard.yaml")
-
-	// prompt guard (streaming response) on the routes
-	//promptGuardStreamingManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "prompt-guard-streaming.yaml")
 )

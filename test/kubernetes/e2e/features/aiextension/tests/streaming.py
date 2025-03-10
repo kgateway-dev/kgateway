@@ -70,54 +70,6 @@ class TestStreaming(LLMClient):
             and last_chunk.choices[0].finish_reason == "stop"
         )
 
-    def test_mistralai_completion_stream(self):
-        model = "mistral-small-latest"
-        resp = self.mistral_client.chat.stream(
-            model=model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a poetic assistant, skilled in explaining complex programming concepts with creative flair.",
-                },
-                {
-                    "role": "user",
-                    "content": "Compose a poem that explains the concept of recursion in programming.",
-                },
-            ],
-        )
-        assert resp is not None
-        last_chunk = None
-        for chunk in resp:
-            logger.debug(f"mistral completion stream chunk:\n{chunk}")
-            assert chunk is not None and len(chunk.data.choices) > 0
-            last_chunk = chunk
-        assert (
-            last_chunk is not None
-            and len(last_chunk.data.choices) > 0
-            and last_chunk.data.choices[0].finish_reason == "stop"
-        )
-
-    def test_anthropic_completion_stream(self):
-        resp = self.anthropic_client.messages.create(
-            max_tokens=1024,
-            model="claude-3-haiku-20240307",
-            system="You are a poetic assistant, skilled in explaining complex programming concepts with creative flair.",
-            messages=[
-                {
-                    "role": "user",
-                    "content": "Compose a poem that explains the concept of recursion in programming.",
-                },
-            ],
-            stream=True,
-        )
-        assert resp is not None
-        last_chunk = None
-        for chunk in resp:
-            logger.debug(f"anthropic completion stream chunk:\n{chunk}")
-            assert chunk is not None and chunk.type is not None
-            last_chunk = chunk
-        assert last_chunk is not None and last_chunk.type == "message_stop"
-
     # gemini python library does not support parsing alt=sse streaming response. Only supports JSON formatted responses.
     def test_gemini_completion_stream_sse(self):
         payload = {

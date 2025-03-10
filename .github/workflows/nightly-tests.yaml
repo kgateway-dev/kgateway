@@ -2,13 +2,6 @@ name: Nightly
 
 env:
   GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }} # necessary to pass upgrade tests
-  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-  AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
-  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-  # These 2 need to be set for the test to succeed, but they do not need to be real as we
-  # are not actually using these services in the tests.
-  ANTHROPIC_API_KEY: fake
-  MISTRAL_API_KEY: fake
   # Only run python tests which contain `openai` or `gemini` in the test name as that's the only CI
   # key we currently have access to.
   TEST_PYTHON_STRING_MATCH: "openai or gemini or vertex_ai"

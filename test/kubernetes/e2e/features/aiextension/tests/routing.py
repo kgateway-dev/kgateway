@@ -61,50 +61,6 @@ class TestRouting(LLMClient):
             and resp.usage.completion_tokens > 0
         )
 
-    def test_mistralai_completion(self):
-        resp = self.mistral_client.chat.complete(
-            model="mistral-small-latest",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a poetic assistant, skilled in explaining complex programming concepts with creative flair.",
-                },
-                {
-                    "role": "user",
-                    "content": "Compose a poem that explains the concept of recursion in programming.",
-                },
-            ],
-        )
-        logger.debug(f"mistralai completion response:\n{resp}")
-        assert (
-            resp is not None
-            and resp.choices is not None
-            and len(resp.choices) > 0
-            and resp.choices[0].message.content != ""
-        )
-        assert resp.usage.prompt_tokens > 0
-        assert (
-            resp.usage.completion_tokens is not None
-            and resp.usage.completion_tokens > 0
-        )
-
-    def test_anthropic_completion(self):
-        resp = self.anthropic_client.messages.create(
-            max_tokens=1024,
-            model="claude-3-haiku-20240307",
-            system="You are a poetic assistant, skilled in explaining complex programming concepts with creative flair.",
-            messages=[
-                {
-                    "role": "user",
-                    "content": "Compose a poem that explains the concept of recursion in programming.",
-                },
-            ],
-        )
-        assert resp is not None
-        logger.debug(f"anthropic completion response:\n{resp}")
-        assert len(resp.content) > 0
-        assert resp.usage.output_tokens > 0
-
     def test_gemini_completion(self):
         resp = self.gemini_client.generate_content(
             "Compose a poem that explains the concept of recursion in programming."

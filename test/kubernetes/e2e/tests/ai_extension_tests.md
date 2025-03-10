@@ -11,7 +11,6 @@ The AI extension e2e test is different from the other tests in the sense that it
 - environment variables:
     - `OPENAI_API_KEY`: OpenAI API key
     - `ANTHROPIC_API_KEY`: Anthropic API key
-    - `MISTRAL_API_KEY`: Mistral API key
     - `GEMINI_API_KEY`: Gemini API key
     - `PYTHON`: path to the python3 executable, e.g. `/src/code/kgateway/.venv/bin/python`
 
@@ -28,6 +27,8 @@ python3 -m pip install -r test/kubernetes/e2e/features/aiextension/tests/require
 export PYTHON=$(which python)
 ```
 
+*Note*: Python 3.11 is currently being used in CI.
+
 ## Run the test
 
 Spin up the cluster
@@ -36,7 +37,7 @@ CONFORMANCE=true ./hack/kind/setup-kind.sh
 ```
 
 ```bash
-OPENAI_API_KEY=<api key> ANTHROPIC_API_KEY=<api key> MISTRAL_API_KEY=<api key> AZURE_OPENAI_API_KEY=<api key> GEMINI_API_KEY=<api key> go test ./test/kubernetes/e2e/tests/ -run AIExtension
+go test ./test/kubernetes/e2e/tests/ -run AIExtension
 ```
 
 You can set the `TEST_PYTHON_STRING_MATCH` to run a specific subset of tests. For example `TEST_PYTHON_STRING_MATCH=vertex_ai` would only run the `vertex_ai` tests:
@@ -74,12 +75,6 @@ The following vscode launch config can be used to debug tests using the IDE:
         "-test.v",
       ],
       "env": {
-        "GOLANG_PROTOBUF_REGISTRATION_CONFLICT": "warn",
-        "ANTHROPIC_API_KEY": "FIXME",
-        "OPENAI_API_KEY": "FIXME",
-        "MISTRAL_API_KEY": "FIXME",
-        "AZURE_OPENAI_API_KEY": "FIXME",
-        "GEMINI_API_KEY": "FIXME",
         "PYTHON": "FIXME - path to python inside the virtualenv",
       },
     },

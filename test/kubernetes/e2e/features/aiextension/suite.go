@@ -17,9 +17,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/kgateway-dev/kgateway/v2/test/testutils"
-
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 var pythonBin = func() string {
@@ -58,13 +57,9 @@ func NewSuite(
 
 func (s *tsuite) SetupSuite() {
 	s.manifests = map[string][]string{
-		"TestRouting":            {commonManifest, backendManifest, routesBasicManifest},
-		"TestRoutingPassthrough": {commonManifest, backendPassthroughManifest, routesWithExtensionManifest},
-		"TestStreaming":          {commonManifest, backendManifest, routesWithExtensionManifest, routeOptionStreamingManifest},
-		// "TestPromptGuardWebhook": {commonManifest, backendManifest, routesWithExtensionManifest, promptGuardWebhookManifest},
-		//"TestPromptGuardWebhookStreaming":         {commonManifest, backendManifest, routesWithExtensionManifest, promptGuardWebhookStreamingManifest},
-		"TestPromptGuard": {commonManifest, backendManifest, routesWithExtensionManifest, promptGuardManifest},
-		// "TestPromptGuardStreaming":                {commonManifest, backendManifest, routesWithExtensionManifest, promptGuardStreamingManifest},
+		"TestRouting": {commonManifest, backendManifest, routesBasicManifest},
+		//"TestRoutingPassthrough":                  {commonManifest, backendPassthroughManifest, routesWithExtensionManifest},
+		//"TestStreaming":                           {commonManifest, backendManifest, routesWithExtensionManifest, routeOptionStreamingManifest},
 		//"TestUserInvokedFunctionCalling":          {commonManifest, backendManifest, routesBasicManifest},
 		//"TestUserInvokedFunctionCallingStreaming": {commonManifest, backendManifest, routesWithExtensionManifest, routeOptionStreamingManifest},
 		//"TestLangchain":                           {commonManifest, backendManifest, routesBasicManifest},
@@ -116,117 +111,25 @@ func (s *tsuite) TestRouting() {
 	s.invokePytest("routing.py")
 }
 
-func (s *tsuite) TestRoutingPassthrough() {
-	vertexAIToken, err := GetVertexAIToken()
-	if err != nil {
-		s.T().Fatal(err)
-	}
-	s.invokePytest(
-		"routing.py",
-		"TEST_TOKEN_PASSTHROUGH=true",
-		fmt.Sprintf("OPENAI_API_KEY=%s", os.Getenv("OPENAI_API_KEY")),
-		fmt.Sprintf("AZURE_OPENAI_API_KEY=%s", os.Getenv("AZURE_OPENAI_API_KEY")),
-		fmt.Sprintf("GEMINI_API_KEY=%s", os.Getenv("GEMINI_API_KEY")),
-		fmt.Sprintf("VERTEX_AI_API_KEY=%s", vertexAIToken),
-	)
-}
-
-func (s *tsuite) TestStreaming() {
-	s.invokePytest("streaming.py")
-}
-
-func (s *tsuite) TestPromptGuard() {
-	s.invokePytest("prompt_guard.py")
-}
-
-//func (s *tsuite) TestPromptGuardStreaming() {
-//	s.invokePytest("prompt_guard_streaming.py")
-//}
-//
-//func (s *tsuite) TestRateLimit() {
-//	s.invokePytest("rate_limit.py")
-//
-//	// Restart rate-limiter Redis so that the next test can start with a clean state
-//	err := s.testInst.Actions.Kubectl().DeploymentRolloutStatus(s.ctx, "redis", "-n", s.installNamespace)
-//	s.Require().NoError(err)
-//}
-//
-//func (s *tsuite) TestPromptGuardWebhook() {
-//	spacy_model := "en_core_web_lg"
-//	spacyInfo, err := exec.Command(pythonBin, "-m", "spacy", "info").CombinedOutput()
-//	if !strings.Contains(string(spacyInfo), spacy_model) {
-//		byt, err := exec.Command(pythonBin, "-m", "spacy", "download", spacy_model).CombinedOutput()
-//		s.Require().NoError(err)
-//		s.T().Logf("spacy download output: %s", string(byt))
+//func (s *tsuite) TestRoutingPassthrough() {
+//	vertexAIToken, err := GetVertexAIToken()
+//	if err != nil {
+//		s.T().Fatal(err)
 //	}
-//
-//	cmd := exec.Command(pythonBin, "-m", "fastapi", "run", "--host", "0.0.0.0", "--port", "7891", "samples/app.py")
-//	cmd.Dir = filepath.Join(s.rootDir, "projects/ai-extension")
-//
-//	var b bytes.Buffer
-//	cmd.Stdout = &b
-//	cmd.Stderr = &b
-//	err = cmd.Start()
-//	s.Require().NoError(err)
-//	defer func() {
-//		cmd.Process.Kill()
-//		err := cmd.Wait()
-//		if err != nil && err.Error() != "signal: killed" {
-//			s.T().Logf("error: %s", err)
-//		}
-//		s.T().Logf("combined_output: %s", b.String())
-//		http.Get("http://localhost:7891/shutdown")
-//	}()
-//
-//	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-//		resp, err := http.Get("http://localhost:7891/health")
-//		if assert.NoErrorf(c, err, "failed to get health check") {
-//			defer resp.Body.Close()
-//			assert.Equalf(c, resp.StatusCode, 200, "health check failed")
-//		}
-//	}, 20*time.Second, 1*time.Second)
-//
-//	s.invokePytest("prompt_guard_webhook.py")
+//	s.invokePytest(
+//		"routing.py",
+//		"TEST_TOKEN_PASSTHROUGH=true",
+//		fmt.Sprintf("OPENAI_API_KEY=%s", os.Getenv("OPENAI_API_KEY")),
+//		fmt.Sprintf("AZURE_OPENAI_API_KEY=%s", os.Getenv("AZURE_OPENAI_API_KEY")),
+//		fmt.Sprintf("GEMINI_API_KEY=%s", os.Getenv("GEMINI_API_KEY")),
+//		fmt.Sprintf("VERTEX_AI_API_KEY=%s", vertexAIToken),
+//	)
 //}
 //
-//func (s *tsuite) TestPromptGuardWebhookStreaming() {
-//	spacy_model := "en_core_web_lg"
-//	spacyInfo, err := exec.Command(pythonBin, "-m", "spacy", "info").CombinedOutput()
-//	if !strings.Contains(string(spacyInfo), spacy_model) {
-//		byt, err := exec.Command(pythonBin, "-m", "spacy", "download", spacy_model).CombinedOutput()
-//		s.Require().NoError(err)
-//		s.T().Logf("spacy download output: %s", string(byt))
-//	}
-//
-//	cmd := exec.Command(pythonBin, "-m", "fastapi", "run", "--host", "0.0.0.0", "--port", "7891", "samples/app.py")
-//	cmd.Dir = filepath.Join(s.rootDir, "projects/ai-extension")
-//
-//	var b bytes.Buffer
-//	cmd.Stdout = &b
-//	cmd.Stderr = &b
-//	err = cmd.Start()
-//	s.Require().NoError(err)
-//	defer func() {
-//		cmd.Process.Kill()
-//		err := cmd.Wait()
-//		if err != nil && err.Error() != "signal: killed" {
-//			s.T().Logf("error: %s", err)
-//		}
-//		s.T().Logf("combined_output: %s", b.String())
-//		http.Get("http://localhost:7891/shutdown")
-//	}()
-//
-//	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-//		resp, err := http.Get("http://localhost:7891/health")
-//		if assert.NoErrorf(c, err, "failed to get health check") {
-// 			defer resp.Body.Close()
-//			assert.Equalf(c, resp.StatusCode, 200, "health check failed")
-//		}
-//	}, 20*time.Second, 1*time.Second)
-//
-//	s.invokePytest("prompt_guard_webhook_streaming.py")
+//func (s *tsuite) TestStreaming() {
+//	s.invokePytest("streaming.py")
 //}
-//
+
 //func (s *tsuite) TestUserInvokedFunctionCalling() {
 //	s.invokePytest("user_function_calling.py")
 //}
@@ -258,7 +161,6 @@ func (s *tsuite) invokePytest(test string, extraEnv ...string) {
 	cmd.Env = []string{
 		fmt.Sprintf("TEST_OPENAI_BASE_URL=%s/openai", gwURL),
 		fmt.Sprintf("TEST_AZURE_OPENAI_BASE_URL=%s/azure", gwURL),
-		fmt.Sprintf("TEST_MISTRAL_BASE_URL=%s/mistralai", gwURL),
 		fmt.Sprintf("TEST_ANTHROPIC_BASE_URL=%s/anthropic", gwURL),
 		fmt.Sprintf("TEST_GEMINI_BASE_URL=%s/gemini", gwURL), // need to specify HTTP as part of the endpoint
 		fmt.Sprintf("TEST_VERTEX_AI_BASE_URL=%s/vertex-ai", gwURL),

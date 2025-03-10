@@ -1,11 +1,9 @@
 package tests_test
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -47,6 +45,7 @@ func TestAIExtensions(t *testing.T) {
 		}
 
 		testInstallation.UninstallKgateway(ctx)
+		cleanupMockProvider(ctx, testInstallation, installNs)
 	})
 
 	// Install kgateway
@@ -55,6 +54,9 @@ func TestAIExtensions(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+
+	// Install provider mock app
+	installProviderMockApp(ctx, testInstallation, installNs)
 
 	AIGatewaySuiteRunner().Run(ctx, t, testInstallation)
 }
@@ -65,41 +67,14 @@ func bootstrapEnv(
 	testInstallation *e2e.TestInstallation,
 	installNamespace string,
 ) error {
-	openaiKey, ok := os.LookupEnv("OPENAI_API_KEY")
-	if !ok {
-		return fmt.Errorf("OPENAI_API_KEY environment variable not set")
-	}
-	mistralKey, ok := os.LookupEnv("MISTRAL_API_KEY")
-	if !ok {
-		return fmt.Errorf("MISTRAL_API_KEY environment variable not set")
-	}
-	anthropicKey, ok := os.LookupEnv("ANTHROPIC_API_KEY")
-	if !ok {
-		return fmt.Errorf("ANTHROPIC_API_KEY environment variable not set")
-	}
-	azureOpenAiKey, ok := os.LookupEnv("AZURE_OPENAI_API_KEY")
-	if !ok {
-		return fmt.Errorf("AZURE_OPENAI_API_KEY environment variable not set")
-	}
-	geminiKey, ok := os.LookupEnv("GEMINI_API_KEY")
-	if !ok {
-		return fmt.Errorf("GEMINI_API_KEY environment variable not set")
-	}
-
-	vertexAITokenEnv, _ := os.LookupEnv("VERTEX_AI_AUTH_TOKEN")
-	vertexAITokenStr := vertexAITokenEnv
-	if vertexAITokenEnv == "" {
-		var err error
-		vertexAITokenStr, err = getVertexAIToken()
-		if err != nil {
-			return fmt.Errorf("failed to get Vertex AI token %s", err.Error())
-		}
-	}
+	// note: e2e tests are currently using the mock provider
+	openaiKey := "fake-openai-key"
+	azureOpenAiKey := "fake-azure-openai-key"
+	geminiKey := "fake-gemini-key"
+	vertexAITokenStr := "fake-vertex-ai-token"
 
 	secretsMap := map[string]map[string]string{
 		"openai-secret":    {"Authorization": "Bearer " + openaiKey},
-		"mistralai-secret": {"Authorization": "Bearer " + mistralKey},
-		"anthropic-secret": {"Authorization": anthropicKey},
 		"azure-secret":     {"Authorization": azureOpenAiKey},
 		"gemini-secret":    {"Authorization": geminiKey},
 		"vertex-ai-secret": {"Authorization": vertexAITokenStr},
@@ -140,12 +115,74 @@ func createOrUpdateSecret(
 	return nil
 }
 
-func getVertexAIToken() (string, error) {
-	cmd := exec.Command("gcloud", "auth", "print-access-token",
-		"ci-cloud-run@gloo-ee.iam.gserviceaccount.com", "--project", "gloo-ee")
-	vertexAIToken, err := cmd.Output()
+func getMockProviderYAML(namespace, image string) string {
+	return fmt.Sprintf(`
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-ai-provider
+  namespace: %s
+  labels:
+    app: test-ai-provider
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-ai-provider
+  template:
+    metadata:
+      labels:
+        app: test-ai-provider
+    spec:
+      containers:
+        - name: test-ai-provider
+          image: %s
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5001
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-ai-provider
+  namespace: %s
+spec:
+  selector:
+    app: test-ai-provider
+  ports:
+    - port: 5001
+      targetPort: 5001
+  type: ClusterIP`, namespace, image, namespace)
+}
+
+func cleanupMockProvider(ctx context.Context, testInstallation *e2e.TestInstallation, namespace string) {
+	// Use empty image as it's not needed for cleanup
+	yaml := getMockProviderYAML(namespace, "")
+	err := testInstallation.ClusterContext.Cli.Delete(ctx, []byte(yaml))
 	if err != nil {
-		return "", fmt.Errorf("failed to get access token: %s", err.Error())
+		fmt.Printf("Warning: Failed to cleanup mock provider: %v\n", err)
 	}
-	return string(bytes.TrimSpace(vertexAIToken)), nil
+}
+
+func installProviderMockApp(ctx context.Context, testInstallation *e2e.TestInstallation, namespace string) {
+	// Get version from environment variable or use default image
+	version := os.Getenv("VERSION")
+	image := "ghcr.io/kgateway-dev/test-ai-provider:1.0.0-dev"
+	if version != "" {
+		image = fmt.Sprintf("ghcr.io/kgateway-dev/test-ai-provider:%s", version)
+	}
+
+	yaml := getMockProviderYAML(namespace, image)
+	err := testInstallation.ClusterContext.Cli.Apply(ctx, []byte(yaml))
+	if err != nil {
+		panic(fmt.Sprintf("Failed to install mock provider: %v", err))
+	}
 }

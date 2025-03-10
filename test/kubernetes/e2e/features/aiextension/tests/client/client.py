@@ -1,8 +1,6 @@
 import os
 import logging
 from openai import OpenAI, AzureOpenAI
-from mistralai import Mistral
-from anthropic import Anthropic
 from openai import NotGiven, NOT_GIVEN
 from openai.types.chat.chat_completion import ChatCompletion
 from openai import Stream, NotFoundError
@@ -39,8 +37,6 @@ class PassthroughCredentials(credentials.Credentials):
 
 TEST_OPENAI_BASE_URL = os.environ.get("TEST_OPENAI_BASE_URL", "")
 TEST_AZURE_OPENAI_BASE_URL = os.environ.get("TEST_AZURE_OPENAI_BASE_URL", "")
-TEST_MISTRAL_BASE_URL = os.environ.get("TEST_MISTRAL_BASE_URL", "")
-TEST_ANTHROPIC_BASE_URL = os.environ.get("TEST_ANTHROPIC_BASE_URL", "")
 TEST_GEMINI_BASE_URL = os.environ.get("TEST_GEMINI_BASE_URL", "")
 TEST_VERTEX_AI_BASE_URL = os.environ.get("TEST_VERTEX_AI_BASE_URL", "")
 
@@ -57,14 +53,6 @@ class LLMClient:
         base_url=TEST_AZURE_OPENAI_BASE_URL,
         max_retries=10,
         api_version="2024-02-15-preview",
-    )
-    mistral_client = Mistral(
-        api_key=(os.environ.get("MISTRAL_API_KEY", "") if passthrough else "FAKE"),
-        server_url=TEST_MISTRAL_BASE_URL,
-    )
-    anthropic_client = Anthropic(
-        api_key=(os.environ.get("ANTHROPIC_API_KEY", "") if passthrough else "FAKE"),
-        base_url=TEST_ANTHROPIC_BASE_URL,
     )
 
     genai.configure(

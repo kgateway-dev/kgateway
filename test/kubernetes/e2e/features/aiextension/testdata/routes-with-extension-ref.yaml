@@ -25,30 +25,6 @@ spec:
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: mistralai
-  namespace: ai-test
-spec:
-  parentRefs:
-    - name: ai-gateway
-  rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /mistralai
-      backendRefs:
-        - name: mistralai
-          group: gateway.kgateway.dev
-          kind: Backend
-          filters:
-            - type: ExtensionRef
-              extensionRef:
-                group: gateway.kgateway.dev
-                kind: RoutePolicy
-                name: mistralai-policy
----
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
   name: azure-openai
   namespace: ai-test
 spec:
@@ -71,30 +47,6 @@ spec:
                 group: gateway.kgateway.dev
                 kind: RoutePolicy
                 name: openai-azure-policy
----
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: anthropic
-  namespace: ai-test
-spec:
-  parentRefs:
-    - name: ai-gateway
-  rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /anthropic
-      backendRefs:
-        - name: anthropic
-          group: gateway.kgateway.dev
-          kind: Backend
-          filters:
-            - type: ExtensionRef
-              extensionRef:
-                group: gateway.kgateway.dev
-                kind: RoutePolicy
-                name: anthropic-policy
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
