@@ -4,7 +4,7 @@ metadata:
   name: example-gateway
   namespace: infra
 spec:
-  gatewayClassName: example-gateway-class
+  gatewayClassName: kgateway
   listeners:
   - name: http
     protocol: HTTP

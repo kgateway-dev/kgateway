@@ -196,7 +196,6 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 	// TODO: consider moving the common code to a util that both proxy syncer and this test call
 	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
 	extensions := registry.MergePlugins(plugins...)
-	commoncol.InitPlugins(ctx, extensions)
 
 	gk := schema.GroupKind{
 		Group: "",
@@ -207,23 +206,23 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 		GetBackendForRef: testBackendPlugin{}.GetBackendForRefPlugin,
 	}
 
-	gi, ri, ui, ei := krtcollections.InitCollections(ctx, extensions, cli, commoncol.RefGrants, krtOpts)
+	commoncol.InitPlugins(ctx, extensions)
 
 	translator := translator.NewCombinedTranslator(ctx, extensions, commoncol)
-	translator.Init(ctx, ri)
+	translator.Init(ctx, commoncol.Routes)
 
 	cli.RunAndWait(ctx.Done())
-	gi.Gateways.WaitUntilSynced(ctx.Done())
-	kubeclient.WaitForCacheSync("routes", ctx.Done(), ri.HasSynced)
+	commoncol.GatewayIndex.Gateways.WaitUntilSynced(ctx.Done())
+	kubeclient.WaitForCacheSync("routes", ctx.Done(), commoncol.Routes.HasSynced)
 	kubeclient.WaitForCacheSync("extensions", ctx.Done(), extensions.HasSynced)
 	kubeclient.WaitForCacheSync("commoncol", ctx.Done(), commoncol.HasSynced)
 	kubeclient.WaitForCacheSync("translator", ctx.Done(), translator.HasSynced)
-	kubeclient.WaitForCacheSync("backends", ctx.Done(), ui.HasSynced)
-	kubeclient.WaitForCacheSync("endpoints", ctx.Done(), ei.HasSynced)
+	kubeclient.WaitForCacheSync("backends", ctx.Done(), commoncol.BackendIndex.HasSynced)
+	kubeclient.WaitForCacheSync("endpoints", ctx.Done(), commoncol.Endpoints.HasSynced)
 
 	results := make(map[types.NamespacedName]ActualTestResult)
 
-	for _, gw := range gi.Gateways.List() {
+	for _, gw := range commoncol.GatewayIndex.Gateways.List() {
 		gwNN := types.NamespacedName{
 			Namespace: gw.Namespace,
 			Name:      gw.Name,
