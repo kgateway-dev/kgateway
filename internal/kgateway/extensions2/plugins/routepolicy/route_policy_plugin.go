@@ -79,7 +79,7 @@ func (d *routePolicy) Equals(in any) bool {
 }
 
 type routePolicyPluginGwPass struct {
-	setTransformationInChain bool // TODO(nfuden): mae this multi stage
+	setTransformationInChain bool // TODO(nfuden): make this multi stage
 	// TODO(nfuden): dont abuse httplevel filter in favor of route level
 	rustformationStash map[string]string
 	ir.UnimplementedProxyTranslationPass
@@ -347,7 +347,7 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 		policyIr.AISecret = aiSecretForSpec(ctx, secrets, krtctx, policyCR)
 
 		// Apply transformation specific translation
-		transformationForSpec(policyCR.Spec, outSpec)
+		transformationForSpec(policyCR.Spec, &outSpec)
 
 		for _, err := range outSpec.errors {
 			contextutils.LoggerFrom(ctx).Error(policyCR.GetNamespace(), policyCR.GetName(), err)
@@ -386,7 +386,7 @@ func aiSecretForSpec(
 }
 
 // transformationForSpec translates the transformation spec into and onto the IR policy
-func transformationForSpec(spec v1alpha1.RoutePolicySpec, out routeSpecIr) {
+func transformationForSpec(spec v1alpha1.RoutePolicySpec, out *routeSpecIr) {
 	var err error
 	if !useRustformations {
 		out.transform, err = toTransformFilterConfig(&spec.Transformation)

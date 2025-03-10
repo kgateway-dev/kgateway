@@ -34,7 +34,7 @@ jobs:
         # Mar 4, 2025: TODO minutes
         - cluster-name: 'cluster-two'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^Transformation$$'
+          go-test-run-regex: '^TestKgateway$$/^Transforms$$'
           localstack: 'false'
         # TODO: measure minutes.
         - cluster-name: 'cluster-three'
