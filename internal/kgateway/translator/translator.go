@@ -17,7 +17,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/query"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	gwtranslator "github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/gateway"
@@ -61,14 +60,9 @@ func NewCombinedTranslator(
 	}
 }
 
-func (s *CombinedTranslator) Init(ctx context.Context, routes *krtcollections.RoutesIndex) error {
+func (s *CombinedTranslator) Init(ctx context.Context) error {
 	ctx = contextutils.WithLogger(ctx, "k8s-gw-proxy-syncer")
-
-	queries := query.NewData(
-		s.commonCols.Routes,
-		s.commonCols.Secrets,
-		s.commonCols.Namespaces,
-	)
+	queries := query.NewData(s.commonCols)
 	s.gwtranslator = gwtranslator.NewTranslator(queries)
 	s.irtranslator = &irtranslator.Translator{
 		ContributedPolicies: s.extensions.ContributesPolicies,

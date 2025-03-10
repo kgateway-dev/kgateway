@@ -19,6 +19,7 @@ import (
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
@@ -920,7 +921,9 @@ func newQueries(initObjs ...client.Object) query.GatewayQueries {
 	for !rtidx.HasSynced() || !refgrants.HasSynced() || !secrets.HasSynced() || !upstreams.HasSynced() {
 		time.Sleep(time.Second / 10)
 	}
-	return query.NewData(rtidx, secrets, nsCol)
+	return query.NewData(&common.CommonCollections{
+		Routes: rtidx, Secrets: secrets, Namespaces: nsCol,
+	})
 }
 
 func k8sUpstreams(services krt.Collection[*corev1.Service]) krt.Collection[ir.BackendObjectIR] {

@@ -183,7 +183,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) erro
 
 	finalBackends := krt.JoinCollection(s.commonCols.BackendIndex.Backends(), krtopts.ToOptions("FinalUpstreams")...)
 
-	s.translator.Init(ctx, s.commonCols.Routes)
+	s.translator.Init(ctx)
 
 	s.mostXdsSnapshots = krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
 		logger.Debugf("building proxy for kube gw %s version %s", client.ObjectKeyFromObject(gw.Obj), gw.Obj.GetResourceVersion())

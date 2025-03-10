@@ -1,0 +1,63 @@
+Listeners:
+- address:
+    socketAddress:
+      address: '::'
+      ipv4Compat: true
+      portValue: 15088
+  filterChains:
+  - filterChainMatch:
+      destinationPort: 5000
+      prefixRanges:
+      - addressPrefix: 1.2.3.4
+        prefixLen: 32
+    filters:
+    - name: proxy_protocol_authority
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.set_filter_state.v3.Config
+        onNewConnection:
+        - factoryKey: envoy.string
+          formatString:
+            textFormatSource:
+              inlineString: '%DYNAMIC_METADATA(envoy.filters.listener.proxy_protocol:peer_principal)%'
+          objectKey: io.istio.peer_principal
+          sharedWithUpstream: ONCE
+    - name: envoy.filters.network.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        httpFilters:
+        - name: envoy.filters.http.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+        mergeSlashes: true
+        normalizePath: true
+        rds:
+          configSource:
+            ads: {}
+            resourceApiVersion: V3
+          routeConfigName: fc_http_5000_helloworld_infra
+        statPrefix: http
+        useRemoteAddress: true
+    name: fc_http_5000_helloworld_infra
+  listenerFilters:
+  - name: envoy.filters.listener.proxy_protocol
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.listener.proxy_protocol.v3.ProxyProtocol
+      rules:
+      - onTlvPresent:
+          key: peer_principal
+        tlvType: 208
+  name: proxy_protocol_inbound
+Routes:
+- ignorePortInHostMatching: true
+  name: fc_http_5000_helloworld_infra
+  virtualHosts:
+  - domains:
+    - '*'
+    name: vh_http_5000_helloworld_infra
+    routes:
+    - match:
+        prefix: /
+      name: vh_http_5000_helloworld_infra-route-0-matcher-0
+      route:
+        cluster: kube_infra_helloworld_5000
+        clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR

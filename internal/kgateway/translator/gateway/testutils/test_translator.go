@@ -6,6 +6,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/google/go-cmp/cmp"
@@ -52,6 +53,7 @@ func TestTranslation(
 		InputFiles: inputFiles,
 	}.Run(t, ctx)
 	Expect(err).NotTo(HaveOccurred())
+	// TODO allow expecting multiple gateways in the output (map nns -> outputFile?)
 	Expect(results).To(HaveLen(1))
 	Expect(results).To(HaveKey(gwNN))
 	result := results[gwNN]
@@ -241,16 +243,20 @@ func (tc TestCase) Run(t test.Failer, ctx context.Context) (map[types.Namespaced
 	commoncol.InitPlugins(ctx, extensions)
 
 	translator := translator.NewCombinedTranslator(ctx, extensions, commoncol)
-	translator.Init(ctx, commoncol.Routes)
+	translator.Init(ctx)
 
 	cli.RunAndWait(ctx.Done())
 	commoncol.GatewayIndex.Gateways.WaitUntilSynced(ctx.Done())
+
+	kubeclient.WaitForCacheSync("routes", ctx.Done(), commoncol.HasSynced)
 	kubeclient.WaitForCacheSync("routes", ctx.Done(), commoncol.Routes.HasSynced)
 	kubeclient.WaitForCacheSync("extensions", ctx.Done(), extensions.HasSynced)
 	kubeclient.WaitForCacheSync("commoncol", ctx.Done(), commoncol.HasSynced)
 	kubeclient.WaitForCacheSync("translator", ctx.Done(), translator.HasSynced)
 	kubeclient.WaitForCacheSync("backends", ctx.Done(), commoncol.BackendIndex.HasSynced)
 	kubeclient.WaitForCacheSync("endpoints", ctx.Done(), commoncol.Endpoints.HasSynced)
+
+	time.Sleep(1 * time.Second)
 
 	results := make(map[types.NamespacedName]ActualTestResult)
 

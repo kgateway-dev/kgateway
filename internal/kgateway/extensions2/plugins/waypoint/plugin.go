@@ -16,25 +16,24 @@ func NewPlugin(
 	ctx context.Context,
 	commonCols *common.CommonCollections,
 ) extensionsplug.Plugin {
+	queries := query.NewData(
+		commonCols,
+	)
+	waypointQueries := waypointquery.NewQueries(
+		commonCols,
+		queries,
+	)
 	return extensionsplug.Plugin{
 		ContributesPolicies: extensionsplug.ContributesPolicies{},
 		ContributesGwTranslator: func(gw *gwv1.Gateway) extensionsplug.KGwTranslator {
-			queries := query.NewData(
-				commonCols.Routes,
-				commonCols.Secrets,
-				commonCols.Namespaces,
-			)
-			waypointQueries := waypointquery.NewQueries(
-				commonCols,
-				queries,
-			)
 			if gw.Spec.GatewayClassName != wellknown.WaypointClassName {
 				return nil
 			}
+
 			return NewTranslator(queries, waypointQueries)
 		},
-		// ExtraHasSynced: func() bool {
-		// 	return waypointQueries.HasSynced()
-		// },
+		ExtraHasSynced: func() bool {
+			return waypointQueries.HasSynced()
+		},
 	}
 }
