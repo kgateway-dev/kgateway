@@ -47,6 +47,7 @@ type BackendIr struct {
 	AwsIr         *AwsIr
 	AISecret      *ir.Secret
 	AIMultiSecret map[string]*ir.Secret
+	Errors        []error
 }
 
 func data(s *ir.Secret) map[string][]byte {
@@ -100,8 +101,13 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 	col := krt.WrapClient(kclient.New[*v1alpha1.Backend](commoncol.Client), commoncol.KrtOpts.ToOptions("Backends")...)
 
 	gk := wellknown.BackendGVK.GroupKind()
-	translate := buildTranslateFunc(ctx, commoncol.Secrets)
+	translateFn := buildTranslateFunc(ctx, commoncol.Secrets)
 	bcol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.BackendObjectIR {
+		backendIR := translateFn(krtctx, i)
+		if len(backendIR.Errors) > 0 {
+			contextutils.LoggerFrom(ctx).Error("failed to translate backend", "backend", i.GetName(), "error", errors.Join(backendIR.Errors...))
+			return nil
+		}
 		// resolve secrets
 		return &ir.BackendObjectIR{
 			ObjectSource: ir.ObjectSource{
@@ -113,7 +119,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			GvPrefix:          ExtensionName,
 			CanonicalHostname: hostname(i),
 			Obj:               i,
-			ObjIr:             translate(krtctx, i),
+			ObjIr:             backendIR,
 		}
 	})
 	endpoints := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *v1alpha1.Backend) *ir.EndpointsForBackend {
@@ -154,12 +160,12 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 
 			lambdaArn, err := buildLambdaARN(i.Spec.Aws, region)
 			if err != nil {
-				contextutils.LoggerFrom(ctx).Error(err)
+				backendIr.Errors = append(backendIr.Errors, err)
 			}
 
 			endpointConfig, err := configureLambdaEndpoint(i.Spec.Aws)
 			if err != nil {
-				contextutils.LoggerFrom(ctx).Error(err)
+				backendIr.Errors = append(backendIr.Errors, err)
 			}
 
 			var lambdaTransportSocket *envoy_config_core_v3.TransportSocket
@@ -169,7 +175,7 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 					Sni: endpointConfig.hostname,
 				})
 				if err != nil {
-					contextutils.LoggerFrom(ctx).Error(err)
+					backendIr.Errors = append(backendIr.Errors, err)
 				}
 				lambdaTransportSocket = &envoy_config_core_v3.TransportSocket{
 					Name: envoywellknown.TransportSocketTls,
@@ -184,13 +190,13 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 				var err error
 				secret, err = pluginutils.GetSecretIr(secrets, krtctx, i.Spec.Aws.Auth.Secret.Name, i.GetNamespace())
 				if err != nil {
-					contextutils.LoggerFrom(ctx).Error(err)
+					backendIr.Errors = append(backendIr.Errors, err)
 				}
 			}
 
 			lambdaFilters, err := buildLambdaFilters(lambdaArn, region, secret, invokeMode)
 			if err != nil {
-				contextutils.LoggerFrom(ctx).Error(err)
+				backendIr.Errors = append(backendIr.Errors, err)
 			}
 
 			backendIr.AwsIr = &AwsIr{
@@ -206,7 +212,7 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 				if secretRef != nil {
 					secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, ns)
 					if err != nil {
-						contextutils.LoggerFrom(ctx).Error(err)
+						backendIr.Errors = append(backendIr.Errors, err)
 					}
 					backendIr.AISecret = secret
 				}
@@ -223,7 +229,7 @@ func buildTranslateFunc(ctx context.Context, secrets *krtcollections.SecretIndex
 						// if secretRef is used, set the secret on the backend ir
 						secret, err := pluginutils.GetSecretIr(secrets, krtctx, secretRef.Name, ns)
 						if err != nil {
-							contextutils.LoggerFrom(ctx).Error(err)
+							backendIr.Errors = append(backendIr.Errors, err)
 						}
 						backendIr.AIMultiSecret[getMultiPoolSecretKey(idx, jdx, secretRef.Name)] = secret
 					}
