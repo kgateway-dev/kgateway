@@ -26,10 +26,10 @@ jobs:
         # Above each test below, we document the latest date/time for the GitHub action step to run
         # NOTE: We use the GitHub action step time (as opposed to the `go test` time), because it is easier to capture
         test:
-        # Feb 27, 2025: 13 minutes
+        # March 10, 2025: 20 minutes
         - cluster-name: 'cluster-one'
           go-test-args: '-v -timeout=25m'
-          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$|^TestKgateway$$/^Backends$$'
+          go-test-run-regex: '^TestKgateway$$/^BasicRouting$$|^TestKgateway$$/^Deployer$$|^TestKgateway$$/^RouteDelegation$$|^TestKgateway$$/^HTTPRouteServices$$|^TestKgateway$$/^TCPRouteServices$$|^TestKgateway$$/^TLSRouteServices$$|^TestKgateway$$/^Backends$$'
           localstack: 'false'
         # Mar 4, 2025: TODO minutes
         - cluster-name: 'cluster-two'
@@ -45,7 +45,7 @@ jobs:
 #         # Dec 4, 2024: 23 minutes
 #         - cluster-name: 'cluster-two'
 #           go-test-args: '-v -timeout=25m'
-#           go-test-run-regex: '^TestKgateway$$/^RouteDelegation$$|^TestKgatewayIstioRevision$$|^TestRevisionIstioRegression$$|^TestKgateway$$/^RouteOptions$$|^TestKgateway$$/^VirtualHostOptions$$|^TestKgateway$$/^HeadlessSvc$$|^TestKgateway$$/^PortRouting$$|^TestKgatewayMinimalDefaultGatewayParameters$$|^TestKgateway$$/^DirectResponse$$|^TestKgateway$$/^HttpListenerOptions$$|^TestKgateway$$/^ListenerOptions$$|^TestKgateway$$/^GlooAdminServer$$'
+#           go-test-run-regex: '^TestKgatewayIstioRevision$$|^TestRevisionIstioRegression$$|^TestKgateway$$/^RouteOptions$$|^TestKgateway$$/^VirtualHostOptions$$|^TestKgateway$$/^HeadlessSvc$$|^TestKgateway$$/^PortRouting$$|^TestKgatewayMinimalDefaultGatewayParameters$$|^TestKgateway$$/^DirectResponse$$|^TestKgateway$$/^HttpListenerOptions$$|^TestKgateway$$/^ListenerOptions$$|^TestKgateway$$/^GlooAdminServer$$'
 
 #         # Dec 4, 2024: 24 minutes
 #         - cluster-name: 'cluster-three'
