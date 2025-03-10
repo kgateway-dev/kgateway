@@ -30,12 +30,6 @@ spec:
   - name: example-waypoint
     namespace: infra
   rules:
-  - filters:
-    - type: ResponseHeaderModifier
-      responseHeaderModifier:
-        add:
-        - name: "traversed-waypoint"
-          value: "kgateway-waypoint"
   - matches:
     - path:
         type: PathPrefix
