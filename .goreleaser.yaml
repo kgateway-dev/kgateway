@@ -162,16 +162,22 @@ release:
 
     ### Helm Charts
 
-    The Helm chart is available at {{ .Env.IMAGE_REGISTRY }}/charts/kgateway.
+    The Helm chart is available at {{ .Env.VANITY_REGISTRY }}/charts/kgateway.
 
     ### Docker Images
 
     The docker images are available at:
 
-    - cr.kgateway.dev/kgateway-dev/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}
-    - cr.kgateway.dev/kgateway-dev/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.VERSION }}
-    - cr.kgateway.dev/kgateway-dev/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.VERSION }}
+    - {{ .Env.VANITY_REGISTRY }}/{{ .Env.CONTROLLER_IMAGE_REPO }}:{{ .Env.VERSION }}
+    - {{ .Env.VANITY_REGISTRY }}/{{ .Env.SDS_IMAGE_REPO }}:{{ .Env.VERSION }}
+    - {{ .Env.VANITY_REGISTRY }}/{{ .Env.ENVOYINIT_IMAGE_REPO }}:{{ .Env.VERSION }}
 
     ## Quickstart
+
+    Try installing this release:
+    ```
+    helm install --create-namespace --namespace kgateway-system kgateway \
+      oci://{{ .Env.VANITY_REGISTRY }}/charts/kgateway --version {{ .Env.VERSION }}
+    ```
 
     For detailed installation instructions and next steps, please visit our [quickstart guide](https://kgateway.dev/docs/quickstart/).
