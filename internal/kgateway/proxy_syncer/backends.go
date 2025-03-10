@@ -11,7 +11,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
-	ggv2utils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 )
 
@@ -67,7 +67,7 @@ func NewPerClientEnvoyClusters(
 				Cluster:        c,
 				Name:           c.GetName(),
 				Error:          err,
-				ClusterVersion: ggv2utils.HashProto(c),
+				ClusterVersion: utils.HashProto(c),
 			})
 		}
 		return uccWithClusterRet

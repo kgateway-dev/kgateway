@@ -56,19 +56,12 @@ type ControlPlaneInfo struct {
 	XdsPort uint32
 }
 
-type AwsInfo struct {
-	EnableServiceAccountCredentials bool
-	StsClusterName                  string
-	StsUri                          string
-}
-
 // Inputs is the set of options used to configure the gateway deployer deployment
 type Inputs struct {
 	ControllerName          string
 	Dev                     bool
 	IstioIntegrationEnabled bool
 	ControlPlane            ControlPlaneInfo
-	Aws                     *AwsInfo
 }
 
 // NewDeployer creates a new gateway deployer
@@ -176,7 +169,8 @@ func (d *Deployer) getGatewayParametersForGateway(ctx context.Context, gw *api.G
 		// there is no custom GatewayParameters; use GatewayParameters attached to GatewayClass
 		logger.V(1).Info("no GatewayParameters found for Gateway",
 			"gatewayName", gw.GetName(),
-			"gatewayNamespace", gw.GetNamespace())
+			"gatewayNamespace", gw.GetNamespace(),
+		)
 		return d.getDefaultGatewayParameters(ctx, gw)
 	}
 
@@ -350,9 +344,6 @@ func (d *Deployer) getValues(gw *api.Gateway, gwParam *v1alpha1.GatewayParameter
 	gateway.Istio = getIstioValues(d.inputs.IstioIntegrationEnabled, istioConfig)
 	gateway.SdsContainer = getSdsContainerValues(sdsContainerConfig)
 	gateway.IstioContainer = getIstioContainerValues(istioContainerConfig)
-
-	// aws values
-	gateway.Aws = getAwsValues(d.inputs.Aws)
 
 	// ai values
 	gateway.AIExtension, err = getAIExtensionValues(aiExtensionConfig)

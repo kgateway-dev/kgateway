@@ -37,8 +37,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.AnthropicConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AwsAuth"):
 		return &apiv1alpha1.AwsAuthApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("AWSAuthIRSA"):
-		return &apiv1alpha1.AWSAuthIRSAApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AwsBackend"):
 		return &apiv1alpha1.AwsBackendApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AwsLambda"):

@@ -193,7 +193,7 @@ func GetTestReleasedVersion(ctx context.Context, repoName string) string {
 		return current.String()
 	}
 
-	// Assume that releasedVersion is a valid version, for a previously released version of Gloo Edge
+	// Assume that releasedVersion is a valid version, for a previously released version of kgateway
 	return releasedVersion
 }
 func GetTestHelper(ctx context.Context, namespace string) (*helper.SoloTestHelper, error) {

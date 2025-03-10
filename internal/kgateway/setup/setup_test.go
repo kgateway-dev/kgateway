@@ -48,7 +48,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/proxy_syncer"
-	ggv2setup "github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/setup"
 )
 
 func getAssetsDir(t *testing.T) string {
@@ -108,32 +108,29 @@ func init() {
 }
 
 func TestWithAutoDns(t *testing.T) {
-	os.Setenv("KGW_DNS_LOOKUP_FAMILY", "AUTO")
-	t.Cleanup(func() {
-		os.Unsetenv("KGW_DNS_LOOKUP_FAMILY")
-	})
-	runScenario(t, "testdata/autodns")
+	st, err := settings.BuildSettings()
+	if err != nil {
+		t.Fatalf("can't get settings %v", err)
+	}
+	st.DnsLookupFamily = "AUTO"
+
+	runScenario(t, "testdata/autodns", st)
 }
 
 func TestScenarios(t *testing.T) {
-	// set global settings env vars; "default" ggv2setup_tests assume these are set to true
-	os.Setenv("KGW_ENABLE_ISTIO_INTEGRATION", "true")
-	os.Setenv("KGW_ENABLE_AUTO_MTLS", "true")
-	t.Cleanup(func() {
-		os.Unsetenv("KGW_ENABLE_ISTIO_INTEGRATION")
-		os.Unsetenv("KGW_ENABLE_AUTO_MTLS")
-	})
-	runScenario(t, "testdata")
+	st, err := settings.BuildSettings()
+	if err != nil {
+		t.Fatalf("can't get settings %v", err)
+	}
+	st.EnableIstioIntegration = true
+	st.EnableAutoMtls = true
+
+	runScenario(t, "testdata", st)
 }
 
-func runScenario(t *testing.T, scenarioDir string) {
+func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Settings) {
 	proxy_syncer.UseDetailedUnmarshalling = true
 	writer.set(t)
-
-	os.Setenv("POD_NAMESPACE", "gwtest") // TODO: is this still needed?
-	t.Cleanup(func() {
-		os.Unsetenv("POD_NAMESPACE")
-	})
 
 	testEnv := &envtest.Environment{
 		CRDDirectoryPaths: []string{
@@ -192,27 +189,23 @@ func runScenario(t *testing.T, scenarioDir string) {
 		t.Fatalf("can't listen %v", err)
 	}
 	xdsPort := lis.Addr().(*net.TCPAddr).Port
-	snapCache, grpcServer := ggv2setup.NewControlPlaneWithListener(ctx, lis, uniqueClientCallbacks)
+	snapCache, grpcServer := setup.NewControlPlaneWithListener(ctx, lis, uniqueClientCallbacks)
 	t.Cleanup(func() { grpcServer.Stop() })
 
-	st, err := settings.BuildSettings()
-	if err != nil {
-		t.Fatalf("can't get settings %v", err)
-	}
 	setupOpts := &controller.SetupOpts{
 		Cache:          snapCache,
 		KrtDebugger:    new(krt.DebugHandler),
-		GlobalSettings: st,
+		GlobalSettings: globalSettings,
 	}
 
-	// start ggv2
+	// start kgateway
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		ggv2setup.StartGGv2WithConfig(ctx, setupOpts, cfg, builder, nil, nil)
+		setup.StartKgatewayWithConfig(ctx, setupOpts, cfg, builder, nil, nil)
 	}()
-	// give ggv2 time to initialize so we don't get
-	// "ggv2 not initialized" error
+	// give kgateway time to initialize so we don't get
+	// "kgateway not initialized" error
 	// this means that it attaches the pod collection to the unique client set collection.
 	time.Sleep(time.Second)
 
@@ -231,7 +224,7 @@ func runScenario(t *testing.T, scenarioDir string) {
 				t.Cleanup(func() {
 					writer.set(parentT)
 				})
-				//sadly tests can't run yet in parallel, as ggv2 will add all the k8s services as clusters. this means
+				//sadly tests can't run yet in parallel, as kgateway will add all the k8s services as clusters. this means
 				// that we get test pollution.
 				// once we change it to only include the ones in the proxy, we can re-enable this
 				//				t.Parallel()
@@ -265,6 +258,7 @@ func testScenario(
 	if err != nil {
 		t.Fatalf("failed to read file: %v", err)
 	}
+
 	var expectedXdsDump xdsDump
 	err = expectedXdsDump.FromYaml(ya)
 	if err != nil {
@@ -329,7 +323,7 @@ func testScenario(
 		t.Fatal("wrote out file - nothing to test")
 	}
 	dump.Compare(t, expectedXdsDump)
-	fmt.Println("test done")
+	t.Logf("%s passed", t.Name())
 }
 
 // logKrtState logs the krt state with a message
