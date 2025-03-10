@@ -110,7 +110,7 @@ spec:
         resources:
           {{- toYaml $gateway.resources | nindent 10 }}
 {{- end }} {{/* if $gateway.resources */}}
-{{- if $gateway.istio.enabled }}
+{{- if and $gateway.istio.enabled ($gateway.sdsContainer).image }}
       - name: sds
         image: "{{ template "kgateway.gateway.image" $gateway.sdsContainer.image }}"
         {{- if $gateway.sdsContainer.image.pullPolicy }}
@@ -157,7 +157,7 @@ spec:
           - mountPath: /etc/envoy
             name: envoy-config
 {{- end }} {{/* if $gateway.istio.enabled */}}
-{{- if $gateway.istio.enabled }}
+{{- if and $gateway.istio.enabled ($gateway.istioContainer).image }}
           - mountPath: /etc/istio-certs/
             name: istio-certs
       - name: istio-proxy
@@ -259,7 +259,7 @@ spec:
           - mountPath: /var/run/secrets/workload-spiffe-credentials
             name: workload-certs
 {{- end }} {{/* if $gateway.istio.enabled */}}
-{{- if (($gateway.aiExtension).enabled) }}
+{{- if and ($gateway.aiExtension).enabled ($gateway.aiExtension).image }}
       - name: kgateway-ai-extension
         image: "{{ template "kgateway.gateway.image" $gateway.aiExtension.image }}"
         {{- if $gateway.aiExtension.image.pullPolicy }}
