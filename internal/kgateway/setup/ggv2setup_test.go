@@ -108,32 +108,29 @@ func init() {
 }
 
 func TestWithAutoDns(t *testing.T) {
-	os.Setenv("KGW_DNS_LOOKUP_FAMILY", "AUTO")
-	t.Cleanup(func() {
-		os.Unsetenv("KGW_DNS_LOOKUP_FAMILY")
-	})
-	runScenario(t, "testdata/autodns")
+	st, err := settings.BuildSettings()
+	if err != nil {
+		t.Fatalf("can't get settings %v", err)
+	}
+	st.DnsLookupFamily = "AUTO"
+
+	runScenario(t, "testdata/autodns", st)
 }
 
 func TestScenarios(t *testing.T) {
-	// set global settings env vars; "default" ggv2setup_tests assume these are set to true
-	os.Setenv("KGW_ENABLE_ISTIO_INTEGRATION", "true")
-	os.Setenv("KGW_ENABLE_AUTO_MTLS", "true")
-	t.Cleanup(func() {
-		os.Unsetenv("KGW_ENABLE_ISTIO_INTEGRATION")
-		os.Unsetenv("KGW_ENABLE_AUTO_MTLS")
-	})
-	runScenario(t, "testdata")
+	st, err := settings.BuildSettings()
+	if err != nil {
+		t.Fatalf("can't get settings %v", err)
+	}
+	st.EnableIstioIntegration = true
+	st.EnableAutoMtls = true
+
+	runScenario(t, "testdata", st)
 }
 
-func runScenario(t *testing.T, scenarioDir string) {
+func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Settings) {
 	proxy_syncer.UseDetailedUnmarshalling = true
 	writer.set(t)
-
-	os.Setenv("POD_NAMESPACE", "gwtest") // TODO: is this still needed?
-	t.Cleanup(func() {
-		os.Unsetenv("POD_NAMESPACE")
-	})
 
 	testEnv := &envtest.Environment{
 		CRDDirectoryPaths: []string{
@@ -195,14 +192,10 @@ func runScenario(t *testing.T, scenarioDir string) {
 	snapCache, grpcServer := ggv2setup.NewControlPlaneWithListener(ctx, lis, uniqueClientCallbacks)
 	t.Cleanup(func() { grpcServer.Stop() })
 
-	st, err := settings.BuildSettings()
-	if err != nil {
-		t.Fatalf("can't get settings %v", err)
-	}
 	setupOpts := &controller.SetupOpts{
 		Cache:          snapCache,
 		KrtDebugger:    new(krt.DebugHandler),
-		GlobalSettings: st,
+		GlobalSettings: globalSettings,
 	}
 
 	// start ggv2
@@ -265,6 +258,7 @@ func testScenario(
 	if err != nil {
 		t.Fatalf("failed to read file: %v", err)
 	}
+
 	var expectedXdsDump xdsDump
 	err = expectedXdsDump.FromYaml(ya)
 	if err != nil {
@@ -329,7 +323,7 @@ func testScenario(
 		t.Fatal("wrote out file - nothing to test")
 	}
 	dump.Compare(t, expectedXdsDump)
-	fmt.Println("test done")
+	t.Logf("%s passed", t.Name())
 }
 
 // logKrtState logs the krt state with a message
