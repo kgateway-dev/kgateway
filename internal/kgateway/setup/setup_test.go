@@ -108,7 +108,11 @@ func init() {
 }
 
 func TestWithStandardSettings(t *testing.T) {
-	runScenario(t, "testdata/standard")
+	st, err := settings.BuildSettings()
+	if err != nil {
+		t.Fatalf("can't get settings %v", err)
+	}
+	runScenario(t, "testdata/standard", st)
 }
 
 func TestWithAutoDns(t *testing.T) {
