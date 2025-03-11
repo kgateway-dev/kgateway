@@ -13,14 +13,6 @@ clusters:
       ads: {}
       resourceApiVersion: V3
   metadata: {}
-  name: kube_gwtest_http-backendtlspolicy_8080
-  type: EDS
-- connectTimeout: 5s
-  edsClusterConfig:
-    edsConfig:
-      ads: {}
-      resourceApiVersion: V3
-  metadata: {}
   name: kube_gwtest_reviews_8080
   transportSocket:
     name: envoy.transport_sockets.tls

@@ -87,7 +87,7 @@ func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensi
 			TargetRefs: convertTargetRefs(i.Spec.TargetRefs),
 		}
 		return pol
-	}, commoncol.KrtOpts.ToOptions("BackedTLSPolicyIRs")...)
+	}, commoncol.KrtOpts.ToOptions("BackendTLSPolicyIRs")...)
 
 	return extensionsplug.Plugin{
 		ContributesPolicies: map[schema.GroupKind]extensionsplug.PolicyPlugin{
