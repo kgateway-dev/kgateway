@@ -219,7 +219,7 @@ func (c *Cli) SetLabel(
 	label, value string,
 ) error {
 	// ex: k -n ns label svc svc-a foo=val --overwrite
-	args := []string{"label", kind, name, label + "=", value, "--overwrite"}
+	args := []string{"label", kind, name, label + "=" + value, "--overwrite"}
 	if namespace != "" {
 		args = append(
 			[]string{"-n", namespace},

@@ -18,6 +18,7 @@ var _ e2e.NewSuiteFunc = NewTestingSuite
 
 var (
 	testdata   = filepath.Join(fsutils.MustGetThisDir(), "testdata")
+	nsYAML     = filepath.Join(testdata, "common/test_namespace.yaml")
 	commonYAML = filepath.Join(testdata, "common")
 
 	testNamespace = "waypoint-test-ns"
@@ -45,7 +46,12 @@ func NewTestingSuite(ctx context.Context, testInst *e2e.TestInstallation) suite.
 // * Deploy server (Services, Pods) - `svc-a`, `svc-b`
 // * Deploy client (Pods) - `client-a`
 func (s *testingSuite) SetupSuite() {
-	err := s.testInstallation.ClusterContext.Cli.ApplyFilePath(s.ctx, commonYAML, "-n", testNamespace)
+	// must apply the ns first
+	err := s.testInstallation.ClusterContext.Cli.ApplyFilePath(s.ctx, nsYAML)
+	if err != nil {
+		s.FailNow("failed creating suite namespace", nsYAML, err)
+	}
+	err = s.testInstallation.ClusterContext.Cli.ApplyFilePath(s.ctx, commonYAML, "-n", testNamespace)
 	if err != nil {
 		s.FailNow("failed applying suite yaml", commonYAML, err)
 	}
@@ -78,7 +84,7 @@ func (s *testingSuite) SetupSuite() {
 }
 
 func (s *testingSuite) TearDownSuite() {
-	s.testInstallation.ClusterContext.Cli.DeleteFilePath(s.ctx, commonYAML, "-n", testNamespace)
+	// s.testInstallation.ClusterContext.Cli.DeleteFilePath(s.ctx, commonYAML, "-n", testNamespace)
 }
 
 func (s *testingSuite) applyOrFail(fileName string, namespace string) {

@@ -14,10 +14,10 @@ spec:
         value: "svc-a:8080"
     - headers:
       - name: "Host"
-        value: "svc-a.waypoint-test:8080"
+        value: "svc-a.waypoint-test-ns:8080"
     - headers:
       - name: "Host"
-        value: "svc-a.waypoint-test.svc.cluster.local:8080"
+        value: "svc-a.waypoint-test-ns.svc.cluster.local:8080"
     backendRefs:
     - name: svc-a
       port: 8080
@@ -33,10 +33,10 @@ spec:
         value: "svc-b:8080"
     - headers:
       - name: "Host"
-        value: "svc-b.waypoint-test:8080"
+        value: "svc-b.waypoint-test-ns:8080"
     - headers:
       - name: "Host"
-        value: "svc-b.waypoint-test.svc.cluster.local:8080"
+        value: "svc-b.waypoint-test-ns.svc.cluster.local:8080"
     backendRefs:
     - name: svc-b
       port: 8080
