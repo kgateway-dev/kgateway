@@ -50,8 +50,6 @@ jobs:
 
       - name: Prepare Python Runner
         uses: ./.github/actions/prep-python-runner
-        with:
-          github-token: ${{ env.GITHUB_TOKEN }}
 
       - name: Run Tests
         shell: bash

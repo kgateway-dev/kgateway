@@ -26,6 +26,9 @@ KIND="${KIND:-go tool kind}"
 # If true, use localstack for lambda functions
 LOCALSTACK="${LOCALSTACK:-false}"
 
+# Export the variables so they are available in the environment
+export VERSION CLUSTER_NAME
+
 function create_kind_cluster_or_skip() {
   activeClusters=$(kind get clusters)
 

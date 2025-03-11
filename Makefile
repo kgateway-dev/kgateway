@@ -26,8 +26,6 @@ help: ## Output the self-documenting make targets
 
 ROOTDIR := $(shell pwd)
 OUTPUT_DIR ?= $(ROOTDIR)/_output
-AI_EXTENSION_DIR := $(ROOTDIR)/python
-TEST_AI_PROVIDER_SERVER_DIR := $(ROOTDIR)/test/mocks/mock-ai-provider-server
 
 # TODO: fix this
 export IMAGE_REGISTRY ?= ghcr.io/kgateway-dev
@@ -339,6 +337,8 @@ go-generate-apis: ## Run all go generate directives in the repo, including codeg
 go-generate-mocks: ## Runs all generate directives for mockgen in the repo
 	GO111MODULE=on go generate -run="mockgen" ./...
 
+AI_EXTENSION_DIR := $(ROOTDIR)/python
+
 .PHONY: generate-ai-extension-apis
 generate-ai-extension-apis:
 ifeq ($(SKIP_VENV), true)
@@ -353,16 +353,26 @@ else
 	)
 endif
 
+#----------------------------------------------------------------------------------
+# AI Extensions ExtProc Server
+#----------------------------------------------------------------------------------
+
+export AI_EXTENSION_IMAGE_REPO ?= kgateway-ai-extension
 
 .PHONY: kgateway-ai-extension-docker
 kgateway-ai-extension-docker:
-	cd $(AI_EXTENSION_DIR) && docker buildx build $(LOAD_OR_PUSH) $(DOCKER_BUILD_ARGS_AI_EXT) -f Dockerfile . \
+	docker buildx build $(LOAD_OR_PUSH) $(DOCKER_BUILD_ARGS_AI_EXT) -f $(AI_EXTENSION_DIR)/Dockerfile $(AI_EXTENSION_DIR) \
 		$(QUAY_EXPIRATION_LABEL) \
 		-t $(IMAGE_REGISTRY)/kgateway-ai-extension:$(VERSION)
 
+#----------------------------------------------------------------------------------
+# AI Extensions Test Server (for mocking AI Providers)
+#----------------------------------------------------------------------------------
+
+TEST_AI_PROVIDER_SERVER_DIR := $(ROOTDIR)/test/mocks/mock-ai-provider-server
 .PHONY: test-ai-provider-docker
 test-ai-provider-docker:
-	cd $(TEST_AI_PROVIDER_SERVER_DIR) && docker buildx build $(LOAD_OR_PUSH) $(DOCKER_BUILD_ARGS_AI_EXT) -f Dockerfile . \
+	docker buildx build $(LOAD_OR_PUSH) $(DOCKER_BUILD_ARGS_AI_EXT) -f $(TEST_AI_PROVIDER_SERVER_DIR)/Dockerfile $(TEST_AI_PROVIDER_SERVER_DIR) \
 		$(QUAY_EXPIRATION_LABEL) \
 		-t $(IMAGE_REGISTRY)/test-ai-provider:$(VERSION)
 

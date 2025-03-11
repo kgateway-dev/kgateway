@@ -7,17 +7,12 @@ inputs:
     description: directory to run setup steps in
     required: false
     default: '.'
-  github-token:
-    description: GitHub token used to configure git for private modules
-    required: true
 
 runs:
   using: "composite"
   steps:
     - name: Cancel Previous Actions
       uses: styfle/cancel-workflow-action@0.12.1
-      with:
-        access_token: ${{ github.token }}
 
     - uses: actions/setup-python@v5
       id: setup_python

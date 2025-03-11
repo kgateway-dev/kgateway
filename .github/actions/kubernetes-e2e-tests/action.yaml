@@ -29,8 +29,6 @@ runs:
     # Python env is needed for ai ext tests & below setup isn't working on arm64
     # so installing it conditionally as we don't build ai-ext image for arm64 at the moment
     uses: ./.github/actions/prep-python-runner
-    with:
-      github-token: ${{ env.GITHUB_TOKEN }}
   - name: Execute tests
     env:
       GO_TEST_USER_ARGS: ${{ inputs.test-args }} -run "${{ inputs.run-regex }}"

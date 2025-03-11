@@ -24,15 +24,15 @@ type MockResponse struct {
 	IsGzip   bool
 }
 
-var testData = map[string]MockResponse{
-	"793764f12a5e331ae08cecab749a022c23867d03c9db18cf00fc4dd1dc89f132": {FilePath: "data/routing/azure_non_streaming.json", IsGzip: false},
-	"fdcaa093f659f4035e1502c2d7b4ed8160365330513b20ec1deed795327037b3": {FilePath: "data/routing/openai_non_streaming.txt.gz", IsGzip: true},
-	"c9c34d39cb0af7ef19530a58aae8557d951fb1eef1fcaf2b65583cb823ca47a2": {FilePath: "data/routing/gemini_non_streaming.json", IsGzip: false},
-	"6be80eb5071d90b7aafefc1e2f11d045acec300c1c71e6bbfce415bb3ede0abd": {FilePath: "data/routing/vertex_ai_non_streaming.json", IsGzip: false},
-	"daa5badeb5cfabcb85b36bb0d6d8daa2a63536329f3c48e654137a6b3dc8c3d6": {FilePath: "data/streaming/azure_streaming.txt", IsGzip: false},
-	"705bf37e4ef6d83df189e431aeb6515ac101cce05bbd0056d8aa33da140c724b": {FilePath: "data/streaming/openai_streaming.txt", IsGzip: false},
-	"3cfe127aeb62bea0bd5f716e2cb41cde7ee716f10253fdaa5ce635e112396e86": {FilePath: "data/streaming/gemini_streaming.txt", IsGzip: false},
-	"932f03e0388bfffb32732bf96e2aa76f31967c8e8f073ed835092c2e1146cfa6": {FilePath: "data/streaming/vertex_ai_streaming.txt", IsGzip: false},
+var mockData = map[string]MockResponse{
+	"793764f12a5e331ae08cecab749a022c23867d03c9db18cf00fc4dd1dc89f132": {FilePath: "mocks/routing/azure_non_streaming.json", IsGzip: false},
+	"fdcaa093f659f4035e1502c2d7b4ed8160365330513b20ec1deed795327037b3": {FilePath: "mocks/routing/openai_non_streaming.txt.gz", IsGzip: true},
+	"c9c34d39cb0af7ef19530a58aae8557d951fb1eef1fcaf2b65583cb823ca47a2": {FilePath: "mocks/routing/gemini_non_streaming.json", IsGzip: false},
+	"6be80eb5071d90b7aafefc1e2f11d045acec300c1c71e6bbfce415bb3ede0abd": {FilePath: "mocks/routing/vertex_ai_non_streaming.json", IsGzip: false},
+	"daa5badeb5cfabcb85b36bb0d6d8daa2a63536329f3c48e654137a6b3dc8c3d6": {FilePath: "mocks/streaming/azure_streaming.txt", IsGzip: false},
+	"705bf37e4ef6d83df189e431aeb6515ac101cce05bbd0056d8aa33da140c724b": {FilePath: "mocks/streaming/openai_streaming.txt", IsGzip: false},
+	"3cfe127aeb62bea0bd5f716e2cb41cde7ee716f10253fdaa5ce635e112396e86": {FilePath: "mocks/streaming/gemini_streaming.txt", IsGzip: false},
+	"932f03e0388bfffb32732bf96e2aa76f31967c8e8f073ed835092c2e1146cfa6": {FilePath: "mocks/streaming/vertex_ai_streaming.txt", IsGzip: false},
 }
 
 func getJSONHash(data map[string]interface{}, provider string, stream bool) string {
@@ -47,7 +47,8 @@ func getJSONHash(data map[string]interface{}, provider string, stream bool) stri
 func generateSSEStream(c *gin.Context, filePath string) {
 	file, err := os.Open(filePath)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open file"})
+		fmt.Printf("failed to open file: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to open file: %v", err)})
 		return
 	}
 	defer file.Close()
@@ -67,7 +68,7 @@ func handleModelResponse(c *gin.Context, requestData map[string]interface{}, pro
 	hash := getJSONHash(requestData, provider, stream)
 	fmt.Printf("data: %v, hash: %s\n", requestData, hash)
 
-	if response, exists := testData[hash]; exists {
+	if response, exists := mockData[hash]; exists {
 		if stream {
 			generateSSEStream(c, response.FilePath)
 			return
@@ -100,11 +101,12 @@ func main() {
 		stream := false
 		if requestData["stream"] != nil {
 			stream, _ = requestData["stream"].(bool)
-			print("has stream: ", stream)
+			fmt.Printf("has stream: %v\n", stream)
 		}
 		// check that api token is provided
 		apiToken := c.Request.Header.Get("Authorization")
 		if apiToken == "" {
+			fmt.Println("no api token provided in header")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "API token is required"})
 			return
 		}
@@ -128,7 +130,7 @@ func main() {
 		stream := false
 		if requestData["stream"] != nil {
 			stream, _ = requestData["stream"].(bool)
-			print("has stream: ", stream)
+			fmt.Printf("has stream: %v\n", stream)
 		}
 		// check that api token is provided
 		apiToken := c.Request.Header.Get("api-key")
@@ -147,7 +149,7 @@ func main() {
 			return
 		}
 
-		apiToken := c.Param("key")
+		apiToken := c.Query("key")
 		if apiToken == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "API token is required"})
 			return
@@ -189,6 +191,7 @@ func main() {
 
 	// Add NoRoute handler for debugging
 	r.NoRoute(func(c *gin.Context) {
+		fmt.Printf("no route %s\n", c.Request.URL.Path)
 		c.JSON(http.StatusNotFound, gin.H{
 			"error":   "Page not found",
 			"path":    c.Request.URL.Path,

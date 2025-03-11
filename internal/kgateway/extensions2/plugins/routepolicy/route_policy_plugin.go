@@ -80,7 +80,7 @@ func (d *routePolicy) Equals(in any) bool {
 		return false
 	}
 
-	if d.spec.AI.Equals(d2.spec.AI) {
+	if !d.spec.AI.Equals(d2.spec.AI) {
 		return false
 	}
 
