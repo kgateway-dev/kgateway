@@ -521,7 +521,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
     ) -> external_processor_pb2.ProcessingResponse:
         if handler.resp.is_streaming:
             # TODO(npolshak): Prompt guard is only applied to the last function call response.
-            # We can optimize and avoid buffering the intermediate response here: https://github.com/solo-io/solo-projects/issues/7588
+            # We can optimize and avoid buffering the intermediate response
             body = await handler.stream_chunks.buffer(
                 llm_provider=handler.provider,
                 resp_webhook=handler.resp_webhook,

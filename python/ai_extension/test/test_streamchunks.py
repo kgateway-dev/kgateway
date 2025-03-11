@@ -248,11 +248,6 @@ class TestStreamChunks(unittest.TestCase):
                 assert chunks[0].get_content(i) == b"", f"{chunks[0]}"
 
     def test_align_contents_for_guardrail_multichoices(self):
-        # The visualization of how this test work can be found in
-        # https://soloio.slab.com/posts/ai-gateway-guardrail-streaming-response-support-vuox5wpv
-        # search for the "Multi-choice Response:" section
-        # The comments below will make more sense looking at the actual chunks in a table
-
         chunks = StreamChunks()
         provider = OpenAI()
         for chunk in multichoices_test_chunk_data[0:65]:

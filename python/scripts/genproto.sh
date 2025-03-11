@@ -27,8 +27,6 @@ proto_gen_paths=(
   "${TMP_DIR}"/xds/annotations/v3
   "${TMP_DIR}"/validate
   "${TMP_DIR}"/extproto
-  "${TMP_DIR}"/enterprise/options/ai/
-  "${TMP_DIR}"/solo_io/solo_kit/api/v1/
 )
 
 do_curl() {
@@ -39,10 +37,6 @@ do_curl() {
   (cd "${to}" && curl -s -f --max-time 5 --retry 5 --retry-delay 0 --retry-max-time 20 -O "${from}")
 }
 
-# TODO: consider cleaning the existing protos in the future
-# git rm -r "${REPO_ROOT}"/projects/ai-extension/ai_extension/api/
-# # TODO: remove the hack for tmp protos once AI protos are generated from source
-# git restore --staged "${REPO_ROOT}"/projects/ai-extension/ai_extension/api/tmp
 for path in "${proto_gen_paths[@]}"; do
   mkdir -p "${path}"
 done
@@ -73,11 +67,7 @@ do_curl "${XDS_REPO_ROOT}"/udpa/annotations/versioning.proto "${TMP_DIR}"/udpa/a
 # Validate proto
 do_curl "${PROTOC_GEN_VALIDATE_ROOT}"/validate/validate.proto "${TMP_DIR}"/validate/
 
-# Solo protos
-cp "${REPO_ROOT}"/vendor_any/github.com/solo-io/protoc-gen-ext/extproto/ext.proto "${TMP_DIR}"/extproto/
-cp "${REPO_ROOT}"/vendor_any/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ai/ai.proto "${TMP_DIR}"/enterprise/options/ai/
-cp "${REPO_ROOT}"/vendor_any/github.com/solo-io/solo-kit/api/v1/ref.proto "${TMP_DIR}"/solo_io/solo_kit/api/v1/
-sed -i 's#github.com/solo-io/solo-kit/#solo_io/solo_kit/#g' "${TMP_DIR}"/enterprise/options/ai/ai.proto
+# TODO: copy over kgateway apis instead of manually maintaining python version
 
 echo "generating pb files"
 

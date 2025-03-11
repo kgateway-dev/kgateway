@@ -468,12 +468,8 @@ class StreamChunks:
         re-align the chunks in the fifo if necessary to make all the end indices on the same chunk
         returns how many chunks should be popped out to send back to envoy
         """
-        # You can find the visualization and explanation of a multi choice example for this logic in
-        # https://soloio.slab.com/posts/ai-gateway-guardrail-streaming-response-support-vuox5wpv
-        # search for the "Multi-choice Response:" section
-
-        # TODO(andy): This is option 2 in the design doc(https://soloio.slab.com/posts/ai-gateway-guardrail-streaming-response-support-vuox5wpv#hasu0-buffering-modes).
-        #             When we have more than 1 option, need to get which option from x-resp-guardrails-config
+        # You can find the visualization and explanation of a multi choice example for this logic in test
+        # test_align_contents_for_guardrail_multichoices in test_streamchunks.py.
 
         min_chunks_required = 2
         if len(stream_contents) > 1:

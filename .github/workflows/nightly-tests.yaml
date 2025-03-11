@@ -2,9 +2,6 @@ name: Nightly
 
 env:
   GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }} # necessary to pass upgrade tests
-  # Only run python tests which contain `openai` or `gemini` in the test name as that's the only CI
-  # key we currently have access to.
-  TEST_PYTHON_STRING_MATCH: "openai or gemini or vertex_ai"
 
 on:
   # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/crontab.html#tag_20_25_07

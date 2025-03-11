@@ -28,19 +28,19 @@ FROM python:3.12-slim-bookworm AS runner-image
 RUN apt-get update && apt-get install --no-install-recommends -y build-essential libpq-dev && \
 	apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN useradd --create-home gloo
+RUN useradd --create-home kgateway
 COPY --from=builder-image /opt/venv /opt/venv
 COPY --from=builder-image /opt/tldextract /opt/tldextract
 COPY --from=builder-image /opt/tiktoken /opt/tiktoken
 
-RUN chown -R gloo:gloo /opt/tldextract
+RUN chown -R kgateway:kgateway /opt/tldextract
 RUN chmod 755 /opt/tldextract
-RUN chown -R gloo:gloo /opt/tiktoken
+RUN chown -R kgateway:kgateway /opt/tiktoken
 RUN chmod 755 /opt/tiktoken
 
-USER gloo
-RUN mkdir -p /home/gloo
-WORKDIR /home/gloo
+USER kgateway
+RUN mkdir -p /home/kgateway
+WORKDIR /home/kgateway
 COPY ai_extension .
 
 # make sure all messages always reach console

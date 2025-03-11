@@ -126,10 +126,7 @@ gateway:
   aiExtension:
     enabled: false
     image:
-      registry: ghcr.io/kgateway-dev
       repository: kgateway-ai-extension
-      pullPolicy: IfNotPresent
-      tag: ""
   stats:
     enabled: true
     routePrefixRewrite: "/stats/prometheus"

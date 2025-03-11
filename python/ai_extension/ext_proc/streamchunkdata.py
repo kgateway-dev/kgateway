@@ -5,7 +5,7 @@ from typing import Dict
 from typing import Any
 from enum import Enum
 
-logger = logging.getLogger().getChild("gloo-ai-ext.streamchunkdata")
+logger = logging.getLogger().getChild("kgateway-ai-ext.streamchunkdata")
 
 
 class StreamChunkDataType(Enum):

@@ -53,7 +53,7 @@ class Config(BaseModel):
     """
     Python representation of the AI Stats config struct from the Gateway Parameters API.
 
-    https://github.com/solo-io/gloo/blob/e05b5a5a71c1dcfc266cd0acbd883031b5dd9447/projects/gateway2/api/v1alpha1/gateway_parameters_types.go#L649
+    https://github.com/kgateway-dev/kgateway/blob/75dca1e66e894325ee1b57db04c0455432228dcf/api/v1alpha1/gateway_parameters_types.go#L668
     """
 
     custom_labels: list[CustomLabel] = Field(alias="customLabels")

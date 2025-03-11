@@ -186,7 +186,6 @@ def req_from_json(data: str) -> PromptguardRequest:
 
     regex_data = request_data.get("regex")
     regex = None
-    # TODO: clean up
     if regex_data:
         matches_data = regex_data.get("matches")
         matches = []

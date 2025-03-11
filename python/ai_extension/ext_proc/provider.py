@@ -1052,7 +1052,7 @@ class Gemini(Provider):
         # Gemini can stream raw json where the content_type would be just 'application/json' which
         # look just like non-streaming response. So, assume it's a stream response if the request
         # is streaming request but we actually don't support that streaming format yet. This is tracked
-        # by: https://github.com/solo-io/solo-projects/issues/7271
+        # by: https://github.com/kgateway-dev/kgateway/issues/10804
         if content_type == "application/json" and is_streaming_request:
             return True
 

@@ -8,9 +8,6 @@ on:
 env:
   VERSION: '1.0.0-ci1'
   GITHUB_TOKEN: ${{ github.token }}
-  # Only run python tests which contain `openai` or `gemini` in the test name as that's the only CI
-  # key we currently have access to.
-  TEST_PYTHON_STRING_MATCH: "openai or gemini or vertex_ai"
 
 jobs:
   end_to_end_tests:

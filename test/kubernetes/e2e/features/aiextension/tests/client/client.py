@@ -45,29 +45,29 @@ passthrough = os.environ.get("TEST_TOKEN_PASSTHROUGH", "false").lower() == "true
 
 class LLMClient:
     openai_client = OpenAI(
-        api_key=os.environ.get("OPENAI_API_KEY", "") if passthrough else "FAKE",
+        api_key="fake-openai-key" if passthrough else "FAKE",
         base_url=TEST_OPENAI_BASE_URL,
     )
     azure_openai_client = AzureOpenAI(
-        api_key=(os.environ.get("AZURE_OPENAI_API_KEY", "") if passthrough else "FAKE"),
+        api_key=("fake-azure-openai-key" if passthrough else "FAKE"),
         base_url=TEST_AZURE_OPENAI_BASE_URL,
         max_retries=10,
         api_version="2024-02-15-preview",
     )
 
     genai.configure(
-        api_key=(os.environ.get("GEMINI_API_KEY", "") if passthrough else "FAKE"),
+        api_key=("fake-gemini-key" if passthrough else "FAKE"),
         client_options={"api_endpoint": TEST_GEMINI_BASE_URL},
         transport="rest",
     )
     gemini_client = genai.GenerativeModel("gemini-1.5-flash-001")
 
     vertexai.init(
-        project="gloo-ee",
+        project="kgateway-project",
         location="us-central1",
         api_endpoint=TEST_VERTEX_AI_BASE_URL,
         api_transport="rest",
-        api_key=(os.environ.get("VERTEX_AI_API_KEY", "") if passthrough else "FAKE"),
+        api_key=("fake-vertex-ai-key" if passthrough else "FAKE"),
         credentials=PassthroughCredentials() if passthrough else FakeCredentials(),
     )
     vertex_ai_client = GenerativeModel("gemini-1.5-flash-001")

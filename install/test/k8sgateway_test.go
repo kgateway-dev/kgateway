@@ -112,7 +112,7 @@ var _ = Describe("Kubernetes Gateway API integration", func() {
 
 				Expect(*gwpKube.GetAiExtension().GetEnabled()).To(BeFalse())
 				Expect(*gwpKube.GetAiExtension().GetImage().GetPullPolicy()).To(Equal(corev1.PullIfNotPresent))
-				Expect(*gwpKube.GetAiExtension().GetImage().GetRegistry()).To(Equal("quay.io/solo-io"))
+				Expect(*gwpKube.GetAiExtension().GetImage().GetRegistry()).To(Equal("ghcr.io/kgateway-dev"))
 				Expect(*gwpKube.GetAiExtension().GetImage().GetRepository()).To(Equal("kgateway-ai-extension"))
 				Expect(*gwpKube.GetAiExtension().GetImage().GetTag()).To(Equal(version))
 				Expect(gwpKube.GetAiExtension().GetSecurityContext()).To(BeNil())

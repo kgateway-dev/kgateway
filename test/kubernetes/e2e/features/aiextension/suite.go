@@ -124,8 +124,6 @@ func (s *tsuite) invokePytest(test string, extraEnv ...string) {
 	cmd.Env = append(cmd.Env, extraEnv...)
 
 	fmt.Printf("Running Test Command: %s\n", cmd.String())
-	// TODO: remove
-	fmt.Printf("Using Environment Values: %v\n", cmd.Env)
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
