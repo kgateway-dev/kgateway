@@ -513,6 +513,11 @@ package-kgateway-crd-chart: ## Package the kgateway crd chart for testing
 	$(HELM) package $(HELM_PACKAGE_ARGS) --destination $(TEST_ASSET_DIR) $(HELM_CHART_DIR_CRD); \
 	$(HELM) repo index $(TEST_ASSET_DIR);
 
+.PHONY: lint-kgateway-charts
+lint-kgateway-charts: ## Lint the kgateway charts
+	$(HELM) lint $(HELM_CHART_DIR)
+	$(HELM) lint $(HELM_CHART_DIR_CRD)
+
 #----------------------------------------------------------------------------------
 # Release
 #----------------------------------------------------------------------------------
