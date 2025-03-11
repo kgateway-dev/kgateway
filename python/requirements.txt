@@ -1,5 +1,5 @@
 grpcio
-grpcio-tools
+grpcio-tools==1.62.2
 grpcio-health-checking
 protobuf>4.0.0,<5.0.0
 prometheus-client

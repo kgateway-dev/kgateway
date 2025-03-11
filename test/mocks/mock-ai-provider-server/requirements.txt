@@ -1,3 +1,0 @@
-flask>=2.1.0
-flask-cors
-pyOpenSSL
