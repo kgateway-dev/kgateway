@@ -6,7 +6,7 @@ metadata:
   name: openai
   namespace: ai-test
 spec:
-  type: ai
+  type: AI
   ai:
     llm:
       hostOverride:
@@ -25,7 +25,7 @@ metadata:
   name: azure-openai
   namespace: ai-test
 spec:
-  type: ai
+  type: AI
   ai:
     llm:
       hostOverride:
@@ -47,7 +47,7 @@ metadata:
   name: gemini
   namespace: ai-test
 spec:
-  type: ai
+  type: AI
   ai:
     llm:
       hostOverride:
@@ -68,7 +68,7 @@ metadata:
   name: vertex-ai
   namespace: ai-test
 spec:
-  type: ai
+  type: AI
   ai:
     llm:
       hostOverride:

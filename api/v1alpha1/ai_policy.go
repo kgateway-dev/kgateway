@@ -29,6 +29,197 @@ type AIRoutePolicy struct {
 	RouteType *RouteType `json:"routeType,omitempty"`
 }
 
+func (in *AIRoutePolicy) Equals(ai *AIRoutePolicy) bool {
+	if in == nil && ai == nil {
+		return true
+	}
+	if in == nil || ai == nil {
+		return false
+	}
+
+	// Compare RouteType
+	if (in.RouteType == nil) != (ai.RouteType == nil) {
+		return false
+	}
+	if in.RouteType != nil && *in.RouteType != *ai.RouteType {
+		return false
+	}
+
+	// Compare PromptEnrichment
+	if (in.PromptEnrichment == nil) != (ai.PromptEnrichment == nil) {
+		return false
+	}
+	if in.PromptEnrichment != nil {
+		if len(in.PromptEnrichment.Prepend) != len(ai.PromptEnrichment.Prepend) ||
+			len(in.PromptEnrichment.Append) != len(ai.PromptEnrichment.Append) {
+			return false
+		}
+
+		// Compare Prepend messages
+		for i, msg := range in.PromptEnrichment.Prepend {
+			if msg.Role != ai.PromptEnrichment.Prepend[i].Role ||
+				msg.Content != ai.PromptEnrichment.Prepend[i].Content {
+				return false
+			}
+		}
+
+		// Compare Append messages
+		for i, msg := range in.PromptEnrichment.Append {
+			if msg.Role != ai.PromptEnrichment.Append[i].Role ||
+				msg.Content != ai.PromptEnrichment.Append[i].Content {
+				return false
+			}
+		}
+	}
+
+	// Compare PromptGuard
+	if (in.PromptGuard == nil) != (ai.PromptGuard == nil) {
+		return false
+	}
+	if in.PromptGuard != nil {
+		// Compare Request
+		if (in.PromptGuard.Request == nil) != (ai.PromptGuard.Request == nil) {
+			return false
+		}
+		if in.PromptGuard.Request != nil {
+			// Compare CustomResponse
+			if (in.PromptGuard.Request.CustomResponse == nil) != (ai.PromptGuard.Request.CustomResponse == nil) {
+				return false
+			}
+			if in.PromptGuard.Request.CustomResponse != nil {
+				if (in.PromptGuard.Request.CustomResponse.Message == nil) != (ai.PromptGuard.Request.CustomResponse.Message == nil) ||
+					(in.PromptGuard.Request.CustomResponse.StatusCode == nil) != (ai.PromptGuard.Request.CustomResponse.StatusCode == nil) {
+					return false
+				}
+				if in.PromptGuard.Request.CustomResponse.Message != nil && *in.PromptGuard.Request.CustomResponse.Message != *ai.PromptGuard.Request.CustomResponse.Message {
+					return false
+				}
+				if in.PromptGuard.Request.CustomResponse.StatusCode != nil && *in.PromptGuard.Request.CustomResponse.StatusCode != *ai.PromptGuard.Request.CustomResponse.StatusCode {
+					return false
+				}
+			}
+
+			// Compare Regex
+			if !in.PromptGuard.Request.Regex.compareRegex(ai.PromptGuard.Request.Regex) {
+				return false
+			}
+
+			// Compare Webhook
+			if !in.PromptGuard.Request.Webhook.compareWebhook(ai.PromptGuard.Request.Webhook) {
+				return false
+			}
+
+			// Compare Moderation
+			if (in.PromptGuard.Request.Moderation == nil) != (ai.PromptGuard.Request.Moderation == nil) {
+				return false
+			}
+			if in.PromptGuard.Request.Moderation != nil {
+				if !in.PromptGuard.Request.Moderation.OpenAIModeration.Equals(ai.PromptGuard.Request.Moderation.OpenAIModeration) {
+					return false
+				}
+			}
+		}
+
+		// Compare Response
+		if (in.PromptGuard.Response == nil) != (ai.PromptGuard.Response == nil) {
+			return false
+		}
+		if in.PromptGuard.Response != nil {
+			// Compare Regex
+			if !in.PromptGuard.Response.Regex.compareRegex(ai.PromptGuard.Response.Regex) {
+				return false
+			}
+
+			// Compare Webhook
+			if !in.PromptGuard.Response.Webhook.compareWebhook(ai.PromptGuard.Response.Webhook) {
+				return false
+			}
+		}
+	}
+
+	// Compare Defaults
+	if len(in.Defaults) != len(ai.Defaults) {
+		return false
+	}
+	for i, def := range in.Defaults {
+		if def.Field != ai.Defaults[i].Field ||
+			def.Value != ai.Defaults[i].Value ||
+			*def.Override != *ai.Defaults[i].Override {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Helper function to compare Regex configurations
+func (r1 *Regex) compareRegex(r2 *Regex) bool {
+	if (r1 == nil) != (r2 == nil) {
+		return false
+	}
+	if r1 != nil {
+		// Compare Action
+		if (r1.Action == nil) != (r2.Action == nil) {
+			return false
+		}
+		if r1.Action != nil && *r1.Action != *r2.Action {
+			return false
+		}
+
+		// Compare Matches
+		if len(r1.Matches) != len(r2.Matches) {
+			return false
+		}
+		for i, match := range r1.Matches {
+			if (match.Pattern == nil) != (r2.Matches[i].Pattern == nil) ||
+				(match.Name == nil) != (r2.Matches[i].Name == nil) {
+				return false
+			}
+			if match.Pattern != nil && *match.Pattern != *r2.Matches[i].Pattern {
+				return false
+			}
+			if match.Name != nil && *match.Name != *r2.Matches[i].Name {
+				return false
+			}
+		}
+
+		// Compare Builtins
+		if len(r1.Builtins) != len(r2.Builtins) {
+			return false
+		}
+		for i, builtin := range r1.Builtins {
+			if builtin != r2.Builtins[i] {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// Helper function to compare Webhook configurations
+func (w1 *Webhook) compareWebhook(w2 *Webhook) bool {
+	if (w1 == nil) != (w2 == nil) {
+		return false
+	}
+	if w1 != nil {
+		// Compare Host
+		if w1.Host != w2.Host {
+			return false
+		}
+
+		// Compare ForwardHeaders
+		if len(w1.ForwardHeaders) != len(w2.ForwardHeaders) {
+			return false
+		}
+		for i, header := range w1.ForwardHeaders {
+			if header != w2.ForwardHeaders[i] {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 // AIPromptEnrichment defines the config to enrich requests sent to the LLM provider by appending and prepending system prompts.
 // This can be configured only for LLM providers that use the `CHAT` or `CHAT_STREAMING` API type.
 //

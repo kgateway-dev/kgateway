@@ -70,6 +70,16 @@ type SingleAuthToken struct {
 	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
+func (in *SingleAuthToken) Equals(token *SingleAuthToken) bool {
+	if in == nil && token == nil {
+		return true
+	}
+	if in == nil || token == nil {
+		return false
+	}
+	return in.Kind == token.Kind && in.Inline == token.Inline && in.SecretRef == token.SecretRef
+}
+
 // OpenAIConfig settings for the [OpenAI](https://platform.openai.com/docs/api-reference/streaming) LLM provider.
 type OpenAIConfig struct {
 	// The authorization token that the AI gateway uses to access the OpenAI API.
@@ -81,6 +91,24 @@ type OpenAIConfig struct {
 	// If unset, the model name is taken from the request.
 	// This setting can be useful when setting up model failover within the same LLM provider.
 	Model *string `json:"model,omitempty"`
+}
+
+func (in *OpenAIConfig) Equals(c1 *OpenAIConfig) bool {
+	if (in == nil) != (c1 == nil) {
+		return false
+	}
+	if in != nil {
+		// Compare all fields from OpenAIConfig
+		if in.Model != nil {
+			if in.Model != c1.Model {
+				return false
+			}
+		}
+		if in.AuthToken.Equals(&c1.AuthToken) {
+			return false
+		}
+	}
+	return true
 }
 
 // AzureOpenAIConfig settings for the [Azure OpenAI](https://learn.microsoft.com/en-us/azure/ai-services/openai/) LLM provider.
