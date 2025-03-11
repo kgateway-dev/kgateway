@@ -3,6 +3,7 @@ package aiextension
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -63,6 +64,21 @@ func (s *tsuite) SetupSuite() {
 func (s *tsuite) TearDownSuite() {
 }
 
+func (s *tsuite) waitForEnvoyReady() {
+	gwURL := s.getGatewayURL()
+	fmt.Printf("Waiting for envoy up.")
+	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+		statusChar := "."
+		resp, err := http.Get(gwURL + "/not_there")
+		if assert.NoErrorf(c, err, "failed to wait for envoy up") {
+			statusChar = "*"
+			assert.Equalf(c, resp.StatusCode, 404, "envoy up check failed")
+		}
+		fmt.Printf(statusChar)
+	}, 30*time.Second, 1*time.Second)
+	fmt.Printf("\n")
+}
+
 func (s *tsuite) BeforeTest(suiteName, testName string) {
 	manifests := s.manifests[testName]
 	fmt.Printf("Applying manifests for test %s in suite %s", testName, suiteName)
@@ -70,6 +86,8 @@ func (s *tsuite) BeforeTest(suiteName, testName string) {
 		err := s.testInst.Actions.Kubectl().ApplyFile(s.ctx, manifest)
 		s.Require().NoError(err)
 	}
+
+	s.waitForEnvoyReady()
 }
 
 func (s *tsuite) AfterTest(suiteName, testName string) {
