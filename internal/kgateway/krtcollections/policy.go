@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/ptr"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -149,13 +150,19 @@ type GatewayIndex struct {
 func NewGatewayIndex(
 	krtopts krtutil.KrtOptions,
 	policies *PolicyIndex,
+	controllerName string,
 	gws krt.Collection[*gwv1.Gateway],
+	gwClasses krt.Collection[*gwv1.GatewayClass],
 ) *GatewayIndex {
 	h := &GatewayIndex{policies: policies}
+
 	h.Gateways = krt.NewCollection(gws, func(kctx krt.HandlerContext, i *gwv1.Gateway) *ir.Gateway {
-		if !wellknown.IsOurGateway(i) {
+		// only care about gateways that we have a class name for
+		gwClass := ptr.Flatten(krt.FetchOne(kctx, gwClasses, krt.FilterKey(string(i.Spec.GatewayClassName))))
+		if gwClass == nil || controllerName != string(gwClass.Spec.ControllerName) {
 			return nil
 		}
+
 		out := ir.Gateway{
 			ObjectSource: ir.ObjectSource{
 				Group:     gwv1.SchemeGroupVersion.Group,

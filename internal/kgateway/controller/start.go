@@ -10,7 +10,6 @@ import (
 	"istio.io/istio/pkg/kube/krt"
 	istiolog "istio.io/istio/pkg/log"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -43,8 +42,7 @@ const (
 )
 
 type SetupOpts struct {
-	Cache               envoycache.SnapshotCache
-	ExtraGatewayClasses []string
+	Cache envoycache.SnapshotCache
 
 	KrtDebugger *krt.DebugHandler
 
@@ -144,7 +142,6 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	mergedPlugins := pluginFactoryWithBuiltin(cfg.ExtraPlugins)(ctx, commoncol)
 	commoncol.InitPlugins(ctx, mergedPlugins)
 
-	gwClasses := sets.New(append(cfg.SetupOpts.ExtraGatewayClasses, wellknown.GatewayClassName)...)
 	// Create the proxy syncer for the Gateway API resources
 	setupLog.Info("initializing proxy syncer")
 	proxySyncer := proxy_syncer.NewProxySyncer(
@@ -164,7 +161,7 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 		return nil, err
 	}
 
-	setupLog.Info("starting controller builder", "GatewayClasses", sets.List(gwClasses))
+	setupLog.Info("starting controller builder", "GatewayClasses")
 	return &ControllerBuilder{
 		proxySyncer: proxySyncer,
 		cfg:         cfg,
@@ -200,6 +197,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 
 	if err := NewBaseGatewayController(ctx, GatewayConfig{
 		Mgr:            c.mgr,
+		// TODO read this from globalSettings
 		ControllerName: wellknown.GatewayControllerName,
 		AutoProvision:  AutoProvision,
 		ControlPlane: deployer.ControlPlaneInfo{

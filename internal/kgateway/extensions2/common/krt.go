@@ -17,6 +17,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
 )
 
@@ -113,6 +114,8 @@ func (c *CommonCollections) InitPlugins(ctx context.Context, mergedPlugins exten
 		c.Client,
 		c.RefGrants,
 		c.KrtOpts,
+		// TODO read this from c.Settings
+		wellknown.GatewayControllerName,
 	)
 
 	// With plugins applied

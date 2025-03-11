@@ -15,6 +15,7 @@ type Settings struct {
 
 	EnableIstioIntegration bool `split_words:"true"`
 	EnableAutoMtls         bool `split_words:"true"`
+	EnableWaypoint         bool `split_words:"true"`
 
 	// XdsServiceName is the name of the Kubernetes Service that serves xDS config.
 	// It it assumed to be in the kgateway install namespace.

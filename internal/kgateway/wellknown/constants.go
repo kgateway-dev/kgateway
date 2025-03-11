@@ -5,12 +5,6 @@ const (
 	// on the helm chart. If enabled, the gateway proxy is assumed to have an istio sidecar injected.
 	IstioInjectionEnabled = "ENABLE_ISTIO_SIDECAR_ON_GATEWAY"
 
-	// WaypointEnabled gates the ability to translate for the class kgateway-waypoint.
-	WaypointEnabled = "ENABLE_WAYPOINTS"
-	// WaypointEnabledByDefault is safe but we retain the ability to turn it off
-	// if we discover issues.
-	WaypointEnabledByDefault = true
-
 	// Note: These are coming from istio: https://github.com/istio/istio/blob/fa321ebd2a1186325788b0f461aa9f36a1a8d90e/pilot/pkg/model/service.go#L206
 	// IstioCertSecret is the secret that holds the server cert and key for Istio mTLS
 	IstioCertSecret = "istio_server_cert"

@@ -194,10 +194,9 @@ func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Sett
 	t.Cleanup(func() { grpcServer.Stop() })
 
 	setupOpts := &controller.SetupOpts{
-		Cache:               snapCache,
-		KrtDebugger:         new(krt.DebugHandler),
-		ExtraGatewayClasses: []string{wellknown.WaypointEnabled},
-		GlobalSettings:      globalSettings,
+		Cache:          snapCache,
+		KrtDebugger:    new(krt.DebugHandler),
+		GlobalSettings: globalSettings,
 	}
 
 	// start kgateway

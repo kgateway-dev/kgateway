@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -111,12 +112,19 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		return err
 	}
 
+	cli := c.cfg.Mgr.GetClient()
+
 	buildr := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		// Don't use WithEventFilter here as it also filters events for Owned objects.
 		For(&apiv1.Gateway{}, builder.WithPredicates(predicate.NewPredicateFuncs(func(object client.Object) bool {
 			// We only care about Gateways that use our GatewayClasses
 			if gw, ok := object.(*apiv1.Gateway); ok {
-				return wellknown.SupportedGatewayClasses.Has(gw.Spec.GatewayClassName)
+				gc := &apiv1.GatewayClass{}
+				err := cli.Get(context.TODO(), types.NamespacedName{Name: string(gw.Spec.GatewayClassName)}, gc)
+				if err != nil {
+					return false
+				}
+				return gc.Spec.ControllerName == apiv1.GatewayController(c.cfg.ControllerName)
 			}
 			return false
 		}),
@@ -126,8 +134,46 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 			),
 		))
 
+	// watch for changes in GatewayClass
+	buildr.Watches(
+		&apiv1.GatewayClass{},
+		handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
+			gc, ok := obj.(*apiv1.GatewayClass)
+			if !ok {
+				return nil
+			}
+			if gc.Spec.ControllerName == apiv1.GatewayController(c.cfg.ControllerName) {
+				return nil
+			}
+
+			// Enqueue all Gateways that reference this GatewayClass
+			gwl := &apiv1.GatewayList{}
+			if err := cli.List(ctx, gwl); err != nil {
+				return nil
+			}
+
+			var reqs []reconcile.Request
+			for _, gw := range gwl.Items {
+				if string(gw.Spec.GatewayClassName) == gc.Name {
+					reqs = append(reqs,
+						reconcile.Request{
+							NamespacedName: client.ObjectKeyFromObject(&gw),
+						},
+					)
+				}
+			}
+			return reqs
+		}),
+		builder.WithPredicates(
+			predicate.NewPredicateFuncs(func(obj client.Object) bool {
+				gc, ok := obj.(*apiv1.GatewayClass)
+				return ok && gc.Spec.ControllerName == apiv1.GatewayController(c.cfg.ControllerName)
+			}),
+			predicate.GenerationChangedPredicate{},
+		),
+	)
+
 	// watch for changes in GatewayParameters
-	cli := c.cfg.Mgr.GetClient()
 	buildr.Watches(&v1alpha1.GatewayParameters{}, handler.EnqueueRequestsFromMapFunc(
 		func(ctx context.Context, obj client.Object) []reconcile.Request {
 			gwpName := obj.GetName()

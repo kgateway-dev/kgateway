@@ -118,7 +118,7 @@ var _ = BeforeSuite(func() {
 	err = controller.NewBaseGatewayController(ctx, cfg)
 	Expect(err).ToNot(HaveOccurred())
 
-	for class := range wellknown.SupportedGatewayClasses {
+	for class := range wellknown.BuiltinGatewayClasses {
 		err = k8sClient.Create(ctx, &api.GatewayClass{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: string(class),

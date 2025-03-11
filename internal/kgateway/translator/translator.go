@@ -100,7 +100,9 @@ func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Con
 		maybeGatewayTranslator := s.extensions.ContributesGwTranslator(gw.Obj)
 		if maybeGatewayTranslator != nil {
 			gatewayTranslator = maybeGatewayTranslator
-		} else if wellknown.IsExtensionGatewayClass(gw.Obj.Spec.GatewayClassName) {
+		} else if gw.Obj.Spec.GatewayClassName != wellknown.GatewayClassName {
+			// we will hit this when a GatewayClass has us as the controllerName
+			// but no plugin provides a translator for that class.
 			contextutils.LoggerFrom(ctx).Errorf("translation not enabled for Gateway %s (gatewayClass %s)", gw.Name, gw.Obj.Spec.GatewayClassName)
 		}
 	}

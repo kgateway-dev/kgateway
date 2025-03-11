@@ -27,15 +27,8 @@ const (
 	DefaultGatewayParametersName = "kgateway"
 )
 
-var SupportedGatewayClasses = sets.New[gwv1.ObjectName](
+// BuiltinGatewayClasses are non-extension classe
+var BuiltinGatewayClasses = sets.New[gwv1.ObjectName](
 	GatewayClassName,
 	WaypointClassName,
 )
-
-func IsExtensionGatewayClass(class gwv1.ObjectName) bool {
-	return class != gwv1.ObjectName(GatewayClassName) && SupportedGatewayClasses.Has(class)
-}
-
-func IsOurGateway(gw *gwv1.Gateway) bool {
-	return SupportedGatewayClasses.Has(gw.Spec.GatewayClassName)
-}
