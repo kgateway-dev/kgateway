@@ -107,6 +107,14 @@ func init() {
 	grpclog.SetLoggerV2(grpclog.NewLoggerV2WithVerbosity(writer, writer, writer, 100))
 }
 
+func TestWithStandardSettings(t *testing.T) {
+	st, err := settings.BuildSettings()
+	if err != nil {
+		t.Fatalf("can't get settings %v", err)
+	}
+	runScenario(t, "testdata/standard", st)
+}
+
 func TestWithAutoDns(t *testing.T) {
 	st, err := settings.BuildSettings()
 	if err != nil {
@@ -323,7 +331,7 @@ func testScenario(
 		t.Fatal("wrote out file - nothing to test")
 	}
 	dump.Compare(t, expectedXdsDump)
-	t.Logf("%s passed", t.Name())
+	t.Logf("%s finished", t.Name())
 }
 
 // logKrtState logs the krt state with a message

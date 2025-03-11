@@ -103,21 +103,21 @@ func (t *BackendTranslator) runPolicies(
 	backend ir.BackendObjectIR,
 	out *clusterv3.Cluster,
 ) {
-	for gk, polImpl := range t.ContributedPolicies {
+	for gk, policyPlugin := range t.ContributedPolicies {
 		// TODO: in theory it would be nice to do `ProcessBackend` once, and only do
 		// the the per-client processing for each client.
 		// that would require refactoring and thinking about the proper IR, so we'll punt on that for
 		// now, until we have more backend plugin examples to properly understand what it should look
 		// like.
-		if polImpl.PerClientProcessBackend != nil {
-			polImpl.PerClientProcessBackend(kctx, ctx, ucc, backend, out)
+		if policyPlugin.PerClientProcessBackend != nil {
+			policyPlugin.PerClientProcessBackend(kctx, ctx, ucc, backend, out)
 		}
 
-		if polImpl.ProcessBackend == nil {
+		if policyPlugin.ProcessBackend == nil {
 			continue
 		}
 		for _, pol := range backend.AttachedPolicies.Policies[gk] {
-			polImpl.ProcessBackend(ctx, pol.PolicyIr, backend, out)
+			policyPlugin.ProcessBackend(ctx, pol.PolicyIr, backend, out)
 		}
 	}
 }

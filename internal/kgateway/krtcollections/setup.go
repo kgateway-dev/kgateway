@@ -12,7 +12,7 @@ import (
 
 	"istio.io/istio/pkg/config/schema/gvk"
 	"istio.io/istio/pkg/config/schema/gvr"
-	skubeclient "istio.io/istio/pkg/config/schema/kubeclient"
+	"istio.io/istio/pkg/config/schema/kubeclient"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -23,33 +23,33 @@ import (
 )
 
 func registerTypes() {
-	skubeclient.Register[*gwv1.HTTPRoute](
+	kubeclient.Register[*gwv1.HTTPRoute](
 		gvr.HTTPRoute_v1,
 		gvk.HTTPRoute_v1.Kubernetes(),
-		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
 			return c.GatewayAPI().GatewayV1().HTTPRoutes(namespace).List(context.Background(), o)
 		},
-		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return c.GatewayAPI().GatewayV1().HTTPRoutes(namespace).Watch(context.Background(), o)
 		},
 	)
-	skubeclient.Register[*gwv1a2.TCPRoute](
+	kubeclient.Register[*gwv1a2.TCPRoute](
 		gvr.TCPRoute,
 		gvk.TCPRoute.Kubernetes(),
-		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
 			return c.GatewayAPI().GatewayV1alpha2().TCPRoutes(namespace).List(context.Background(), o)
 		},
-		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return c.GatewayAPI().GatewayV1alpha2().TCPRoutes(namespace).Watch(context.Background(), o)
 		},
 	)
-	skubeclient.Register[*gwv1.Gateway](
+	kubeclient.Register[*gwv1.Gateway](
 		gvr.KubernetesGateway_v1,
 		gvk.KubernetesGateway_v1.Kubernetes(),
-		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
 			return c.GatewayAPI().GatewayV1().Gateways(namespace).List(context.Background(), o)
 		},
-		func(c skubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
 			return c.GatewayAPI().GatewayV1().Gateways(namespace).Watch(context.Background(), o)
 		},
 	)

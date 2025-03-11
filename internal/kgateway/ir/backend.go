@@ -87,7 +87,19 @@ func BackendResourceName(objSource ObjectSource, port int32) string {
 }
 
 func (c BackendObjectIR) Equals(in BackendObjectIR) bool {
-	return c.ObjectSource.Equals(in.ObjectSource) && versionEquals(c.Obj, in.Obj) && c.ObjIr.Equals(in.ObjIr) && c.AttachedPolicies.Equals(in.AttachedPolicies)
+	objEq := c.ObjectSource.Equals(in.ObjectSource)
+	objVersionEq := versionEquals(c.Obj, in.Obj)
+	polEq := c.AttachedPolicies.Equals(in.AttachedPolicies)
+
+	// objIr may currently be nil in the case of k8s Services
+	// TODO: add an IR for Services to avoid the need for this
+	// see: internal/kgateway/extensions2/plugins/kubernetes/k8s.go
+	objIrEq := true
+	if c.ObjIr != nil {
+		objIrEq = c.ObjIr.Equals(in.ObjIr)
+	}
+
+	return objEq && objVersionEq && objIrEq && polEq
 }
 
 func (c BackendObjectIR) ClusterName() string {
@@ -103,7 +115,8 @@ func (c BackendObjectIR) ClusterName() string {
 type Secret struct {
 	// Ref to source object. sometimes the group and kind are not populated from api-server, so
 	// set them explicitly here, and pass this around as the reference.
-	ObjectSource `json:",inline"`
+	// TODO: why does this have json tag?
+	ObjectSource
 
 	// original object. Opaque to us other than metadata.
 	Obj metav1.Object

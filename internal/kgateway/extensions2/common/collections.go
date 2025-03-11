@@ -24,8 +24,9 @@ type CommonCollections struct {
 	Secrets   *krtcollections.SecretIndex
 	Backends  *krtcollections.BackendIndex
 
-	Pods      krt.Collection[krtcollections.LocalityPod]
-	RefGrants *krtcollections.RefGrantIndex
+	Pods       krt.Collection[krtcollections.LocalityPod]
+	RefGrants  *krtcollections.RefGrantIndex
+	ConfigMaps krt.Collection[*corev1.ConfigMap]
 
 	// static set of global Settings, non-krt based for dev speed
 	// TODO: this should be refactored to a more correct location,
@@ -66,13 +67,17 @@ func NewCommonCollections(
 	refgrantsCol := krt.WrapClient(kclient.New[*gwv1beta1.ReferenceGrant](client), krtOptions.ToOptions("RefGrants")...)
 	refgrants := krtcollections.NewRefGrantIndex(refgrantsCol)
 
+	cmClient := kclient.New[*corev1.ConfigMap](client)
+	cfgmaps := krt.WrapClient(cmClient, krtOptions.ToOptions("ConfigMaps")...)
+
 	return &CommonCollections{
-		OurClient: ourClient,
-		Client:    client,
-		KrtOpts:   krtOptions,
-		Secrets:   krtcollections.NewSecretIndex(secrets, refgrants),
-		Pods:      krtcollections.NewPodsCollection(client, krtOptions),
-		RefGrants: refgrants,
-		Settings:  settings,
+		OurClient:  ourClient,
+		Client:     client,
+		KrtOpts:    krtOptions,
+		Secrets:    krtcollections.NewSecretIndex(secrets, refgrants),
+		Pods:       krtcollections.NewPodsCollection(client, krtOptions),
+		RefGrants:  refgrants,
+		Settings:   settings,
+		ConfigMaps: cfgmaps,
 	}
 }
