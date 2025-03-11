@@ -75,7 +75,7 @@ var _ = BeforeSuite(func() {
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "crds"),
-			filepath.Join("..", "..", "..", "install", "helm", "kgateway", "crds"),
+			filepath.Join("..", "..", "..", "install", "helm", "kgateway-crds", "templates"),
 		},
 		ErrorIfCRDPathMissing: true,
 		// set assets dir so we can run without the makefile
