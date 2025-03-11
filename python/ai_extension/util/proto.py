@@ -1,3 +1,4 @@
+import gzip
 import logging
 from api.kgateway.policy.ai import authtoken
 from api.envoy.config.core.v3 import base_pb2 as base_pb2
@@ -36,11 +37,25 @@ def get_http_header(headers: base_pb2.HeaderMap, header_name: str) -> str:
     return "unknown"
 
 
-def extproc_no_change_response() -> external_processor_pb2.ProcessingResponse:
-    return external_processor_pb2.ProcessingResponse()
+def extproc_clear_request_body() -> external_processor_pb2.ProcessingResponse:
+    """
+    construct an ext_proc response to clear the request body
+    This can be used as response for both request extproc calls only
+    """
+    return external_processor_pb2.ProcessingResponse(
+        request_body=external_processor_pb2.BodyResponse(
+            response=external_processor_pb2.CommonResponse(
+                body_mutation=external_processor_pb2.BodyMutation(clear_body=True),
+            )
+        ),
+    )
 
 
-def extproc_clear_body_response() -> external_processor_pb2.ProcessingResponse:
+def extproc_clear_response_body() -> external_processor_pb2.ProcessingResponse:
+    """
+    construct an ext_proc response to clear the response body
+    This can be used as response for both response extproc calls only
+    """
     return external_processor_pb2.ProcessingResponse(
         response_body=external_processor_pb2.BodyResponse(
             response=external_processor_pb2.CommonResponse(
@@ -50,13 +65,20 @@ def extproc_clear_body_response() -> external_processor_pb2.ProcessingResponse:
     )
 
 
-def extproc_body_response(
-    body: bytes, dynamic_metadata: Optional[Union[struct_pb2.Struct, Mapping]] = None
+def extproc_new_response_body(
+    content_encoding: str,
+    body: bytes,
+    dynamic_metadata: Optional[Union[struct_pb2.Struct, Mapping]] = None,
 ) -> external_processor_pb2.ProcessingResponse:
+    """
+    construct an extproc response to replace the original response body
+    """
     return external_processor_pb2.ProcessingResponse(
         response_body=external_processor_pb2.BodyResponse(
             response=external_processor_pb2.CommonResponse(
-                body_mutation=external_processor_pb2.BodyMutation(body=body),
+                body_mutation=external_processor_pb2.BodyMutation(
+                    body=(gzip.compress(body) if content_encoding == "gzip" else body),
+                ),
             ),
         ),
         dynamic_metadata=dynamic_metadata,
@@ -69,6 +91,9 @@ def extproc_immediate_response(
     details: str
     | None = None,  # details that goes into %RESPONSE_CODE_DETAILS% which can be used in logs
 ) -> external_processor_pb2.ProcessingResponse:
+    """
+    construct an extproc response to instruct envoy to return the specified response immediately
+    """
     return external_processor_pb2.ProcessingResponse(
         immediate_response=external_processor_pb2.ImmediateResponse(
             status=dict(code=map_int_to_grpc_status_code(status_code)),

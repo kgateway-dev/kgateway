@@ -107,6 +107,11 @@ class TestStreaming(LLMClient):
                     for candidate in data["candidates"]:
                         assert "content" in candidate, "Missing 'content' in candidate"
                         content = candidate["content"]
+                        if (
+                            candidate.get("finishReason", None) is not None
+                            and "parts" not in content
+                        ):
+                            continue
                         assert "parts" in content, "Missing 'parts' in content"
                         assert len(content["parts"]) > 0, "'parts' should not be empty"
                         for part in content["parts"]:
@@ -154,6 +159,11 @@ class TestStreaming(LLMClient):
                     for candidate in data["candidates"]:
                         assert "content" in candidate, "Missing 'content' in candidate"
                         content = candidate["content"]
+                        if (
+                            candidate.get("finishReason", None) is not None
+                            and "parts" not in content
+                        ):
+                            continue
                         assert "parts" in content, "Missing 'parts' in content"
                         assert len(content["parts"]) > 0, "'parts' should not be empty"
                         for part in content["parts"]:

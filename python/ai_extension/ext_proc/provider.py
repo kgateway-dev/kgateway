@@ -2,13 +2,7 @@ import logging
 import tiktoken
 import traceback
 
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Final,
-    List,
-)
+from typing import Any, Callable, Dict, Final, List, Optional
 
 from api.envoy.config.core.v3 import base_pb2 as base_pb2
 from dataclasses import dataclass
@@ -27,6 +21,43 @@ VERTEX_AI_LLM_STR: Final[str] = "vertex-ai"
 
 
 @dataclass
+class TokensDetails:
+    """
+    Detail breakdowns of the prompt or completion tokens reported
+    OpenAI reference: https://platform.openai.com/docs/api-reference/chat/object#chat/object-usage
+    Gemini reference: https://ai.google.dev/api/generate-content#UsageMetadata
+    """
+
+    cached: int = 0  # prompt (Gemini, OpenAI)
+    tool_used: int = 0  # prompt (Gemini)
+    accepted_prediction: int = 0  # completion (OpenAI)
+    rejected_prediction: int = 0  # completion (OpenAI)
+    reasoning: int = 0  # completion (OpenAI)
+    text: int = 0  # prompt or completion (Gemini)
+    audio: int = 0  # prompt or completion (Gemini, OpenAI)
+    document: int = 0  # prompt or completion (Gemini)
+    image: int = 0  # prompt or completion (Gemini)
+    video: int = 0  # prompt or completion (Gemini)
+
+    def __add__(self, other):
+        if other is None:
+            return self
+
+        return TokensDetails(
+            cached=self.cached + other.cached,
+            tool_used=self.tool_used + other.tool_used,
+            accepted_prediction=self.accepted_prediction + other.accepted_prediction,
+            rejected_prediction=self.rejected_prediction + other.rejected_prediction,
+            reasoning=self.reasoning + other.reasoning,
+            text=self.text + other.text,
+            audio=self.audio + other.audio,
+            document=self.document + other.document,
+            image=self.image + other.image,
+            video=self.video + other.video,
+        )
+
+
+@dataclass
 class Tokens:
     """
     Tokens is a dataclass that represents the tokens used in a request and response.
@@ -34,11 +65,30 @@ class Tokens:
 
     completion: int = 0
     prompt: int = 0
+    prompt_details: Optional[TokensDetails] = None
+    completion_details: Optional[TokensDetails] = None
+
+    def __add_optional_details(
+        self, a: Optional[TokensDetails], b: Optional[TokensDetails]
+    ) -> TokensDetails | None:
+        if a is None:
+            return b
+
+        if b is None:
+            return a
+
+        return a + b
 
     def __add__(self, other):
         return Tokens(
             completion=self.completion + other.completion,
             prompt=self.prompt + other.prompt,
+            prompt_details=self.__add_optional_details(
+                self.prompt_details, other.prompt_details
+            ),
+            completion_details=self.__add_optional_details(
+                self.completion_details, other.completion_details
+            ),
         )
 
     def total_tokens(self) -> int:
@@ -57,6 +107,13 @@ class Provider(ABC):
     def tokens(self, jsn: dict) -> Tokens:
         """
         tokens should return the Tokens object from the JSON response of the provider.
+        """
+        pass
+
+    @abstractmethod
+    def create_usage_json(self, tokens: Tokens) -> Dict[str, Any]:
+        """
+        create the usage json object base on the values in tokens
         """
         pass
 
@@ -266,10 +323,71 @@ class OpenAI(Provider):
             # and only the total will be in the last chunk
             return Tokens()
 
+        prompt_details = None
+        details = usage.get("prompt_tokens_details")
+        if details is not None:
+            prompt_details = TokensDetails(
+                audio=details.get("audio_tokens", 0),
+                cached=details.get("cached_tokens", 0),
+            )
+
+        completion_details = None
+        details = usage.get("completion_tokens_details")
+        if details is not None:
+            completion_details = TokensDetails(
+                audio=details.get("audio_tokens", 0),
+                accepted_prediction=details.get("accepted_prediction_tokens", 0),
+                rejected_prediction=details.get("rejected_prediction_tokens", 0),
+                reasoning=details.get("reasoning_tokens", 0),
+            )
+
         return Tokens(
             completion=int(usage.get("completion_tokens", 0)),
             prompt=int(usage.get("prompt_tokens", 0)),
+            prompt_details=prompt_details,
+            completion_details=completion_details,
         )
+
+    def create_usage_json(self, tokens: Tokens) -> Dict[str, Any]:
+        # As of 2/27/2025, the OpenAI usage object looks like this:
+        # {
+        #   "completion_tokens": 68,
+        #   "completion_tokens_details": {
+        #     "accepted_prediction_tokens": 0,
+        #     "audio_tokens": 0,
+        #     "reasoning_tokens": 0,
+        #     "rejected_prediction_tokens": 0
+        #   },
+        #   "prompt_tokens": 84,
+        #   "prompt_tokens_details": {
+        #     "audio_tokens": 0,
+        #     "cached_tokens": 0
+        #   },
+        #   "total_tokens": 152
+        # }
+        # currently, we only need to create the usage json when collapsing
+        # chunks that has usage but OpenAI only send usage one time at the end
+        # of the stream, so most likely we don't need this but just in case
+        # they change the behavior in the future, we will be covered.
+        usage = {}
+        usage["completion_tokens"] = tokens.completion
+        usage["prompt_tokens"] = tokens.prompt
+        usage["total_tokens"] = tokens.total_tokens()
+        if tokens.prompt_details is not None:
+            usage["prompt_tokens_details"] = {
+                "audio_tokens": tokens.prompt_details.audio,
+                "cached_tokens": tokens.prompt_details.cached,
+            }
+
+        if tokens.completion_details is not None:
+            usage["completion_tokens_details"] = {
+                "audio_tokens": tokens.completion_details.audio,
+                "accepted_prediction_tokens": tokens.completion_details.accepted_prediction,
+                "reasoning_tokens": tokens.completion_details.reasoning,
+                "rejected_prediction_tokens": tokens.completion_details.rejected_prediction,
+            }
+
+        return usage
 
     def has_function_call_finish_reason(self, body: dict) -> bool:
         # check if any of the choices have the "finish_reason" field defined as function_call
@@ -288,10 +406,7 @@ class OpenAI(Provider):
     def update_stream_resp_usage_token(self, json_data: Dict[str, Any], tokens: Tokens):
         # for OpenAI streaming response, while each chunk has "usage" field but they are always null
         # the total usage is in the last chunk
-        if "usage" in json_data:
-            usage = json_data["usage"]
-            usage["completion_tokens"] = tokens.completion
-            usage["prompt_tokens"] = tokens.prompt
+        json_data["usage"] = self.create_usage_json(tokens)
 
     def iterate_str_resp_messages(self, body: dict, cb: Callable[[str, str], str]):
         for idx, choice in enumerate(body.get("choices", [])):
@@ -593,6 +708,9 @@ class Anthropic(OpenAI):
             prompt=jsn.get("usage", {}).get("input_tokens", 0),
         )
 
+    def create_usage_json(self, tokens: Tokens) -> Dict[str, Any]:
+        return {"input_tokens": tokens.prompt, "output_tokens": tokens.completion}
+
     def get_model_resp(self, body_jsn: dict) -> str:
         if body_jsn.get("type", "") == "message_start" and "message" in body_jsn:
             return body_jsn["message"].get("model", "")
@@ -749,16 +867,101 @@ class Anthropic(OpenAI):
 
 
 class Gemini(Provider):
+    def get_tokens_details_from_json(self, details_json: List[Any]) -> TokensDetails:
+        tokens_details = TokensDetails()
+        for detail in details_json:
+            match detail.get("modality", ""):
+                case "TEXT":
+                    tokens_details.text = detail.get("tokenCount", 0)
+                case "AUDIO":
+                    tokens_details.audio = detail.get("tokenCount", 0)
+                case "VIDEO":
+                    tokens_details.video = detail.get("tokenCount", 0)
+                case "DOCUMENT":
+                    tokens_details.document = detail.get("tokenCount", 0)
+                case "IMAGE":
+                    tokens_details.image = detail.get("tokenCount", 0)
+
+        return tokens_details
+
     def tokens(self, jsn: dict) -> Tokens:
         if "usageMetadata" not in jsn:
             # During testing, I observed, occasionally, a chunk will be missing usageMetadata
             return Tokens()
 
-        usageTokens = jsn.get("usageMetadata", {})
+        usage = jsn.get("usageMetadata", {})
+
+        prompt_details = None
+        details = usage.get("promptTokensDetails")
+        if details is not None and len(details) > 0:
+            prompt_details = self.get_tokens_details_from_json(details)
+
+        completion_details = None
+        details = usage.get("candidatesTokensDetails")
+        if details is not None and len(details) > 0:
+            completion_details = self.get_tokens_details_from_json(details)
+
         return Tokens(
-            completion=int(usageTokens.get("candidatesTokenCount", 0)),
-            prompt=int(usageTokens.get("promptTokenCount", 0)),
+            completion=int(usage.get("candidatesTokenCount", 0)),
+            prompt=int(usage.get("promptTokenCount", 0)),
+            prompt_details=prompt_details,
+            completion_details=completion_details,
         )
+
+    def create_modality_json(self, modality: str, token_count: int) -> Dict[str, Any]:
+        return {"modality": modality, "tokenCount": token_count}
+
+    def create_tokens_details_json(self, tokens_details: TokensDetails) -> List[Any]:
+        details = []
+        if tokens_details.text > 0:
+            details.append(self.create_modality_json("TEXT", tokens_details.text))
+        if tokens_details.image > 0:
+            details.append(self.create_modality_json("IMAGE", tokens_details.image))
+        if tokens_details.audio > 0:
+            details.append(self.create_modality_json("AUDIO", tokens_details.audio))
+        if tokens_details.video > 0:
+            details.append(self.create_modality_json("VIDEO", tokens_details.video))
+        if tokens_details.document > 0:
+            details.append(
+                self.create_modality_json("DOCUMENT", tokens_details.document)
+            )
+
+        return details
+
+    def create_usage_json(self, tokens: Tokens) -> Dict[str, Any]:
+        # as of 2/27/2025, the gemini usage object looks like this:
+        # "usageMetadata": {
+        #   "promptTokenCount": 20,
+        #   "candidatesTokenCount": 283,
+        #   "totalTokenCount": 303,
+        #   "promptTokensDetails": [
+        #     {
+        #       "modality": "TEXT",
+        #       "tokenCount": 20
+        #     }
+        #   ],
+        #   "candidatesTokensDetails": [
+        #     {
+        #       "modality": "TEXT",
+        #       "tokenCount": 283
+        #     }
+        #   ]
+        # }
+        usageMetadata = {}
+        usageMetadata["promptTokenCount"] = tokens.prompt
+        usageMetadata["candidatesTokenCount"] = tokens.completion
+        usageMetadata["totalTokenCount"] = tokens.total_tokens()
+        if tokens.prompt_details is not None:
+            tokens_details = self.create_tokens_details_json(tokens.prompt_details)
+            if len(tokens_details) > 0:
+                usageMetadata["promptTokensDetails"] = tokens_details
+
+        if tokens.completion_details is not None:
+            tokens_details = self.create_tokens_details_json(tokens.completion_details)
+            if len(tokens_details) > 0:
+                usageMetadata["candidatesTokensDetails"] = tokens_details
+
+        return usageMetadata
 
     def has_function_call_finish_reason(self, body: dict) -> bool:
         # check if any of the candidates in the response have a functionCall defined
@@ -771,15 +974,7 @@ class Gemini(Provider):
         return False
 
     def update_stream_resp_usage_token(self, json_data: Dict[str, Any], tokens: Tokens):
-        if "usageMetadata" in json_data:
-            usage = json_data["usageMetadata"]
-            usage["candidatesTokenCount"] = tokens.completion
-            usage["promptTokenCount"] = tokens.prompt
-            usage["totalTokenCount"] = tokens.prompt + tokens.completion
-        else:
-            logger.warning(
-                "Gemini: attempt to update chunk usageMetadata but it doesn't exist"
-            )
+        json_data["usageMetadata"] = self.create_usage_json(tokens)
 
     def get_sse_delimiter(self) -> bytes:
         return b"\r\n\r\n"

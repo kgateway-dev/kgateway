@@ -1,7 +1,7 @@
 import copy
 import json
 
-from ext_proc.provider import Tokens, Anthropic, Gemini, OpenAI
+from ext_proc.provider import Tokens, TokensDetails, Anthropic, Gemini, OpenAI
 from guardrails import api as webhook_api
 from ext_proc.streamchunkdata import StreamChunkDataType
 from typing import Dict, Any
@@ -13,6 +13,57 @@ def test_tokens_addition():
     result = tokens1 + tokens2
     assert result.completion == 8
     assert result.prompt == 17
+    assert result.prompt_details is None
+    assert result.completion_details is None
+
+    token_details = TokensDetails(
+        cached=1,
+        tool_used=2,
+        accepted_prediction=3,
+        rejected_prediction=4,
+        reasoning=5,
+        text=6,
+        audio=7,
+        document=8,
+        image=9,
+        video=10,
+    )
+
+    # when one of the details is None, just take the other one
+    tokens1 = Tokens(completion=5, prompt=10, prompt_details=token_details)
+    tokens2 = Tokens(completion=3, prompt=7, completion_details=token_details)
+    result = tokens1 + tokens2
+    assert result.prompt_details == token_details
+    assert result.completion_details == token_details
+
+    # when both details exist in each token, they are added together
+    expected_token_details = TokensDetails(
+        cached=2,
+        tool_used=4,
+        accepted_prediction=6,
+        rejected_prediction=8,
+        reasoning=10,
+        text=12,
+        audio=14,
+        document=16,
+        image=18,
+        video=20,
+    )
+    tokens1 = Tokens(
+        completion=5,
+        prompt=10,
+        prompt_details=token_details,
+        completion_details=token_details,
+    )
+    tokens2 = Tokens(
+        completion=3,
+        prompt=7,
+        prompt_details=token_details,
+        completion_details=token_details,
+    )
+    result = tokens1 + tokens2
+    assert result.prompt_details == expected_token_details
+    assert result.completion_details == expected_token_details
 
 
 def test_tokens_total_tokens():
@@ -247,11 +298,43 @@ def gemini_stream_resp_last() -> Dict[str, Any]:
     )
 
 
+def gemini_stream_resp_no_usage() -> Dict[str, Any]:
+    return json.loads(
+        '{"candidates": [{"content": {"role": "model", "parts": [{"text": "These examples should give you a good starting point for creating test email addresses"}]}, "safetyRatings": [{"category": "HARM_CATEGORY_HATE_SPEECH", "probability": "NEGLIGIBLE", "probabilityScore": 0.05834961, "severity": "HARM_SEVERITY_NEGLIGIBLE", "severityScore": 0.09814453}, {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "probability": "NEGLIGIBLE", "probabilityScore": 0.13671875, "severity": "HARM_SEVERITY_NEGLIGIBLE", "severityScore": 0.091308594}, {"category": "HARM_CATEGORY_HARASSMENT", "probability": "NEGLIGIBLE", "probabilityScore": 0.10107422, "severity": "HARM_SEVERITY_NEGLIGIBLE", "severityScore": 0.026733398}, {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "probability": "NEGLIGIBLE", "probabilityScore": 0.04736328, "severity": "HARM_SEVERITY_NEGLIGIBLE", "severityScore": 0.05102539}]}], "modelVersion": "gemini-1.5-flash-001", "createTime": "2025-02-26T17:16:05.905870Z", "responseId": "VUy_Z46lN-a22PgPorGBuQY"}'
+    )
+
+
+def gemini_stream_resp_with_usage() -> Dict[str, Any]:
+    return json.loads(
+        '{"candidates": [{"content": {"role": "model", "parts": [{"text": "These examples should give you a good starting point for creating test email addresses"}]}, "safetyRatings": [{"category": "HARM_CATEGORY_HATE_SPEECH", "probability": "NEGLIGIBLE", "probabilityScore": 0.05834961, "severity": "HARM_SEVERITY_NEGLIGIBLE", "severityScore": 0.09814453}, {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "probability": "NEGLIGIBLE", "probabilityScore": 0.13671875, "severity": "HARM_SEVERITY_NEGLIGIBLE", "severityScore": 0.091308594}, {"category": "HARM_CATEGORY_HARASSMENT", "probability": "NEGLIGIBLE", "probabilityScore": 0.10107422, "severity": "HARM_SEVERITY_NEGLIGIBLE", "severityScore": 0.026733398}, {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "probability": "NEGLIGIBLE", "probabilityScore": 0.04736328, "severity": "HARM_SEVERITY_NEGLIGIBLE", "severityScore": 0.05102539}]}], "usageMetadata": {"promptTokenCount": 20,"candidatesTokenCount": 283,"totalTokenCount": 303,"promptTokensDetails": [{"modality": "TEXT","tokenCount": 20}],"candidatesTokensDetails": [{"modality": "TEXT","tokenCount": 283}]}, "modelVersion": "gemini-1.5-flash-001", "createTime": "2025-02-26T17:16:05.905870Z", "responseId": "VUy_Z46lN-a22PgPorGBuQY"}'
+    )
+
+
 def test_gemini_tokens():
     provider = Gemini()
     tokens = provider.tokens(gemini_resp())
     assert tokens.completion == 241
     assert tokens.prompt == 5
+    assert tokens.completion_details is None
+    assert tokens.prompt_details is None
+
+    jsn = gemini_stream_resp_with_usage()
+    # "usageMetadata": {"promptTokenCount": 20,"candidatesTokenCount": 283,"totalTokenCount": 303,"promptTokensDetails": [{"modality": "TEXT","tokenCount": 20}],"candidatesTokensDetails": [{"modality": "TEXT","tokenCount": 283}]}
+    tokens = provider.tokens(jsn)
+    assert tokens.prompt == 20
+    assert tokens.completion == 283
+    assert tokens.completion_details is not None
+    assert tokens.prompt_details is not None
+    assert tokens.prompt_details.text == 20
+    assert tokens.prompt_details.audio == 0
+    assert tokens.prompt_details.video == 0
+    assert tokens.prompt_details.image == 0
+    assert tokens.prompt_details.document == 0
+    assert tokens.completion_details.text == 283
+    assert tokens.completion_details.audio == 0
+    assert tokens.completion_details.video == 0
+    assert tokens.completion_details.image == 0
+    assert tokens.completion_details.document == 0
 
 
 def test_gemini_get_model_req():
@@ -446,6 +529,52 @@ def test_gemini_update_stream_resp_contents():
     assert provider.extract_contents_from_resp_chunk(jsn) == [expected]
 
 
+def test_gemini_update_stream_resp_usage_token():
+    provider = Gemini()
+    # Test that we will create the usageMetadata field if it's missing
+    jsn = gemini_stream_resp_no_usage()
+    promptTokenCount = 21
+    completionTokenCount = 123
+    total = promptTokenCount + completionTokenCount
+    tokens = Tokens(completion=completionTokenCount, prompt=promptTokenCount)
+    provider.update_stream_resp_usage_token(jsn, tokens)
+    assert jsn["usageMetadata"]["promptTokenCount"] == promptTokenCount
+    assert jsn["usageMetadata"]["candidatesTokenCount"] == completionTokenCount
+    assert jsn["usageMetadata"]["totalTokenCount"] == total
+    assert jsn["usageMetadata"].get("promptTokensDetails") is None
+    assert jsn["usageMetadata"].get("candidatesTokensDetails") is None
+
+    # Test that we will update the usageMetadata field if it already exists
+    jsn = gemini_stream_resp_with_usage()
+    provider.update_stream_resp_usage_token(jsn, tokens)
+    assert jsn["usageMetadata"]["promptTokenCount"] == promptTokenCount
+    assert jsn["usageMetadata"]["candidatesTokenCount"] == completionTokenCount
+    assert jsn["usageMetadata"]["totalTokenCount"] == total
+    assert jsn["usageMetadata"].get("promptTokensDetails") is None
+    assert jsn["usageMetadata"].get("candidatesTokensDetails") is None
+
+    # Test that we will update the usageMetadata with tokens details
+    tokens.completion_details = TokensDetails(text=123)
+    tokens.prompt_details = TokensDetails(text=456)
+    jsn = gemini_stream_resp_with_usage()
+    provider.update_stream_resp_usage_token(jsn, tokens)
+    assert jsn["usageMetadata"]["promptTokenCount"] == promptTokenCount
+    assert jsn["usageMetadata"]["candidatesTokenCount"] == completionTokenCount
+    assert jsn["usageMetadata"]["totalTokenCount"] == total
+
+    details = jsn["usageMetadata"].get("promptTokensDetails")
+    assert details is not None
+    assert len(details) == 1
+    assert details[0]["modality"] == "TEXT"
+    assert details[0]["tokenCount"] == 456
+
+    details = jsn["usageMetadata"].get("candidatesTokensDetails")
+    assert details is not None
+    assert len(details) == 1
+    assert details[0]["modality"] == "TEXT"
+    assert details[0]["tokenCount"] == 123
+
+
 def openai_req() -> dict:
     return {
         "model": "gpt-4o-mini",
@@ -524,11 +653,54 @@ def openai_stream_resp_last() -> Dict[str, Any]:
     )
 
 
+def openai_stream_resp_no_usage() -> Dict[str, Any]:
+    return json.loads(
+        '{"choices":[{"content_filter_results":{},"delta":{"content":"","refusal":null,"role":"assistant"},"finish_reason":null,"index":0,"logprobs":null}],"created":1740590155,"id":"chatcmpl-B5FIhX6e00wpolDWO1wswKjNXoabt","model":"gpt-4o-mini-2024-07-18","object":"chat.completion.chunk","system_fingerprint":"fp_b705f0c291","usage":null}'
+    )
+
+
+def openai_stream_resp_with_usage() -> Dict[str, Any]:
+    return json.loads(
+        '{"choices":[],"created":1740590155,"id":"chatcmpl-B5FIhX6e00wpolDWO1wswKjNXoabt","model":"gpt-4o-mini-2024-07-18","object":"chat.completion.chunk","system_fingerprint":"fp_b705f0c291","usage":{"completion_tokens":68,"completion_tokens_details":{"accepted_prediction_tokens":0,"audio_tokens":0,"reasoning_tokens":0,"rejected_prediction_tokens":0},"prompt_tokens":84,"prompt_tokens_details":{"audio_tokens":0,"cached_tokens":0},"total_tokens":152}}'
+    )
+
+
 def test_openai_tokens():
     provider = OpenAI()
     tokens = provider.tokens(openai_resp())
     assert tokens.completion == 16
     assert tokens.prompt == 28
+    assert tokens.prompt_details is None
+    assert tokens.completion_details is None
+
+    jsn = openai_stream_resp_with_usage()
+    jsn["usage"] = {
+        "completion_tokens": 68,
+        "completion_tokens_details": {
+            "accepted_prediction_tokens": 3,
+            "audio_tokens": 4,
+            "reasoning_tokens": 5,
+            "rejected_prediction_tokens": 6,
+        },
+        "prompt_tokens": 84,
+        "prompt_tokens_details": {"audio_tokens": 7, "cached_tokens": 8},
+        "total_tokens": 152,
+    }
+    tokens = provider.tokens(jsn)
+    assert tokens.completion == 68
+    assert tokens.completion_details is not None
+    assert tokens.completion_details.accepted_prediction == 3
+    assert tokens.completion_details.audio == 4
+    assert tokens.completion_details.reasoning == 5
+    assert tokens.completion_details.rejected_prediction == 6
+    assert tokens.completion_details.cached == 0
+    assert tokens.prompt == 84
+    assert tokens.prompt_details is not None
+    assert tokens.prompt_details.audio == 7
+    assert tokens.prompt_details.cached == 8
+    assert tokens.prompt_details.accepted_prediction == 0
+    assert tokens.prompt_details.reasoning == 0
+    assert tokens.prompt_details.rejected_prediction == 0
 
 
 def test_openai_get_model_req():
@@ -715,3 +887,55 @@ def test_openai_update_stream_resp_contents():
     jsn = openai_stream_resp_last()
     provider.update_stream_resp_contents(jsn, 0, expected)
     assert provider.extract_contents_from_resp_chunk(jsn) is None
+
+
+def test_openai_update_stream_resp_usage_token():
+    provider = OpenAI()
+    # Test that we will create the usage field if it's missing
+    jsn = openai_stream_resp_no_usage()
+    promptTokenCount = 21
+    completionTokenCount = 123
+    total = promptTokenCount + completionTokenCount
+    tokens = Tokens(completion=completionTokenCount, prompt=promptTokenCount)
+    provider.update_stream_resp_usage_token(jsn, tokens)
+    assert jsn["usage"]["prompt_tokens"] == promptTokenCount
+    assert jsn["usage"]["completion_tokens"] == completionTokenCount
+    assert jsn["usage"]["total_tokens"] == total
+    assert jsn["usage"].get("prompt_tokens_details") is None
+    assert jsn["usage"].get("completion_tokens_details") is None
+
+    # Test that we will update the usage field if it already exists
+    jsn = openai_stream_resp_with_usage()
+    provider.update_stream_resp_usage_token(jsn, tokens)
+    assert jsn["usage"]["prompt_tokens"] == promptTokenCount
+    assert jsn["usage"]["completion_tokens"] == completionTokenCount
+    assert jsn["usage"]["total_tokens"] == total
+    assert jsn["usage"].get("prompt_tokens_details") is None
+    assert jsn["usage"].get("completion_tokens_details") is None
+
+    # Test that we will update the usage field with token details
+    jsn = openai_stream_resp_with_usage()
+    provider.update_stream_resp_usage_token(jsn, tokens)
+    assert jsn["usage"]["prompt_tokens"] == promptTokenCount
+    assert jsn["usage"]["completion_tokens"] == completionTokenCount
+    assert jsn["usage"]["total_tokens"] == total
+    assert jsn["usage"].get("prompt_tokens_details") is None
+    assert jsn["usage"].get("completion_tokens_details") is None
+
+    tokens.completion_details = TokensDetails(
+        audio=1, rejected_prediction=2, accepted_prediction=3, reasoning=4
+    )
+    tokens.prompt_details = TokensDetails(audio=5, cached=6)
+    jsn = openai_stream_resp_with_usage()
+    provider.update_stream_resp_usage_token(jsn, tokens)
+    details = jsn["usage"].get("prompt_tokens_details")
+    assert details is not None
+    assert details["audio_tokens"] == 5
+    assert details["cached_tokens"] == 6
+
+    details = jsn["usage"].get("completion_tokens_details")
+    assert details is not None
+    assert details["audio_tokens"] == 1
+    assert details["rejected_prediction_tokens"] == 2
+    assert details["accepted_prediction_tokens"] == 3
+    assert details["reasoning_tokens"] == 4

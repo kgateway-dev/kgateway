@@ -35,7 +35,9 @@ from api.envoy.service.ext_proc.v3 import external_processor_pb2
 from api.envoy.service.ext_proc.v3 import external_processor_pb2_grpc
 from api.kgateway.policy.ai import prompt_guard
 from util.proto import (
-    extproc_clear_body_response,
+    extproc_clear_request_body,
+    extproc_clear_response_body,
+    extproc_new_response_body,
     get_auth_token,
     get_http_header,
     map_int_to_grpc_status_code,
@@ -508,10 +510,8 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                 ),
             )
 
-        # If it's not end of stream, return an empty response for fall-through cases.
-        return external_processor_pb2.ProcessingResponse(
-            request_body=external_processor_pb2.BodyResponse()
-        )
+        # If it's not end of stream, clear the body so envoy doesn't forward to upstream.
+        return extproc_clear_request_body()
 
     async def handle_response_body(
         self,
@@ -535,7 +535,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                 handler.logger.debug(
                     "buffering streaming response %s\n", resp_body.body
                 )
-                return extproc_clear_body_response()
+                return extproc_clear_response_body()
 
             handler.resp.append(body)
             handler.logger.debug("handling streaming response %s\n", body)
@@ -569,13 +569,13 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                 # TODO(andy): as an optimization, we can check if GuardRail is not enabled,
                 #             we could tell envoy to just start returning the chunk here while
                 #             we still store them for caching
-                return extproc_clear_body_response()
+                return extproc_clear_response_body()
             else:
                 try:
                     full_body = (
                         gzip.decompress(handler.resp.body)
                         if handler.content_encoding == "gzip"
-                        else handler.resp.body
+                        else bytes(handler.resp.body)
                     )
                     if handler.content_encoding == "gzip":
                         handler.logger.debug(f"unzipped body: {full_body}")
@@ -583,10 +583,20 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                     body_str = full_body.decode("utf-8")
                     jsn = json.loads(body_str)
                 except json.decoder.JSONDecodeError as exc:
-                    handler.logger.info("Error decoding json: %s", exc)
-                    return external_processor_pb2.ProcessingResponse(
-                        response_body=external_processor_pb2.BodyResponse()
-                    )
+                    # This could be we are getting an error response that's not json in the body
+                    handler.logger.debug("Error decoding json: %s", exc)
+                    if full_body == resp_body.body:
+                        # This means that there is only 1 chunk and it's also the end of stream,
+                        # so, just ask envoy to send the response through
+                        return external_processor_pb2.ProcessingResponse(
+                            response_body=external_processor_pb2.BodyResponse()
+                        )
+                    else:
+                        # This means we have already buffered some of the body, we should
+                        # send them all back to envoy
+                        return extproc_new_response_body(
+                            content_encoding=handler.content_encoding, body=full_body
+                        )
                 else:
                     handler.increment_tokens(jsn)
                     has_function_call_resp = (
