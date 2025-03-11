@@ -69,7 +69,7 @@ impl<EC: EnvoyHttpFilterConfig, EHF: EnvoyHttpFilter> HttpFilterConfig<EC, EHF> 
 
         // !! Envoy context accessors
         env.add_function("header", header);
-        // env.add_function("request_header", request_header);
+        env.add_function("request_header", request_header);
         // env.add_function("extraction", extraction);
         // env.add_function("body", body);
         // env.add_function("dynamic_metadata", dynamic_metadata);
@@ -142,8 +142,19 @@ fn header(state: &State, key: &str) -> String {
     header_map.get(key).cloned().unwrap_or_default()
 }
 
-/// This implements the [`envoy_proxy_dynamic_modules_rust_sdk::HttpFilter`] trait.
-///
+fn request_header(state: &State, key: &str) -> String {
+    let headers = state.lookup("request_headers");
+    let Some(headers) = headers else {
+        return "".to_string();
+    };
+
+    let Some(header_map) = <HashMap<String, String>>::deserialize(headers.clone()).ok() else {
+        return "".to_string();
+    };
+    header_map.get(key).cloned().unwrap_or_default()
+}
+
+
 /// This sets the request and response headers to the values specified in the filter config.
 pub struct Filter {
     request_headers_setter: Vec<(String, String)>,
@@ -195,7 +206,6 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
             headers.insert(key.to_string(), value);
         }
 
-        // let serialized_headers = serde_json::to_string(&headers).unwrap();
         for (key, value) in &setters {
             let mut env = self.env.clone();
             env.add_template("temp", value).unwrap();
@@ -228,6 +238,16 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
             headers.insert(key.to_string(), value);
         }
 
+        let mut request_headers = HashMap::new();
+        for (key, val) in envoy_filter.get_request_headers() {
+            let Some(key) = std::str::from_utf8(key.as_slice()).ok() else {
+                continue;
+            };
+            let value = std::str::from_utf8(val.as_slice()).unwrap().to_string();
+
+            request_headers.insert(key.to_string(), value);
+        }
+
         let mut setters = self.response_headers_setter.clone();
         // use the sub route version if appropriate as we dont have valid perroute config today
         if self.route_specific.len() > 0 {
@@ -245,16 +265,13 @@ impl<EHF: EnvoyHttpFilter> HttpFilter<EHF> for Filter {
                 .response_headers_setter
                 .clone();
 
-            // TODO(nfuden)remove
-            // add a debug to the setters
-            setters.append(&mut vec![("x-debuggs".to_string(), route_name.to_string())]);
         }
 
         for (key, value) in &setters {
             let mut env = self.env.clone();
             env.add_template("temp", value).unwrap();
             let tmpl = env.get_template("temp").unwrap();
-            let rendered = tmpl.render(context!(headers => headers));
+            let rendered = tmpl.render(context!(headers => headers, request_headers => request_headers));
             let mut rendered_str = "".to_string();
             if rendered.is_ok() {
                 rendered_str = rendered.unwrap();

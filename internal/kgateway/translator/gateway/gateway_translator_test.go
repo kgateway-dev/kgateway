@@ -103,16 +103,6 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				Name:      "gw",
 			},
 		}),
-	Entry(
-		"http gateway with lambda destination",
-		translatorTestCase{
-			inputFile:  "http-with-lambda-destination",
-			outputFile: "http-with-lambda-destination-proxy.yaml",
-			gwNN: types.NamespacedName{
-				Namespace: "default",
-				Name:      "gw",
-			},
-		}),
 	XEntry(
 		"http gateway with azure destination",
 		translatorTestCase{

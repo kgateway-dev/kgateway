@@ -9,6 +9,7 @@ Find tools and information to help you develop the Gloo Gateway project.
 * `tools`: A set of scripts and tools that are intended to help you develop the Gloo Gateway project's codebase. Learn more about these tools in the short descriptions later in this readme.
 
 Other resources:
-* [Developer guide (Gloo Edge API)](https://docs.solo.io/gloo-edge/latest/guides/dev/) to set up your development environment and learn more about extending the functionality of the Gloo Gateway project and related plug-ins. While written for external contributors, internal Solo developers might also find this guide helpful when onboarding.
+* [Developer guide (Gloo Edge API)](https://docs.solo.io/gloo-edge/latest/guides/dev/) - 
+while this guide is written for Gloo Edge, it can be used temporarily for setting up your development environment and learning about extending kgateway functionality and related plug-ins. An updated guide specific to kgateway will be provided in the future. 
 * [Product documentation (K8s Gateway API)](https://docs.solo.io/gateway/latest/)
 * [Contribution guidelines (K8s Gateway API)](https://docs.solo.io/gateway/latest/reference/contribution/)

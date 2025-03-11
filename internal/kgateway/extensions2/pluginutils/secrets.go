@@ -21,9 +21,8 @@ func GetSecretIr(secrets *krtcollections.SecretIndex, krtctx krt.HandlerContext,
 		Namespace: ns,
 	}
 	secret, err := secrets.GetSecret(krtctx, from, secretRef)
-	if secret != nil {
-		return secret, nil
-	} else {
-		return nil, fmt.Errorf(fmt.Sprintf("unable to find the secret %s", secretRef.Name), err)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find secret %s: %v", secretName, err)
 	}
+	return secret, nil
 }
