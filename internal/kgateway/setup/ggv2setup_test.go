@@ -107,6 +107,10 @@ func init() {
 	grpclog.SetLoggerV2(grpclog.NewLoggerV2WithVerbosity(writer, writer, writer, 100))
 }
 
+func TestWithStandardSettings(t *testing.T) {
+	runScenario(t, "testdata/standard")
+}
+
 func TestWithAutoDns(t *testing.T) {
 	os.Setenv("KGW_DNS_LOOKUP_FAMILY", "AUTO")
 	t.Cleanup(func() {

@@ -10,6 +10,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backend"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/backendtlspolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/destrule"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/directresponse"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/httplistenerpolicy"
@@ -75,6 +76,7 @@ func Plugins(ctx context.Context, commoncol *common.CommonCollections) []extensi
 		destrule.NewPlugin(ctx, commoncol),
 		listenerpolicy.NewPlugin(ctx, commoncol),
 		httplistenerpolicy.NewPlugin(ctx, commoncol),
+		backendtlspolicy.NewPlugin(ctx, commoncol),
 	}
 }
 
