@@ -1,7 +1,7 @@
 name: Conformance Tests
 description: run kubernetes gateway api conformance tests
 inputs:
-  api-version: 
+  api-version:
     description: "Override of the sig Gateway API to test against."
     required: false
 runs:
@@ -9,11 +9,6 @@ runs:
   steps:
   - name: Prep Go Runner
     uses: ./.github/actions/prep-go-runner
-  - name: Install kind
-    uses: helm/kind-action@v1.10.0
-    with:
-      install_only: true
-      version: ${{ matrix.kube-version.kind }}
   - uses: azure/setup-kubectl@v4
     id: kubectl
     with:
@@ -39,7 +34,6 @@ runs:
       else
         echo "CONFORMANCE_VERSION=${{ inputs.API_VERSION }}" >> $GITHUB_ENV
       fi
-      
 
   - name: Setup test env
     shell: bash
@@ -48,8 +42,8 @@ runs:
       IMAGE_VARIANT: ${{ matrix.image-variant }}
       CONFORMANCE: "true"
       CONFORMANCE_VERSION: ${{ env.CONFORMANCE_VERSION }}
-      
     run: ./hack/kind/setup-kind.sh
+
   - name: Install kgateway via helm
     shell: bash
     run: |

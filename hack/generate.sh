@@ -37,14 +37,14 @@ done
 API_INPUT_DIRS_SPACE="${API_INPUT_DIRS_SPACE%,}" # drop trailing space
 API_INPUT_DIRS_COMMA="${API_INPUT_DIRS_COMMA%,}" # drop trailing comma
 
-go run k8s.io/code-generator/cmd/register-gen --output-file zz_generated.register.go ${API_INPUT_DIRS_SPACE}
-go run sigs.k8s.io/controller-tools/cmd/controller-gen crd:maxDescLen=0 object rbac:roleName=kgateway paths="${APIS_PKG}/api/${VERSION}" \
+go tool register-gen --output-file zz_generated.register.go ${API_INPUT_DIRS_SPACE}
+go tool controller-gen crd:maxDescLen=0 object rbac:roleName=kgateway paths="${APIS_PKG}/api/${VERSION}" \
     output:crd:artifacts:config=${ROOT_DIR}/${CRD_DIR} output:rbac:artifacts:config=${ROOT_DIR}/${MANIFESTS_DIR}
 
 # throw away
 new_report="$(mktemp -t "$(basename "$0").api_violations.XXXXXX")"
 
-go run k8s.io/kube-openapi/cmd/openapi-gen \
+go tool openapi-gen \
   --output-file zz_generated.openapi.go \
   --report-filename "${new_report}" \
   --output-dir "${ROOT_DIR}/${OPENAPI_GEN_DIR}" \
@@ -58,13 +58,13 @@ go run k8s.io/kube-openapi/cmd/openapi-gen \
   k8s.io/apimachinery/pkg/api/resource \
   k8s.io/apimachinery/pkg/version
 
-go run k8s.io/code-generator/cmd/applyconfiguration-gen \
+go tool applyconfiguration-gen \
   --openapi-schema <(go run ${ROOT_DIR}/cmd/modelschema) \
   --output-dir "${ROOT_DIR}/${APPLY_CFG_DIR}" \
   --output-pkg "github.com/kgateway-dev/kgateway/v2/api/applyconfiguration" \
   ${API_INPUT_DIRS_SPACE}
 
-go run k8s.io/code-generator/cmd/client-gen \
+go tool client-gen \
   --clientset-name "versioned" \
   --input-base "${APIS_PKG}" \
   --input "${API_INPUT_DIRS_COMMA//${APIS_PKG}/}" \
@@ -75,5 +75,5 @@ go run k8s.io/code-generator/cmd/client-gen \
 go generate ${ROOT_DIR}/internal/envoyinit/hack/...
 
 # fix imports of gen code
-go run golang.org/x/tools/cmd/goimports -w ${ROOT_DIR}/${CLIENT_GEN_DIR}
-go run golang.org/x/tools/cmd/goimports -w ${ROOT_DIR}/api
+go tool goimports -w ${ROOT_DIR}/${CLIENT_GEN_DIR}
+go tool goimports -w ${ROOT_DIR}/api

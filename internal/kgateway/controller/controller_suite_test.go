@@ -55,10 +55,10 @@ const (
 )
 
 func getAssetsDir() string {
-	assets := ""
+	var assets string
 	if os.Getenv("KUBEBUILDER_ASSETS") == "" {
 		// set default if not user provided
-		out, err := exec.Command("sh", "-c", "make -sC $(dirname $(go env GOMOD))/internal/kgateway envtest-path").CombinedOutput()
+		out, err := exec.Command("sh", "-c", "make -sC $(dirname $(go env GOMOD)) envtest-path").CombinedOutput()
 		fmt.Fprintln(GinkgoWriter, "out:", string(out))
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 		assets = strings.TrimSpace(string(out))
@@ -69,7 +69,7 @@ func getAssetsDir() string {
 var _ = BeforeSuite(func() {
 	log.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
-	ctx, cancel = context.WithCancel(context.TODO())
+	ctx, cancel = context.WithCancel(context.Background())
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
@@ -93,7 +93,7 @@ var _ = BeforeSuite(func() {
 	Expect(k8sClient).NotTo(BeNil())
 
 	webhookInstallOptions := &testEnv.WebhookInstallOptions
-	mgrOpts := ctrl.Options{
+	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme: scheme,
 		WebhookServer: webhook.NewServer(webhook.Options{
 			Host:    webhookInstallOptions.LocalServingHost,
@@ -107,8 +107,7 @@ var _ = BeforeSuite(func() {
 			// the name validation here.
 			SkipNameValidation: ptr.To(true),
 		},
-	}
-	mgr, err := ctrl.NewManager(cfg, mgrOpts)
+	})
 	Expect(err).ToNot(HaveOccurred())
 
 	kubeconfig = generateKubeConfiguration(cfg)
@@ -116,15 +115,14 @@ var _ = BeforeSuite(func() {
 
 	Expect(err).ToNot(HaveOccurred())
 
-	cfg := controller.GatewayConfig{
+	err = controller.NewBaseGatewayController(ctx, controller.GatewayConfig{
 		Mgr:            mgr,
 		ControllerName: gatewayControllerName,
 		OurGateway: func(gw *apiv1.Gateway) bool {
 			return gwClasses.Has(string(gw.Spec.GatewayClassName))
 		},
 		AutoProvision: true,
-	}
-	err = controller.NewBaseGatewayController(ctx, cfg)
+	})
 	Expect(err).ToNot(HaveOccurred())
 
 	for class := range gwClasses {

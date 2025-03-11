@@ -13,26 +13,3 @@ test:
 .PHONY: test-full
 test-full:
 	go test -ldflags=$(LDFLAGS) -count=1 ./...
-
-# internal target used by ./controller/controller_suite_test.go & ./setup/setup_test.go
-envtest:
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)"
-
-#----------------------------------------------------------------------------------
-# Env test
-#----------------------------------------------------------------------------------
-ENVTEST_K8S_VERSION = 1.23
-
-.PHONY: envtest-path
-envtest-path:
-	@$(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path --arch=amd64
-
-ENVTEST = $(DEPSGOBIN)/setup-envtest
-
-DEPSGOBIN:=$(shell pwd)/.bin
-export PATH:=$(DEPSGOBIN):$(PATH)
-export GOBIN:=$(DEPSGOBIN)
-
-install-go-tools:
-	mkdir -p $(DEPSGOBIN)
-	test -s $(ENVTEST) || go install sigs.k8s.io/controller-runtime/tools/setup-envtest@15d792835235
