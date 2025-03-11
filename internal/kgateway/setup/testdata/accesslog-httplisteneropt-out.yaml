@@ -149,35 +149,6 @@ listeners:
                 upstreamHost: '%UPSTREAM_HOST%'
                 user_agent: '%REQ(USER-AGENT)%'
             path: /dev/stdout
-        - name: envoy.access_loggers.file
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
-            logFormat:
-              formatters:
-              - name: envoy.formatter.req_without_query
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.extensions.formatter.req_without_query.v3.ReqWithoutQuery
-              - name: envoy.formatter.metadata
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.extensions.formatter.metadata.v3.Metadata
-              jsonFormat:
-                authority: '%REQ(:AUTHORITY)%'
-                bytes_received: '%BYTES_RECEIVED%'
-                bytes_sent: '%BYTES_SENT%'
-                method: '%REQ(X-ENVOY-ORIGINAL-METHOD?:METHOD)%'
-                path: '%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%'
-                protocol: '%PROTOCOL%'
-                req_x_forwarded_for: '%REQ(X-FORWARDED-FOR)%'
-                request_id: '%REQ(X-REQUEST-ID)%'
-                resp_upstream_service_time: '%RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)%'
-                response_code: '%RESPONSE_CODE%'
-                response_flags: '%RESPONSE_FLAGS%'
-                start_time: '%START_TIME%'
-                total_duration: '%DURATION%'
-                upstreamCluster: '%UPSTREAM_CLUSTER%'
-                upstreamHost: '%UPSTREAM_HOST%'
-                user_agent: '%REQ(USER-AGENT)%'
-            path: /dev/stdout
         httpFilters:
         - name: envoy.filters.http.router
           typedConfig:
@@ -204,35 +175,6 @@ listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         accessLog:
-        - name: envoy.access_loggers.file
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
-            logFormat:
-              formatters:
-              - name: envoy.formatter.req_without_query
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.extensions.formatter.req_without_query.v3.ReqWithoutQuery
-              - name: envoy.formatter.metadata
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.extensions.formatter.metadata.v3.Metadata
-              jsonFormat:
-                authority: '%REQ(:AUTHORITY)%'
-                bytes_received: '%BYTES_RECEIVED%'
-                bytes_sent: '%BYTES_SENT%'
-                method: '%REQ(X-ENVOY-ORIGINAL-METHOD?:METHOD)%'
-                path: '%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%'
-                protocol: '%PROTOCOL%'
-                req_x_forwarded_for: '%REQ(X-FORWARDED-FOR)%'
-                request_id: '%REQ(X-REQUEST-ID)%'
-                resp_upstream_service_time: '%RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)%'
-                response_code: '%RESPONSE_CODE%'
-                response_flags: '%RESPONSE_FLAGS%'
-                start_time: '%START_TIME%'
-                total_duration: '%DURATION%'
-                upstreamCluster: '%UPSTREAM_CLUSTER%'
-                upstreamHost: '%UPSTREAM_HOST%'
-                user_agent: '%REQ(USER-AGENT)%'
-            path: /dev/stdout
         - name: envoy.access_loggers.file
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
