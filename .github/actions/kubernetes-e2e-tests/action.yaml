@@ -31,7 +31,6 @@ runs:
     uses: ./.github/actions/prep-python-runner
     with:
       github-token: ${{ env.GITHUB_TOKEN }}
-      arch: ${{ env.TEST_RUNNER_ARCH }}
   - name: Execute tests
     env:
       GO_TEST_USER_ARGS: ${{ inputs.test-args }} -run "${{ inputs.run-regex }}"
