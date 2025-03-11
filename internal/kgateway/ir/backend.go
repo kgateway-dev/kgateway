@@ -57,7 +57,7 @@ const (
 type BackendObjectIR struct {
 	// Ref to source object. sometimes the group and kind are not populated from api-server, so
 	// set them explicitly here, and pass this around as the reference.
-	ObjectSource `json:",inline"` // TODO: why json tag here?
+	ObjectSource `json:",inline"`
 	// optional port for if ObjectSource is a service that can have multiple ports.
 	Port int32
 	// optional application protocol for the backend. Can be used to enable http2.
@@ -116,7 +116,7 @@ type Secret struct {
 	// Ref to source object. sometimes the group and kind are not populated from api-server, so
 	// set them explicitly here, and pass this around as the reference.
 	// TODO: why does this have json tag?
-	ObjectSource `json:",inline"`
+	ObjectSource
 
 	// original object. Opaque to us other than metadata.
 	Obj metav1.Object
