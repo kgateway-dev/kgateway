@@ -4,18 +4,24 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"time"
 
 	"google.golang.org/protobuf/proto"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/watch"
 
 	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/solo-io/go-utils/contextutils"
+	"istio.io/istio/pkg/config/schema/kubeclient"
+	"istio.io/istio/pkg/kube/kclient"
 	"istio.io/istio/pkg/kube/krt"
+	"istio.io/istio/pkg/kube/kubetypes"
 
 	gwapiv1a2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gwapiv1a3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
@@ -24,13 +30,13 @@ import (
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	kgwellknown "github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 )
 
+var backendTlsPolicyGvr = gwapiv1a3.SchemeGroupVersion.WithResource("backendtlspolicies")
+
 type backendTlsPolicy struct {
 	ct              time.Time
-	spec            gwapiv1a3.BackendTLSPolicySpec
 	transportSocket *envoy_config_core_v3.TransportSocket
 }
 
@@ -45,21 +51,28 @@ func (d *backendTlsPolicy) Equals(in any) bool {
 	if !ok {
 		return false
 	}
-	// spec has several nested slices, use DeepEqual for now
-	specEq := reflect.DeepEqual(d.spec, d2.spec)
-	socketEq := proto.Equal(d.transportSocket, d2.transportSocket)
-	return specEq && socketEq
+	return proto.Equal(d.transportSocket, d2.transportSocket)
+}
+
+func registerTypes() {
+	kubeclient.Register[*gwapiv1a3.BackendTLSPolicy](
+		backendTlsPolicyGvr,
+		kgwellknown.BackendTLSPolicyGVK,
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (runtime.Object, error) {
+			return c.GatewayAPI().GatewayV1alpha3().BackendTLSPolicies(namespace).List(context.Background(), o)
+		},
+		func(c kubeclient.ClientGetter, namespace string, o metav1.ListOptions) (watch.Interface, error) {
+			return c.GatewayAPI().GatewayV1alpha3().BackendTLSPolicies(namespace).Watch(context.Background(), o)
+		},
+	)
 }
 
 func NewPlugin(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
-	// TODO: register types directly rather than rely on dynamic client
-	col := krtutil.SetupCollectionDynamic[gwapiv1a3.BackendTLSPolicy](
-		ctx,
-		commoncol.Client,
-		gwapiv1a3.SchemeGroupVersion.WithResource("backendtlspolicies"),
-		commoncol.KrtOpts.ToOptions("BackendTLSPolicy")...,
-	)
+	registerTypes()
+	inf := kclient.NewDelayedInformer[*gwapiv1a3.BackendTLSPolicy](commoncol.Client, backendTlsPolicyGvr, kubetypes.StandardInformer, kclient.Filter{})
+	col := krt.WrapClient(inf, commoncol.KrtOpts.ToOptions("BackendTLSPolicy")...)
 	gk := kgwellknown.BackendTLSPolicyGVK.GroupKind()
+
 	translate := buildTranslateFunc(ctx, commoncol.ConfigMaps)
 	tlsPolicyCol := krt.NewCollection(col, func(krtctx krt.HandlerContext, i *gwapiv1a3.BackendTLSPolicy) *ir.PolicyWrapper {
 		var pol = &ir.PolicyWrapper{
@@ -105,8 +118,7 @@ func buildTranslateFunc(
 	return func(krtctx krt.HandlerContext, policyCR *gwapiv1a3.BackendTLSPolicy) *backendTlsPolicy {
 		spec := policyCR.Spec
 		policyIr := backendTlsPolicy{
-			ct:   policyCR.CreationTimestamp.Time,
-			spec: spec,
+			ct: policyCR.CreationTimestamp.Time,
 		}
 
 		if len(spec.Validation.CACertificateRefs) == 0 {
@@ -114,10 +126,13 @@ func buildTranslateFunc(
 		}
 
 		certRef := spec.Validation.CACertificateRefs[0]
-		key := fmt.Sprintf("%s/%s", policyCR.Namespace, certRef.Name)
-		cfgmap := krt.FetchOne(krtctx, cfgmaps, krt.FilterKey(key))
+		nn := types.NamespacedName{
+			Name:      string(certRef.Name),
+			Namespace: policyCR.Namespace,
+		}
+		cfgmap := krt.FetchOne(krtctx, cfgmaps, krt.FilterObjectName(nn))
 		if cfgmap == nil {
-			contextutils.LoggerFrom(ctx).Error(errors.New(fmt.Sprintf("configmap %s not found", key)))
+			contextutils.LoggerFrom(ctx).Error(errors.New(fmt.Sprintf("configmap %s not found", nn)))
 			return &policyIr
 		}
 
