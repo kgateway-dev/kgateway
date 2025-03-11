@@ -331,7 +331,7 @@ func testScenario(
 		t.Fatal("wrote out file - nothing to test")
 	}
 	dump.Compare(t, expectedXdsDump)
-	t.Logf("%s passed", t.Name())
+	t.Logf("%s finished", t.Name())
 }
 
 // logKrtState logs the krt state with a message
