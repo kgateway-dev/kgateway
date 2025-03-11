@@ -2,6 +2,7 @@ package tests
 
 import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/backendtls"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/basicrouting"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/transformation"
 
@@ -36,6 +37,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	// kubeGatewaySuiteRunner.Register("VirtualHostOptions", virtualhost_options.NewTestingSuite)
 
 	kubeGatewaySuiteRunner.Register("Backends", backends.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("BackendTLSPolicies", backendtls.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("HTTPRouteServices", httproute.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("TCPRouteServices", tcproute.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("TLSRouteServices", tlsroute.NewTestingSuite)
