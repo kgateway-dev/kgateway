@@ -1,5 +1,3 @@
-//go:build ignore
-
 package route_delegation
 
 import (
@@ -51,7 +49,6 @@ func (s *tsuite) SetupSuite() {
 		"TestMultipleParents":             {commonManifest, multipleParentsManifest},
 		"TestInvalidChildValidStandalone": {commonManifest, invalidChildValidStandaloneManifest},
 		"TestUnresolvedChild":             {commonManifest, unresolvedChildManifest},
-		"TestRouteOptions":                {commonManifest, routeOptionsManifest},
 		"TestMatcherInheritance":          {commonManifest, matcherInheritanceManifest},
 	}
 	// Not every resource that is applied needs to be verified. We are not testing `kubectl apply`,
@@ -66,7 +63,6 @@ func (s *tsuite) SetupSuite() {
 		multipleParentsManifest:             {routeParent1, routeParent2, routeTeam1, routeTeam2},
 		invalidChildValidStandaloneManifest: {proxyTestService, proxyTestDeployment, routeRoot, routeTeam1, routeTeam2},
 		unresolvedChildManifest:             {routeRoot},
-		routeOptionsManifest:                {routeRoot, routeTeam1, routeTeam2},
 		matcherInheritanceManifest:          {routeParent1, routeParent2, routeTeam1},
 	}
 }
@@ -233,32 +229,6 @@ func (s *tsuite) TestInvalidChildValidStandalone() {
 func (s *tsuite) TestUnresolvedChild() {
 	s.ti.Assertions.EventuallyHTTPRouteStatusContainsReason(s.ctx, routeRoot.Name, routeRoot.Namespace,
 		string(gwv1.RouteReasonBackendNotFound), 10*time.Second, 1*time.Second)
-}
-
-func (s *tsuite) TestRouteOptions() {
-	// Assert traffic to team1 route experiences the injected fault using RouteOption
-	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHostPort(proxyHostPort),
-			curl.WithPath(pathTeam1),
-		},
-		&testmatchers.HttpResponse{
-			StatusCode: http.StatusTeapot,
-			Body:       ContainSubstring("fault filter abort"),
-		})
-
-	// Assert traffic to team2 route succeeds with path rewrite using RouteOption
-	// while also containing the response header set by the root RouteOption
-	s.ti.Assertions.AssertEventuallyConsistentCurlResponse(s.ctx, defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHostPort(proxyHostPort),
-			curl.WithPath(pathTeam2),
-		},
-		&testmatchers.HttpResponse{
-			StatusCode: http.StatusOK,
-			Body:       ContainSubstring("/anything/rewrite"),
-			Headers:    map[string]interface{}{"x-foo": Equal("baz")},
-		})
 }
 
 func (s *tsuite) TestMatcherInheritance() {

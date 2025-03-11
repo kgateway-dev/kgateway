@@ -36,7 +36,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	ggv2utils "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
@@ -93,7 +92,7 @@ func sliceToResourcesHash[T proto.Message](slice []T) ([]envoycachetypes.Resourc
 	var resourcesHash uint64
 	for _, r := range slice {
 		var m proto.Message = r
-		hash := ggv2utils.HashProto(r)
+		hash := utils.HashProto(r)
 		slicePb = append(slicePb, envoycachetypes.ResourceWithTTL{Resource: m})
 		resourcesHash ^= hash
 	}
@@ -305,7 +304,7 @@ func (s *ProxySyncer) Start(ctx context.Context) error {
 	logger.Infof("starting %s Proxy Syncer", s.controllerName)
 	// latestReport will be constantly updated to contain the merged status report for Kube Gateway status
 	// when timer ticks, we will use the state of the mergedReports at that point in time to sync the status to k8s
-	latestReportQueue := ggv2utils.NewAsyncQueue[reports.ReportMap]()
+	latestReportQueue := utils.NewAsyncQueue[reports.ReportMap]()
 	logger.Infof("waiting for cache to sync")
 
 	// wait for krt collections to sync

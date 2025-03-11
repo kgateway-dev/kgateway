@@ -21,6 +21,7 @@ import (
 
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/admin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/controller"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
@@ -39,7 +40,7 @@ func Main(customCtx context.Context) error {
 }
 
 func startSetupLoop(ctx context.Context) error {
-	return StartGGv2(ctx, nil, nil)
+	return StartKgateway(ctx, nil, nil)
 }
 
 func createKubeClient(restConfig *rest.Config) (istiokube.Client, error) {
@@ -52,9 +53,9 @@ func createKubeClient(restConfig *rest.Config) (istiokube.Client, error) {
 	return client, nil
 }
 
-func StartGGv2(
+func StartKgateway(
 	ctx context.Context,
-	extraPlugins []extensionsplug.Plugin,
+	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []extensionsplug.Plugin,
 	extraGwClasses []string, // TODO: we can remove this and replace with something that watches all GW classes with our controller name
 ) error {
 	logger := contextutils.LoggerFrom(ctx)
@@ -83,7 +84,7 @@ func StartGGv2(
 	}
 
 	restConfig := ctrl.GetConfigOrDie()
-	return StartGGv2WithConfig(ctx, setupOpts, restConfig, uccBuilder, extraPlugins, nil)
+	return StartKgatewayWithConfig(ctx, setupOpts, restConfig, uccBuilder, extraPlugins, nil)
 }
 
 func startControlPlane(
@@ -94,12 +95,12 @@ func startControlPlane(
 	return NewControlPlane(ctx, &net.TCPAddr{IP: net.IPv4zero, Port: int(port)}, callbacks)
 }
 
-func StartGGv2WithConfig(
+func StartKgatewayWithConfig(
 	ctx context.Context,
 	setupOpts *controller.SetupOpts,
 	restConfig *rest.Config,
 	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
-	extraPlugins []extensionsplug.Plugin,
+	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []extensionsplug.Plugin,
 	extraGwClasses []string, // TODO: we can remove this and replace with something that watches all GW classes with our controller name
 ) error {
 	ctx = contextutils.WithLogger(ctx, "k8s")

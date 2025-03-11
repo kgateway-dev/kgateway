@@ -13,10 +13,8 @@ type Settings struct {
 	// https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#enum-config-cluster-v3-cluster-dnslookupfamily
 	DnsLookupFamily string `split_words:"true" default:"V4_PREFERRED"`
 
-	EnableIstioIntegration bool   `split_words:"true"`
-	EnableAutoMtls         bool   `split_words:"true"`
-	StsClusterName         string `split_words:"true"`
-	StsUri                 string `split_words:"true"`
+	EnableIstioIntegration bool `split_words:"true"`
+	EnableAutoMtls         bool `split_words:"true"`
 
 	// XdsServiceName is the name of the Kubernetes Service that serves xDS config.
 	// It it assumed to be in the kgateway install namespace.

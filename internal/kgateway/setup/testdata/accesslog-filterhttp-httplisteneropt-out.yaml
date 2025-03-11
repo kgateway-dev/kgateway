@@ -199,21 +199,6 @@ listeners:
                   clusterName: log-test
               logName: test-accesslog-service
               transportApiVersion: V3
-        - filter:
-            headerFilter:
-              header:
-                name: x-my-cool-test-filter
-                stringMatch:
-                  exact: test
-          name: envoy.access_loggers.http_grpc
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.access_loggers.grpc.v3.HttpGrpcAccessLogConfig
-            commonConfig:
-              grpcService:
-                envoyGrpc:
-                  clusterName: log-test
-              logName: test-accesslog-service
-              transportApiVersion: V3
         httpFilters:
         - name: envoy.filters.http.router
           typedConfig:
@@ -240,21 +225,6 @@ listeners:
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
         accessLog:
-        - filter:
-            headerFilter:
-              header:
-                name: x-my-cool-test-filter
-                stringMatch:
-                  exact: test
-          name: envoy.access_loggers.http_grpc
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.access_loggers.grpc.v3.HttpGrpcAccessLogConfig
-            commonConfig:
-              grpcService:
-                envoyGrpc:
-                  clusterName: log-test
-              logName: test-accesslog-service
-              transportApiVersion: V3
         - filter:
             headerFilter:
               header:

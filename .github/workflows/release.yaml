@@ -23,6 +23,7 @@ on:
 env:
   # this is uses the `github.repository_owner` to support releases from forks (useful for testing).
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
+  VANITY_REGISTRY: cr.kgateway.dev/kgateway-dev
 
 permissions:
   contents: write

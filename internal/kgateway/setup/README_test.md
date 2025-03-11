@@ -1,4 +1,4 @@
-Envtests for krt/ggv2
+Envtests for krt/kgateway
 
 Add a `.yaml` in the test folder.
 The first time your run the test, an xds `-out.yaml` file will be created in the same folder.
