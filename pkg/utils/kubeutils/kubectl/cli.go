@@ -219,14 +219,7 @@ func (c *Cli) SetLabel(
 	label, value string,
 ) error {
 	// ex: k -n ns label svc svc-a foo=val --overwrite
-	args := []string{"label", kind, name, label + "=" + value, "--overwrite"}
-	if namespace != "" {
-		args = append(
-			[]string{"-n", namespace},
-			args...,
-		)
-	}
-	return c.RunCommand(ctx, args...)
+	return c.labelInner(ctx, kind, name, namespace, label, "=", value)
 }
 
 // UnsetLabel unsets a label on a given resource.
@@ -235,8 +228,24 @@ func (c *Cli) UnsetLabel(
 	kind, name, namespace string,
 	label string,
 ) error {
-	// ex: k -n ns label svc svc-a foo=- --overwrite
-	return c.SetLabel(ctx, kind, name, namespace, label, "-")
+	// ex: k -n ns label svc svc-a foo- --overwrite
+	return c.labelInner(ctx, kind, name, namespace, label, "-", "")
+}
+
+func (c *Cli) labelInner(
+	ctx context.Context,
+	kind, name, namespace string,
+	label, op, value string,
+) error {
+	// ex: k -n ns label svc svc-a foo=val --overwrite
+	args := []string{"label", kind, name, label + op + value, "--overwrite"}
+	if namespace != "" {
+		args = append(
+			[]string{"-n", namespace},
+			args...,
+		)
+	}
+	return c.RunCommand(ctx, args...)
 }
 
 // DeploymentRolloutStatus waits for the deployment to complete rolling out
