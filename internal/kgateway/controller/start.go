@@ -65,7 +65,7 @@ type StartConfig struct {
 	RestConfig *rest.Config
 	// ExtensionsFactory is the factory function which will return an extensions.K8sGatewayExtensions
 	// This is responsible for producing the extension points that this controller requires
-	ExtraPlugins []extensionsplug.Plugin
+	ExtraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []extensionsplug.Plugin
 
 	Client istiokube.Client
 
@@ -174,11 +174,13 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	}, nil
 }
 
-func pluginFactoryWithBuiltin(extraPlugins []extensionsplug.Plugin) extensions2.K8sGatewayExtensionsFactory {
+func pluginFactoryWithBuiltin(extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []extensionsplug.Plugin) extensions2.K8sGatewayExtensionsFactory {
 	return func(ctx context.Context, commoncol *common.CommonCollections) extensionsplug.Plugin {
 		plugins := registry.Plugins(ctx, commoncol)
 		plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
-		plugins = append(plugins, extraPlugins...)
+		if extraPlugins != nil {
+			plugins = append(plugins, extraPlugins(ctx, commoncol)...)
+		}
 		return registry.MergePlugins(plugins...)
 	}
 }
