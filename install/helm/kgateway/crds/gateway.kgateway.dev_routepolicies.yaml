@@ -17,8 +17,6 @@ spec:
     kind: RoutePolicy
     listKind: RoutePolicyList
     plural: routepolicies
-    shortNames:
-    - rp
     singular: routepolicy
   scope: Namespaced
   versions:

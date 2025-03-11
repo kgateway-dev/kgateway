@@ -17,8 +17,6 @@ spec:
     kind: ListenerPolicy
     listKind: ListenerPolicyList
     plural: listenerpolicies
-    shortNames:
-    - lp
     singular: listenerpolicy
   scope: Namespaced
   versions:
