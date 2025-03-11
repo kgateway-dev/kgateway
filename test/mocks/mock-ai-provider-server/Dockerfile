@@ -1,20 +1,23 @@
-FROM python:3.9-slim
+# Use official golang image as the base image
+FROM golang:1.24-alpine
 
+# Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
+# Copy go.mod and go.sum files from the mock server directory
+COPY go.mod go.sum* ./
 
-# Install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Download dependencies
+RUN go mod download
 
+# Copy the source code and data files from the mock server directory
 COPY . .
-EXPOSE 5000
 
-ENV FLASK_APP=app.py
-ENV FLASK_ENV=production
+# Build the application
+RUN go build -o main ./main.go
 
-CMD ["python", "app.py"]
+# Expose port 5001 (the port used in the application)
+EXPOSE 5001
+
+# Run the application
+CMD ["./main"]

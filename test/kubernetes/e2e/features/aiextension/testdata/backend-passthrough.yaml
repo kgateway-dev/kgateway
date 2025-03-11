@@ -55,7 +55,7 @@ spec:
         port: 5001
       provider:
         gemini:
-          model: "gemini-1.5-flash-latest"
+          model: "gemini-1.5-flash-001"
           apiVersion: "v1beta"
           authToken:
             kind: "Passthrough"
@@ -79,7 +79,7 @@ spec:
           model: gemini-1.5-flash-001
           apiVersion: v1
           location: us-central1
-          projectId: gloo-ee
+          projectId: kgateway-project
           publisher: GOOGLE
           authToken:
             kind: "Passthrough"

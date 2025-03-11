@@ -1,16 +1,13 @@
 package aiextension
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"time"
 
-	"github.com/rotisserie/eris"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
@@ -57,32 +54,13 @@ func NewSuite(
 
 func (s *tsuite) SetupSuite() {
 	s.manifests = map[string][]string{
-		"TestRouting": {commonManifest, backendManifest, routesBasicManifest},
-		//"TestRoutingPassthrough":                  {commonManifest, backendPassthroughManifest, routesWithExtensionManifest},
-		//"TestStreaming":                           {commonManifest, backendManifest, routesWithExtensionManifest, routeOptionStreamingManifest},
-		//"TestUserInvokedFunctionCalling":          {commonManifest, backendManifest, routesBasicManifest},
-		//"TestUserInvokedFunctionCallingStreaming": {commonManifest, backendManifest, routesWithExtensionManifest, routeOptionStreamingManifest},
-		//"TestLangchain":                           {commonManifest, backendManifest, routesBasicManifest},
+		"TestRouting":            {commonManifest, backendManifest, routesBasicManifest},
+		"TestRoutingPassthrough": {commonManifest, backendPassthroughManifest, routesWithExtensionManifest},
+		"TestStreaming":          {commonManifest, backendManifest, routesWithExtensionManifest, routeOptionStreamingManifest},
 	}
 }
 
 func (s *tsuite) TearDownSuite() {
-}
-
-func (s *tsuite) waitForEnvoyReady() {
-	gwURL := s.getGatewayURL()
-	fmt.Printf("Waiting for envoy up.")
-	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		statusChar := "."
-		resp, err := http.Get(gwURL + "/not_there")
-		if assert.NoErrorf(c, err, "failed to wait for envoy up") {
-			defer resp.Body.Close()
-			statusChar = "*"
-			assert.Equalf(c, resp.StatusCode, 404, "envoy up check failed")
-		}
-		fmt.Printf(statusChar)
-	}, 30*time.Second, 1*time.Second)
-	fmt.Printf("\n")
 }
 
 func (s *tsuite) BeforeTest(suiteName, testName string) {
@@ -92,8 +70,6 @@ func (s *tsuite) BeforeTest(suiteName, testName string) {
 		err := s.testInst.Actions.Kubectl().ApplyFile(s.ctx, manifest)
 		s.Require().NoError(err)
 	}
-
-	s.waitForEnvoyReady()
 }
 
 func (s *tsuite) AfterTest(suiteName, testName string) {
@@ -111,36 +87,16 @@ func (s *tsuite) TestRouting() {
 	s.invokePytest("routing.py")
 }
 
-//func (s *tsuite) TestRoutingPassthrough() {
-//	vertexAIToken, err := GetVertexAIToken()
-//	if err != nil {
-//		s.T().Fatal(err)
-//	}
-//	s.invokePytest(
-//		"routing.py",
-//		"TEST_TOKEN_PASSTHROUGH=true",
-//		fmt.Sprintf("OPENAI_API_KEY=%s", os.Getenv("OPENAI_API_KEY")),
-//		fmt.Sprintf("AZURE_OPENAI_API_KEY=%s", os.Getenv("AZURE_OPENAI_API_KEY")),
-//		fmt.Sprintf("GEMINI_API_KEY=%s", os.Getenv("GEMINI_API_KEY")),
-//		fmt.Sprintf("VERTEX_AI_API_KEY=%s", vertexAIToken),
-//	)
-//}
-//
-//func (s *tsuite) TestStreaming() {
-//	s.invokePytest("streaming.py")
-//}
+func (s *tsuite) TestRoutingPassthrough() {
+	s.invokePytest(
+		"routing.py",
+		"TEST_TOKEN_PASSTHROUGH=true",
+	)
+}
 
-//func (s *tsuite) TestUserInvokedFunctionCalling() {
-//	s.invokePytest("user_function_calling.py")
-//}
-//
-//func (s *tsuite) TestUserInvokedFunctionCallingStreaming() {
-//	s.invokePytest("user_function_calling_stream.py")
-//}
-//
-//func (s *tsuite) TestLangchain() {
-//	s.invokePytest("langchain_function_calling.py")
-//}
+func (s *tsuite) TestStreaming() {
+	s.invokePytest("streaming.py")
+}
 
 func (s *tsuite) invokePytest(test string, extraEnv ...string) {
 	fmt.Printf("Using Python binary: %s\n", pythonBin)
@@ -161,7 +117,6 @@ func (s *tsuite) invokePytest(test string, extraEnv ...string) {
 	cmd.Env = []string{
 		fmt.Sprintf("TEST_OPENAI_BASE_URL=%s/openai", gwURL),
 		fmt.Sprintf("TEST_AZURE_OPENAI_BASE_URL=%s/azure", gwURL),
-		fmt.Sprintf("TEST_ANTHROPIC_BASE_URL=%s/anthropic", gwURL),
 		fmt.Sprintf("TEST_GEMINI_BASE_URL=%s/gemini", gwURL), // need to specify HTTP as part of the endpoint
 		fmt.Sprintf("TEST_VERTEX_AI_BASE_URL=%s/vertex-ai", gwURL),
 		fmt.Sprintf("TEST_GATEWAY_ADDRESS=%s", gwURL),
@@ -209,14 +164,4 @@ func (s *tsuite) getGatewayURL() string {
 	}, 10*time.Second, 1*time.Second)
 
 	return fmt.Sprintf("http://%s:%d", svc.Status.LoadBalancer.Ingress[0].IP, svc.Spec.Ports[0].Port)
-}
-
-func GetVertexAIToken() (string, error) {
-	cmd := exec.Command("gcloud", "auth", "print-access-token",
-		"ci-cloud-run@gloo-ee.iam.gserviceaccount.com", "--project", "gloo-ee")
-	vertexAIToken, err := cmd.Output()
-	if err != nil {
-		return "", eris.Wrap(err, "Failed to get access token")
-	}
-	return string(bytes.TrimSpace(vertexAIToken)), nil
 }

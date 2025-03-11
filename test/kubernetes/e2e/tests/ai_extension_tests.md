@@ -9,9 +9,6 @@ The AI extension e2e test is different from the other tests in the sense that it
 - system that supports MetalLB to expose k8s services to the host
 
 - environment variables:
-    - `OPENAI_API_KEY`: OpenAI API key
-    - `ANTHROPIC_API_KEY`: Anthropic API key
-    - `GEMINI_API_KEY`: Gemini API key
     - `PYTHON`: path to the python3 executable, e.g. `/src/code/kgateway/.venv/bin/python`
 
 ## Set-up Python virtualenv
@@ -43,8 +40,11 @@ go test ./test/kubernetes/e2e/tests/ -run AIExtension
 You can set the `TEST_PYTHON_STRING_MATCH` to run a specific subset of tests. For example `TEST_PYTHON_STRING_MATCH=vertex_ai` would only run the `vertex_ai` tests:
 
 ```bash
-TEST_PYTHON_STRING_MATCH=vertex_ai go test ./test/kubernetes/e2e/tests/ -run AIExtension
+VERSION=1.0.0-ci1 TEST_PYTHON_STRING_MATCH=vertex_ai go test ./test/kubernetes/e2e/tests/ -run AIExtension
 ```
+
+Note: The `VERSION` is required to ensure the correct version of the `test-ai-provider` image is used. It should match the 
+version of kgateway being tested.
 
 ## Run the python test
 
