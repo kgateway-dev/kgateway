@@ -79,9 +79,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Prep Go Runner
-        uses: ./.github/actions/prep-go-runner
-
       - name: Helm login to ${{ env.IMAGE_REGISTRY }}
         if: ${{ github.event_name != 'pull_request' }}
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.IMAGE_REGISTRY }} -u ${{ github.repository_owner }} --password-stdin
