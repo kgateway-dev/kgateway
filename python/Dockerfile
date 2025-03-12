@@ -12,8 +12,11 @@ RUN python3 -m venv /opt/venv
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
+# pass in the AI extension directory
+ARG AI_EXTENSION_DIR=.
+
 # install requirements
-COPY requirements.txt .
+COPY ${AI_EXTENSION_DIR}/requirements.txt .
 RUN pip3 install --no-cache-dir wheel
 RUN pip3 install --no-cache-dir -r requirements.txt
 # Pre-download tiktoken encoding model
@@ -41,7 +44,7 @@ RUN chmod 755 /opt/tiktoken
 USER kgateway
 RUN mkdir -p /home/kgateway
 WORKDIR /home/kgateway
-COPY ai_extension .
+COPY ${AI_EXTENSION_DIR}/ai_extension .
 
 # make sure all messages always reach console
 ENV PYTHONUNBUFFERED=1
