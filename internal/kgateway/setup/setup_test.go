@@ -195,7 +195,9 @@ func runScenario(t *testing.T, scenarioDir string, globalSettings *settings.Sett
 		// web hook to add cluster ips to services
 	}
 	// Enable this if you want api server logs and audit logs.
-	//	addApiServerLogs(t, testEnv)
+	if os.Getenv("DEBUG_APISERVER") == "true" {
+		addApiServerLogs(t, testEnv)
+	}
 	var wg sync.WaitGroup
 	t.Cleanup(wg.Wait)
 
